@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 ###############################################################################
 """
-This module contains a zero-order representation of an electroCoagulation unit.
+This module contains a zero-order representation of an electrocoagulation unit.
 """
 
 from pyomo.environ import units as pyunits, Var
@@ -24,7 +24,7 @@ from idaes.core.util.constants import Constants
 @declare_process_block_class("ElectrocoagulationZO")
 class ElectrocoagulationZOData(ZeroOrderBaseData):
     """
-    Zero-Order model for an electro coagulation unit operation.
+    Zero-order model for an electrocoagulation unit operation.
     """
 
     CONFIG = ZeroOrderBaseData.CONFIG()
@@ -36,12 +36,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
         build_sido(self)
 
-        self.current_density = Var(
-            self.flowsheet().time,
-            units=pyunits.mA / pyunits.cm**2,
-            bounds=(1, 9),
-            doc="Current density"
-        )
+        # Fixed parameters in the model
 
         self.electrode_spacing = Var(
             units=pyunits.cm,
@@ -51,11 +46,6 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         self.solution_conductivity = Var(
             units=pyunits.S / pyunits.cm,
             doc="Electrical conductivity of solution",
-        )
-
-        self.ohmic_resistance = Var(
-            units=pyunits.ohm * pyunits.cm**2,
-            doc="Ohmic resistance in an EC reactor",
         )
 
         self.power_density_k1 = Var(
@@ -77,25 +67,32 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.power_density_k2)
         self._fixed_perf_vars.append(self.z_valence)
 
+        # Variable parameters and constraints
+
+        self.current_density = Var(
+            self.flowsheet().time,
+            units=pyunits.mA / pyunits.cm**2,
+            bounds=(1, 9),
+            doc="Current density"
+        )
+
         self.energy_consumption = Var(
             self.flowsheet().time,
             units=pyunits.kWh / pyunits.m**3 / pyunits.mol,
             doc="Energy required for treating a given volume",
         )
 
-        @self.Constraint(
-            self.flowsheet().time, doc="Energy requirement constraint"
-        )
+        @self.Constraint(self.flowsheet().time, doc="Energy requirement constraint")
         def energy_consumption_constraint(b, t):
-            current_density_in = pyunits.convert(
-                b.current_density[t],
-                to_units=pyunits.A / pyunits.cm**2,
-            )
+            current_density_in = pyunits.convert(b.current_density[t], to_units=pyunits.A / pyunits.cm**2)
+            ohmic_resistance = self.electrode_spacing / self.solution_conductivity
             return b.energy_consumption[t] == (
-                current_density_in * b.ohmic_resistance
+                current_density_in * ohmic_resistance
                 + b.power_density_k1 * log(current_density_in)
                 + b.power_density_k2
             ) * (b.z_valence * Constants.faraday_constant / (3600 * 10**6))
 
-        enrg_consump = self.energy_consumption
-        self._perf_var_dict["Energy Consumption (kWh/m3/Mole)"] = enrg_consump
+        # Store contents for reporting output
+
+        self._perf_var_dict["Current density (mA/cm²)"] = self.current_density
+        self._perf_var_dict["Energy Consumption (kWh/m³/mole)"] = self.energy_consumption
