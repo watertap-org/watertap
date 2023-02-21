@@ -40,7 +40,7 @@ def set_up_sensitivity(m):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num, nx, interpolate_nan_outputs=True):
+def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
     m, _ = metab.main()
 
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
