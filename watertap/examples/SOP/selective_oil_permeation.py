@@ -21,7 +21,7 @@ from pyomo.environ import (
     Reference,
     units as pyunits,
 )
-from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
@@ -35,7 +35,7 @@ from idaes.core import (
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -195,12 +195,12 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             doc="Oil volumetric flux",
         )
 
-        self.recovery_oil = Var(
+        self.recovery_frac_oil = Var(
             self.flowsheet().config.time,
             initialize=0.5,
             bounds=(0, 1),
             units=pyunits.dimensionless,
-            doc="Oil recovery",
+            doc="Oil recovery fraction on a mass basis",
         )
 
         self.mass_transfer_oil = Var(
@@ -281,11 +281,11 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         def eq_pressure_transmemb(b, t):
             return (
                 b.pressure_transmemb[t]
-                == (
+                == 0.5
+                * (
                     b.feed_side.properties_in[t].pressure
                     + b.feed_side.properties_out[t].pressure
                 )
-                / 2
                 - b.properties_permeate[t].pressure
             )
 
@@ -297,11 +297,14 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         )
         def eq_mass_transfer_term(b, t, p, j):
             if j == "H2O":
-                self.feed_side.mass_transfer_term[t, p, j].fix(0)  # no water transfer
+                self.feed_side.mass_transfer_term[t, p, "H2O"].fix(
+                    0
+                )  # no water transfer
                 return Constraint.Skip
             elif j == "oil":
                 return (
-                    b.mass_transfer_oil[t] == -b.feed_side.mass_transfer_term[t, p, j]
+                    b.mass_transfer_oil[t]
+                    == -b.feed_side.mass_transfer_term[t, p, "oil"]
                 )
 
         @self.Constraint(
@@ -328,7 +331,8 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             )
 
         @self.Constraint(
-            self.flowsheet().config.time, doc="Isothermal assumption for permeate"
+            self.flowsheet().config.time,
+            doc="Isothermal assumption for permeate",
         )
         def eq_permeate_isothermal(b, t):
             return (
@@ -336,25 +340,28 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
                 == b.properties_permeate[t].temperature
             )
 
-        # TODO add flux relationship
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     doc="Volumetric oil flux",
-        # )
-        # def eq_flux_vol_oil(b, t):
-        #     return (
-        #         b.flux_vol_oil[t] == b.pressure_transmemb[t]
-        #     )
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Volumetric oil flux",
+        )
+        def eq_flux_vol_oil(b, t):
+            return (
+                b.flux_vol_oil[t]
+                == 1.0e-6
+                * units_meta("length")
+                * units_meta("time")
+                ** -1  # TODO implement the actual expression for oil flux
+            )
 
         @self.Constraint(
             self.flowsheet().config.time,
             doc="Recovery fraction of oil, mass basis",
         )
-        def eq_recovery_oil(b, t):
+        def eq_recovery_frac_oil(b, t):
             return (
-                b.recovery_oil[t]
+                b.recovery_frac_oil[t]
+                * b.feed_side.properties_in[t].flow_mass_phase_comp["Liq", "oil"]
                 == b.properties_permeate[t].flow_mass_phase_comp["Liq", "oil"]
-                / b.feed_side.properties_in[t].flow_mass_phase_comp["Liq", "oil"]
             )
 
     def initialize_build(
@@ -437,9 +444,10 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         expr_dict = {}
         var_dict["Membrane area"] = self.area
         var_dict["Avg. transmembr. pressure"] = self.pressure_transmemb[time_point]
-        var_dict["Pressure drop"] = self.deltaP[time_point]
+        if hasattr(self, "deltaP"):
+            var_dict["Pressure drop"] = self.deltaP[time_point]
         var_dict["Oil volumetric flux"] = self.flux_vol_oil[time_point]
-        var_dict["Oil recovery"] = self.recovery_oil[time_point]
+        var_dict["Oil recovery"] = self.recovery_frac_oil[time_point]
         return {"vars": var_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
@@ -457,8 +465,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.area, 1e-1)
         iscale.set_scaling_factor(self.flux_vol_oil, 1e6)
-        iscale.set_scaling_factor(self.recovery_oil, 1)
-
+        iscale.set_scaling_factor(self.recovery_frac_oil, 1)
         iscale.set_scaling_factor(
             self.pressure_transmemb,
             iscale.get_scaling_factor(self.feed_side.properties_in[0].pressure),
@@ -470,6 +477,9 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             ),
         )
 
+        # TODO any other scaling needed? I see that there are some unit models that also make calls to constraint_scaling_transform in this method
+
+    # TODO can the rest of these comments below be removed?
     #     # setting scaling factors for variables
     #     # these variables should have user input, if not there will be a warning
     #     if iscale.get_scaling_factor(self.area) is None:
