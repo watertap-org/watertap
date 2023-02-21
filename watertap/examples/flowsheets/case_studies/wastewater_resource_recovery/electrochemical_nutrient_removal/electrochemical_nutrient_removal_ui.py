@@ -353,7 +353,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Levelized cost metrics",
     )
     exports.add(
-        obj=fs.costing.LCOS,
+        obj=fs.costing.LCOP,
         name="Levelized cost of phosphorus recovery",
         ui_units=fs.costing.base_currency / pyunits.kg,
         display_units="$/kg-P",

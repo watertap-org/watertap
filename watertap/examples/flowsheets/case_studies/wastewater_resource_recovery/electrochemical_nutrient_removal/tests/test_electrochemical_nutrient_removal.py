@@ -97,7 +97,7 @@ class TestElectroNPFlowsheet:
         assert value(m.fs.costing.LCOW) == pytest.approx(
             0.0108682, rel=1e-3
         )  # in $/m**3
-        assert value(m.fs.costing.LCOS) == pytest.approx(0.0155105, rel=1e-3)
+        assert value(m.fs.costing.LCOP) == pytest.approx(0.0155105, rel=1e-3)
 
     @pytest.mark.component
     def test_display(self, system_frame):

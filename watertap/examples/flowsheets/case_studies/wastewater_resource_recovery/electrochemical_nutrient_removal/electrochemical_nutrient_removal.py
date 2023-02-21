@@ -188,7 +188,7 @@ def add_costing(m):
         doc="Levelized Cost of Treatment With Revenue",
     )
 
-    m.fs.costing.LCOS = Expression(
+    m.fs.costing.LCOP = Expression(
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
@@ -340,10 +340,10 @@ def display_costing(m):
     )
     print(f"Levelized Cost of Treatment With Revenue: {LCOT_with_revenue:.3f} $/m^3")
 
-    LCOS = value(
-        pyunits.convert(m.fs.costing.LCOS, to_units=pyunits.USD_2018 / pyunits.kg)
+    LCOP = value(
+        pyunits.convert(m.fs.costing.LCOP, to_units=pyunits.USD_2018 / pyunits.kg)
     )
-    print(f"Levelized Cost of Phosphorus Recovery: {LCOS:.3f} $/kg")
+    print(f"Levelized Cost of Phosphorus Recovery: {LCOP:.3f} $/kg")
 
 
 if __name__ == "__main__":
