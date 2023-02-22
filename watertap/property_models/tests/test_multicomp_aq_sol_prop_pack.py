@@ -1381,11 +1381,11 @@ def test_diffus_hl(model7):
     results = solver.solve(m)
     assert_optimal_termination(results)
 
-    assert isinstance(m.fs.properties.molar_volume_comp, Param)
-    assert m.fs.properties.molar_volume_comp["Liq", "A"].value == 96e-6
-    assert m.fs.properties.molar_volume_comp["Liq", "B"].value == 100e-6
-    assert m.fs.properties.molar_volume_comp["Liq", "C"].value == 60e-6
-    assert m.fs.properties.molar_volume_comp["Liq", "D"].value == 200e-6
+    assert isinstance(m.fs.properties.molar_volume_phase_comp, Param)
+    assert m.fs.properties.molar_volume_phase_comp["Liq", "A"].value == 96e-6
+    assert m.fs.properties.molar_volume_phase_comp["Liq", "B"].value == 100e-6
+    assert m.fs.properties.molar_volume_phase_comp["Liq", "C"].value == 60e-6
+    assert m.fs.properties.molar_volume_phase_comp["Liq", "D"].value == 200e-6
 
     sb = m.fs.sb[0]
 

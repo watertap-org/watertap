@@ -362,8 +362,8 @@ class MCASParameterData(PhysicalParameterBlock):
             units=pyunits.m,
             doc="Stokes radius of solute",
         )
-        self.molar_volume_comp = Param(
-            ["Liq"],
+        self.molar_volume_phase_comp = Param(
+            self.phase_list,
             self.solute_set,
             mutable=True,
             default=1e-5,
@@ -520,7 +520,7 @@ class MCASParameterData(PhysicalParameterBlock):
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
                 "molality_phase_comp": {"method": "_molality_phase_comp"},
-                "molar_volume_comp": {"method": "_molar_volume_comp"},
+                "molar_volume_phase_comp": {"method": "_molar_volume_phase_comp"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
                 "visc_k_phase": {"method": "_visc_k_phase"},
@@ -1227,8 +1227,10 @@ class MCASStateBlockData(StateBlockData):
     def _radius_stokes_comp(self):
         add_object_reference(self, "radius_stokes_comp", self.params.radius_stokes_comp)
 
-    def _molar_volume_comp(self):
-        add_object_reference(self, "molar_volume_comp", self.params.molar_volume_comp)
+    def _molar_volume_phase_comp(self):
+        add_object_reference(
+            self, "molar_volume_phase_comp", self.params.molar_volume_phase_comp
+        )
 
     def _diffus_phase_comp(self):
         # Retrieve two components sets from the molar_volume_data and diffusivity_data configurations
@@ -1337,7 +1339,7 @@ class MCASStateBlockData(StateBlockData):
                     ) * (
                         (
                             pyunits.convert(
-                                b.molar_volume_comp[p, j],
+                                b.molar_volume_phase_comp[p, j],
                                 to_units=pyunits.cm**3 * pyunits.mol**-1,
                             )
                             * molar_volume_inv_units
