@@ -351,7 +351,7 @@ see property package for documentation.}""",
                     )
                 )
                 + (blk.properties_in[t].conc_mass_comp["X_I"] * blk.N_I)
-                + (blk.properties_in[t].conc_mass_comp["X_c"] * blk.N_I)
+                + (blk.properties_in[t].conc_mass_comp["X_c"] * blk.N_xc)
                 + (blk.properties_in[t].conc_mass_comp["X_pr"] * blk.N_aa)
                 - (blk.properties_in[t].conc_mass_comp["X_I"] * blk.N_I * blk.i_ec)
             )
