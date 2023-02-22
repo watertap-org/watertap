@@ -381,20 +381,22 @@ see property package for documentation.}""",
     ):
         """
         This method calls the initialization method of the state blocks.
+
         Keyword Arguments:
             state_args_in : a dict of arguments to be passed to the inlet
-                            property package (to provide an initial state for
-                            initialization (see documentation of the specific
-                            property package) (default = None).
+                property package (to provide an initial state for
+                initialization (see documentation of the specific
+                property package) (default = None).
             state_args_out : a dict of arguments to be passed to the outlet
-                             property package (to provide an initial state for
-                             initialization (see documentation of the specific
-                             property package) (default = None).
+                property package (to provide an initial state for
+                initialization (see documentation of the specific
+                property package) (default = None).
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default=None, use
                      default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
+
         Returns:
             None
         """
