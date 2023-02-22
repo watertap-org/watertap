@@ -372,7 +372,7 @@ see property package for documentation.}""",
             return blk.properties_out[t].conc_mass_comp[i] == 1e-6
 
     def initialize_build(
-        blk,
+        self,
         state_args_in=None,
         state_args_out=None,
         outlvl=idaeslog.NOTSET,
@@ -400,14 +400,14 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
 
         # Create solver
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize state block
-        flags = blk.properties_in.initialize(
+        flags = self.properties_in.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -415,16 +415,16 @@ see property package for documentation.}""",
             hold_state=True,
         )
 
-        blk.properties_out.initialize(
+        self.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args_out,
         )
 
-        if degrees_of_freedom(blk) == 0:
+        if degrees_of_freedom(self) == 0:
             with idaeslog.solver_log(init_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(blk, tee=slc.tee)
+                res = opt.solve(self, tee=slc.tee)
 
             init_log.info("Initialization Complete {}.".format(idaeslog.condition(res)))
         else:
@@ -435,4 +435,4 @@ see property package for documentation.}""",
                 "between the two state blocks."
             )
 
-        blk.properties_in.release_state(flags=flags, outlvl=outlvl)
+        self.properties_in.release_state(flags=flags, outlvl=outlvl)
