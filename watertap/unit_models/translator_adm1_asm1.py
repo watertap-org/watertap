@@ -185,6 +185,13 @@ see property package for documentation.}""",
             mutable=True,
             doc="Nitrogen content of inerts [kmole N/kg COD]",
         )
+        self.N_xc = Param(
+            initialize=0.0376
+            / 14,  # change from 0.002 to 0.0376/14 based on Rosen & Jeppsson, 2006
+            units=pyunits.kmol * pyunits.kg**-1,
+            mutable=True,
+            doc="Nitrogen content of composites [kmole N/kg COD]",
+        )
         self.N_aa = Param(
             initialize=0.007,
             units=pyunits.kmol * pyunits.kg**-1,
