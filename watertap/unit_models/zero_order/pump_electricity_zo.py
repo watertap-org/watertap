@@ -14,6 +14,7 @@
 This module contains a zero-order representation of a low pressure pump unit
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.core import build_pt, ZeroOrderBaseData
@@ -89,3 +90,53 @@ class PumpElectricityZOData(ZeroOrderBaseData):
 
         self._perf_var_dict["Electricity (kW)"] = self.electricity
         self._perf_var_dict["Applied Pressure (bar)"] = self.applied_pressure
+
+    @property
+    def default_costing_method(self):
+        return self.cost_pump_electricity
+
+    @staticmethod
+    def cost_pump_electricity(blk):
+        """
+        General method for costing low pressure pump. Capital cost
+        is based on the cost of inlet flow rate.
+        This method also registers the electricity demand as a costed flow.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        A = blk.unit_model._get_tech_parameters(
+            blk, parameter_dict, blk.unit_model.config.process_subtype, ["pump_cost"]
+        )
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        expr = pyo.units.convert(
+            blk.unit_model.properties[t0].flow_vol * A,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        # Determine if a costing factor is required
+        blk.unit_model._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )

@@ -14,6 +14,7 @@
 This module contains a zero-order representation of an autothermal hydrothermal liquefaction unit.
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.core import build_sido_reactive, ZeroOrderBaseData
@@ -112,3 +113,150 @@ class ATHTLZOData(ZeroOrderBaseData):
                 b.catalyst_dosage * b.flow_mass_in[t],
                 to_units=pyunits.pound / pyunits.hr,
             )
+
+    @property
+    def default_costing_method(self):
+        return self.cost_autothermal_hydrothermal_liquefaction
+
+    @staticmethod
+    def cost_autothermal_hydrothermal_liquefaction(blk):
+        """
+        General method for costing autothermal-hydrothermal liquefaction unit. Capital cost
+        is based on the HTL reactor, booster pump, solid filter, other equipment, and
+        heat oil system.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        (
+            A,
+            B,
+            C,
+            D,
+            E,
+            F,
+            G,
+            H,
+            I,
+            J,
+            K,
+            L,
+            M,
+            N,
+            O,
+            P,
+            Q,
+            R,
+            S,
+            T,
+        ) = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            [
+                "installation_factor_reactor",
+                "equipment_cost_reactor",
+                "base_flowrate_reactor",
+                "scaling_exponent_reactor",
+                "installation_factor_pump",
+                "equipment_cost_pump",
+                "base_flowrate_pump",
+                "scaling_exponent_pump",
+                "installation_factor_other",
+                "equipment_cost_other",
+                "base_flowrate_other",
+                "scaling_exponent_other",
+                "installation_factor_solid_filter",
+                "equipment_cost_solid_filter",
+                "base_flowrate_solid_filter",
+                "scaling_exponent_solid_filter",
+                "installation_factor_heat",
+                "equipment_cost_heat",
+                "base_flowrate_heat",
+                "scaling_exponent_heat",
+            ],
+        )
+
+        sizing_term_reactor = pyo.units.convert(
+            (blk.unit_model.flow_mass_in[t0] / C),
+            to_units=pyo.units.dimensionless,
+        )
+
+        sizing_term_pump = pyo.units.convert(
+            (blk.unit_model.flow_mass_in[t0] / G),
+            to_units=pyo.units.dimensionless,
+        )
+
+        sizing_term_other = pyo.units.convert(
+            (blk.unit_model.flow_mass_in[t0] / K),
+            to_units=pyo.units.dimensionless,
+        )
+
+        sizing_term_solid_filter = pyo.units.convert(
+            (blk.unit_model.flow_mass_in[t0] / O),
+            to_units=pyo.units.dimensionless,
+        )
+
+        sizing_term_heat = pyo.units.convert(
+            (blk.unit_model.flow_mass_in[t0] / S),
+            to_units=pyo.units.dimensionless,
+        )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        reactor_cost = pyo.units.convert(
+            A * B * sizing_term_reactor**D,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        pump_cost = pyo.units.convert(
+            E * F * sizing_term_pump**H,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        other_cost = pyo.units.convert(
+            I * J * sizing_term_other**L,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        solid_filter_cost = pyo.units.convert(
+            M * N * sizing_term_solid_filter**P,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        heat_cost = pyo.units.convert(
+            Q * R * sizing_term_heat**T,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        expr = reactor_cost + pump_cost + other_cost + solid_filter_cost + heat_cost
+
+        blk.unit_model._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.catalyst_flow[t0], "catalyst_ATHTL"
+        )

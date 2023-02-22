@@ -1221,7 +1221,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             initialize=2.08e-14,
             units=(pyo.units.kmol / pyo.units.m**3) ** 2,
             domain=pyo.PositiveReals,
-            doc="Dissociation water constant",
+            doc="Water dissociation constant",
         )
         self.K_a_co2 = pyo.Var(
             initialize=4.94e-7,
