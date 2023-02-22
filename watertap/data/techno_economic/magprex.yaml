@@ -27,7 +27,7 @@ default:
       units: dimensionless
       constituent_longform: Struvite
   magnesium_chloride_dosage:
-    value: 1.3 # kg-MgCl2/kg struvite
+    value: 1.3 # kg-MgCl2/kg phosphates
     units: dimensionless
   reactions:
     struvite_precip:

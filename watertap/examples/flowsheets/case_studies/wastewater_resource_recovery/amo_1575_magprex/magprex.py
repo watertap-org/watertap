@@ -132,7 +132,7 @@ def set_operating_conditions(m):
     # Magprex reactor
     m.fs.magprex.load_parameters_from_database(use_default_removal=True)
 
-    # clarifier
+    # centrifuge
     m.fs.centrifuge.load_parameters_from_database(use_default_removal=True)
 
     # struvite classifier
@@ -156,15 +156,9 @@ def solve(blk, solver=None, tee=False, check_termination=True):
 
 
 def display_results(m):
-    print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    print("++++++++++++++++++++ DISPLAY RESULTS ++++++++++++++++++++")
-    print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-
     unit_list = ["feed", "magprex", "centrifuge", "classifier"]
     for u in unit_list:
         m.fs.component(u).report()
-
-    print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
 
 def add_costing(m):
@@ -255,28 +249,6 @@ def add_costing(m):
         ),
         doc="Levelized cost of struvite",
     )
-
-
-def initialize_system(m):
-    seq = SequentialDecomposition()
-    seq.options.tear_set = []
-    seq.options.iterLim = 1
-    seq.run(m, lambda u: u.initialize())
-
-
-def solve(blk, solver=None, tee=False, check_termination=True):
-    if solver is None:
-        solver = get_solver()
-    results = solver.solve(blk, tee=tee)
-    if check_termination:
-        assert_optimal_termination(results)
-    return results
-
-
-def display_results(m):
-    unit_list = ["feed", "magprex", "centrifuge", "classifier"]
-    for u in unit_list:
-        m.fs.component(u).report()
 
 
 def display_costing(m):

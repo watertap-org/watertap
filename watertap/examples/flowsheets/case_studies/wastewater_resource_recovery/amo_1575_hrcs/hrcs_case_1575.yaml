@@ -5,14 +5,14 @@ defined_flows:
     value: 0.08
     units: USD_2020/kWh
   ferric_chloride:
-    value: 0.27
+    value: 0.6
     units: USD_2020/kg
 global_parameters:
   plant_lifetime:
-    value: 30
+    value: 50
     units: year
   utilization_factor:
-    value: 0.85
+    value: 1
     units: dimensionless
   land_cost_percent_FCI:
     value: 0
