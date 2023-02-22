@@ -323,7 +323,7 @@ see property package for documentation.}""",
         def eq_Snd_conc(blk, t):
             return blk.properties_out[t].conc_mass_comp["S_ND"] == (
                 blk.properties_in[t].conc_mass_comp["S_I"] * blk.N_I
-            ) + (blk.properties_in[t].conc_mass_comp["S_I"] * blk.N_aa)
+            ) + (blk.properties_in[t].conc_mass_comp["S_aa"] * blk.N_aa)
 
         @self.Constraint(
             self.flowsheet().time,
