@@ -104,9 +104,22 @@ def test_parameter_block(model):
     assert isinstance(model.fs.properties.solvent_set, Set)
     for j in model.fs.properties.solvent_set:
         assert j in ["H2O"]
-    assert isinstance(model.fs.properties.ion_set, Set)
-    for j in model.fs.properties.ion_set | model.fs.properties.solute_set:
+    # solute set and ion set are identical when all components in component_list are ions given hierarchy
+    assert isinstance(model.fs.properties.solute_set, Set)
+    for j in model.fs.properties.solute_set:
         assert j in ["A", "B", "C", "D"]
+    assert isinstance(model.fs.properties.ion_set, Set)
+    for j in model.fs.properties.ion_set:
+        assert j in ["A", "B", "C", "D"]
+    assert isinstance(model.fs.properties.anion_set, Set)
+    for j in model.fs.properties.anion_set:
+        assert j in ["B", "D"]
+    assert isinstance(model.fs.properties.cation_set, Set)
+    for j in model.fs.properties.cation_set:
+        assert j in ["A", "C"]
+    # neutral set is always constructed, even when no neutrals are present in component_list
+    assert isinstance(model.fs.properties.neutral_set, Set)
+    assert model.fs.properties.neutral_set == []
 
     assert isinstance(model.fs.properties.phase_list, Set)
     for j in model.fs.properties.phase_list:
