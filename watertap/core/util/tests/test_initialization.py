@@ -120,8 +120,9 @@ class TestCheckSolve:
         # expect the solve to fail and raise error
         with pytest.raises(
             ValueError,
-            match="test failed. The solver failed to converge to an optimal solution. "
-            "This suggests that the user provided infeasible inputs or that the model is poorly scaled.",
+            match="The solver at the test step failed to converge to an optimal solution."
+            "This suggests that the user provided infeasible inputs or that the model "
+            "is poorly scaled, poorly initialized, or degenerate.",
         ):
             check_solve(results, checkpoint="test", logger=_log, fail_flag=True)
 
