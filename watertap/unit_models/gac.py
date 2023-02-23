@@ -247,6 +247,12 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # apply target species automatically if arg left to default and only one viable option exists
         if self.config.target_species is None and len(solute_set) == 1:
             self.config.target_species = solute_set
+        if self.config.target_species is None:
+            raise ConfigurationError(
+                "'target species' is not specified for the GAC unit model, "
+                "either specify 'target species' argument or reduce solute set "
+                "to a single component"
+            )
         target_species = self.config.target_species
         inert_species = component_set - self.config.target_species
 

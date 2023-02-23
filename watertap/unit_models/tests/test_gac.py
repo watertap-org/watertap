@@ -39,6 +39,7 @@ from idaes.core.util.scaling import (
     unscaled_variables_generator,
     badly_scaled_var_generator,
 )
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import UnitModelCostingBlock
 
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
@@ -51,6 +52,7 @@ from watertap.unit_models.gac import (
     SurfaceDiffusionCoefficientType,
 )
 from watertap.costing import WaterTAPCosting
+
 
 __author__ = "Hunter Barber"
 
@@ -688,3 +690,45 @@ class TestGACMulti:
     def test_multi_reporting(self, gac_frame_multi):
         mm = gac_frame_multi
         mm.fs.unit.report()
+
+    @pytest.mark.unit
+    def test_error(self):
+
+        with pytest.raises(
+            ConfigurationError,
+            match="'target species' is not specified for the GAC unit model, "
+            "either specify 'target species' argument or reduce solute set "
+            "to a single component",
+        ):
+            me = ConcreteModel()
+            me.fs = FlowsheetBlock(dynamic=False)
+
+            # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
+            # arbitrary diffusivity data for non-target species
+            me.fs.properties = MCASParameterBlock(
+                solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
+                mw_data={
+                    "H2O": 0.018,
+                    "TCE": 0.1314,
+                    "BGSOL": 0.1,
+                    "BGCAT": 0.1,
+                    "BGAN": 0.1,
+                },
+                charge={"BGCAT": 1, "BGAN": -2},
+                diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+                molar_volume_data={("Liq", "TCE"): 9.81e-5},
+                diffusivity_data={
+                    ("Liq", "BGSOL"): 1e-5,
+                    ("Liq", "BGCAT"): 1e-5,
+                    ("Liq", "BGAN"): 1e-5,
+                },
+            )
+            me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+            me.fs.properties.dens_mass_const = 1000
+
+            # testing target_species arg
+            me.fs.unit = GAC(
+                property_package=me.fs.properties,
+                film_transfer_coefficient_type="calculated",
+                surface_diffusion_coefficient_type="calculated",
+            )
