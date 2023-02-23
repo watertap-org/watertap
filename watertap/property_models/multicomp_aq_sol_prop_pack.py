@@ -55,7 +55,7 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Solute, Solvent, Cation, Anion
+from idaes.core.base.components import Component, Ion, Solute, Solvent, Cation, Anion
 from idaes.core.base.phases import AqueousPhase
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
@@ -304,18 +304,27 @@ class MCASParameterData(PhysicalParameterBlock):
         self.Liq = AqueousPhase()
 
         # list to hold all species (including water)
-        self.component_list = Set()
+        self.component_list = Set(dimen=1)
 
         # components
         self.H2O = Solvent()
 
-        # blank sets
-        self.cation_set = Set()
-        self.anion_set = Set()
-        self.solute_set = Set()
-        self.ion_set = Set()
+        # Other component sets
+        self.solute_set = Set(dimen=1)  # All components except Solvent() ("H2O")
+        self.cation_set = Set(dimen=1)  # Components with charge >0
+        self.anion_set = Set(dimen=1)  # Components with charge <0
+        self.neutral_set = Set(dimen=1)  # Components with charge =0
+        self.ion_set = Set(dimen=1)  # All Ion Components (cations + anions)
 
+        # Group components into different sets
         for j in self.config.solute_list:
+            if j == "H2O":
+                raise ConfigurationError(
+                    "'H2O'is reserved as the default solvent and cannot be a solute."
+                )
+            # Add valid members of solute_list into IDAES's Solute() class.
+            # This triggers the addition of j into component_list and solute_set.
+            self.add_component(j, Solute())
             if j in self.config.charge:
                 if self.config.charge[j] == 0:
                     raise ConfigurationError(
@@ -323,22 +332,26 @@ class MCASParameterData(PhysicalParameterBlock):
                             j
                         )
                     )
-                elif self.config.charge[j] > 0:
+                if self.config.charge[j] > 0:
+                    # Run a "del_component" and "add_component" to move ion j from IDAES's Solute to Cation class.
+                    # Ion j has to be added into Solute to be registered in the compolist and solute_set.
+                    # Reference to idaes.core.base.components.
+                    self.del_component(j)
                     self.add_component(
-                        str(j),
+                        j,
                         Cation(charge=self.config.charge[j], _electrolyte=True),
                     )
-                    self.component_list.add(str(j))
-                    self.ion_set.add(str(j))
+                    self.ion_set.add(j)
                 else:
+                    # The same to the notes above goes for anions.
+                    self.del_component(j)
                     self.add_component(
-                        str(j),
+                        j,
                         Anion(charge=self.config.charge[j], _electrolyte=True),
                     )
-                    self.component_list.add(str(j))
-                    self.ion_set.add(str(j))
+                    self.ion_set.add(j)
             else:
-                self.add_component(str(j), Solute())
+                self.neutral_set.add(j)
 
         # reference
         # Todo: enter any relevant references
@@ -355,7 +368,7 @@ class MCASParameterData(PhysicalParameterBlock):
         )
         # Stokes radius
         self.radius_stokes_comp = Param(
-            self.ion_set | self.solute_set,
+            self.solute_set,
             mutable=True,
             default=1e-10,
             initialize=self.config.stokes_radius_data,
@@ -1189,7 +1202,7 @@ class MCASStateBlockData(StateBlockData):
     def _molality_phase_comp(self):
         self.molality_phase_comp = Var(
             self.params.phase_list,
-            self.params.ion_set | self.params.solute_set,
+            self.params.solute_set,
             initialize=1,
             bounds=(0, 10),
             units=pyunits.mole / pyunits.kg,
@@ -1206,7 +1219,7 @@ class MCASStateBlockData(StateBlockData):
 
         self.eq_molality_phase_comp = Constraint(
             self.params.phase_list,
-            self.params.ion_set | self.params.solute_set,
+            self.params.solute_set,
             rule=rule_molality_phase_comp,
         )
 
@@ -1440,7 +1453,7 @@ class MCASStateBlockData(StateBlockData):
     def _act_coeff_phase_comp(self):
         self.act_coeff_phase_comp = Var(
             self.params.phase_list,
-            self.params.ion_set | self.params.solute_set,
+            self.params.solute_set,
             initialize=0.7,
             domain=NonNegativeReals,
             bounds=(0, 1.001),
@@ -1468,7 +1481,7 @@ class MCASStateBlockData(StateBlockData):
 
         self.eq_act_coeff_phase_comp = Constraint(
             self.params.phase_list,
-            self.params.ion_set | self.params.solute_set,
+            self.params.solute_set,
             rule=rule_act_coeff_phase_comp,
         )
 
@@ -1541,10 +1554,7 @@ class MCASStateBlockData(StateBlockData):
         def rule_pressure_osm_phase(b, p):
             return (
                 b.pressure_osm_phase[p]
-                == sum(
-                    b.conc_mol_phase_comp[p, j]
-                    for j in self.params.ion_set | self.params.solute_set
-                )
+                == sum(b.conc_mol_phase_comp[p, j] for j in self.params.solute_set)
                 * Constants.gas_constant
                 * b.temperature
             )
@@ -1756,7 +1766,7 @@ class MCASStateBlockData(StateBlockData):
                     "adjust_by_ion must be set to the name of an ion in the ion_set."
                 )
         if defined_state:
-            for j in self.params.ion_set | self.params.solute_set:
+            for j in self.params.solute_set:
                 if (
                     not self.flow_mol_phase_comp["Liq", j].is_fixed()
                     and adjust_by_ion != j
@@ -1768,7 +1778,7 @@ class MCASStateBlockData(StateBlockData):
                 if adjust_by_ion == j and self.flow_mol_phase_comp["Liq", j].is_fixed():
                     self.flow_mol_phase_comp["Liq", j].unfix()
         else:
-            for j in self.params.ion_set | self.params.solute_set:
+            for j in self.params.solute_set:
                 if self.flow_mol_phase_comp["Liq", j].is_fixed():
                     raise AssertionError(
                         f"{self.flow_mol_phase_comp['Liq', j]} was fixed. Either set defined_state=True or unfix "
@@ -1872,7 +1882,7 @@ class MCASStateBlockData(StateBlockData):
             )
             iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"], sf)
 
-        for j in self.params.ion_set | self.params.solute_set:
+        for j in self.params.solute_set:
             if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j]) is None:
                 sf = iscale.get_scaling_factor(
                     self.flow_mol_phase_comp["Liq", j], default=1, warning=True
@@ -2013,7 +2023,7 @@ class MCASStateBlockData(StateBlockData):
                     * sum(
                         iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
                         ** 2
-                        for j in self.params.ion_set | self.params.solute_set
+                        for j in self.params.solute_set
                     )
                     ** 0.5
                 )
@@ -2101,7 +2111,7 @@ class MCASStateBlockData(StateBlockData):
             iscale.set_scaling_factor(self.flow_vol, sf)
 
         if self.is_property_constructed("molality_phase_comp"):
-            for j in self.params.ion_set | self.params.solute_set:
+            for j in self.params.solute_set:
                 if (
                     iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
                     is None
@@ -2116,7 +2126,7 @@ class MCASStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(self.molality_phase_comp["Liq", j], sf)
 
         if self.is_property_constructed("act_coeff_phase_comp"):
-            for j in self.params.ion_set | self.params.solute_set:
+            for j in self.params.solute_set:
                 if (
                     iscale.get_scaling_factor(self.act_coeff_phase_comp["Liq", j])
                     is None
@@ -2131,7 +2141,7 @@ class MCASStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.ionic_strength_molal) is None:
                 sf = min(
                     iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
-                    for j in self.params.ion_set | self.params.solute_set
+                    for j in self.params.solute_set
                 )
                 iscale.set_scaling_factor(self.ionic_strength_molal, sf)
 

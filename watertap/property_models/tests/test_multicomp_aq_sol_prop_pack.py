@@ -105,9 +105,22 @@ def test_parameter_block(model):
     assert isinstance(model.fs.properties.solvent_set, Set)
     for j in model.fs.properties.solvent_set:
         assert j in ["H2O"]
-    assert isinstance(model.fs.properties.ion_set, Set)
-    for j in model.fs.properties.ion_set | model.fs.properties.solute_set:
+    # solute set and ion set are identical when all components in component_list are ions given hierarchy
+    assert isinstance(model.fs.properties.solute_set, Set)
+    for j in model.fs.properties.solute_set:
         assert j in ["A", "B", "C", "D"]
+    assert isinstance(model.fs.properties.ion_set, Set)
+    for j in model.fs.properties.ion_set:
+        assert j in ["A", "B", "C", "D"]
+    assert isinstance(model.fs.properties.anion_set, Set)
+    for j in model.fs.properties.anion_set:
+        assert j in ["B", "D"]
+    assert isinstance(model.fs.properties.cation_set, Set)
+    for j in model.fs.properties.cation_set:
+        assert j in ["A", "C"]
+    # neutral set is always constructed, even when no neutrals are present in component_list
+    assert isinstance(model.fs.properties.neutral_set, Set)
+    assert model.fs.properties.neutral_set == []
 
     assert isinstance(model.fs.properties.phase_list, Set)
     for j in model.fs.properties.phase_list:
@@ -1118,13 +1131,15 @@ def test_parameter_block_comparison(model4):
     for j in m_ion.fs.properties.ion_set:
         assert j in ["A", "B", "C", "D"]
 
+    assert isinstance(m_ion.fs.properties.neutral_set, Set)
+    for j in m_ion.fs.properties.neutral_set:
+        assert j in ["E"]
+
     assert isinstance(m_ion.fs.properties.solute_set, Set)
     assert isinstance(m_generic.fs.properties.solute_set, Set)
-    assert len(m_ion.fs.properties.solute_set) == len(
-        m_generic.fs.properties.solute_set
-    )
     for j in m_ion.fs.properties.solute_set:
-        assert j in ["E"]
+        assert j in ["A", "B", "C", "D", "E"]
+        assert m_ion.fs.properties.get_component(j).is_solute()
 
     assert m_ion.fs.properties.charge_comp["B"].value == -2
     # NOTE: Below is how you grab charge from the generic package
@@ -1335,6 +1350,21 @@ def test_elec_properties_errormsg(model6):
         match="""Missing a valid trans_num_data configuration to build "trans_num_phase_comp" """,
     ):
         m[2].fs.stream[0].trans_num_phase_comp
+
+
+@pytest.mark.unit
+def test_solute_list_errormsg():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    with pytest.raises(
+        ConfigurationError,
+        match="'H2O'is reserved as the default solvent and cannot be a solute.",
+    ):
+        m.fs.properties = MCASParameterBlock(
+            solute_list=["H2O", "Na_+", "Cl_-", "N"],
+            mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
+            charge={"Na_+": 1, "Cl_-": -1},
+        )
 
 
 @pytest.fixture(scope="module")
