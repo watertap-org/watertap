@@ -27,6 +27,6 @@ default:
       units: dimensionless
       constituent_longform: Struvite
   polymer_dose:
-    value: 0.1 # mg/L sludge treated
+    value: 481 # mg/L sludge treated
     units: mg/L
     constituent_longform: Polymer Dosage
