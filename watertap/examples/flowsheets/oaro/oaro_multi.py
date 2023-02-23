@@ -207,7 +207,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     m.fs.oaro_min_pressure = Param(initialize=10e5, units=pyunits.Pa, mutable=True)
     m.fs.oaro_max_pressure = Param(initialize=85e5, units=pyunits.Pa, mutable=True)
     m.fs.ro_min_pressure = Param(initialize=10e5, units=pyunits.Pa, mutable=True)
-    m.fs.ro_max_pressure = Param(initialize=65e5, units=pyunits.Pa, mutable=True)
+    m.fs.ro_max_pressure = Param(initialize=85e5, units=pyunits.Pa, mutable=True)
     m.fs.recycle_pump_min_pressure = Param(
         initialize=1e5, units=pyunits.Pa, mutable=True
     )
