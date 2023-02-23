@@ -618,9 +618,11 @@ def initialize_system(m, solver=None, verbose=True):
     propagate_state(m.fs.ERD_to_recyclepump[last_stage])
     m.fs.RecyclePumps[last_stage].initialize()
 
+    print(f"DOF before last OARO: {degrees_of_freedom(m)}")
     propagate_state(m.fs.recyclepump_to_OARO[last_stage])
     propagate_state(m.fs.pump_to_OARO[last_stage - 1])
     m.fs.OAROUnits[last_stage - 1].initialize()
+    print(f"DOF after last OARO: {degrees_of_freedom(m)}")
 
     # ---initialize first ERD---
     propagate_state(m.fs.OARO_to_ERD[first_stage])
