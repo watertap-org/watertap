@@ -18,7 +18,7 @@ import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 
-from watertap.core import build_sido_reactive, ZeroOrderBaseData
+from watertap.core import build_sido, ZeroOrderBaseData
 
 # Some more information about this module
 __author__ = "Chenyu Wang"
@@ -37,7 +37,7 @@ class ElectroNPZOData(ZeroOrderBaseData):
 
         self._tech_type = "electrochemical_nutrient_removal"
 
-        build_sido_reactive(self)
+        build_sido(self)
 
         self.electricity = Var(
             self.flowsheet().time,
@@ -50,18 +50,18 @@ class ElectroNPZOData(ZeroOrderBaseData):
 
         self.energy_electric_flow_mass = Var(
             units=pyunits.kWh / pyunits.kg,
-            doc="Electricity intensity with respect to struvite byproduct flowrate of unit",
+            doc="Electricity intensity with respect to phosphorus removal",
         )
 
         @self.Constraint(
             self.flowsheet().time,
-            doc="Constraint for electricity consumption based on struvite flowrate.",
+            doc="Constraint for electricity consumption based on phosphorus removal",
         )
         def electricity_consumption(b, t):
             return b.electricity[t] == (
                 b.energy_electric_flow_mass
                 * pyunits.convert(
-                    b.properties_byproduct[t].flow_mass_comp["struvite"],
+                    b.properties_treated[t].flow_mass_comp["phosphorus"],
                     to_units=pyunits.kg / pyunits.hour,
                 )
             )
@@ -72,13 +72,13 @@ class ElectroNPZOData(ZeroOrderBaseData):
         self.magnesium_chloride_dosage = Var(
             units=pyunits.dimensionless,
             bounds=(0, None),
-            doc="Dosage of magnesium chloride per struvite",
+            doc="Dosage of magnesium chloride per treated phosphorus",
         )
 
         self._fixed_perf_vars.append(self.magnesium_chloride_dosage)
 
         self._perf_var_dict[
-            "Dosage of magnesium chloride per struvite"
+            "Dosage of magnesium chloride per treated phosphorus"
         ] = self.magnesium_chloride_dosage
 
         self.MgCl2_flowrate = Var(
@@ -92,13 +92,13 @@ class ElectroNPZOData(ZeroOrderBaseData):
 
         @self.Constraint(
             self.flowsheet().time,
-            doc="Constraint for magnesium chloride demand based on struvite flowrate.",
+            doc="Constraint for magnesium chloride demand based on phosphorus removal.",
         )
         def MgCl2_demand(b, t):
             return b.MgCl2_flowrate[t] == (
                 b.magnesium_chloride_dosage
                 * pyunits.convert(
-                    b.properties_byproduct[t].flow_mass_comp["struvite"],
+                    b.properties_treated[t].flow_mass_comp["phosphorus"],
                     to_units=pyunits.kg / pyunits.hour,
                 )
             )
@@ -162,8 +162,4 @@ class ElectroNPZOData(ZeroOrderBaseData):
         )
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.MgCl2_flowrate[t0], "magnesium_chloride"
-        )
-        blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.properties_byproduct[t0].flow_mass_comp["struvite"],
-            "struvite_product",
         )
