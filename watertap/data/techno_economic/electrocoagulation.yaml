@@ -26,8 +26,20 @@ aluminum_electrodes:
     toc:
       value: 0.77
       units: dimensionless
+    cod:
+      value: 0.86
+      units: dimensionless
+    turbidity:
+      value: 0.97
+      units: dimensionless
     tss:
       value: 0.72
+      units: dimensionless
+    hardness:
+      value: 0.80
+      units: dimensionless
+    silica:
+      value: 0.75
       units: dimensionless
   capital_cost:
     basis: flow_vol
@@ -56,8 +68,20 @@ iron_electrodes:
     toc:
       value: 0.68
       units: dimensionless
+    cod:
+      value: 0.88
+      units: dimensionless
+    turbidity:
+      value: 0.75
+      units: dimensionless
     tss:
       value: 0.72
+      units: dimensionless
+    hardness:
+      value: 0.80
+      units: dimensionless
+    silica:
+      value: 0.75
       units: dimensionless
   capital_cost:
     basis: flow_vol

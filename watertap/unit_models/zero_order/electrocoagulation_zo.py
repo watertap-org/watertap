@@ -78,7 +78,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
         self.energy_consumption = Var(
             self.flowsheet().time,
-            units=pyunits.kWh / pyunits.m**3 / pyunits.mol,
+            units=pyunits.kWh / pyunits.m**3 / pyunits.mM,
             doc="Energy required for treating a given volume",
         )
 
@@ -94,4 +94,4 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         # Store contents for reporting output
 
         self._perf_var_dict["Current density (mA/cm²)"] = self.current_density
-        self._perf_var_dict["Energy Consumption (kWh/m³/mole)"] = self.energy_consumption
+        self._perf_var_dict["Energy Consumption (kWh/m³/mM)"] = self.energy_consumption
