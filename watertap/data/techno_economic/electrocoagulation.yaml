@@ -1,7 +1,7 @@
 default:
   current_density:
     value: 8.0
-    unit: mA/cm^2
+    units: mA/cm^2
   electrode_spacing:
     value: 5.4
     units: cm
