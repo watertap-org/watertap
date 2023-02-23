@@ -26,7 +26,7 @@ def set_up_sensitivity(m):
 
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
-    outputs["LCOS"] = m.fs.costing.LCOS
+    outputs["LCOP"] = m.fs.costing.LCOP
 
     return outputs, optimize_kwargs, opt_function
 

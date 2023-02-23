@@ -71,13 +71,13 @@ def build():
 
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        solute_list=["nitrogen", "phosphorus", "struvite"]
+        solute_list=["nitrogen", "phosphorus", "calcium"]
     )
 
     # components
     m.fs.feed = FeedZO(property_package=m.fs.prop)
     m.fs.product_H2O = Product(property_package=m.fs.prop)
-    m.fs.product_struvite = Product(property_package=m.fs.prop)
+    m.fs.product_salt = Product(property_package=m.fs.prop)
     m.fs.pump = PumpElectricityZO(
         property_package=m.fs.prop,
         database=m.db,
@@ -92,9 +92,7 @@ def build():
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.pump.inlet)
     m.fs.s02 = Arc(source=m.fs.pump.outlet, destination=m.fs.electroNP.inlet)
     m.fs.s03 = Arc(source=m.fs.electroNP.treated, destination=m.fs.product_H2O.inlet)
-    m.fs.s04 = Arc(
-        source=m.fs.electroNP.byproduct, destination=m.fs.product_struvite.inlet
-    )
+    m.fs.s04 = Arc(source=m.fs.electroNP.byproduct, destination=m.fs.product_salt.inlet)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -108,13 +106,13 @@ def set_operating_conditions(m):
     flow_vol = 37.9 / 3600 * pyunits.m**3 / pyunits.s
     conc_nitrogen = 0.715 * pyunits.kg / pyunits.m**3
     conc_phosphorus = 0.715 * pyunits.kg / pyunits.m**3
-    conc_struvite = 0 * pyunits.kg / pyunits.m**3
+    conc_calcium = 0.162 * pyunits.kg / pyunits.m**3
 
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "nitrogen"].fix(conc_nitrogen)
     m.fs.feed.conc_mass_comp[0, "phosphorus"].fix(conc_phosphorus)
-    m.fs.feed.conc_mass_comp[0, "struvite"].fix(conc_struvite)
-    solve(m.fs.feed, checkpoint="solve feed block")
+    m.fs.feed.conc_mass_comp[0, "calcium"].fix(conc_calcium)
+    solve(m.fs.feed)
 
     # pump
     m.fs.pump.load_parameters_from_database(use_default_removal=True)
@@ -167,7 +165,6 @@ def add_costing(m):
         expr=(
             (
                 m.fs.costing.total_annualized_cost
-                + m.fs.costing.aggregate_flow_costs["struvite_product"]
                 + m.fs.costing.aggregate_flow_costs["magnesium_chloride"]
             )
             / m.fs.costing.annual_water_production
@@ -184,7 +181,6 @@ def add_costing(m):
         expr=(
             (
                 m.fs.costing.total_annualized_cost
-                + m.fs.costing.aggregate_flow_costs["struvite_product"]
                 + m.fs.costing.aggregate_flow_costs["magnesium_chloride"]
             )
             / m.fs.costing.annual_water_inlet
@@ -192,7 +188,7 @@ def add_costing(m):
         doc="Levelized Cost of Treatment With Revenue",
     )
 
-    m.fs.costing.LCOS = Expression(
+    m.fs.costing.LCOP = Expression(
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
@@ -200,11 +196,11 @@ def add_costing(m):
         / (
             m.fs.costing.utilization_factor
             * pyunits.convert(
-                m.fs.product_struvite.properties[0].flow_mass_comp["struvite"],
+                m.fs.product_salt.properties[0].flow_mass_comp["phosphorus"],
                 to_units=pyunits.kg / m.fs.costing.base_period,
             )
         ),
-        doc="Levelized cost of struvite",
+        doc="Levelized cost of phosphorus recovery",
     )
 
 
@@ -235,11 +231,6 @@ def display_results(m):
         m.fs.product_H2O.flow_mass_comp[0, "H2O"] / m.fs.feed.flow_mass_comp[0, "H2O"]
     )
     print(f"Water recovery: {water_recovery:.3f} [-]")
-
-    struvite_production = value(
-        m.fs.product_struvite.flow_mass_comp[0, "struvite"] / m.fs.feed.flow_vol[0]
-    )
-    print(f"Struvite production: {struvite_production:.3f} [kg/m3 feed]")
 
     phosphorus_removal = 1 - value(
         m.fs.product_H2O.flow_mass_comp[0, "phosphorus"]
@@ -318,11 +309,11 @@ def display_costing(m):
             m.fs.feed.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.s
         )
         / pyunits.convert(
-            m.fs.product_struvite.flow_mass_comp[0, "struvite"],
+            m.fs.product_salt.flow_mass_comp[0, "phosphorus"],
             to_units=pyunits.kg / pyunits.s,
         )
     )
-    print(f"Specific energy consumption: {sec:.3f} kWh/kg struvite")
+    print(f"Specific energy consumption: {sec:.3f} kWh/kg phosphorus removal")
 
     print("\n----------Levelized Cost----------")
     LCOW = value(
@@ -348,10 +339,10 @@ def display_costing(m):
     )
     print(f"Levelized Cost of Treatment With Revenue: {LCOT_with_revenue:.3f} $/m^3")
 
-    LCOS = value(
-        pyunits.convert(m.fs.costing.LCOS, to_units=pyunits.USD_2018 / pyunits.kg)
+    LCOP = value(
+        pyunits.convert(m.fs.costing.LCOP, to_units=pyunits.USD_2018 / pyunits.kg)
     )
-    print(f"Levelized Cost of Struvite: {LCOS:.3f} $/kg")
+    print(f"Levelized Cost of Phosphorus Recovery: {LCOP:.3f} $/kg")
 
 
 if __name__ == "__main__":
