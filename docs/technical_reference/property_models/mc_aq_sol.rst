@@ -72,7 +72,7 @@ Properties
    "Ion component electrical mobility", ":math:`\mu_e`", "elec_mobility_phase_comp", "[p,j]", ":math:`\text{m}^2\text{ }\text{V}^{-1}\text{ }\text{s}^{-1}`"
    "Ion component transport number", ":math:`t`", "trans_num_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
    "Phase equivalent conductivity", ":math:`\Lambda`", "equiv_conductivity_phase", "[p]", ":math:`\text{m}^2 \text{ } \Omega^{-1} \text{ mol}^{-1}`"
-   "Phase electrical conductivity", ":math:`\lambda`", "elec_cond_phase", "[p]", ":math:`\Omega^{-1} \text{ m}^{-1}`", ":math:`\lambda=\Lambda\sum_{j\in cation}{\left|z_j\right|n_j}`"
+   "Phase electrical conductivity", ":math:`\lambda`", "elec_cond_phase", "[p]", ":math:`\Omega^{-1} \text{ m}^{-1}`"
    "Component activity coefficient", ":math:`\gamma`", "act_coeff_phase_comp", "[j]", ":math:`\text{dimensionless}`"
    "Debye-Huckel constant A", ":math:`A`", "deby_huckel_constant", "none", ":math:`\text{dimensionless}`"
    "Ionic Strength", ":math:`I`", "ionic_strength_molal", "none", ":math:`\text{mol kg}^{-1}`"
