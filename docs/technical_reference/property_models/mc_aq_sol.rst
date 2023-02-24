@@ -143,6 +143,18 @@ Classes
 .. autoclass:: MCASParameterBlock
     :members:
     :noindex:
+
+.. autoclass:: MCASParameterData
+    :members:
+    :noindex:
+
+.. autoclass:: _MCASStateBlock
+    :members:
+    :noindex:
+
+.. autoclass:: MCASStateBlockData
+    :members:
+    :noindex:
    
 Reference
 ---------
