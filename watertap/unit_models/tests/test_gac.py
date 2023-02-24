@@ -38,6 +38,8 @@ from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
     badly_scaled_var_generator,
+    unscaled_constraints_generator,
+    constraint_autoscale_large_jac,
 )
 from idaes.core import UnitModelCostingBlock
 
@@ -160,7 +162,7 @@ class TestGACSimplified:
 
         # test statistics
         assert number_variables(ms) == 79
-        assert number_total_constraints(ms) == 46
+        assert number_total_constraints(ms) == 45
         assert number_unused_variables(ms) == 10  # dens parameters from properties
 
     @pytest.mark.unit
@@ -184,6 +186,8 @@ class TestGACSimplified:
         unscaled_var_list = list(unscaled_variables_generator(ms))
         assert len(unscaled_var_list) == 0
 
+        # m_debug = _model_debug(ms.clone())
+
     @pytest.mark.component
     def test_initialize_simplified(self, gac_frame_simplified):
         initialization_tester(gac_frame_simplified)
@@ -203,6 +207,7 @@ class TestGACSimplified:
 
         # Check for optimal solution
         assert check_optimal_termination(results)
+        _model_debug(ms)
 
     @pytest.mark.component
     def test_var_scaling_solve_simplified(self, gac_frame_simplified):
@@ -223,6 +228,7 @@ class TestGACSimplified:
         )
 
 
+"""
 # -----------------------------------------------------------------------------
 class TestGACRobust:
     @pytest.fixture(scope="class")
@@ -655,3 +661,81 @@ class TestGACMulti:
     def test_reporting_multi(self, gac_frame_multi):
         mm = gac_frame_multi
         mm.fs.unit.report()
+    """
+
+import idaes.core.util.scaling as iscale
+from idaes.core.util.model_diagnostics import DegeneracyHunter
+
+
+def _model_debug(model):
+
+    check_jac(model)
+
+    model.obj = pyo.Objective(expr=0)
+
+    # initial point
+    """
+    solver.options["max_iter"] = 0
+    solver.solve(model, tee=False)
+    """
+    dh = DegeneracyHunter(model, solver=pyo.SolverFactory("cbc"))
+    """
+    dh.check_residuals(tol=1e-8)
+    dh.check_variable_bounds(tol=1e-8)
+    """
+
+    # solved model
+    solver.options["max_iter"] = 10000
+    solver.options["tol"] = 1e-8
+    solver.solve(model, tee=False)
+    badly_scaled_var_list = badly_scaled_var_generator(model, large=1e1, small=1e-1)
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    dh.check_residuals(tol=1e-8)
+    dh.check_variable_bounds(tol=1e-8)
+    dh.check_rank_equality_constraints(dense=True)
+    ds = dh.find_candidate_equations(verbose=True, tee=True)
+    ids = dh.find_irreducible_degenerate_sets(verbose=True)
+
+    """
+    variables_near_bounds_list = variables_near_bounds_generator(model)
+    for x in variables_near_bounds_list:
+        print(x, x.value)
+    """
+
+    return model
+
+
+def check_jac(model):
+
+    jac, jac_scaled, nlp = iscale.constraint_autoscale_large_jac(model, min_scale=1e-8)
+    cond_number = iscale.jacobian_cond(model, jac=jac_scaled)  # / 1e10
+    print("--------------------------")
+    print("Extreme Jacobian entries:")
+    extreme_entries = iscale.extreme_jacobian_entries(
+        model, jac=jac_scaled, zero=1e-20, large=10
+    )
+    for val, var, con in extreme_entries:
+        print(val, var.name, con.name)
+    print("--------------------------")
+    print("Extreme Jacobian columns:")
+    extreme_cols = iscale.extreme_jacobian_columns(model, jac=jac_scaled)
+    for val, var in extreme_cols:
+        print(val, var.name)
+    print("------------------------")
+    print("Extreme Jacobian rows:")
+    extreme_rows = iscale.extreme_jacobian_rows(model, jac=jac_scaled)
+    for val, con in extreme_rows:
+        print(val, con.name)
+
+    """
+    unscaled_constraints_list = unscaled_constraints_generator(ms)
+    for x in unscaled_constraints_list:
+        print(f"{x}")
+    solver.solve
+    print("model has been resolved")
+    constraint_autoscale_large_jac(ms)
+    unscaled_constraints_list = unscaled_constraints_generator(ms)
+    for x in unscaled_constraints_list:
+        print(f"{x}")
+    """

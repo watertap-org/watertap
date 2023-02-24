@@ -274,7 +274,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             has_pressure_change=False,
         )
 
-        # add port for absorbed contaminant contained in nearly saturated GAC particles
+        # add port for adsorbed contaminant contained in nearly saturated GAC particles
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
@@ -287,7 +287,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            doc="Isothermal assumption for absorbed contaminant",
+            doc="Isothermal assumption for adsorbed contaminant",
         )
         def eq_isothermal_adsorbed_contam(b, t):
             return (
@@ -297,7 +297,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            doc="Isobaric assumption for absorbed contaminant",
+            doc="Isobaric assumption for adsorbed contaminant",
         )
         def eq_isobaric_adsorbed_contam(b, t):
             return (
@@ -368,7 +368,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             bounds=(1e-8, None),
             domain=NonNegativeReals,
             units=units_meta("mass"),
-            doc="Mass of contaminant absorbed at the time of replacement",
+            doc="Mass of contaminant adsorbed at the time of replacement",
         )
 
         self.mass_adsorbed_saturated = Var(
@@ -732,11 +732,12 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # no mass transfer of inert species
         for j in inert_species:
             self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
+            self.adsorbed_contam[0].get_material_flow_terms("Liq", j).fix(0)
 
         @self.Constraint(
             self.flowsheet().config.time,
-            self.config.property_package.component_list,
-            doc="Contaminant absorbed",
+            target_species,
+            doc="Contaminant adsorbed",
         )
         def eq_mass_transfer_adsorbed(b, t, j):
             return (
@@ -867,14 +868,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
             target_species,
             doc="Total mass adsorbed in the elapsed time",
         )
-        def eq_mass_absorbed(b, j):
+        def eq_mass_adsorbed(b, j):
             return (
                 b.mass_adsorbed
                 == b.adsorbed_contam[0].flow_mass_phase_comp["Liq", j] * b.elap_time
             )
 
         @self.Constraint(doc="Total mass adsorbed if fully saturated")
-        def eq_mass_absorbed_fully_saturated(b):
+        def eq_mass_adsorbed_fully_saturated(b):
             return b.mass_adsorbed_saturated == b.bed_mass_gac * b.equil_conc
 
         @self.Constraint(doc="Fraction of gac saturation when replaced")
@@ -1086,15 +1087,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        # specify conditions to solve at a feasible point during initialization
-        # necessary to invert user provided scaling factor due to
-        # low values creating infeasible initialization conditions
-        for j in self.config.property_package.component_list:
-            temp_scale = iscale.get_scaling_factor(
-                self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
-            )
-            state_args["flow_mol_phase_comp"][("Liq", j)] = temp_scale**-1
-
         # Initialize control volume
         flags = self.process_flow.initialize(
             outlvl=outlvl,
@@ -1106,16 +1098,10 @@ class GACData(InitializationMixin, UnitModelBlockData):
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
         # Initialize adsorbed_contam port
+        # all non-adsorbed species initialized to 0
         for j in self.config.property_package.component_list:
-            if j in self.config.target_species:
-                temp_scale = iscale.get_scaling_factor(
-                    self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
-                )
-                state_args["flow_mol_phase_comp"][("Liq", j)] = temp_scale**-1
-            else:
-                state_args["flow_mol_phase_comp"][
-                    ("Liq", j)
-                ] = 0  # all non-adsorbed species initialized to 0
+            if j not in self.config.target_species:
+                state_args["flow_mol_phase_comp"][("Liq", j)] = 0
 
         self.adsorbed_contam.initialize(
             outlvl=outlvl,
@@ -1150,7 +1136,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             "Equilibrium concentration of adsorbed phase with liquid phase"
         ] = self.equil_conc
         var_dict[
-            "Mass of contaminant absorbed at the time of replacement"
+            "Mass of contaminant adsorbed at the time of replacement"
         ] = self.mass_adsorbed
         var_dict["Adsorber bed void fraction"] = self.bed_voidage
         var_dict["Adsorber bed volume"] = self.bed_volume
