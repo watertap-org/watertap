@@ -17,26 +17,14 @@ from pyomo.environ import (
     units,
 )
 
-from pyomo.environ import (
-    Reference,
-    Var,
-    value,
-    Constraint,
-    Param,
-    units as pyunits,
-    check_optimal_termination,
-    exp,
-    Set,
-)
 from pyomo.network import Arc, SequentialDecomposition
-from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 from idaes.models.unit_models import (
     Feed,
     Product,
-    Translator,
 )
 from watertap.unit_models.translator_adm1_asm1 import Translator_ADM1_ASM1
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
@@ -66,6 +54,7 @@ m.fs.ASM1Treated = Product(property_package=m.fs.props_ASM1)
 m.fs.T101 = Translator_ADM1_ASM1(
     inlet_property_package=m.fs.props_ADM1,
     outlet_property_package=m.fs.props_ASM1,
+    reaction_package=m.fs.ADM1_rxn_props,
     has_phase_equilibrium=False,
     outlet_state_defined=True,
 )
@@ -79,38 +68,38 @@ pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 m.fs.ADM1feed.flow_vol.fix(170 * pyo.units.m**3 / pyo.units.day)
 m.fs.ADM1feed.temperature.fix(308.15 * pyo.units.K)
 m.fs.ADM1feed.pressure.fix(1 * pyo.units.atm)
-m.fs.ADM1feed.conc_mass_comp[0, "S_su"].fix(1 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "S_aa"].fix(1 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "S_fa"].fix(1 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "S_va"].fix(1 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "S_bu"].fix(1 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "S_pro"].fix(1 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "S_ac"].fix(1 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "S_h2"].fix(1e-5 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "S_ch4"].fix(1e-2 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "S_su"].fix(12.394 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "S_aa"].fix(5.54 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "S_fa"].fix(107.41 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "S_va"].fix(12.33 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "S_bu"].fix(14.00 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "S_pro"].fix(17.584 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "S_ac"].fix(89.315 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "S_h2"].fix(2.55e-4 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "S_ch4"].fix(55.49 * pyo.units.mg / pyo.units.liter)
 m.fs.ADM1feed.conc_mass_comp[0, "S_IC"].fix(
-    40 * units.mmol / units.liter * 12 * units.mg / units.mmol
+    95.149 * units.mmol / units.liter * 12 * units.mg / units.mmol
 )
 m.fs.ADM1feed.conc_mass_comp[0, "S_IN"].fix(
-    10 * units.mmol / units.liter * 14 * units.mg / units.mmol
+    94.468 * units.mmol / units.liter * 14 * units.mg / units.mmol
 )
-m.fs.ADM1feed.conc_mass_comp[0, "S_I"].fix(20 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "S_I"].fix(130.87 * pyo.units.mg / pyo.units.liter)
 
-m.fs.ADM1feed.conc_mass_comp[0, "X_c"].fix(2000 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "X_ch"].fix(5000 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "X_pr"].fix(20000 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "X_li"].fix(5000 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "X_su"].fix(1 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "X_aa"].fix(10 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "X_fa"].fix(10 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "X_c4"].fix(10 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "X_pro"].fix(10 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "X_ac"].fix(10 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "X_h2"].fix(10 * pyo.units.mg / pyo.units.liter)
-m.fs.ADM1feed.conc_mass_comp[0, "X_I"].fix(25000 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "X_c"].fix(107.92 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "X_ch"].fix(20.517 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "X_pr"].fix(84.22 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "X_li"].fix(43.629 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "X_su"].fix(312.22 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "X_aa"].fix(931.67 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "X_fa"].fix(338.39 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "X_c4"].fix(335.77 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "X_pro"].fix(101.12 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "X_ac"].fix(677.24 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "X_h2"].fix(284.84 * pyo.units.mg / pyo.units.liter)
+m.fs.ADM1feed.conc_mass_comp[0, "X_I"].fix(17216 * pyo.units.mg / pyo.units.liter)
 
-m.fs.ADM1feed.cations[0].fix(40 * pyo.units.mmol / pyo.units.liter)
-m.fs.ADM1feed.anions[0].fix(20 * pyo.units.mmol / pyo.units.liter)
+m.fs.ADM1feed.cations[0].fix(1e-8 * pyo.units.mmol / pyo.units.liter)
+m.fs.ADM1feed.anions[0].fix(5.21 * pyo.units.mmol / pyo.units.liter)
 
 
 # Check degrees of freedom
@@ -139,3 +128,5 @@ solver = get_solver(options={"bound_push": 1e-8})
 results = solver.solve(m, tee=True)
 
 pyo.assert_optimal_termination(results)
+
+m.fs.ASM1Treated.report()

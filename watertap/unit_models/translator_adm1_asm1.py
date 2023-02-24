@@ -40,16 +40,11 @@ from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 from pyomo.environ import (
-    Reference,
-    Var,
-    value,
     Constraint,
     Param,
     units as pyunits,
     check_optimal_termination,
-    exp,
     Set,
-    PositiveReals,
 )
 
 __author__ = "Alejandro Garciadiego, Andrew Lee"
@@ -166,6 +161,31 @@ block associated with the outgoing stream,
 see property package for documentation.}""",
         ),
     )
+    CONFIG.declare(
+        "reaction_package",
+        ConfigValue(
+            default=None,
+            domain=is_reaction_parameter_block,
+            description="Reaction package to use for control volume",
+            doc="""Reaction parameter object used to define reaction calculations,
+**default** - None.
+**Valid values:** {
+**None** - no reaction package,
+**ReactionParameterBlock** - a ReactionParameterBlock object.}""",
+        ),
+    )
+    CONFIG.declare(
+        "reaction_package_args",
+        ConfigBlock(
+            implicit=True,
+            description="Arguments to use for constructing reaction packages",
+            doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
+and used when constructing these,
+**default** - None.
+**Valid values:** {
+see reaction package for documentation.}""",
+        ),
+    )
 
     def build(self):
         """
@@ -177,33 +197,6 @@ see property package for documentation.}""",
         """
         # Call UnitModel.build to setup dynamics
         super(TranslatorData, self).build()
-
-        self.N_I = Param(
-            initialize=0.06
-            / 14,  # change from 0.002 to 0.06/14 based on Rosen & Jeppsson, 2006
-            units=pyunits.kmol * pyunits.kg**-1,
-            mutable=True,
-            doc="Nitrogen content of inerts [kmole N/kg COD]",
-        )
-        self.N_xc = Param(
-            initialize=0.0376
-            / 14,  # change from 0.002 to 0.0376/14 based on Rosen & Jeppsson, 2006
-            units=pyunits.kmol * pyunits.kg**-1,
-            mutable=True,
-            doc="Nitrogen content of composites [kmole N/kg COD]",
-        )
-        self.N_aa = Param(
-            initialize=0.007,
-            units=pyunits.kmol * pyunits.kg**-1,
-            mutable=True,
-            doc="Nitrogen in amino acids and proteins [kmole N/kg COD]",
-        )
-        self.N_bac = Param(
-            initialize=0.08 / 14,
-            units=pyunits.kmol * pyunits.kg**-1,
-            mutable=True,
-            doc="Nitrogen content in bacteria [kmole N/kg COD]",
-        )
 
         self.i_ec = Param(
             initialize=0.06,
@@ -232,6 +225,9 @@ see property package for documentation.}""",
         # Add ports
         self.add_port(name="inlet", block=self.properties_in, doc="Inlet Port")
         self.add_port(name="outlet", block=self.properties_out, doc="Outlet Port")
+
+        mw_n = 14.006 * pyunits.kg / pyunits.kmol
+        mw_c = 12.011 * pyunits.kg / pyunits.kmol
 
         @self.Constraint(
             self.flowsheet().time,
@@ -328,9 +324,16 @@ see property package for documentation.}""",
             doc="Equality S_ND equation",
         )
         def eq_Snd_conc(blk, t):
-            return blk.properties_out[t].conc_mass_comp["S_ND"] == (
-                blk.properties_in[t].conc_mass_comp["S_I"] * blk.N_I
-            ) + (blk.properties_in[t].conc_mass_comp["S_aa"] * blk.N_aa)
+            return blk.properties_out[t].conc_mass_comp["S_ND"] == mw_n * (
+                (
+                    blk.properties_in[t].conc_mass_comp["S_I"]
+                    * blk.config.reaction_package.N_I
+                )
+                + (
+                    blk.properties_in[t].conc_mass_comp["S_aa"]
+                    * blk.config.reaction_package.N_aa
+                )
+            )
 
         @self.Constraint(
             self.flowsheet().time,
@@ -338,22 +341,34 @@ see property package for documentation.}""",
         )
         def eq_Xnd_conc(blk, t):
             return blk.properties_out[t].conc_mass_comp["X_ND"] == (
-                (
-                    blk.N_bac
-                    * (
-                        blk.properties_in[t].conc_mass_comp["X_su"]
-                        + blk.properties_in[t].conc_mass_comp["X_aa"]
-                        + blk.properties_in[t].conc_mass_comp["X_fa"]
-                        + blk.properties_in[t].conc_mass_comp["X_c4"]
-                        + blk.properties_in[t].conc_mass_comp["X_pro"]
-                        + blk.properties_in[t].conc_mass_comp["X_ac"]
-                        + blk.properties_in[t].conc_mass_comp["X_h2"]
+                mw_n
+                * (
+                    (
+                        blk.config.reaction_package.N_bac
+                        * (
+                            blk.properties_in[t].conc_mass_comp["X_su"]
+                            + blk.properties_in[t].conc_mass_comp["X_aa"]
+                            + blk.properties_in[t].conc_mass_comp["X_fa"]
+                            + blk.properties_in[t].conc_mass_comp["X_c4"]
+                            + blk.properties_in[t].conc_mass_comp["X_pro"]
+                            + blk.properties_in[t].conc_mass_comp["X_ac"]
+                            + blk.properties_in[t].conc_mass_comp["X_h2"]
+                        )
+                    )
+                    + (
+                        blk.properties_in[t].conc_mass_comp["X_I"]
+                        * blk.config.reaction_package.N_I
+                    )
+                    + (
+                        blk.properties_in[t].conc_mass_comp["X_c"]
+                        * blk.config.reaction_package.N_xc
+                    )
+                    + (
+                        blk.properties_in[t].conc_mass_comp["X_pr"]
+                        * blk.config.reaction_package.N_aa
                     )
                 )
-                + (blk.properties_in[t].conc_mass_comp["X_I"] * blk.N_I)
-                + (blk.properties_in[t].conc_mass_comp["X_c"] * blk.N_xc)
-                + (blk.properties_in[t].conc_mass_comp["X_pr"] * blk.N_aa)
-                - (blk.properties_in[t].conc_mass_comp["X_I"] * blk.N_I * blk.i_ec)
+                - (blk.properties_in[t].conc_mass_comp["X_I"] * blk.i_ec)
             )
 
         @self.Constraint(
@@ -363,7 +378,7 @@ see property package for documentation.}""",
         def return_Salk(blk, t):
             return (
                 blk.properties_out[t].alkalinity
-                == blk.properties_in[t].conc_mass_comp["S_IC"]
+                == blk.properties_in[t].conc_mass_comp["S_IC"] / mw_c
             )
 
         self.zero_flow_components = Set(
@@ -376,7 +391,10 @@ see property package for documentation.}""",
             doc="Components with no flow equation",
         )
         def return_zero_flow_comp(blk, t, i):
-            return blk.properties_out[t].conc_mass_comp[i] == 1e-6
+            return (
+                blk.properties_out[t].conc_mass_comp[i]
+                == 1e-6 * pyunits.kg / pyunits.m**3
+            )
 
     def initialize_build(
         self,
