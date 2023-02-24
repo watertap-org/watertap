@@ -12,10 +12,14 @@
 #################################################################################
 """
 Modified translator block.
+
 This is copied from the Generic template for a translator block.
+
 Assumptions:
      * Steady-state only
+
 Model formulated from:
+
 Flores-Alsina, X., Solon, K., Mbamba, C.K., Tait, S., Gernaey, K.V., Jeppsson, U. and Batstone, D.J., 2016.
 Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes.
 Water Research, 95, pp.370-382.
@@ -294,7 +298,7 @@ class TranslatorData(UnitModelBlockData):
                 == blk.properties_in[t].conc_mass_comp["S_NH4"]
             )
 
-        # TODO: ADM1D does not have S_IP
+        # TODO: ADM1 does not have S_IP
         # @self.Constraint(
         #     self.flowsheet().time,
         #     doc="Equality S_PO4 equation",
@@ -344,6 +348,7 @@ class TranslatorData(UnitModelBlockData):
             )
 
         # TODO: ADM1 model does not has X_PP as poly-phosphates
+        # Assume both sides are 0 - Page 373
         # @self.Constraint(
         #     self.flowsheet().time,
         #     doc="Equality X_PP equation",
@@ -416,6 +421,7 @@ class TranslatorData(UnitModelBlockData):
     ):
         """
         This method calls the initialization method of the state blocks.
+
         Keyword Arguments:
             state_args_in : a dict of arguments to be passed to the inlet
                 property package (to provide an initial state for
@@ -430,6 +436,7 @@ class TranslatorData(UnitModelBlockData):
                      default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
+
         Returns:
             None
         """
