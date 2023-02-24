@@ -236,12 +236,6 @@ def test_property_ions_2(model2):
     stream[0].flow_mol_phase_comp["Liq", "H2O"].fix(0.99046)
     stream[0].temperature.fix(298.15)
     stream[0].pressure.fix(101325)
-    """
-    stream[0].diffus_phase_comp["Liq", "A"] = 1e-9
-    stream[0].diffus_phase_comp["Liq", "B"] = 1e-10
-    stream[0].diffus_phase_comp["Liq", "C"] = 1e-7
-    stream[0].diffus_phase_comp["Liq", "D"] = 1e-11
-    """
 
     stream[0].mw_comp["H2O"] = 18e-3
     stream[0].mw_comp["A"] = 10e-3
