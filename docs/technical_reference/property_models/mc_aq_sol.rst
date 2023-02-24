@@ -43,11 +43,15 @@ Parameters
 
  "Component molecular weight", ":math:`m_N`", "mw_comp", "[j]", ":math:`\text{kg mol}^{-1}`"
  "Stokes radius of solute", ":math:`r_h`", "radius_stokes_comp", "[j]", ":math:`\text{m}`"
- "Bulk diffusivity of ion", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^2\text{ } \text{s}^{-1}}`"
+ "Molar volume of solute", ":math:`V`", "molar_volume_phase_comp", "[p, j]", ":math:`\text{m}^3 \text{ mol}^{-1}`"
  "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa s}`"
+ "Bulk diffusivity of solute", ":math:`D`", "diffus_phase_comp_param", "[p, j]", ":math:`\text{m}^2\text{ } \text{s}^{-1}}`"
  "Ion charge", ":math:`z`", "charge_comp", "[j]", ":math:`\text{dimensionless}`"
  "Dielectric constant of water", ":math:`\epsilon`", "dielectric_constant", "None", ":math:`\text{dimensionless}`"
  "Debye Huckel constant b", ":math:`b`", "debye_huckel_b", "None", ":math:`\text{kg mol}^{-1}`"
+ "Hayduk Laudie correlation constant", ":math:`???`", "hl_diffus_cont", "None", ":math:`\text{dimensionless}`"
+ "Hayduk Laudie viscosity coefficient", ":math:`???`", "hl_visc_coeff", "None", ":math:`\text{dimensionless}`"
+ "Hayduk Laudie molar volume coefficient", ":math:`???`", "hl_molar_volume_coeff", "None", ":math:`\text{dimensionless}`"
 
 
 Properties
@@ -76,6 +80,8 @@ Properties
    "Component activity coefficient", ":math:`\gamma`", "act_coeff_phase_comp", "[j]", ":math:`\text{dimensionless}`"
    "Debye-Huckel constant A", ":math:`A`", "deby_huckel_constant", "none", ":math:`\text{dimensionless}`"
    "Ionic Strength", ":math:`I`", "ionic_strength_molal", "none", ":math:`\text{mol kg}^{-1}`"
+   "Mass diffusivity of solute", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^2\text{ } \text{s}^{-1}}`"
+
 
 
 Relationships
@@ -100,6 +106,7 @@ Relationships
    "Phase electrical conductivity", ":math:`\lambda=\Lambda\sum_{j\in cation}{\left|z_j\right|n_j}`"
    "Debye-Huckel constant", ":math:`A=\frac{\left(2 \pi N_A\right)^{0.5}}{log(10)} \left(\frac{\textbf{e}^2}{4 \pi \epsilon \epsilon_0 kT}\right)^{\frac{3}{2}}`"
    "Ionic strength", ":math:`I=0.5\sum_{j\in ion}{z_j^2b_j}`"
+   "Component mass diffusivity", ":math:`???`"
 
 **Notes**
    :sup:`1`  :math:`\textbf{f}(\cdot)` refers to empirical correlations of phase or solvent mass density to seawater salinity and temperature following the study of Sharqawy et al. (2010).
