@@ -14,6 +14,7 @@
 This module contains a zero-order representation of a membrane aerated biofilm reactor unit.
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.core import build_sido_reactive, ZeroOrderBaseData
@@ -122,3 +123,64 @@ class MABRZOData(ZeroOrderBaseData):
         self._perf_var_dict[
             "Electricity Intensity"
         ] = self.energy_electric_flow_vol_inlet
+
+    @property
+    def default_costing_method(self):
+        return self.cost_mabr
+
+    @staticmethod
+    def cost_mabr(blk):
+        """
+        General method for costing membrane aerated biofilm reactor. Capital cost
+        is based on the cost of reactor and blower.
+        This method also registers the electricity demand as a costed flow.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        A, B = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["reactor_cost", "blower_cost"],
+        )
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        DCC_reactor = pyo.units.convert(
+            blk.unit_model.properties_treated[t0].flow_mass_comp["ammonium_as_nitrogen"]
+            / blk.unit_model.nitrogen_removal_rate
+            * A,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        DCC_blower = pyo.units.convert(
+            blk.unit_model.reactor_area * blk.unit_model.air_flow_rate[t0] * B,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        expr = DCC_reactor + DCC_blower
+
+        blk.unit_model._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )

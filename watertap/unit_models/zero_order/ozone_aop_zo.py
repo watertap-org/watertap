@@ -15,16 +15,18 @@ This module contains a zero-order representation of a Ozone-AOP unit
 operation.
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.unit_models.zero_order.ozone_zo import OzoneZOData
+from watertap.unit_models.zero_order.aop_addition_zo import AOPAdditionMixin
 
 # Some more information about this module
 __author__ = "Kurban Sitterley"
 
 
 @declare_process_block_class("OzoneAOPZO")
-class OzoneAOPZOData(OzoneZOData):
+class OzoneAOPZOData(OzoneZOData, AOPAdditionMixin):
     """
     Zero-Order model for a Ozone-AOP unit operation.
     """
@@ -88,3 +90,59 @@ class OzoneAOPZOData(OzoneZOData):
         self._perf_var_dict["Oxidant Flow (kg/s)"] = self.chemical_flow_mass
         self._perf_var_dict["Oxidant/Ozone Ratio"] = self.oxidant_ozone_ratio
         self._perf_var_dict["Ozone/TOC Ratio"] = self.ozone_toc_ratio
+
+    @property
+    def default_costing_method(self):
+        return self.cost_ozonation_aop
+
+    @staticmethod
+    def cost_ozonation_aop(blk):
+        """
+        General method for costing ozonation with AOP. Capital cost is
+        based on the inlet flowrate, dosage of ozone and flow rate of H2O2.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        A, B, C, D, E, F = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            [
+                "ozone_capital_a_parameter",
+                "ozone_capital_b_parameter",
+                "ozone_capital_c_parameter",
+                "ozone_capital_d_parameter",
+                "aop_capital_a_parameter",
+                "aop_capital_b_parameter",
+            ],
+        )
+
+        # Add cost variable
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        # Get costing term for ozone addition
+        expr = blk.unit_model._get_ozone_capital_cost(blk, A, B, C, D)
+
+        # Add costing term for AOP addition
+        expr += blk.unit_model._get_aop_capital_cost(blk, E, F)
+
+        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.chemical_flow_mass[t0], "hydrogen_peroxide"
+        )

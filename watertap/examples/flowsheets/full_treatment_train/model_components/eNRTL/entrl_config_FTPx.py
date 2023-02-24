@@ -38,12 +38,12 @@ from idaes.models.properties.modular_properties.pure.electrolyte import (
 
 
 class ConstantVolMol:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=18e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 
