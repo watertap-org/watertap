@@ -15,15 +15,15 @@ Sets
 .. csv-table::
    :header: "Description", "Symbol", "Indices"
 
-   "Components", ":math:`j`", "['H2O', solute_list :sup:`1`]"
+   "Components", ":math:`j`", "['H2O', component_list :sup:`1`]"
    "Phases", ":math:`p`", "['Liq']"
-   "solute_set", ":math:`j`", "[neutral species in solute_list] :sup:`2`"
-   "ion_set", ":math:`j`", "[ionic species in solute_list]"
-   "cation_set", ":math:`j`", "[cationic species in solute_list]"
-   "anion_set", ":math:`j`", "[anionic species in solute_list]"
+   "solute_set", ":math:`j`", "[neutral species in component_list] :sup:`2`"
+   "ion_set", ":math:`j`", "[ionic species in component_list]"
+   "cation_set", ":math:`j`", "[cationic species in component_list]"
+   "anion_set", ":math:`j`", "[anionic species in component_list]"
 
 **Notes** 
-   :sup:`1`  solute_list is provided by a necessary configuration to use this property package.
+   :sup:`1`  component_list is provided by a necessary configuration to use this property package.
 
    :sup:`2` In the implementing codes, the "solute_set" was declared to include only neutral species for current programming convenience; in other places throughout this document, "solute" by itself includes both ionic and neutral species solvated by water.  
 
