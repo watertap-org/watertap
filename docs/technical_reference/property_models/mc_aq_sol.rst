@@ -17,7 +17,7 @@ Sets
 
    "Components", ":math:`j`", "['H2O', component_list :sup:`1`]"
    "Phases", ":math:`p`", "['Liq']"
-   "solute_set", ":math:`j`", "[all components in component_list except H2O]
+   "solute_set", ":math:`j`", "[all components in component_list except H2O]"
    "cation_set", ":math:`j`", "[cationic components in component_list]"
    "anion_set", ":math:`j`", "[anionic components in component_list]"
    "neutral_set", ":math:`j`", "[neutral components in component_list]"
