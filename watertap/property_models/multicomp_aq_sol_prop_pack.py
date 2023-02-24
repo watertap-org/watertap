@@ -662,8 +662,8 @@ class _MCASStateBlock(StateBlock):
                         )
                     )
 
-            # Vars indexed by ion_set | solute_set
-            for j in self[k].params.ion_set | self[k].params.solute_set:
+            # Vars indexed by solute_set
+            for j in self[k].params.solute_set:
                 if self[k].is_property_constructed("molality_phase_comp"):
                     self[k].molality_phase_comp["Liq", j].set_value(
                         self[k].flow_mol_phase_comp["Liq", j]
@@ -714,14 +714,14 @@ class _MCASStateBlock(StateBlock):
                     * sum(
                         self[k].charge_comp[j] ** 2
                         * self[k].molality_phase_comp["Liq", j]
-                        for j in self[k].params.ion_set | self[k].params.solute_set
+                        for j in self[k].params.solute_set
                     )
                 )
             if self[k].is_property_constructed("pressure_osm_phase"):
                 self[k].pressure_osm_phase["Liq"].set_value(
                     sum(
                         self[k].conc_mol_phase_comp["Liq", j]
-                        for j in self[k].params.ion_set | self[k].params.solute_set
+                        for j in self[k].params.solute_set
                     )
                     * Constants.gas_constant
                     * self[k].temperature
@@ -1003,10 +1003,7 @@ class MCASStateBlockData(StateBlockData):
             elif b.params.config.density_calculation == DensityCalculation.seawater:
                 # density, eq. 8 in Sharqawy #TODO- add Sharqawy reference
                 t = b.temperature - 273.15 * pyunits.K
-                s = sum(
-                    b.mass_frac_phase_comp[p, j]
-                    for j in b.params.ion_set | b.params.solute_set
-                )
+                s = sum(b.mass_frac_phase_comp[p, j] for j in b.params.solute_set)
                 dens_mass = (
                     b.dens_mass_solvent
                     + b.params.dens_mass_param_B1 * s
@@ -1255,9 +1252,7 @@ class MCASStateBlockData(StateBlockData):
         )
         if self.params.config.diffus_calculation == DiffusivityCalculation.none:
             missing_diffus_ind = [
-                i
-                for i in (self.params.ion_set | self.params.solute_set)
-                if i not in self.diffus_dt_ind
+                i for i in (self.params.solute_set) if i not in self.diffus_dt_ind
             ]
             if not missing_diffus_ind == []:
                 _log.warning(
@@ -1277,7 +1272,7 @@ class MCASStateBlockData(StateBlockData):
         ):
             missing_diffus_ind = [
                 i
-                for i in (self.params.ion_set | self.params.solute_set)
+                for i in (self.params.solute_set)
                 if i not in (self.mv_dt_ind | self.diffus_dt_ind)
             ]
             if not missing_diffus_ind == []:
