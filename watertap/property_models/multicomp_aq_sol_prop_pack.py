@@ -1243,10 +1243,7 @@ class MCASStateBlockData(StateBlockData):
         )
 
     def _diffus_phase_comp(self):
-        # Retrieve two components sets from the molar_volume_data and diffusivity_data configurations
-        self.molar_volume_data_indices = Set(
-            initialize=[i[1] for i in self.params.config.molar_volume_data.keys()]
-        )
+        # Retrieve component set from diffusivity_data configuration
         self.diffus_data_indices = Set(
             initialize=[i[1] for i in self.params.config.diffusivity_data.keys()]
         )
@@ -1270,6 +1267,10 @@ class MCASStateBlockData(StateBlockData):
         elif (
             self.params.config.diffus_calculation == DiffusivityCalculation.HaydukLaudie
         ):
+            # Retrieve component set from diffusivity_data configuration
+            self.molar_volume_data_indices = Set(
+                initialize=[i[1] for i in self.params.config.molar_volume_data.keys()]
+            )
             missing_diffus_ind = [
                 i
                 for i in (self.params.solute_set)
@@ -1290,7 +1291,7 @@ class MCASStateBlockData(StateBlockData):
             _log.warning(
                 "Both diffusivity_data and molar_volume_data are provided for {}; "
                 "the diffus_phase_comp property will be calculated based on their molar_volume_data "
-                "for these components becuase the HaydukLaudie method is selected.".format(
+                "for these components because the HaydukLaudie method is selected.".format(
                     common_ind
                 )
             )  # warning for components whose diffusivity_data will be overridden by the HaydukLaudie method.
