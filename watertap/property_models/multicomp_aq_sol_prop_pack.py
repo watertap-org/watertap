@@ -1289,7 +1289,7 @@ class MCASStateBlockData(StateBlockData):
                 "for these components becuase the HaydukLadie method is selected.".format(
                     common_ind
                 )
-            )  # warning for components whose diffusivity_data will be overriden by the HaydukLaudie method.
+            )  # warning for components whose diffusivity_data will be overridden by the HaydukLaudie method.
             self.diffus_phase_comp = Var(
                 self.params.phase_list,
                 self.mv_dt_ind | self.diffus_dt_ind,
