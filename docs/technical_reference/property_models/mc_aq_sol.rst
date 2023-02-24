@@ -32,7 +32,7 @@ State variables
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
-   "Component molar flow rate", ":math:`N`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mol/s}`"
+   "Component molar flow rate", ":math:`N`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mol s}^{-1}`"
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
 
@@ -41,13 +41,13 @@ Parameters
 .. csv-table::
  :header: "Description", "Symbol", "Parameter", "Index", "Units"
 
- "Component molecular weight", ":math:`m_N`", "mw_comp", "[j]", ":math:`\text{kg/mol}`"
+ "Component molecular weight", ":math:`m_N`", "mw_comp", "[j]", ":math:`\text{kg mol}^{-1}`"
  "Stokes radius of solute", ":math:`r_h`", "radius_stokes_comp", "[j]", ":math:`\text{m}`"
- "Bulk diffusivity of ion", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^{2} \text{/s}`"
+ "Bulk diffusivity of ion", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^2\text{ } \text{s}^{-1}}`"
  "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa s}`"
  "Ion charge", ":math:`z`", "charge_comp", "[j]", ":math:`\text{dimensionless}`"
  "Dielectric constant of water", ":math:`\epsilon`", "dielectric_constant", "None", ":math:`\text{dimensionless}`"
- "Debye Huckel constant b", ":math:`b`", "debye_huckel_b", "None", ":math:`\text{kg/mol}`"
+ "Debye Huckel constant b", ":math:`b`", "debye_huckel_b", "None", ":math:`\text{kg mol}^{-1}`"
 
 
 Properties
