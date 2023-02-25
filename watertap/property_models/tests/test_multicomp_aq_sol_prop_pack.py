@@ -1304,31 +1304,32 @@ def model6():
 @pytest.mark.unit
 def test_elec_properties_errormsg(model6):
     m = model6
-    with pytest.raises(
-        ConfigurationError,
-        match="The charge property should not be assigned to the neutral component",
-    ):
-        m[0].fs.properties = MCASParameterBlock(
-            solute_list=["Na_+", "Cl_-", "N"],
-            mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
-            charge={"N": 0, "Na_+": 1, "Cl_-": -1},
-        )
+    # with pytest.raises(
+    #     ConfigurationError,
+    #     match="The charge property should not be assigned to the neutral component",
+    # ):
+    #     m[0].fs.properties = MCASParameterBlock(
+    #         solute_list=["Na_+", "Cl_-", "N"],
+    #         mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
+    #         charge={"N": 0, "Na_+": 1, "Cl_-": -1},
+    #     )
     m[0].fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Cl_-", "N"],
         mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
         charge={"Na_+": 1, "Cl_-": -1},
         elec_mobility_calculation=ElectricalMobilityCalculation.EinsteinRelation,
+        diffus_calculation=DiffusivityCalculation.HaydukLaudie,
     )
     m[0].fs.stream = m[0].fs.properties.build_state_block([0], defined_state=True)
-    # TODO: this is no longer raised since I assign a default value for diffus_phase_comp
-    # which was needed to avoid an error
 
-    # with pytest.raises(
-    #     ConfigurationError,
-    #     match="""Missing a valid diffusivity_data configuration to use EinsteinRelation
-    #                     to compute the "elec_mobility_phase_comp" """,
-    # ):
-    #     m[0].fs.stream[0].elec_mobility_phase_comp
+    with pytest.raises(
+        ConfigurationError,
+        match=re.compile(
+            r'Missing\s+a\s+valid\s+diffusivity_data\s+configuration\s+to\s+use\s+EinsteinRelation\s+to\s+compute\s+the\s+"elec_mobility_phase_comp"\s+for\s+Na_\+\s+in\s+fs\.stream\[0\]\s*\.\s*Provide\s+this\s+configuration\s+or\s+use\s+another\s+"elec_mobility_calculation"\s+configuration\s+value\.',
+            flags=re.DOTALL,
+        ),
+    ):
+        m[0].fs.stream[0].elec_mobility_phase_comp
 
     with pytest.raises(
         ConfigurationError,

@@ -1426,7 +1426,7 @@ class MCASStateBlockData(StateBlockData):
                     if (p, j) in self.params.config.elec_mobility_data.keys():
                         _log.warning(
                             """
-                            The provided elec_mobility_data of {} will be overritten 
+                            The provided elec_mobility_data of {} will be overwritten 
                             by the calculated data for {} because the EinsteinRelation 
                             method is selected.""".format(
                                 j, self.name
