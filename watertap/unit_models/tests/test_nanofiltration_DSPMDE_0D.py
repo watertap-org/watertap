@@ -312,7 +312,7 @@ class TestNanoFiltration_with_CP_5ions:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 581
+        assert number_variables(m) == 566
         assert number_total_constraints(m) == 526
         assert number_unused_variables(m) == 11
 
@@ -806,7 +806,7 @@ class TestNanoFiltration_with_CP_2ions:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 326
+        assert number_variables(m) == 320
         assert number_total_constraints(m) == 286
         assert number_unused_variables(m) == 11
 
@@ -1279,7 +1279,7 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 581
+        assert number_variables(m) == 566
         assert number_total_constraints(m) == 526
         assert number_unused_variables(m) == 11
 
