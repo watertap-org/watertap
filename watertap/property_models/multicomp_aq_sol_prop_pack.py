@@ -1290,12 +1290,13 @@ class MCASStateBlockData(StateBlockData):
             common_ind = [
                 i for i in molar_volume_data_indices if i in diffus_data_indices
             ]
-            # warning for components whose diffusivity_data will be overwritten by the HaydukLaudie method.
-            _log.warning(
-                f"Both diffusivity_data and molar_volume_data were provided for {common_ind}; "
-                f"since the the HaydukLaudie method was selected, the diffus_phase_comp property of these components will "
-                f"be calculated based on their molar_volume_data and overwritten."
-            )
+            if not common_ind == []:
+                # warning for components whose diffusivity_data will be overwritten by the HaydukLaudie method.
+                _log.warning(
+                    f"Both diffusivity_data and molar_volume_data were provided for {common_ind}; "
+                    f"since the the HaydukLaudie method was selected, the diffus_phase_comp property of these components will "
+                    f"be calculated based on their molar_volume_data and overwritten."
+                )
             self.diffus_phase_comp = Var(
                 self.params.phase_list,
                 molar_volume_data_indices | diffus_data_indices,
