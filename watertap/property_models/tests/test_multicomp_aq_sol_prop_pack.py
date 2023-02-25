@@ -1309,15 +1309,15 @@ def model6():
 @pytest.mark.unit
 def test_elec_properties_errormsg(model6):
     m = model6
-    # with pytest.raises(
-    #     ConfigurationError,
-    #     match="The charge property should not be assigned to the neutral component",
-    # ):
-    #     m[0].fs.properties = MCASParameterBlock(
-    #         solute_list=["Na_+", "Cl_-", "N"],
-    #         mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
-    #         charge={"N": 0, "Na_+": 1, "Cl_-": -1},
-    #     )
+    with pytest.raises(
+        ConfigurationError,
+        match="The charge property should not be assigned to the neutral component",
+    ):
+        m[0].fs.properties = MCASParameterBlock(
+            solute_list=["Na_+", "Cl_-", "N"],
+            mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
+            charge={"N": 0, "Na_+": 1, "Cl_-": -1},
+        )
     m[0].fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Cl_-", "N"],
         mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
