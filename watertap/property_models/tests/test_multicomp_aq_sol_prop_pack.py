@@ -209,7 +209,11 @@ def test_property_ions(model):
     assert value(m.fs.stream[0].trans_num_phase_comp["Liq", "B"]) == pytest.approx(
         0.563, rel=1e-3
     )
-    assert isinstance(model.fs.properties.config.params.diffus_phase_comp, Var)
+    assert isinstance(model.fs.properties.diffus_phase_comp, Var)
+    assert isinstance(model.fs.properties.diffus_phase_comp_default, Param)
+    for v in model.fs.properties.diffus_phase_comp.values():
+        assert v.fixed
+    assert value(model.fs.properties.diffus_phase_comp_default) == 1e-9
 
 
 @pytest.fixture(scope="module")
