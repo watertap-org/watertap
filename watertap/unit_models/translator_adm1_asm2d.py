@@ -165,6 +165,31 @@ class TranslatorData(UnitModelBlockData):
     see property package for documentation.}""",
         ),
     )
+    CONFIG.declare(
+        "reaction_package",
+        ConfigValue(
+            default=None,
+            domain=is_reaction_parameter_block,
+            description="Reaction package to use for control volume",
+            doc="""Reaction parameter object used to define reaction calculations,
+    **default** - None.
+    **Valid values:** {
+    **None** - no reaction package,
+    **ReactionParameterBlock** - a ReactionParameterBlock object.}""",
+        ),
+    )
+    CONFIG.declare(
+        "reaction_package_args",
+        ConfigBlock(
+            implicit=True,
+            description="Arguments to use for constructing reaction packages",
+            doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
+    and used when constructing these,
+    **default** - None.
+    **Valid values:** {
+    see reaction package for documentation.}""",
+        ),
+    )
 
     def build(self):
         """
@@ -177,33 +202,7 @@ class TranslatorData(UnitModelBlockData):
         # Call UnitModel.build to setup dynamics
         super(TranslatorData, self).build()
 
-        # self.N_I = Param(
-        #     initialize=0.06
-        #     / 14,  # change from 0.002 to 0.06/14 based on Rosen & Jeppsson, 2006
-        #     units=pyunits.kmol * pyunits.kg**-1,
-        #     mutable=True,
-        #     doc="Nitrogen content of inerts [kmole N/kg COD]",
-        # )
-        # self.N_xc = Param(
-        #     initialize=0.0376
-        #     / 14,  # change from 0.002 to 0.0376/14 based on Rosen & Jeppsson, 2006
-        #     units=pyunits.kmol * pyunits.kg**-1,
-        #     mutable=True,
-        #     doc="Nitrogen content of composites [kmole N/kg COD]",
-        # )
-        # self.N_aa = Param(
-        #     initialize=0.007,
-        #     units=pyunits.kmol * pyunits.kg**-1,
-        #     mutable=True,
-        #     doc="Nitrogen in amino acids and proteins [kmole N/kg COD]",
-        # )
-        # self.N_bac = Param(
-        #     initialize=0.08 / 14,
-        #     units=pyunits.kmol * pyunits.kg**-1,
-        #     mutable=True,
-        #     doc="Nitrogen content in bacteria [kmole N/kg COD]",
-        # )
-        #
+        # TODO: check this parameter later
         # self.i_ec = Param(
         #     initialize=0.06,
         #     units=pyunits.dimensionless,
@@ -293,8 +292,8 @@ class TranslatorData(UnitModelBlockData):
         )
         def eq_SNH4_conc(blk, t):
             return (
-                blk.properties_out[t].conc_mass_comp["S_IN"]
-                == blk.properties_in[t].conc_mass_comp["S_NH4"]
+                blk.properties_out[t].conc_mass_comp["S_NH4"]
+                == blk.properties_in[t].conc_mass_comp["S_IN"]
             )
 
         # TODO: ADM1 does not have S_IP
@@ -389,8 +388,6 @@ class TranslatorData(UnitModelBlockData):
                 "S_NO3",
                 "S_O2",
                 "S_PO4",
-                "S_NO",
-                "S_ALK",
                 "X_AUT",
                 "X_H",
                 "X_MeOH",
@@ -408,7 +405,10 @@ class TranslatorData(UnitModelBlockData):
             doc="Components with no flow equation",
         )
         def return_zero_flow_comp(blk, t, i):
-            return blk.properties_out[t].conc_mass_comp[i] == 1e-6
+            return (
+                blk.properties_out[t].conc_mass_comp[i]
+                == 1e-6 * pyunits.kg / pyunits.m**3
+            )
 
     def initialize_build(
         self,
