@@ -70,6 +70,10 @@ class ModelExport(BaseModel):
     input_category: Optional[str]
     output_category: Optional[str]
     obj_key: str = None
+    fixed: bool = True
+    lb: Optional[float] = 0.0
+    ub: Optional[float] = 0.0
+    has_bounds: bool = True
 
     class Config:
         arbitrary_types_allowed = True
@@ -405,6 +409,28 @@ class FlowsheetInterface:
                 # Don't convert units when setting the exported value
                 dst.value = src.value
 
+                dst.obj.fixed = src.fixed
+                dst.fixed = src.fixed
+
+                #update bounds
+                if (src.lb is None or src.lb == ""):
+                    dst.obj.lb = None
+                    dst.lb = None
+                else:
+                    tmp = pyo.Var(initialize=src.lb, units=ui_units)
+                    tmp.construct()
+                    dst.obj.lb = pyo.value(u.convert(tmp, to_units=u.get_units(dst.obj)))
+                    dst.lb = src.lb
+                if (src.ub is None or src.ub == ""):
+                    dst.obj.ub = None
+                    dst.ub = None
+                else:
+                    tmp = pyo.Var(initialize=src.ub, units=ui_units)
+                    tmp.construct()
+                    dst.obj.ub = pyo.value(u.convert(tmp, to_units=u.get_units(dst.obj)))
+                    dst.ub = src.ub
+        
+
         if missing:
             raise self.MissingObjectError(missing)
 
@@ -497,6 +523,21 @@ class FlowsheetInterface:
         u = pyo.units
         for key, mo in self.fs_exp.model_objects.items():
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
+            try:
+                if mo.obj.ub is None:
+                    mo.ub = mo.obj.ub
+                else:
+                    tmp = pyo.Var(initialize=mo.obj.ub, units=u.get_units(mo.obj))
+                    tmp.construct()
+                    mo.ub = pyo.value(u.convert(tmp, to_units=mo.ui_units))
+                if mo.obj.lb is None:
+                    mo.lb = mo.obj.lb
+                else:
+                    tmp = pyo.Var(initialize=mo.obj.lb, units=u.get_units(mo.obj))
+                    tmp.construct()
+                    mo.lb = pyo.value(u.convert(tmp, to_units=mo.ui_units))
+            except Exception as e:
+                mo.has_bounds = False
 
     @classmethod
     def from_installed_packages(
