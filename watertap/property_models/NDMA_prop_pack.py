@@ -134,6 +134,11 @@ class NDMAParameterData(PhysicalParameterBlock):
                 "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
                 "molality_phase_comp": {"method": "_molality_phase_comp"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
                 "enth_flow": {"method": "_enth_flow"},
             }
         )

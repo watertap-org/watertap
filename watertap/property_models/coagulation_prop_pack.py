@@ -203,6 +203,11 @@ class CoagulationParameterData(PhysicalParameterBlock):
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
                 "enth_flow": {"method": "_enth_flow"},
             }
         )

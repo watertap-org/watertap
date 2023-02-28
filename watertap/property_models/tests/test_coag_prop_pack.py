@@ -88,21 +88,21 @@ class TestCoagulationPropPack:
         metadata = model.fs.properties.get_metadata().properties
 
         # check that properties are not built if not demanded
-        for v_name in metadata:
-            if metadata[v_name]["method"] is not None:
-                if model.fs.stream[0].is_property_constructed(v_name):
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if model.fs.stream[0].is_property_constructed(v.name):
                     raise PropertyAttributeError(
                         "Property {v_name} is an on-demand property, but was found "
-                        "on the stateblock without being demanded".format(v_name=v_name)
+                        "on the stateblock without being demanded".format(v_name=v.name)
                     )
 
         # check that properties are built if demanded
-        for v_name in metadata:
-            if metadata[v_name]["method"] is not None:
-                if not hasattr(model.fs.stream[0], v_name):
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if not hasattr(model.fs.stream[0], v.name):
                     raise PropertyAttributeError(
                         "Property {v_name} is an on-demand property, but was not built "
-                        "when demanded".format(v_name=v_name)
+                        "when demanded".format(v_name=v.name)
                     )
 
         # check the other stateblock functions

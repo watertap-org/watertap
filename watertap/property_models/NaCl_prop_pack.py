@@ -186,9 +186,14 @@ class NaClParameterData(PhysicalParameterBlock):
                 "molality_phase_comp": {"method": "_molality_phase_comp"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
-                "osm_coeff": {"method": "_osm_coeff"},
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
+                "osm_coeff": {"method": "_osm_coeff"},
                 "enth_flow": {"method": "_enth_flow"},
             }
         )
