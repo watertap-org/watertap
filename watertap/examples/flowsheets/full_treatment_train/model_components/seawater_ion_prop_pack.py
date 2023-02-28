@@ -125,6 +125,11 @@ class PropParameterData(PhysicalParameterBlock):
                 "flow_vol": {"method": "_flow_vol"},
                 "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "conc_mol_phase_comp": {"method": "_conc_mol_phase_comp"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
                 "enth_flow": {"method": "_enth_flow"},
             }
         )
