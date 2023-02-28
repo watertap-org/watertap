@@ -167,7 +167,7 @@ class TestGACSimplified:
         # test statistics
         assert number_variables(ms) == 79
         assert number_total_constraints(ms) == 46
-        assert number_unused_variables(ms) == 11  # dens parameters from properties
+        assert number_unused_variables(ms) == 10  # dens parameters from properties
 
     @pytest.mark.unit
     def test_simplified_dof(self, gac_frame_simplified):
