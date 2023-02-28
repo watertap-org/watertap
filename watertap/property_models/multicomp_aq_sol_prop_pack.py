@@ -415,13 +415,11 @@ class MCASParameterData(PhysicalParameterBlock):
                 _log.warning(
                     f"Diffusivity data was not provided for {missing_diffus_ind}. "
                 )
-                diffusivity_data = self.config.diffusivity_data
-            else:
-                diffusivity_data = self.config.diffusivity_data
 
             self.diffus_phase_comp = Var(
-                self.config.diffusivity_data.keys(),
-                initialize=diffusivity_data,
+                self.phase_list,
+                self.solute_set,
+                initialize=self.config.diffusivity_data,
                 units=pyunits.m**2 * pyunits.s**-1,
                 doc="Mass diffusivity of solute components",
             )
