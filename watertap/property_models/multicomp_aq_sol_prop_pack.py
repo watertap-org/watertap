@@ -404,12 +404,6 @@ class MCASParameterData(PhysicalParameterBlock):
         )
 
         if self.config.diffus_calculation == DiffusivityCalculation.none:
-            self.diffus_phase_comp_default = Param(
-                mutable=True,
-                default=1e-9,
-                units=pyunits.m**2 * pyunits.s**-1,
-                doc="Default fill value for diffus_phase_comp",
-            )
             # Retrieve component string names from user-provided diffusivity_data configuration
             diffus_data_indices = [i[1] for i in self.config.diffusivity_data.keys()]
             # identify component string names that were not specified in diffusivity_data
@@ -420,11 +414,9 @@ class MCASParameterData(PhysicalParameterBlock):
             if not missing_diffus_ind == []:
                 _log.warning(
                     f"Diffusivity data was not provided for {missing_diffus_ind}. "
-                    f"A default value of {value(self.diffus_phase_comp_default)} will be assigned."
+                    # f"A default value of {value(self.diffus_phase_comp_default)} will be assigned."
                 )
                 diffusivity_data = self.config.diffusivity_data
-                for i in missing_diffus_ind:
-                    diffusivity_data["Liq", i] = self.diffus_phase_comp_default
             else:
                 diffusivity_data = self.config.diffusivity_data
 

@@ -210,10 +210,8 @@ def test_property_ions(model):
         0.563, rel=1e-3
     )
     assert isinstance(model.fs.properties.diffus_phase_comp, Var)
-    assert isinstance(model.fs.properties.diffus_phase_comp_default, Param)
     for v in model.fs.properties.diffus_phase_comp.values():
         assert v.fixed
-    assert value(model.fs.properties.diffus_phase_comp_default) == 1e-9
 
 
 @pytest.fixture(scope="module")
@@ -1323,16 +1321,13 @@ def test_elec_properties_errormsg(model6):
         mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
         charge={"Na_+": 1, "Cl_-": -1},
         elec_mobility_calculation=ElectricalMobilityCalculation.EinsteinRelation,
-        diffus_calculation=DiffusivityCalculation.HaydukLaudie,
     )
     m[0].fs.stream = m[0].fs.properties.build_state_block([0], defined_state=True)
 
     with pytest.raises(
         ConfigurationError,
-        match=re.compile(
-            r'Missing\s+a\s+valid\s+diffusivity_data\s+configuration\s+to\s+use\s+EinsteinRelation\s+to\s+compute\s+the\s+"elec_mobility_phase_comp"\s+for\s+Na_\+\s+in\s+fs\.stream\[0\]\s*\.\s*Provide\s+this\s+configuration\s+or\s+use\s+another\s+"elec_mobility_calculation"\s+configuration\s+value\.',
-            flags=re.DOTALL,
-        ),
+        match="""Missing a valid diffusivity_data configuration to use EinsteinRelation 
+                        to compute the "elec_mobility_phase_comp" """,
     ):
         m[0].fs.stream[0].elec_mobility_phase_comp
 
