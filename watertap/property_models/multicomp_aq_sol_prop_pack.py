@@ -1269,9 +1269,11 @@ class MCASStateBlockData(StateBlockData):
         )
 
     def _diffus_phase_comp(self):
-        # Retrieve component string names from diffusivity_data configuration
-        diffus_data_indices = {i[1] for i in self.params.config.diffusivity_data.keys()}
         if self.params.config.diffus_calculation == DiffusivityCalculation.HaydukLaudie:
+            # Retrieve component string names from diffusivity_data configuration
+            diffus_data_indices = {
+                i[1] for i in self.params.config.diffusivity_data.keys()
+            }
             # Retrieve component string names from molar_volume_data configuration
             molar_volume_data_indices = {
                 i[1] for i in self.params.config.molar_volume_data.keys()
@@ -1326,53 +1328,49 @@ class MCASStateBlockData(StateBlockData):
                 doc="Hayduk Laudie molar volume coefficient",
             )
 
-        def rule_diffus_phase_comp(b, p, j):
-            if self.params.config.diffus_calculation == DiffusivityCalculation.none:
-                add_object_reference(
-                    self, "diffus_phase_comp", self.params.diffus_phase_comp
-                )
-                return Constraint.Skip
-            elif (
-                self.params.config.diffus_calculation
-                == DiffusivityCalculation.HaydukLaudie
-            ):
+            def rule_diffus_phase_comp(b, p, j):
+                if (
+                    self.params.config.diffus_calculation
+                    == DiffusivityCalculation.HaydukLaudie
+                ):
 
-                if j not in molar_volume_data_indices:
-                    b.diffus_phase_comp[p, j].fix(
-                        self.params.config.diffusivity_data[p, j]
-                    )
-                    return Constraint.Skip
-                else:
-
-                    diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
-                    visc_solvent_inv_units = pyunits.cP**-1
-                    molar_volume_inv_units = pyunits.mol * pyunits.cm**-3
-                    return (b.diffus_phase_comp[p, j] * diffus_coeff_inv_units) * (
-                        (
-                            pyunits.convert(b.visc_d_phase[p], to_units=pyunits.cP)
-                            * visc_solvent_inv_units
+                    if j not in molar_volume_data_indices:
+                        b.diffus_phase_comp[p, j].fix(
+                            self.params.config.diffusivity_data[p, j]
                         )
-                        ** b.hl_visc_coeff
-                    ) * (
-                        (
-                            pyunits.convert(
-                                b.molar_volume_phase_comp[p, j],
-                                to_units=pyunits.cm**3 * pyunits.mol**-1,
+                        return Constraint.Skip
+                    else:
+
+                        diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
+                        visc_solvent_inv_units = pyunits.cP**-1
+                        molar_volume_inv_units = pyunits.mol * pyunits.cm**-3
+                        return (b.diffus_phase_comp[p, j] * diffus_coeff_inv_units) * (
+                            (
+                                pyunits.convert(b.visc_d_phase[p], to_units=pyunits.cP)
+                                * visc_solvent_inv_units
                             )
-                            * molar_volume_inv_units
-                        )
-                        ** b.hl_molar_volume_coeff
-                    ) == b.hl_diffus_cont
+                            ** b.hl_visc_coeff
+                        ) * (
+                            (
+                                pyunits.convert(
+                                    b.molar_volume_phase_comp[p, j],
+                                    to_units=pyunits.cm**3 * pyunits.mol**-1,
+                                )
+                                * molar_volume_inv_units
+                            )
+                            ** b.hl_molar_volume_coeff
+                        ) == b.hl_diffus_cont
 
-        self.eq_diffus_phase_comp = Constraint(
-            self.params.phase_list,
-            (
-                diffus_data_indices
-                if self.params.config.diffus_calculation == DiffusivityCalculation.none
-                else molar_volume_data_indices | diffus_data_indices
-            ),
-            rule=rule_diffus_phase_comp,
-        )
+            self.eq_diffus_phase_comp = Constraint(
+                self.params.phase_list,
+                molar_volume_data_indices | diffus_data_indices,
+                rule=rule_diffus_phase_comp,
+            )
+
+        elif self.params.config.diffus_calculation == DiffusivityCalculation.none:
+            add_object_reference(
+                self, "diffus_phase_comp", self.params.diffus_phase_comp
+            )
 
     def _visc_d_phase(self):
         add_object_reference(self, "visc_d_phase", self.params.visc_d_phase)
@@ -1899,7 +1897,7 @@ class MCASStateBlockData(StateBlockData):
                     sf = iscale.get_scaling_factor(self.flow_mol_phase_comp[j])
                     iscale.set_scaling_factor(self.flow_equiv_phase_comp[j], sf)
 
-        # The following variables and parameters have computed scalling factors;
+        # The following variables and parameters have computed scaling factors;
         # Users do not have to input scaling factors but, if they do, their value
         # will override.
         for j, v in self.mw_comp.items():
@@ -2158,6 +2156,6 @@ class MCASStateBlockData(StateBlockData):
         if self.is_property_constructed("ionic_strength_molal"):
             iscale.constraint_scaling_transform(self.eq_ionic_strength_molal, 1)
 
-        if self.is_property_constructed("diffus_phase_comp"):
+        if hasattr(self, "eq_diffus_phase_comp"):
             for ind, v in self.eq_diffus_phase_comp.items():
                 iscale.constraint_scaling_transform(v, 1e9)
