@@ -1,7 +1,7 @@
 How to run a zero-order model
 -----------------------------
 
-The example below runs the dual media filtration zero-order model. This example uses the default parameters defined in the watertap YAML database. The output from running the example is also shown below.
+The example script shown below is for the dual media filtration zero-order model. This example uses the default parameters defined in the watertap YAML database.
 
 .. testcode::
 
@@ -17,28 +17,36 @@ The example below runs the dual media filtration zero-order model. This example 
 
    def main():
 
+       # Create a Pyomo model and initialize the YAML database
        model = ConcreteModel()
        model.db = Database()
 
+       # Create an IDAES flowsheet and define the solutes
        model.fs = FlowsheetBlock(dynamic=False)
        model.fs.params = WaterParameterBlock(solute_list=["nonvolatile_toc", "toc", "tss"])
 
+       # Setup the zero-order model and define inlet flows
        model.fs.unit = DualMediaFiltrationZO(property_package=model.fs.params, database=model.db)
        model.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
        model.fs.unit.inlet.flow_mass_comp[0, "nonvolatile_toc"].fix(1)
        model.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(1)
        model.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
 
+       # Load default parameters from the YAML database
        model.fs.unit.load_parameters_from_database()
 
+       # Access the solver and solve the model
        solver = get_solver()
        solver.solve(model)
 
+       # Display a report of the results
        model.fs.unit.report()
 
 
    if __name__ == "__main__":
        main()
+
+The output from running the example is shown below.
 
 .. code-block:: text
 
@@ -67,7 +75,7 @@ The example below runs the dual media filtration zero-order model. This example 
        Mass Concentration tss              kilogram / meter ** 3   76.923   2.6019    659.86
    ====================================================================================
 
-To use a local YAML database file, define the folder path to the file using the :code:`dbpath` parameter for the :code:`Database()` class. The line below defines the current working directory as the path for the YAML file.
+The zero-order models rely on default model parameter values specified in YAML files. Users should supply their own values, if possible, instead of relying on the default parameter values. To use a local YAML database file, define the folder path to the file using the :code:`dbpath` parameter for the :code:`Database()` class. The line below defines the current working directory as the path for the YAML file.
 
 .. code-block::
 
