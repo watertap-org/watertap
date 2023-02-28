@@ -972,6 +972,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
+            "diffusivity_data": {("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9},
         }
         m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
@@ -1183,6 +1184,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
+            "diffusivity_data": {("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9},
         }
         m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
@@ -1204,6 +1206,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
+            "diffusivity_data": {("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9},
         }
         m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
@@ -1359,6 +1362,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
+            "diffusivity_data": {("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9},
         }
         m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
@@ -1551,10 +1555,10 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
         assert "vars" in perform_dict
         assert value(
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
-        ) == pytest.approx(12.890, rel=1e-3)
+        ) == pytest.approx(12.904, rel=1e-3)
         assert value(
             perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
-        ) == pytest.approx(0.8617, rel=1e-3)
+        ) == pytest.approx(0.8627, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4791, rel=1e-3
         )
