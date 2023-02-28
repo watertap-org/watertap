@@ -1435,3 +1435,29 @@ def test_diffus_properties_errormsg(model7):
         match=("Index"),
     ):
         m.fs.sb[0].diffus_phase_comp["Liq", "G"]
+
+
+@pytest.mark.component
+def test_solute_list_longer_than_diff_data():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["A", "B", "C", "D", "E", "F", "G", "H"],
+        charge={"E": 1, "F": -1},
+        diffus_calculation=DiffusivityCalculation.none,
+        molar_volume_data={
+            ("Liq", "A"): 96e-6,  # tested for benzene
+            ("Liq", "B"): 100e-6,  # arbitrary
+            ("Liq", "C"): 60e-6,  # arbitrary
+            ("Liq", "D"): 200e-6,  # arbitrary
+        },
+        diffusivity_data={
+            ("Liq", "A"): 1e-11,
+            ("Liq", "E"): 1.33e-9,
+            ("Liq", "F"): 2.03e-9,
+        },
+    )
+    m.fs.properties.visc_d_phase["Liq"] = 1.0e-3
+
+    m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
+    calculate_scaling_factors(m.fs)
