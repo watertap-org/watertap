@@ -52,7 +52,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Translator_ADM1_ASM1")
-class TranslatorData(TranslatorData):
+class TranslatorDataAA(TranslatorData):
     """
     Standard Translator Block Class
     """
@@ -93,7 +93,7 @@ see reaction package for documentation.}""",
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(TranslatorData, self).build()
+        super(TranslatorDataAA, self).build()
 
         self.i_ec = Param(
             initialize=0.06,
