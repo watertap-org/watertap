@@ -1,19 +1,17 @@
-#################################################################################
-# The Institute for the Design of Advanced Energy Systems Integrated Platform
-# Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+###############################################################################
+# WaterTAP Copyright (c) 2021, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National
+# Laboratory, National Renewable Energy Laboratory, and National Energy
+# Technology Laboratory (subject to receipt of any required approvals from
+# the U.S. Dept. of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
-#################################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#
+###############################################################################
 """
-Modified translator block.
-
-This is copied from the Generic template for a translator block.
+Translator block representing the ADM1/ASM1 interface.
 
 Assumptions:
      * Steady-state only
@@ -30,6 +28,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.models.unit_models.translator import TranslatorData
 from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
@@ -55,112 +54,12 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Translator_ADM1_ASM1")
-class TranslatorData(UnitModelBlockData):
+class TranslatorData(TranslatorData):
     """
     Standard Translator Block Class
     """
 
-    CONFIG = ConfigBlock()
-    CONFIG.declare(
-        "dynamic",
-        ConfigValue(
-            domain=In([False]),
-            default=False,
-            description="Dynamic model flag - must be False",
-            doc="""Translator blocks are always steady-state.""",
-        ),
-    )
-    CONFIG.declare(
-        "has_holdup",
-        ConfigValue(
-            default=False,
-            domain=In([False]),
-            description="Holdup construction flag - must be False",
-            doc="""Translator blocks do not contain holdup.""",
-        ),
-    )
-    CONFIG.declare(
-        "has_phase_equilibrium",
-        ConfigValue(
-            default=False,
-            domain=Bool,
-            description="Phase equilibrium construction flag",
-            doc="""Indicates whether terms for phase equilibrium should be
-    constructed,
-    **default** = False.
-    **Valid values:** {
-    **True** - include phase equilibrium terms
-    **False** - exclude phase equilibrium terms.}""",
-        ),
-    )
-    CONFIG.declare(
-        "outlet_state_defined",
-        ConfigValue(
-            default=True,
-            domain=Bool,
-            description="Indicated whether outlet state will be fully defined",
-            doc="""Indicates whether unit model will fully define outlet state.
-If False, the outlet property package will enforce constraints such as sum
-of mole fractions and phase equilibrium.
-**default** - True.
-**Valid values:** {
-**True** - outlet state will be fully defined,
-**False** - outlet property package should enforce sumation and equilibrium
-constraints.}""",
-        ),
-    )
-    CONFIG.declare(
-        "inlet_property_package",
-        ConfigValue(
-            default=None,
-            domain=is_physical_parameter_block,
-            description="Property package to use for incoming stream",
-            doc="""Property parameter object used to define property
-calculations for the incoming stream,
-**default** - None.
-**Valid values:** {
-**PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
-        ),
-    )
-    CONFIG.declare(
-        "inlet_property_package_args",
-        ConfigBlock(
-            implicit=True,
-            description="Arguments to use for constructing property package "
-            "of the incoming stream",
-            doc="""A ConfigBlock with arguments to be passed to the property
-block associated with the incoming stream,
-**default** - None.
-**Valid values:** {
-see property package for documentation.}""",
-        ),
-    )
-    CONFIG.declare(
-        "outlet_property_package",
-        ConfigValue(
-            default=None,
-            domain=is_physical_parameter_block,
-            description="Property package to use for outgoing stream",
-            doc="""Property parameter object used to define property
-calculations for the outgoing stream,
-**default** - None.
-**Valid values:** {
-**PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
-        ),
-    )
-    CONFIG.declare(
-        "outlet_property_package_args",
-        ConfigBlock(
-            implicit=True,
-            description="Arguments to use for constructing property package "
-            "of the outgoing stream",
-            doc="""A ConfigBlock with arguments to be passed to the property
-block associated with the outgoing stream,
-**default** - None.
-**Valid values:** {
-see property package for documentation.}""",
-        ),
-    )
+    CONFIG = TranslatorData.CONFIG()
     CONFIG.declare(
         "reaction_package",
         ConfigValue(
@@ -205,29 +104,8 @@ see reaction package for documentation.}""",
             doc="Nitrogen inert content",
         )
 
-        # Add State Blocks
-        self.properties_in = self.config.inlet_property_package.build_state_block(
-            self.flowsheet().time,
-            doc="Material properties in incoming stream",
-            defined_state=True,
-            has_phase_equilibrium=False,
-            **self.config.inlet_property_package_args
-        )
-
-        self.properties_out = self.config.outlet_property_package.build_state_block(
-            self.flowsheet().time,
-            doc="Material properties in outgoing stream",
-            defined_state=self.config.outlet_state_defined,
-            has_phase_equilibrium=False,
-            **self.config.outlet_property_package_args
-        )
-
-        # Add ports
-        self.add_port(name="inlet", block=self.properties_in, doc="Inlet Port")
-        self.add_port(name="outlet", block=self.properties_out, doc="Outlet Port")
-
-        mw_n = 14.006 * pyunits.kg / pyunits.kmol
-        mw_c = 12.011 * pyunits.kg / pyunits.kmol
+        mw_n = 14 * pyunits.kg / pyunits.kmol
+        mw_c = 12 * pyunits.kg / pyunits.kmol
 
         @self.Constraint(
             self.flowsheet().time,
@@ -250,24 +128,17 @@ see reaction package for documentation.}""",
         def eq_pressure_rule(blk, t):
             return blk.properties_out[t].pressure == blk.properties_in[t].pressure
 
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Equality S_I equation",
-        )
-        def eq_SI_conc(blk, t):
-            return (
-                blk.properties_out[t].conc_mass_comp["S_I"]
-                == blk.properties_in[t].conc_mass_comp["S_I"]
-            )
+        self.unchanged_component = Set(initialize=["S_I", "X_I"])
 
         @self.Constraint(
             self.flowsheet().time,
-            doc="Equality X_I equation",
+            self.unchanged_component,
+            doc="Equality equation for unchanged components",
         )
-        def eq_XI_conc(blk, t):
+        def eq_unchanged_conc(blk, t, i):
             return (
-                blk.properties_out[t].conc_mass_comp["X_I"]
-                == blk.properties_in[t].conc_mass_comp["X_I"]
+                blk.properties_out[t].conc_mass_comp[i]
+                == blk.properties_in[t].conc_mass_comp[i]
             )
 
         self.readily_biodegradable = Set(
@@ -447,17 +318,21 @@ see reaction package for documentation.}""",
             state_args=state_args_out,
         )
 
-        if degrees_of_freedom(self) == 0:
-            with idaeslog.solver_log(init_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(self, tee=slc.tee)
+        self.properties_in.release_state(flags=flags, outlvl=outlvl)
 
-            init_log.info("Initialization Complete {}.".format(idaeslog.condition(res)))
-        else:
-            init_log.warning(
-                "Initialization incomplete. Degrees of freedom "
-                "were not zero. Please provide sufficient number "
-                "of constraints linking the state variables "
-                "between the two state blocks."
+        if degrees_of_freedom(self) != 0:
+            raise Exception(
+                f"{self.name} degrees of freedom were not 0 at the beginning "
+                f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
 
-        self.properties_in.release_state(flags=flags, outlvl=outlvl)
+        with idaeslog.solver_log(init_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+
+        init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
+
+        if not check_optimal_termination(res):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information."
+            )
