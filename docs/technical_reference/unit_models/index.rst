@@ -20,4 +20,5 @@ Unit Models
    osmotically_assisted_reverse_osmosis_0D
    anaerobic_digestor
    ion_exchange_0D
+   translator_adm1_asm2d
    zero_order_unit_models/index
