@@ -165,7 +165,7 @@ class TestGACSimplified:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(ms) == 80
+        assert number_variables(ms) == 79
         assert number_total_constraints(ms) == 46
         assert number_unused_variables(ms) == 11  # dens parameters from properties
 
