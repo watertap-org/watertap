@@ -1132,8 +1132,12 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
     def define_metadata(cls, obj):
         obj.add_properties(
             {
-                "conc_mol_co2": {"method": "_rxn_rate"},
                 "reaction_rate": {"method": "_rxn_rate"},
+            }
+        )
+        obj.define_custom_properties(
+            {
+                "conc_mol_co2": {"method": "_rxn_rate"},
                 "I": {"method": "_I"},
             }
         )

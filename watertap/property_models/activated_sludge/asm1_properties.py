@@ -118,6 +118,10 @@ class ASM1ParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "temperature": {"method": None},
                 "conc_mass_comp": {"method": None},
+            }
+        )
+        obj.define_custom_properties(
+            {
                 "alkalinity": {"method": None},
             }
         )
