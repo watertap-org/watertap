@@ -91,7 +91,9 @@ def run_analysis(case_num=1, nx=5, interpolate_nan_outputs=True, save_outputs=No
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         print(
-            "Usage: python multi_sweep.py case_number number_of_samples interpolate_nan_outputs"
+            "Usage: Specify the conditions in the run_analysis function and then run 'python multi_sweep.py' "
+            "Case number (case_num) is an integer, number_of_samples (nx) is an integer, interpolate_nan_outputs is a"
+            "boolean and results_path is the file path where the results will be created and displayed."
         )
         print(
             f"Results will be written to {os.path.dirname(os.path.abspath(__file__))}"
