@@ -414,7 +414,6 @@ class MCASParameterData(PhysicalParameterBlock):
             if not missing_diffus_ind == []:
                 _log.warning(
                     f"Diffusivity data was not provided for {missing_diffus_ind}. "
-                    # f"A default value of {value(self.diffus_phase_comp_default)} will be assigned."
                 )
                 diffusivity_data = self.config.diffusivity_data
             else:
