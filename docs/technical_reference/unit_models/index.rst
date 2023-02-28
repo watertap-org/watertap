@@ -19,5 +19,6 @@ Unit Models
    gac
    osmotically_assisted_reverse_osmosis_0D
    anaerobic_digestor
+   translator_adm1_asm1
    ion_exchange_0D
    zero_order_unit_models/index
