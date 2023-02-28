@@ -126,7 +126,8 @@ class WaterParameterBlockData(PhysicalParameterBlock):
 
         # ---------------------------------------------------------------------
         # Set default scaling factors
-        self.default_scaling_factor = {("flow_vol"): 1e3, ("conc_mass_comp"): 1e2}
+        self.set_default_scaling("flow_vol", 1e3)
+        self.set_default_scaling("conc_mass_comp", 1e2)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -329,8 +330,8 @@ class WaterStateBlockData(StateBlockData):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
 
-        d_sf_Q = self.params.default_scaling_factor["flow_vol"]
-        d_sf_c = self.params.default_scaling_factor["conc_mass_comp"]
+        d_sf_Q = self.params.get_default_scaling("flow_vol")
+        d_sf_c = self.params.get_default_scaling("conc_mass_comp")
 
         for j, v in self.flow_mass_comp.items():
             if iscale.get_scaling_factor(v) is None:
@@ -345,7 +346,7 @@ class WaterStateBlockData(StateBlockData):
                 sf_c = iscale.get_scaling_factor(self.conc_mass_comp[j])
                 if sf_c is None:
                     try:
-                        sf_c = self.params.default_scaling_factor[("conc_mass_comp", j)]
+                        sf_c = self.params.get_default_scaling("conc_mass_comp", j)
                     except KeyError:
                         sf_c = d_sf_c
                     iscale.set_scaling_factor(self.conc_mass_comp[j], sf_c)
