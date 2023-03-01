@@ -28,7 +28,7 @@ Sets
    :sup:`1`  component_list is provided by a necessary configuration to use this property package.
 
 .. figure:: ../../_static/unit_models/mcas_set_hierarchy.png
-    :width: 1200
+    :width: 400
     :align: center
 
     Figure 1. Hierarchy of the pyomo sets constructed in the MCAS property package. Here types are declared for the
