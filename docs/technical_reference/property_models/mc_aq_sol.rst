@@ -32,7 +32,8 @@ Sets
     :align: center
 
     Figure 1. Hierarchy of the pyomo sets constructed in the MCAS property package. Here types are declared for the
-    species in component list, or sometimes auto assigned considering other input such as charge.
+    species in component list, or sometimes auto assigned considering other input such as charge. e.g., the chloride anion
+    would be contained in anion_set, ion_set, solute_set, and component_list.
 
 State variables
 ---------------
