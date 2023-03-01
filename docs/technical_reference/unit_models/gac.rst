@@ -91,9 +91,9 @@ Sets
 
    "Time", ":math:`t`", "[0]"
    "Phases", ":math:`p`", "['Liq']"
-   "Components", ":math:`j`", "['H2O', 'adsorbed solute', 'background solutes]*"
+   "Components", ":math:`j`", "['H2O', 'target_species', 'background solutes]*"
 
-\*"adsorbed solute" provided in the ``target_species`` argument of the unit model.
+\*"target_species" is provided in the ``target_species`` argument of the unit model and corresponds to the single solute which is adsorbed.
 \*"background solutes" are the difference in ``component_list - target_species``.
 
 .. _GAC_variables:
