@@ -345,8 +345,7 @@ class WaterStateBlockData(StateBlockData):
             for j, v in self.conc_mass_comp.items():
                 sf_c = iscale.get_scaling_factor(self.conc_mass_comp[j])
                 if sf_c is None:
-                    try:
-                        sf_c = self.params.get_default_scaling("conc_mass_comp", j)
-                    except KeyError:
+                    sf_c = self.params.get_default_scaling("conc_mass_comp", j)
+                    if sf_c is None:
                         sf_c = d_sf_c
                     iscale.set_scaling_factor(self.conc_mass_comp[j], sf_c)
