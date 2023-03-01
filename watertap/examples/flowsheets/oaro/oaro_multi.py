@@ -237,28 +237,28 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     )
 
     # system water recovery
-    m.fs.volumetric_recovery = Var(
+    m.fs.water_recovery = Var(
         initialize=0.5,
         bounds=(0, 1),
         domain=NonNegativeReals,
         units=pyunits.dimensionless,
         doc="System Volumetric Recovery of Water",
     )
-    m.fs.eq_volumetric_recovery = Constraint(
-        expr=m.fs.feed.properties[0].flow_vol_phase["Liq"] * m.fs.volumetric_recovery
+    m.fs.eq_water_recovery = Constraint(
+        expr=m.fs.feed.properties[0].flow_vol_phase["Liq"] * m.fs.water_recovery
         == m.fs.product.properties[0].flow_vol_phase["Liq"]
     )
 
-    m.fs.water_recovery = Var(
+    m.fs.mass_water_recovery = Var(
         initialize=0.5,
         bounds=(0, 1),
         domain=NonNegativeReals,
         units=pyunits.dimensionless,
         doc="System Water Recovery",
     )
-    m.fs.eq_water_recovery = Constraint(
+    m.fs.eq_mass_water_recovery = Constraint(
         expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-        * m.fs.water_recovery
+        * m.fs.mass_water_recovery
         == m.fs.product.properties[0].flow_mass_phase_comp["Liq", "H2O"]
     )
 
@@ -406,12 +406,12 @@ def set_operating_conditions(
     # primary pumps
     for idx, pump in m.fs.PrimaryPumps.items():
         pump.control_volume.properties_out[0].pressure = 65e5
-        pump.efficiency_pump.fix(0.80)
+        pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
     for pump in m.fs.RecyclePumps.values():
         pump.control_volume.properties_out[0].pressure = 4e5
-        pump.efficiency_pump.fix(0.80)
+        pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
     # initial guess for states of recycle pumps (temperature and concentrations)
@@ -453,15 +453,15 @@ def set_operating_conditions(
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
     m.fs.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
-    m.fs.RO.feed_side.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
+    m.fs.RO.feed_side.spacer_porosity.fix(0.85)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO.width.fix(5)  # stage width [m]
-    m.fs.RO.area.fix(50)  # guess area for RO initialization
+    m.fs.RO.area.fix(100)  # guess area for RO initialization
 
     if m.fs.erd_type == ERDtype.pump_as_turbine:
         # energy recovery turbine - efficiency and outlet pressure
         for erd in m.fs.EnergyRecoveryDevices.values():
-            erd.efficiency_pump.fix(0.95)
+            erd.efficiency_pump.fix(0.8)
             erd.control_volume.properties_out[0].pressure.fix(pressure_atmospheric)
     else:
         erd_type_not_found(m.fs.erd_type)
@@ -608,7 +608,7 @@ def initialize_system(m, solver=None, verbose=True):
     propagate_state(m.fs.pump_to_ro)
     print(f"DOF after prop_state to RO: {degrees_of_freedom(m)}")
     print(f"fixed variables set after prop_state to RO: {fixed_variables_set(m.fs.RO)}")
-    m.fs.RO.initialize()
+    m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
     print(f"fixed variables set after RO: {fixed_variables_set(m.fs.RO)}")
     print(f"DOF after RO: {degrees_of_freedom(m)}")
 
