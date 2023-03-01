@@ -14,6 +14,7 @@
 from pyomo.environ import (
     Var,
     Param,
+    Set,
     Suffix,
     NonNegativeReals,
     units as pyunits,
@@ -220,7 +221,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         ),
     )
 
-    # ---------------------------------------------------------------------
     def _validate_config(self):
         if (
             self.config.is_isothermal
@@ -230,6 +230,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 "If the isothermal assumption is used then the energy balance type must be none"
             )
 
+    # ---------------------------------------------------------------------
     def build(self):
 
         super().build()
@@ -241,20 +242,25 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # Check configs for errors
         self._validate_config()
 
-        # separate target species to be adsorbed and other species considered inert
-        component_set = self.config.property_package.component_list
-        solute_set = self.config.property_package.solute_set
-        # apply target species automatically if arg left to default and only one viable option exists
-        if self.config.target_species is None and len(solute_set) == 1:
-            self.config.target_species = solute_set
+        # separate target_species to be adsorbed and other species considered inert
+        # apply target_species automatically if arg left to default and only one viable option exists
+        if (
+            self.config.target_species is None
+            and len(self.config.property_package.solute_set) == 1
+        ):
+            self.config.target_species = self.config.property_package.solute_set
         if self.config.target_species is None:
             raise ConfigurationError(
-                "'target species' is not specified for the GAC unit model, "
-                "either specify 'target species' argument or reduce solute set "
-                "to a single component"
+                "'target species' is not specified for the GAC unit model, either specify 'target species'"
+                " argument or reduce solute set to a single component"
             )
-        target_species = self.config.target_species
-        inert_species = component_set - self.config.target_species
+        # define sets to be used across GAC methods
+        self.target_species = Set(dimen=1)
+        self.inert_species = Set(dimen=1)
+        self.target_species = self.config.target_species
+        self.inert_species = (
+            self.config.property_package.component_list - self.config.target_species
+        )
 
         # build control volume
         self.process_flow = ControlVolume0DBlock(
@@ -271,10 +277,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.energy_balance_type,
             has_enthalpy_transfer=False,
         )
-
         if self.config.is_isothermal:
             self.process_flow.add_isothermal_assumption()
-
         self.process_flow.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=False,
@@ -284,8 +288,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
-        tmp_dict["defined_state"] = False  # permeate block is not an inlet
-        self.adsorbed_contam = self.config.property_package.state_block_class(
+        tmp_dict["defined_state"] = False
+        self.gac_removed = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of spent gac",
             **tmp_dict,
@@ -295,26 +299,23 @@ class GACData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Isothermal assumption for adsorbed contaminant",
         )
-        def eq_isothermal_adsorbed_contam(b, t):
+        def eq_isothermal_gac_removed(b, t):
             return (
                 b.process_flow.properties_in[t].temperature
-                == b.adsorbed_contam[t].temperature
+                == b.gac_removed[t].temperature
             )
 
         @self.Constraint(
             self.flowsheet().config.time,
             doc="Isobaric assumption for adsorbed contaminant",
         )
-        def eq_isobaric_adsorbed_contam(b, t):
-            return (
-                b.process_flow.properties_in[t].pressure
-                == b.adsorbed_contam[t].pressure
-            )
+        def eq_isobaric_gac_removed(b, t):
+            return b.process_flow.properties_in[t].pressure == b.gac_removed[t].pressure
 
         # Add ports
         self.add_inlet_port(name="inlet", block=self.process_flow)
         self.add_outlet_port(name="outlet", block=self.process_flow)
-        self.add_outlet_port(name="adsorbed", block=self.adsorbed_contam)
+        self.add_outlet_port(name="adsorbed", block=self.gac_removed)
 
         # ---------------------------------------------------------------------
         # parameter declaration
@@ -331,7 +332,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # Freundlich isotherm parameters and adsorption variables
         self.freund_k = Var(
             initialize=10,
-            bounds=(0, 1000),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,  # dynamic with freund_ninv, ((length ** 3) * (mass ** -1)) ** freund_ninv,
             doc="Freundlich isotherm k parameter, must be provided in base [L3/M] units",
@@ -347,7 +348,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         self.equil_conc = Var(
             initialize=1e-4,
-            bounds=(1e-20, None),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Equilibrium concentration of adsorbed phase with liquid phase",
@@ -355,7 +356,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         self.mass_adsorbed = Var(
             initialize=1e5,
-            bounds=(1e-8, None),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass"),
             doc="Mass of contaminant adsorbed at the time of replacement",
@@ -363,7 +364,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         self.mass_adsorbed_saturated = Var(
             initialize=1e5,
-            bounds=(1e-8, None),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass"),
             doc="Mass of contaminant adsorbed if fully saturated",
@@ -381,7 +382,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         self.bed_volume = Var(
             initialize=100,
-            bounds=(1e-3, None),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length") ** 3,
             doc="Adsorber bed volume",
@@ -709,7 +710,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # TODO: Add support mole or mass based property packs
         @self.Constraint(
             self.flowsheet().config.time,
-            target_species,
+            self.target_species,
             doc="Mass transfer term for solutes",
         )
         def eq_mass_transfer_solute(b, t, j):
@@ -720,24 +721,24 @@ class GACData(InitializationMixin, UnitModelBlockData):
             ]
 
         # no mass transfer of inert species
-        for j in inert_species:
+        for j in self.inert_species:
             self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
-            self.adsorbed_contam[0].get_material_flow_terms("Liq", j).fix(0)
+            self.gac_removed[0].get_material_flow_terms("Liq", j).fix(0)
 
         @self.Constraint(
             self.flowsheet().config.time,
-            target_species,
+            self.target_species,
             doc="Contaminant adsorbed",
         )
         def eq_mass_transfer_adsorbed(b, t, j):
             return (
-                b.adsorbed_contam[t].get_material_flow_terms("Liq", j)
+                b.gac_removed[t].get_material_flow_terms("Liq", j)
                 == -b.process_flow.mass_transfer_term[t, "Liq", j]
             )
 
         @self.Constraint(
             self.flowsheet().config.time,
-            target_species,
+            self.target_species,
             doc="Equilibrium concentration",
         )
         def eq_equil_conc(b, t, j):
@@ -751,7 +752,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            target_species,
+            self.target_species,
             doc="Solute distribution parameter",
         )
         def eq_dg(b, t, j):
@@ -855,13 +856,13 @@ class GACData(InitializationMixin, UnitModelBlockData):
             return b.bed_volumes_treated * b.res_time == b.elap_time * b.bed_voidage
 
         @self.Constraint(
-            target_species,
+            self.target_species,
             doc="Total mass adsorbed in the elapsed time",
         )
         def eq_mass_adsorbed(b, j):
             return (
                 b.mass_adsorbed
-                == b.adsorbed_contam[0].flow_mass_phase_comp["Liq", j] * b.elap_time
+                == b.gac_removed[0].flow_mass_phase_comp["Liq", j] * b.elap_time
             )
 
         @self.Constraint(doc="Total mass adsorbed if fully saturated")
@@ -948,7 +949,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                     * b.velocity_sup
                 )
 
-            @self.Constraint(target_species, doc="Schmidt number calculation")
+            @self.Constraint(self.target_species, doc="Schmidt number calculation")
             def eq_schmidt_number(b, j):
                 return (
                     b.N_Sc
@@ -958,7 +959,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 )
 
             @self.Constraint(
-                target_species,
+                self.target_species,
                 doc="Liquid phase film transfer rate from the Gnielinshi correlation",
             )
             def eq_film_transfer_rate(b, j):
@@ -990,7 +991,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             )
 
             @self.Constraint(
-                target_species,
+                self.target_species,
                 doc="Solute distribution parameter",
             )
             def eq_surface_diffusion_coefficient_calculated(b, j):
@@ -1056,13 +1057,12 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
-        # Initialize adsorbed_contam port
+        # Initialize gac_removed port
         # all non-adsorbed species initialized to 0
-        for j in self.config.property_package.component_list:
-            if j not in self.config.target_species:
-                state_args["flow_mol_phase_comp"][("Liq", j)] = 0
+        for j in self.inert_species:
+            state_args["flow_mol_phase_comp"][("Liq", j)] = 0
 
-        self.adsorbed_contam.initialize(
+        self.gac_removed.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1148,9 +1148,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
                     var_dict[f"{prop_str} of {j} @ process feed outlet"] = getattr(
                         self.process_flow.properties_out[time_point], prop_name
                     )["Liq", j]
-                if self.adsorbed_contam[time_point].is_property_constructed(prop_name):
+                if self.gac_removed[time_point].is_property_constructed(prop_name):
                     var_dict[f"{prop_str} of {j} @ process feed outlet"] = getattr(
-                        self.adsorbed_contam[time_point], prop_name
+                        self.gac_removed[time_point], prop_name
                     )["Liq", j]
 
         # loop through desired state block properties indexed by [phase]
@@ -1170,9 +1170,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 var_dict[f"{prop_str} @ process feed outlet"] = getattr(
                     self.process_flow.properties_out[time_point], prop_name
                 )["Liq"]
-            if self.adsorbed_contam[time_point].is_property_constructed(prop_name):
+            if self.gac_removed[time_point].is_property_constructed(prop_name):
                 var_dict[f"{prop_str} @ process feed outlet"] = getattr(
-                    self.adsorbed_contam[time_point], prop_name
+                    self.gac_removed[time_point], prop_name
                 )["Liq"]
 
         return {"vars": var_dict}
@@ -1193,7 +1193,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         super().calculate_scaling_factors()
 
         # scale based on molar flow traditionally provided by user for building flowsheets
-        for j in self.config.target_species:
+        for j in self.target_species:
             sf_solute = iscale.get_scaling_factor(
                 self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j],
                 default=1e4,  # default based on typical concentration for treatment
@@ -1207,28 +1207,25 @@ class GACData(InitializationMixin, UnitModelBlockData):
             )
 
         # overwrite default scaling for state block variables
-        for j in self.config.target_species:
+        for j in self.target_species:
             iscale.set_scaling_factor(
                 self.process_flow.properties_out[0].flow_mol_phase_comp["Liq", j],
                 10 * sf_solute,
             )
-        for j in self.config.property_package.component_list:
-            if j not in self.config.target_species:
-                iscale.set_scaling_factor(
-                    self.adsorbed_contam[0].flow_mol_phase_comp["Liq", j],
-                    1e12,
-                )  # ensure lower concentration of zero flow components, below zero tol
-                #  checks for other state block property objects
-                if self.adsorbed_contam[0].is_property_constructed(
-                    "flow_mass_phase_comp"
-                ):
-                    iscale.set_scaling_factor(
-                        self.adsorbed_contam[0].flow_mass_phase_comp["Liq", j],
-                        1e12,
-                    )  # ensure lower concentration of zero flow components, below zero tol
-        if self.adsorbed_contam[0].is_property_constructed("flow_vol_phase"):
+        for j in self.inert_species:
             iscale.set_scaling_factor(
-                self.adsorbed_contam[0].flow_vol_phase["Liq"],
+                self.gac_removed[0].flow_mol_phase_comp["Liq", j],
+                1,
+            )  # ensure lower concentration of zero flow components, below zero tol
+            #  checks for other state block property objects
+            if self.gac_removed[0].is_property_constructed("flow_mass_phase_comp"):
+                iscale.set_scaling_factor(
+                    self.gac_removed[0].flow_mass_phase_comp["Liq", j],
+                    1,
+                )  # ensure lower concentration of zero flow components, below zero tol
+        if self.gac_removed[0].is_property_constructed("flow_vol_phase"):
+            iscale.set_scaling_factor(
+                self.gac_removed[0].flow_vol_phase["Liq"],
                 1e4 * sf_solute,
             )
 

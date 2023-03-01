@@ -168,7 +168,7 @@ class TestGACSimplified:
 
         # test statistics
         assert number_variables(ms) == 80
-        assert number_total_constraints(ms) == 46
+        assert number_total_constraints(ms) == 45
         assert number_unused_variables(ms) == 11  # dens parameters from properties
 
     @pytest.mark.unit
@@ -234,7 +234,6 @@ class TestGACSimplified:
         )
 
 
-"""
 # -----------------------------------------------------------------------------
 class TestGACRobust:
     @pytest.fixture(scope="class")
@@ -275,7 +274,7 @@ class TestGACRobust:
         mr.fs.unit.process_flow.properties_in[0].conc_mass_phase_comp
         # test construction of other variables in .report()
         mr.fs.unit.process_flow.properties_out[0].flow_vol_phase["Liq"]
-        mr.fs.unit.adsorbed_contam[0].flow_vol_phase["Liq"]
+        mr.fs.unit.gac_removed[0].flow_vol_phase["Liq"]
 
         # trial problem from Crittenden, 2012 for removal of TCE
         # adsorption isotherm
@@ -356,7 +355,7 @@ class TestGACRobust:
 
         # test statistics
         assert number_variables(mr) == 89
-        assert number_total_constraints(mr) == 55
+        assert number_total_constraints(mr) == 54
         assert number_unused_variables(mr) == 10  # dens parameters from properties
 
     @pytest.mark.unit
@@ -590,7 +589,7 @@ class TestGACMulti:
         mm.fs.unit.process_flow.properties_in[0].conc_mass_phase_comp
         # test construction of other variables in .report()
         mm.fs.unit.process_flow.properties_out[0].flow_vol_phase["Liq"]
-        mm.fs.unit.adsorbed_contam[0].flow_vol_phase["Liq"]
+        mm.fs.unit.gac_removed[0].flow_vol_phase["Liq"]
 
         # trial problem from Crittenden, 2012 for removal of TCE
         # adsorption isotherm
@@ -662,8 +661,10 @@ class TestGACMulti:
     def test_multi_var_scaling_init(self, gac_frame_multi):
         mm = gac_frame_multi
         badly_scaled_var_lst = list(
-            badly_scaled_var_generator(mm, large=1e2, small=1e-3, zero=1e-8)
+            badly_scaled_var_generator(mm, large=1e2, small=1e-2, zero=1e-8)
         )
+        for x in badly_scaled_var_lst:
+            print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -738,7 +739,7 @@ class TestGACMulti:
                 film_transfer_coefficient_type="calculated",
                 surface_diffusion_coefficient_type="calculated",
             )
-    """
+
 
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_diagnostics import DegeneracyHunter
