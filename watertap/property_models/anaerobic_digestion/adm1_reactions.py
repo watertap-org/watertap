@@ -1154,7 +1154,7 @@ class _ADM1ReactionBlock(ReactionBlockBase):
     whole, rather than individual elements of indexed Reaction Blocks.
     """
 
-    def initialize(blk, outlvl=idaeslog.NOTSET, **kwargs):
+    def initialize(self, outlvl=idaeslog.NOTSET, **kwargs):
         """
         Initialization routine for reaction package.
 
@@ -1164,7 +1164,7 @@ class _ADM1ReactionBlock(ReactionBlockBase):
         Returns:
             None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
         init_log.info("Initialization Complete.")
 
 
@@ -1798,7 +1798,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         iscale.set_scaling_factor(self.K_a_co2, 1e7)
         iscale.set_scaling_factor(self.K_a_IN, 1e9)
 
-    def get_reaction_rate_basis(b):
+    def get_reaction_rate_basis(self):
         return MaterialFlowBasis.mass
 
     def calculate_scaling_factors(self):

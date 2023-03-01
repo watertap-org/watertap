@@ -104,7 +104,7 @@ def mock_edb(monkeypatch) -> EDBClientFactory:
     # to be able to access the EDB data for e.g. assertions
     client_factory = EDBClientFactory(mongomock.MongoClient())
 
-    with MonkeyPatch.context() as mp:
+    with monkeypatch.context() as mp:
         mp.setattr("watertap.edb.db_api.MongoClient", client_factory)
         yield client_factory
 

@@ -26,7 +26,7 @@ def set_up_sensitivity(m):
 
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
-    outputs["LCOS"] = m.fs.costing.LCOS
+    outputs["LCOP"] = m.fs.costing.LCOP
 
     return outputs, optimize_kwargs, opt_function
 
@@ -60,4 +60,14 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, results_path=N
 
 
 if __name__ == "__main__":
-    results, sweep_params, m = run_analysis(*sys.argv[1:])
+    if len(sys.argv) == 1:
+        print(
+            "Usage: Specify the conditions in the run_analysis function and then run 'python multi_sweep.py' "
+            "Case number (case_num) is an integer, number_of_samples (nx) is an integer, interpolate_nan_outputs is a"
+            "boolean and results_path is the file path where the results will be created and displayed."
+        )
+        print(
+            f"Results will be written to {os.path.dirname(os.path.abspath(__file__))}"
+        )
+    else:
+        results, sweep_params, m = run_analysis(*sys.argv[1:])

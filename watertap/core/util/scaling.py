@@ -22,7 +22,9 @@ def transform_property_constraints(self):
             var = getattr(self, var_str)
             if not isinstance(var, pyo.Var):
                 continue  # properties that are not vars do not have constraints
-            con = getattr(self, "eq_" + var_str)
-            for ind, c in con.items():
-                sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+            # adding a conditional to check if a constraint exists for property; in the case when we only add and object reference, there would not be a constraint
+            if hasattr(self, "eq_" + var_str):
+                con = getattr(self, "eq_" + var_str)
+                for ind, c in con.items():
+                    sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
+                    iscale.constraint_scaling_transform(c, sf)

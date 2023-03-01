@@ -608,9 +608,9 @@ class TestUV_with_multiple_comps:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 68
+        assert number_variables(m) == 70
         assert number_total_constraints(m) == 42
-        assert number_unused_variables(m) == 12
+        assert number_unused_variables(m) == 14
 
         # test unit consistency
         assert_units_consistent(m.fs.unit)
