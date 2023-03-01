@@ -28,7 +28,7 @@ Sets
    :sup:`1`  component_list is provided by a necessary configuration to use this property package.
 
 .. figure:: ../../_static/unit_models/mcas_set_hierarchy.png
-    :width: 400
+    :width: 800
     :align: center
 
     Figure 1. Hierarchy of the pyomo sets constructed in the MCAS property package. Here types are declared for the
@@ -99,7 +99,7 @@ Relationships
    "Component charge-equivalent molar flow rate", ":math:`\tilde{N}=N\left|z\right|`"
    "Component charge-equivalent molar concentration", ":math:`\tilde{n}=n\left|z\right|`"
    "Component mass fraction", ":math:`x_j=\frac{M_j}{\sum_j{M_j}}`"
-   "Mass density of aqueous phase", ":math:`\rho=1000 \text{kg m}^{-3}` or :math:`\rho=\rho_w + \textbf{f} \left(\sum_{j\in solute}{x_j}, T\right)` :sup:`1`"
+   "Mass density of aqueous phase", ":math:`\rho=1000 \text{ kg m}^{-3}` or :math:`\rho=\rho_w + \textbf{f} \left(\sum_{j\in solute}{x_j}, T\right)` :sup:`1`"
    "Mass density of solvent water", ":math:`\rho_w=\textbf{f}\left(T\right)` :sup:`1`"
    "Phase volumetric flowrate", ":math:`Q=\frac{\sum_j{N_j m_{Nj}}}{\rho}`"
    "Total volumetric flowrate", ":math:`Q_{tot}=\sum_p{Q_p}`"
@@ -113,7 +113,7 @@ Relationships
    "Phase electrical conductivity", ":math:`\lambda=\Lambda\sum_{j\in cation}{\left|z_j\right|n_j}`"
    "Debye-Huckel constant", ":math:`A=\frac{\left(2 \pi N_A\right)^{0.5}}{log(10)} \left(\frac{\textbf{e}^2}{4 \pi \epsilon \epsilon_0 kT}\right)^{\frac{3}{2}}`"
    "Ionic strength", ":math:`I=0.5\sum_{j\in ion}{z_j^2b_j}`"
-   "Component mass diffusivity", ":math:`D=\frac{\chi_{1}}{(\mu [\text{cP}])^{\chi_{2}}(V [\text{cm}^3 \text{ mol}^{-1}])^{\chi_{3}}}`"
+   "Component mass diffusivity", ":math:`D \text{ }[\text{m}^2 \text{ s}^{-1}]=\frac{\chi_{1}}{(\mu \text{ }[\text{cP}])^{\chi_{2}}(V \text{ }[\text{cm}^3 \text{ mol}^{-1}])^{\chi_{3}}}`"
 
 **Notes**
    :sup:`1`  :math:`\textbf{f}(\cdot)` refers to empirical correlations of phase or solvent mass density to seawater salinity and temperature following the study of Sharqawy et al. (2010).
