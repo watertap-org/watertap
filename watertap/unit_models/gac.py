@@ -247,6 +247,12 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # apply target species automatically if arg left to default and only one viable option exists
         if self.config.target_species is None and len(solute_set) == 1:
             self.config.target_species = solute_set
+        if self.config.target_species is None:
+            raise ConfigurationError(
+                "'target species' is not specified for the GAC unit model, "
+                "either specify 'target species' argument or reduce solute set "
+                "to a single component"
+            )
         target_species = self.config.target_species
         inert_species = component_set - self.config.target_species
 
@@ -319,22 +325,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="GAC particle saturation of the lagging/upstream edge"
             " of the mass transfer zone, typically 0.95 or 0.99",
-        )
-
-        self.visc_water = Param(
-            default=1.3097e-3,
-            initialize=1.3097e-3,
-            domain=NonNegativeReals,
-            units=units_meta("pressure") * units_meta("time"),
-            doc="Water viscosity",
-        )
-
-        self.dens_water = Param(
-            default=997,
-            initialize=997,
-            domain=NonNegativeReals,
-            units=units_meta("mass") * units_meta("length") ** -3,
-            doc="Water density",
         )
 
         # ---------------------------------------------------------------------
@@ -919,50 +909,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if (
             self.config.film_transfer_coefficient_type
             == FilmTransferCoefficientType.calculated
-            or self.config.surface_diffusion_coefficient_type
-            == SurfaceDiffusionCoefficientType.calculated
-        ):
-            self.diffus_liq = Var(
-                initialize=1e-10,
-                bounds=(0, None),
-                domain=NonNegativeReals,
-                units=units_meta("length") ** 2 * units_meta("time") ** -1,
-                doc="Molecular diffusion coefficient",
-            )
-
-            # TODO: Determine whether the LeBas method can be implemented or embed in prop pack
-            self.molal_volume = Var(
-                initialize=1e-5,
-                bounds=(0, None),
-                domain=NonNegativeReals,
-                units=units_meta("length") ** 3 * units_meta("amount") ** -1,
-                doc="Molal volume",
-            )
-
-            @self.Constraint(
-                doc="Molecular diffusion coefficient calculated by the Hayduk-Laudie correlation "
-                "in specified units for organic compounds in water",
-            )
-            def eq_molecular_diffusion_coefficient(b):
-                molecular_diffusion_coefficient_inv_units = (
-                    units_meta("time") * units_meta("length") ** -2
-                )
-                visc_water_inv_units = (
-                    units_meta("pressure") ** -1 * units_meta("time") ** -1
-                )
-                molal_volume_inv_units = (
-                    units_meta("amount") * units_meta("length") ** -3
-                )
-                return (b.diffus_liq * molecular_diffusion_coefficient_inv_units) * (
-                    (b.visc_water * 1e3 * visc_water_inv_units) ** 1.14
-                ) * (
-                    (b.molal_volume * 1e6 * molal_volume_inv_units) ** 0.589
-                ) == 13.26e-9
-
-        # ---------------------------------------------------------------------
-        if (
-            self.config.film_transfer_coefficient_type
-            == FilmTransferCoefficientType.calculated
         ):
             # TODO check N_Re formulation for packed beds
             self.N_Re = Var(
@@ -992,21 +938,34 @@ class GACData(InitializationMixin, UnitModelBlockData):
             @self.Constraint(doc="Reynolds number calculation")
             def eq_reynolds_number(b):
                 return (
-                    b.N_Re * b.visc_water * b.bed_voidage
-                    == b.dens_water * b.sphericity * b.particle_dia * b.velocity_sup
+                    b.N_Re
+                    * b.process_flow.properties_in[0].visc_d_phase["Liq"]
+                    * b.bed_voidage
+                    == b.process_flow.properties_in[0].dens_mass_phase["Liq"]
+                    * b.sphericity
+                    * b.particle_dia
+                    * b.velocity_sup
                 )
 
-            @self.Constraint(doc="Schmidt number calculation")
-            def eq_schmidt_number(b):
-                return b.N_Sc * b.dens_water * b.diffus_liq == b.visc_water
+            @self.Constraint(target_species, doc="Schmidt number calculation")
+            def eq_schmidt_number(b, j):
+                return (
+                    b.N_Sc
+                    * b.process_flow.properties_in[0].dens_mass_phase["Liq"]
+                    * b.process_flow.properties_in[0].diffus_phase_comp["Liq", j]
+                    == b.process_flow.properties_in[0].visc_d_phase["Liq"]
+                )
 
             @self.Constraint(
-                doc="Liquid phase film transfer rate from the Gnielinshi correlation"
+                target_species,
+                doc="Liquid phase film transfer rate from the Gnielinshi correlation",
             )
-            def eq_film_transfer_rate(b):
+            def eq_film_transfer_rate(b, j):
                 return b.kf * b.particle_dia == b.sphericity * (
                     1 + 1.5 * (1 - b.bed_voidage)
-                ) * b.diffus_liq * (2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc ** (1 / 3)))
+                ) * b.process_flow.properties_in[0].diffus_phase_comp["Liq", j] * (
+                    2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc ** (1 / 3))
+                )
 
         # ---------------------------------------------------------------------
         if (
@@ -1037,7 +996,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 return (
                     b.ds * b.tort * b.equil_conc * b.particle_dens_app
                     == b.spdfr
-                    * b.diffus_liq
+                    * b.process_flow.properties_in[0].diffus_phase_comp["Liq", j]
                     * b.process_flow.properties_in[0].conc_mass_phase_comp["Liq", j]
                 )
 
@@ -1181,10 +1140,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         var_dict["Liquid phase film transfer coefficient"] = self.kf
         var_dict["Surface diffusion coefficient"] = self.ds
         var_dict["Solute distribution parameter"] = self.dg
-        if hasattr(self, "diffus_liq"):
-            var_dict["Molecular diffusion coefficient"] = self.diffus_liq
-        if hasattr(self, "molal_volume"):
-            var_dict["Molal volume"] = self.molal_volume
 
         # loop through desired state block properties indexed by [phase, comp]
         phase_comp_prop_dict = {
@@ -1414,14 +1369,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         iscale.set_scaling_factor(self.b2, 1)
         iscale.set_scaling_factor(self.b3, 10)
         iscale.set_scaling_factor(self.b4, 1)
-
-        if hasattr(self, "diffus_liq"):
-            if iscale.get_scaling_factor(self.diffus_liq) is None:
-                iscale.set_scaling_factor(self.diffus_liq, 1e10)
-
-        if hasattr(self, "molal_volume"):
-            if iscale.get_scaling_factor(self.molal_volume) is None:
-                iscale.set_scaling_factor(self.molal_volume, 1e5)
 
         if hasattr(self, "N_Re"):
             if iscale.get_scaling_factor(self.N_Re) is None:
