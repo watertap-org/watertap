@@ -27,6 +27,13 @@ Sets
 **Notes** 
    :sup:`1`  component_list is provided by a necessary configuration to use this property package.
 
+.. figure:: ../../_static/unit_models/mcas_set_hierarchy.png
+    :width: 1200
+    :align: center
+
+    Figure 1. Hierarchy of the pyomo sets constructed in the MCAS property package. Here types are declared for the
+    species in component list, or sometimes auto assigned considering other input such as charge.
+
 State variables
 ---------------
 .. csv-table::
@@ -45,13 +52,13 @@ Parameters
  "Stokes radius of solute", ":math:`r_h`", "radius_stokes_comp", "[j]", ":math:`\text{m}`"
  "Molar volume of solute", ":math:`V`", "molar_volume_phase_comp", "[p, j]", ":math:`\text{m}^3 \text{ mol}^{-1}`"
  "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa s}`"
- "Bulk diffusivity of solute", ":math:`D`", "diffus_phase_comp_param", "[p, j]", ":math:`\text{m}^2\text{ } \text{s}^{-1}}`"
+ "Bulk diffusivity of solute", ":math:`D`", "diffus_phase_comp_param", "[p, j]", ":math:`\text{m}^2 \text{ s}^{-1}`"
  "Ion charge", ":math:`z`", "charge_comp", "[j]", ":math:`\text{dimensionless}`"
  "Dielectric constant of water", ":math:`\epsilon`", "dielectric_constant", "None", ":math:`\text{dimensionless}`"
  "Debye Huckel constant b", ":math:`b`", "debye_huckel_b", "None", ":math:`\text{kg mol}^{-1}`"
- "Hayduk Laudie correlation constant", ":math:`???`", "hl_diffus_cont", "None", ":math:`\text{dimensionless}`"
- "Hayduk Laudie viscosity coefficient", ":math:`???`", "hl_visc_coeff", "None", ":math:`\text{dimensionless}`"
- "Hayduk Laudie molar volume coefficient", ":math:`???`", "hl_molar_volume_coeff", "None", ":math:`\text{dimensionless}`"
+ "Hayduk Laudie correlation constant", ":math:`\chi_{1}`", "hl_diffus_cont", "None", ":math:`\text{dimensionless}`"
+ "Hayduk Laudie viscosity coefficient", ":math:`\chi_{2}`", "hl_visc_coeff", "None", ":math:`\text{dimensionless}`"
+ "Hayduk Laudie molar volume coefficient", ":math:`\chi_{3}`", "hl_molar_volume_coeff", "None", ":math:`\text{dimensionless}`"
 
 
 Properties
@@ -106,7 +113,7 @@ Relationships
    "Phase electrical conductivity", ":math:`\lambda=\Lambda\sum_{j\in cation}{\left|z_j\right|n_j}`"
    "Debye-Huckel constant", ":math:`A=\frac{\left(2 \pi N_A\right)^{0.5}}{log(10)} \left(\frac{\textbf{e}^2}{4 \pi \epsilon \epsilon_0 kT}\right)^{\frac{3}{2}}`"
    "Ionic strength", ":math:`I=0.5\sum_{j\in ion}{z_j^2b_j}`"
-   "Component mass diffusivity", ":math:`???`"
+   "Component mass diffusivity", ":math:`D=\frac{\chi_{1}}{(\mu [\text{cP}])^{\chi_{2}}(V [\text{cm}^3 \text{ mol}^{-1}])^{\chi_{3}}}`"
 
 **Notes**
    :sup:`1`  :math:`\textbf{f}(\cdot)` refers to empirical correlations of phase or solvent mass density to seawater salinity and temperature following the study of Sharqawy et al. (2010).
@@ -170,3 +177,4 @@ M.H. Sharqawy, J.H.L. V, S.M. Zubair, Thermophysical properties of seawater: a r
 
 Bard, A. J., Faulkner, L. R., & White, H. S. (2022). Electrochemical methods: fundamentals and applications. John Wiley & Sons.
 
+Hayduk, W., & Laudie, H. (1974). Prediction of diffusion coefficients for nonelectrolytes in dilute aqueous solutions. AIChE Journal, 20(3), 611–615. https://doi.org/10.1002/aic.690200329
