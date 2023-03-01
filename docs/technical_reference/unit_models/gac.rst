@@ -155,14 +155,6 @@ variables in the model.
 
 The following variables are only built when specific configuration options are selected.
 
-if ``film_transfer_coefficient_type`` or ``surface_diffusion_coefficient_type`` is set to ``calculated``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Molecular diffusion coefficient", ":math:`D_l`", "diffus_liq", "None", ":math:`\text{m}^2\text{/s}`"
-   "Molal volume", ":math:`V_b`", "molal_volume", "None", ":math:`\text{m}^3\text{/mol}`"
-
 if ``film_transfer_coefficient_type`` is set to ``calculated``:
 
 .. csv-table::
