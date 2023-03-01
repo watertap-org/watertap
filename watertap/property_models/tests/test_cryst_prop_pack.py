@@ -321,6 +321,7 @@ class TestNaClPropertySolution_4(PropertyRegressionTest):
         }
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 class TestNaClPropertySolution_5(PropertyRegressionTest):
     # Test pure vapor solution 1 - check vapor properties
