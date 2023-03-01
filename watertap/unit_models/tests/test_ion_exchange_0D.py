@@ -346,7 +346,7 @@ class TestIonExchangeNoInert:
             assert isinstance(sb, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 123
+        assert number_variables(m) == 124
         assert number_total_constraints(m) == 82
         assert number_unused_variables(m) == 15
 
@@ -686,9 +686,9 @@ class TestIonExchangeWithInert:
             assert isinstance(sb, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 161
+        assert number_variables(m) == 164
         assert number_total_constraints(m) == 116
-        assert number_unused_variables(m) == 17
+        assert number_unused_variables(m) == 19
 
     @pytest.mark.unit
     def test_dof(self, IX_frame_with_inert):
