@@ -55,7 +55,7 @@ Sets
    "Outlet Components", ":math:`j`", "['H2O', 'S_I','S_F','S_A','S_I','S_NH4','S_PO4','S_IC','X_I','X_S','X_PP','X_PHA',]"
    "Readily Biodegradable COD", ":math:`k`", "['S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac']"
    "Slowly Biodegradable COD", ":math:`m`", "['X_ch', 'X_pr', 'X_li']"
-   "Zero Flow Components", ":math:`j`", "['S_N2','S_NO3','S_O2','S_PO4','S_NO','S_ALK','X_AUT','X_H','X_MeOH','X_MeP','X_PAO','X_PHA','X_PP','X_TSS']
+   "Zero Flow Components", ":math:`j`", "['S_N2','S_NO3','S_O2','S_PO4','S_NO','S_ALK','X_AUT','X_H','X_MeOH','X_MeP','X_PAO','X_PHA','X_PP','X_TSS']"
 
 **Notes**
  :sup:`*` Ion" is a subset of "Inlet Components" and uses the same symbol j.
@@ -80,16 +80,6 @@ Equations and Relationships
    "Inert particulate COD conversion", ":math:`X_{I, out} = X_{I, in}`"
    "Biodegradable particulate organics conversion", ":math:`X_{S, out} = X_{ch, in} + X_{pr, in} + X_{li, in}`"
 
-
-
-   "Inert soluble COD balance", ":math:`S_{I, out} = S_{I, in}`"
-   "Inert particulate COD balance", ":math:`X_{I, out} = X_{I, in}`"
-   "Soluble biodegradable COD balance", ":math:`S_{S, out} = S_{su, in} + S_{aa, in} + S_{fa, in} + S_{va, in} + S_{bu, in} + S_{pro, in} + S_{ac, in}`"
-   "Particulate biodegradable COD balance", ":math:`X_{S, out} = X_{c, in} + X_{ch, in} + X_{pr, in} + X_{li, in} + X_{su, in} + X_{aa, in} + X_{fa, in} + X_{c4, in} + X_{pro, in} + X_{ac, in} + X_{h2, in}`"
-   "Inorganic nitrogen balance", ":math:`S_{NH, out} = S_{IN, in}`"
-   "Organic nitrogen balance", ":math:`S_{ND, out} = (S_{I, in} * N_i) + (S_{aa, in} * N_{aa})`"
-   "Particulate organic nitrogen balance", ":math:`X_{ND, out} = N_{bac} * (X_{su, in} + X_{aa, in} + X_{fa, in} + X_{c4, in} + X_{pro, in} + X_{ac, in} + X_{h2, in}) + N_i * X_{I, in} + N_{xc} * X_{c, in} + N_{aa} * X_{pr, in} - x_{ie} * X_{I, in}`"
-   "Alkalinity equation", ":math:`S_{ALK, out} = S_{IC, in}`"
 
 Classes
 -------
