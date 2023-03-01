@@ -184,9 +184,9 @@ class TestAsm2dAdm1(object):
         assert hasattr(asmadm.fs.unit.outlet, "alkalinity")
 
         assert number_variables(asmadm) == 135
-        assert number_total_constraints(asmadm) == 21
+        assert number_total_constraints(asmadm) == 22
 
-        assert number_unused_variables(asmadm.fs.unit) == 14
+        assert number_unused_variables(asmadm.fs.unit) == 12
 
     @pytest.mark.component
     def test_units(self, asmadm):
@@ -210,73 +210,73 @@ class TestAsm2dAdm1(object):
         results = solver.solve(asmadm)
         assert_optimal_termination(results)
 
-    # @pytest.mark.solver
-    # @pytest.mark.skipif(solver is None, reason="Solver not available")
-    # @pytest.mark.component
-    # def test_solution(self, asmadm):
-    #     assert pytest.approx(101325.0, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.pressure[0]
-    #     )
-    #     assert pytest.approx(308.15, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.temperature[0]
-    #     )
-    #     assert pytest.approx(0.1308, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "S_A"]
-    #     )
-    #     assert pytest.approx(0.2585, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "S_F"]
-    #     )
-    #     assert pytest.approx(17.216, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "S_I"]
-    #     )
-    #     assert pytest.approx(3.2375, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "S_N2"]
-    #     )
-    #     assert pytest.approx(1e-6, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "S_NH4"]
-    #     )
-    #     assert pytest.approx(1e-6, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "S_NO3"]
-    #     )
-    #     assert pytest.approx(1e-6, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "S_O2"]
-    #     )
-    #     assert pytest.approx(1e-6, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "S_PO4"]
-    #     )
-    #     assert pytest.approx(1e-6, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "X_AUT"]
-    #     )
-    #     assert pytest.approx(1.322, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "X_H"]
-    #     )
-    #     assert pytest.approx(0.008, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "X_I"]
-    #     )
-    #     assert pytest.approx(0.251, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "X_MeOH"]
-    #     )
-    #     assert pytest.approx(0.251, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "X_MeP"]
-    #     )
-    #     assert pytest.approx(0.251, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PAO"]
-    #     )
-    #     assert pytest.approx(0.251, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PHA"]
-    #     )
-    #     assert pytest.approx(0.251, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PP"]
-    #     )
-    #     assert pytest.approx(0.251, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "X_S"]
-    #     )
-    #     assert pytest.approx(0.251, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.conc_mass_comp[0, "X_TSS"]
-    #     )
-    #     assert pytest.approx(0.095061, abs=1e-2) == value(
-    #         asmadm.fs.unit.outlet.alkalinity[0]
-    #     )
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, asmadm):
+        assert pytest.approx(101325.0, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.pressure[0]
+        )
+        assert pytest.approx(308.15, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.temperature[0]
+        )
+        assert pytest.approx(0.1308, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_A"]
+        )
+        assert pytest.approx(0.1253, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_F"]
+        )
+        assert pytest.approx(0.1309, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_I"]
+        )
+        assert pytest.approx(1.3226, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_NH4"]
+        )
+        assert pytest.approx(1e-6, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_N2"]
+        )
+        assert pytest.approx(1e-6, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_NO3"]
+        )
+        assert pytest.approx(1e-6, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_O2"]
+        )
+        assert pytest.approx(1e-6, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_PO4"]
+        )
+        assert pytest.approx(1e-6, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_AUT"]
+        )
+        assert pytest.approx(1e-6, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_H"]
+        )
+        assert pytest.approx(17.216, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_I"]
+        )
+        assert pytest.approx(1e-6, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_MeOH"]
+        )
+        assert pytest.approx(1e-6, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_MeP"]
+        )
+        assert pytest.approx(1e-6, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PAO"]
+        )
+        assert pytest.approx(1e-6, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PHA"]
+        )
+        assert pytest.approx(1e-6, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PP"]
+        )
+        assert pytest.approx(0.1484, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_S"]
+        )
+        assert pytest.approx(1e-6, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_TSS"]
+        )
+        assert pytest.approx(0.095149, abs=1e-2) == value(
+            asmadm.fs.unit.outlet.alkalinity[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

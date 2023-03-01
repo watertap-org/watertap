@@ -231,6 +231,8 @@ class TranslatorData(UnitModelBlockData):
         self.add_port(name="inlet", block=self.properties_in, doc="Inlet Port")
         self.add_port(name="outlet", block=self.properties_out, doc="Outlet Port")
 
+        mw_c = 12 * pyunits.kg / pyunits.kmol
+
         @self.Constraint(
             self.flowsheet().time,
             doc="Equality volumetric flow equation",
@@ -370,16 +372,15 @@ class TranslatorData(UnitModelBlockData):
 
         # TODO: check if we track S_SO4, S_Na, S_K, S_Cl, S_Ca, S_Mg, X_Ca2(PO4)3, X_MgNH4PO4
 
-        # TODO: we don't S_IC in ASM2D, probably S_ALK
-        # @self.Constraint(
-        #     self.flowsheet().time,
-        #     doc="Equality alkalinity equation",
-        # )
-        # def return_Salk(blk, t):
-        #     return (
-        #         blk.properties_out[t].alkalinity
-        #         == blk.properties_in[t].conc_mass_comp["S_ALK"]
-        #     )
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Equality alkalinity equation",
+        )
+        def return_Salk(blk, t):
+            return (
+                blk.properties_out[t].alkalinity
+                == blk.properties_in[t].conc_mass_comp["S_IC"] / mw_c
+            )
 
         # TODO: check S_ALK
         self.zero_flow_components = Set(
