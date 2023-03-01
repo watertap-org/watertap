@@ -95,7 +95,7 @@ see reaction package for documentation.}""",
         # Call UnitModel.build to setup dynamics
         super(TranslatorDataAA, self).build()
 
-        self.i_ec = Param(
+        self.i_xe = Param(
             initialize=0.06,
             units=pyunits.dimensionless,
             mutable=True,
@@ -237,7 +237,7 @@ see reaction package for documentation.}""",
                         * blk.config.reaction_package.N_aa
                     )
                 )
-                - (blk.properties_in[t].conc_mass_comp["X_I"] * blk.i_ec)
+                - (blk.properties_in[t].conc_mass_comp["X_I"] * blk.i_xe)
             )
 
         @self.Constraint(
