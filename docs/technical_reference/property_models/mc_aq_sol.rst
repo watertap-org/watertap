@@ -87,7 +87,7 @@ Properties
    "Component activity coefficient", ":math:`\gamma`", "act_coeff_phase_comp", "[j]", ":math:`\text{dimensionless}`"
    "Debye-Huckel constant A", ":math:`A`", "deby_huckel_constant", "none", ":math:`\text{dimensionless}`"
    "Ionic Strength", ":math:`I`", "ionic_strength_molal", "none", ":math:`\text{mol kg}^{-1}`"
-   "Mass diffusivity of solute", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^2\text{ } \text{s}^{-1}}`"
+   "Mass diffusivity of solute", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^2 \text{ s}^{-1}`"
 
 
 
