@@ -11,6 +11,7 @@ the Anaerobic Digestor Model 1 (ADM1) and the Activated Sludge Model 1 (ASM1).
 The model relies on the following key assumption:
 
    * supports only liquid phase
+   * supports only ADM1 to ASM1 translationS
 
 .. index::
    pair: watertap.unit_models.translator_adm1_asm1;translator_adm1_asm1
