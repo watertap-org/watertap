@@ -13,7 +13,7 @@
 
 import pytest
 from pyomo.environ import ConcreteModel, Var, Constraint
-from watertap.core.util.infeasible import (
+from watertap.core.util.model_diagnostics.infeasible import (
     print_infeasible_constraints,
     print_infeasible_bounds,
     print_variables_close_to_bounds,
