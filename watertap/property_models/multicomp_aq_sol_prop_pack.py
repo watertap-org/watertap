@@ -85,9 +85,7 @@ class ActivityCoefficientModel(Enum):
 class DensityCalculation(Enum):
     constant = auto()  # constant @ 1000 kg/m3
     seawater = auto()  # seawater correlation for TDS from Sharqawy
-    laliberte = (
-        auto()
-    )  # Laliberte correlation using apparent density #TODO add this later with reference
+    # TODO: add laliberte mixing correlation and/or ideal aqueous solution rule
 
 
 class DiffusivityCalculation(Enum):
@@ -209,7 +207,6 @@ class MCASParameterData(PhysicalParameterBlock):
 
            "``DensityCalculation.constant``", "Solution density assumed constant at 1000 kg/m3 by default in dens_mass_const parameter"
            "``DensityCalculation.seawater``", "Solution density based on correlation for seawater (TDS)"
-           "``DensityCalculation.laliberte``", "Solution density based on mixing correlation from Laliberte"
        """,
         ),
     )
