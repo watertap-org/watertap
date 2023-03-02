@@ -202,14 +202,6 @@ class TranslatorData(UnitModelBlockData):
         # Call UnitModel.build to setup dynamics
         super(TranslatorData, self).build()
 
-        # TODO: check this parameter later
-        # self.i_ec = Param(
-        #     initialize=0.06,
-        #     units=pyunits.dimensionless,
-        #     mutable=True,
-        #     doc="Nitrogen inert content",
-        # )
-
         # Add State Blocks
         self.properties_in = self.config.inlet_property_package.build_state_block(
             self.flowsheet().time,
@@ -278,14 +270,17 @@ class TranslatorData(UnitModelBlockData):
                 for i in blk.readily_biodegradable2
             )
 
+        self.unchanged_component = Set(initialize=["S_I", "X_I"])
+
         @self.Constraint(
             self.flowsheet().time,
-            doc="Equality S_I equation",
+            self.unchanged_component,
+            doc="Equality equation for unchanged components",
         )
-        def eq_SI_conc(blk, t):
+        def eq_unchanged_conc(blk, t, i):
             return (
-                blk.properties_out[t].conc_mass_comp["S_I"]
-                == blk.properties_in[t].conc_mass_comp["S_I"]
+                blk.properties_out[t].conc_mass_comp[i]
+                == blk.properties_in[t].conc_mass_comp[i]
             )
 
         @self.Constraint(
@@ -319,16 +314,6 @@ class TranslatorData(UnitModelBlockData):
         #         blk.properties_out[t].conc_mass_comp["S_IC"]
         #         == blk.properties_in[t].conc_mass_comp["S_IC"]
         #     )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Equality X_I equation",
-        )
-        def eq_XI_conc(blk, t):
-            return (
-                blk.properties_out[t].conc_mass_comp["X_I"]
-                == blk.properties_in[t].conc_mass_comp["X_I"]
-            )
 
         self.slowly_biodegradable = Set(
             initialize=[
