@@ -23,19 +23,15 @@ from pyomo.environ import (
     Expression,
     log,
     Suffix,
-    check_optimal_termination,
     units as pyunits,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigValue, In
 
 from idaes.core import declare_process_block_class
 from idaes.core.util.constants import Constants
 from idaes.core.util.misc import StrEnum
 import idaes.core.util.scaling as iscale
-from idaes.core.solvers.get_solver import get_solver
-
 from watertap.core import build_sido, ZeroOrderBaseData
-import idaes.logger as idaeslog
 
 
 class ElectrodeMaterial(StrEnum):
@@ -447,7 +443,23 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
     @staticmethod
     def cost_electrocoagulation(blk):
-        t0 = blk.flowsheet().time.first()
+        costing = blk.config.flowsheet_costing_block
+        base_currency = costing.base_currency
+        ec = blk.unit_model
+        flow_mgd = pyunits.convert(
+            ec.properties_in[0].flow_vol, to_units=pyunits.Mgallons / pyunits.day
+        )
+        flow_m3_yr = pyunits.convert(
+            ec.properties_in[0].flow_vol, to_units=pyunits.m**3 / pyunits.year
+        )
+        blk.annual_sludge_flow = pyunits.convert(
+            sum(
+                ec.properties_byproduct[0].flow_mass_comp[j] if j != "H2O" else 0
+                for j in ec.properties_byproduct[0].params.component_list
+            ),
+            to_units=pyunits.kg / pyunits.year,
+        )
+        electrode_mat = ec.config.electrode_material
 
         # Add cost variable and constraint
         blk.capital_cost = Var(
@@ -508,21 +520,12 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             ],
         )
 
-        base_currency = blk.config.flowsheet_costing_block.base_currency
-        ec = blk.unit_model
-        flow_mgd = pyunits.convert(
-            ec.properties_in[0].flow_vol, to_units=pyunits.Mgallons / pyunits.day
-        )
-        flow_m3_yr = pyunits.convert(
-            ec.properties_in[0].flow_vol, to_units=pyunits.m**3 / pyunits.year
-        )
-        blk.annual_sludge_flow = pyunits.convert(
-            sum(
-                ec.properties_byproduct[0].flow_mass_comp[j] if j != "H2O" else 0
-                for j in ec.properties_byproduct[0].params.component_list
-            ),
-            to_units=pyunits.kg / pyunits.year,
-        )
+        if electrode_mat == "aluminum":
+            costing.defined_flows["aluminum"] = 2.23 * base_currency / pyunits.kg
+            costing.register_flow_type("aluminum", 2.23 * base_currency / pyunits.kg)
+        if electrode_mat == "iron":
+            costing.defined_flows["iron"] = 3.41 * base_currency / pyunits.kg
+            costing.register_flow_type("iron", 3.41 * base_currency / pyunits.kg)
 
         blk.number_chambers_system = Param(
             initialize=3,
@@ -664,124 +667,17 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             )
         )
 
-        blk.costing_package.cost_flow(
-            blk.annual_electrode_replacement_mass_flow, ec.config.electrode_material
-        )
-
         blk.electricity_flow = Expression(
             expr=pyunits.convert(
                 ec.applied_current * ec.cell_voltage, to_units=pyunits.kW
             )
         )
 
-        blk.config.flowsheet_costing_block.cost_flow(
-            blk.electricity_flow, "electricity"
+        costing.cost_flow(
+            blk.annual_electrode_replacement_mass_flow, ec.config.electrode_material
         )
 
-    def initialize_build(
-        blk,
-        state_args=None,
-        outlvl=idaeslog.NOTSET,
-        solver=None,
-        optarg=None,
-    ):
-        """
-        General wrapper for initialization routines
-
-        Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
-                         package(s) to provide an initial state for
-                         initialization (see documentation of the specific
-                         property package) (default = {}).
-            outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
-            solver : str indicating which solver to use during
-                     initialization (default = None)
-
-        Returns: None
-        """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-
-        opt = get_solver(solver, optarg)
-
-        # ---------------------------------------------------------------------
-        flags = blk.properties_in.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args,
-            hold_state=True,
-        )
-        init_log.info("Initialization Step 1a Complete.")
-        # ---------------------------------------------------------------------
-        # Initialize other state blocks
-        # Set state_args from inlet state
-        if state_args is None:
-            blk.state_args = state_args = {}
-            state_dict = blk.properties_in[
-                blk.flowsheet().config.time.first()
-            ].define_port_members()
-
-            for k in state_dict.keys():
-                if state_dict[k].is_indexed():
-                    state_args[k] = {}
-                    for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
-                else:
-                    state_args[k] = state_dict[k].value
-
-        state_args_out = deepcopy(state_args)
-
-        for j in blk.properties_out.component_list:
-            if j == "H2O":
-                state_args_out["flow_vol"] = (
-                    state_args["flow_vol"] * blk.vol_recovery.value
-                )
-            else:
-                state_args_out["conc_mass_comp"][j] = state_args["conc_mass_comp"][
-                    j
-                ] * (1 - blk.removal_efficiency[j].value)
-
-        blk.properties_out.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args_out,
-        )
-        init_log.info("Initialization Step 1b Complete.")
-
-        state_args_waste = deepcopy(state_args)
-        for j in blk.properties_waste.component_list:
-            if j == "H2O":
-                state_args_waste["flow_vol"] = state_args["flow_vol"] * (
-                    1 - blk.vol_recovery.value
-                )
-            else:
-                state_args_waste["conc_mass_comp"][j] = (
-                    state_args["conc_mass_comp"][j] * blk.removal_efficiency[j].value
-                )
-
-        blk.properties_waste.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args_waste,
-        )
-
-        init_log.info("Initialization Step 1c Complete.")
-
-        # Solve unit
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
-        init_log.info("Initialization Step 2 {}.".format(idaeslog.condition(res)))
-        # ---------------------------------------------------------------------
-        # Release Inlet state
-        blk.properties_in.release_state(flags, outlvl=outlvl)
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-
-        if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+        costing.cost_flow(blk.electricity_flow, "electricity")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
