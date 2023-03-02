@@ -93,11 +93,6 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 units=pyunits.kg / pyunits.m**3,
                 doc="Density of electrode material",
             )
-            self.metal_dose_to_toc_ratio = Param(
-                initialize=1,
-                units=pyunits.kg / pyunits.kg,
-                doc="Coagulant dose to inlet TOC ratio",
-            )
 
         elif self.config.electrode_material == ElectrodeMaterial.iron:
             self.mw_electrode_material = Param(
@@ -114,11 +109,6 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 initialize=7860,
                 units=pyunits.kg / pyunits.m**3,
                 doc="Density of electrode material",
-            )
-            self.metal_dose_to_toc_ratio = Param(
-                initialize=2,
-                units=pyunits.kg / pyunits.kg,
-                doc="Coagulant dose to inlet TOC ratio",
             )
 
         # Fixed parameters
