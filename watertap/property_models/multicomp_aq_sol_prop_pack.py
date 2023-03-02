@@ -89,6 +89,11 @@ class DensityCalculation(Enum):
     )  # Laliberte correlation using apparent density #TODO add this later with reference
 
 
+class DiffusivityCalculation(Enum):
+    none = auto()
+    HaydukLaudie = auto()
+
+
 class ElectricalMobilityCalculation(Enum):
     none = auto()
     EinsteinRelation = auto()
@@ -126,6 +131,14 @@ class MCASParameterData(PhysicalParameterBlock):
             default={},
             domain=dict,
             description="Dict of solute species names and bulk ion diffusivity data",
+        ),
+    )
+    CONFIG.declare(
+        "molar_volume_data",
+        ConfigValue(
+            default={},
+            domain=dict,
+            description="Dict of solute species names and molar volume of aqueous species",
         ),
     )
     CONFIG.declare(
@@ -196,6 +209,25 @@ class MCASParameterData(PhysicalParameterBlock):
            "``DensityCalculation.constant``", "Solution density assumed constant at 1000 kg/m3 by default in dens_mass_const parameter"
            "``DensityCalculation.seawater``", "Solution density based on correlation for seawater (TDS)"
            "``DensityCalculation.laliberte``", "Solution density based on mixing correlation from Laliberte"
+       """,
+        ),
+    )
+    CONFIG.declare(
+        "diffus_calculation",
+        ConfigValue(
+            default=DiffusivityCalculation.none,
+            domain=In(DiffusivityCalculation),
+            description="Diffusivity calculation flag",
+            doc="""
+           Options to account for ionic or molecular diffusivity.
+
+           **default** - ``DiffusivityCalculation.none``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``DiffusivityCalculation.none``", "Users provide data via the diffusivity_data configuration"
+           "``DiffusivityCalculation.HaydukLaudie``", "Allow the nonelectrolyte (neutral) species to get diffusivity from the Hayduk Laudie equation"
        """,
         ),
     )
@@ -342,14 +374,14 @@ class MCASParameterData(PhysicalParameterBlock):
             units=pyunits.m,
             doc="Stokes radius of solute",
         )
-        self.diffus_phase_comp = Param(
+        self.molar_volume_phase_comp = Param(
             self.phase_list,
             self.solute_set,
             mutable=True,
-            default=1e-9,
-            initialize=self.config.diffusivity_data,
-            units=pyunits.m**2 * pyunits.s**-1,
-            doc="Bulk diffusivity of ion",
+            default=1e-5,
+            initialize=self.config.molar_volume_data,
+            units=pyunits.m**3 / pyunits.mol,
+            doc="molar volume of solutes",
         )
         self.visc_d_phase = Param(
             self.phase_list,
@@ -369,6 +401,29 @@ class MCASParameterData(PhysicalParameterBlock):
             units=pyunits.dimensionless,
             doc="Ion charge",
         )
+
+        if self.config.diffus_calculation == DiffusivityCalculation.none:
+            # Retrieve component string names from user-provided diffusivity_data configuration
+            diffus_data_indices = [i[1] for i in self.config.diffusivity_data.keys()]
+            # identify component string names that were not specified in diffusivity_data
+            missing_diffus_ind = [
+                i for i in self.solute_set if i not in diffus_data_indices
+            ]
+            # warning for components with no diffusivity_data entry
+            if not missing_diffus_ind == []:
+                _log.warning(
+                    f"Diffusivity data was not provided for {missing_diffus_ind}. "
+                )
+
+            self.diffus_phase_comp = Var(
+                self.phase_list,
+                self.solute_set,
+                initialize=self.config.diffusivity_data,
+                units=pyunits.m**2 * pyunits.s**-1,
+                doc="Mass diffusivity of solute components",
+            )
+            self.diffus_phase_comp.fix()
+
         # Dielectric constant of water
         self.dielectric_constant = Param(
             mutable=True,
@@ -492,6 +547,7 @@ class MCASParameterData(PhysicalParameterBlock):
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
                 "molality_phase_comp": {"method": "_molality_phase_comp"},
+                "molar_volume_phase_comp": {"method": "_molar_volume_phase_comp"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
                 "visc_k_phase": {"method": "_visc_k_phase"},
@@ -620,8 +676,8 @@ class _MCASStateBlock(StateBlock):
                         )
                     )
 
-            # Vars indexed by ion_set | solute_set
-            for j in self[k].params.ion_set | self[k].params.solute_set:
+            # Vars indexed by solute_set
+            for j in self[k].params.solute_set:
                 if self[k].is_property_constructed("molality_phase_comp"):
                     self[k].molality_phase_comp["Liq", j].set_value(
                         self[k].flow_mol_phase_comp["Liq", j]
@@ -672,14 +728,14 @@ class _MCASStateBlock(StateBlock):
                     * sum(
                         self[k].charge_comp[j] ** 2
                         * self[k].molality_phase_comp["Liq", j]
-                        for j in self[k].params.ion_set | self[k].params.solute_set
+                        for j in self[k].params.solute_set
                     )
                 )
             if self[k].is_property_constructed("pressure_osm_phase"):
                 self[k].pressure_osm_phase["Liq"].set_value(
                     sum(
                         self[k].conc_mol_phase_comp["Liq", j]
-                        for j in self[k].params.ion_set | self[k].params.solute_set
+                        for j in self[k].params.solute_set
                     )
                     * Constants.gas_constant
                     * self[k].temperature
@@ -961,10 +1017,7 @@ class MCASStateBlockData(StateBlockData):
             elif b.params.config.density_calculation == DensityCalculation.seawater:
                 # density, eq. 8 in Sharqawy #TODO- add Sharqawy reference
                 t = b.temperature - 273.15 * pyunits.K
-                s = sum(
-                    b.mass_frac_phase_comp[p, j]
-                    for j in b.params.ion_set | b.params.solute_set
-                )
+                s = sum(b.mass_frac_phase_comp[p, j] for j in b.params.solute_set)
                 dens_mass = (
                     b.dens_mass_solvent
                     + b.params.dens_mass_param_B1 * s
@@ -1198,8 +1251,114 @@ class MCASStateBlockData(StateBlockData):
     def _radius_stokes_comp(self):
         add_object_reference(self, "radius_stokes_comp", self.params.radius_stokes_comp)
 
+    def _molar_volume_phase_comp(self):
+        add_object_reference(
+            self, "molar_volume_phase_comp", self.params.molar_volume_phase_comp
+        )
+
     def _diffus_phase_comp(self):
-        add_object_reference(self, "diffus_phase_comp", self.params.diffus_phase_comp)
+        if self.params.config.diffus_calculation == DiffusivityCalculation.HaydukLaudie:
+            # Retrieve component string names from diffusivity_data configuration
+            diffus_data_indices = {
+                i[1] for i in self.params.config.diffusivity_data.keys()
+            }
+            # Retrieve component string names from molar_volume_data configuration
+            molar_volume_data_indices = {
+                i[1] for i in self.params.config.molar_volume_data.keys()
+            }
+            missing_diffus_ind = [
+                i
+                for i in self.params.solute_set
+                if i not in (molar_volume_data_indices | diffus_data_indices)
+            ]
+            # warning for components with neither diffusivity_data nor molar_volume_data entry
+            if not missing_diffus_ind == []:
+                _log.warning(
+                    f"Neither diffusivity_data nor molar_volume_data was provided for {missing_diffus_ind}; "
+                    "there will be no diffus_phase_comp properties for these components."
+                )
+            common_ind = [
+                i for i in molar_volume_data_indices if i in diffus_data_indices
+            ]
+            if not common_ind == []:
+                # warning for components whose diffusivity_data will be overwritten by the HaydukLaudie method.
+                _log.warning(
+                    f"Both diffusivity_data and molar_volume_data were provided for {common_ind}; "
+                    f"since the the HaydukLaudie method was selected, the diffus_phase_comp property of these components will "
+                    f"be calculated based on their molar_volume_data and overwritten."
+                )
+            self.diffus_phase_comp = Var(
+                self.params.phase_list,
+                molar_volume_data_indices | diffus_data_indices,
+                initialize=1e-9,
+                units=pyunits.m**2 * pyunits.s**-1,
+                doc="Mass diffusivity of solute components",
+            )
+            self.hl_diffus_cont = Param(
+                mutable=True,
+                default=13.26e-9,
+                initialize=13.26e-9,
+                units=pyunits.dimensionless,
+                doc="Hayduk Laudie correlation constant",
+            )
+            self.hl_visc_coeff = Param(
+                mutable=True,
+                default=1.14,
+                initialize=1.14,
+                units=pyunits.dimensionless,
+                doc="Hayduk Laudie viscosity coefficient",
+            )
+            self.hl_molar_volume_coeff = Param(
+                mutable=True,
+                default=0.589,
+                initialize=0.589,
+                units=pyunits.dimensionless,
+                doc="Hayduk Laudie molar volume coefficient",
+            )
+
+            def rule_diffus_phase_comp(b, p, j):
+                if (
+                    self.params.config.diffus_calculation
+                    == DiffusivityCalculation.HaydukLaudie
+                ):
+
+                    if j not in molar_volume_data_indices:
+                        b.diffus_phase_comp[p, j].fix(
+                            self.params.config.diffusivity_data[p, j]
+                        )
+                        return Constraint.Skip
+                    else:
+
+                        diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
+                        visc_solvent_inv_units = pyunits.cP**-1
+                        molar_volume_inv_units = pyunits.mol * pyunits.cm**-3
+                        return (b.diffus_phase_comp[p, j] * diffus_coeff_inv_units) * (
+                            (
+                                pyunits.convert(b.visc_d_phase[p], to_units=pyunits.cP)
+                                * visc_solvent_inv_units
+                            )
+                            ** b.hl_visc_coeff
+                        ) * (
+                            (
+                                pyunits.convert(
+                                    b.molar_volume_phase_comp[p, j],
+                                    to_units=pyunits.cm**3 * pyunits.mol**-1,
+                                )
+                                * molar_volume_inv_units
+                            )
+                            ** b.hl_molar_volume_coeff
+                        ) == b.hl_diffus_cont
+
+            self.eq_diffus_phase_comp = Constraint(
+                self.params.phase_list,
+                molar_volume_data_indices | diffus_data_indices,
+                rule=rule_diffus_phase_comp,
+            )
+
+        elif self.params.config.diffus_calculation == DiffusivityCalculation.none:
+            add_object_reference(
+                self, "diffus_phase_comp", self.params.diffus_phase_comp
+            )
 
     def _visc_d_phase(self):
         add_object_reference(self, "visc_d_phase", self.params.visc_d_phase)
@@ -1254,7 +1413,7 @@ class MCASStateBlockData(StateBlockData):
                     if (p, j) in self.params.config.elec_mobility_data.keys():
                         _log.warning(
                             """
-                            The provided elec_mobility_data of {} will be overritten 
+                            The provided elec_mobility_data of {} will be overwritten 
                             by the calculated data for {} because the EinsteinRelation 
                             method is selected.""".format(
                                 j, self.name
@@ -1726,7 +1885,7 @@ class MCASStateBlockData(StateBlockData):
                     sf = iscale.get_scaling_factor(self.flow_mol_phase_comp[j])
                     iscale.set_scaling_factor(self.flow_equiv_phase_comp[j], sf)
 
-        # The following variables and parameters have computed scalling factors;
+        # The following variables and parameters have computed scaling factors;
         # Users do not have to input scaling factors but, if they do, their value
         # will override.
         for j, v in self.mw_comp.items():
@@ -1984,3 +2143,7 @@ class MCASStateBlockData(StateBlockData):
 
         if self.is_property_constructed("ionic_strength_molal"):
             iscale.constraint_scaling_transform(self.eq_ionic_strength_molal, 1)
+
+        if hasattr(self, "eq_diffus_phase_comp"):
+            for ind, v in self.eq_diffus_phase_comp.items():
+                iscale.constraint_scaling_transform(v, 1e9)

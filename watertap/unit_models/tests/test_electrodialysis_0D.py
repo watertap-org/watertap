@@ -985,6 +985,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstV:
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
+            "diffusivity_data": {("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9},
         }
         m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(
@@ -1208,6 +1209,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstC:
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
+            "diffusivity_data": {("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9},
         }
         m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(

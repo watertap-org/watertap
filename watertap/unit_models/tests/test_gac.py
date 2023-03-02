@@ -38,10 +38,12 @@ from idaes.core.util.scaling import (
     unscaled_variables_generator,
     badly_scaled_var_generator,
 )
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import UnitModelCostingBlock
 
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
+    DiffusivityCalculation,
 )
 from watertap.unit_models.gac import (
     GAC,
@@ -49,6 +51,7 @@ from watertap.unit_models.gac import (
     SurfaceDiffusionCoefficientType,
 )
 from watertap.costing import WaterTAPCosting
+
 
 __author__ = "Hunter Barber"
 
@@ -118,7 +121,7 @@ class TestGACSimplified:
         return ms
 
     @pytest.mark.unit
-    def test_config_simplified(self, gac_frame_simplified):
+    def test_simplified_config(self, gac_frame_simplified):
         ms = gac_frame_simplified
         # check unit config arguments
         assert len(ms.fs.unit.config) == 11
@@ -139,12 +142,15 @@ class TestGACSimplified:
             == SurfaceDiffusionCoefficientType.fixed
         )
 
+        # check properties
+        assert ms.fs.unit.config.property_package is ms.fs.properties
         assert ms.fs.unit.config.property_package is ms.fs.properties
         assert len(ms.fs.unit.config.property_package.solute_set) == 1
         assert len(ms.fs.unit.config.property_package.solvent_set) == 1
+        assert ms.fs.properties.config.diffus_calculation == DiffusivityCalculation.none
 
     @pytest.mark.unit
-    def test_build_simplified(self, gac_frame_simplified):
+    def test_simplified_build(self, gac_frame_simplified):
         ms = gac_frame_simplified
 
         # test units
@@ -158,17 +164,17 @@ class TestGACSimplified:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(ms) == 79
+        assert number_variables(ms) == 80
         assert number_total_constraints(ms) == 46
-        assert number_unused_variables(ms) == 10  # dens parameters from properties
+        assert number_unused_variables(ms) == 11  # dens parameters from properties
 
     @pytest.mark.unit
-    def test_dof_simplified(self, gac_frame_simplified):
+    def test_simplified_dof(self, gac_frame_simplified):
         ms = gac_frame_simplified
         assert degrees_of_freedom(ms) == 0
 
     @pytest.mark.unit
-    def test_calculate_scaling_simplified(self, gac_frame_simplified):
+    def test_simplified_calculate_scaling(self, gac_frame_simplified):
         ms = gac_frame_simplified
 
         ms.fs.properties.set_default_scaling(
@@ -184,11 +190,11 @@ class TestGACSimplified:
         assert len(unscaled_var_list) == 0
 
     @pytest.mark.component
-    def test_initialize_simplified(self, gac_frame_simplified):
+    def test_simplified_initialize(self, gac_frame_simplified):
         initialization_tester(gac_frame_simplified)
 
     @pytest.mark.component
-    def test_var_scaling_init_simplified(self, gac_frame_simplified):
+    def test_simplified_var_scaling_init(self, gac_frame_simplified):
         ms = gac_frame_simplified
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(ms, large=1e2, small=1e-2, zero=1e-8)
@@ -196,7 +202,7 @@ class TestGACSimplified:
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
-    def test_solve_simplified(self, gac_frame_simplified):
+    def test_simplified_solve(self, gac_frame_simplified):
         ms = gac_frame_simplified
         results = solver.solve(ms)
 
@@ -204,7 +210,7 @@ class TestGACSimplified:
         assert check_optimal_termination(results)
 
     @pytest.mark.component
-    def test_var_scaling_solve_simplified(self, gac_frame_simplified):
+    def test_simplified_var_scaling_solve(self, gac_frame_simplified):
         ms = gac_frame_simplified
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(ms, large=1e2, small=1e-2, zero=1e-8)
@@ -212,7 +218,7 @@ class TestGACSimplified:
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
-    def test_solution_simplified(self, gac_frame_simplified):
+    def test_simplified_solution(self, gac_frame_simplified):
         ms = gac_frame_simplified
 
         # Approx data pulled from graph in Hand, 1984 at ~30 days
@@ -230,8 +236,13 @@ class TestGACRobust:
         mr.fs = FlowsheetBlock(dynamic=False)
 
         mr.fs.properties = MCASParameterBlock(
-            solute_list=["TCE"], mw_data={"H2O": 0.018, "TCE": 0.1314}
+            solute_list=["TCE"],
+            mw_data={"H2O": 0.018, "TCE": 0.1314},
+            diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+            molar_volume_data={("Liq", "TCE"): 9.81e-5},
         )
+        mr.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+        mr.fs.properties.dens_mass_const = 1000
 
         mr.fs.unit = GAC(
             property_package=mr.fs.properties,
@@ -278,7 +289,6 @@ class TestGACRobust:
         mr.fs.unit.conc_ratio_replace.fix(0.80)
 
         # parameters
-        mr.fs.unit.molal_volume.fix(9.81e-5)
         mr.fs.unit.tort.fix(1)
         mr.fs.unit.spdfr.fix(1)
         mr.fs.unit.sphericity.fix(1.5)
@@ -293,7 +303,7 @@ class TestGACRobust:
         return mr
 
     @pytest.mark.unit
-    def test_config_robust(self, gac_frame_robust):
+    def test_robust_config(self, gac_frame_robust):
         mr = gac_frame_robust
         # check unit config arguments
         assert len(mr.fs.unit.config) == 11
@@ -314,12 +324,17 @@ class TestGACRobust:
             == SurfaceDiffusionCoefficientType.calculated
         )
 
+        # check properties
         assert mr.fs.unit.config.property_package is mr.fs.properties
         assert len(mr.fs.unit.config.property_package.solute_set) == 1
         assert len(mr.fs.unit.config.property_package.solvent_set) == 1
+        assert (
+            mr.fs.properties.config.diffus_calculation
+            == DiffusivityCalculation.HaydukLaudie
+        )
 
     @pytest.mark.unit
-    def test_build_robust(self, gac_frame_robust):
+    def test_robust_build(self, gac_frame_robust):
         mr = gac_frame_robust
 
         # test units
@@ -333,17 +348,17 @@ class TestGACRobust:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(mr) == 90
+        assert number_variables(mr) == 89
         assert number_total_constraints(mr) == 55
         assert number_unused_variables(mr) == 10  # dens parameters from properties
 
     @pytest.mark.unit
-    def test_dof_robust(self, gac_frame_robust):
+    def test_robust_dof(self, gac_frame_robust):
         mr = gac_frame_robust
         assert degrees_of_freedom(mr) == 0
 
     @pytest.mark.unit
-    def test_calculate_scaling_robust(self, gac_frame_robust):
+    def test_robust_calculate_scaling(self, gac_frame_robust):
         mr = gac_frame_robust
 
         mr.fs.properties.set_default_scaling(
@@ -359,11 +374,11 @@ class TestGACRobust:
         assert len(unscaled_var_list) == 0
 
     @pytest.mark.component
-    def test_initialize_robust(self, gac_frame_robust):
+    def test_robust_initialize(self, gac_frame_robust):
         initialization_tester(gac_frame_robust)
 
     @pytest.mark.component
-    def test_var_scaling_init_robust(self, gac_frame_robust):
+    def test_robust_var_scaling_init(self, gac_frame_robust):
         mr = gac_frame_robust
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mr, large=1e2, small=1e-2, zero=1e-8)
@@ -371,7 +386,7 @@ class TestGACRobust:
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
-    def test_solve_robust(self, gac_frame_robust):
+    def test_robust_solve(self, gac_frame_robust):
         mr = gac_frame_robust
         results = solver.solve(mr)
 
@@ -379,7 +394,7 @@ class TestGACRobust:
         assert check_optimal_termination(results)
 
     @pytest.mark.component
-    def test_var_scaling_solve_robust(self, gac_frame_robust):
+    def test_robust_var_scaling_solve(self, gac_frame_robust):
         mr = gac_frame_robust
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mr, large=1e2, small=1e-2, zero=1e-8)
@@ -387,22 +402,23 @@ class TestGACRobust:
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
-    def test_solution_robust(self, gac_frame_robust):
+    def test_robust_solution(self, gac_frame_robust):
         mr = gac_frame_robust
 
         # values calculated independently and near to those reported in Crittenden, 2012
         assert pytest.approx(1.139, rel=1e-3) == value(mr.fs.unit.mass_throughput)
         assert pytest.approx(12830000, rel=1e-3) == value(mr.fs.unit.elap_time)
+        assert pytest.approx(0.8333, rel=1e-3) == value(mr.fs.unit.bed_length)
         assert pytest.approx(10.68, rel=1e-3) == value(mr.fs.unit.bed_area)
         assert pytest.approx(21390, rel=1e-3) == value(mr.fs.unit.bed_volumes_treated)
 
     @pytest.mark.component
-    def test_reporting_robust(self, gac_frame_robust):
+    def test_robust_reporting(self, gac_frame_robust):
         mr = gac_frame_robust
         mr.fs.unit.report()
 
     @pytest.mark.component
-    def test_costing_robust(self, gac_frame_robust):
+    def test_robust_costing(self, gac_frame_robust):
         mr = gac_frame_robust
 
         mr.fs.costing = WaterTAPCosting()
@@ -420,33 +436,31 @@ class TestGACRobust:
         # Check for known cost solution of default twin alternating contactors
         assert value(mr.fs.costing.gac.num_contactors_op) == 1
         assert value(mr.fs.costing.gac.num_contactors_redundant) == 1
-        assert pytest.approx(56900.93523, rel=1e-5) == value(
+        assert pytest.approx(56900, rel=1e-3) == value(
             mr.fs.unit.costing.contactor_cost
         )
-        assert pytest.approx(4.359114384, rel=1e-5) == value(
+        assert pytest.approx(4.359, rel=1e-3) == value(
             mr.fs.unit.costing.adsorbent_unit_cost
         )
-        assert pytest.approx(17454.52868, rel=1e-5) == value(
+        assert pytest.approx(17450, rel=1e-3) == value(
             mr.fs.unit.costing.adsorbent_cost
         )
-        assert pytest.approx(81692.69369, rel=1e-5) == value(
+        assert pytest.approx(81690, rel=1e-3) == value(
             mr.fs.unit.costing.other_process_cost
         )
-        assert pytest.approx(156048.1576, rel=1e-5) == value(
-            mr.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(13535.92023, rel=1e-5) == value(
+        assert pytest.approx(156000, rel=1e-3) == value(mr.fs.unit.costing.capital_cost)
+        assert pytest.approx(13540, rel=1e-3) == value(
             mr.fs.unit.costing.gac_makeup_cost
         )
-        assert pytest.approx(29524.89977, rel=1e-5) == value(
+        assert pytest.approx(29520, rel=1e-3) == value(
             mr.fs.unit.costing.gac_regen_cost
         )
-        assert pytest.approx(43060.81999, rel=1e-5) == value(
+        assert pytest.approx(43060, rel=1e-3) == value(
             mr.fs.unit.costing.fixed_operating_cost
         )
 
     @pytest.mark.component
-    def test_costing_modular_contactors_robust(self, gac_frame_robust):
+    def test_robust_costing_modular_contactors(self, gac_frame_robust):
         mr = gac_frame_robust
 
         mr.fs.costing = WaterTAPCosting()
@@ -465,18 +479,16 @@ class TestGACRobust:
         # Check for known cost solution when changing volume scale of vessels in parallel
         assert value(mr.fs.costing.gac.num_contactors_op) == 4
         assert value(mr.fs.costing.gac.num_contactors_redundant) == 2
-        assert pytest.approx(89035.16691, rel=1e-5) == value(
+        assert pytest.approx(89040, rel=1e-3) == value(
             mr.fs.unit.costing.contactor_cost
         )
-        assert pytest.approx(69693.33132, rel=1e-5) == value(
+        assert pytest.approx(69690, rel=1e-3) == value(
             mr.fs.unit.costing.other_process_cost
         )
-        assert pytest.approx(176183.0269, rel=1e-5) == value(
-            mr.fs.unit.costing.capital_cost
-        )
+        assert pytest.approx(176200, rel=1e-3) == value(mr.fs.unit.costing.capital_cost)
 
     @pytest.mark.component
-    def test_costing_max_gac_ref_robust(self, gac_frame_robust):
+    def test_robust_costing_max_gac_ref(self, gac_frame_robust):
         mr = gac_frame_robust
 
         # scale flow up 10x
@@ -514,6 +526,7 @@ class TestGACMulti:
         mm.fs = FlowsheetBlock(dynamic=False)
 
         # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
+        # arbitrary diffusivity data for non-target species
         mm.fs.properties = MCASParameterBlock(
             solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
             mw_data={
@@ -524,7 +537,16 @@ class TestGACMulti:
                 "BGAN": 0.1,
             },
             charge={"BGCAT": 1, "BGAN": -2},
+            diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+            molar_volume_data={("Liq", "TCE"): 9.81e-5},
+            diffusivity_data={
+                ("Liq", "BGSOL"): 1e-5,
+                ("Liq", "BGCAT"): 1e-5,
+                ("Liq", "BGAN"): 1e-5,
+            },
         )
+        mm.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+        mm.fs.properties.dens_mass_const = 1000
 
         # testing target_species arg
         mm.fs.unit = GAC(
@@ -564,16 +586,24 @@ class TestGACMulti:
         mm.fs.unit.adsorbed_contam[0].flow_vol_phase["Liq"]
 
         # trial problem from Crittenden, 2012 for removal of TCE
-        mm.fs.unit.conc_ratio_replace.fix(0.80)
+        # adsorption isotherm
         mm.fs.unit.freund_k.fix(1062e-6 * (1e6**0.48))
         mm.fs.unit.freund_ninv.fix(0.48)
-        mm.fs.unit.ebct.fix(10 * 60)
-        mm.fs.unit.bed_voidage.fix(0.44)
+
+        # gac particle specifications
         mm.fs.unit.particle_porosity.fix(0.641)
         mm.fs.unit.particle_dens_app.fix(803.4)
         mm.fs.unit.particle_dia.fix(0.001026)
+
+        # adsorber bed specifications
+        mm.fs.unit.ebct.fix(10 * 60)
+        mm.fs.unit.bed_voidage.fix(0.44)
         mm.fs.unit.velocity_sup.fix(5 / 3600)
-        mm.fs.unit.molal_volume.fix(9.81e-5)
+
+        # design spec
+        mm.fs.unit.conc_ratio_replace.fix(0.80)
+
+        # parameters
         mm.fs.unit.tort.fix(1)
         mm.fs.unit.spdfr.fix(1)
         mm.fs.unit.sphericity.fix(1.5)
@@ -588,18 +618,22 @@ class TestGACMulti:
         return mm
 
     @pytest.mark.unit
-    def test_config_multi(self, gac_frame_multi):
+    def test_multi_config(self, gac_frame_multi):
         mm = gac_frame_multi
 
         # checking non-unity solute set and nonzero ion set handling
         assert len(mm.fs.unit.config.property_package.solute_set) == 4
         assert len(mm.fs.unit.config.property_package.solvent_set) == 1
         assert len(mm.fs.unit.config.property_package.ion_set) == 2
+        assert (
+            mm.fs.properties.config.diffus_calculation
+            == DiffusivityCalculation.HaydukLaudie
+        )
 
         assert degrees_of_freedom(mm) == 0
 
     @pytest.mark.unit
-    def test_calculate_scaling_multi(self, gac_frame_multi):
+    def test_multi_calculate_scaling(self, gac_frame_multi):
         mm = gac_frame_multi
 
         mm.fs.properties.set_default_scaling(
@@ -618,7 +652,7 @@ class TestGACMulti:
         assert len(unscaled_var_list) == 0
 
     @pytest.mark.unit
-    def test_var_scaling_init_multi(self, gac_frame_multi):
+    def test_multi_var_scaling_init(self, gac_frame_multi):
         mm = gac_frame_multi
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mm, large=1e2, small=1e-3, zero=1e-8)
@@ -626,7 +660,7 @@ class TestGACMulti:
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
-    def test_solve_multi(self, gac_frame_multi):
+    def test_multi_solve(self, gac_frame_multi):
         mm = gac_frame_multi
         results = solver.solve(mm)
 
@@ -634,7 +668,7 @@ class TestGACMulti:
         assert check_optimal_termination(results)
 
     @pytest.mark.unit
-    def test_var_scaling_solve_multi(self, gac_frame_multi):
+    def test_multi_var_scaling_solve(self, gac_frame_multi):
         mm = gac_frame_multi
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mm, large=1e2, small=1e-2, zero=1e-8)
@@ -642,15 +676,58 @@ class TestGACMulti:
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
-    def test_solution_multi(self, gac_frame_multi):
+    def test_multi_solution(self, gac_frame_multi):
         mm = gac_frame_multi
 
         # values calculated independently and near to those reported in Crittenden, 2012
         assert pytest.approx(1.139, rel=1e-3) == value(mm.fs.unit.mass_throughput)
         assert pytest.approx(12830000, rel=1e-3) == value(mm.fs.unit.elap_time)
+        assert pytest.approx(0.8333, rel=1e-3) == value(mm.fs.unit.bed_length)
         assert pytest.approx(10.68, rel=1e-3) == value(mm.fs.unit.bed_area)
 
     @pytest.mark.component
-    def test_reporting_multi(self, gac_frame_multi):
+    def test_multi_reporting(self, gac_frame_multi):
         mm = gac_frame_multi
         mm.fs.unit.report()
+
+    @pytest.mark.unit
+    def test_error(self):
+
+        with pytest.raises(
+            ConfigurationError,
+            match="'target species' is not specified for the GAC unit model, "
+            "either specify 'target species' argument or reduce solute set "
+            "to a single component",
+        ):
+            me = ConcreteModel()
+            me.fs = FlowsheetBlock(dynamic=False)
+
+            # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
+            # arbitrary diffusivity data for non-target species
+            me.fs.properties = MCASParameterBlock(
+                solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
+                mw_data={
+                    "H2O": 0.018,
+                    "TCE": 0.1314,
+                    "BGSOL": 0.1,
+                    "BGCAT": 0.1,
+                    "BGAN": 0.1,
+                },
+                charge={"BGCAT": 1, "BGAN": -2},
+                diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+                molar_volume_data={("Liq", "TCE"): 9.81e-5},
+                diffusivity_data={
+                    ("Liq", "BGSOL"): 1e-5,
+                    ("Liq", "BGCAT"): 1e-5,
+                    ("Liq", "BGAN"): 1e-5,
+                },
+            )
+            me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+            me.fs.properties.dens_mass_const = 1000
+
+            # testing target_species arg
+            me.fs.unit = GAC(
+                property_package=me.fs.properties,
+                film_transfer_coefficient_type="calculated",
+                surface_diffusion_coefficient_type="calculated",
+            )

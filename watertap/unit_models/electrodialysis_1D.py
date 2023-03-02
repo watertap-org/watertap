@@ -1529,7 +1529,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     Constants.faraday_constant
                     * (
                         sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
+                            self.diluate.properties[t, x].diffus_phase_comp["Liq", j]
                             ** -1
                             for j in self.ion_set
                         )
@@ -1579,7 +1579,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     -Constants.faraday_constant
                     * (
                         sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
+                            self.diluate.properties[t, x].diffus_phase_comp["Liq", j]
                             ** -1
                             for j in self.ion_set
                         )
@@ -1638,7 +1638,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     Constants.faraday_constant
                     * (
                         sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
+                            self.diluate.properties[t, x].diffus_phase_comp["Liq", j]
                             ** -1
                             for j in self.ion_set
                         )
@@ -1669,7 +1669,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     Constants.faraday_constant
                     * (
                         sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
+                            self.diluate.properties[t, x].diffus_phase_comp["Liq", j]
                             ** -1
                             for j in self.ion_set
                         )
@@ -1700,7 +1700,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     -Constants.faraday_constant
                     * (
                         sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
+                            self.diluate.properties[t, x].diffus_phase_comp["Liq", j]
                             ** -1
                             for j in self.ion_set
                         )
@@ -1731,7 +1731,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     -Constants.faraday_constant
                     * (
                         sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
+                            self.diluate.properties[t, x].diffus_phase_comp["Liq", j]
                             ** -1
                             for j in self.ion_set
                         )
@@ -2451,7 +2451,9 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                         96485**-1
                         * sum(
                             iscale.get_scaling_factor(
-                                self.config.property_package.diffus_phase_comp["Liq", j]
+                                self.diluate.properties[0, 0].diffus_phase_comp[
+                                    "Liq", j
+                                ]
                             )
                             ** -2
                             for j in self.ion_set
@@ -2467,7 +2469,9 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                         96485**-1
                         * sum(
                             iscale.get_scaling_factor(
-                                self.config.property_package.diffus_phase_comp["Liq", j]
+                                self.diluate.properties[0, 0].diffus_phase_comp[
+                                    "Liq", j
+                                ]
                             )
                             ** -2
                             for j in self.ion_set
