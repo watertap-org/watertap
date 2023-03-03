@@ -117,8 +117,8 @@ Relationships
    "Component mass diffusivity", ":math:`D\text{ specified in data argument}` or :math:`D \text{ }[\text{m}^2 \text{ s}^{-1}]=\frac{\chi_{1}}{(\mu \text{ }[\text{cP}])^{\chi_{2}}(V \text{ }[\text{cm}^3 \text{ mol}^{-1}])^{\chi_{3}}}` :sup:`2`"
 
 **Notes**
-   :sup:`1`  :math:`\textbf{f}(\cdot)` refers to empirical correlations of phase or solvent mass density to seawater salinity and temperature following the study of Sharqawy et al. (2010).
-   :sup:`2`  Diffusivity specified in diffus_phase_comp_param or calculated by the correlation defined in Hayduk, W., & Laudie, H. (1974).
+   | :sup:`1`  :math:`\textbf{f}(\cdot)` refers to empirical correlations of phase or solvent mass density to seawater salinity and temperature following the study of Sharqawy et al. (2010).
+   | :sup:`2`  Diffusivity specified in diffus_phase_comp_param or calculated by the correlation defined in Hayduk, W., & Laudie, H. (1974).
 
 Physical/chemical constants
 ---------------------------
