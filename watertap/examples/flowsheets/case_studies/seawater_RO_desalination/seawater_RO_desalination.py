@@ -1,21 +1,19 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 from pyomo.environ import (
     ConcreteModel,
     value,
     TransformationFactory,
     units as pyunits,
-    assert_optimal_termination,
     Block,
 )
 from pyomo.network import Arc
@@ -45,7 +43,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
 )
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
-from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
@@ -67,6 +65,9 @@ from watertap.unit_models.zero_order import (
 from watertap.core.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
 
+# Set up logger
+_log = idaeslog.getLogger(__name__)
+
 
 def build_flowsheet(erd_type=None):
     m = build(erd_type=erd_type)
@@ -79,12 +80,12 @@ def solve_flowsheet(flowsheet=None):
     m = flowsheet.parent_block()  # UI block is 'm.fs' but funcs below use 'm'
     initialize_system(m)
     assert_degrees_of_freedom(m, 0)
-    solve(m)
+    solve(m, checkpoint="solve flowsheet after initializing system")
     display_results(m)
     add_costing(m)
     initialize_costing(m)
     assert_degrees_of_freedom(m, 0)
-    solve(m)
+    solve(m, checkpoint="solve flowsheet with costing")
 
 
 def main(erd_type="pressure_exchanger"):
@@ -97,14 +98,14 @@ def main(erd_type="pressure_exchanger"):
     initialize_system(m)
     assert_degrees_of_freedom(m, 0)
 
-    solve(m)
+    solve(m, checkpoint=f" solve flowsheet after initializing {erd_type} system")
     display_results(m)
 
     add_costing(m)
     initialize_costing(m)
     assert_degrees_of_freedom(m, 0)
 
-    solve(m, tee=True)
+    solve(m, tee=True, checkpoint=f" solve {erd_type} flowsheet with costing")
     display_costing(m)
 
     return m
@@ -368,7 +369,7 @@ def set_operating_conditions(m):
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "tds"].fix(conc_mass_tds)
     m.fs.feed.conc_mass_comp[0, "tss"].fix(conc_mass_tss)
-    solve(m.fs.feed)
+    solve(m.fs.feed, checkpoint="solve feed block")
 
     m.fs.tb_prtrt_desal.properties_out[0].temperature.fix(temperature)
     m.fs.tb_prtrt_desal.properties_out[0].pressure.fix(pressure)
@@ -487,12 +488,12 @@ def initialize_system(m):
     psttrt = m.fs.posttreatment
 
     # initialize feed
-    solve(m.fs.feed)
+    solve(m.fs.feed, checkpoint="solve flowsheet after initializing feed")
 
     # initialize pretreatment
     propagate_state(m.fs.s_feed)
     flags = fix_state_vars(prtrt.intake.properties)
-    solve(prtrt)
+    solve(prtrt, checkpoint="solve flowsheet after initializing pre-treatment")
     revert_state_vars(prtrt.intake.properties, flags)
 
     # initialize desalination
@@ -521,11 +522,17 @@ def initialize_system(m):
     propagate_state(m.fs.s_tb_desal)
     if m.erd_type == "pressure_exchanger":
         flags = fix_state_vars(desal.S1.mixed_state)
-        solve(desal)
+        solve(
+            desal,
+            checkpoint=f"solve flowsheet after initializing {m.erd_type} desalination",
+        )
         revert_state_vars(desal.S1.mixed_state, flags)
     elif m.erd_type == "pump_as_turbine":
         flags = fix_state_vars(desal.P1.control_volume.properties_in)
-        solve(desal)
+        solve(
+            desal,
+            checkpoint=f"solve flowsheet after initializing {m.erd_type} desalination",
+        )
         revert_state_vars(desal.P1.control_volume.properties_in, flags)
 
     # initialize posttreatment
@@ -539,16 +546,15 @@ def initialize_system(m):
 
     propagate_state(m.fs.s_tb_psttrt)
     flags = fix_state_vars(psttrt.storage_tank_2.properties)
-    solve(psttrt)
+    solve(psttrt, checkpoint="solve flowsheet after initializing post-treatment")
     revert_state_vars(psttrt.storage_tank_2.properties, flags)
 
 
-def solve(blk, solver=None, tee=False, check_termination=True):
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    if check_termination:
-        assert_optimal_termination(results)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
 

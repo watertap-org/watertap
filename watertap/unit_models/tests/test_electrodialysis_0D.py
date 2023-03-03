@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.unit_models.electrodialysis_0D import (
@@ -986,6 +985,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstV:
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
+            "diffusivity_data": {("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9},
         }
         m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(
@@ -1209,6 +1209,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstC:
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
+            "diffusivity_data": {("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9},
         }
         m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(

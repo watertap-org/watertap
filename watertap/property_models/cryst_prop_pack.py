@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Initial crystallization property package for H2O-NaCl system
 """
@@ -839,27 +838,32 @@ class NaClParameterData(PhysicalParameterBlock):
                     "method": "_solubility_mass_frac_phase_comp"
                 },
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
-                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
-                "dens_mass_solute": {"method": "_dens_mass_solute"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
-                "dh_vap_mass_solvent": {"method": "_dh_vap_mass_solvent"},
-                "cp_mass_solvent": {"method": "_cp_mass_solvent"},
-                "cp_mass_solute": {"method": "_cp_mass_solute"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
                 "flow_vol": {"method": "_flow_vol"},
                 "pressure_sat": {"method": "_pressure_sat"},
-                "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
-                "enth_mass_solvent": {"method": "_enth_mass_solvent"},
-                "enth_mass_solute": {"method": "_enth_mass_solute"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
                 "dh_crystallization_mass_comp": {
                     "method": "_dh_crystallization_mass_comp"
                 },
-                "enth_flow": {"method": "_enth_flow"},
                 "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
+                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
+                "dens_mass_solute": {"method": "_dens_mass_solute"},
+                "dh_vap_mass_solvent": {"method": "_dh_vap_mass_solvent"},
+                "cp_mass_solvent": {"method": "_cp_mass_solvent"},
+                "cp_mass_solute": {"method": "_cp_mass_solute"},
+                "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
+                "enth_mass_solvent": {"method": "_enth_mass_solvent"},
+                "enth_mass_solute": {"method": "_enth_mass_solute"},
+                "enth_flow": {"method": "_enth_flow"},
             }
         )
 
