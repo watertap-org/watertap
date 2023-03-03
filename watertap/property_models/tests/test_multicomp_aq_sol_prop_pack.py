@@ -318,21 +318,21 @@ def test_build(model3):
     metadata = m.fs.properties.get_metadata().properties
 
     # check that properties are not built if not demanded
-    for v_name in metadata:
-        if metadata[v_name]["method"] is not None:
-            if m.fs.stream[0].is_property_constructed(v_name):
+    for v in metadata.list_supported_properties():
+        if metadata[v.name].method is not None:
+            if m.fs.stream[0].is_property_constructed(v.name):
                 raise PropertyAttributeError(
                     "Property {v_name} is an on-demand property, but was found "
-                    "on the stateblock without being demanded".format(v_name=v_name)
+                    "on the stateblock without being demanded".format(v_name=v.name)
                 )
 
     # check that properties are built if demanded
-    for v_name in metadata:
-        if metadata[v_name]["method"] is not None:
-            if not hasattr(m.fs.stream[0], v_name):
+    for v in metadata.list_supported_properties():
+        if metadata[v.name].method is not None:
+            if not hasattr(m.fs.stream[0], v.name):
                 raise PropertyAttributeError(
                     "Property {v_name} is an on-demand property, but was not built "
-                    "when demanded".format(v_name=v_name)
+                    "when demanded".format(v_name=v.name)
                 )
 
     assert m.fs.stream[0].is_property_constructed("act_coeff_phase_comp")
@@ -409,8 +409,8 @@ def test_scaling(model3):
     # m.fs.stream.initialize()
     metadata = m.fs.properties.get_metadata().properties
 
-    for v_name in metadata:
-        getattr(m.fs.stream[0], v_name)
+    for v in metadata.list_supported_properties():
+        getattr(m.fs.stream[0], v.name)
 
     calculate_scaling_factors(m)
 
@@ -508,8 +508,8 @@ def test_seawater_data():
     )
 
     metadata = m.fs.properties.get_metadata().properties
-    for v_name in metadata:
-        getattr(stream[0], v_name)
+    for v in metadata.list_supported_properties():
+        getattr(stream[0], v.name)
     assert stream[0].is_property_constructed("conc_mol_phase_comp")
 
     assert_units_consistent(m)

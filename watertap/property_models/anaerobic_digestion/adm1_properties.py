@@ -134,6 +134,10 @@ class ADM1ParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "temperature": {"method": None},
                 "conc_mass_comp": {"method": None},
+            }
+        )
+        obj.define_custom_properties(
+            {
                 "anions": {"method": None},
                 "cations": {"method": None},
             }
