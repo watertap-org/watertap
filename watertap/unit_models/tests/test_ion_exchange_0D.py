@@ -33,7 +33,6 @@ from watertap.unit_models.ion_exchange_0D import (
 )
 from watertap.costing import WaterTAPCosting
 from watertap.core.util.initialization import check_dof
-from watertap.core.util.infeasible import *
 
 from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.model_statistics import (
