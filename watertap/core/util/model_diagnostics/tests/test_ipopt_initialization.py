@@ -1,4 +1,3 @@
-
 import pytest
 from pyomo.environ import Block, Var, SolverFactory
 
@@ -8,6 +7,7 @@ from watertap.core.util.model_diagnostics.ipopt_initialization import (
     print_initialization_perturbation,
     assert_no_initialization_perturbation,
 )
+
 
 class TestPerturbationHelper:
     @pytest.fixture(scope="class")
