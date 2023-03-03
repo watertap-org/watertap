@@ -282,7 +282,7 @@ class SopStateBlockData(StateBlockData):
         )
 
         self.visc_d_phase_comp["Liq", "H2O"] = 1e-3
-        self.visc_d_phase_comp["Liq", "oil"] = 5e-3
+        self.visc_d_phase_comp["Liq", "oil"] = 3.5e-3
 
     def _dens_mass_phase_comp(self):
         self.dens_mass_phase_comp = Param(
@@ -295,7 +295,7 @@ class SopStateBlockData(StateBlockData):
         )
 
         self.dens_mass_phase_comp["Liq", "H2O"] = 1e3
-        self.dens_mass_phase_comp["Liq", "oil"] = 700  # TODO: update density for oil
+        self.dens_mass_phase_comp["Liq", "oil"] = 780
 
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
