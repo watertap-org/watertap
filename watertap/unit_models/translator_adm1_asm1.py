@@ -36,6 +36,8 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
+from idaes.core.util.exceptions import InitializationError
+
 from pyomo.environ import (
     Constraint,
     Param,
