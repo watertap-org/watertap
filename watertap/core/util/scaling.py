@@ -9,7 +9,9 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
+"""
+This module contains a utility function for scaling of WaterTAP property model constraints.
+"""
 import pyomo.environ as pyo
 import idaes.core.util.scaling as iscale
 
