@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from copy import deepcopy
 from enum import Enum, auto
@@ -72,6 +71,16 @@ class PressureChangeType(Enum):
     fixed_per_stage = auto()
     fixed_per_unit_length = auto()
     calculated = auto()
+
+
+class FrictionFactor(Enum):
+    """
+    flat_sheet: Darcy's friction factor correlation by Guillen & Hoek
+    spiral_wound: Darcy's friction factor correlation by Schock & Miquel, 1987
+    """
+
+    flat_sheet = auto()
+    spiral_wound = auto()
 
 
 CONFIG_Template = ConfigDict()
@@ -263,6 +272,26 @@ CONFIG_Template.declare(
     ),
 )
 
+CONFIG_Template.declare(
+    "friction_factor",
+    ConfigValue(
+        default=FrictionFactor.flat_sheet,
+        domain=In(FrictionFactor),
+        description="Darcy friction factor correlation",
+        doc="""
+        Options to account for friction factor correlations.
+
+        **default** - ``FrictionFactor.flat_sheet`` 
+
+    .. csv-table::
+        :header: "Configuration Options", "Description"
+
+        "``FrictionFactor.flat_sheet``", "Friction factor correlation for flat-sheet membrane modules"
+        "``FrictionFactor.spiral_wound``", "Friction factor correlation for spiral-wound membranes"
+    """,
+    ),
+)
+
 
 class MembraneChannelMixin:
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
@@ -301,6 +330,7 @@ class MembraneChannelMixin:
         has_pressure_change=True,
         pressure_change_type=PressureChangeType.calculated,
         custom_term=None,
+        friction_factor=FrictionFactor.flat_sheet,
     ):
         super().add_total_pressure_balances(
             has_pressure_change=has_pressure_change, custom_term=custom_term
@@ -320,7 +350,7 @@ class MembraneChannelMixin:
             self._add_pressure_change(pressure_change_type=pressure_change_type)
 
         if pressure_change_type == PressureChangeType.calculated:
-            self._add_calculated_pressure_change()
+            self._add_calculated_pressure_change(friction_factor=friction_factor)
 
     def add_interface_isothermal_conditions(self):
 
@@ -424,7 +454,7 @@ class MembraneChannelMixin:
             solute_set,
             doc="Concentration polarization modulus",
         )
-        def eq_cp_modulus(b, t, x, j):
+        def eq_cp_modulus(b, t, x, j):  # pylint: disable=function-redefined
             if b._skip_element(x):
                 return Constraint.Skip
             return (
@@ -651,7 +681,9 @@ class MembraneChannelMixin:
             **tmp_dict,
         )
 
-    def _add_calculated_pressure_change(self):
+    def _add_calculated_pressure_change(
+        self, friction_factor=FrictionFactor.flat_sheet
+    ):
         self._add_calculated_pressure_change_mass_transfer_components()
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
@@ -690,14 +722,31 @@ class MembraneChannelMixin:
 
         ## ==========================================================================
         # Darcy friction factor based on eq. S27 in SI for Cost Optimization of Osmotically Assisted Reverse Osmosis
-        # TODO: this relationship for friction factor is specific to a particular spacer geometry. Add alternatives.
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.length_domain,
-            doc="Darcy friction factor constraint",
-        )
-        def eq_friction_factor_darcy(b, t, x):
-            return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
+        if friction_factor == FrictionFactor.flat_sheet:
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.length_domain,
+                doc="Darcy friction factor constraint for flat sheet membranes",
+            )
+            def eq_friction_factor(b, t, x):
+                return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
+
+        # Darcy friction factor based on eq. 24 in Mass transfer and pressure loss in spiral wound modules (Schock & Miquel, 1987)
+        elif friction_factor == FrictionFactor.spiral_wound:
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.length_domain,
+                doc="Darcy friction factor constraint for spiral-wound membranes",
+            )
+            def eq_friction_factor(b, t, x):
+                return b.friction_factor_darcy[t, x] == 6.23 * b.N_Re[t, x] ** -0.3
+
+        else:
+            raise ConfigurationError(
+                f"Unrecognized friction_factor type {friction_factor}"
+            )
 
         ## ==========================================================================
         # Pressure change per unit length due to friction
@@ -943,4 +992,12 @@ def validate_membrane_config_args(unit):
                 unit.config.mass_transfer_coefficient,
                 unit.config.concentration_polarization_type,
             )
+        )
+
+    if (
+        unit.config.pressure_change_type != PressureChangeType.calculated
+        and unit.config.friction_factor != unit.config.get("friction_factor")._default
+    ):
+        raise ConfigurationError(
+            "\nChanging the 'friction_factor' will have no effect if the 'pressure_change_type' is not `PressureChangeType.calculated`"
         )

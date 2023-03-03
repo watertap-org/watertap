@@ -14,7 +14,7 @@ WaterTAP is developed as part of the [National Alliance for Water Innovation](ht
 
 ## Getting started
 
-To quickly install and start using WaterTAP, head over to the [Getting Started](https://watertap.readthedocs.io/en/stable/getting_started/install.html#general-installation) section of the documentation.
+To quickly install and start using WaterTAP, head over to the [Getting Started](https://watertap.readthedocs.io/en/stable/getting_started.html) section of the documentation.
 
 ## Documentation
 

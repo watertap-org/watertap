@@ -1,26 +1,26 @@
 default:    # Electrochemical Nutrient Recovery
   energy_electric_flow_mass:
-    value: 0.205
-    units: kWh/kg
+    value: 0.044 # Update according to the latest data sent by Ohio University
+    units: kWh/kg # KWh/kg P
   recovery_frac_mass_H2O:
-    value: 1 # no water wasting, reactive removal handled below
+    value: 1 # no water wasting
     units: dimensionless
   default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
   removal_frac_mass_comp:
     nitrogen:
-      value: 0 # reactive removal handled below
+      value: 0.3 # Update according to the latest data sent by Ohio University
       units: dimensionless
       constituent_longform: Nitrogen
     phosphorus:
-      value: 0 # reactive removal handled below
+      value: 0.98 # Update according to the latest data sent by Ohio University
       units: dimensionless
       consituent_longform: Phosphorus
-    struvite:
-      value: 1 # reactive removal handled below
+    calcium:
+      value: 0.25 # Update according to the latest data sent by Ohio University
       units: dimensionless
-      consituent_longform: Struvite
+      consituent_longform: Calcium
   magnesium_chloride_dosage:
     value: 0.388 # g-MgCl2/g-struvite
     units: dimensionless
@@ -36,16 +36,3 @@ default:    # Electrochemical Nutrient Recovery
     sizing_cost:
       value: 1.25
       units: USD_2020/m^3
-  reactions:
-    extract_N_P:
-      key_reactant: phosphorus
-      conversion: 0.83
-      stoichiometry:
-        phosphorus:
-          conversion_ratio: -1
-        nitrogen:
-          conversion_ratio: -1
-        H2O:
-          conversion_ratio: -6
-        struvite:
-          conversion_ratio: 1

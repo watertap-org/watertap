@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 This module contains utility functions for initialization of WaterTAP models.
 """
@@ -46,19 +45,21 @@ def check_solve(results, checkpoint=None, logger=_log, fail_flag=False):
     """
     if check_optimal_termination(results):
         if checkpoint is None:
-            logger.info(f"Solve successful.")
+            logger.info("Solve successful.")
         else:
             logger.info(f"{checkpoint} successful.")
     else:
         if checkpoint is None:
             msg = (
                 f"The solver failed to converge to an optimal solution. "
-                f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
+                "This suggests that the user provided infeasible inputs or that the model "
+                "is poorly scaled, poorly initialized, or degenerate."
             )
         else:
             msg = (
-                f"{checkpoint} failed. The solver failed to converge to an optimal solution. "
-                f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
+                f" The solver at the {checkpoint} step failed to converge to an optimal solution."
+                "This suggests that the user provided infeasible inputs or that the model "
+                "is poorly scaled, poorly initialized, or degenerate."
             )
         if fail_flag:
             logger.error(msg)

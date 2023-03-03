@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 from pyomo.environ import (
@@ -346,7 +345,7 @@ class TestIonExchangeNoInert:
             assert isinstance(sb, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 123
+        assert number_variables(m) == 124
         assert number_total_constraints(m) == 82
         assert number_unused_variables(m) == 15
 
@@ -686,9 +685,9 @@ class TestIonExchangeWithInert:
             assert isinstance(sb, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 161
+        assert number_variables(m) == 164
         assert number_total_constraints(m) == 116
-        assert number_unused_variables(m) == 17
+        assert number_unused_variables(m) == 19
 
     @pytest.mark.unit
     def test_dof(self, IX_frame_with_inert):

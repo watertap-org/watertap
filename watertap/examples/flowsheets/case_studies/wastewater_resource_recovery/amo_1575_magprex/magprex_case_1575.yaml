@@ -2,13 +2,13 @@ base_currency: USD_2020
 base_period: year
 defined_flows:
   electricity:
-    value: 0.08
+    value: 0.092
     units: USD_2020/kWh
   magnesium_chloride:
-    value: 0.0786     # $0.69/gal
+    value: 0.143
     units: USD_2020/kg
   polymer:
-    value: 2.447      # $1.11/lb dry polymer
+    value: 4.41
     units: USD_2020/kg
   struvite_product:
     value: -0.1     # value from https://www.researchgate.net/figure/Estimating-cost-of-phosphorus-recovery-as-struvite-from-digester-supernatant_tbl1_7405260

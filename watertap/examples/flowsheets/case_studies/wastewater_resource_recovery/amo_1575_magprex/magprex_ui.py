@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 from watertap.ui.fsapi import FlowsheetInterface
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex import (
@@ -103,7 +102,7 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=pyunits.kWh / pyunits.m**3,
         display_units="kWh/m3",
         rounding=2,
-        description="Specific aeration energy relating the energy to the volume of struvite product",
+        description="Specific aeration energy relating the energy to the volume of feed",
         is_input=True,
         input_category="Magprex reactor",
         is_output=False,
@@ -112,9 +111,9 @@ def export_variables(flowsheet=None, exports=None):
         obj=fs.magprex.magnesium_chloride_dosage,
         name="MgCl2 Dosage",
         ui_units=pyunits.dimensionless,
-        display_units="kg MgCl2/kg struvite",
+        display_units="kg MgCl2/kg phosphates",
         rounding=2,
-        description="MgCl2 Dosage per kg of struvite product",
+        description="MgCl2 Dosage per kg of influent phosphates",
         is_input=True,
         input_category="Magprex reactor",
         is_output=False,
@@ -173,7 +172,7 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=pyunits.kWh / pyunits.m**3,
         display_units="kWh/m3",
         rounding=2,
-        description="Centrifuge specific power relating the power to the volume of struvite product",
+        description="Centrifuge specific power relating the power to the volume of feed",
         is_input=True,
         input_category="Centrifuge",
         is_output=False,
@@ -221,7 +220,7 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=pyunits.kWh / pyunits.m**3,
         display_units="kWh/m3",
         rounding=2,
-        description="Classifier specific power relating the power to the volume of struvite product",
+        description="Classifier specific power relating the power to the volume of feed",
         is_input=True,
         input_category="Classifier",
         is_output=False,
