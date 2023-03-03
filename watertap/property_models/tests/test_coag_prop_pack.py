@@ -1,15 +1,14 @@
-###############################################################################
-# ProteusLib Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
-# "https://github.com/nawi-hub/proteuslib/"
-#
-###############################################################################
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 import pytest
 from watertap.property_models.coagulation_prop_pack import (
     CoagulationParameterBlock,
@@ -88,21 +87,21 @@ class TestCoagulationPropPack:
         metadata = model.fs.properties.get_metadata().properties
 
         # check that properties are not built if not demanded
-        for v_name in metadata:
-            if metadata[v_name]["method"] is not None:
-                if model.fs.stream[0].is_property_constructed(v_name):
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if model.fs.stream[0].is_property_constructed(v.name):
                     raise PropertyAttributeError(
                         "Property {v_name} is an on-demand property, but was found "
-                        "on the stateblock without being demanded".format(v_name=v_name)
+                        "on the stateblock without being demanded".format(v_name=v.name)
                     )
 
         # check that properties are built if demanded
-        for v_name in metadata:
-            if metadata[v_name]["method"] is not None:
-                if not hasattr(model.fs.stream[0], v_name):
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if not hasattr(model.fs.stream[0], v.name):
                     raise PropertyAttributeError(
                         "Property {v_name} is an on-demand property, but was not built "
-                        "when demanded".format(v_name=v_name)
+                        "when demanded".format(v_name=v.name)
                     )
 
         # check the other stateblock functions
