@@ -71,8 +71,8 @@ class ModelExport(BaseModel):
     output_category: Optional[str]
     obj_key: str = None
     fixed: bool = True
-    lb: Optional[float] = 0.0
-    ub: Optional[float] = 0.0
+    lb: Union[None, float] = 0.0
+    ub: Union[None, float] = 0.0
     has_bounds: bool = True
 
     class Config:
