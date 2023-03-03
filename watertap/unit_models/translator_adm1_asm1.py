@@ -333,6 +333,6 @@ see reaction package for documentation.}""",
 
         if not check_optimal_termination(res):
             raise InitializationError(
-                f"{blk.name} failed to initialize successfully. Please check "
+                f"{self.name} failed to initialize successfully. Please check "
                 f"the output logs for more information."
             )
