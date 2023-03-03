@@ -540,7 +540,6 @@ class MCASParameterData(PhysicalParameterBlock):
                 "conc_equiv_phase_comp": {"method": "_conc_equiv_phase_comp"},
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
-                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
                 "flow_vol": {"method": "_flow_vol"},
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
                 "conc_mol_phase_comp": {"method": "_conc_mol_phase_comp"},
@@ -560,6 +559,12 @@ class MCASParameterData(PhysicalParameterBlock):
                 "elec_cond_phase": {"method": "_elec_cond_phase"},
                 "charge_comp": {"method": "_charge_comp"},
                 "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
+                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
                 "dielectric_constant": {"method": "_dielectric_constant"},
                 "debye_huckel_constant": {"method": "_debye_huckel_constant"},
                 "ionic_strength_molal": {"method": "_ionic_strength_molal"},
