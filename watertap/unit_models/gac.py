@@ -764,9 +764,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Biot number")
         def eq_n_bi(b):
-            return b.N_Bi * b.ds * b.dg * b.bed_voidage == b.kf * (
-                b.particle_dia / 2
-            ) * (1 - b.bed_voidage)
+            return 1 == (b.kf * (b.particle_dia / 2) * (1 - b.bed_voidage)) / (
+                b.N_Bi * b.ds * b.dg * b.bed_voidage
+            )
 
         @self.Constraint(
             doc="Minimum Stanton number to achieve constant pattern solution"
@@ -1289,7 +1289,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.particle_dia, 1e3)
 
         if iscale.get_scaling_factor(self.conc_ratio_avg) is None:
-            iscale.set_scaling_factor(self.conc_ratio_avg, 1e2)
+            iscale.set_scaling_factor(self.conc_ratio_avg, 1e1)
 
         if iscale.get_scaling_factor(self.conc_ratio_replace) is None:
             iscale.set_scaling_factor(self.conc_ratio_replace, 1e1)

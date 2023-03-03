@@ -209,11 +209,11 @@ class TestGACSimplified:
     @pytest.mark.component
     def test_simplified_solve(self, gac_frame_simplified):
         ms = gac_frame_simplified
+        _model_debug(ms)
         results = solver.solve(ms)
 
         # Check for optimal solution
         assert check_optimal_termination(results)
-        _model_debug(ms)
 
     @pytest.mark.component
     def test_simplified_var_scaling_solve(self, gac_frame_simplified):
