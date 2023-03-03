@@ -84,9 +84,7 @@ class ActivityCoefficientModel(Enum):
 class DensityCalculation(Enum):
     constant = auto()  # constant @ 1000 kg/m3
     seawater = auto()  # seawater correlation for TDS from Sharqawy
-    laliberte = (
-        auto()
-    )  # Laliberte correlation using apparent density #TODO add this later with reference
+    # TODO: add laliberte mixing correlation and/or ideal aqueous solution rule
 
 
 class DiffusivityCalculation(Enum):
@@ -208,7 +206,6 @@ class MCASParameterData(PhysicalParameterBlock):
 
            "``DensityCalculation.constant``", "Solution density assumed constant at 1000 kg/m3 by default in dens_mass_const parameter"
            "``DensityCalculation.seawater``", "Solution density based on correlation for seawater (TDS)"
-           "``DensityCalculation.laliberte``", "Solution density based on mixing correlation from Laliberte"
        """,
         ),
     )
@@ -540,7 +537,6 @@ class MCASParameterData(PhysicalParameterBlock):
                 "conc_equiv_phase_comp": {"method": "_conc_equiv_phase_comp"},
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
-                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
                 "flow_vol": {"method": "_flow_vol"},
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
                 "conc_mol_phase_comp": {"method": "_conc_mol_phase_comp"},
@@ -560,6 +556,12 @@ class MCASParameterData(PhysicalParameterBlock):
                 "elec_cond_phase": {"method": "_elec_cond_phase"},
                 "charge_comp": {"method": "_charge_comp"},
                 "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
+                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
                 "dielectric_constant": {"method": "_dielectric_constant"},
                 "debye_huckel_constant": {"method": "_debye_huckel_constant"},
                 "ionic_strength_molal": {"method": "_ionic_strength_molal"},
