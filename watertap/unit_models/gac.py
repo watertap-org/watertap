@@ -63,9 +63,8 @@ class SurfaceDiffusionCoefficientType(Enum):
 @declare_process_block_class("GAC")
 class GACData(InitializationMixin, UnitModelBlockData):
     """
-    Initial Granular Activated Carbon Model -
-    currently should be used for only with ion_DSPMDE_prop_pack with
-    a single solute and single solvent as water
+    Empirical CPHSDM Granular Activated Carbon Model -
+    currently only supported with the multicomp_aq_sol_prop_pack
     """
 
     CONFIG = ConfigBlock()
@@ -255,11 +254,12 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 " argument or reduce solute set to a single component"
             )
         # define sets to be used across GAC methods
-        self.target_species = Set(dimen=1)
-        self.inert_species = Set(dimen=1)
-        self.target_species = self.config.target_species
-        self.inert_species = (
-            self.config.property_package.component_list - self.config.target_species
+        self.target_species = Set(dimen=1, initialize=self.config.target_species)
+        self.inert_species = Set(
+            dimen=1,
+            initialize=(
+                self.config.property_package.component_list - self.config.target_species
+            ),
         )
 
         # build control volume
@@ -277,12 +277,12 @@ class GACData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.energy_balance_type,
             has_enthalpy_transfer=False,
         )
-        if self.config.is_isothermal:
-            self.process_flow.add_isothermal_assumption()
         self.process_flow.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=False,
         )
+        if self.config.is_isothermal:
+            self.process_flow.add_isothermal_assumption()
 
         # add port for adsorbed contaminant contained in nearly saturated GAC particles
         tmp_dict = dict(**self.config.property_package_args)
@@ -297,7 +297,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            doc="Isothermal assumption for adsorbed contaminant",
+            doc="Isothermal assumption for the adsorbed species contained in the removed GAC",
         )
         def eq_isothermal_gac_removed(b, t):
             return (
@@ -307,7 +307,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            doc="Isobaric assumption for adsorbed contaminant",
+            doc="Isobaric assumption for the adsorbed species contained in the removed GAC",
         )
         def eq_isobaric_gac_removed(b, t):
             return b.process_flow.properties_in[t].pressure == b.gac_removed[t].pressure
@@ -381,7 +381,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         )
 
         self.bed_volume = Var(
-            initialize=100,
+            initialize=5,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length") ** 3,
@@ -405,7 +405,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         )
 
         self.bed_length = Var(
-            initialize=1,
+            initialize=5,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length"),
@@ -979,7 +979,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="tortuosity of the path that the adsorbate must take as compared to the radius",
+                doc="Tortuosity of the path that the adsorbate must take as compared to the radius",
             )
 
             self.spdfr = Var(
