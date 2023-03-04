@@ -79,7 +79,7 @@ def erd_type_not_found(erd_type):
 #     arc.destination.display()
 
 
-def main(number_of_stages, erd_type=ERDtype.pump_as_turbine):
+def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     # set up solver
     solver = get_solver()
 
@@ -87,14 +87,21 @@ def main(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     m = build(number_of_stages=number_of_stages, erd_type=erd_type)
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
-
+    solve(m, solver=solver)
+    print("\n***---Simulation results---***")
+    display_system(m)
+    display_design(m)
+    if erd_type == ERDtype.pump_as_turbine:
+        display_state(m)
+    else:
+        pass
     # print_close_to_bounds(m)
     # print_infeasible_constraints(m)
 
-    # optimize_set_up(m, water_recovery=0.3)
+    optimize_set_up(m, water_recovery=system_recovery)
     solve(m, solver=solver)
 
-    print("\n***---Simulation results---***")
+    print("\n***---Optimization results---***")
     display_system(m)
     display_design(m)
     if erd_type == ERDtype.pump_as_turbine:
@@ -447,7 +454,7 @@ def set_operating_conditions(
         stage.permeate_side.spacer_porosity.fix(0.75)
         stage.feed_side.channel_height.fix(0.002)
         stage.feed_side.spacer_porosity.fix(0.75)
-        stage.feed_side.velocity[0, 0].fix(0.1)
+        stage.feed_side.velocity[0, 0].fix(0.2)
 
     # RO unit
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
@@ -698,13 +705,13 @@ def optimize_set_up(
         pump.deltaP.setlb(0)
 
     # # OARO Units
-    # for stage in m.fs.OAROUnits.values():
-    #     stage.area.unfix()
+    for stage in m.fs.OAROUnits.values():
+        stage.area.unfix()
     #     stage.area.setlb(1)
     #     stage.area.setub(2000)
     #
-    # # RO
-    # m.fs.RO.area.unfix()
+    # RO
+    m.fs.RO.area.unfix()
     # m.fs.RO.area.setlb(1)
     # m.fs.RO.area.setub(2000)
 
@@ -890,4 +897,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(5, erd_type=ERDtype.pump_as_turbine)
+    m = main(2, system_recovery=0.3, erd_type=ERDtype.pump_as_turbine)
