@@ -1,22 +1,22 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import os
+import idaes.logger as idaeslog
+
 
 from pyomo.environ import (
     ConcreteModel,
     units as pyunits,
-    assert_optimal_termination,
     Expression,
     value,
     TransformationFactory,
@@ -32,7 +32,7 @@ from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
 
-from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
@@ -41,6 +41,9 @@ from watertap.unit_models.zero_order import (
     PeraceticAcidDisinfectionZO,
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 def main():
@@ -52,8 +55,7 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m)
-    assert_optimal_termination(results)
+    results = solve(m, checkpoint="solve flowsheet after initializing system")
     display_results(m)
 
     add_costing(m)
@@ -61,8 +63,7 @@ def main():
 
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
-    results = solve(m)
-    assert_optimal_termination(results)
+    results = solve(m, checkpoint="solve flowsheet after costing")
     display_costing(m)
 
     return m, results
@@ -117,7 +118,7 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "peracetic_acid"].fix(conc_mass_PAA)
     m.fs.feed.conc_mass_comp[0, "total_coliforms_fecal_ecoli"].fix(conc_mass_ecoli)
 
-    solve(m.fs.feed)
+    solve(m.fs.feed, checkpoint="solve feed block")
 
     m.fs.PAA.load_parameters_from_database(use_default_removal=True)
 
@@ -129,12 +130,11 @@ def initialize_system(m):
     seq.run(m, lambda u: u.initialize())
 
 
-def solve(blk, solver=None, tee=False, check_termination=True):
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    if check_termination:
-        assert_optimal_termination(results)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
 

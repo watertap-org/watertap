@@ -1,14 +1,13 @@
 #################################################################################
-# The Institute for the Design of Advanced Energy Systems Integrated Platform
-# Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
 Example of activated sludge process model based on BSM1 study using ASM1 reactions.
@@ -62,6 +61,11 @@ from watertap.property_models.activated_sludge.asm1_properties import ASM1Parame
 from watertap.property_models.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
+
+from watertap.core.util.initialization import check_solve
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 def build_flowsheet():
@@ -292,8 +296,7 @@ def build_flowsheet():
     # Solve overall flowsheet to close recycle loop
     solver = get_solver(options={"bound_push": 1e-8})
     results = solver.solve(m)
-
-    pyo.assert_optimal_termination(results)
+    check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
 
     # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
     m.fs.R3.KLa.fix(10)
@@ -303,7 +306,12 @@ def build_flowsheet():
 
     # Resolve with controls in place
     results = solver.solve(m, tee=True)
-    pyo.assert_optimal_termination(results)
+    check_solve(
+        results,
+        checkpoint="re-solve with controls in place",
+        logger=_log,
+        fail_flag=True,
+    )
 
     return m, results
 

@@ -1,25 +1,23 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import os
+import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
-    Set,
     Expression,
     value,
     TransformationFactory,
     units as pyunits,
-    assert_optimal_termination,
 )
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
@@ -32,13 +30,16 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
-from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 from watertap.unit_models.zero_order import (
     FeedZO,
     PumpElectricityZO,
     ElectroNPZO,
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 def main():
@@ -50,16 +51,14 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m)
-    assert_optimal_termination(results)
+    results = solve(m, checkpoint="solve flowsheet after initializing system")
     display_results(m)
 
     add_costing(m)
     m.fs.costing.initialize()
 
     assert_degrees_of_freedom(m, 0)
-    results = solve(m)
-    assert_optimal_termination(results)
+    results = solve(m, checkpoint="solve flowsheet after costing")
 
     display_costing(m)
     return m, results
@@ -71,13 +70,13 @@ def build():
 
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        solute_list=["nitrogen", "phosphorus", "struvite"]
+        solute_list=["nitrogen", "phosphorus", "calcium"]
     )
 
     # components
     m.fs.feed = FeedZO(property_package=m.fs.prop)
     m.fs.product_H2O = Product(property_package=m.fs.prop)
-    m.fs.product_struvite = Product(property_package=m.fs.prop)
+    m.fs.product_salt = Product(property_package=m.fs.prop)
     m.fs.pump = PumpElectricityZO(
         property_package=m.fs.prop,
         database=m.db,
@@ -92,9 +91,7 @@ def build():
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.pump.inlet)
     m.fs.s02 = Arc(source=m.fs.pump.outlet, destination=m.fs.electroNP.inlet)
     m.fs.s03 = Arc(source=m.fs.electroNP.treated, destination=m.fs.product_H2O.inlet)
-    m.fs.s04 = Arc(
-        source=m.fs.electroNP.byproduct, destination=m.fs.product_struvite.inlet
-    )
+    m.fs.s04 = Arc(source=m.fs.electroNP.byproduct, destination=m.fs.product_salt.inlet)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -108,12 +105,12 @@ def set_operating_conditions(m):
     flow_vol = 37.9 / 3600 * pyunits.m**3 / pyunits.s
     conc_nitrogen = 0.715 * pyunits.kg / pyunits.m**3
     conc_phosphorus = 0.715 * pyunits.kg / pyunits.m**3
-    conc_struvite = 0 * pyunits.kg / pyunits.m**3
+    conc_calcium = 0.162 * pyunits.kg / pyunits.m**3
 
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "nitrogen"].fix(conc_nitrogen)
     m.fs.feed.conc_mass_comp[0, "phosphorus"].fix(conc_phosphorus)
-    m.fs.feed.conc_mass_comp[0, "struvite"].fix(conc_struvite)
+    m.fs.feed.conc_mass_comp[0, "calcium"].fix(conc_calcium)
     solve(m.fs.feed)
 
     # pump
@@ -167,7 +164,6 @@ def add_costing(m):
         expr=(
             (
                 m.fs.costing.total_annualized_cost
-                + m.fs.costing.aggregate_flow_costs["struvite_product"]
                 + m.fs.costing.aggregate_flow_costs["magnesium_chloride"]
             )
             / m.fs.costing.annual_water_production
@@ -184,7 +180,6 @@ def add_costing(m):
         expr=(
             (
                 m.fs.costing.total_annualized_cost
-                + m.fs.costing.aggregate_flow_costs["struvite_product"]
                 + m.fs.costing.aggregate_flow_costs["magnesium_chloride"]
             )
             / m.fs.costing.annual_water_inlet
@@ -192,7 +187,7 @@ def add_costing(m):
         doc="Levelized Cost of Treatment With Revenue",
     )
 
-    m.fs.costing.LCOS = Expression(
+    m.fs.costing.LCOP = Expression(
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
@@ -200,11 +195,11 @@ def add_costing(m):
         / (
             m.fs.costing.utilization_factor
             * pyunits.convert(
-                m.fs.product_struvite.properties[0].flow_mass_comp["struvite"],
+                m.fs.product_salt.properties[0].flow_mass_comp["phosphorus"],
                 to_units=pyunits.kg / m.fs.costing.base_period,
             )
         ),
-        doc="Levelized cost of struvite",
+        doc="Levelized cost of phosphorus recovery",
     )
 
 
@@ -215,12 +210,11 @@ def initialize_system(m):
     seq.run(m, lambda u: u.initialize())
 
 
-def solve(blk, solver=None, tee=False, check_termination=True):
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    if check_termination:
-        assert_optimal_termination(results)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
 
@@ -236,11 +230,6 @@ def display_results(m):
         m.fs.product_H2O.flow_mass_comp[0, "H2O"] / m.fs.feed.flow_mass_comp[0, "H2O"]
     )
     print(f"Water recovery: {water_recovery:.3f} [-]")
-
-    struvite_production = value(
-        m.fs.product_struvite.flow_mass_comp[0, "struvite"] / m.fs.feed.flow_vol[0]
-    )
-    print(f"Struvite production: {struvite_production:.3f} [kg/m3 feed]")
 
     phosphorus_removal = 1 - value(
         m.fs.product_H2O.flow_mass_comp[0, "phosphorus"]
@@ -319,11 +308,11 @@ def display_costing(m):
             m.fs.feed.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.s
         )
         / pyunits.convert(
-            m.fs.product_struvite.flow_mass_comp[0, "struvite"],
+            m.fs.product_salt.flow_mass_comp[0, "phosphorus"],
             to_units=pyunits.kg / pyunits.s,
         )
     )
-    print(f"Specific energy consumption: {sec:.3f} kWh/kg struvite")
+    print(f"Specific energy consumption: {sec:.3f} kWh/kg phosphorus removal")
 
     print("\n----------Levelized Cost----------")
     LCOW = value(
@@ -349,10 +338,10 @@ def display_costing(m):
     )
     print(f"Levelized Cost of Treatment With Revenue: {LCOT_with_revenue:.3f} $/m^3")
 
-    LCOS = value(
-        pyunits.convert(m.fs.costing.LCOS, to_units=pyunits.USD_2018 / pyunits.kg)
+    LCOP = value(
+        pyunits.convert(m.fs.costing.LCOP, to_units=pyunits.USD_2018 / pyunits.kg)
     )
-    print(f"Levelized Cost of Struvite: {LCOS:.3f} $/kg")
+    print(f"Levelized Cost of Phosphorus Recovery: {LCOP:.3f} $/kg")
 
 
 if __name__ == "__main__":
