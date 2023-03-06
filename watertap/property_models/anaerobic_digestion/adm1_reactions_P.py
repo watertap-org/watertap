@@ -746,7 +746,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             )
             * mw_c,
             ("R3", "Liq", "S_IN"): 0,
-            ("R3", "Liq", "S_IP"): -self.Pi["X_li"],
+            ("R3", "Liq", "S_IP"): -self.Pi["X_li"] * mw_p,
             ("R3", "Liq", "S_I"): 0,
             ("R3", "Liq", "X_c"): 0,
             ("R3", "Liq", "X_ch"): 0,
