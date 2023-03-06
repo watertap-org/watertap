@@ -1321,14 +1321,14 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
 
         # TODO: Update s_ic_rxns list and add similar code for S_IN and S_IP
 
-        s_ic_rxns = ["R5", "R6", "R10", "R11", "R12"]
-
-        for R in s_ic_rxns:
-            self.rate_reaction_stoichiometry[R, "Liq", "S_IC"] = -sum(
-                self.Ci[S] * self.rate_reaction_stoichiometry[R, "Liq", S] * mw_c
-                for S in Ci_dict.keys()
-                if S != "S_IC"
-            )
+        # s_ic_rxns = ["R5", "R6", "R10", "R11", "R12"]
+        #
+        # for R in s_ic_rxns:
+        #     self.rate_reaction_stoichiometry[R, "Liq", "S_IC"] = -sum(
+        #         self.Ci[S] * self.rate_reaction_stoichiometry[R, "Liq", S] * mw_c
+        #         for S in Ci_dict.keys()
+        #         if S != "S_IC"
+        #     )
 
         for R in self.rate_reaction_idx:
             self.rate_reaction_stoichiometry[R, "Liq", "S_cat"] = 0
@@ -1506,6 +1506,12 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             domain=pyo.NonNegativeReals,
             doc="molar concentration of OH",
             units=pyo.units.kmol / pyo.units.m**3,
+        )
+        self.Z_h2s = pyo.Var(
+            initialize=0,
+            domain=pyo.NonNegativeReals,
+            doc="Reference component mass concentrations of hydrogen sulfide",
+            units=pyo.units.kg / pyo.units.m**3,
         )
 
         # Equation from [2]
@@ -1744,9 +1750,9 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             doc="hydrogen inhibition attributed to propionate uptake",
         )
 
-        # TODO: check Z_h2s and if we have ref state for S_h2s
+        # TODO: revisit Z_h2s values and if we have ref state for S_h2s
         def rule_I_h2s_ac(self):
-            return 1 / (1 + self.conc_mass_comp_ref["S_h2s"] / self.params.K_I_h2s_ac)
+            return 1 / (1 + self.Z_h2s / self.params.K_I_h2s_ac)
 
         self.I_h2s_ac = pyo.Expression(
             rule=rule_I_h2s_ac,
@@ -1754,7 +1760,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         )
 
         def rule_I_h2s_c4(self):
-            return 1 / (1 + self.conc_mass_comp_ref["S_h2s"] / self.params.K_I_h2s_c4)
+            return 1 / (1 + self.Z_h2s / self.params.K_I_h2s_c4)
 
         self.I_h2s_c4 = pyo.Expression(
             rule=rule_I_h2s_c4,
@@ -1762,7 +1768,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         )
 
         def rule_I_h2s_h2(self):
-            return 1 / (1 + self.conc_mass_comp_ref["S_h2s"] / self.params.K_I_h2s_h2)
+            return 1 / (1 + self.Z_h2s / self.params.K_I_h2s_h2)
 
         self.I_h2s_h2 = pyo.Expression(
             rule=rule_I_h2s_h2,
@@ -1770,7 +1776,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         )
 
         def rule_I_h2s_pro(self):
-            return 1 / (1 + self.conc_mass_comp_ref["S_h2s"] / self.params.K_I_h2s_pro)
+            return 1 / (1 + self.Z_h2s / self.params.K_I_h2s_pro)
 
         self.I_h2s_pro = pyo.Expression(
             rule=rule_I_h2s_pro,
