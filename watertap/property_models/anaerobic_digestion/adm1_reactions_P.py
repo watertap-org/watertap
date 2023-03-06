@@ -592,6 +592,12 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Acetate acid-base equilibrium constant",
         )
+        self.f_xi_xb = pyo.Var(
+            initialize=0.275,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Fraction of inert particulate organics from biomass",
+        )
         self.f_ch_xb = pyo.Var(
             initialize=0.275,
             units=pyo.units.dimensionless,
@@ -677,7 +683,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R1", "Liq", "S_ac"): 0,
             ("R1", "Liq", "S_h2"): 0,
             ("R1", "Liq", "S_ch4"): 0,
-            ("R1", "Liq", "S_IC"): (self.Ci["S_su"] - self.Ci["X_ch"]) * mw_c,
+            ("R1", "Liq", "S_IC"): (self.Ci["X_ch"] - self.Ci["S_su"]) * mw_c,
             ("R1", "Liq", "S_IN"): 0,
             ("R1", "Liq", "S_IP"): 0,
             ("R1", "Liq", "S_I"): 0,
@@ -917,21 +923,27 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R9", "Liq", "X_ac"): 0,
             ("R9", "Liq", "X_h2"): 0,
             ("R9", "Liq", "X_I"): 0,
-            # R10: Uptake of propionate
+            # R10: Uptake of acetate
             ("R10", "Liq", "H2O"): 0,
             ("R10", "Liq", "S_su"): 0,
             ("R10", "Liq", "S_aa"): 0,
             ("R10", "Liq", "S_fa"): 0,
             ("R10", "Liq", "S_va"): 0,
             ("R10", "Liq", "S_bu"): 0,
-            ("R10", "Liq", "S_pro"): -1,
-            ("R10", "Liq", "S_ac"): (1 - self.Y_pro) * 0.57,
-            ("R10", "Liq", "S_h2"): (1 - self.Y_pro) * 0.43,
-            ("R10", "Liq", "S_ch4"): 0,
-            ("R10", "Liq", "S_IC"): 0,
-            ("R10", "Liq", "S_IN"): (-self.Y_pro * self.N_bac) * mw_n,
+            ("R10", "Liq", "S_pro"): 0,
+            ("R10", "Liq", "S_ac"): -1,
+            ("R10", "Liq", "S_h2"): 0,
+            ("R10", "Liq", "S_ch4"): 1 - self.Y_ac,
+            ("R10", "Liq", "S_IC"): (
+                self.Ci["S_ac"]
+                - (1 - self.Y_ac) * self.Ci["S_ch4"]
+                - self.Y_ac * self.Ci["X_ac"]
+            )
+            * mw_c,
+            ("R10", "Liq", "S_IN"): (-self.Y_ac * self.Ni["X_ac"]) * mw_n,
+            ("R10", "Liq", "S_IP"): 0,
             ("R10", "Liq", "S_I"): 0,
-            ("R10", "Liq", "X_c"): 0,
+            ("R10", "Liq", "X_IP"): 0,
             ("R10", "Liq", "X_ch"): 0,
             ("R10", "Liq", "X_pr"): 0,
             ("R10", "Liq", "X_li"): 0,
@@ -939,11 +951,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R10", "Liq", "X_aa"): 0,
             ("R10", "Liq", "X_fa"): 0,
             ("R10", "Liq", "X_c4"): 0,
-            ("R10", "Liq", "X_pro"): self.Y_pro,
-            ("R10", "Liq", "X_ac"): 0,
+            ("R10", "Liq", "X_pro"): 0,
+            ("R10", "Liq", "X_ac"): self.Y_ac,
             ("R10", "Liq", "X_h2"): 0,
             ("R10", "Liq", "X_I"): 0,
-            # R11: Uptake of acetate
+            # R11: Uptake of hydrogen
             ("R11", "Liq", "H2O"): 0,
             ("R11", "Liq", "S_su"): 0,
             ("R11", "Liq", "S_aa"): 0,
@@ -951,13 +963,17 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R11", "Liq", "S_va"): 0,
             ("R11", "Liq", "S_bu"): 0,
             ("R11", "Liq", "S_pro"): 0,
-            ("R11", "Liq", "S_ac"): -1,
-            ("R11", "Liq", "S_h2"): 0,
-            ("R11", "Liq", "S_ch4"): 1 - self.Y_ac,
-            ("R11", "Liq", "S_IC"): 0,
-            ("R11", "Liq", "S_IN"): (-self.Y_ac * self.N_bac) * mw_n,
+            ("R11", "Liq", "S_ac"): 0,
+            ("R11", "Liq", "S_h2"): -1,
+            ("R11", "Liq", "S_ch4"): 1 - self.Y_h2,
+            ("R11", "Liq", "S_IC"): (
+                -(1 - self.Y_h2) * self.Ci["S_ch4"] - self.Y_h2 * self.Ci["X_h2"]
+            )
+            * mw_c,
+            ("R11", "Liq", "S_IN"): (-self.Y_h2 * self.Ni["X_h2"]) * mw_n,
+            ("R11", "Liq", "S_IP"): (-self.Y_h2 * self.Pi["X_h2"]) * mw_p,
             ("R11", "Liq", "S_I"): 0,
-            ("R11", "Liq", "X_c"): 0,
+            ("R11", "Liq", "X_IP"): 0,
             ("R11", "Liq", "X_ch"): 0,
             ("R11", "Liq", "X_pr"): 0,
             ("R11", "Liq", "X_li"): 0,
@@ -966,10 +982,10 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R11", "Liq", "X_fa"): 0,
             ("R11", "Liq", "X_c4"): 0,
             ("R11", "Liq", "X_pro"): 0,
-            ("R11", "Liq", "X_ac"): self.Y_ac,
-            ("R11", "Liq", "X_h2"): 0,
+            ("R11", "Liq", "X_ac"): 0,
+            ("R11", "Liq", "X_h2"): self.Y_h2,
             ("R11", "Liq", "X_I"): 0,
-            # R12: Uptake of hydrogen
+            # R12: Decay of X_su
             ("R12", "Liq", "H2O"): 0,
             ("R12", "Liq", "S_su"): 0,
             ("R12", "Liq", "S_aa"): 0,
@@ -978,23 +994,31 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R12", "Liq", "S_bu"): 0,
             ("R12", "Liq", "S_pro"): 0,
             ("R12", "Liq", "S_ac"): 0,
-            ("R12", "Liq", "S_h2"): -1,
-            ("R12", "Liq", "S_ch4"): (1 - self.Y_h2),
-            ("R12", "Liq", "S_IC"): 0,
-            ("R12", "Liq", "S_IN"): (-self.Y_h2 * self.N_bac) * mw_n,
+            ("R12", "Liq", "S_h2"): 0,
+            ("R12", "Liq", "S_ch4"): 0,
+            ("R12", "Liq", "S_IC"): (
+                self.Ci["X_Su"]
+                - self.f_ch_xb * self.Ci["X_ch"]
+                - self.f_pr_xb * self.Ci["X_pr"]
+                - self.f_li_xb * self.Ci["X_li"]
+                - self.f_xi_xb * self.Ci["X_I"]
+            )
+            * mw_c,
+            ("R12", "Liq", "S_IN"): (-self.Y_h2 * self.Ni["X_h2"]) * mw_n,
+            ("R12", "Liq", "S_IP"): (-self.Y_h2 * self.Pi["X_h2"]) * mw_p,
             ("R12", "Liq", "S_I"): 0,
-            ("R12", "Liq", "X_c"): 0,
-            ("R12", "Liq", "X_ch"): 0,
-            ("R12", "Liq", "X_pr"): 0,
-            ("R12", "Liq", "X_li"): 0,
-            ("R12", "Liq", "X_su"): 0,
+            ("R12", "Liq", "X_IP"): 0,
+            ("R12", "Liq", "X_ch"): self.f_ch_xb,
+            ("R12", "Liq", "X_pr"): self.f_pr_xb,
+            ("R12", "Liq", "X_li"): self.f_li_xb,
+            ("R12", "Liq", "X_su"): -1,
             ("R12", "Liq", "X_aa"): 0,
             ("R12", "Liq", "X_fa"): 0,
             ("R12", "Liq", "X_c4"): 0,
             ("R12", "Liq", "X_pro"): 0,
             ("R12", "Liq", "X_ac"): 0,
-            ("R12", "Liq", "X_h2"): self.Y_h2,
-            ("R12", "Liq", "X_I"): 0,
+            ("R12", "Liq", "X_h2"): 0,
+            ("R12", "Liq", "X_I"): self.f_xi_xb,
             # R13: Decay of X_su
             ("R13", "Liq", "H2O"): 0,
             ("R13", "Liq", "S_su"): 0,
