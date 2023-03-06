@@ -189,6 +189,8 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
         mw_c = 12 * pyo.units.kg / pyo.units.kmol
         mw_p = 31 * pyo.units.kg / pyo.units.kmol
 
+        # TODO: Inherit these parameters from ADM1 such that there is less repeated code?
+
         # Stoichiometric Parameters (Table 6.1 in Batstone et al., 2002)
         self.f_sI_xc = pyo.Var(
             initialize=0.1,
@@ -1037,15 +1039,25 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R12", "Liq", "S_h2"): 0,
             ("R12", "Liq", "S_ch4"): 0,
             ("R12", "Liq", "S_IC"): (
-                self.Ci["X_Su"]
+                self.Ci["X_su"]
                 - self.f_ch_xb * self.Ci["X_ch"]
                 - self.f_pr_xb * self.Ci["X_pr"]
                 - self.f_li_xb * self.Ci["X_li"]
                 - self.f_xi_xb * self.Ci["X_I"]
             )
             * mw_c,
-            ("R12", "Liq", "S_IN"): (-self.Y_h2 * self.Ni["X_h2"]) * mw_n,
-            ("R12", "Liq", "S_IP"): (-self.Y_h2 * self.Pi["X_h2"]) * mw_p,
+            ("R12", "Liq", "S_IN"): (
+                self.Ni["X_su"]
+                - self.f_pr_xb * self.Ni["X_pr"]
+                - self.f_xi_xb * self.Ni["X_I"]
+            )
+            * mw_n,
+            ("R12", "Liq", "S_IP"): (
+                self.Pi["X_su"]
+                - self.f_li_xb * self.Pi["X_li"]
+                - self.f_xi_xb * self.Pi["X_I"]
+            )
+            * mw_p,
             ("R12", "Liq", "S_I"): 0,
             ("R12", "Liq", "X_IP"): 0,
             ("R12", "Liq", "X_ch"): self.f_ch_xb,
@@ -1059,7 +1071,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R12", "Liq", "X_ac"): 0,
             ("R12", "Liq", "X_h2"): 0,
             ("R12", "Liq", "X_I"): self.f_xi_xb,
-            # R13: Decay of X_su
+            # R13: Decay of X_aa
             ("R13", "Liq", "H2O"): 0,
             ("R13", "Liq", "S_su"): 0,
             ("R13", "Liq", "S_aa"): 0,
@@ -1070,22 +1082,40 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R13", "Liq", "S_ac"): 0,
             ("R13", "Liq", "S_h2"): 0,
             ("R13", "Liq", "S_ch4"): 0,
-            ("R13", "Liq", "S_IC"): (-self.Ci["X_c"] + self.Ci["X_ac"]) * mw_c,
-            ("R13", "Liq", "S_IN"): (self.N_bac - self.N_xc) * mw_n,
+            ("R13", "Liq", "S_IC"): (
+                self.Ci["X_aa"]
+                - self.f_ch_xb * self.Ci["X_ch"]
+                - self.f_pr_xb * self.Ci["X_pr"]
+                - self.f_li_xb * self.Ci["X_li"]
+                - self.f_xi_xb * self.Ci["X_I"]
+            )
+            * mw_c,
+            ("R13", "Liq", "S_IN"): (
+                self.Ni["X_aa"]
+                - self.f_pr_xb * self.Ni["X_pr"]
+                - self.f_xi_xb * self.Ni["X_I"]
+            )
+            * mw_n,
+            ("R13", "Liq", "S_IP"): (
+                self.Pi["X_aa"]
+                - self.f_li_xb * self.Pi["X_li"]
+                - self.f_xi_xb * self.Pi["X_I"]
+            )
+            * mw_p,
             ("R13", "Liq", "S_I"): 0,
-            ("R13", "Liq", "X_c"): 1,
-            ("R13", "Liq", "X_ch"): 0,
-            ("R13", "Liq", "X_pr"): 0,
-            ("R13", "Liq", "X_li"): 0,
-            ("R13", "Liq", "X_su"): -1,
-            ("R13", "Liq", "X_aa"): 0,
+            ("R13", "Liq", "X_IP"): 0,
+            ("R13", "Liq", "X_ch"): self.f_ch_xb,
+            ("R13", "Liq", "X_pr"): self.f_pr_xb,
+            ("R13", "Liq", "X_li"): self.f_li_xb,
+            ("R13", "Liq", "X_su"): 0,
+            ("R13", "Liq", "X_aa"): -1,
             ("R13", "Liq", "X_fa"): 0,
             ("R13", "Liq", "X_c4"): 0,
             ("R13", "Liq", "X_pro"): 0,
             ("R13", "Liq", "X_ac"): 0,
             ("R13", "Liq", "X_h2"): 0,
-            ("R13", "Liq", "X_I"): 0,
-            # R14: Decay of X_aa
+            ("R13", "Liq", "X_I"): self.f_xi_xb,
+            # R14: Decay of X_fa
             ("R14", "Liq", "H2O"): 0,
             ("R14", "Liq", "S_su"): 0,
             ("R14", "Liq", "S_aa"): 0,
@@ -1096,22 +1126,40 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R14", "Liq", "S_ac"): 0,
             ("R14", "Liq", "S_h2"): 0,
             ("R14", "Liq", "S_ch4"): 0,
-            ("R14", "Liq", "S_IC"): (-self.Ci["X_c"] + self.Ci["X_ac"]) * mw_c,
-            ("R14", "Liq", "S_IN"): (self.N_bac - self.N_xc) * mw_n,
+            ("R14", "Liq", "S_IC"): (
+                self.Ci["X_fa"]
+                - self.f_ch_xb * self.Ci["X_ch"]
+                - self.f_pr_xb * self.Ci["X_pr"]
+                - self.f_li_xb * self.Ci["X_li"]
+                - self.f_xi_xb * self.Ci["X_I"]
+            )
+            * mw_c,
+            ("R14", "Liq", "S_IN"): (
+                self.Ni["X_fa"]
+                - self.f_pr_xb * self.Ni["X_pr"]
+                - self.f_xi_xb * self.Ni["X_I"]
+            )
+            * mw_n,
+            ("R14", "Liq", "S_IP"): (
+                self.Pi["X_fa"]
+                - self.f_li_xb * self.Pi["X_li"]
+                - self.f_xi_xb * self.Pi["X_I"]
+            )
+            * mw_p,
             ("R14", "Liq", "S_I"): 0,
-            ("R14", "Liq", "X_c"): 1,
-            ("R14", "Liq", "X_ch"): 0,
-            ("R14", "Liq", "X_pr"): 0,
-            ("R14", "Liq", "X_li"): 0,
+            ("R14", "Liq", "X_IP"): 0,
+            ("R14", "Liq", "X_ch"): self.f_ch_xb,
+            ("R14", "Liq", "X_pr"): self.f_pr_xb,
+            ("R14", "Liq", "X_li"): self.f_li_xb,
             ("R14", "Liq", "X_su"): 0,
-            ("R14", "Liq", "X_aa"): -1,
-            ("R14", "Liq", "X_fa"): 0,
+            ("R14", "Liq", "X_aa"): 0,
+            ("R14", "Liq", "X_fa"): -1,
             ("R14", "Liq", "X_c4"): 0,
             ("R14", "Liq", "X_pro"): 0,
             ("R14", "Liq", "X_ac"): 0,
             ("R14", "Liq", "X_h2"): 0,
-            ("R14", "Liq", "X_I"): 0,
-            # R15: Decay of X_fa
+            ("R14", "Liq", "X_I"): self.f_xi_xb,
+            # R15: Decay of X_c4
             ("R15", "Liq", "H2O"): 0,
             ("R15", "Liq", "S_su"): 0,
             ("R15", "Liq", "S_aa"): 0,
@@ -1122,22 +1170,40 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R15", "Liq", "S_ac"): 0,
             ("R15", "Liq", "S_h2"): 0,
             ("R15", "Liq", "S_ch4"): 0,
-            ("R15", "Liq", "S_IC"): (-self.Ci["X_c"] + self.Ci["X_ac"]) * mw_c,
-            ("R15", "Liq", "S_IN"): (self.N_bac - self.N_xc) * mw_n,
+            ("R15", "Liq", "S_IC"): (
+                self.Ci["X_c4"]
+                - self.f_ch_xb * self.Ci["X_ch"]
+                - self.f_pr_xb * self.Ci["X_pr"]
+                - self.f_li_xb * self.Ci["X_li"]
+                - self.f_xi_xb * self.Ci["X_I"]
+            )
+            * mw_c,
+            ("R15", "Liq", "S_IN"): (
+                self.Ni["X_c4"]
+                - self.f_pr_xb * self.Ni["X_pr"]
+                - self.f_xi_xb * self.Ni["X_I"]
+            )
+            * mw_n,
+            ("R15", "Liq", "S_IP"): (
+                self.Pi["X_c4"]
+                - self.f_li_xb * self.Pi["X_li"]
+                - self.f_xi_xb * self.Pi["X_I"]
+            )
+            * mw_p,
             ("R15", "Liq", "S_I"): 0,
-            ("R15", "Liq", "X_c"): 1,
-            ("R15", "Liq", "X_ch"): 0,
-            ("R15", "Liq", "X_pr"): 0,
-            ("R15", "Liq", "X_li"): 0,
+            ("R15", "Liq", "X_IP"): 0,
+            ("R15", "Liq", "X_ch"): self.f_ch_xb,
+            ("R15", "Liq", "X_pr"): self.f_pr_xb,
+            ("R15", "Liq", "X_li"): self.f_li_xb,
             ("R15", "Liq", "X_su"): 0,
             ("R15", "Liq", "X_aa"): 0,
-            ("R15", "Liq", "X_fa"): -1,
-            ("R15", "Liq", "X_c4"): 0,
+            ("R15", "Liq", "X_fa"): 0,
+            ("R15", "Liq", "X_c4"): -1,
             ("R15", "Liq", "X_pro"): 0,
             ("R15", "Liq", "X_ac"): 0,
             ("R15", "Liq", "X_h2"): 0,
-            ("R15", "Liq", "X_I"): 0,
-            # R16: Decay of X_c4
+            ("R15", "Liq", "X_I"): self.f_xi_xb,
+            # R16: Decay of X_pro
             ("R16", "Liq", "H2O"): 0,
             ("R16", "Liq", "S_su"): 0,
             ("R16", "Liq", "S_aa"): 0,
@@ -1148,22 +1214,40 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R16", "Liq", "S_ac"): 0,
             ("R16", "Liq", "S_h2"): 0,
             ("R16", "Liq", "S_ch4"): 0,
-            ("R16", "Liq", "S_IC"): (-self.Ci["X_c"] + self.Ci["X_ac"]) * mw_c,
-            ("R16", "Liq", "S_IN"): (self.N_bac - self.N_xc) * mw_n,
+            ("R16", "Liq", "S_IC"): (
+                self.Ci["X_pro"]
+                - self.f_ch_xb * self.Ci["X_ch"]
+                - self.f_pr_xb * self.Ci["X_pr"]
+                - self.f_li_xb * self.Ci["X_li"]
+                - self.f_xi_xb * self.Ci["X_I"]
+            )
+            * mw_c,
+            ("R16", "Liq", "S_IN"): (
+                self.Ni["X_pro"]
+                - self.f_pr_xb * self.Ni["X_pr"]
+                - self.f_xi_xb * self.Ni["X_I"]
+            )
+            * mw_n,
+            ("R16", "Liq", "S_IP"): (
+                self.Pi["X_pro"]
+                - self.f_li_xb * self.Pi["X_li"]
+                - self.f_xi_xb * self.Pi["X_I"]
+            )
+            * mw_p,
             ("R16", "Liq", "S_I"): 0,
-            ("R16", "Liq", "X_c"): 1,
-            ("R16", "Liq", "X_ch"): 0,
-            ("R16", "Liq", "X_pr"): 0,
-            ("R16", "Liq", "X_li"): 0,
+            ("R16", "Liq", "X_IP"): 0,
+            ("R16", "Liq", "X_ch"): self.f_ch_xb,
+            ("R16", "Liq", "X_pr"): self.f_pr_xb,
+            ("R16", "Liq", "X_li"): self.f_li_xb,
             ("R16", "Liq", "X_su"): 0,
             ("R16", "Liq", "X_aa"): 0,
             ("R16", "Liq", "X_fa"): 0,
-            ("R16", "Liq", "X_c4"): -1,
-            ("R16", "Liq", "X_pro"): 0,
+            ("R16", "Liq", "X_c4"): 0,
+            ("R16", "Liq", "X_pro"): -1,
             ("R16", "Liq", "X_ac"): 0,
             ("R16", "Liq", "X_h2"): 0,
-            ("R16", "Liq", "X_I"): 0,
-            # R17: Decay of X_pro
+            ("R16", "Liq", "X_I"): self.f_xi_xb,
+            # R17: Decay of X_ac
             ("R17", "Liq", "H2O"): 0,
             ("R17", "Liq", "S_su"): 0,
             ("R17", "Liq", "S_aa"): 0,
@@ -1174,22 +1258,40 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R17", "Liq", "S_ac"): 0,
             ("R17", "Liq", "S_h2"): 0,
             ("R17", "Liq", "S_ch4"): 0,
-            ("R17", "Liq", "S_IC"): (-self.Ci["X_c"] + self.Ci["X_ac"]) * mw_c,
-            ("R17", "Liq", "S_IN"): (self.N_bac - self.N_xc) * mw_n,
+            ("R17", "Liq", "S_IC"): (
+                self.Ci["X_ac"]
+                - self.f_ch_xb * self.Ci["X_ch"]
+                - self.f_pr_xb * self.Ci["X_pr"]
+                - self.f_li_xb * self.Ci["X_li"]
+                - self.f_xi_xb * self.Ci["X_I"]
+            )
+            * mw_c,
+            ("R17", "Liq", "S_IN"): (
+                self.Ni["X_ac"]
+                - self.f_pr_xb * self.Ni["X_pr"]
+                - self.f_xi_xb * self.Ni["X_I"]
+            )
+            * mw_n,
+            ("R17", "Liq", "S_IP"): (
+                self.Pi["X_ac"]
+                - self.f_li_xb * self.Pi["X_li"]
+                - self.f_xi_xb * self.Pi["X_I"]
+            )
+            * mw_p,
             ("R17", "Liq", "S_I"): 0,
-            ("R17", "Liq", "X_c"): 1,
-            ("R17", "Liq", "X_ch"): 0,
-            ("R17", "Liq", "X_pr"): 0,
-            ("R17", "Liq", "X_li"): 0,
+            ("R17", "Liq", "X_IP"): 0,
+            ("R17", "Liq", "X_ch"): self.f_ch_xb,
+            ("R17", "Liq", "X_pr"): self.f_pr_xb,
+            ("R17", "Liq", "X_li"): self.f_li_xb,
             ("R17", "Liq", "X_su"): 0,
             ("R17", "Liq", "X_aa"): 0,
             ("R17", "Liq", "X_fa"): 0,
             ("R17", "Liq", "X_c4"): 0,
-            ("R17", "Liq", "X_pro"): -1,
-            ("R17", "Liq", "X_ac"): 0,
+            ("R17", "Liq", "X_pro"): 0,
+            ("R17", "Liq", "X_ac"): -1,
             ("R17", "Liq", "X_h2"): 0,
-            ("R17", "Liq", "X_I"): 0,
-            # R18: Decay of X_ac
+            ("R17", "Liq", "X_I"): self.f_xi_xb,
+            # R18: Decay of X_h2
             ("R18", "Liq", "H2O"): 0,
             ("R18", "Liq", "S_su"): 0,
             ("R18", "Liq", "S_aa"): 0,
@@ -1200,50 +1302,44 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R18", "Liq", "S_ac"): 0,
             ("R18", "Liq", "S_h2"): 0,
             ("R18", "Liq", "S_ch4"): 0,
-            ("R18", "Liq", "S_IC"): (-self.Ci["X_c"] + self.Ci["X_ac"]) * mw_c,
-            ("R18", "Liq", "S_IN"): (self.N_bac - self.N_xc) * mw_n,
+            ("R18", "Liq", "S_IC"): (
+                self.Ci["X_h2"]
+                - self.f_ch_xb * self.Ci["X_ch"]
+                - self.f_pr_xb * self.Ci["X_pr"]
+                - self.f_li_xb * self.Ci["X_li"]
+                - self.f_xi_xb * self.Ci["X_I"]
+            )
+            * mw_c,
+            ("R18", "Liq", "S_IN"): (
+                self.Ni["X_h2"]
+                - self.f_pr_xb * self.Ni["X_pr"]
+                - self.f_xi_xb * self.Ni["X_I"]
+            )
+            * mw_n,
+            ("R18", "Liq", "S_IP"): (
+                self.Pi["X_h2"]
+                - self.f_li_xb * self.Pi["X_li"]
+                - self.f_xi_xb * self.Pi["X_I"]
+            )
+            * mw_p,
             ("R18", "Liq", "S_I"): 0,
-            ("R18", "Liq", "X_c"): 1,
-            ("R18", "Liq", "X_ch"): 0,
-            ("R18", "Liq", "X_pr"): 0,
-            ("R18", "Liq", "X_li"): 0,
+            ("R18", "Liq", "X_IP"): 0,
+            ("R18", "Liq", "X_ch"): self.f_ch_xb,
+            ("R18", "Liq", "X_pr"): self.f_pr_xb,
+            ("R18", "Liq", "X_li"): self.f_li_xb,
             ("R18", "Liq", "X_su"): 0,
             ("R18", "Liq", "X_aa"): 0,
             ("R18", "Liq", "X_fa"): 0,
             ("R18", "Liq", "X_c4"): 0,
             ("R18", "Liq", "X_pro"): 0,
-            ("R18", "Liq", "X_ac"): -1,
-            ("R18", "Liq", "X_h2"): 0,
-            ("R18", "Liq", "X_I"): 0,
-            # R19: Decay of X_h2
-            ("R19", "Liq", "H2O"): 0,
-            ("R19", "Liq", "S_su"): 0,
-            ("R19", "Liq", "S_aa"): 0,
-            ("R19", "Liq", "S_fa"): 0,
-            ("R19", "Liq", "S_va"): 0,
-            ("R19", "Liq", "S_bu"): 0,
-            ("R19", "Liq", "S_pro"): 0,
-            ("R19", "Liq", "S_ac"): 0,
-            ("R19", "Liq", "S_h2"): 0,
-            ("R19", "Liq", "S_ch4"): 0,
-            ("R19", "Liq", "S_IC"): (-self.Ci["X_c"] + self.Ci["X_ac"]) * mw_c,
-            ("R19", "Liq", "S_IN"): (self.N_bac - self.N_xc) * mw_n,
-            ("R19", "Liq", "S_I"): 0,
-            ("R19", "Liq", "X_c"): 1,
-            ("R19", "Liq", "X_ch"): 0,
-            ("R19", "Liq", "X_pr"): 0,
-            ("R19", "Liq", "X_li"): 0,
-            ("R19", "Liq", "X_su"): 0,
-            ("R19", "Liq", "X_aa"): 0,
-            ("R19", "Liq", "X_fa"): 0,
-            ("R19", "Liq", "X_c4"): 0,
-            ("R19", "Liq", "X_pro"): 0,
-            ("R19", "Liq", "X_ac"): 0,
-            ("R19", "Liq", "X_h2"): -1,
-            ("R19", "Liq", "X_I"): 0,
+            ("R18", "Liq", "X_ac"): 0,
+            ("R18", "Liq", "X_h2"): -1,
+            ("R18", "Liq", "X_I"): self.f_xi_xb,
         }
 
-        s_ic_rxns = ["Y_su", "R6", "R10", "R11", "R12"]
+        # TODO: Update s_ic_rxns list and add similar code for S_IN and S_IP
+
+        s_ic_rxns = ["R5", "R6", "R10", "R11", "R12"]
 
         for R in s_ic_rxns:
             self.rate_reaction_stoichiometry[R, "Liq", "S_IC"] = -sum(
@@ -1280,6 +1376,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
         )
 
 
+# TODO: Update the class names below
 class _ADM1ReactionBlock(ReactionBlockBase):
     """
     This Class contains methods which should be applied to Reaction Blocks as a
