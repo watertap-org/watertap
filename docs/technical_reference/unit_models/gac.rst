@@ -238,7 +238,7 @@ if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Surface diffusion coefficient correlation", ":math:`D_s=\left( S\!P\!D\!F\!R \right)\left( \frac{\epsilon_pC_0D_l}{\rho_aq_e\tau_p} \right)`"
+   "Surface diffusion coefficient correlation (Crittenden, et al. 1987)", ":math:`D_s=\left( S\!P\!D\!F\!R \right)\left( \frac{\epsilon_pC_0D_l}{\rho_aq_e\tau_p} \right)`"
 
 Costing Method
 ---------------
@@ -339,6 +339,9 @@ Journal of Environmental Engineering, 110(2), 440-456.
 
 Crittenden, J., Rhodes, R., Hand, D., Howe, K., & Tchobanoglous, G. (2012). MWHs Water Treatment. Principles and Design.
 EditorialJohn Wiley & Sons.
+
+Crittenden, J. C., Berrigan, J. K., Hand, D. W., & Lykins, B. (1987). Design of Rapid Fixed‐Bed Adsorption Tests for
+Nonconstant Diffusivities. Journal of Environmental Engineering, 113(2), 243–259.
 
 United States Environmental Protection Agency. (2021). Work Breakdown Structure-Based Cost Model for Granular Activated
 Carbon Drinking Water Treatment.

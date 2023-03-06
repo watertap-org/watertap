@@ -283,7 +283,6 @@ class TestGACRobust:
         mr.fs.unit.freund_ninv.fix(0.48)
 
         # gac particle specifications
-        mr.fs.unit.particle_porosity.fix(0.641)
         mr.fs.unit.particle_dens_app.fix(803.4)
         mr.fs.unit.particle_dia.fix(0.001026)
 
@@ -417,11 +416,13 @@ class TestGACRobust:
         assert pytest.approx(42890, rel=1e-3) == value(mr.fs.unit.dg)
         assert pytest.approx(45.79, rel=1e-3) == value(mr.fs.unit.N_Bi)
         assert pytest.approx(36.64, rel=1e-3) == value(mr.fs.unit.min_N_St)
-        assert pytest.approx(1.139, rel=1e-3) == value(mr.fs.unit.mass_throughput)
-        assert pytest.approx(395.9, rel=1e-3) == value(mr.fs.unit.min_res_time)
-        assert pytest.approx(264.0, rel=1e-3) == value(mr.fs.unit.res_time)
-        assert pytest.approx(19340000, rel=1e-3) == value(mr.fs.unit.min_elap_time)
-        assert pytest.approx(13690000, rel=1e-3) == value(mr.fs.unit.elap_time)
+        assert pytest.approx(1.139, rel=1e-3) == value(mr.fs.unit.throughput)
+        assert pytest.approx(395.9, rel=1e-3) == value(mr.fs.unit.min_residence_time)
+        assert pytest.approx(264.0, rel=1e-3) == value(mr.fs.unit.residence_time)
+        assert pytest.approx(19340000, rel=1e-3) == value(
+            mr.fs.unit.min_operational_time
+        )
+        assert pytest.approx(13690000, rel=1e-3) == value(mr.fs.unit.operational_time)
         assert pytest.approx(22810, rel=1e-3) == value(mr.fs.unit.bed_volumes_treated)
         assert pytest.approx(0.003157, rel=1e-3) == value(mr.fs.unit.velocity_int)
         assert pytest.approx(0.8333, rel=1e-3) == value(mr.fs.unit.bed_length)
@@ -432,7 +433,7 @@ class TestGACRobust:
         assert pytest.approx(0.002360, rel=1e-3) == value(
             mr.fs.unit.ele_conc_ratio_avg[1]
         )
-        assert pytest.approx(0.2287, rel=1e-3) == value(mr.fs.unit.ele_conc_ratio)
+        assert pytest.approx(0.2287, rel=1e-3) == value(mr.fs.unit.conc_ratio_avg)
 
     '''
     @pytest.mark.component
