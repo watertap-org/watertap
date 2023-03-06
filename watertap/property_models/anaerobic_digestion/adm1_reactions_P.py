@@ -595,7 +595,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             doc="Acetate acid-base equilibrium constant",
         )
         self.f_xi_xb = pyo.Var(
-            initialize=0.275,
+            initialize=0.1,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="Fraction of inert particulate organics from biomass",
