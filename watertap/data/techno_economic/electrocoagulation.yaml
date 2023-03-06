@@ -1,13 +1,10 @@
 default:
-  # current_density:
-  #   value: 8.0
-  #   units: mA/cm^2
-  # electrode_spacing:
-  #   value: 5.4
-  #   units: cm
-  # solution_conductivity:
-  #   value: 0.00115
-  #   units: S/cm
+  overpotential_k1:
+    value: 430
+    units: millivolt
+  overpotential_k2:
+    value: 1000
+    units: millivolt
   electrode_thick:
     value: 0.001
     units: m
@@ -30,7 +27,7 @@ default:
     value: 1.83
     units: dimensionless
   overpotential:
-    value: 2.271509
+    value: 1.5
     units: volt
   recovery_frac_mass_H2O:
     value: 0.99
@@ -72,7 +69,7 @@ default:
       value: 0.4589
       units: dimensionless
     sludge_handling_cost:
-      value: 0.1
+      value: 0.0275
       units: USD_2020 / kg
     ec_labor_maint_factor:
       value: 0.063
@@ -87,87 +84,3 @@ default:
       value: 2
       units: USD_2020 / kg
 
-
-# aluminum_electrodes:
-#   power_density_k1:
-#     value: 430
-#     units: dimensionless
-#   power_density_k2:
-#     value: 1000
-#     units: dimensionless
-#   z_valence:
-#     value: 1.64
-#     units: dimensionless
-#   removal_frac_mass_comp:
-#     toc:
-#       value: 0.77
-#       units: dimensionless
-#     cod:
-#       value: 0.86
-#       units: dimensionless
-#     turbidity:
-#       value: 0.97
-#       units: dimensionless
-#     tss:
-#       value: 0.72
-#       units: dimensionless
-#     hardness:
-#       value: 0.80
-#       units: dimensionless
-#     silica:
-#       value: 0.75
-#       units: dimensionless
-#   capital_cost:
-#     basis: flow_vol
-#     cost_factor: None
-#     reference_state:
-#       value: 4732.0
-#       units: m^3/hr
-#     capital_a_parameter:
-#       value: 12.17829669e6
-#       units: USD_2014
-#     capital_b_parameter:
-#       value: 0.5862
-#       units: dimensionless
-
-# iron_electrodes:
-#   power_density_k1:
-#     value: 75
-#     units: dimensionless
-#   power_density_k2:
-#     value: 600
-#     units: dimensionless
-#   z_valence:
-#     value: 2
-#     units: dimensionless
-#   removal_frac_mass_comp:
-#     toc:
-#       value: 0.68
-#       units: dimensionless
-#     cod:
-#       value: 0.88
-#       units: dimensionless
-#     turbidity:
-#       value: 0.75
-#       units: dimensionless
-#     tss:
-#       value: 0.72
-#       units: dimensionless
-#     hardness:
-#       value: 0.80
-#       units: dimensionless
-#     silica:
-#       value: 0.75
-#       units: dimensionless
-#   capital_cost:
-#     basis: flow_vol
-#     cost_factor: None
-#     reference_state:
-#       value: 4732.0
-#       units: m^3/hr
-#     capital_a_parameter:
-#       value: 12.17829669e6
-#       units: USD_2014
-#     capital_b_parameter:
-#       value: 0.5862
-#       units: dimensionless
