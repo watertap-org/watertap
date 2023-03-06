@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 This module contains the general purpose property package for zero-order
 unit models. Zero-order models do not track temperature and pressure, or any
@@ -126,7 +125,8 @@ class WaterParameterBlockData(PhysicalParameterBlock):
 
         # ---------------------------------------------------------------------
         # Set default scaling factors
-        self.default_scaling_factor = {("flow_vol"): 1e3, ("conc_mass_comp"): 1e2}
+        self.set_default_scaling("flow_vol", 1e3)
+        self.set_default_scaling("conc_mass_comp", 1e2)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -329,8 +329,8 @@ class WaterStateBlockData(StateBlockData):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
 
-        d_sf_Q = self.params.default_scaling_factor["flow_vol"]
-        d_sf_c = self.params.default_scaling_factor["conc_mass_comp"]
+        d_sf_Q = self.params.get_default_scaling("flow_vol")
+        d_sf_c = self.params.get_default_scaling("conc_mass_comp")
 
         for j, v in self.flow_mass_comp.items():
             if iscale.get_scaling_factor(v) is None:
@@ -344,8 +344,7 @@ class WaterStateBlockData(StateBlockData):
             for j, v in self.conc_mass_comp.items():
                 sf_c = iscale.get_scaling_factor(self.conc_mass_comp[j])
                 if sf_c is None:
-                    try:
-                        sf_c = self.params.default_scaling_factor[("conc_mass_comp", j)]
-                    except KeyError:
+                    sf_c = self.params.get_default_scaling("conc_mass_comp", j)
+                    if sf_c is None:
                         sf_c = d_sf_c
                     iscale.set_scaling_factor(self.conc_mass_comp[j], sf_c)

@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Initial property package for seawater system
 """
@@ -738,7 +737,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
-                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
                 "flow_vol": {"method": "_flow_vol"},
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
@@ -746,20 +744,27 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
                 "molality_phase_comp": {"method": "_molality_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
-                "osm_coeff": {"method": "_osm_coeff"},
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
-                "enth_flow": {"method": "_enth_flow"},
                 "pressure_sat": {"method": "_pressure_sat"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
-                "dh_vap_mass": {"method": "_dh_vap_mass"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
                 "boiling_point_elevation_phase": {
                     "method": "_boiling_point_elevation_phase"
                 },
             }
         )
+
+        obj.define_custom_properties(
+            {
+                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
+                "osm_coeff": {"method": "_osm_coeff"},
+                "enth_flow": {"method": "_enth_flow"},
+                "dh_vap_mass": {"method": "_dh_vap_mass"},
+            }
+        )
+
         # TODO: add diffusivity variable and constraint since it is needed when calculating mass transfer coefficient in
         #  current implementation of 0D RO model
         obj.add_default_units(
