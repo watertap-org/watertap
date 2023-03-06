@@ -689,7 +689,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R1", "Liq", "S_IN"): 0,
             ("R1", "Liq", "S_IP"): 0,
             ("R1", "Liq", "S_I"): 0,
-            ("R1", "Liq", "X_IP"): 0,
             ("R1", "Liq", "X_ch"): -1,
             ("R1", "Liq", "X_pr"): 0,
             ("R1", "Liq", "X_li"): 0,
@@ -985,7 +984,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R10", "Liq", "S_IN"): (-self.Y_ac * self.Ni["X_ac"]) * mw_n,
             ("R10", "Liq", "S_IP"): 0,
             ("R10", "Liq", "S_I"): 0,
-            ("R10", "Liq", "X_IP"): 0,
             ("R10", "Liq", "X_ch"): 0,
             ("R10", "Liq", "X_pr"): 0,
             ("R10", "Liq", "X_li"): 0,
@@ -1015,7 +1013,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R11", "Liq", "S_IN"): (-self.Y_h2 * self.Ni["X_h2"]) * mw_n,
             ("R11", "Liq", "S_IP"): (-self.Y_h2 * self.Pi["X_h2"]) * mw_p,
             ("R11", "Liq", "S_I"): 0,
-            ("R11", "Liq", "X_IP"): 0,
             ("R11", "Liq", "X_ch"): 0,
             ("R11", "Liq", "X_pr"): 0,
             ("R11", "Liq", "X_li"): 0,
@@ -1059,7 +1056,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             )
             * mw_p,
             ("R12", "Liq", "S_I"): 0,
-            ("R12", "Liq", "X_IP"): 0,
             ("R12", "Liq", "X_ch"): self.f_ch_xb,
             ("R12", "Liq", "X_pr"): self.f_pr_xb,
             ("R12", "Liq", "X_li"): self.f_li_xb,
@@ -1103,7 +1099,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             )
             * mw_p,
             ("R13", "Liq", "S_I"): 0,
-            ("R13", "Liq", "X_IP"): 0,
             ("R13", "Liq", "X_ch"): self.f_ch_xb,
             ("R13", "Liq", "X_pr"): self.f_pr_xb,
             ("R13", "Liq", "X_li"): self.f_li_xb,
@@ -1147,7 +1142,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             )
             * mw_p,
             ("R14", "Liq", "S_I"): 0,
-            ("R14", "Liq", "X_IP"): 0,
             ("R14", "Liq", "X_ch"): self.f_ch_xb,
             ("R14", "Liq", "X_pr"): self.f_pr_xb,
             ("R14", "Liq", "X_li"): self.f_li_xb,
@@ -1191,7 +1185,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             )
             * mw_p,
             ("R15", "Liq", "S_I"): 0,
-            ("R15", "Liq", "X_IP"): 0,
             ("R15", "Liq", "X_ch"): self.f_ch_xb,
             ("R15", "Liq", "X_pr"): self.f_pr_xb,
             ("R15", "Liq", "X_li"): self.f_li_xb,
@@ -1235,7 +1228,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             )
             * mw_p,
             ("R16", "Liq", "S_I"): 0,
-            ("R16", "Liq", "X_IP"): 0,
             ("R16", "Liq", "X_ch"): self.f_ch_xb,
             ("R16", "Liq", "X_pr"): self.f_pr_xb,
             ("R16", "Liq", "X_li"): self.f_li_xb,
@@ -1279,7 +1271,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             )
             * mw_p,
             ("R17", "Liq", "S_I"): 0,
-            ("R17", "Liq", "X_IP"): 0,
             ("R17", "Liq", "X_ch"): self.f_ch_xb,
             ("R17", "Liq", "X_pr"): self.f_pr_xb,
             ("R17", "Liq", "X_li"): self.f_li_xb,
@@ -1323,7 +1314,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             )
             * mw_p,
             ("R18", "Liq", "S_I"): 0,
-            ("R18", "Liq", "X_IP"): 0,
             ("R18", "Liq", "X_ch"): self.f_ch_xb,
             ("R18", "Liq", "X_pr"): self.f_pr_xb,
             ("R18", "Liq", "X_li"): self.f_li_xb,
