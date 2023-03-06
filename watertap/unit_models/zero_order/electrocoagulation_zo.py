@@ -44,6 +44,12 @@ class ReactorMaterial(StrEnum):
     stainless_steel = "stainless_steel"
 
 
+class OverpotentialCalculation(StrEnum):
+    nernst = "nernst"
+    fixed = "fixed"
+    regression = "regression"
+
+
 @declare_process_block_class("ElectrocoagulationZO")
 class ElectrocoagulationZOData(ZeroOrderBaseData):
     """
@@ -67,6 +73,15 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             default="pvc",
             domain=In(ReactorMaterial),
             description="Reactor material",
+        ),
+    )
+
+    CONFIG.declare(
+        "overpotential_calculation",
+        ConfigValue(
+            default="fixed",
+            domain=In(OverpotentialCalculation),
+            description="Determination of overpotential",
         ),
     )
 
@@ -94,6 +109,36 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 doc="Density of electrode material",
             )
 
+            if self.config.overpotential_calculation == OverpotentialCalculation.nernst:
+
+                self.anode_cell_potential_std = Param(
+                    initialize=-1.66,
+                    mutable=True,
+                    units=pyunits.volt,
+                    doc="Anodic non-equilibrium cell potential, standard @ 25C",
+                )
+
+                self.anode_entropy_change_std = Param(
+                    initialize=0.000533,  # = S / (Z * F)
+                    mutable=True,
+                    units=pyunits.volt / pyunits.K,
+                    doc="Entropy change",
+                )
+
+                self.anodic_exchange_current_density = Param(
+                    initialize=2.602e-5,
+                    mutable=True,
+                    units=pyunits.ampere / pyunits.m**2,
+                    doc="Anodic exchange current density",
+                )
+
+                self.cathodic_exchange_current_density = Param(
+                    initialize=1.0e-4,
+                    mutable=True,
+                    units=pyunits.ampere / pyunits.m**2,
+                    doc="Cathodic exchange current density",
+                )
+
         elif self.config.electrode_material == ElectrodeMaterial.iron:
             self.mw_electrode_material = Param(
                 initialize=0.056,
@@ -111,22 +156,94 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 doc="Density of electrode material",
             )
 
+            if self.config.overpotential_calculation == OverpotentialCalculation.nernst:
+
+                self.anode_cell_potential_std = Param(
+                    initialize=-0.41,
+                    mutable=True,
+                    units=pyunits.volt,
+                    doc="Anodic non-equilibrium cell potential, standard @ 25C",
+                )
+
+                self.anode_entropy_change_std = Param(
+                    initialize=7e-5,  # = S / (Z * F)
+                    mutable=True,
+                    units=pyunits.volt / pyunits.K,
+                    doc="Entropy change",
+                )
+
+                self.anodic_exchange_current_density = Param(
+                    initialize=0.00025,
+                    mutable=True,
+                    units=pyunits.ampere / pyunits.m**2,
+                    doc="Anodic exchange current density",
+                )
+
+                self.cathodic_exchange_current_density = Param(
+                    initialize=0.001,
+                    mutable=True,
+                    units=pyunits.ampere / pyunits.m**2,
+                    doc="Cathodic exchange current density",
+                )
+
+        if self.config.overpotential_calculation == OverpotentialCalculation.nernst:
+
+            self.cathode_cell_potential_std = Param(
+                initialize=-0.83,
+                mutable=True,
+                units=pyunits.volt,
+                doc="Cathode equilibrium cell potential, standard H2 @ 25C",
+            )
+
+            self.cathode_entropy_change_std = Param(
+                initialize=-0.000836,  # = S / (Z * F)
+                mutable=True,
+                units=pyunits.volt / pyunits.K,
+                doc="Entropy change for H2",
+            )
+
+            self.cathode_conc_mol_hydroxide = Param(
+                initialize=1e-3,
+                mutable=True,
+                units=pyunits.mol / pyunits.liter,
+                doc="Hydroxide concentration at cathode surface- assume pH = 11",
+            )
+
+            self.cathode_conc_mol_metal = Param(
+                initialize=0.08,
+                mutable=True,
+                units=pyunits.mol / pyunits.liter,
+                doc="Metal concentration at cathode surface- assume pH = 11",
+            )
+
+            self.partial_pressure_H2 = Param(
+                initialize=1,
+                mutable=True,
+                units=pyunits.atm,
+                doc="Partial pressure of hydrogen gas",
+            )
+
+            self.frac_increase_temperature = Param(
+                initialize=1.05,
+                mutable=True,
+                units=pyunits.dimensionless,
+                doc="Fractional increase in water temperature from inlet to outlet",
+            )
+
+            self.temp_in = Var(
+                initialize=298.15,
+                bounds=(273.15, 373.15),
+                units=pyunits.K,
+                doc="Temperature in",
+            )
+            self.temp_out = Var(
+                initialize=298.15,
+                bounds=(273.15, 373.15),
+                units=pyunits.K,
+                doc="Temperature out",
+            )
+
         # Fixed parameters
-
-        # self.current_density = Var(
-        #     units=pyunits.mA / pyunits.cm**2,
-        #     doc="Currenty density"
-        # )
-
-        # self.electrode_spacing = Var(
-        #     units=pyunits.cm,
-        #     doc="Distance between the electrodes",
-        # )
-
-        # self.solution_conductivity = Var(
-        #     units=pyunits.S / pyunits.cm,
-        #     doc="Electrical conductivity of solution",
-        # )
 
         # self.power_density_k1 = Var(
         #     units=pyunits.dimensionless,
@@ -290,7 +407,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             initialize=1,
             bounds=(0, None),
             units=pyunits.volt,
-            doc="Potential balance for voltage",  # ???
+            doc="Overpotential",
         )
 
         self.reactor_volume = Var(
@@ -328,6 +445,126 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             doc="Current density",
         )
 
+        self.power_required = Var(
+            initialize=1,
+            bounds=(1, None),
+            units=pyunits.watt,
+            doc="Current density",
+        )
+
+        if self.config.overpotential_calculation == OverpotentialCalculation.fixed:
+            self._fixed_perf_vars.append(self.overpotential)
+
+        if self.config.overpotential_calculation == OverpotentialCalculation.regression:
+
+            self.overpotential_k1 = Var(
+                units=pyunits.millivolt,
+                doc="Constant k1 in overpotential equation",
+            )
+
+            self.overpotential_k2 = Var(
+                units=pyunits.millivolt,
+                doc="Constant k2 in overpotential equation",
+            )
+
+            @self.Constraint(doc="Overpotential calculation")
+            def eq_overpotential(b):
+                cd = pyunits.convert(
+                    b.current_density, to_units=pyunits.milliampere / pyunits.cm**2
+                )
+                cd_dimensionless = pyunits.convert(
+                    cd * pyunits.cm**2 / pyunits.milliampere,
+                    to_units=pyunits.dimensionless,
+                )
+                ea_tot = pyunits.convert(
+                    b.electrode_area_total, to_units=pyunits.cm**2
+                )
+                return b.overpotential == pyunits.convert(
+                    (
+                        (
+                            cd
+                            * (
+                                b.overpotential_k1 * log(cd_dimensionless)
+                                + b.overpotential_k2
+                            )
+                        )
+                        * ea_tot
+                    )
+                    / b.applied_current,
+                    to_units=pyunits.volt,
+                )
+
+            self._fixed_perf_vars.append(self.overpotential_k1)
+            self._fixed_perf_vars.append(self.overpotential_k2)
+
+        if self.config.overpotential_calculation == OverpotentialCalculation.nernst:
+
+            @self.Constraint(doc="Temperature change")
+            def eq_temperature_change(b):
+                return b.temp_out == b.frac_increase_temperature * b.temp_in
+
+            @self.Expression(doc="Change in temperature")
+            def delta_temp(b):
+                return b.temp_out - b.temp_in
+
+            @self.Expression(doc="Anode equilibrium cell potential")
+            def anode_cell_potential(b):
+                return (
+                    b.anode_cell_potential_std
+                    + b.anode_entropy_change_std * b.delta_temp
+                    + (
+                        (Constants.gas_constant * b.temp_out)
+                        / (Constants.faraday_constant * b.valence_electrode_material)
+                        * log(b.cathode_conc_mol_metal)
+                    )
+                )
+
+            @self.Expression(doc="Cathode equilibrium cell potential")
+            def cathode_cell_potential(b):
+                return (
+                    b.cathode_cell_potential_std
+                    + b.cathode_entropy_change_std * b.delta_temp
+                    - (
+                        (Constants.gas_constant * b.temp_out)
+                        / (Constants.faraday_constant * b.valence_electrode_material)
+                        * log(b.cathode_conc_mol_hydroxide * b.partial_pressure_H2**2)
+                    )
+                )
+
+            @self.Expression(doc="Anode overpotential")
+            def anode_overpotential(b):
+                return -1 * (
+                    (
+                        Constants.gas_constant
+                        * b.temp_out
+                        * log(b.anodic_exchange_current_density)
+                    )
+                    / (Constants.faraday_constant * b.valence_electrode_material * 0.5)
+                ) + (
+                    (Constants.gas_constant * b.temp_out * log(b.current_density))
+                    / (Constants.faraday_constant * b.valence_electrode_material * 0.5)
+                )
+
+            @self.Expression(doc="Cathode overpotential")
+            def cathode_overpotential(b):
+                return (
+                    (
+                        Constants.gas_constant
+                        * b.temp_out
+                        * log(b.cathodic_exchange_current_density)
+                    )
+                    / (Constants.faraday_constant * b.valence_electrode_material * 0.5)
+                ) - (
+                    (Constants.gas_constant * b.temp_out * log(b.current_density))
+                    / (Constants.faraday_constant * b.valence_electrode_material * 0.5)
+                )
+
+            @self.Constraint(doc="Overpotential calculation")
+            def eq_overpotential(b):
+                return b.overpotential == abs(
+                    b.cathode_cell_potential - b.anode_cell_potential
+                ) + b.anode_overpotential + abs(b.cathode_overpotential)
+
         self._fixed_perf_vars.append(self.electrode_thick)
         self._fixed_perf_vars.append(self.current_density)
         self._fixed_perf_vars.append(self.electrolysis_time)
@@ -335,7 +572,6 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.number_electrode_pairs)
         self._fixed_perf_vars.append(self.electrode_gap)
         self._fixed_perf_vars.append(self.current_efficiency)
-        self._fixed_perf_vars.append(self.overpotential)
 
         @self.Constraint(doc="Charge loading rate equation")
         def eq_charge_loading_rate(b):
@@ -344,7 +580,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 * pyunits.convert(b.electrolysis_time, to_units=pyunits.second)
             ) / pyunits.convert(b.reactor_volume, to_units=pyunits.liter)
 
-        @self.Constraint(doc="Metal loading rate equation")
+        @self.Constraint(doc="Metal loading equation")
         def eq_metal_loading_rate(b):
             return b.metal_loading == (
                 b.current_efficiency * b.charge_loading_rate * b.mw_electrode_material
@@ -427,6 +663,10 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 == b.electrode_volume_per * b.density_electrode_material
             )
 
+        @self.Constraint(doc="Power required")
+        def eq_power_required(b):
+            return b.power_required == b.cell_voltage * b.applied_current
+
     @property
     def default_costing_method(self):
         return self.cost_electrocoagulation
@@ -435,6 +675,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
     def cost_electrocoagulation(blk):
         costing = blk.config.flowsheet_costing_block
         base_currency = costing.base_currency
+        base_period = costing.base_period
         ec = blk.unit_model
         flow_mgd = pyunits.convert(
             ec.properties_in[0].flow_vol, to_units=pyunits.Mgallons / pyunits.day
@@ -658,9 +899,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         )
 
         blk.electricity_flow = Expression(
-            expr=pyunits.convert(
-                ec.applied_current * ec.cell_voltage, to_units=pyunits.kW
-            )
+            expr=pyunits.convert(ec.power_required, to_units=pyunits.kW)
         )
 
         costing.cost_flow(
