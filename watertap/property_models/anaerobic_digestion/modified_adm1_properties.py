@@ -43,8 +43,8 @@ __author__ = "Chenyu Wang, Marcus Holly"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("ADM1_P_ParameterBlock")
-class ADM1_P_ParameterData(PhysicalParameterBlock):
+@declare_process_block_class("ModifiedADM1ParameterBlock")
+class ModifiedADM1ParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
     """
@@ -55,7 +55,7 @@ class ADM1_P_ParameterData(PhysicalParameterBlock):
         """
         super().build()
 
-        self._state_block_class = ADM1_P_StateBlock
+        self._state_block_class = ModifiedADM1StateBlock
 
         # Add Phase objects
         self.Liq = LiquidPhase()
@@ -155,7 +155,7 @@ class ADM1_P_ParameterData(PhysicalParameterBlock):
         )
 
 
-class _ADM1_P_StateBlock(StateBlock):
+class _ModifiedADM1StateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -251,8 +251,10 @@ class _ADM1_P_StateBlock(StateBlock):
         init_log.info("State Released.")
 
 
-@declare_process_block_class("ADM1_P_StateBlock", block_class=_ADM1_P_StateBlock)
-class ADM1_P_StateBlockData(StateBlockData):
+@declare_process_block_class(
+    "ModifiedADM1StateBlock", block_class=_ModifiedADM1StateBlock
+)
+class ModifiedADM1StateBlockData(StateBlockData):
     """
     StateBlock for calculating thermophysical properties associated with the modified ADM1
     reaction system.
