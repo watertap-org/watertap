@@ -10,13 +10,14 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-
+import numpy as np
 from pyomo.environ import (
     Var,
     Param,
     Set,
     Suffix,
     NonNegativeReals,
+    PositiveIntegers,
     units as pyunits,
     check_optimal_termination,
 )
@@ -326,6 +327,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="GAC particle saturation of the lagging/upstream edge"
             " of the mass transfer zone, typically 0.95 or 0.99",
+        )
+
+        self.elements_ss_approx = Param(
+            default=9,
+            initialize=9,
+            domain=PositiveIntegers,
+            units=pyunits.dimensionless,
+            doc="number of discretized elements used for accurate steady state approximation",
         )
 
         # ---------------------------------------------------------------------
@@ -908,6 +917,109 @@ class GACData(InitializationMixin, UnitModelBlockData):
             ) == b.bed_length * b.gac_saturation_replace
 
         # ---------------------------------------------------------------------
+        # steady state approximation
+
+        ele_disc = range(self.elements_ss_approx.value + 1)
+        ele_index = ele_disc[1:]
+
+        self.ele_conc_ratio_replace = Var(
+            ele_disc,
+            initialize=0.05,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+        )
+
+        self.ele_throughput = Var(
+            ele_disc,
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+        )
+
+        self.ele_min_elap_time = Var(
+            ele_disc,
+            initialize=1e8,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+        )
+
+        self.ele_elap_time = Var(
+            ele_disc,
+            initialize=1e5,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+        )
+
+        self.ele_conc_ratio_replace[0].fix(0)
+        self.ele_throughput[0].fix(0)
+        self.ele_min_elap_time[0].fix(0)
+        self.ele_elap_time[0].fix(0)
+
+        @self.Constraint(ele_index)
+        def eq_ele_conc_ratio_replace(b, ele):
+            return b.ele_conc_ratio_replace[ele] == 0.01 + (ele_disc[ele] - 1) * (
+                (b.conc_ratio_replace - 0.01) / (b.elements_ss_approx - 1)
+            )
+
+        @self.Constraint(ele_index)
+        def eq_ele_throughput(b, ele):
+            return b.ele_throughput[ele] == b.b0 + b.b1 * (
+                b.ele_conc_ratio_replace[ele] ** b.b2
+            ) + b.b3 / (1.01 - b.ele_conc_ratio_replace[ele] ** b.b4)
+
+        @self.Constraint(ele_index)
+        def eq_ele_min_elap_time(b, ele):
+            return (
+                b.ele_min_elap_time[ele]
+                == b.min_res_time * (b.dg + 1) * b.ele_throughput[ele]
+            )
+
+        @self.Constraint(ele_index)
+        def eq_ele_elap_time(b, ele):
+            return b.ele_elap_time[ele] == b.ele_min_elap_time[ele] + (
+                b.res_time - b.min_res_time
+            ) * (b.dg + 1)
+
+        self.ele_conc_ratio_avg = Var(
+            ele_index,
+            initialize=0.05,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+        )
+
+        @self.Constraint(
+            ele_index,
+            doc="finite element discretization of concentration ratios over time",
+        )
+        def eq_ele_conc_ratio_avg(b, ele):
+            return b.ele_conc_ratio_avg[ele] == (
+                (b.ele_elap_time[ele] - b.ele_elap_time[ele - 1])
+                / b.ele_elap_time[self.elements_ss_approx.value]
+            ) * (
+                (b.ele_conc_ratio_replace[ele] + b.ele_conc_ratio_replace[ele - 1]) / 2
+            )
+
+        self.ele_conc_ratio = Var(
+            initialize=0.05,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+        )
+
+        @self.Constraint(
+            doc="summation of finite elements for average concentration during operating time"
+        )
+        def eq_ele_conc_ratio(b):
+            return b.ele_conc_ratio == sum(
+                b.ele_conc_ratio_avg[ele] for ele in ele_index
+            )
+
+        # ---------------------------------------------------------------------
         if (
             self.config.film_transfer_coefficient_type
             == FilmTransferCoefficientType.calculated
@@ -937,16 +1049,22 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 doc="Sphericity of the particle",
             )
 
+            self.shape_correction_factor = Var(
+                initialize=1.5,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Shape correction factor",
+            )
+
             @self.Constraint(doc="Reynolds number calculation")
             def eq_reynolds_number(b):
                 return (
-                    b.N_Re
-                    * b.process_flow.properties_in[0].visc_d_phase["Liq"]
-                    * b.bed_voidage
+                    b.N_Re * b.process_flow.properties_in[0].visc_d_phase["Liq"]
                     == b.process_flow.properties_in[0].dens_mass_phase["Liq"]
                     * b.sphericity
                     * b.particle_dia
-                    * b.velocity_sup
+                    * b.velocity_int
                 )
 
             @self.Constraint(self.target_species, doc="Schmidt number calculation")
@@ -963,7 +1081,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 doc="Liquid phase film transfer rate from the Gnielinshi correlation",
             )
             def eq_film_transfer_rate(b, j):
-                return b.kf * b.particle_dia == b.sphericity * (
+                return b.kf * b.particle_dia == b.shape_correction_factor * (
                     1 + 1.5 * (1 - b.bed_voidage)
                 ) * b.process_flow.properties_in[0].diffus_phase_comp["Liq", j] * (
                     2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc ** (1 / 3))
@@ -1302,6 +1420,25 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.mass_throughput) is None:
             iscale.set_scaling_factor(self.mass_throughput, 1)
+
+        for ele in range(self.elements_ss_approx.value + 1):
+
+            if iscale.get_scaling_factor(self.ele_conc_ratio_replace[ele]) is None:
+                iscale.set_scaling_factor(self.ele_conc_ratio_replace[ele], 10)
+
+            if iscale.get_scaling_factor(self.ele_throughput[ele]) is None:
+                iscale.set_scaling_factor(self.ele_throughput[ele], 1)
+
+            if iscale.get_scaling_factor(self.ele_min_elap_time[ele]) is None:
+                iscale.set_scaling_factor(self.ele_min_elap_time[ele], 1e-6)
+
+            if iscale.get_scaling_factor(self.ele_elap_time[ele]) is None:
+                iscale.set_scaling_factor(self.ele_elap_time[ele], 1e-6)
+
+        for ele in range(1, self.elements_ss_approx.value + 1):
+
+            if iscale.get_scaling_factor(self.ele_conc_ratio_avg[ele]) is None:
+                iscale.set_scaling_factor(self.ele_conc_ratio_avg[ele], 1e2)
 
         if iscale.get_scaling_factor(self.res_time) is None:
             iscale.set_scaling_factor(self.res_time, 1e-2)
