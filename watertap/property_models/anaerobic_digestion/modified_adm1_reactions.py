@@ -2413,7 +2413,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                         * b.conc_mass_comp_ref["X_h2"]
                     )
                 elif r == "R19":
-                    # R19: Storage of Sva in X_PHA
+                    # R19: Storage of S_va in X_PHA
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.q_PHA
                         * b.conc_mass_comp_ref["S_va"]
@@ -2432,6 +2432,90 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                             + b.conc_mass_comp_ref["S_pro"]
                             + b.conc_mass_comp_ref["S_ac"]
                         ),
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
+                elif r == "R20":
+                    # R20: Storage of S_bu in X_PHA
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.q_PHA
+                        * b.conc_mass_comp_ref["S_bu"]
+                        / (b.params.K_A + b.conc_mass_comp_ref["S_bu"])
+                        * (b.conc_mass_comp_ref["X_PP"] / b.conc_mass_comp_ref["X_PAO"])
+                        / (
+                            b.params.K_PP
+                            + b.conc_mass_comp_ref["X_PP"]
+                            / b.conc_mass_comp_ref["X_PAO"]
+                        )
+                        * b.conc_mass_comp_ref["X_PAO"]
+                        * b.conc_mass_comp_ref["S_bu"]
+                        / (
+                            b.conc_mass_comp_ref["S_va"]
+                            + b.conc_mass_comp_ref["S_bu"]
+                            + b.conc_mass_comp_ref["S_pro"]
+                            + b.conc_mass_comp_ref["S_ac"]
+                        ),
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
+                elif r == "R21":
+                    # R21: Storage of S_pro in X_PHA
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.q_PHA
+                        * b.conc_mass_comp_ref["S_pro"]
+                        / (b.params.K_A + b.conc_mass_comp_ref["S_pro"])
+                        * (b.conc_mass_comp_ref["X_PP"] / b.conc_mass_comp_ref["X_PAO"])
+                        / (
+                            b.params.K_PP
+                            + b.conc_mass_comp_ref["X_PP"]
+                            / b.conc_mass_comp_ref["X_PAO"]
+                        )
+                        * b.conc_mass_comp_ref["X_PAO"]
+                        * b.conc_mass_comp_ref["S_pro"]
+                        / (
+                            b.conc_mass_comp_ref["S_va"]
+                            + b.conc_mass_comp_ref["S_bu"]
+                            + b.conc_mass_comp_ref["S_pro"]
+                            + b.conc_mass_comp_ref["S_ac"]
+                        ),
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
+                elif r == "R22":
+                    # R22: Storage of S_ac in X_PHA
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.q_PHA
+                        * b.conc_mass_comp_ref["S_ac"]
+                        / (b.params.K_A + b.conc_mass_comp_ref["S_ac"])
+                        * (b.conc_mass_comp_ref["X_PP"] / b.conc_mass_comp_ref["X_PAO"])
+                        / (
+                            b.params.K_PP
+                            + b.conc_mass_comp_ref["X_PP"]
+                            / b.conc_mass_comp_ref["X_PAO"]
+                        )
+                        * b.conc_mass_comp_ref["X_PAO"]
+                        * b.conc_mass_comp_ref["S_ac"]
+                        / (
+                            b.conc_mass_comp_ref["S_va"]
+                            + b.conc_mass_comp_ref["S_bu"]
+                            + b.conc_mass_comp_ref["S_pro"]
+                            + b.conc_mass_comp_ref["S_ac"]
+                        ),
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
+                elif r == "R23":
+                    # R23: Lysis of X_PAO
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_PAO * b.conc_mass_comp_ref["X_PAO"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
+                elif r == "R24":
+                    # R24: Lysis of X_PP
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_PP * b.conc_mass_comp_ref["X_PP"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
+                elif r == "R25":
+                    # R25: Lysis of X_PHA
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_PHA * b.conc_mass_comp_ref["X_PHA"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 else:
