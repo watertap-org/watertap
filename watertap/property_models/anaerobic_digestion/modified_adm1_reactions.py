@@ -229,7 +229,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             doc="Lipids from composites",
         )
 
-        # TODO: delete unused parameters
         self.f_fa_li = pyo.Var(
             initialize=0.95,
             units=pyo.units.dimensionless,
@@ -695,18 +694,17 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Yield of biomass on phosphate (kmol P/kg COD)",
         )
-        # TODO: add doc
         self.K_XPP = pyo.Var(
             initialize=1 / 3,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="K_XPP",
+            doc="Potassium coefficient for polyphosphates",
         )
         self.Mg_XPP = pyo.Var(
             initialize=1 / 3,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Mg_XPP",
+            doc="Magnesium coefficient for polyphosphates",
         )
         self.temperature_ref = pyo.Param(
             within=pyo.PositiveReals,
