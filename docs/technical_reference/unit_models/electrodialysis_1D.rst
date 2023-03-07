@@ -69,6 +69,13 @@ This model can simulate electrodialysis for desalination of a water solution con
 For a clear model demonstration, **this document uses an NaCl water solution as an instance hereafter.**  The user can
 nevertheless expand the component set as needed to represent other feed water conditions.
 
+This model can mathematically take a multi-component (i.e., > one salt molecule to be treated) as an input; nevertheless a multi-component
+solution creates unknown or difficult-to-specify parameters, e.g., the electrical transport numbers through membranes, 
+the multi-ion diffusivity, etc., and physical relationships, which may result in ill-posed or ill-conditioned problems challenging 
+the models' numerical solutions.  While we continuously work on advancing our models to absorb new principles revealed by 
+progressing research, we advise the users be very **cautious** with simulating multi-component systems by this programmed model 
+for aspects stated above. 
+
 .. csv-table:: **Table 1.** List of Set
    :header: "Description", "Symbol", "Indices"
 
