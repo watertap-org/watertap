@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Translator block representing the ADM1/ASM1 interface.
 
@@ -54,9 +53,9 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Translator_ADM1_ASM1")
-class TranslatorDataAA(TranslatorData):
+class TranslatorDataADM1ASM1(TranslatorData):
     """
-    Standard Translator Block Class
+    Translator block representing the ADM1/ASM1 interface
     """
 
     CONFIG = TranslatorData.CONFIG()
@@ -95,7 +94,7 @@ see reaction package for documentation.}""",
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(TranslatorDataAA, self).build()
+        super(TranslatorDataADM1ASM1, self).build()
 
         self.i_xe = Param(
             initialize=0.06,

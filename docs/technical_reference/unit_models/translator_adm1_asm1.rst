@@ -4,7 +4,7 @@ ADM1 to ASM1 Translator
 Introduction
 ------------
 
-A link is required to translate between biological based and physical or chemical mediated processes
+A link is required to translate between biological and physically- or chemically-mediated processes
 to develop whole-plant modeling of wastewater treatment. This model mediates the interaction between
 the Anaerobic Digestor Model 1 (ADM1) and the Activated Sludge Model 1 (ASM1).
 
