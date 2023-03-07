@@ -208,7 +208,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         "target_species",
         ConfigValue(
             default=None,
-            domain=set,
+            domain=list,
             description="Species target for adsorption, currently only supports single species",
             doc="""Indicate which component in the property package's component list is the target species
         for adsorption by the GAC system, currently the model supports a single species
@@ -253,18 +253,29 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # separate target_species to be adsorbed and other species considered inert
         # apply target_species automatically if arg left to default and only one viable option exists
-        if (
-            self.config.target_species is None
-            and len(self.config.property_package.solute_set) == 1
-        ):
-            self.config.target_species = self.config.property_package.solute_set
+
         if self.config.target_species is None:
-            raise ConfigurationError(
-                "'target species' is not specified for the GAC unit model, either specify 'target species'"
-                " argument or reduce solute set to a single component"
-            )
-        # define sets to be used across GAC methods
-        self.target_species = Set(dimen=1, initialize=self.config.target_species)
+            if len(self.config.property_package.solute_set) == 1:
+                self.config.target_species = self.config.property_package.solute_set
+                self.target_species = self.config.target_species
+            else:
+                raise ConfigurationError(
+                    "'target species' is not specified for the GAC unit model, either specify 'target species'"
+                    " argument or reduce solute set to a single component"
+                )
+        else:
+            self.target_species = Set(dimen=1)
+            for str_species in self.config.target_species:
+                if not isinstance(str_species, str):
+                    raise ConfigurationError(
+                        f"item {str_species} within 'target_species' list is not of data type str"
+                    )
+                if str_species not in self.config.property_package.component_list:
+                    raise ConfigurationError(
+                        f"item {str_species} within 'target_species' list is not in 'component_list'"
+                    )
+                self.target_species.add(str_species)
+
         self.inert_species = Set(
             dimen=1,
             initialize=(

@@ -62,6 +62,8 @@ sv_large = 1e2
 sv_small = 1e-2
 sv_zero = 1e-8
 
+print(isinstance({"species": "TCE"}, list))
+
 # -----------------------------------------------------------------------------
 class TestGACSimplified:
     @pytest.fixture(scope="class")
@@ -746,4 +748,80 @@ class TestGACMulti:
                     property_package=me.fs.properties,
                     film_transfer_coefficient_type="calculated",
                     surface_diffusion_coefficient_type="calculated",
+                )
+
+            with pytest.raises(
+                ConfigurationError,
+                match="item 0 within 'target_species' list is not of data type str",
+            ):
+                me = ConcreteModel()
+                me.fs = FlowsheetBlock(dynamic=False)
+
+                # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
+                # arbitrary diffusivity data for non-target species
+                me.fs.properties = MCASParameterBlock(
+                    solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
+                    mw_data={
+                        "H2O": 0.018,
+                        "TCE": 0.1314,
+                        "BGSOL": 0.1,
+                        "BGCAT": 0.1,
+                        "BGAN": 0.1,
+                    },
+                    charge={"BGCAT": 1, "BGAN": -2},
+                    diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+                    molar_volume_data={("Liq", "TCE"): 9.81e-5},
+                    diffusivity_data={
+                        ("Liq", "BGSOL"): 1e-5,
+                        ("Liq", "BGCAT"): 1e-5,
+                        ("Liq", "BGAN"): 1e-5,
+                    },
+                )
+                me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+                me.fs.properties.dens_mass_const = 1000
+
+                # testing target_species arg
+                me.fs.unit = GAC(
+                    property_package=me.fs.properties,
+                    film_transfer_coefficient_type="calculated",
+                    surface_diffusion_coefficient_type="calculated",
+                    target_species=range(2),
+                )
+
+            with pytest.raises(
+                ConfigurationError,
+                match="item species within 'target_species' list is not in 'component_list",
+            ):
+                me = ConcreteModel()
+                me.fs = FlowsheetBlock(dynamic=False)
+
+                # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
+                # arbitrary diffusivity data for non-target species
+                me.fs.properties = MCASParameterBlock(
+                    solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
+                    mw_data={
+                        "H2O": 0.018,
+                        "TCE": 0.1314,
+                        "BGSOL": 0.1,
+                        "BGCAT": 0.1,
+                        "BGAN": 0.1,
+                    },
+                    charge={"BGCAT": 1, "BGAN": -2},
+                    diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+                    molar_volume_data={("Liq", "TCE"): 9.81e-5},
+                    diffusivity_data={
+                        ("Liq", "BGSOL"): 1e-5,
+                        ("Liq", "BGCAT"): 1e-5,
+                        ("Liq", "BGAN"): 1e-5,
+                    },
+                )
+                me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+                me.fs.properties.dens_mass_const = 1000
+
+                # testing target_species arg
+                me.fs.unit = GAC(
+                    property_package=me.fs.properties,
+                    film_transfer_coefficient_type="calculated",
+                    surface_diffusion_coefficient_type="calculated",
+                    target_species={"species": "TCE"},
                 )
