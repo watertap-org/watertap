@@ -38,6 +38,8 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
+from idaes.core.util.exceptions import InitializationError
+
 from pyomo.environ import (
     Reference,
     Var,
@@ -299,7 +301,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
     ):
         """
         This method calls the initialization method of the state blocks.
-
         Keyword Arguments:
             state_args_in : a dict of arguments to be passed to the inlet
                 property package (to provide an initial state for
@@ -314,7 +315,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                      default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
-
         Returns:
             None
         """
@@ -340,17 +340,21 @@ class TranslatorDataADM1ASM2D(TranslatorData):
             state_args=state_args_out,
         )
 
-        if degrees_of_freedom(self) == 0:
-            with idaeslog.solver_log(init_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(self, tee=slc.tee)
+        self.properties_in.release_state(flags=flags, outlvl=outlvl)
 
-            init_log.info("Initialization Complete {}.".format(idaeslog.condition(res)))
-        else:
-            init_log.warning(
-                "Initialization incomplete. Degrees of freedom "
-                "were not zero. Please provide sufficient number "
-                "of constraints linking the state variables "
-                "between the two state blocks."
+        if degrees_of_freedom(self) != 0:
+            raise Exception(
+                f"{self.name} degrees of freedom were not 0 at the beginning "
+                f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
 
-        self.properties_in.release_state(flags=flags, outlvl=outlvl)
+        with idaeslog.solver_log(init_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+
+        init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
+
+        if not check_optimal_termination(res):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information."
+            )
