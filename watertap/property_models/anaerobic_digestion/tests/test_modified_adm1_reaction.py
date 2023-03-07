@@ -72,7 +72,7 @@ class TestParamBlock(object):
     def test_build(self, model):
         assert model.rparams.reaction_block_class is ModifiedADM1ReactionBlock
 
-        assert len(model.rparams.rate_reaction_idx) == 18
+        assert len(model.rparams.rate_reaction_idx) == 25
         for i in model.rparams.rate_reaction_idx:
             assert i in [
                 "R1",
@@ -93,6 +93,13 @@ class TestParamBlock(object):
                 "R16",
                 "R17",
                 "R18",
+                "R19",
+                "R20",
+                "R21",
+                "R22",
+                "R23",
+                "R24",
+                "R25",
             ]
 
         # Expected non-zero stoichiometries
@@ -247,9 +254,61 @@ class TestParamBlock(object):
             ("R18", "Liq", "X_li"): 0.35,
             ("R18", "Liq", "X_h2"): -1,
             ("R18", "Liq", "X_I"): 0.1,
+            # R19: Storage of S_va in X_PHA
+            ("R19", "Liq", "S_va"): -1,
+            ("R19", "Liq", "S_IC"): -0.000962 * mw_c,
+            ("R19", "Liq", "S_IP"): 0.012903 * mw_p,
+            ("R19", "Liq", "X_PHA"): 1,
+            ("R19", "Liq", "X_PP"): -0.012903,
+            ("R19", "Liq", "X_K"): 0.004301,
+            ("R19", "Liq", "X_Mg"): 0.004301,
+            # R20: Storage of S_bu in X_PHA
+            ("R20", "Liq", "S_bu"): -1,
+            ("R20", "Liq", "S_IP"): 0.012903 * mw_p,
+            ("R20", "Liq", "X_PHA"): 1,
+            ("R20", "Liq", "X_PP"): -0.012903,
+            ("R20", "Liq", "X_K"): 0.004301,
+            ("R20", "Liq", "X_Mg"): 0.004301,
+            # R21: Storage of S_pro in X_PHA
+            ("R21", "Liq", "S_pro"): -1,
+            ("R21", "Liq", "S_IC"): 0.001786 * mw_c,
+            ("R21", "Liq", "S_IP"): 0.012903 * mw_p,
+            ("R21", "Liq", "X_PHA"): 1,
+            ("R21", "Liq", "X_PP"): -0.012903,
+            ("R21", "Liq", "X_K"): 0.004301,
+            ("R21", "Liq", "X_Mg"): 0.004301,
+            # R22: Storage of S_ac in X_PHA
+            ("R22", "Liq", "S_ac"): -1,
+            ("R22", "Liq", "S_IC"): 0.006250 * mw_c,
+            ("R22", "Liq", "S_IP"): 0.012903 * mw_p,
+            ("R22", "Liq", "X_PHA"): 1,
+            ("R22", "Liq", "X_PP"): -0.012903,
+            ("R22", "Liq", "X_K"): 0.004301,
+            ("R22", "Liq", "X_Mg"): 0.004301,
+            # R23: Lysis of X_PAO
+            ("R23", "Liq", "S_IC"): 0.002773 * mw_c,
+            ("R23", "Liq", "S_IN"): 0.003551 * mw_n,
+            ("R23", "Liq", "S_IP"): 0.000553 * mw_p,
+            ("R23", "Liq", "X_ch"): 0.275,
+            ("R23", "Liq", "X_pr"): 0.275,
+            ("R23", "Liq", "X_li"): 0.35,
+            ("R23", "Liq", "X_I"): 0.1,
+            ("R23", "Liq", "X_PAO"): -1,
+            # R24: Lysis of X_PP
+            ("R24", "Liq", "S_IP"): 1 * mw_p,
+            ("R24", "Liq", "X_PP"): -1,
+            ("R24", "Liq", "X_K"): 1 / 3,
+            ("R24", "Liq", "X_Mg"): 1 / 3,
+            # R25: Lysis of X_PAO
+            ("R25", "Liq", "S_va"): 0.1,
+            ("R25", "Liq", "S_bu"): 0.1,
+            ("R25", "Liq", "S_pro"): 0.4,
+            ("R25", "Liq", "S_ac"): 0.4,
+            ("R25", "Liq", "S_IC"): -0.003118 * mw_c,
+            ("R25", "Liq", "X_PHA"): -1,
         }
 
-        assert len(model.rparams.rate_reaction_stoichiometry) == 18 * 27
+        assert len(model.rparams.rate_reaction_stoichiometry) == 25 * 32
         for i, v in model.rparams.rate_reaction_stoichiometry.items():
 
             assert i[0] in [
@@ -271,6 +330,13 @@ class TestParamBlock(object):
                 "R16",
                 "R17",
                 "R18",
+                "R19",
+                "R20",
+                "R21",
+                "R22",
+                "R23",
+                "R24",
+                "R25",
             ]
             if i in stoic:
                 assert pytest.approx(stoic[i], rel=1e-2) == value(v)
@@ -300,13 +366,13 @@ class TestParamBlock(object):
         assert isinstance(model.rparams.f_fa_li, Var)
         assert value(model.rparams.f_fa_li) == 0.95
         assert isinstance(model.rparams.f_h2_su, Var)
-        assert value(model.rparams.f_h2_su) == 0.19
+        assert value(model.rparams.f_h2_su) == 0.1906
         assert isinstance(model.rparams.f_bu_su, Var)
-        assert value(model.rparams.f_bu_su) == 0.13
+        assert value(model.rparams.f_bu_su) == 0.1328
         assert isinstance(model.rparams.f_pro_su, Var)
-        assert value(model.rparams.f_pro_su) == 0.27
+        assert value(model.rparams.f_pro_su) == 0.2691
         assert isinstance(model.rparams.f_ac_su, Var)
-        assert value(model.rparams.f_ac_su) == 0.41
+        assert value(model.rparams.f_ac_su) == 0.4076
         assert isinstance(model.rparams.f_h2_aa, Var)
         assert value(model.rparams.f_h2_aa) == 0.06
         assert isinstance(model.rparams.f_va_aa, Var)
