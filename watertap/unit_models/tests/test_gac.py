@@ -254,8 +254,8 @@ class TestGACRobust:
             property_package=mr.fs.properties,
             film_transfer_coefficient_type="fixed",
             surface_diffusion_coefficient_type="fixed",
+            finite_elements_ss_approximation=9,
         )
-        mr.fs.unit.elements_ss_approx = 9
 
         # feed specifications
         mr.fs.unit.process_flow.properties_in[0].pressure.fix(

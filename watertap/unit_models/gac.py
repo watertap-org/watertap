@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-import numpy as np
+
 from pyomo.environ import (
     Var,
     Param,
@@ -220,6 +220,15 @@ class GACData(InitializationMixin, UnitModelBlockData):
         the component id must be provided.}""",
         ),
     )
+    CONFIG.declare(
+        "finite_elements_ss_approximation",
+        ConfigValue(
+            default=5,
+            domain=int,
+            description="Number of finite elements in operational time domain for steady state approximation",
+            doc="""Number of finite elements to use when discretizing operational time (default=5)""",
+        ),
+    )
 
     def _validate_config(self):
         if (
@@ -242,6 +251,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # Check configs for errors
         self._validate_config()
 
+        # ---------------------------------------------------------------------
         # separate target_species to be adsorbed and other species considered inert
         # apply target_species automatically if arg left to default and only one viable option exists
         if (
@@ -263,6 +273,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             ),
         )
 
+        # ---------------------------------------------------------------------
         # build control volume
         self.process_flow = ControlVolume0DBlock(
             dynamic=False,
@@ -292,26 +303,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
         tmp_dict["defined_state"] = False
         self.gac_removed = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
-            doc="Material properties of spent gac",
+            doc="state block of the species contained within the gac removed from the bed",
             **tmp_dict,
         )
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="Isothermal assumption for the adsorbed species contained in the removed GAC",
-        )
-        def eq_isothermal_gac_removed(b, t):
-            return (
-                b.process_flow.properties_in[t].temperature
-                == b.gac_removed[t].temperature
-            )
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="Isobaric assumption for the adsorbed species contained in the removed GAC",
-        )
-        def eq_isobaric_gac_removed(b, t):
-            return b.process_flow.properties_in[t].pressure == b.gac_removed[t].pressure
 
         # Add ports
         self.add_inlet_port(name="inlet", block=self.process_flow)
@@ -319,17 +313,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
         self.add_outlet_port(name="adsorbed", block=self.gac_removed)
 
         # ---------------------------------------------------------------------
-        # parameter declaration
-        self.elements_ss_approx = Param(
-            default=9,
-            initialize=9,
-            domain=PositiveIntegers,
-            units=pyunits.dimensionless,
-            doc="number of discretized elements used for accurate steady state approximation",
-        )
+        # Freundlich isotherm parameters and other property variables
 
-        # ---------------------------------------------------------------------
-        # Freundlich isotherm parameters and adsorption variables
         self.freund_k = Var(
             initialize=10,
             bounds=(0, None),
@@ -337,233 +322,41 @@ class GACData(InitializationMixin, UnitModelBlockData):
             units=pyunits.dimensionless,  # dynamic with freund_ninv, ((length ** 3) * (mass ** -1)) ** freund_ninv,
             doc="Freundlich isotherm k parameter, must be provided in base [L3/M] units",
         )
-
         self.freund_ninv = Var(
             initialize=0.5,
             bounds=(0, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Freundlich isotherm 1/n parameter, equations valid for range of 0 to 1",
+            doc="Freundlich isotherm 1/n parameter",
         )
-
-        self.equil_conc = Var(
-            initialize=1e-4,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="Equilibrium concentration of adsorbed phase with liquid phase",
-        )
-
-        self.mass_adsorbed = Var(
-            initialize=1e5,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("mass"),
-            doc="Mass of contaminant adsorbed at the time of replacement",
-        )
-
-        self.mass_adsorbed_saturated = Var(
-            initialize=1e5,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("mass"),
-            doc="Mass of contaminant adsorbed if fully saturated",
-        )
-
-        # ---------------------------------------------------------------------
-        # gac bed properties
-        self.bed_voidage = Var(
-            initialize=0.5,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="Adsorber bed void fraction",
-        )
-
-        self.bed_volume = Var(
-            initialize=5,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("length") ** 3,
-            doc="Adsorber bed volume",
-        )
-
-        self.bed_area = Var(
-            initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("length") ** 2,
-            doc="Adsorber bed area, single adsorber area or sum of areas for adsorbers in parallel",
-        )
-
-        self.bed_diameter = Var(
-            initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("length"),
-            doc="Adsorber bed diameter, valid if considering only a single adsorber",
-        )
-
-        self.bed_length = Var(
-            initialize=5,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("length"),
-            doc="Adsorber bed length",
-        )
-
-        self.bed_mass_gac = Var(
-            initialize=100,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("mass"),
-            doc="Mass of fresh GAC in the adsorber bed",
-        )
-
-        self.velocity_sup = Var(
-            initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("length") * units_meta("time") ** -1,
-            doc="Superficial velocity",
-        )
-
-        self.velocity_int = Var(
-            initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("length") * units_meta("time") ** -1,
-            doc="Interstitial velocity",
-        )
-
-        # ---------------------------------------------------------------------
-        # TODO: Potentially switch these to parameters or create a default option
-        # gac particle properties
-
-        self.particle_dens_app = Var(
-            initialize=1000,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("mass") * units_meta("length") ** -3,
-            doc="GAC particle apparent density",
-        )
-
-        self.particle_dens_bulk = Var(
-            initialize=500,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("mass") * units_meta("length") ** -3,
-            doc="GAC particle bulk density",
-        )
-
-        self.particle_dia = Var(
-            initialize=0.001,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("length"),
-            doc="GAC particle diameter",
-        )
-
-        # ---------------------------------------------------------------------
-        # performance variables
-        self.conc_ratio_avg = Var(
-            initialize=0.1,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="Steady state average effluent to inlet concentration ratio",
-        )
-
-        self.conc_ratio_replace = Var(
-            initialize=0.5,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="Effluent to inlet concentration ratio at time of bed replacement",
-        )
-
-        self.gac_saturation_replace = Var(
-            initialize=0.9,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="Approximate GAC saturation in the adsorber bed at time of replacement",
-        )
-
-        self.ebct = Var(
-            initialize=500,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("time"),
-            doc="Empty bed contact time",
-        )
-
-        self.throughput = Var(
-            initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="Mass throughput",
-        )
-
-        self.residence_time = Var(
-            initialize=100,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("time"),
-            doc="Fluid residence time in the adsorber bed",
-        )
-
-        self.operational_time = Var(
-            initialize=1e5,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("time"),
-            doc="Elapsed time between GAC replacement in adsorber bed in operation",
-        )
-
-        self.bed_volumes_treated = Var(
-            initialize=10000,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="Bed volumes treated",
-        )
-
-        self.gac_mass_replace_rate = Var(
-            initialize=1e-2,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("mass") * units_meta("time") ** -1,
-            doc="GAC usage and required replacement/regeneration rate",
-        )
-
-        # ---------------------------------------------------------------------
-        # intermediate calculations and dimensionless parameters
-        self.kf = Var(
-            initialize=5e-5,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("length") * units_meta("time") ** -1,
-            doc="Liquid phase film transfer coefficient",
-        )
-
         self.ds = Var(
             initialize=1e-14,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length") ** 2 * units_meta("time") ** -1,
-            doc="Surface diffusion coefficient",
+            doc="surface diffusion coefficient",
         )
-
+        self.kf = Var(
+            initialize=5e-5,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") * units_meta("time") ** -1,
+            doc="liquid phase film transfer coefficient",
+        )
+        self.equil_conc = Var(
+            initialize=1e-4,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="equilibrium concentration of adsorbed phase with liquid phase",
+        )
         self.dg = Var(
             initialize=1e5,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Solute distribution parameter",
+            doc="solute distribution parameter",
         )
-
         self.N_Bi = Var(
             initialize=10,
             bounds=(0, None),
@@ -573,104 +366,344 @@ class GACData(InitializationMixin, UnitModelBlockData):
         )
 
         # ---------------------------------------------------------------------
-        # minimum conditions to achieve a constant pattern solution
-        self.min_N_St = Var(
-            initialize=10,
+        # bed dimensions and related variables
+
+        self.velocity_sup = Var(
+            initialize=0.001,
             bounds=(0, None),
             domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="Minimum Stanton number to achieve a constant pattern solution",
+            units=units_meta("length") * units_meta("time") ** -1,
+            doc="superficial velocity",
         )
-
-        self.min_ebct = Var(
+        self.velocity_int = Var(
+            initialize=0.002,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") * units_meta("time") ** -1,
+            doc="interstitial velocity",
+        )
+        self.bed_voidage = Var(
+            initialize=0.5,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="bed void fraction",
+        )
+        self.bed_length = Var(
+            initialize=5,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length"),
+            doc="bed length",
+        )
+        self.bed_diameter = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length"),
+            doc="bed diameter, valid if considering only a single adsorber",
+        )
+        self.bed_area = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") ** 2,
+            doc="bed area, single adsorber area or sum of areas for adsorbers in parallel",
+        )
+        self.bed_volume = Var(
+            initialize=5,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") ** 3,
+            doc="bed volume",
+        )
+        self.ebct = Var(
             initialize=500,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
-            doc="Minimum empty bed contact time to achieve a constant pattern solution",
+            doc="empty bed contact time",
         )
-
-        self.min_residence_time = Var(
-            initialize=1000,
+        self.residence_time = Var(
+            initialize=100,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
-            doc="Minimum fluid residence time in the adsorber bed "
-            "to achieve a constant pattern solution",
+            doc="fluid residence time in the bed",
         )
-
-        self.min_operational_time = Var(
-            initialize=1e8,
+        self.bed_mass_gac = Var(
+            initialize=100,
             bounds=(0, None),
             domain=NonNegativeReals,
-            units=units_meta("time"),
-            doc="Minimum elapsed time between GAC replacement in adsorber bed in operation"
-            "to achieve a constant pattern solution",
+            units=units_meta("mass"),
+            doc="mass of fresh gac in the bed",
         )
 
         # ---------------------------------------------------------------------
-        # constants in regressed equations
+        # gac particle properties
+        # TODO: Potentially create a default option
+
+        self.particle_dens_app = Var(
+            initialize=1000,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass") * units_meta("length") ** -3,
+            doc="gac apparent density",
+        )
+        self.particle_dens_bulk = Var(
+            initialize=500,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass") * units_meta("length") ** -3,
+            doc="gac bulk density",
+        )
+        self.particle_dia = Var(
+            initialize=0.001,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length"),
+            doc="gac particle diameter",
+        )
+
+        # ---------------------------------------------------------------------
+        # constants in empirical equations
+
         self.a0 = Var(
             initialize=1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Stanton equation parameter 0",
+            doc="stanton equation parameter 0",
         )
-
         self.a1 = Var(
             initialize=1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Stanton equation parameter 1",
+            doc="stanton equation parameter 1",
         )
-
         self.b0 = Var(
             initialize=0.1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Throughput equation parameter 0",
+            doc="throughput equation parameter 0",
         )
-
         self.b1 = Var(
             initialize=0.1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Throughput equation parameter 1",
+            doc="throughput equation parameter 1",
         )
-
         self.b2 = Var(
             initialize=0.1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Throughput equation parameter 2",
+            doc="throughput equation parameter 2",
         )
-
         self.b3 = Var(
             initialize=0.1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Throughput equation parameter 3",
+            doc="throughput equation parameter 3",
         )
-
         self.b4 = Var(
             initialize=0.1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Throughput equation parameter 4",
+            doc="throughput equation parameter 4",
         )
 
         # ---------------------------------------------------------------------
-        # mass transfer equations
+        # conditions to achieve a constant pattern solution
+
+        self.min_N_St = Var(
+            initialize=10,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="minimum Stanton number to achieve a constant pattern solution",
+        )
+        self.min_ebct = Var(
+            initialize=500,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="minimum empty bed contact time to achieve a constant pattern solution",
+        )
+        self.throughput = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="specific throughput from empirical equation",
+        )
+        self.min_residence_time = Var(
+            initialize=1000,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="minimum fluid residence time in the bed to achieve a constant pattern solution",
+        )
+        self.min_operational_time = Var(
+            initialize=1e8,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="minimum operational time of the bed from fresh to achieve a constant pattern solution",
+        )
+
+        # ---------------------------------------------------------------------
+        # performance variables of CPHSDM
+
+        self.conc_ratio_replace = Var(
+            initialize=0.5,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="effluent to inlet concentration ratio at operational time",
+        )
+        self.operational_time = Var(
+            initialize=1e5,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="operational time of the bed from fresh",
+        )
+        self.bed_volumes_treated = Var(
+            initialize=10000,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="bed volumes treated in operational time",
+        )
+
+        # ---------------------------------------------------------------------
+        # steady state approximation
+
+        self.elements_ss_approx = Param(
+            mutable=True,
+            default=5,
+            initialize=self.config.finite_elements_ss_approximation,
+            domain=PositiveIntegers,
+            units=pyunits.dimensionless,
+            doc="number of discretized operational time elements used for steady state approximation",
+        )
+        self.conc_ratio_start_breakthrough = Param(
+            mutable=True,
+            default=0.01,
+            initialize=0.01,
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="the concentration ratio at which the breakthrough curve is to start, typically between 0.01 amd 0.05",
+        )
+
+        # create index for discretized elements with element [0] containing 0s for performance variables
+        ele_disc = range(self.elements_ss_approx.value + 1)
+        ele_index = ele_disc[1:]
+
+        self.ele_throughput = Var(
+            ele_disc,
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="specific throughput from empirical equation by discrete element",
+        )
+        self.ele_min_operational_time = Var(
+            ele_disc,
+            initialize=1e8,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="minimum operational time of the bed from fresh to achieve a constant pattern solution by discrete element",
+        )
+        self.ele_conc_ratio_replace = Var(
+            ele_disc,
+            initialize=0.05,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="effluent to inlet concentration ratio at operational time by discrete element",
+        )
+        self.ele_operational_time = Var(
+            ele_disc,
+            initialize=1e5,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="operational time of the bed from fresh by discrete element",
+        )
+        self.ele_conc_ratio_avg = Var(
+            ele_index,
+            initialize=0.05,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="trapezoid rule of elements for numerical integration of average concentration ratio",
+        )
+        self.conc_ratio_avg = Var(
+            initialize=0.1,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule",
+        )
+        self.mass_adsorbed = Var(
+            initialize=1e5,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass"),
+            doc="total mass of adsorbed species at operational time",
+        )
+        self.mass_adsorbed_saturated = Var(
+            initialize=1e5,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass"),
+            doc="total mass of adsorbed species if the bed were fully saturated",
+        )
+        self.gac_saturation_replace = Var(
+            initialize=0.9,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="approximate gac saturation in the adsorber bed at operational time",
+        )
+        self.gac_usage_rate = Var(
+            initialize=1e-2,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass") * units_meta("time") ** -1,
+            doc="gac usage/replacement/regeneration rate",
+        )
+
+        # ---------------------------------------------------------------------
+        # balance equations
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="isothermal assumption for the species contained within the gac removed from the bed",
+        )
+        def eq_isothermal_gac_removed(b, t):
+            return (
+                b.process_flow.properties_in[t].temperature
+                == b.gac_removed[t].temperature
+            )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="isobaric assumption for the species contained within the gac removed from the bed",
+        )
+        def eq_isobaric_gac_removed(b, t):
+            return b.process_flow.properties_in[t].pressure == b.gac_removed[t].pressure
+
         # TODO: If used with other property packages check for mass based (not mole) get_material_flow_terms,
         #  but ok under mcas_prop_pack
-
         # mass transfer of target_species
         @self.Constraint(
             self.flowsheet().config.time,
@@ -843,7 +876,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="steady state rate of new gac mass required")
         def eq_gac_mass_replace_rate(b):
-            return b.gac_mass_replace_rate * b.operational_time == b.bed_mass_gac
+            return b.gac_usage_rate * b.operational_time == b.bed_mass_gac
 
         @self.Constraint(doc="mass adsorbed into gac if the bed was fully saturated")
         def eq_mass_adsorbed_fully_saturated(b):
@@ -852,50 +885,18 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # steady state approximation
 
-        ele_disc = range(self.elements_ss_approx.value + 1)
-        ele_index = ele_disc[1:]
-
-        self.ele_conc_ratio_replace = Var(
-            ele_disc,
-            initialize=0.05,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-        )
-
-        self.ele_throughput = Var(
-            ele_disc,
-            initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-        )
-
-        self.ele_min_elap_time = Var(
-            ele_disc,
-            initialize=1e8,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("time"),
-        )
-
-        self.ele_elap_time = Var(
-            ele_disc,
-            initialize=1e5,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("time"),
-        )
-
         self.ele_conc_ratio_replace[0].fix(0)
         self.ele_throughput[0].fix(0)
-        self.ele_min_elap_time[0].fix(0)
-        self.ele_elap_time[0].fix(0)
+        self.ele_min_operational_time[0].fix(0)
+        self.ele_operational_time[0].fix(0)
 
         @self.Constraint(ele_index)
         def eq_ele_conc_ratio_replace(b, ele):
-            return b.ele_conc_ratio_replace[ele] == 0.01 + (ele_disc[ele] - 1) * (
-                (b.conc_ratio_replace - 0.01) / (b.elements_ss_approx - 1)
+            return b.ele_conc_ratio_replace[ele] == b.conc_ratio_start_breakthrough + (
+                ele_disc[ele] - 1
+            ) * (
+                (b.conc_ratio_replace - b.conc_ratio_start_breakthrough)
+                / (b.elements_ss_approx - 1)
             )
 
         @self.Constraint(ele_index)
@@ -907,23 +908,15 @@ class GACData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(ele_index)
         def eq_ele_min_elap_time(b, ele):
             return (
-                b.ele_min_elap_time[ele]
+                b.ele_min_operational_time[ele]
                 == b.min_residence_time * (b.dg + 1) * b.ele_throughput[ele]
             )
 
         @self.Constraint(ele_index)
         def eq_ele_elap_time(b, ele):
-            return b.ele_elap_time[ele] == b.ele_min_elap_time[ele] + (
+            return b.ele_operational_time[ele] == b.ele_min_operational_time[ele] + (
                 b.residence_time - b.min_residence_time
             ) * (b.dg + 1)
-
-        self.ele_conc_ratio_avg = Var(
-            ele_index,
-            initialize=0.05,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-        )
 
         @self.Constraint(
             ele_index,
@@ -931,8 +924,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
         )
         def eq_ele_conc_ratio_avg(b, ele):
             return b.ele_conc_ratio_avg[ele] == (
-                (b.ele_elap_time[ele] - b.ele_elap_time[ele - 1])
-                / b.ele_elap_time[self.elements_ss_approx.value]
+                (b.ele_operational_time[ele] - b.ele_operational_time[ele - 1])
+                / b.ele_operational_time[self.elements_ss_approx.value]
             ) * (
                 (b.ele_conc_ratio_replace[ele] + b.ele_conc_ratio_replace[ele - 1]) / 2
             )
@@ -1166,7 +1159,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         ] = self.operational_time
         var_dict[
             "GAC usage and required replacement/regeneration rate"
-        ] = self.gac_mass_replace_rate
+        ] = self.gac_usage_rate
         var_dict["Liquid phase film transfer coefficient"] = self.kf
         var_dict["Surface diffusion coefficient"] = self.ds
         var_dict["Solute distribution parameter"] = self.dg
@@ -1292,8 +1285,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.bed_mass_gac) is None:
             iscale.set_scaling_factor(self.bed_mass_gac, sf_solvent * 1e-1)
 
-        if iscale.get_scaling_factor(self.gac_mass_replace_rate) is None:
-            iscale.set_scaling_factor(self.gac_mass_replace_rate, sf_solute * 1e-1)
+        if iscale.get_scaling_factor(self.gac_usage_rate) is None:
+            iscale.set_scaling_factor(self.gac_usage_rate, sf_solute * 1e-1)
 
         # scaling for gac created variables that are flow magnitude independent
         if iscale.get_scaling_factor(self.freund_k) is None:
@@ -1349,11 +1342,11 @@ class GACData(InitializationMixin, UnitModelBlockData):
             if iscale.get_scaling_factor(self.ele_throughput[ele]) is None:
                 iscale.set_scaling_factor(self.ele_throughput[ele], 1)
 
-            if iscale.get_scaling_factor(self.ele_min_elap_time[ele]) is None:
-                iscale.set_scaling_factor(self.ele_min_elap_time[ele], 1e-6)
+            if iscale.get_scaling_factor(self.ele_min_operational_time[ele]) is None:
+                iscale.set_scaling_factor(self.ele_min_operational_time[ele], 1e-6)
 
-            if iscale.get_scaling_factor(self.ele_elap_time[ele]) is None:
-                iscale.set_scaling_factor(self.ele_elap_time[ele], 1e-6)
+            if iscale.get_scaling_factor(self.ele_operational_time[ele]) is None:
+                iscale.set_scaling_factor(self.ele_operational_time[ele], 1e-6)
 
         for ele in range(1, self.elements_ss_approx.value + 1):
 
