@@ -35,9 +35,8 @@ def main():
     m.fs.stream[0].display()
 
     # attempt to access properties so that they are built
-    metadata = m.fs.properties.get_metadata().properties
-    for v_name in metadata:
-        getattr(m.fs.stream[0], v_name)
+    for p in m.fs.properties.get_metadata().properties.list_supported_properties():
+        getattr(m.fs.stream[0], p.name)
     print("\n---second display---")
     m.fs.stream[0].display()
 

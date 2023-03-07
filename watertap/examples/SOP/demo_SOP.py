@@ -37,7 +37,7 @@ def main():
     # scale model
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "oil"))
-    iscale.calculate_scaling_factors(m.fs)
+    iscale.calculate_scaling_factors(m)
 
     # print DOF before specifying
     print("DOF before specifying:", degrees_of_freedom(m.fs))
