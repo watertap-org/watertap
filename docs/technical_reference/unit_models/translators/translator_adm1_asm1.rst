@@ -14,9 +14,9 @@ The model relies on the following key assumption:
    * supports only ADM1 to ASM1 translations
 
 .. index::
-   pair: watertap.unit_models.translator_adm1_asm1;translator_adm1_asm1
+   pair: watertap.unit_models.translators.translator_adm1_asm1;translator_adm1_asm1
 
-.. currentmodule:: watertap.unit_models.translator_adm1_asm1
+.. currentmodule:: watertap.unit_models.translators.translator_adm1_asm1
 
 Degrees of Freedom
 ------------------
@@ -76,9 +76,9 @@ Equations and Relationships
 
 Classes
 -------
-.. currentmodule:: watertap.unit_models.translator_adm1_asm1
+.. currentmodule:: watertap.unit_models.translators.translator_adm1_asm1
 
-.. autoclass:: TranslatorData
+.. autoclass:: TranslatorDataADM1ASM1
     :members:
     :noindex:
 
