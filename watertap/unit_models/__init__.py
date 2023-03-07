@@ -24,3 +24,4 @@ from .electrodialysis_0D import Electrodialysis0D
 from .electrodialysis_1D import Electrodialysis1D
 from .gac import GAC
 from .ion_exchange_0D import IonExchange0D
+from .electrocoagulation import Electrocoagulation
