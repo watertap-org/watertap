@@ -807,11 +807,11 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 b.dg + 1
             )
 
-        @self.Constraint(doc="Relate void fraction and GAC densities")
+        @self.Constraint(doc="Relate bed void fraction and GAC densities")
         def eq_bed_voidage(b):
             return b.bed_voidage == 1 - (b.particle_dens_bulk / b.particle_dens_app)
 
-        @self.Constraint(doc="Relate void fraction and GAC densities")
+        @self.Constraint(doc="Relate particle void fraction and GAC densities")
         def eq_particle_porosity(b):
             return b.particle_porosity == 1 - (
                 b.particle_dens_app / b.particle_dens_sol
@@ -891,7 +891,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 == (b.mass_throughput_mtz_upstream - b.mass_throughput) * b.min_ebct
             )
 
-        @self.Constraint(doc="Adsorber bed length")
+        @self.Constraint(doc="Length of the mass transfer zone")
         def eq_length_mtz(b):
             return b.length_mtz_replace == b.velocity_sup * b.ebct_mtz_replace
 
