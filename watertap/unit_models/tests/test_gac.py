@@ -39,8 +39,6 @@ from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
     badly_scaled_var_generator,
-    unscaled_constraints_generator,
-    constraint_autoscale_large_jac,
 )
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import UnitModelCostingBlock
