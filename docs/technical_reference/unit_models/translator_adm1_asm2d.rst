@@ -15,13 +15,12 @@ the Anaerobic Digestor Model 1 (ADM1) and the Activated Sludge Model 2d (ASM2d).
 The model relies on the following key assumption:
 
    * supports only liquid phase
-   * the inlet property package is adm1_properties
-   * the outlet property package is asm2d_properties
+   * supports only ADM1 to ASM2d translations
 
 .. index::
-   pair: watertap.unit_models.translator_adm1_asm2d;translator_adm1_asm2d
+   pair: watertap.unit_models.translators.translator_adm1_asm2d;translator_adm1_asm2d
 
-.. currentmodule:: watertap.unit_models.translator_adm1_asm2d
+.. currentmodule:: watertap.unit_models.translators.translator_adm1_asm2d
 
 Degrees of Freedom
 ------------------
@@ -44,13 +43,17 @@ This model provides two ports:
 
 Sets
 ----
+.. note::
+
+    Component list is outdated
+
 .. csv-table::
    :header: "Description", "Symbol", "Indices"
 
    "Time", ":math:`t`", "[0]"
    "Inlet/outlet", ":math:`x`", "['in', 'out']"
    "Phases", ":math:`p`", "['Liq']"
-   "Inlet Components", ":math:`j`", "['H2O', 'S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac','S_I','S_IN','S_IP','S_IC','X_I','X_ch','X_pr','X_li','X_PP','X_PHA',]"
+   "Inlet Components", ":math:`j`", "['H2O', 'S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac','S_h2','S_ch4','S_IC','S_IN','S_IP','S_I','X_ch','X_pr','X_pr','X_li','X_su','X_aa','X_fa','X_c4','X_pro','X_ac','X_h2','X_I','X_PHA','X_PP','X_PAO','X_K','X_Mg']"
    "Ion", ":math:`j`", "['S_cat', 'S_an'] \  :sup:`*`"
    "Outlet Components", ":math:`j`", "['H2O', 'S_I','S_F','S_A','S_I','S_NH4','S_PO4','S_IC','X_I','X_S','X_PP','X_PHA',]"
    "Readily Biodegradable COD", ":math:`k`", "['S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac']"
@@ -83,9 +86,9 @@ Equations and Relationships
 
 Classes
 -------
-.. currentmodule:: watertap.unit_models.translator_adm1_asm2d
+.. currentmodule:: watertap.unit_models.translators.translator_adm1_asm2d
 
-.. autoclass:: UnitModelBlockData
+.. autoclass:: TranslatorDataADM1ASM2D
     :members:
     :noindex:
 
