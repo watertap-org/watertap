@@ -15,6 +15,7 @@
 from pyomo.environ import (
     Var,
     Constraint,
+    Param,
     check_optimal_termination,
     Suffix,
     NonNegativeReals,
@@ -36,6 +37,7 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import InitializationError
+from idaes.core.util.constants import Constants
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -338,6 +340,119 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             return (
                 b.feed_side.properties_in[t].temperature
                 == b.properties_permeate[t].temperature
+            )
+
+        # Add parameters
+        # TODO possibly move these higher up in the code
+        # TODO would we want some of these Params to be Vars instead? So we could find optimal values?
+        self.pore_diameter = Param(
+            mutable=True,
+            initialize=4e-8,
+            units=pyunits.m,
+            doc="Average membrane pore diameter",
+        )
+
+        self.porosity = Param(
+            mutable=True,
+            initialize=0.4,
+            units=pyunits.dimensionless,
+            doc="Membrane porosity",
+        )
+
+        self.membrane_thickness = Param(
+            mutable=True,
+            initialize=4e-5,
+            units=pyunits.m,
+            doc="Membrane thickness",
+        )
+
+        self.permeability_constant = Param(
+            mutable=True,
+            initialize=150,
+            units=pyunits.dimensionless,
+            doc="Permeability constant",
+        )
+
+        self.module_diameter = Param(
+            mutable=True,
+            initialize=0.064,
+            units=pyunits.m,
+            doc="Module diameter",
+        )
+
+        self.num_constant = Param(
+            mutable=True,
+            initialize=1.65e12,
+            units=pyunits.dimensionless,
+            doc="Numerator constant",
+        )
+
+        self.den_constant = Param(
+            mutable=True,
+            initialize=2.66e15,
+            units=pyunits.dimensionless,
+            doc="Denominator constant",
+        )
+
+        self.num_mu_exp = Param(
+            mutable=True,
+            initialize=1.0,
+            units=pyunits.dimensionless,
+            doc="Numerator viscosity exponent",
+        )
+
+        self.den_mu_exp = Param(
+            mutable=True,
+            initialize=1.1,
+            units=pyunits.dimensionless,
+            doc="Denominator viscosity exponent",
+        )
+
+        self.num_PT_exp = Param(
+            mutable=True,
+            initialize=-1.6,
+            units=pyunits.dimensionless,
+            doc="Numerator transmembrane pressure exponent",
+        )
+
+        self.den_PT_exp = Param(
+            mutable=True,
+            initialize=-2.1,
+            units=pyunits.dimensionless,
+            doc="Denominator transmembrane pressure exponent",
+        )
+
+        self.num_v_exp = Param(
+            mutable=True,
+            initialize=0.3,
+            units=pyunits.dimensionless,
+            doc="Numerator liquid velocity exponent",
+        )
+
+        self.den_v_exp = Param(
+            mutable=True,
+            initialize=0.4,
+            units=pyunits.dimensionless,
+            doc="Denominator liquid velocity exponent",
+        )
+
+        self.liquid_velocity = Var(
+            self.flowsheet().config.time,
+            initialize=0.01,
+            bounds=(0.0, 1e3),
+            domain=NonNegativeReals,
+            units=units_meta("length") * units_meta("time") ** -1,
+            doc="Liquid velocity at module inlet",
+        )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Liquid velocity",
+        )
+        def eq_liquid_velocity(b, t):
+            return (
+                b.feed_side.properties_in[t].flow_vol_phase["Liq"]
+                == b.liquid_velocity[t] * Constants.pi / 4 * b.module_diameter**2
             )
 
         @self.Constraint(
