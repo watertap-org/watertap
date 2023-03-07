@@ -353,15 +353,6 @@ class TestParamBlock(object):
         assert isinstance(model.rparams.f_li_xc, Var)
         assert value(model.rparams.f_li_xc) == 0.30
 
-        assert isinstance(model.rparams.N_xc, Var)
-        assert value(model.rparams.N_xc) == 0.0376 / 14
-        assert isinstance(model.rparams.N_I, Var)
-        assert value(model.rparams.N_I) == 0.06 / 14
-        assert isinstance(model.rparams.N_aa, Var)
-        assert value(model.rparams.N_aa) == 0.007
-        assert isinstance(model.rparams.N_bac, Var)
-        assert value(model.rparams.N_bac) == 0.08 / 14
-
         assert isinstance(model.rparams.f_fa_li, Var)
         assert value(model.rparams.f_fa_li) == 0.95
         assert isinstance(model.rparams.f_h2_su, Var)
@@ -398,8 +389,6 @@ class TestParamBlock(object):
         assert isinstance(model.rparams.Y_h2, Var)
         assert value(model.rparams.Y_h2) == 0.06
 
-        assert isinstance(model.rparams.k_dis, Var)
-        assert value(model.rparams.k_dis) == 0.5
         assert isinstance(model.rparams.k_hyd_ch, Var)
         assert value(model.rparams.k_hyd_ch) == 10
         assert isinstance(model.rparams.k_hyd_pr, Var)

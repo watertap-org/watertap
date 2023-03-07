@@ -230,34 +230,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
         )
 
         # TODO: delete unused parameters
-        self.N_xc = pyo.Var(
-            initialize=0.0376
-            / 14,  # change from 0.002 to 0.0376/14 based on Rosen & Jeppsson, 2006
-            units=pyo.units.kmol * pyo.units.kg**-1,
-            domain=pyo.PositiveReals,
-            doc="Nitrogen content of composites [kmole N/kg COD]",
-        )
-        self.N_I = pyo.Var(
-            initialize=0.06
-            / 14,  # change from 0.002 to 0.06/14 based on Rosen & Jeppsson, 2006
-            units=pyo.units.kmol * pyo.units.kg**-1,
-            domain=pyo.PositiveReals,
-            doc="Nitrogen content of inerts [kmole N/kg COD]",
-        )
-        self.N_aa = pyo.Var(
-            initialize=0.007,
-            units=pyo.units.kmol * pyo.units.kg**-1,
-            domain=pyo.PositiveReals,
-            doc="Nitrogen in amino acids and proteins [kmole N/kg COD]",
-        )
-        self.N_bac = pyo.Var(
-            initialize=0.08 / 14,
-            units=pyo.units.kmol * pyo.units.kg**-1,
-            # units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Nitrogen content in bacteria [kmole N/kg COD]",
-        )
-
         self.f_fa_li = pyo.Var(
             initialize=0.95,
             units=pyo.units.dimensionless,
@@ -362,12 +334,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             doc="Yield of hydrogen per biomass [kg COD S/ kg COD X]",
         )
         # Biochemical Parameters
-        self.k_dis = pyo.Var(
-            initialize=0.5,
-            units=pyo.units.day**-1,
-            domain=pyo.PositiveReals,
-            doc="First-order kinetic parameter for disintegration",
-        )
         self.k_hyd_ch = pyo.Var(
             initialize=10,
             units=pyo.units.day**-1,
@@ -627,17 +593,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Fraction of proteins from biomass",
         )
-        self.f_sl_xb = pyo.Var(
-            initialize=0,  # Check this value
+        self.f_si_xb = pyo.Var(
+            initialize=0,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="Fraction of soluble inerts from biomass",
-        )
-        self.f_xl_xb = pyo.Var(
-            initialize=0.1,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Fraction of particulate inerts from biomass",
         )
         self.K_I_h2s_ac = pyo.Var(
             initialize=460e-3,
@@ -1190,7 +1150,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R12", "Liq", "S_I"): 0,
+            ("R12", "Liq", "S_I"): self.f_si_xb,
             ("R12", "Liq", "X_ch"): self.f_ch_xb,
             ("R12", "Liq", "X_pr"): self.f_pr_xb,
             ("R12", "Liq", "X_li"): self.f_li_xb,
@@ -1238,7 +1198,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R13", "Liq", "S_I"): 0,
+            ("R13", "Liq", "S_I"): self.f_si_xb,
             ("R13", "Liq", "X_ch"): self.f_ch_xb,
             ("R13", "Liq", "X_pr"): self.f_pr_xb,
             ("R13", "Liq", "X_li"): self.f_li_xb,
@@ -1286,7 +1246,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R14", "Liq", "S_I"): 0,
+            ("R14", "Liq", "S_I"): self.f_si_xb,
             ("R14", "Liq", "X_ch"): self.f_ch_xb,
             ("R14", "Liq", "X_pr"): self.f_pr_xb,
             ("R14", "Liq", "X_li"): self.f_li_xb,
@@ -1334,7 +1294,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R15", "Liq", "S_I"): 0,
+            ("R15", "Liq", "S_I"): self.f_si_xb,
             ("R15", "Liq", "X_ch"): self.f_ch_xb,
             ("R15", "Liq", "X_pr"): self.f_pr_xb,
             ("R15", "Liq", "X_li"): self.f_li_xb,
@@ -1382,7 +1342,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R16", "Liq", "S_I"): 0,
+            ("R16", "Liq", "S_I"): self.f_si_xb,
             ("R16", "Liq", "X_ch"): self.f_ch_xb,
             ("R16", "Liq", "X_pr"): self.f_pr_xb,
             ("R16", "Liq", "X_li"): self.f_li_xb,
@@ -1430,7 +1390,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R17", "Liq", "S_I"): 0,
+            ("R17", "Liq", "S_I"): self.f_si_xb,
             ("R17", "Liq", "X_ch"): self.f_ch_xb,
             ("R17", "Liq", "X_pr"): self.f_pr_xb,
             ("R17", "Liq", "X_li"): self.f_li_xb,
@@ -1478,7 +1438,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R18", "Liq", "S_I"): 0,
+            ("R18", "Liq", "S_I"): self.f_si_xb,
             ("R18", "Liq", "X_ch"): self.f_ch_xb,
             ("R18", "Liq", "X_pr"): self.f_pr_xb,
             ("R18", "Liq", "X_li"): self.f_li_xb,
@@ -1650,7 +1610,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R23", "Liq", "S_I"): 0,
+            ("R23", "Liq", "S_I"): self.f_si_xb,
             ("R23", "Liq", "X_ch"): self.f_ch_xb,
             ("R23", "Liq", "X_pr"): self.f_pr_xb,
             ("R23", "Liq", "X_li"): self.f_li_xb,
@@ -1766,7 +1726,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
         )
 
 
-# TODO: Update the class names below
 class _ModifiedADM1ReactionBlock(ReactionBlockBase):
     """
     This Class contains methods which should be applied to Reaction Blocks as a
