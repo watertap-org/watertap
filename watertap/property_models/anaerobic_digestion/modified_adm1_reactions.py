@@ -99,6 +99,13 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 "R16",
                 "R17",
                 "R18",
+                "R19",
+                "R20",
+                "R21",
+                "R22",
+                "R23",
+                "R24",
+                "R25",
             ]
         )
 
@@ -220,6 +227,8 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Lipids from composites",
         )
+
+        # TODO: delete unused parameters
         self.N_xc = pyo.Var(
             initialize=0.0376
             / 14,  # change from 0.002 to 0.0376/14 based on Rosen & Jeppsson, 2006
@@ -247,6 +256,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Nitrogen content in bacteria [kmole N/kg COD]",
         )
+
         self.f_fa_li = pyo.Var(
             initialize=0.95,
             units=pyo.units.dimensionless,
@@ -658,6 +668,85 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="P limitation for inorganic phosphorus",
         )
+        self.b_PAO = pyo.Var(
+            initialize=0.2,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="Lysis rate of phosphorus accumulating organisms",
+        )
+        self.b_PHA = pyo.Var(
+            initialize=0.2,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="Lysis rate of polyhydroxyalkanoates",
+        )
+        self.b_PP = pyo.Var(
+            initialize=0.2,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="Lysis rate of polyphosphates",
+        )
+        self.f_ac_PHA = pyo.Var(
+            initialize=0.4,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Yield of acetate on polyhydroxyalkanoates",
+        )
+        self.f_bu_PHA = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Yield of butyrate on polyhydroxyalkanoates",
+        )
+        self.f_pro_PHA = pyo.Var(
+            initialize=0.4,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Yield of propionate on polyhydroxyalkanoates",
+        )
+        self.f_va_PHA = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Yield of valerate on polyhydroxyalkanoates",
+        )
+        self.K_A = pyo.Var(
+            initialize=4e-3,
+            units=pyo.units.kg**-1 * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Saturation coefficient for acetate",
+        )
+        self.K_PP = pyo.Var(
+            initialize=0.32e-3,
+            units=pyo.units.kg**-1 * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Saturation coefficient for polyphosphate",
+        )
+        self.q_PHA = pyo.Var(
+            initialize=3.0,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="rate constant for storage of polyhydroxyalkanoates",
+        )
+        self.Y_PO4 = pyo.Var(
+            initialize=13e-3,
+            units=pyo.units.kmol / pyo.units.kg,
+            domain=pyo.PositiveReals,
+            doc="Yield of biomass on phosphate (kmol P/kg COD)",
+        )
+        # TODO: add doc
+        self.K_XPP = pyo.Var(
+            initialize=1 / 3,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="K_XPP",
+        )
+        self.Mg_XPP = pyo.Var(
+            initialize=1 / 3,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Mg_XPP",
+        )
         self.temperature_ref = pyo.Param(
             within=pyo.PositiveReals,
             mutable=True,
@@ -698,6 +787,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R1", "Liq", "X_ac"): 0,
             ("R1", "Liq", "X_h2"): 0,
             ("R1", "Liq", "X_I"): 0,
+            ("R1", "Liq", "X_PHA"): 0,
+            ("R1", "Liq", "X_PP"): 0,
+            ("R1", "Liq", "X_PAO"): 0,
+            ("R1", "Liq", "X_K"): 0,
+            ("R1", "Liq", "X_Mg"): 0,
             # R2:  Hydrolysis of proteins
             ("R2", "Liq", "H2O"): 0,
             ("R2", "Liq", "S_su"): 0,
@@ -724,6 +818,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R2", "Liq", "X_ac"): 0,
             ("R2", "Liq", "X_h2"): 0,
             ("R2", "Liq", "X_I"): 0,
+            ("R2", "Liq", "X_PHA"): 0,
+            ("R2", "Liq", "X_PP"): 0,
+            ("R2", "Liq", "X_PAO"): 0,
+            ("R2", "Liq", "X_K"): 0,
+            ("R2", "Liq", "X_Mg"): 0,
             # R3:  Hydrolysis of lipids
             ("R3", "Liq", "H2O"): 0,
             ("R3", "Liq", "S_su"): 1 - self.f_fa_li,
@@ -755,6 +854,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R3", "Liq", "X_ac"): 0,
             ("R3", "Liq", "X_h2"): 0,
             ("R3", "Liq", "X_I"): 0,
+            ("R3", "Liq", "X_PHA"): 0,
+            ("R3", "Liq", "X_PP"): 0,
+            ("R3", "Liq", "X_PAO"): 0,
+            ("R3", "Liq", "X_K"): 0,
+            ("R3", "Liq", "X_Mg"): 0,
             # R4:  Uptake of sugars
             ("R4", "Liq", "H2O"): 0,
             ("R4", "Liq", "S_su"): -1,
@@ -791,6 +895,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R4", "Liq", "X_ac"): 0,
             ("R4", "Liq", "X_h2"): 0,
             ("R4", "Liq", "X_I"): 0,
+            ("R4", "Liq", "X_PHA"): 0,
+            ("R4", "Liq", "X_PP"): 0,
+            ("R4", "Liq", "X_PAO"): 0,
+            ("R4", "Liq", "X_K"): 0,
+            ("R4", "Liq", "X_Mg"): 0,
             # R5:  Uptake of amino acids
             ("R5", "Liq", "H2O"): 0,
             ("R5", "Liq", "S_su"): 0,
@@ -829,6 +938,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R5", "Liq", "X_ac"): 0,
             ("R5", "Liq", "X_h2"): 0,
             ("R5", "Liq", "X_I"): 0,
+            ("R5", "Liq", "X_PHA"): 0,
+            ("R5", "Liq", "X_PP"): 0,
+            ("R5", "Liq", "X_PAO"): 0,
+            ("R5", "Liq", "X_K"): 0,
+            ("R5", "Liq", "X_Mg"): 0,
             # R6:  Uptake of long chain fatty acids (LCFAs)
             ("R6", "Liq", "H2O"): 0,
             ("R6", "Liq", "S_su"): 0,
@@ -860,6 +974,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R6", "Liq", "X_ac"): 0,
             ("R6", "Liq", "X_h2"): 0,
             ("R6", "Liq", "X_I"): 0,
+            ("R6", "Liq", "X_PHA"): 0,
+            ("R6", "Liq", "X_PP"): 0,
+            ("R6", "Liq", "X_PAO"): 0,
+            ("R6", "Liq", "X_K"): 0,
+            ("R6", "Liq", "X_Mg"): 0,
             # R7:  Uptake of valerate
             ("R7", "Liq", "H2O"): 0,
             ("R7", "Liq", "S_su"): 0,
@@ -892,6 +1011,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R7", "Liq", "X_ac"): 0,
             ("R7", "Liq", "X_h2"): 0,
             ("R7", "Liq", "X_I"): 0,
+            ("R7", "Liq", "X_PHA"): 0,
+            ("R7", "Liq", "X_PP"): 0,
+            ("R7", "Liq", "X_PAO"): 0,
+            ("R7", "Liq", "X_K"): 0,
+            ("R7", "Liq", "X_Mg"): 0,
             # R8:  Uptake of butyrate
             ("R8", "Liq", "H2O"): 0,
             ("R8", "Liq", "S_su"): 0,
@@ -923,6 +1047,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R8", "Liq", "X_ac"): 0,
             ("R8", "Liq", "X_h2"): 0,
             ("R8", "Liq", "X_I"): 0,
+            ("R8", "Liq", "X_PHA"): 0,
+            ("R8", "Liq", "X_PP"): 0,
+            ("R8", "Liq", "X_PAO"): 0,
+            ("R8", "Liq", "X_K"): 0,
+            ("R8", "Liq", "X_Mg"): 0,
             # R9: Uptake of propionate
             ("R9", "Liq", "H2O"): 0,
             ("R9", "Liq", "S_su"): 0,
@@ -954,6 +1083,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R9", "Liq", "X_ac"): 0,
             ("R9", "Liq", "X_h2"): 0,
             ("R9", "Liq", "X_I"): 0,
+            ("R9", "Liq", "X_PHA"): 0,
+            ("R9", "Liq", "X_PP"): 0,
+            ("R9", "Liq", "X_PAO"): 0,
+            ("R9", "Liq", "X_K"): 0,
+            ("R9", "Liq", "X_Mg"): 0,
             # R10: Uptake of acetate
             ("R10", "Liq", "H2O"): 0,
             ("R10", "Liq", "S_su"): 0,
@@ -985,6 +1119,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R10", "Liq", "X_ac"): self.Y_ac,
             ("R10", "Liq", "X_h2"): 0,
             ("R10", "Liq", "X_I"): 0,
+            ("R10", "Liq", "X_PHA"): 0,
+            ("R10", "Liq", "X_PP"): 0,
+            ("R10", "Liq", "X_PAO"): 0,
+            ("R10", "Liq", "X_K"): 0,
+            ("R10", "Liq", "X_Mg"): 0,
             # R11: Uptake of hydrogen
             ("R11", "Liq", "H2O"): 0,
             ("R11", "Liq", "S_su"): 0,
@@ -1014,6 +1153,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R11", "Liq", "X_ac"): 0,
             ("R11", "Liq", "X_h2"): self.Y_h2,
             ("R11", "Liq", "X_I"): 0,
+            ("R11", "Liq", "X_PHA"): 0,
+            ("R11", "Liq", "X_PP"): 0,
+            ("R11", "Liq", "X_PAO"): 0,
+            ("R11", "Liq", "X_K"): 0,
+            ("R11", "Liq", "X_Mg"): 0,
             # R12: Decay of X_su
             ("R12", "Liq", "H2O"): 0,
             ("R12", "Liq", "S_su"): 0,
@@ -1057,6 +1201,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R12", "Liq", "X_ac"): 0,
             ("R12", "Liq", "X_h2"): 0,
             ("R12", "Liq", "X_I"): self.f_xi_xb,
+            ("R12", "Liq", "X_PHA"): 0,
+            ("R12", "Liq", "X_PP"): 0,
+            ("R12", "Liq", "X_PAO"): 0,
+            ("R12", "Liq", "X_K"): 0,
+            ("R12", "Liq", "X_Mg"): 0,
             # R13: Decay of X_aa
             ("R13", "Liq", "H2O"): 0,
             ("R13", "Liq", "S_su"): 0,
@@ -1100,6 +1249,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R13", "Liq", "X_ac"): 0,
             ("R13", "Liq", "X_h2"): 0,
             ("R13", "Liq", "X_I"): self.f_xi_xb,
+            ("R13", "Liq", "X_PHA"): 0,
+            ("R13", "Liq", "X_PP"): 0,
+            ("R13", "Liq", "X_PAO"): 0,
+            ("R13", "Liq", "X_K"): 0,
+            ("R13", "Liq", "X_Mg"): 0,
             # R14: Decay of X_fa
             ("R14", "Liq", "H2O"): 0,
             ("R14", "Liq", "S_su"): 0,
@@ -1143,6 +1297,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R14", "Liq", "X_ac"): 0,
             ("R14", "Liq", "X_h2"): 0,
             ("R14", "Liq", "X_I"): self.f_xi_xb,
+            ("R14", "Liq", "X_PHA"): 0,
+            ("R14", "Liq", "X_PP"): 0,
+            ("R14", "Liq", "X_PAO"): 0,
+            ("R14", "Liq", "X_K"): 0,
+            ("R14", "Liq", "X_Mg"): 0,
             # R15: Decay of X_c4
             ("R15", "Liq", "H2O"): 0,
             ("R15", "Liq", "S_su"): 0,
@@ -1186,6 +1345,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R15", "Liq", "X_ac"): 0,
             ("R15", "Liq", "X_h2"): 0,
             ("R15", "Liq", "X_I"): self.f_xi_xb,
+            ("R15", "Liq", "X_PHA"): 0,
+            ("R15", "Liq", "X_PP"): 0,
+            ("R15", "Liq", "X_PAO"): 0,
+            ("R15", "Liq", "X_K"): 0,
+            ("R15", "Liq", "X_Mg"): 0,
             # R16: Decay of X_pro
             ("R16", "Liq", "H2O"): 0,
             ("R16", "Liq", "S_su"): 0,
@@ -1229,6 +1393,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R16", "Liq", "X_ac"): 0,
             ("R16", "Liq", "X_h2"): 0,
             ("R16", "Liq", "X_I"): self.f_xi_xb,
+            ("R16", "Liq", "X_PHA"): 0,
+            ("R16", "Liq", "X_PP"): 0,
+            ("R16", "Liq", "X_PAO"): 0,
+            ("R16", "Liq", "X_K"): 0,
+            ("R16", "Liq", "X_Mg"): 0,
             # R17: Decay of X_ac
             ("R17", "Liq", "H2O"): 0,
             ("R17", "Liq", "S_su"): 0,
@@ -1272,6 +1441,11 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R17", "Liq", "X_ac"): -1,
             ("R17", "Liq", "X_h2"): 0,
             ("R17", "Liq", "X_I"): self.f_xi_xb,
+            ("R17", "Liq", "X_PHA"): 0,
+            ("R17", "Liq", "X_PP"): 0,
+            ("R17", "Liq", "X_PAO"): 0,
+            ("R17", "Liq", "X_K"): 0,
+            ("R17", "Liq", "X_Mg"): 0,
             # R18: Decay of X_h2
             ("R18", "Liq", "H2O"): 0,
             ("R18", "Liq", "S_su"): 0,
@@ -1315,18 +1489,229 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R18", "Liq", "X_ac"): 0,
             ("R18", "Liq", "X_h2"): -1,
             ("R18", "Liq", "X_I"): self.f_xi_xb,
+            ("R18", "Liq", "X_PHA"): 0,
+            ("R18", "Liq", "X_PP"): 0,
+            ("R18", "Liq", "X_PAO"): 0,
+            ("R18", "Liq", "X_K"): 0,
+            ("R18", "Liq", "X_Mg"): 0,
+            # R19: Storage of S_va in X_PHA
+            ("R19", "Liq", "H2O"): 0,
+            ("R19", "Liq", "S_su"): 0,
+            ("R19", "Liq", "S_aa"): 0,
+            ("R19", "Liq", "S_fa"): 0,
+            ("R19", "Liq", "S_va"): -1,
+            ("R19", "Liq", "S_bu"): 0,
+            ("R19", "Liq", "S_pro"): 0,
+            ("R19", "Liq", "S_ac"): 0,
+            ("R19", "Liq", "S_h2"): 0,
+            ("R19", "Liq", "S_ch4"): 0,
+            ("R19", "Liq", "S_IC"): 0,
+            ("R19", "Liq", "S_IN"): 0,
+            ("R19", "Liq", "S_IP"): 0,
+            ("R19", "Liq", "S_I"): 0,
+            ("R19", "Liq", "X_ch"): 0,
+            ("R19", "Liq", "X_pr"): 0,
+            ("R19", "Liq", "X_li"): 0,
+            ("R19", "Liq", "X_su"): 0,
+            ("R19", "Liq", "X_aa"): 0,
+            ("R19", "Liq", "X_fa"): 0,
+            ("R19", "Liq", "X_c4"): 0,
+            ("R19", "Liq", "X_pro"): 0,
+            ("R19", "Liq", "X_ac"): 0,
+            ("R19", "Liq", "X_h2"): 0,
+            ("R19", "Liq", "X_I"): 0,
+            ("R19", "Liq", "X_PHA"): 1,
+            ("R19", "Liq", "X_PP"): -self.Y_PO4,
+            ("R19", "Liq", "X_PAO"): 0,
+            ("R19", "Liq", "X_K"): self.Y_PO4 * self.K_XPP,
+            ("R19", "Liq", "X_Mg"): self.Y_PO4 * self.Mg_XPP,
+            # R20: Storage of S_bu in X_PHA
+            ("R20", "Liq", "H2O"): 0,
+            ("R20", "Liq", "S_su"): 0,
+            ("R20", "Liq", "S_aa"): 0,
+            ("R20", "Liq", "S_fa"): 0,
+            ("R20", "Liq", "S_va"): 0,
+            ("R20", "Liq", "S_bu"): -1,
+            ("R20", "Liq", "S_pro"): 0,
+            ("R20", "Liq", "S_ac"): 0,
+            ("R20", "Liq", "S_h2"): 0,
+            ("R20", "Liq", "S_ch4"): 0,
+            ("R20", "Liq", "S_IC"): 0,
+            ("R20", "Liq", "S_IN"): 0,
+            ("R20", "Liq", "S_IP"): 0,
+            ("R20", "Liq", "S_I"): 0,
+            ("R20", "Liq", "X_ch"): 0,
+            ("R20", "Liq", "X_pr"): 0,
+            ("R20", "Liq", "X_li"): 0,
+            ("R20", "Liq", "X_su"): 0,
+            ("R20", "Liq", "X_aa"): 0,
+            ("R20", "Liq", "X_fa"): 0,
+            ("R20", "Liq", "X_c4"): 0,
+            ("R20", "Liq", "X_pro"): 0,
+            ("R20", "Liq", "X_ac"): 0,
+            ("R20", "Liq", "X_h2"): 0,
+            ("R20", "Liq", "X_I"): 0,
+            ("R20", "Liq", "X_PHA"): 1,
+            ("R20", "Liq", "X_PP"): -self.Y_PO4,
+            ("R20", "Liq", "X_PAO"): 0,
+            ("R20", "Liq", "X_K"): self.Y_PO4 * self.K_XPP,
+            ("R20", "Liq", "X_Mg"): self.Y_PO4 * self.Mg_XPP,
+            # R21: Storage of S_pro in X_PHA
+            ("R21", "Liq", "H2O"): 0,
+            ("R21", "Liq", "S_su"): 0,
+            ("R21", "Liq", "S_aa"): 0,
+            ("R21", "Liq", "S_fa"): 0,
+            ("R21", "Liq", "S_va"): 0,
+            ("R21", "Liq", "S_bu"): 0,
+            ("R21", "Liq", "S_pro"): -1,
+            ("R21", "Liq", "S_ac"): 0,
+            ("R21", "Liq", "S_h2"): 0,
+            ("R21", "Liq", "S_ch4"): 0,
+            ("R21", "Liq", "S_IC"): 0,
+            ("R21", "Liq", "S_IN"): 0,
+            ("R21", "Liq", "S_IP"): 0,
+            ("R21", "Liq", "S_I"): 0,
+            ("R21", "Liq", "X_ch"): 0,
+            ("R21", "Liq", "X_pr"): 0,
+            ("R21", "Liq", "X_li"): 0,
+            ("R21", "Liq", "X_su"): 0,
+            ("R21", "Liq", "X_aa"): 0,
+            ("R21", "Liq", "X_fa"): 0,
+            ("R21", "Liq", "X_c4"): 0,
+            ("R21", "Liq", "X_pro"): 0,
+            ("R21", "Liq", "X_ac"): 0,
+            ("R21", "Liq", "X_h2"): 0,
+            ("R21", "Liq", "X_I"): 0,
+            ("R21", "Liq", "X_PHA"): 1,
+            ("R21", "Liq", "X_PP"): -self.Y_PO4,
+            ("R21", "Liq", "X_PAO"): 0,
+            ("R21", "Liq", "X_K"): self.Y_PO4 * self.K_XPP,
+            ("R21", "Liq", "X_Mg"): self.Y_PO4 * self.Mg_XPP,
+            # R22: Storage of S_ac in X_PHA
+            ("R22", "Liq", "H2O"): 0,
+            ("R22", "Liq", "S_su"): 0,
+            ("R22", "Liq", "S_aa"): 0,
+            ("R22", "Liq", "S_fa"): 0,
+            ("R22", "Liq", "S_va"): 0,
+            ("R22", "Liq", "S_bu"): 0,
+            ("R22", "Liq", "S_pro"): 0,
+            ("R22", "Liq", "S_ac"): -1,
+            ("R22", "Liq", "S_h2"): 0,
+            ("R22", "Liq", "S_ch4"): 0,
+            ("R22", "Liq", "S_IC"): 0,
+            ("R22", "Liq", "S_IN"): 0,
+            ("R22", "Liq", "S_IP"): 0,
+            ("R22", "Liq", "S_I"): 0,
+            ("R22", "Liq", "X_ch"): 0,
+            ("R22", "Liq", "X_pr"): 0,
+            ("R22", "Liq", "X_li"): 0,
+            ("R22", "Liq", "X_su"): 0,
+            ("R22", "Liq", "X_aa"): 0,
+            ("R22", "Liq", "X_fa"): 0,
+            ("R22", "Liq", "X_c4"): 0,
+            ("R22", "Liq", "X_pro"): 0,
+            ("R22", "Liq", "X_ac"): 0,
+            ("R22", "Liq", "X_h2"): 0,
+            ("R22", "Liq", "X_I"): 0,
+            ("R22", "Liq", "X_PHA"): 1,
+            ("R22", "Liq", "X_PP"): -self.Y_PO4,
+            ("R22", "Liq", "X_PAO"): 0,
+            ("R22", "Liq", "X_K"): self.Y_PO4 * self.K_XPP,
+            ("R22", "Liq", "X_Mg"): self.Y_PO4 * self.Mg_XPP,
+            # R23: Lysis of X_PAO
+            ("R23", "Liq", "H2O"): 0,
+            ("R23", "Liq", "S_su"): 0,
+            ("R23", "Liq", "S_aa"): 0,
+            ("R23", "Liq", "S_fa"): 0,
+            ("R23", "Liq", "S_va"): 0,
+            ("R23", "Liq", "S_bu"): 0,
+            ("R23", "Liq", "S_pro"): 0,
+            ("R23", "Liq", "S_ac"): 0,
+            ("R23", "Liq", "S_h2"): 0,
+            ("R23", "Liq", "S_ch4"): 0,
+            ("R23", "Liq", "S_IC"): 0,
+            ("R23", "Liq", "S_IN"): 0,
+            ("R23", "Liq", "S_IP"): 0,
+            ("R23", "Liq", "S_I"): 0,
+            ("R23", "Liq", "X_ch"): self.f_ch_xb,
+            ("R23", "Liq", "X_pr"): self.f_pr_xb,
+            ("R23", "Liq", "X_li"): self.f_li_xb,
+            ("R23", "Liq", "X_su"): 0,
+            ("R23", "Liq", "X_aa"): 0,
+            ("R23", "Liq", "X_fa"): 0,
+            ("R23", "Liq", "X_c4"): 0,
+            ("R23", "Liq", "X_pro"): 0,
+            ("R23", "Liq", "X_ac"): 0,
+            ("R23", "Liq", "X_h2"): 0,
+            ("R23", "Liq", "X_I"): self.f_xi_xb,
+            ("R23", "Liq", "X_PHA"): 0,
+            ("R23", "Liq", "X_PP"): 0,
+            ("R23", "Liq", "X_PAO"): -1,
+            ("R23", "Liq", "X_K"): 0,
+            ("R23", "Liq", "X_Mg"): 0,
+            # R24: Lysis of X_PP
+            ("R24", "Liq", "H2O"): 0,
+            ("R24", "Liq", "S_su"): 0,
+            ("R24", "Liq", "S_aa"): 0,
+            ("R24", "Liq", "S_fa"): 0,
+            ("R24", "Liq", "S_va"): 0,
+            ("R24", "Liq", "S_bu"): 0,
+            ("R24", "Liq", "S_pro"): 0,
+            ("R24", "Liq", "S_ac"): 0,
+            ("R24", "Liq", "S_h2"): 0,
+            ("R24", "Liq", "S_ch4"): 0,
+            ("R24", "Liq", "S_IC"): 0,
+            ("R24", "Liq", "S_IN"): 0,
+            ("R24", "Liq", "S_IP"): 0,
+            ("R24", "Liq", "S_I"): 0,
+            ("R24", "Liq", "X_ch"): 0,
+            ("R24", "Liq", "X_pr"): 0,
+            ("R24", "Liq", "X_li"): 0,
+            ("R24", "Liq", "X_su"): 0,
+            ("R24", "Liq", "X_aa"): 0,
+            ("R24", "Liq", "X_fa"): 0,
+            ("R24", "Liq", "X_c4"): 0,
+            ("R24", "Liq", "X_pro"): 0,
+            ("R24", "Liq", "X_ac"): 0,
+            ("R24", "Liq", "X_h2"): 0,
+            ("R24", "Liq", "X_I"): 0,
+            ("R24", "Liq", "X_PHA"): 0,
+            ("R24", "Liq", "X_PP"): -1,
+            ("R24", "Liq", "X_PAO"): 0,
+            ("R24", "Liq", "X_K"): self.K_XPP,
+            ("R24", "Liq", "X_Mg"): self.Mg_XPP,
+            # R25: Lysis of X_PHA
+            ("R25", "Liq", "H2O"): 0,
+            ("R25", "Liq", "S_su"): 0,
+            ("R25", "Liq", "S_aa"): 0,
+            ("R25", "Liq", "S_fa"): 0,
+            ("R25", "Liq", "S_va"): self.f_va_PHA,
+            ("R25", "Liq", "S_bu"): self.f_bu_PHA,
+            ("R25", "Liq", "S_pro"): self.f_pro_PHA,
+            ("R25", "Liq", "S_ac"): self.f_ac_PHA,
+            ("R25", "Liq", "S_h2"): 0,
+            ("R25", "Liq", "S_ch4"): 0,
+            ("R25", "Liq", "S_IC"): 0,
+            ("R25", "Liq", "S_IN"): 0,
+            ("R25", "Liq", "S_IP"): 0,
+            ("R25", "Liq", "S_I"): 0,
+            ("R25", "Liq", "X_ch"): 0,
+            ("R25", "Liq", "X_pr"): 0,
+            ("R25", "Liq", "X_li"): 0,
+            ("R25", "Liq", "X_su"): 0,
+            ("R25", "Liq", "X_aa"): 0,
+            ("R25", "Liq", "X_fa"): 0,
+            ("R25", "Liq", "X_c4"): 0,
+            ("R25", "Liq", "X_pro"): 0,
+            ("R25", "Liq", "X_ac"): 0,
+            ("R25", "Liq", "X_h2"): 0,
+            ("R25", "Liq", "X_I"): 0,
+            ("R25", "Liq", "X_PHA"): -1,
+            ("R25", "Liq", "X_PP"): 0,
+            ("R25", "Liq", "X_PAO"): 0,
+            ("R25", "Liq", "X_K"): 0,
+            ("R25", "Liq", "X_Mg"): 0,
         }
-
-        # TODO: Update s_ic_rxns list and add similar code for S_IN and S_IP
-
-        # s_ic_rxns = ["R5", "R6", "R10", "R11", "R12"]
-        #
-        # for R in s_ic_rxns:
-        #     self.rate_reaction_stoichiometry[R, "Liq", "S_IC"] = -sum(
-        #         self.Ci[S] * self.rate_reaction_stoichiometry[R, "Liq", S] * mw_c
-        #         for S in Ci_dict.keys()
-        #         if S != "S_IC"
-        #     )
 
         for R in self.rate_reaction_idx:
             self.rate_reaction_stoichiometry[R, "Liq", "S_cat"] = 0
@@ -2026,6 +2411,28 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                     return b.reaction_rate[r] == (
                         pyo.units.convert(b.params.k_dec_X_h2, to_units=1 / pyo.units.s)
                         * b.conc_mass_comp_ref["X_h2"]
+                    )
+                elif r == "R19":
+                    # R19: Storage of Sva in X_PHA
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.q_PHA
+                        * b.conc_mass_comp_ref["S_va"]
+                        / (b.params.K_A + b.conc_mass_comp_ref["S_va"])
+                        * (b.conc_mass_comp_ref["X_PP"] / b.conc_mass_comp_ref["X_PAO"])
+                        / (
+                            b.params.K_PP
+                            + b.conc_mass_comp_ref["X_PP"]
+                            / b.conc_mass_comp_ref["X_PAO"]
+                        )
+                        * b.conc_mass_comp_ref["X_PAO"]
+                        * b.conc_mass_comp_ref["S_va"]
+                        / (
+                            b.conc_mass_comp_ref["S_va"]
+                            + b.conc_mass_comp_ref["S_bu"]
+                            + b.conc_mass_comp_ref["S_pro"]
+                            + b.conc_mass_comp_ref["S_ac"]
+                        ),
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 else:
                     raise BurntToast()
