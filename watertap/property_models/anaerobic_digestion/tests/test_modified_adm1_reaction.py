@@ -190,7 +190,6 @@ class TestParamBlock(object):
             ("R11", "Liq", "S_IN"): -0.000369 * mw_n,
             ("R11", "Liq", "S_IP"): -0.0000417 * mw_p,
             ("R11", "Liq", "X_h2"): 0.06,
-            # TODO: S_IC values for R12-R18
             # R12: Decay of X_su
             ("R12", "Liq", "S_IC"): 0.002773 * mw_c,
             ("R12", "Liq", "S_IN"): 0.003551 * mw_n,
