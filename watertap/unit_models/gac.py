@@ -683,76 +683,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         )
 
         # ---------------------------------------------------------------------
-        # balance equations
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="isothermal assumption for the species contained within the gac removed from the bed",
-        )
-        def eq_isothermal_gac_removed(b, t):
-            return (
-                b.process_flow.properties_in[t].temperature
-                == b.gac_removed[t].temperature
-            )
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="isobaric assumption for the species contained within the gac removed from the bed",
-        )
-        def eq_isobaric_gac_removed(b, t):
-            return b.process_flow.properties_in[t].pressure == b.gac_removed[t].pressure
-
-        # TODO: If used with other property packages check for mass based (not mole) get_material_flow_terms,
-        #  but ok under mcas_prop_pack
-        # mass transfer of target_species
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.target_species,
-            doc="Mass transfer term for adsorbed solutes in target_species within gac removed",
-        )
-        def eq_mass_transfer_adsorbed(b, t, j):
-            return (1 - b.conc_ratio_avg) * b.process_flow.properties_in[
-                t
-            ].get_material_flow_terms("Liq", j) == (
-                -b.process_flow.mass_transfer_term[t, "Liq", j]
-            )
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.target_species,
-            doc="Mass transfer term for residual solutes in target_species remaining in outlet",
-        )
-        def eq_mass_transfer_residual(b, t, j):
-            return (
-                b.gac_removed[t].get_material_flow_terms("Liq", j)
-                == -b.process_flow.mass_transfer_term[t, "Liq", j]
-            )
-
-        # no mass transfer of inert_species, fix to 0 to avoid 0 solver tolerances
-        for j in self.inert_species:
-            self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
-            self.gac_removed[0].get_material_flow_terms("Liq", j).fix(0)
-
-        @self.Constraint(
-            self.target_species,
-            doc="mass adsorbed in the elapsed time",
-        )
-        def eq_mass_adsorbed(b, j):
-            return (
-                b.mass_adsorbed
-                == b.gac_removed[0].flow_mass_phase_comp["Liq", j] * b.operational_time
-            )
-
-        @self.Constraint(
-            doc="fraction of gac that is saturation at time of replacement"
-        )
-        def eq_replace_gac_saturation_frac(b):
-            return (
-                b.gac_saturation_replace * b.mass_adsorbed_saturated == b.mass_adsorbed
-            )
-
-        # ---------------------------------------------------------------------
-        # gac performance equations
+        # property equations and other dimensionless variables
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -780,11 +711,55 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 1 - b.bed_voidage
             )
 
-        @self.Constraint(doc="biot number")
+        @self.Constraint(doc="Biot number")
         def eq_number_bi(b):
             return 1 == (b.kf * (b.particle_dia / 2) * (1 - b.bed_voidage)) / (
                 b.N_Bi * b.ds * b.dg * b.bed_voidage
             )
+
+        # ---------------------------------------------------------------------
+        # bed dimensions, gac particle, and sizing calculations
+
+        @self.Constraint(doc="bed void fraction based on gac particle densities")
+        def eq_bed_voidage(b):
+            return b.bed_voidage == 1 - (b.particle_dens_bulk / b.particle_dens_app)
+
+        @self.Constraint(doc="relating velocities based on bed voidage")
+        def eq_velocity_relation(b):
+            return b.velocity_sup == b.velocity_int * b.bed_voidage
+
+        @self.Constraint(doc="bed length based on velocity and ebct")
+        def eq_bed_length(b):
+            return b.bed_length == b.velocity_sup * b.ebct
+
+        @self.Constraint(doc="bed diameter and area relation")
+        def eq_bed_diameter(b):
+            return Constants.pi * (b.bed_diameter**2) == 4 * b.bed_area
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="bed area based on velocity and volumetric flow",
+        )
+        def eq_bed_area(b, t):
+            return (
+                b.bed_area * b.velocity_sup
+                == b.process_flow.properties_in[t].flow_vol_phase["Liq"]
+            )
+
+        @self.Constraint(doc="bed volume based on cylindrical dimensions")
+        def eq_bed_volume(b):
+            return b.bed_volume == b.bed_length * b.bed_area
+
+        @self.Constraint(doc="fluid residence time in the bed")
+        def eq_residence_time(b):
+            return b.residence_time == b.bed_voidage * b.ebct
+
+        @self.Constraint(doc="total mass of gac in the bed")
+        def eq_mass_gac_bed(b):
+            return b.bed_mass_gac == b.particle_dens_bulk * b.bed_volume
+
+        # ---------------------------------------------------------------------
+        # gac CPHSDM intermediate equations
 
         @self.Constraint(
             doc="minimum Stanton number to achieve constant pattern solution"
@@ -800,30 +775,29 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 b.particle_dia / 2
             )
 
-        @self.Constraint(
-            doc="Minimum fluid residence time in the adsorber bed to achieve a constant pattern solution"
-        )
-        def eq_min_residence_time_cps(b):
-            return b.min_residence_time == b.bed_voidage * b.min_ebct
-
-        @self.Constraint(doc="Residence time")
-        def eq_residence_time(b):
-            return b.residence_time == b.bed_voidage * b.ebct
-
-        @self.Constraint(
-            doc="throughput based on empirical 5-parameter regression",
-        )
+        @self.Constraint(doc="throughput based on empirical 5-parameter regression")
         def eq_throughput(b):
             return b.throughput == b.b0 + b.b1 * (
                 b.conc_ratio_replace**b.b2
             ) + b.b3 / (1.01 - (b.conc_ratio_replace**b.b4))
 
-        @self.Constraint(doc="minimum elapsed time for constant pattern solution")
+        @self.Constraint(
+            doc="minimum fluid residence time in the bed to achieve a constant pattern solution"
+        )
+        def eq_min_residence_time_cps(b):
+            return b.min_residence_time == b.bed_voidage * b.min_ebct
+
+        @self.Constraint(
+            doc="minimum operational time of the bed from fresh to achieve a constant pattern solution"
+        )
         def eq_minimum_operational_time_cps(b):
             return (
                 b.min_operational_time
                 == b.min_residence_time * (b.dg + 1) * b.throughput
             )
+
+        # ---------------------------------------------------------------------
+        # gac performance equations
 
         @self.Constraint(
             doc="elapsed operational time between a fresh bed and the theoretical bed replacement"
@@ -841,48 +815,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
             )
 
         # ---------------------------------------------------------------------
-        # bed dimensions, gac particle, and sizing calculations
-
-        @self.Constraint(doc="relating velocities based on bed voidage")
-        def eq_velocity_relation(b):
-            return b.velocity_sup == b.velocity_int * b.bed_voidage
-
-        @self.Constraint(doc="bed length")
-        def eq_bed_length(b):
-            return b.bed_length == b.velocity_sup * b.ebct
-
-        @self.Constraint(doc="bed diameter")
-        def eq_bed_diameter(b):
-            return Constants.pi * (b.bed_diameter**2) == 4 * b.bed_area
-
-        @self.Constraint(doc="bed area")
-        def eq_bed_area(b):
-            return (
-                b.bed_area * b.velocity_sup
-                == b.process_flow.properties_in[0].flow_vol_phase["Liq"]
-            )
-
-        @self.Constraint(doc="bed volume")
-        def eq_bed_volume(b):
-            return b.bed_volume == b.bed_length * b.bed_area
-
-        @self.Constraint(doc="bed void fraction based on gac particle densities")
-        def eq_bed_voidage(b):
-            return b.bed_voidage == 1 - (b.particle_dens_bulk / b.particle_dens_app)
-
-        @self.Constraint(doc="total mass of gac in the bed")
-        def eq_mass_gac_bed(b):
-            return b.bed_mass_gac == b.particle_dens_bulk * b.bed_volume
-
-        @self.Constraint(doc="steady state rate of new gac mass required")
-        def eq_gac_mass_replace_rate(b):
-            return b.gac_usage_rate * b.operational_time == b.bed_mass_gac
-
-        @self.Constraint(doc="mass adsorbed into gac if the bed was fully saturated")
-        def eq_mass_adsorbed_fully_saturated(b):
-            return b.mass_adsorbed_saturated == b.bed_mass_gac * b.equil_conc
-
-        # ---------------------------------------------------------------------
         # steady state approximation
 
         self.ele_conc_ratio_replace[0].fix(0)
@@ -890,7 +822,29 @@ class GACData(InitializationMixin, UnitModelBlockData):
         self.ele_min_operational_time[0].fix(0)
         self.ele_operational_time[0].fix(0)
 
-        @self.Constraint(ele_index)
+        @self.Constraint(
+            ele_index,
+            doc="throughput based on empirical 5-parameter regression by discretized element",
+        )
+        def eq_ele_throughput(b, ele):
+            return b.ele_throughput[ele] == b.b0 + b.b1 * (
+                b.ele_conc_ratio_replace[ele] ** b.b2
+            ) + b.b3 / (1.01 - b.ele_conc_ratio_replace[ele] ** b.b4)
+
+        @self.Constraint(
+            ele_index,
+            doc="minimum operational time of the bed from fresh to achieve a constant pattern solution by discretized element",
+        )
+        def eq_ele_min_operational_time(b, ele):
+            return (
+                b.ele_min_operational_time[ele]
+                == b.min_residence_time * (b.dg + 1) * b.ele_throughput[ele]
+            )
+
+        @self.Constraint(
+            ele_index,
+            doc="creating evenly spaced discretized elements",
+        )
         def eq_ele_conc_ratio_replace(b, ele):
             return b.ele_conc_ratio_replace[ele] == b.conc_ratio_start_breakthrough + (
                 ele_disc[ele] - 1
@@ -899,21 +853,11 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 / (b.elements_ss_approx - 1)
             )
 
-        @self.Constraint(ele_index)
-        def eq_ele_throughput(b, ele):
-            return b.ele_throughput[ele] == b.b0 + b.b1 * (
-                b.ele_conc_ratio_replace[ele] ** b.b2
-            ) + b.b3 / (1.01 - b.ele_conc_ratio_replace[ele] ** b.b4)
-
-        @self.Constraint(ele_index)
-        def eq_ele_min_elap_time(b, ele):
-            return (
-                b.ele_min_operational_time[ele]
-                == b.min_residence_time * (b.dg + 1) * b.ele_throughput[ele]
-            )
-
-        @self.Constraint(ele_index)
-        def eq_ele_elap_time(b, ele):
+        @self.Constraint(
+            ele_index,
+            doc="operational time of the bed by discretized element",
+        )
+        def eq_ele_operational_time(b, ele):
             return b.ele_operational_time[ele] == b.ele_min_operational_time[ele] + (
                 b.residence_time - b.min_residence_time
             ) * (b.dg + 1)
@@ -933,10 +877,87 @@ class GACData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(
             doc="summation of finite elements for average concentration during operating time"
         )
-        def eq_ele_conc_ratio(b):
+        def eq_conc_ratio_avg(b):
             return b.conc_ratio_avg == sum(
                 b.ele_conc_ratio_avg[ele] for ele in ele_index
             )
+
+        @self.Constraint(
+            self.target_species,
+            doc="mass adsorbed in the operational time",
+        )
+        def eq_mass_adsorbed(b, j):
+            return (
+                b.mass_adsorbed
+                == b.gac_removed[0].flow_mass_phase_comp["Liq", j] * b.operational_time
+            )
+
+        @self.Constraint(doc="mass adsorbed into gac if the bed was fully saturated")
+        def eq_mass_adsorbed_saturated(b):
+            return b.mass_adsorbed_saturated == b.bed_mass_gac * b.equil_conc
+
+        @self.Constraint(doc="fraction of gac that is saturation at operational time")
+        def eq_gac_saturation_fracion(b):
+            return (
+                b.gac_saturation_replace * b.mass_adsorbed_saturated == b.mass_adsorbed
+            )
+
+        @self.Constraint(doc="steady state rate of new gac mass required")
+        def eq_gac_usage_rate(b):
+            return b.gac_usage_rate * b.operational_time == b.bed_mass_gac
+
+        # ---------------------------------------------------------------------
+        # balance equations
+
+        # isothermal for port not in control volume
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="isothermal assumption for the species contained within the gac removed from the bed",
+        )
+        def eq_isothermal_gac_removed(b, t):
+            return (
+                b.process_flow.properties_in[t].temperature
+                == b.gac_removed[t].temperature
+            )
+
+        # isobaric for port not in control volume
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="isobaric assumption for the species contained within the gac removed from the bed",
+        )
+        def eq_isobaric_gac_removed(b, t):
+            return b.process_flow.properties_in[t].pressure == b.gac_removed[t].pressure
+
+        # mass transfer of target_species
+        # TODO: check for mass based (not mole) get_material_flow_terms, but ok under mcas_prop_pack
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.target_species,
+            doc="mass transfer for adsorbed solutes in 'target_species' within 'gac_removed' (out of the bed)",
+        )
+        def eq_mass_transfer_cv(b, t, j):
+            return (1 - b.conc_ratio_avg) * b.process_flow.properties_in[
+                t
+            ].get_material_flow_terms("Liq", j) == (
+                -b.process_flow.mass_transfer_term[t, "Liq", j]
+            )
+
+        # mass balance for port not in control volume
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.target_species,
+            doc="mass balance for port not in control volume",
+        )
+        def eq_mass_transfer_port(b, t, j):
+            return (
+                b.gac_removed[t].get_material_flow_terms("Liq", j)
+                == -b.process_flow.mass_transfer_term[t, "Liq", j]
+            )
+
+        # no mass transfer of inert_species, fix to 0 to avoid 0 solver tolerances
+        for j in self.inert_species:
+            self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
+            self.gac_removed[0].get_material_flow_terms("Liq", j).fix(0)
 
         # ---------------------------------------------------------------------
         if (
@@ -976,33 +997,41 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 doc="Shape correction factor",
             )
 
-            @self.Constraint(doc="Reynolds number calculation")
-            def eq_reynolds_number(b):
+            @self.Constraint(
+                self.flowsheet().config.time,
+                doc="Reynolds number calculation",
+            )
+            def eq_reynolds_number(b, t):
                 return (
-                    b.N_Re * b.process_flow.properties_in[0].visc_d_phase["Liq"]
-                    == b.process_flow.properties_in[0].dens_mass_phase["Liq"]
+                    b.N_Re * b.process_flow.properties_in[t].visc_d_phase["Liq"]
+                    == b.process_flow.properties_in[t].dens_mass_phase["Liq"]
                     * b.sphericity
                     * b.particle_dia
                     * b.velocity_int
                 )
 
-            @self.Constraint(self.target_species, doc="Schmidt number calculation")
-            def eq_schmidt_number(b, j):
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.target_species,
+                doc="Schmidt number calculation",
+            )
+            def eq_schmidt_number(b, t, j):
                 return (
                     b.N_Sc
-                    * b.process_flow.properties_in[0].dens_mass_phase["Liq"]
-                    * b.process_flow.properties_in[0].diffus_phase_comp["Liq", j]
-                    == b.process_flow.properties_in[0].visc_d_phase["Liq"]
+                    * b.process_flow.properties_in[t].dens_mass_phase["Liq"]
+                    * b.process_flow.properties_in[t].diffus_phase_comp["Liq", j]
+                    == b.process_flow.properties_in[t].visc_d_phase["Liq"]
                 )
 
             @self.Constraint(
+                self.flowsheet().config.time,
                 self.target_species,
                 doc="Liquid phase film transfer rate from the Gnielinshi correlation",
             )
-            def eq_film_transfer_rate(b, j):
+            def eq_film_transfer_rate(b, t, j):
                 return b.kf * b.particle_dia == b.shape_correction_factor * (
                     1 + 1.5 * (1 - b.bed_voidage)
-                ) * b.process_flow.properties_in[0].diffus_phase_comp["Liq", j] * (
+                ) * b.process_flow.properties_in[t].diffus_phase_comp["Liq", j] * (
                     2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc ** (1 / 3))
                 )
 
@@ -1028,15 +1057,16 @@ class GACData(InitializationMixin, UnitModelBlockData):
             )
 
             @self.Constraint(
+                self.flowsheet().config.time,
                 self.target_species,
                 doc="Solute distribution parameter",
             )
-            def eq_surface_diffusion_coefficient_calculated(b, j):
+            def eq_surface_diffusion_coefficient_calculated(b, t, j):
                 return (
                     b.ds * b.tort * b.equil_conc * b.particle_dens_app
                     == b.spdfr
-                    * b.process_flow.properties_in[0].diffus_phase_comp["Liq", j]
-                    * b.process_flow.properties_in[0].conc_mass_phase_comp["Liq", j]
+                    * b.process_flow.properties_in[t].diffus_phase_comp["Liq", j]
+                    * b.process_flow.properties_in[t].conc_mass_phase_comp["Liq", j]
                 )
 
     # ---------------------------------------------------------------------
