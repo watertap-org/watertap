@@ -602,12 +602,12 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="the concentration ratio at which the breakthrough curve is to start, typically between 0.01 amd 0.05",
         )
 
-        # create index for discretized elements with element [0] containing 0s for performance variables
+        # create index for discretized elements with element [0] containing 0s for conc ratio and operational time
         ele_disc = range(self.elements_ss_approx.value + 1)
         ele_index = ele_disc[1:]
 
         self.ele_throughput = Var(
-            ele_disc,
+            ele_index,
             initialize=1,
             bounds=(0, None),
             domain=NonNegativeReals,
@@ -615,7 +615,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="specific throughput from empirical equation by discrete element",
         )
         self.ele_min_operational_time = Var(
-            ele_disc,
+            ele_index,
             initialize=1e8,
             bounds=(0, None),
             domain=NonNegativeReals,
@@ -818,8 +818,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # steady state approximation
 
         self.ele_conc_ratio_replace[0].fix(0)
-        self.ele_throughput[0].fix(0)
-        self.ele_min_operational_time[0].fix(0)
         self.ele_operational_time[0].fix(0)
 
         @self.Constraint(
@@ -1030,6 +1028,13 @@ class GACData(InitializationMixin, UnitModelBlockData):
             == SurfaceDiffusionCoefficientType.calculated
         ):
 
+            self.particle_porosity = Var(
+                initialize=0.65,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="gac particle porosity",
+            )
             self.tort = Var(
                 initialize=1,
                 bounds=(0, None),
@@ -1055,6 +1060,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                     b.ds * b.tort * b.equil_conc * b.particle_dens_app
                     == b.spdfr
                     * b.process_flow.properties_in[t].diffus_phase_comp["Liq", j]
+                    * b.particle_porosity
                     * b.process_flow.properties_in[t].conc_mass_phase_comp["Liq", j]
                 )
 
@@ -1270,12 +1276,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 self.gac_removed[0].flow_mol_phase_comp["Liq", j],
                 1,
             )  # ensure lower concentration of zero flow components, below zero tol
-            #  checks for other state block property objects
-            if self.gac_removed[0].is_property_constructed("flow_mass_phase_comp"):
-                iscale.set_scaling_factor(
-                    self.gac_removed[0].flow_mass_phase_comp["Liq", j],
-                    1,
-                )  # ensure lower concentration of zero flow components, below zero tol
 
         # dens stays at 1000 even though water flow is zero, using sf based on 0.1 assumed mw and 1000 dens
         if self.gac_removed[0].is_property_constructed("flow_vol_phase"):
@@ -1391,7 +1391,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.bed_volumes_treated) is None:
             iscale.set_scaling_factor(self.bed_volumes_treated, 1e-5)
 
-        for ele in range(self.elements_ss_approx.value + 1):
+        for ele in range(1, self.elements_ss_approx.value + 1):
 
             if iscale.get_scaling_factor(self.ele_throughput[ele]) is None:
                 iscale.set_scaling_factor(self.ele_throughput[ele], 1)
@@ -1399,16 +1399,16 @@ class GACData(InitializationMixin, UnitModelBlockData):
             if iscale.get_scaling_factor(self.ele_min_operational_time[ele]) is None:
                 iscale.set_scaling_factor(self.ele_min_operational_time[ele], 1e-6)
 
+            if iscale.get_scaling_factor(self.ele_conc_ratio_term[ele]) is None:
+                iscale.set_scaling_factor(self.ele_conc_ratio_term[ele], 1e2)
+
+        for ele in range(self.elements_ss_approx.value + 1):
+
             if iscale.get_scaling_factor(self.ele_conc_ratio_replace[ele]) is None:
                 iscale.set_scaling_factor(self.ele_conc_ratio_replace[ele], 1e1)
 
             if iscale.get_scaling_factor(self.ele_operational_time[ele]) is None:
                 iscale.set_scaling_factor(self.ele_operational_time[ele], 1e-6)
-
-        for ele in range(1, self.elements_ss_approx.value + 1):
-
-            if iscale.get_scaling_factor(self.ele_conc_ratio_term[ele]) is None:
-                iscale.set_scaling_factor(self.ele_conc_ratio_term[ele], 1e2)
 
         if iscale.get_scaling_factor(self.conc_ratio_avg) is None:
             iscale.set_scaling_factor(self.conc_ratio_avg, 1e1)
@@ -1427,6 +1427,10 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if hasattr(self, "shape_correction_factor"):
             if iscale.get_scaling_factor(self.shape_correction_factor) is None:
                 iscale.set_scaling_factor(self.shape_correction_factor, 1)
+
+        if hasattr(self, "particle_porosity"):
+            if iscale.get_scaling_factor(self.particle_porosity) is None:
+                iscale.set_scaling_factor(self.particle_porosity, 1e1)
 
         if hasattr(self, "tort"):
             if iscale.get_scaling_factor(self.tort) is None:
