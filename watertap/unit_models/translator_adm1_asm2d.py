@@ -92,7 +92,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         ),
     )
 
-    # TODO: Revisit how build() is set up to close match Alejandro's PR
+    # TODO: Revisit how build() is set up to match Alejandro's PR
     def build(self):
         """
         Begin building model.
@@ -104,13 +104,8 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         # Call UnitModel.build to setup dynamics
         super(TranslatorDataADM1ASM2D, self).build()
 
-        # TODO: check this parameter later
-        # self.i_ec = Param(
-        #     initialize=0.06,
-        #     units=pyunits.dimensionless,
-        #     mutable=True,
-        #     doc="Nitrogen inert content",
-        # )
+        mw_c = 12 * pyunits.kg / pyunits.kmol
+        mw_n = 14 * pyunits.kg / pyunits.kmol
 
         @self.Constraint(
             self.flowsheet().time,
@@ -157,14 +152,17 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 for i in blk.readily_biodegradable2
             )
 
+        self.unchanged_component = Set(initialize=["S_I", "X_I"])
+
         @self.Constraint(
             self.flowsheet().time,
-            doc="Equality S_I equation",
+            self.unchanged_component,
+            doc="Equality equation for unchanged components",
         )
-        def eq_SI_conc(blk, t):
+        def eq_unchanged_conc(blk, t, i):
             return (
-                blk.properties_out[t].conc_mass_comp["S_I"]
-                == blk.properties_in[t].conc_mass_comp["S_I"]
+                blk.properties_out[t].conc_mass_comp[i]
+                == blk.properties_in[t].conc_mass_comp[i]
             )
 
         @self.Constraint(
@@ -198,16 +196,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         #         blk.properties_out[t].conc_mass_comp["S_IC"]
         #         == blk.properties_in[t].conc_mass_comp["S_IC"]
         #     )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Equality X_I equation",
-        )
-        def eq_XI_conc(blk, t):
-            return (
-                blk.properties_out[t].conc_mass_comp["X_I"]
-                == blk.properties_in[t].conc_mass_comp["X_I"]
-            )
 
         self.slowly_biodegradable = Set(
             initialize=[
@@ -251,16 +239,15 @@ class TranslatorDataADM1ASM2D(TranslatorData):
 
         # TODO: check if we track S_SO4, S_Na, S_K, S_Cl, S_Ca, S_Mg, X_Ca2(PO4)3, X_MgNH4PO4
 
-        # TODO: we don't S_IC in ASM2D, probably S_ALK
-        # @self.Constraint(
-        #     self.flowsheet().time,
-        #     doc="Equality alkalinity equation",
-        # )
-        # def return_Salk(blk, t):
-        #     return (
-        #         blk.properties_out[t].alkalinity
-        #         == blk.properties_in[t].conc_mass_comp["S_ALK"]
-        #     )
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Equality alkalinity equation",
+        )
+        def return_Salk(blk, t):
+            return (
+                blk.properties_out[t].alkalinity
+                == blk.properties_in[t].conc_mass_comp["S_IC"] / mw_c
+            )
 
         # TODO: check S_ALK
         self.zero_flow_components = Set(
