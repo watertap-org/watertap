@@ -638,7 +638,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             units=units_meta("time"),
             doc="operational time of the bed from fresh by discrete element",
         )
-        self.ele_conc_ratio_avg = Var(
+        self.ele_conc_ratio_term = Var(
             ele_index,
             initialize=0.05,
             bounds=(0, 1),
@@ -672,7 +672,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             bounds=(0, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="approximate gac saturation in the adsorber bed at operational time",
+            doc="approximate gac saturation in the bed at operational time",
         )
         self.gac_usage_rate = Var(
             initialize=1e-2,
@@ -866,8 +866,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
             ele_index,
             doc="finite element discretization of concentration ratios over time",
         )
-        def eq_ele_conc_ratio_avg(b, ele):
-            return b.ele_conc_ratio_avg[ele] == (
+        def eq_ele_conc_ratio_term(b, ele):
+            return b.ele_conc_ratio_term[ele] == (
                 (b.ele_operational_time[ele] - b.ele_operational_time[ele - 1])
                 / b.ele_operational_time[self.elements_ss_approx.value]
             ) * (
@@ -879,7 +879,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         )
         def eq_conc_ratio_avg(b):
             return b.conc_ratio_avg == sum(
-                b.ele_conc_ratio_avg[ele] for ele in ele_index
+                b.ele_conc_ratio_term[ele] for ele in ele_index
             )
 
         @self.Constraint(
@@ -964,37 +964,27 @@ class GACData(InitializationMixin, UnitModelBlockData):
             self.config.film_transfer_coefficient_type
             == FilmTransferCoefficientType.calculated
         ):
-            # TODO check N_Re formulation for packed beds
+
             self.N_Re = Var(
                 initialize=1,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="Reynolds number, correlation using Schmidt number valid in Re < 2e4",
+                doc="Reynolds number, correlations using Reynolds number valid in Re < 2e4",
             )
-
             self.N_Sc = Var(
                 initialize=1000,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="Schmidt number, correlation using Schmidt number valid in 0.7 < Sc < 1e4",
+                doc="Schmidt number, correlations using Schmidt number valid in 0.7 < Sc < 1e4",
             )
-
-            self.sphericity = Var(
+            self.shape_correction_factor = Var(
                 initialize=1,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="Sphericity of the particle",
-            )
-
-            self.shape_correction_factor = Var(
-                initialize=1.5,
-                bounds=(0, None),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Shape correction factor",
+                doc="shape correction factor",
             )
 
             @self.Constraint(
@@ -1005,7 +995,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 return (
                     b.N_Re * b.process_flow.properties_in[t].visc_d_phase["Liq"]
                     == b.process_flow.properties_in[t].dens_mass_phase["Liq"]
-                    * b.sphericity
                     * b.particle_dia
                     * b.velocity_int
                 )
@@ -1026,7 +1015,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             @self.Constraint(
                 self.flowsheet().config.time,
                 self.target_species,
-                doc="Liquid phase film transfer rate from the Gnielinshi correlation",
+                doc="liquid phase film transfer rate from the Gnielinshi correlation",
             )
             def eq_film_transfer_rate(b, t, j):
                 return b.kf * b.particle_dia == b.shape_correction_factor * (
@@ -1040,26 +1029,26 @@ class GACData(InitializationMixin, UnitModelBlockData):
             self.config.surface_diffusion_coefficient_type
             == SurfaceDiffusionCoefficientType.calculated
         ):
+
             self.tort = Var(
                 initialize=1,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="Tortuosity of the path that the adsorbate must take as compared to the radius",
+                doc="tortuosity of the path that the adsorbate must take as compared to the radius",
             )
-
             self.spdfr = Var(
                 initialize=1,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="Surface-to-pore diffusion flux ratio",
+                doc="surface-to-pore diffusion flux ratio",
             )
 
             @self.Constraint(
                 self.flowsheet().config.time,
                 self.target_species,
-                doc="Solute distribution parameter",
+                doc="surface diffusion parameter",
             )
             def eq_surface_diffusion_coefficient_calculated(b, t, j):
                 return (
@@ -1095,11 +1084,12 @@ class GACData(InitializationMixin, UnitModelBlockData):
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
-        # Set solver options
+        # set solver options
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        # Set state_args from inlet state
+        # set state_args from inlet state
+
         if state_args is None:
             state_args = {}
             state_dict = self.process_flow.properties_in[
@@ -1114,7 +1104,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        # Initialize control volume
+        # initialize control volume
         flags = self.process_flow.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -1124,8 +1114,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
-        # Initialize gac_removed port
-        # all non-adsorbed species initialized to 0
+        # initialize gac_removed port
+
+        # all inert species initialized to 0
         for j in self.inert_species:
             state_args["flow_mol_phase_comp"][("Liq", j)] = 0
 
@@ -1138,12 +1129,15 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         init_log.info_high("Initialization Step 2 Complete.")
         # --------------------------------------------------------------------
-        # Solve unit
+        # solve unit
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
+
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
-        # Release Inlet state
+        # release inlet state
+
         self.process_flow.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
@@ -1153,92 +1147,73 @@ class GACData(InitializationMixin, UnitModelBlockData):
     # ---------------------------------------------------------------------
 
     def _get_performance_contents(self, time_point=0):
+
         var_dict = {}
 
         # unit model variables
         var_dict["Freundlich isotherm k parameter"] = self.freund_k
         var_dict["Freundlich isotherm 1/n parameter"] = self.freund_ninv
-        var_dict[
-            "Equilibrium concentration of adsorbed phase with liquid phase"
-        ] = self.equil_conc
-        var_dict[
-            "Mass of contaminant adsorbed at the time of replacement"
-        ] = self.mass_adsorbed
-        var_dict["Adsorber bed void fraction"] = self.bed_voidage
-        var_dict["Adsorber bed volume"] = self.bed_volume
-        var_dict["Adsorber bed area"] = self.bed_area
-        var_dict["Adsorber bed diameter"] = self.bed_diameter
-        var_dict["Adsorber bed length"] = self.bed_length
-        var_dict["Mass of fresh GAC in the adsorber bed"] = self.bed_mass_gac
-        var_dict["Superficial velocity"] = self.velocity_sup
-        var_dict["Interstitial velocity"] = self.velocity_int
-        var_dict["GAC particle porosity or void fraction"] = self.particle_porosity
-        var_dict["GAC particle diameter"] = self.particle_dia
-        var_dict[
-            "Steady state average effluent to inlet concentration ratio"
-        ] = self.conc_ratio_avg
-        var_dict[
-            "Effluent to inlet concentration ratio at time of bed replacement"
-        ] = self.conc_ratio_replace
-        var_dict[
-            "Approximate GAC saturation in the adsorber bed at time of replacement"
-        ] = self.gac_saturation_replace
-        var_dict["Empty bed contact time"] = self.ebct
-        var_dict[
-            "Elapsed time between GAC replacement in adsorber bed in operation"
-        ] = self.operational_time
-        var_dict[
-            "GAC usage and required replacement/regeneration rate"
-        ] = self.gac_usage_rate
-        var_dict["Liquid phase film transfer coefficient"] = self.kf
         var_dict["Surface diffusion coefficient"] = self.ds
-        var_dict["Solute distribution parameter"] = self.dg
+        var_dict["liquid phase film transfer coefficient"] = self.kf
+        var_dict["superficial velocity"] = self.velocity_sup
+        var_dict["bed void fraction"] = self.bed_voidage
+        var_dict["bed length"] = self.bed_length
+        var_dict["bed diameter"] = self.bed_diameter
+        var_dict["bed volume"] = self.bed_volume
+        var_dict["empty bed contact time"] = self.ebct
+        var_dict["fluid residence time in the bed"] = self.residence_time
+        var_dict["mass of fresh gac in the bed"] = self.bed_mass_gac
+        var_dict["concentration ratio at operational time"] = self.conc_ratio_replace
+        var_dict["time for the start of breakthrough"] = self.ele_operational_time[1]
+        var_dict["operational time of the bed from fresh"] = self.operational_time
+        var_dict["bed volumes treated"] = self.bed_volumes_treated
+        var_dict["steady state average concentration ratio"] = self.conc_ratio_avg
+        var_dict["gac saturation at operational time"] = self.gac_saturation_replace
+        var_dict["gac usage/replacement/regeneration rate"] = self.gac_usage_rate
 
         # loop through desired state block properties indexed by [phase, comp]
         phase_comp_prop_dict = {
-            "flow_mol_phase_comp": "Molar flow rate",
-            "flow_mass_phase_comp": "Mass flow rate",
-            "conc_mol_phase_comp": "Molar concentration",
-            "conc_mass_phase_comp": "Mass concentration",
+            "flow_mol_phase_comp": "molar flow rate",
+            "conc_mass_phase_comp": "mass concentration",
         }
         for prop_name, prop_str in phase_comp_prop_dict.items():
             for j in self.config.property_package.component_list:
                 if self.process_flow.properties_in[time_point].is_property_constructed(
                     prop_name
                 ):
-                    var_dict[f"{prop_str} of {j} @ process feed inlet"] = getattr(
+                    var_dict[f"{prop_str} of {j} @ process inlet"] = getattr(
                         self.process_flow.properties_in[time_point], prop_name
                     )["Liq", j]
                 if self.process_flow.properties_out[time_point].is_property_constructed(
                     prop_name
                 ):
-                    var_dict[f"{prop_str} of {j} @ process feed outlet"] = getattr(
+                    var_dict[f"{prop_str} of {j} @ process outlet"] = getattr(
                         self.process_flow.properties_out[time_point], prop_name
                     )["Liq", j]
                 if self.gac_removed[time_point].is_property_constructed(prop_name):
-                    var_dict[f"{prop_str} of {j} @ process feed outlet"] = getattr(
+                    var_dict[f"{prop_str} of {j} @ gac removed outlet"] = getattr(
                         self.gac_removed[time_point], prop_name
                     )["Liq", j]
 
         # loop through desired state block properties indexed by [phase]
         phase_prop_dict = {
-            "flow_vol_phase": "Volumetric flow rate",
+            "flow_vol_phase": "volumetric flow rate",
         }
         for prop_name, prop_str in phase_prop_dict.items():
             if self.process_flow.properties_in[time_point].is_property_constructed(
                 prop_name
             ):
-                var_dict[f"{prop_str} @ process feed inlet"] = getattr(
+                var_dict[f"{prop_str} @ process inlet"] = getattr(
                     self.process_flow.properties_in[time_point], prop_name
                 )["Liq"]
             if self.process_flow.properties_out[time_point].is_property_constructed(
                 prop_name
             ):
-                var_dict[f"{prop_str} @ process feed outlet"] = getattr(
+                var_dict[f"{prop_str} @ process outlet"] = getattr(
                     self.process_flow.properties_out[time_point], prop_name
                 )["Liq"]
             if self.gac_removed[time_point].is_property_constructed(prop_name):
-                var_dict[f"{prop_str} @ process feed outlet"] = getattr(
+                var_dict[f"{prop_str} @ gac removed outlet"] = getattr(
                     self.gac_removed[time_point], prop_name
                 )["Liq"]
 
@@ -1250,22 +1225,26 @@ class GACData(InitializationMixin, UnitModelBlockData):
             {
                 "Process Inlet": self.inlet,
                 "Process Outlet": self.outlet,
-                "Adsorbed Contaminant Outlet": self.adsorbed,
+                "GAC Removed": self.adsorbed,
             },
             time_point=time_point,
         )
 
     # ---------------------------------------------------------------------
     def calculate_scaling_factors(self):
+
         super().calculate_scaling_factors()
 
-        # scale based on molar flow traditionally provided by user for building flowsheets
+        # ---------------------------------------------------------------------
+        # get scaling factors for target species and water to use for other variables
+
         for j in self.target_species:
             sf_solute = iscale.get_scaling_factor(
                 self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j],
                 default=1e4,  # default based on typical concentration for treatment
                 warning=True,
             )
+
         for j in self.config.property_package.solvent_set:
             sf_solvent = iscale.get_scaling_factor(
                 self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j],
@@ -1273,12 +1252,19 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 warning=True,
             )
 
+        # sf_volume based on magnitude of 0.018 water mw and 1000 dens
+        sf_volume = sf_solvent * (100 / 0.01)
+        sf_conc = sf_solute / sf_volume
+
+        # ---------------------------------------------------------------------
         # overwrite default scaling for state block variables
+
         for j in self.target_species:
             iscale.set_scaling_factor(
                 self.process_flow.properties_out[0].flow_mol_phase_comp["Liq", j],
                 10 * sf_solute,
             )
+
         for j in self.inert_species:
             iscale.set_scaling_factor(
                 self.gac_removed[0].flow_mol_phase_comp["Liq", j],
@@ -1290,43 +1276,67 @@ class GACData(InitializationMixin, UnitModelBlockData):
                     self.gac_removed[0].flow_mass_phase_comp["Liq", j],
                     1,
                 )  # ensure lower concentration of zero flow components, below zero tol
+
+        # dens stays at 1000 even though water flow is zero, using sf based on 0.1 assumed mw and 1000 dens
         if self.gac_removed[0].is_property_constructed("flow_vol_phase"):
             iscale.set_scaling_factor(
                 self.gac_removed[0].flow_vol_phase["Liq"],
-                1e4 * sf_solute,
+                sf_solute * (1000 / 0.1),
             )
 
+        # ---------------------------------------------------------------------
         # scaling for gac created variables that are flow magnitude dependent
+
+        if iscale.get_scaling_factor(self.equil_conc) is None:
+            iscale.set_scaling_factor(self.equil_conc, sf_conc * 1e-2)
+
+        if iscale.get_scaling_factor(self.bed_diameter) is None:
+            iscale.set_scaling_factor(self.bed_diameter, sf_volume * 1e-2)
+
+        if iscale.get_scaling_factor(self.bed_area) is None:
+            iscale.set_scaling_factor(self.bed_area, sf_volume * 1e-2)
+
+        if iscale.get_scaling_factor(self.bed_volume) is None:
+            iscale.set_scaling_factor(self.bed_volume, sf_volume * 1e-2)
+
+        if iscale.get_scaling_factor(self.bed_mass_gac) is None:
+            iscale.set_scaling_factor(self.bed_mass_gac, sf_volume * 1e-6)
+
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:
             iscale.set_scaling_factor(self.mass_adsorbed, sf_solute * 1e-6)
 
         if iscale.get_scaling_factor(self.mass_adsorbed_saturated) is None:
             iscale.set_scaling_factor(self.mass_adsorbed_saturated, sf_solute * 1e-6)
 
-        if iscale.get_scaling_factor(self.bed_volume) is None:
-            iscale.set_scaling_factor(self.bed_volume, sf_solvent * 1e2)
-
-        if iscale.get_scaling_factor(self.bed_area) is None:
-            iscale.set_scaling_factor(self.bed_area, sf_solvent * 1e1)
-
-        if iscale.get_scaling_factor(self.bed_diameter) is None:
-            iscale.set_scaling_factor(self.bed_diameter, sf_solvent * 1e2)
-
-        if iscale.get_scaling_factor(self.bed_mass_gac) is None:
-            iscale.set_scaling_factor(self.bed_mass_gac, sf_solvent * 1e-1)
-
         if iscale.get_scaling_factor(self.gac_usage_rate) is None:
-            iscale.set_scaling_factor(self.gac_usage_rate, sf_solute * 1e-1)
+            iscale.set_scaling_factor(self.gac_usage_rate, sf_volume)
 
+        # ---------------------------------------------------------------------
         # scaling for gac created variables that are flow magnitude independent
+
         if iscale.get_scaling_factor(self.freund_k) is None:
             iscale.set_scaling_factor(self.freund_k, 1)
 
         if iscale.get_scaling_factor(self.freund_ninv) is None:
             iscale.set_scaling_factor(self.freund_ninv, 1)
 
-        if iscale.get_scaling_factor(self.equil_conc) is None:
-            iscale.set_scaling_factor(self.equil_conc, 1e3)
+        if iscale.get_scaling_factor(self.ds) is None:
+            iscale.set_scaling_factor(self.ds, 1e14)
+
+        if iscale.get_scaling_factor(self.kf) is None:
+            iscale.set_scaling_factor(self.kf, 1e5)
+
+        if iscale.get_scaling_factor(self.dg) is None:
+            iscale.set_scaling_factor(self.dg, 1e-4)
+
+        if iscale.get_scaling_factor(self.N_Bi) is None:
+            iscale.set_scaling_factor(self.N_Bi, 1)
+
+        if iscale.get_scaling_factor(self.velocity_sup) is None:
+            iscale.set_scaling_factor(self.velocity_sup, 1e3)
+
+        if iscale.get_scaling_factor(self.velocity_int) is None:
+            iscale.set_scaling_factor(self.velocity_int, 1e3)
 
         if iscale.get_scaling_factor(self.bed_voidage) is None:
             iscale.set_scaling_factor(self.bed_voidage, 1e1)
@@ -1334,11 +1344,11 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.bed_length) is None:
             iscale.set_scaling_factor(self.bed_length, 1)
 
-        if iscale.get_scaling_factor(self.velocity_sup) is None:
-            iscale.set_scaling_factor(self.velocity_sup, 1e3)
+        if iscale.get_scaling_factor(self.ebct) is None:
+            iscale.set_scaling_factor(self.ebct, 1e-2)
 
-        if iscale.get_scaling_factor(self.velocity_int) is None:
-            iscale.set_scaling_factor(self.velocity_int, 1e3)
+        if iscale.get_scaling_factor(self.residence_time) is None:
+            iscale.set_scaling_factor(self.residence_time, 1e-2)
 
         if iscale.get_scaling_factor(self.particle_dens_app) is None:
             iscale.set_scaling_factor(self.particle_dens_app, 1e-2)
@@ -1349,73 +1359,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.particle_dia) is None:
             iscale.set_scaling_factor(self.particle_dia, 1e3)
 
-        if iscale.get_scaling_factor(self.conc_ratio_avg) is None:
-            iscale.set_scaling_factor(self.conc_ratio_avg, 1e1)
-
-        if iscale.get_scaling_factor(self.conc_ratio_replace) is None:
-            iscale.set_scaling_factor(self.conc_ratio_replace, 1e1)
-
-        if iscale.get_scaling_factor(self.gac_saturation_replace) is None:
-            iscale.set_scaling_factor(self.gac_saturation_replace, 1e1)
-
-        if iscale.get_scaling_factor(self.ebct) is None:
-            iscale.set_scaling_factor(self.ebct, 1e-2)
-
-        if iscale.get_scaling_factor(self.throughput) is None:
-            iscale.set_scaling_factor(self.throughput, 1)
-
-        for ele in range(self.elements_ss_approx.value + 1):
-
-            if iscale.get_scaling_factor(self.ele_conc_ratio_replace[ele]) is None:
-                iscale.set_scaling_factor(self.ele_conc_ratio_replace[ele], 10)
-
-            if iscale.get_scaling_factor(self.ele_throughput[ele]) is None:
-                iscale.set_scaling_factor(self.ele_throughput[ele], 1)
-
-            if iscale.get_scaling_factor(self.ele_min_operational_time[ele]) is None:
-                iscale.set_scaling_factor(self.ele_min_operational_time[ele], 1e-6)
-
-            if iscale.get_scaling_factor(self.ele_operational_time[ele]) is None:
-                iscale.set_scaling_factor(self.ele_operational_time[ele], 1e-6)
-
-        for ele in range(1, self.elements_ss_approx.value + 1):
-
-            if iscale.get_scaling_factor(self.ele_conc_ratio_avg[ele]) is None:
-                iscale.set_scaling_factor(self.ele_conc_ratio_avg[ele], 1e2)
-
-        if iscale.get_scaling_factor(self.residence_time) is None:
-            iscale.set_scaling_factor(self.residence_time, 1e-2)
-
-        if iscale.get_scaling_factor(self.operational_time) is None:
-            iscale.set_scaling_factor(self.operational_time, 1e-6)
-
-        if iscale.get_scaling_factor(self.bed_volumes_treated) is None:
-            iscale.set_scaling_factor(self.bed_volumes_treated, 1e-5)
-
-        if iscale.get_scaling_factor(self.kf) is None:
-            iscale.set_scaling_factor(self.kf, 1e5)
-
-        if iscale.get_scaling_factor(self.ds) is None:
-            iscale.set_scaling_factor(self.ds, 1e14)
-
-        if iscale.get_scaling_factor(self.dg) is None:
-            iscale.set_scaling_factor(self.dg, 1e-4)
-
-        if iscale.get_scaling_factor(self.N_Bi) is None:
-            iscale.set_scaling_factor(self.N_Bi, 1)
-
-        if iscale.get_scaling_factor(self.min_N_St) is None:
-            iscale.set_scaling_factor(self.min_N_St, 1e-1)
-
-        if iscale.get_scaling_factor(self.min_ebct) is None:
-            iscale.set_scaling_factor(self.min_ebct, 1e-2)
-
-        if iscale.get_scaling_factor(self.min_residence_time) is None:
-            iscale.set_scaling_factor(self.min_residence_time, 1e-2)
-
-        if iscale.get_scaling_factor(self.min_operational_time) is None:
-            iscale.set_scaling_factor(self.min_operational_time, 1e-6)
-
         iscale.set_scaling_factor(self.a0, 1)
         iscale.set_scaling_factor(self.a1, 1)
         iscale.set_scaling_factor(self.b0, 1)
@@ -1423,6 +1366,55 @@ class GACData(InitializationMixin, UnitModelBlockData):
         iscale.set_scaling_factor(self.b2, 1)
         iscale.set_scaling_factor(self.b3, 10)
         iscale.set_scaling_factor(self.b4, 1)
+
+        if iscale.get_scaling_factor(self.min_N_St) is None:
+            iscale.set_scaling_factor(self.min_N_St, 1e-1)
+
+        if iscale.get_scaling_factor(self.min_ebct) is None:
+            iscale.set_scaling_factor(self.min_ebct, 1e-2)
+
+        if iscale.get_scaling_factor(self.throughput) is None:
+            iscale.set_scaling_factor(self.throughput, 1)
+
+        if iscale.get_scaling_factor(self.min_residence_time) is None:
+            iscale.set_scaling_factor(self.min_residence_time, 1e-2)
+
+        if iscale.get_scaling_factor(self.min_operational_time) is None:
+            iscale.set_scaling_factor(self.min_operational_time, 1e-6)
+
+        if iscale.get_scaling_factor(self.conc_ratio_replace) is None:
+            iscale.set_scaling_factor(self.conc_ratio_replace, 1e1)
+
+        if iscale.get_scaling_factor(self.operational_time) is None:
+            iscale.set_scaling_factor(self.operational_time, 1e-6)
+
+        if iscale.get_scaling_factor(self.bed_volumes_treated) is None:
+            iscale.set_scaling_factor(self.bed_volumes_treated, 1e-5)
+
+        for ele in range(self.elements_ss_approx.value + 1):
+
+            if iscale.get_scaling_factor(self.ele_throughput[ele]) is None:
+                iscale.set_scaling_factor(self.ele_throughput[ele], 1)
+
+            if iscale.get_scaling_factor(self.ele_min_operational_time[ele]) is None:
+                iscale.set_scaling_factor(self.ele_min_operational_time[ele], 1e-6)
+
+            if iscale.get_scaling_factor(self.ele_conc_ratio_replace[ele]) is None:
+                iscale.set_scaling_factor(self.ele_conc_ratio_replace[ele], 1e1)
+
+            if iscale.get_scaling_factor(self.ele_operational_time[ele]) is None:
+                iscale.set_scaling_factor(self.ele_operational_time[ele], 1e-6)
+
+        for ele in range(1, self.elements_ss_approx.value + 1):
+
+            if iscale.get_scaling_factor(self.ele_conc_ratio_term[ele]) is None:
+                iscale.set_scaling_factor(self.ele_conc_ratio_term[ele], 1e2)
+
+        if iscale.get_scaling_factor(self.conc_ratio_avg) is None:
+            iscale.set_scaling_factor(self.conc_ratio_avg, 1e1)
+
+        if iscale.get_scaling_factor(self.gac_saturation_replace) is None:
+            iscale.set_scaling_factor(self.gac_saturation_replace, 1e1)
 
         if hasattr(self, "N_Re"):
             if iscale.get_scaling_factor(self.N_Re) is None:
@@ -1432,9 +1424,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
             if iscale.get_scaling_factor(self.N_Sc) is None:
                 iscale.set_scaling_factor(self.N_Sc, 1e-3)
 
-        if hasattr(self, "sphericity"):
-            if iscale.get_scaling_factor(self.sphericity) is None:
-                iscale.set_scaling_factor(self.sphericity, 1)
+        if hasattr(self, "shape_correction_factor"):
+            if iscale.get_scaling_factor(self.shape_correction_factor) is None:
+                iscale.set_scaling_factor(self.shape_correction_factor, 1)
 
         if hasattr(self, "tort"):
             if iscale.get_scaling_factor(self.tort) is None:

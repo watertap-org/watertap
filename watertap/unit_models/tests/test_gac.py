@@ -394,8 +394,7 @@ class TestGACRobust:
     def test_robust_solve(self, gac_frame_robust):
         mr = gac_frame_robust
         results = solver.solve(mr)
-        mr.fs.unit.display()
-        mr.fs.unit.process_flow.properties_in[0].display()
+
         # Check for optimal solution
         assert check_optimal_termination(results)
 
@@ -430,17 +429,17 @@ class TestGACRobust:
         assert pytest.approx(8.900, rel=1e-3) == value(mr.fs.unit.bed_volume)
         assert pytest.approx(3.688, rel=1e-3) == value(mr.fs.unit.bed_diameter)
         assert pytest.approx(4004, rel=1e-3) == value(mr.fs.unit.bed_mass_gac)
-        assert pytest.approx(0.002360, rel=1e-3) == value(
-            mr.fs.unit.ele_conc_ratio_avg[1]
+        assert pytest.approx(6462000, rel=1e-3) == value(
+            mr.fs.unit.ele_operational_time[1]
         )
         assert pytest.approx(0.2287, rel=1e-3) == value(mr.fs.unit.conc_ratio_avg)
 
-    '''
     @pytest.mark.component
     def test_robust_reporting(self, gac_frame_robust):
         mr = gac_frame_robust
         mr.fs.unit.report()
 
+    '''
     @pytest.mark.component
     def test_robust_costing(self, gac_frame_robust):
         mr = gac_frame_robust
