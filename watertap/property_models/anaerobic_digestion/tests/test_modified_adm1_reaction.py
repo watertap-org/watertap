@@ -14,9 +14,9 @@ Tests for ADM1 reaction package.
 
 Verified against results from:
 
-Rosen, C. and Jeppsson, U., 2006.
-Aspects on ADM1 Implementation within the BSM2 Framework.
-Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
+X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
+Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions fordynamic simulations of anaerobic digestion processes,
+Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
 
 Authors: Chenyu Wang, Marcus Holly
 """

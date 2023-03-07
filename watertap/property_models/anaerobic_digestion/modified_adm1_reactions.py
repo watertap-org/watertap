@@ -256,25 +256,25 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             doc="Fatty acids from lipids",
         )
         self.f_h2_su = pyo.Var(
-            initialize=0.19,
+            initialize=0.1906,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="Hydrogen from sugars",
         )
         self.f_bu_su = pyo.Var(
-            initialize=0.13,
+            initialize=0.1328,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="Butyrate from sugars",
         )
         self.f_pro_su = pyo.Var(
-            initialize=0.27,
+            initialize=0.2691,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="Propionate from sugars",
         )
         self.f_ac_su = pyo.Var(
-            initialize=0.41,
+            initialize=0.4076,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="Acetate from sugars",
