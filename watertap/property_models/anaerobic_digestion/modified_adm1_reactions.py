@@ -104,28 +104,28 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
 
         # Carbon content
         Ci_dict = {
-            "S_su": 0.03125,
-            "S_aa": 0.03074,
-            "S_fa": 0.02140,
-            "S_va": 0.02404,
-            "S_bu": 0.02500,
-            "S_pro": 0.02679,
-            "S_ac": 0.03125,
-            "S_ch4": 0.01563,
-            "S_I": 0.03015,
-            "X_ch": 0.03125,
-            "X_pr": 0.03074,
-            "X_li": 0.02193,
-            "X_su": 0.03051,
-            "X_aa": 0.03051,
-            "X_fa": 0.03051,
-            "X_c4": 0.03051,
-            "X_pro": 0.03051,
-            "X_ac": 0.03051,
-            "X_h2": 0.03051,
-            "X_I": 0.03015,
-            "X_PHA": 0.02500,
-            "X_PAO": 0.03051,
+            "S_su": 0.03125000,
+            "S_aa": 0.03074155,
+            "S_fa": 0.02140411,
+            "S_va": 0.02403846,
+            "S_bu": 0.0250000,
+            "S_pro": 0.02678571,
+            "S_ac": 0.031250000,
+            "S_ch4": 0.01562500,
+            "S_I": 0.03014820,
+            "X_ch": 0.03125000,
+            "X_pr": 0.03074155,
+            "X_li": 0.02192559,
+            "X_su": 0.03050979,
+            "X_aa": 0.03050979,
+            "X_fa": 0.03050979,
+            "X_c4": 0.03050979,
+            "X_pro": 0.03050979,
+            "X_ac": 0.03050979,
+            "X_h2": 0.03050979,
+            "X_I": 00.03050979,
+            "X_PHA": 0.02500000,
+            "X_PAO": 0.03050979,
         }
 
         self.Ci = pyo.Var(
@@ -138,18 +138,18 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
 
         # Nitrogen content
         Ni_dict = {
-            "S_aa": 0.00790,
-            "S_I": 0.00429,
-            "X_pr": 0.00790,
-            "X_su": 0.00615,
-            "X_aa": 0.00615,
-            "X_fa": 0.00615,
-            "X_c4": 0.00615,
-            "X_pro": 0.00615,
-            "X_ac": 0.00615,
-            "X_h2": 0.00615,
-            "X_I": 0.00429,
-            "X_PAO": 0.00615,
+            "S_aa": 0.0079034,
+            "S_I": 0.0042876,
+            "X_pr": 0.0079034,
+            "X_su": 0.0061532,
+            "X_aa": 0.0061532,
+            "X_fa": 0.0061532,
+            "X_c4": 0.0061532,
+            "X_pro": 0.0061532,
+            "X_ac": 0.0061532,
+            "X_h2": 0.0061532,
+            "X_I": 0.0042876,
+            "X_PAO": 0.0061532,
         }
 
         self.Ni = pyo.Var(
@@ -160,21 +160,19 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             doc="Nitrogen content of component [kmole N/kg COD]",
         )
 
-        # TODO: check if X_PP needs to be added here
         # Phosphorus content
         Pi_dict = {
-            "S_I": 0.00021,
-            "X_li": 0.00034,
-            "X_su": 0.00069,
-            "X_aa": 0.00069,
-            "X_fa": 0.00069,
-            "X_c4": 0.00069,
-            "X_pro": 0.00069,
-            "X_ac": 0.00069,
-            "X_h2": 0.00069,
-            "X_I": 0.00021,
-            "X_PP": 1,
-            "X_PAO": 0.00069,
+            "S_I": 0.0002093,
+            "X_li": 0.0003441,
+            "X_su": 0.0006947,
+            "X_aa": 0.0006947,
+            "X_fa": 0.0006947,
+            "X_c4": 0.0006947,
+            "X_pro": 0.0006947,
+            "X_ac": 0.0006947,
+            "X_h2": 0.0006947,
+            "X_I": 0.0002093,
+            "X_PAO": 0.0006947,
         }
 
         self.Pi = pyo.Var(
@@ -738,13 +736,13 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             ("R3", "Liq", "S_h2"): 0,
             ("R3", "Liq", "S_ch4"): 0,
             ("R3", "Liq", "S_IC"): (
-                -(1 - self.f_fa_li) * self.Ci["S_su"]
+                self.Ci["X_li"]
+                - (1 - self.f_fa_li) * self.Ci["S_su"]
                 - self.f_fa_li * self.Ci["S_fa"]
-                + self.Ci["X_li"]
             )
             * mw_c,
             ("R3", "Liq", "S_IN"): 0,
-            ("R3", "Liq", "S_IP"): -self.Pi["X_li"] * mw_p,
+            ("R3", "Liq", "S_IP"): self.Pi["X_li"] * mw_p,
             ("R3", "Liq", "S_I"): 0,
             ("R3", "Liq", "X_ch"): 0,
             ("R3", "Liq", "X_pr"): 0,
@@ -974,7 +972,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             )
             * mw_c,
             ("R10", "Liq", "S_IN"): (-self.Y_ac * self.Ni["X_ac"]) * mw_n,
-            ("R10", "Liq", "S_IP"): 0,
+            ("R10", "Liq", "S_IP"): (-self.Y_ac * self.Pi["X_ac"]) * mw_p,
             ("R10", "Liq", "S_I"): 0,
             ("R10", "Liq", "X_ch"): 0,
             ("R10", "Liq", "X_pr"): 0,
