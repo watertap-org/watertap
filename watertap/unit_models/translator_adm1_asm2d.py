@@ -29,12 +29,12 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.models.unit_models.translator import TranslatorData
 from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
@@ -59,112 +59,12 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Translator_ADM1_ASM2D")
-class TranslatorData(UnitModelBlockData):
+class TranslatorDataADM1ASM2D(TranslatorData):
     """
-    Standard Translator Block Class
+    Translator block representing the ADM1/ASM2D interface
     """
 
-    CONFIG = ConfigBlock()
-    CONFIG.declare(
-        "dynamic",
-        ConfigValue(
-            domain=In([False]),
-            default=False,
-            description="Dynamic model flag - must be False",
-            doc="""Translator blocks are always steady-state.""",
-        ),
-    )
-    CONFIG.declare(
-        "has_holdup",
-        ConfigValue(
-            default=False,
-            domain=In([False]),
-            description="Holdup construction flag - must be False",
-            doc="""Translator blocks do not contain holdup.""",
-        ),
-    )
-    CONFIG.declare(
-        "has_phase_equilibrium",
-        ConfigValue(
-            default=False,
-            domain=Bool,
-            description="Phase equilibrium construction flag",
-            doc="""Indicates whether terms for phase equilibrium should be
-    constructed,
-    **default** = False.
-    **Valid values:** {
-    **True** - include phase equilibrium terms
-    **False** - exclude phase equilibrium terms.}""",
-        ),
-    )
-    CONFIG.declare(
-        "outlet_state_defined",
-        ConfigValue(
-            default=True,
-            domain=Bool,
-            description="Indicated whether outlet state will be fully defined",
-            doc="""Indicates whether unit model will fully define outlet state.
-    If False, the outlet property package will enforce constraints such as sum
-    of mole fractions and phase equilibrium.
-    **default** - True.
-    **Valid values:** {
-    **True** - outlet state will be fully defined,
-    **False** - outlet property package should enforce sumation and equilibrium
-    constraints.}""",
-        ),
-    )
-    CONFIG.declare(
-        "inlet_property_package",
-        ConfigValue(
-            default=None,
-            domain=is_physical_parameter_block,
-            description="Property package to use for incoming stream",
-            doc="""Property parameter object used to define property
-    calculations for the incoming stream,
-    **default** - None.
-    **Valid values:** {
-    **PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
-        ),
-    )
-    CONFIG.declare(
-        "inlet_property_package_args",
-        ConfigBlock(
-            implicit=True,
-            description="Arguments to use for constructing property package "
-            "of the incoming stream",
-            doc="""A ConfigBlock with arguments to be passed to the property
-    block associated with the incoming stream,
-    **default** - None.
-    **Valid values:** {
-    see property package for documentation.}""",
-        ),
-    )
-    CONFIG.declare(
-        "outlet_property_package",
-        ConfigValue(
-            default=None,
-            domain=is_physical_parameter_block,
-            description="Property package to use for outgoing stream",
-            doc="""Property parameter object used to define property
-    calculations for the outgoing stream,
-    **default** - None.
-    **Valid values:** {
-    **PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
-        ),
-    )
-    CONFIG.declare(
-        "outlet_property_package_args",
-        ConfigBlock(
-            implicit=True,
-            description="Arguments to use for constructing property package "
-            "of the outgoing stream",
-            doc="""A ConfigBlock with arguments to be passed to the property
-    block associated with the outgoing stream,
-    **default** - None.
-    **Valid values:** {
-    see property package for documentation.}""",
-        ),
-    )
+    CONFIG = TranslatorData.CONFIG()
     CONFIG.declare(
         "reaction_package",
         ConfigValue(
@@ -200,7 +100,7 @@ class TranslatorData(UnitModelBlockData):
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(TranslatorData, self).build()
+        super(TranslatorDataADM1ASM2D, self).build()
 
         # TODO: check this parameter later
         # self.i_ec = Param(
@@ -209,27 +109,6 @@ class TranslatorData(UnitModelBlockData):
         #     mutable=True,
         #     doc="Nitrogen inert content",
         # )
-
-        # Add State Blocks
-        self.properties_in = self.config.inlet_property_package.build_state_block(
-            self.flowsheet().time,
-            doc="Material properties in incoming stream",
-            defined_state=True,
-            has_phase_equilibrium=False,
-            **self.config.inlet_property_package_args
-        )
-
-        self.properties_out = self.config.outlet_property_package.build_state_block(
-            self.flowsheet().time,
-            doc="Material properties in outgoing stream",
-            defined_state=self.config.outlet_state_defined,
-            has_phase_equilibrium=False,
-            **self.config.outlet_property_package_args
-        )
-
-        # Add ports
-        self.add_port(name="inlet", block=self.properties_in, doc="Inlet Port")
-        self.add_port(name="outlet", block=self.properties_out, doc="Outlet Port")
 
         @self.Constraint(
             self.flowsheet().time,
