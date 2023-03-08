@@ -140,6 +140,10 @@ class ModifiedADM1ParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "temperature": {"method": None},
                 "conc_mass_comp": {"method": None},
+            }
+        )
+        obj.define_custom_properties(
+            {
                 "anions": {"method": None},
                 "cations": {"method": None},
             }
@@ -345,10 +349,10 @@ class ModifiedADM1StateBlockData(StateBlockData):
             if j == "H2O":
                 return self.params.dens_mass
             elif j == "S_cat":
-                # Convert moles of alkalinity to mass of catioons assuming all is Na
+                # Convert moles of alkalinity to mass of cations assuming all is Na
                 return self.cations * (23 * pyo.units.kg / pyo.units.kmol)
             elif j == "S_an":
-                # Convert moles of alkalinity to mass of aniona assuming all is Cl
+                # Convert moles of alkalinity to mass of anions assuming all is Cl
                 return self.anions * (35 * pyo.units.kg / pyo.units.kmol)
             else:
                 return self.conc_mass_comp[j]

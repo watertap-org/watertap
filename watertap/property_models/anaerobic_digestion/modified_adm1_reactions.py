@@ -68,7 +68,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
         # R6:  Uptake of long chain fatty acids (LCFAs)
         # R7:  Uptake of valerate
         # R8:  Uptake of butyrate
-        # R9: Uptake of propionate
+        # R9:  Uptake of propionate
         # R10: Uptake of acetate
         # R11: Uptake of hydrogen
         # R12: Decay of X_su
@@ -78,6 +78,13 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
         # R16: Decay of X_pro
         # R17: Decay of X_ac
         # R18: Decay of X_h2
+        # R19: Storage of S_va in X_PHA
+        # R20: Storage of S_bu in X_PHA
+        # R21: Storage of S_pro in X_PHA
+        # R22: Storage of S_ac in X_PHA
+        # R23: Lysis of X_PAO
+        # R24: Lysis of X_PP
+        # R25: Lysis of X_PHA
 
         self.rate_reaction_idx = pyo.Set(
             initialize=[
@@ -197,7 +204,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
 
         # TODO: Inherit these parameters from ADM1 such that there is less repeated code?
 
-        # Stoichiometric Parameters (Table 6.1 in Batstone et al., 2002)
+        # Stoichiometric Parameters (Table 1.1 and 2.1 in Flores-Alsina et al., 2016)
         self.f_sI_xc = pyo.Var(
             initialize=0.1,
             units=pyo.units.dimensionless,
@@ -672,13 +679,14 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
         )
         self.K_A = pyo.Var(
             initialize=4e-3,
-            units=pyo.units.kg**-1 * pyo.units.m**-3,
+            units=pyo.units.kg * pyo.units.m**-3,
             domain=pyo.PositiveReals,
             doc="Saturation coefficient for acetate",
         )
+        # TODO: Check the units for K_A and K_PP (K_PP not dimensionless in the reference)
         self.K_PP = pyo.Var(
             initialize=0.32e-3,
-            units=pyo.units.kg**-1 * pyo.units.m**-3,
+            units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="Saturation coefficient for polyphosphate",
         )
@@ -694,6 +702,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Yield of biomass on phosphate (kmol P/kg COD)",
         )
+        # TODO: Find better doc description for K_XPP and Mg_XPP?
         self.K_XPP = pyo.Var(
             initialize=1 / 3,
             units=pyo.units.dimensionless,
@@ -716,7 +725,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
 
         # Reaction Stoichiometry
         # This is the stoichiometric part of the Peterson matrix in dict form.
-        # See Table 1.1 in Flores-Alsina et al., 2016.
+        # See Table 1.1 and 2.1 in Flores-Alsina et al., 2016.
 
         # Exclude non-zero stoichiometric coefficients for S_IC initially since they depend on other stoichiometric coefficients.
         self.rate_reaction_stoichiometry = {
@@ -1708,8 +1717,12 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
     def define_metadata(cls, obj):
         obj.add_properties(
             {
-                "conc_mol_co2": {"method": "_rxn_rate"},
                 "reaction_rate": {"method": "_rxn_rate"},
+            }
+        )
+        obj.define_custom_properties(
+            {
+                "conc_mol_co2": {"method": "_rxn_rate"},
                 "I": {"method": "_I"},
             }
         )
@@ -1764,6 +1777,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         add_object_reference(self, "temperature", self.state_ref.temperature)
 
         # Initial values of rates of reaction [2]
+        # TODO: Find rxn rate values for R19-25
         self.rates = {
             "R1": 3.235e-06,
             "R2": 1.187e-05,
@@ -1783,6 +1797,13 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             "R16": 3.178e-08,
             "R17": 1.761e-07,
             "R18": 7.338e-08,
+            # "R19": 0,
+            # "R20": 0,
+            # "R21": 0,
+            # "R22": 0,
+            # "R23": 0,
+            # "R24": 0,
+            # "R25": 0,
         }
 
     # Rate of reaction method
@@ -2227,7 +2248,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                 raise BurntToast()
 
         self.I = pyo.Expression(
-            [f"R{i}" for i in range(5, 13)],
+            [f"R{i}" for i in range(4, 12)],
             rule=rule_I,
             doc="Process inhibition functions",
         )
@@ -2298,7 +2319,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                             )
                         )
                         * b.I[r]
-                        * b.params.I_h2s_c4,
+                        * b.I_h2s_c4,
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R8":
@@ -2316,7 +2337,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                             )
                         )
                         * b.I[r]
-                        * b.params.I_h2s_c4,
+                        * b.I_h2s_c4,
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R9":
@@ -2327,7 +2348,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                         / (b.params.K_S_pro + b.conc_mass_comp_ref["S_pro"])
                         * b.conc_mass_comp_ref["X_pro"]
                         * b.I[r]
-                        * b.params.I_h2s_pro,
+                        * b.I_h2s_pro,
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R10":
@@ -2338,7 +2359,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                         / (b.params.K_S_ac + b.conc_mass_comp_ref["S_ac"])
                         * b.conc_mass_comp_ref["X_ac"]
                         * b.I[r]
-                        * b.params.I_h2s_ac,
+                        * b.I_h2s_ac,
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R11":
@@ -2349,7 +2370,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                         / (b.params.K_S_h2 + b.conc_mass_comp_ref["S_h2"])
                         * b.conc_mass_comp_ref["X_h2"]
                         * b.I[r]
-                        * b.params.I_h2s_h2,
+                        * b.I_h2s_h2,
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R12":
