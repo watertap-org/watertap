@@ -15,13 +15,7 @@
 Simple property package for selective oil permeation
 """
 
-from pyomo.environ import (
-    Constraint,
-    Var,
-    Param,
-    NonNegativeReals,
-    Suffix,
-)
+from pyomo.environ import Constraint, Var, Param, NonNegativeReals, Suffix, value
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
@@ -472,7 +466,7 @@ class SopStateBlockData(StateBlockData):
 
         # default scaling factors have already been set with
         # idaes.core.property_base.calculate_scaling_factors()
-
+        sf_dens_mass_phase = self.params.get_default_scaling("dens_mass_phase")
         # these variables should have user input
         for p in self.params.phase_list:
             if (
@@ -511,16 +505,28 @@ class SopStateBlockData(StateBlockData):
         if self.is_property_constructed("flow_vol_phase_comp"):
             for p in self.params.phase_list:
                 for j in self.params.component_list:
-                    sf = iscale.get_scaling_factor(
-                        self.flow_mass_phase_comp[p, j]
-                    ) / iscale.get_scaling_factor(self.dens_mass_phase[p])
+                    sf = (
+                        iscale.get_scaling_factor(self.flow_mass_phase_comp[p, j])
+                        / sf_dens_mass_phase
+                    )
                     iscale.set_scaling_factor(self.flow_vol_phase_comp[p, j], sf)
 
         if self.is_property_constructed("flow_vol_phase"):
             for p in self.params.phase_list:
-                sf = iscale.get_scaling_factor(
-                    self.flow_mass_phase[p]
-                ) / iscale.get_scaling_factor(self.dens_mass_phase[p])
+                # check that flow_mass_phase was constructed. if it was, it will have received a scaling factor a few lines above.
+                if self.is_property_constructed("flow_mass_phase"):
+                    sf = (
+                        iscale.get_scaling_factor(self.flow_mass_phase[p])
+                        / sf_dens_mass_phase
+                    )
+                # if flow_mass_phase wasn't constructed, we could've assigned a default, but here's another way
+                else:
+                    mT = (
+                        self.flow_mass_phase_comp[p, "H2O"]
+                        + self.flow_mass_phase_comp[p, "oil"]
+                    )
+                    sf_mT = 1 / value(mT)
+                    sf = sf_mT / sf_dens_mass_phase
                 iscale.set_scaling_factor(self.flow_vol_phase[p], sf)
 
         if self.is_property_constructed("vol_frac_phase_comp"):
@@ -534,9 +540,10 @@ class SopStateBlockData(StateBlockData):
         if self.is_property_constructed("conc_mass_phase_comp"):
             for p in self.params.phase_list:
                 for j in self.params.component_list:
-                    sf = iscale.get_scaling_factor(
-                        self.mass_frac_phase_comp[p, j]
-                    ) * iscale.get_scaling_factor(self.dens_mass_phase[p])
+                    sf = (
+                        iscale.get_scaling_factor(self.mass_frac_phase_comp[p, j])
+                        * sf_dens_mass_phase
+                    )
                     iscale.set_scaling_factor(self.conc_mass_phase_comp[p, j], sf)
 
         # transform property constraints
