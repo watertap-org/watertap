@@ -22,16 +22,12 @@ from pyomo.environ import (
     ConcreteModel,
     assert_optimal_termination,
     value,
-    Set,
     Param,
     Var,
     Constraint,
 )
 from idaes.core import (
     FlowsheetBlock,
-    EnergyBalanceType,
-    MaterialBalanceType,
-    MomentumBalanceType,
 )
 from idaes.core import UnitModelCostingBlock
 from idaes.core.util.model_statistics import (
@@ -47,7 +43,7 @@ from idaes.core.util.scaling import (
 )
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Kurban Sitterley"
 
