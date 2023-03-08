@@ -10,6 +10,14 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import pyomo.environ as pyo
+from idaes.core.util.model_statistics import (
+    variables_near_bounds_generator,
+    total_constraints_set,
+)
+from idaes.core.util.scaling import (
+    badly_scaled_var_generator,
+)
 from pyomo.environ import (
     Var,
     Param,
@@ -671,7 +679,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="total mass of adsorbed species at operational time",
         )
         self.gac_usage_rate = Var(
-            initialize=1e-2,
+            initialize=1e-10,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("time") ** -1,
@@ -1134,6 +1142,22 @@ class GACData(InitializationMixin, UnitModelBlockData):
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
+            """
+            badly_scaled_var_list = badly_scaled_var_generator(self, large=1e2, small=1e-2)
+            print("----------------   badly_scaled_var_list   ----------------")
+            for x in badly_scaled_var_list:
+                print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+            print("---------------- variables_near_bounds_list ----------------")
+            variables_near_bounds_list = variables_near_bounds_generator(self)
+            for x in variables_near_bounds_list:
+                print(f"{x.name}\t{x.value}")
+            print("---------------- total_constraints_set_list ----------------")
+            total_constraints_set_list = total_constraints_set(self)
+            for x in total_constraints_set_list:
+                residual = abs(pyo.value(x.body) - pyo.value(x.lb))
+                if residual > 1e-8:
+                    print(f"{x}\t{residual}")
+            """
             raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     # ---------------------------------------------------------------------

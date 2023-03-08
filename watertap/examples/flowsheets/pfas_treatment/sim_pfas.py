@@ -94,7 +94,6 @@ def main():
     )
     # testing model at parameter values used to initialize
     m = model_init_build()
-    assert False
 
     # vars to estimate
     theta_names = [
@@ -108,9 +107,11 @@ def main():
     )
 
     # sum of squared error function as objective
+    expr_sf = 1e0
+
     def SSE(model, data):
         expr = (float(data[f"{source_name}_X"]) - model.fs.gac.bed_volumes_treated) ** 2
-        return expr
+        return expr * expr_sf
 
     print(
         "########################################## model regression ##########################################"
@@ -122,21 +123,17 @@ def main():
         theta_names,
         SSE,
         tee=True,
-        solver_options=solver_options,
-        diagnostic_mode=False,
     )
 
     pest.objective_at_theta(
         theta_values=theta_values,
-        initialize_parmest_model=False,
+        initialize_parmest_model=True,
     )
 
     # Parameter estimation
-    solver_est = SolverFactory("ef_ipopt")
-    solver_est.options = solver_options
-    obj, theta = pest.theta_est(solver=solver)
+    obj, theta = pest.theta_est()
 
-    print("The SSE at the optimal solution is %0.6f" % obj)
+    print("The SSE at the optimal solution is %0.6f" % (obj / expr_sf))
     print("The values for the parameters are as follows:")
     for k, v in theta.items():
         print(k, "=", v)
@@ -147,7 +144,7 @@ def main():
 
     # rebuild model across CP to view regression results
     # theta = [guess_freund_k, guess_freund_ninv, guess_ds]
-    model_regressed_build(theta)
+    # model_regressed_build(theta)
 
 
 def model_init_build():
@@ -238,7 +235,7 @@ def model_init_build():
     propagate_state(m.fs.s01)
     m.fs.gac.initialize(optarg=optarg)
 
-    model_solve(m)
+    model_solve(m, solver_log=True)
 
     return m
 
@@ -340,7 +337,7 @@ def model_parmest_build(data):
 
 def model_regressed_build(theta):
 
-    conc_ratio_input = np.linspace(0.01, 0.95, 5)
+    conc_ratio_input = np.linspace(0.01, 0.95, 10)
     conc_ratio_list = []
     bed_volumes_treated_list = []
 
@@ -414,7 +411,7 @@ def model_regressed_build(theta):
         m.fs.gac.bed_voidage.fix(0.44)
         m.fs.gac.velocity_sup.fix(0.002209)
         # design spec
-        m.fs.gac.conc_ratio_replace.fix(0.20)
+        m.fs.gac.conc_ratio_replace.fix(conc_ratio)
         # parameters
         m.fs.gac.a0.fix(0.8)
         m.fs.gac.a1.fix(0)
@@ -439,7 +436,7 @@ def model_regressed_build(theta):
         propagate_state(m.fs.s01)
         m.fs.gac.initialize(optarg=optarg)
 
-        m = model_solve(m)
+        m = model_solve(m, solver_log=False)
 
         conc_ratio_list.append(m.fs.gac.conc_ratio_replace.value)
         bed_volumes_treated_list.append(m.fs.gac.bed_volumes_treated.value)
@@ -470,42 +467,28 @@ def _new_scaling_factors(m):
     set_scaling_factor(m.fs.gac.bed_mass_gac, 1e3)
     set_scaling_factor(m.fs.gac.mass_adsorbed, 1e9)
     set_scaling_factor(m.fs.gac.gac_usage_rate, 1e11)
-    """
-    set_scaling_factor(m.fs.gac.mass_adsorbed, 1e10)
-    set_scaling_factor(m.fs.gac.N_Bi, 1e-1)
-    set_scaling_factor(m.fs.gac.kf, 1e4)
-    set_scaling_factor(m.fs.gac.min_N_St, 1e-2)
-    set_scaling_factor(m.fs.gac.equil_conc, 1e6)
-    set_scaling_factor(m.fs.gac.gac_usage_rate, 1e9)
-
-    set_scaling_factor(m.fs.gac.bed_length, 1e2)
-    set_scaling_factor(m.fs.gac.bed_diameter, 1e3)
-    set_scaling_factor(m.fs.gac.bed_area, 1e5)
-    set_scaling_factor(m.fs.gac.bed_volume, 1e6)
-    set_scaling_factor(m.fs.gac.bed_mass_gac, 1e4)
-    set_scaling_factor(m.fs.gac.residence_time, 1)
-    set_scaling_factor(m.fs.gac.velocity_int, 1e2)
-    set_scaling_factor(m.fs.gac.velocity_sup, 1e2)
-    set_scaling_factor(m.fs.gac.conc_ratio_avg, 1e1)
-    """
 
     return m
 
 
-def model_solve(model):
+def model_solve(model, solver_log=True):
 
     # check model
     assert_units_consistent(model)  # check that units are consistent
     assert degrees_of_freedom(model) == 0
 
     # solve simulation
-    with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
-        results = solver.solve(model, tee=slc.tee)
+    if solver_log:
+        with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
+            results = solver.solve(model, tee=slc.tee)
+            term_cond = results.solver.termination_condition
+            print("termination condition:", term_cond)
+    else:
+        results = solver.solve(model, tee=False)
         term_cond = results.solver.termination_condition
         print("termination condition:", term_cond)
 
     if not term_cond == "optimal":
-        model.display()
         badly_scaled_var_list = badly_scaled_var_generator(model, large=1e2, small=1e-2)
         print("----------------   badly_scaled_var_list   ----------------")
         for x in badly_scaled_var_list:
