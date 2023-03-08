@@ -709,9 +709,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Biot number")
         def eq_number_bi(b):
-            return 1 == (b.kf * (b.particle_dia / 2) * (1 - b.bed_voidage)) / (
-                b.N_Bi * b.ds * b.dg * b.bed_voidage
-            )
+            return b.N_Bi * b.ds * b.dg * b.bed_voidage == b.kf * (
+                b.particle_dia / 2
+            ) * (1 - b.bed_voidage)
 
         # ---------------------------------------------------------------------
         # bed dimensions, gac particle, and sizing calculations
