@@ -166,8 +166,8 @@ class TestGACSimplified:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(ms) == 102
-        assert number_total_constraints(ms) == 66
+        assert number_variables(ms) == 100
+        assert number_total_constraints(ms) == 64
         assert number_unused_variables(ms) == 11  # dens parameters from properties
 
     @pytest.mark.unit
@@ -350,8 +350,8 @@ class TestGACRobust:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(mr) == 121
-        assert number_total_constraints(mr) == 86
+        assert number_variables(mr) == 119
+        assert number_total_constraints(mr) == 84
         assert number_unused_variables(mr) == 10  # dens parameters from properties
 
     @pytest.mark.unit

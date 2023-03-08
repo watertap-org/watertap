@@ -670,20 +670,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
             units=units_meta("mass"),
             doc="total mass of adsorbed species at operational time",
         )
-        self.mass_adsorbed_saturated = Var(
-            initialize=1e5,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("mass"),
-            doc="total mass of adsorbed species if the bed were fully saturated",
-        )
-        self.gac_saturation_replace = Var(
-            initialize=0.9,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="approximate gac saturation in the bed at operational time",
-        )
         self.gac_usage_rate = Var(
             initialize=1e-2,
             bounds=(0, None),
@@ -898,16 +884,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
             return (
                 b.mass_adsorbed
                 == b.gac_removed[0].flow_mass_phase_comp["Liq", j] * b.operational_time
-            )
-
-        @self.Constraint(doc="mass adsorbed into gac if the bed was fully saturated")
-        def eq_mass_adsorbed_saturated(b):
-            return b.mass_adsorbed_saturated == b.bed_mass_gac * b.equil_conc
-
-        @self.Constraint(doc="fraction of gac that is saturation at operational time")
-        def eq_gac_saturation_fracion(b):
-            return (
-                b.gac_saturation_replace * b.mass_adsorbed_saturated == b.mass_adsorbed
             )
 
         @self.Constraint(doc="steady state rate of new gac mass required")
@@ -1184,7 +1160,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         var_dict["operational time of the bed from fresh"] = self.operational_time
         var_dict["bed volumes treated"] = self.bed_volumes_treated
         var_dict["steady state average concentration ratio"] = self.conc_ratio_avg
-        var_dict["gac saturation at operational time"] = self.gac_saturation_replace
         var_dict["gac usage/replacement/regeneration rate"] = self.gac_usage_rate
 
         # loop through desired state block properties indexed by [phase, comp]
@@ -1315,9 +1290,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:
             iscale.set_scaling_factor(self.mass_adsorbed, sf_solute * 1e-6)
 
-        if iscale.get_scaling_factor(self.mass_adsorbed_saturated) is None:
-            iscale.set_scaling_factor(self.mass_adsorbed_saturated, sf_solute * 1e-6)
-
         if iscale.get_scaling_factor(self.gac_usage_rate) is None:
             iscale.set_scaling_factor(self.gac_usage_rate, sf_volume)
 
@@ -1422,9 +1394,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.conc_ratio_avg) is None:
             iscale.set_scaling_factor(self.conc_ratio_avg, 1e1)
-
-        if iscale.get_scaling_factor(self.gac_saturation_replace) is None:
-            iscale.set_scaling_factor(self.gac_saturation_replace, 1e1)
 
         if hasattr(self, "N_Re"):
             if iscale.get_scaling_factor(self.N_Re) is None:
