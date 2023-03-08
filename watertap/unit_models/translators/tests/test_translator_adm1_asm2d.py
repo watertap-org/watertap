@@ -50,7 +50,7 @@ from idaes.core.util.scaling import (
 
 from idaes.core.util.testing import initialization_tester
 
-from watertap.unit_models.translator_adm1_asm2d import Translator_ADM1_ASM2D
+from watertap.unit_models.translators.translator_adm1_asm2d import Translator_ADM1_ASM2D
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
