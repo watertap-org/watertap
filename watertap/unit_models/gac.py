@@ -664,7 +664,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule",
         )
         self.mass_adsorbed = Var(
-            initialize=1e5,
+            initialize=10,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass"),
