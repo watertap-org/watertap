@@ -72,7 +72,8 @@ data = pd.read_csv("F400_PFOA.csv")
 
 # initial guess for regressed variables
 guess_freund_k = 10
-guess_freund_ninv = 0.7
+guess_freund_ninv = 0.8
+guess_ds = 1e-15
 
 # set up solver
 solver = get_solver()
@@ -99,15 +100,16 @@ def main():
     theta_names = [
         "fs.gac.freund_k",
         "fs.gac.freund_ninv",
+        "fs.gac.ds",
     ]
     # vars initial values
     theta_values = pd.DataFrame(
-        data=[[guess_freund_k, guess_freund_ninv]],
+        data=[[guess_freund_k, guess_freund_ninv, guess_ds]],
         columns=theta_names,
     )
 
     # sum of squared error function as objective
-    expr_sf = 1e0
+    expr_sf = 1e-4
 
     def SSE(model, data):
         expr = (float(data[f"{source_name}_X"]) - model.fs.gac.bed_volumes_treated) ** 2
@@ -144,7 +146,7 @@ def main():
 
     # rebuild model across CP to view regression results
     # theta = [guess_freund_k, guess_freund_ninv, guess_ds]
-    # model_regressed_build(theta)
+    model_regressed_build(theta)
 
 
 def model_init_build():
@@ -166,7 +168,7 @@ def model_init_build():
     m.fs.gac = GAC_RSSCT(
         property_package=m.fs.properties,
         film_transfer_coefficient_type="calculated",
-        surface_diffusion_coefficient_type="calculated",
+        surface_diffusion_coefficient_type="fixed",
     )
 
     # touch properties and scaling
@@ -202,6 +204,7 @@ def model_init_build():
     # adsorption isotherm
     m.fs.gac.freund_k.fix(guess_freund_k)
     m.fs.gac.freund_ninv.fix(guess_freund_ninv)
+    m.fs.gac.ds.fix(guess_ds)
     # gac particle specifications
     m.fs.gac.particle_dens_app.fix(962.89)
     m.fs.gac.particle_dia.fix(0.000127)
@@ -219,9 +222,6 @@ def model_init_build():
     m.fs.gac.b2.fix(0.039324)
     m.fs.gac.b3.fix(0.009326)
     m.fs.gac.b4.fix(0.08275)
-    m.fs.gac.particle_porosity.fix(0.69)
-    m.fs.gac.tort.fix()
-    m.fs.gac.spdfr.fix()
     m.fs.gac.shape_correction_factor.fix()
     m.fs.gac.conc_ratio_start_breakthrough = 0.001
 
@@ -260,7 +260,7 @@ def model_parmest_build(data):
     m.fs.gac = GAC_RSSCT(
         property_package=m.fs.properties,
         film_transfer_coefficient_type="calculated",
-        surface_diffusion_coefficient_type="calculated",
+        surface_diffusion_coefficient_type="fixed",
     )
 
     # touch properties and scaling
@@ -296,6 +296,7 @@ def model_parmest_build(data):
     # adsorption isotherm
     m.fs.gac.freund_k.fix(guess_freund_k)
     m.fs.gac.freund_ninv.fix(guess_freund_ninv)
+    m.fs.gac.ds.fix(guess_ds)
     # gac particle specifications
     m.fs.gac.particle_dens_app.fix(962.89)
     m.fs.gac.particle_dia.fix(0.000127)
@@ -313,9 +314,6 @@ def model_parmest_build(data):
     m.fs.gac.b2.fix(0.039324)
     m.fs.gac.b3.fix(0.009326)
     m.fs.gac.b4.fix(0.08275)
-    m.fs.gac.particle_porosity.fix(0.69)
-    m.fs.gac.tort.fix()
-    m.fs.gac.spdfr.fix()
     m.fs.gac.shape_correction_factor.fix()
     m.fs.gac.conc_ratio_start_breakthrough = 0.001
 
@@ -367,7 +365,7 @@ def model_regressed_build(theta):
         m.fs.gac = GAC_RSSCT(
             property_package=m.fs.properties,
             film_transfer_coefficient_type="calculated",
-            surface_diffusion_coefficient_type="calculated",
+            surface_diffusion_coefficient_type="fixed",
         )
 
         # touch properties and scaling
@@ -403,6 +401,7 @@ def model_regressed_build(theta):
         # adsorption isotherm
         m.fs.gac.freund_k.fix(theta[0])
         m.fs.gac.freund_ninv.fix(theta[1])
+        m.fs.gac.ds.fix(theta[2])
         # gac particle specifications
         m.fs.gac.particle_dens_app.fix(962.89)
         m.fs.gac.particle_dia.fix(0.000127)
@@ -420,9 +419,6 @@ def model_regressed_build(theta):
         m.fs.gac.b2.fix(0.039324)
         m.fs.gac.b3.fix(0.009326)
         m.fs.gac.b4.fix(0.08275)
-        m.fs.gac.particle_porosity.fix(0.69)
-        m.fs.gac.tort.fix()
-        m.fs.gac.spdfr.fix()
         m.fs.gac.shape_correction_factor.fix()
         m.fs.gac.conc_ratio_start_breakthrough = 0.001
 
