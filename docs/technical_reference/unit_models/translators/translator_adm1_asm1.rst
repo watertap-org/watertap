@@ -8,7 +8,7 @@ A link is required to translate between biological and physically- or chemically
 to develop whole-plant modeling of wastewater treatment. This model mediates the interaction between
 the Anaerobic Digestor Model 1 (ADM1) and the Activated Sludge Model 1 (ASM1).
 
-The model relies on the following key assumption:
+The model relies on the following key assumptions:
 
    * supports only liquid phase
    * supports only ADM1 to ASM1 translations
