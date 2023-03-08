@@ -1,4 +1,4 @@
-Tranlsators
+Translators
 ===========
 
 .. toctree::
