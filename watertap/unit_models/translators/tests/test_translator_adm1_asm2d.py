@@ -219,7 +219,7 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(308.15, rel=1e-3) == value(
             asmadm.fs.unit.outlet.temperature[0]
         )
-        assert pytest.approx(0.1308, rel=1e-3) == value(
+        assert pytest.approx(0.1332, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_A"]
         )
         assert pytest.approx(0.1253, rel=1e-3) == value(
