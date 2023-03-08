@@ -60,7 +60,7 @@ class SurfaceDiffusionCoefficientType(Enum):
 
 
 # ---------------------------------------------------------------------
-@declare_process_block_class("GAC")
+@declare_process_block_class("GAC_RSSCT")
 class GACData(InitializationMixin, UnitModelBlockData):
     """
     Empirical CPHSDM Granular Activated Carbon Model -
@@ -400,49 +400,49 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="bed void fraction",
         )
         self.bed_length = Var(
-            initialize=5,
+            initialize=0.01,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length"),
             doc="bed length",
         )
         self.bed_diameter = Var(
-            initialize=1,
+            initialize=0.001,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length"),
             doc="bed diameter, valid if considering only a single adsorber",
         )
         self.bed_area = Var(
-            initialize=1,
+            initialize=1e-5,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length") ** 2,
             doc="bed area, single adsorber area or sum of areas for adsorbers in parallel",
         )
         self.bed_volume = Var(
-            initialize=5,
+            initialize=1e-6,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length") ** 3,
             doc="bed volume",
         )
         self.ebct = Var(
-            initialize=500,
+            initialize=10,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
             doc="empty bed contact time",
         )
         self.residence_time = Var(
-            initialize=100,
+            initialize=1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
             doc="fluid residence time in the bed",
         )
         self.bed_mass_gac = Var(
-            initialize=100,
+            initialize=1e-3,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass"),
@@ -553,7 +553,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="specific throughput from empirical equation",
         )
         self.min_residence_time = Var(
-            initialize=1000,
+            initialize=10,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
@@ -657,14 +657,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="trapezoid rule of elements for numerical integration of average concentration ratio",
         )
         self.conc_ratio_avg = Var(
-            initialize=0.1,
+            initialize=0.05,
             bounds=(0, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule",
         )
         self.mass_adsorbed = Var(
-            initialize=10,
+            initialize=1e-9,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass"),
@@ -709,9 +709,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Biot number")
         def eq_number_bi(b):
-            return 1 == (b.kf * (b.particle_dia / 2) * (1 - b.bed_voidage)) / (
-                b.N_Bi * b.ds * b.dg * b.bed_voidage
-            )
+            return b.N_Bi * b.ds * b.dg * b.bed_voidage == b.kf * (
+                b.particle_dia / 2
+            ) * (1 - b.bed_voidage)
 
         # ---------------------------------------------------------------------
         # bed dimensions, gac particle, and sizing calculations

@@ -34,6 +34,7 @@ from idaes.core.util.model_statistics import (
     number_unused_variables,
     large_residuals_set,
     variables_near_bounds_generator,
+    total_constraints_set,
 )
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.model_diagnostics import DegeneracyHunter
@@ -51,8 +52,8 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import (
     DiffusivityCalculation,
 )
 from idaes.models.unit_models import Feed, Product
-from watertap.unit_models.gac import (
-    GAC,
+from watertap.unit_models.gac_rssct import (
+    GAC_RSSCT,
     FilmTransferCoefficientType,
     SurfaceDiffusionCoefficientType,
 )
@@ -76,9 +77,14 @@ guess_freund_ninv = 0.7
 # set up solver
 solver = get_solver()
 solver_options = {
-    "max_iter": 50000,
+    "max_iter": 100000,
 }
 solver.options = solver_options
+
+log = idaeslog.getSolveLogger("solver.demo")
+log.setLevel(idaeslog.DEBUG)
+
+pyo.SolverFactory.register("ipopt")(pyo.SolverFactory.get_class("ipopt-watertap"))
 
 
 def main():
@@ -88,17 +94,16 @@ def main():
     )
     # testing model at parameter values used to initialize
     m = model_init_build()
-    m.fs.gac.display()
     assert False
+
     # vars to estimate
     theta_names = [
         "fs.gac.freund_k",
         "fs.gac.freund_ninv",
-        "fs.gac.ds",
     ]
     # vars initial values
     theta_values = pd.DataFrame(
-        data=[[guess_freund_k, guess_freund_ninv, guess_ds]],
+        data=[[guess_freund_k, guess_freund_ninv]],
         columns=theta_names,
     )
 
@@ -118,18 +123,18 @@ def main():
         SSE,
         tee=True,
         solver_options=solver_options,
-        diagnostic_mode=True,
+        diagnostic_mode=False,
     )
 
     pest.objective_at_theta(
         theta_values=theta_values,
-        initialize_parmest_model=True,
+        initialize_parmest_model=False,
     )
 
     # Parameter estimation
     solver_est = SolverFactory("ef_ipopt")
     solver_est.options = solver_options
-    obj, theta = pest.theta_est(solver=solver_est)
+    obj, theta = pest.theta_est(solver=solver)
 
     print("The SSE at the optimal solution is %0.6f" % obj)
     print("The values for the parameters are as follows:")
@@ -161,7 +166,7 @@ def model_init_build():
     m.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
     m.fs.properties.dens_mass_const = 1000
     m.fs.feed = Feed(property_package=m.fs.properties)
-    m.fs.gac = GAC(
+    m.fs.gac = GAC_RSSCT(
         property_package=m.fs.properties,
         film_transfer_coefficient_type="calculated",
         surface_diffusion_coefficient_type="calculated",
@@ -233,7 +238,7 @@ def model_init_build():
     propagate_state(m.fs.s01)
     m.fs.gac.initialize(optarg=optarg)
 
-    _model_solve(m)
+    model_solve(m)
 
     return m
 
@@ -255,10 +260,10 @@ def model_parmest_build(data):
     m.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
     m.fs.properties.dens_mass_const = 1000
     m.fs.feed = Feed(property_package=m.fs.properties)
-    m.fs.gac = GAC(
+    m.fs.gac = GAC_RSSCT(
         property_package=m.fs.properties,
         film_transfer_coefficient_type="calculated",
-        surface_diffusion_coefficient_type="fixed",
+        surface_diffusion_coefficient_type="calculated",
     )
 
     # touch properties and scaling
@@ -294,25 +299,27 @@ def model_parmest_build(data):
     # adsorption isotherm
     m.fs.gac.freund_k.fix(guess_freund_k)
     m.fs.gac.freund_ninv.fix(guess_freund_ninv)
-    m.fs.gac.ds.fix(guess_ds)
     # gac particle specifications
-    m.fs.gac.particle_dens_app.fix(682)
+    m.fs.gac.particle_dens_app.fix(962.89)
     m.fs.gac.particle_dia.fix(0.000127)
     # adsorber bed specifications
     m.fs.gac.ebct.fix(13.68)
-    m.fs.gac.bed_voidage.fix(0.2037)
+    m.fs.gac.bed_voidage.fix(0.44)
     m.fs.gac.velocity_sup.fix(0.002209)
     # design spec
     m.fs.gac.conc_ratio_replace.fix(0.20)
     # parameters
-    m.fs.gac.shape_correction_factor.fix(1)
-    m.fs.gac.a0.fix(6.31579e0)
-    m.fs.gac.a1.fix(56.8421)
-    m.fs.gac.b0.fix(0.865453)
-    m.fs.gac.b1.fix(0.157618)
-    m.fs.gac.b2.fix(0.444973)
-    m.fs.gac.b3.fix(0.001650)
-    m.fs.gac.b4.fix(0.148084)
+    m.fs.gac.a0.fix(0.8)
+    m.fs.gac.a1.fix(0)
+    m.fs.gac.b0.fix(0.023)
+    m.fs.gac.b1.fix(0.793673)
+    m.fs.gac.b2.fix(0.039324)
+    m.fs.gac.b3.fix(0.009326)
+    m.fs.gac.b4.fix(0.08275)
+    m.fs.gac.particle_porosity.fix(0.69)
+    m.fs.gac.tort.fix()
+    m.fs.gac.spdfr.fix()
+    m.fs.gac.shape_correction_factor.fix()
     m.fs.gac.conc_ratio_start_breakthrough = 0.001
 
     # scaling
@@ -360,10 +367,10 @@ def model_regressed_build(theta):
         m.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
         m.fs.properties.dens_mass_const = 1000
         m.fs.feed = Feed(property_package=m.fs.properties)
-        m.fs.gac = GAC(
+        m.fs.gac = GAC_RSSCT(
             property_package=m.fs.properties,
             film_transfer_coefficient_type="calculated",
-            surface_diffusion_coefficient_type="fixed",
+            surface_diffusion_coefficient_type="calculated",
         )
 
         # touch properties and scaling
@@ -399,25 +406,27 @@ def model_regressed_build(theta):
         # adsorption isotherm
         m.fs.gac.freund_k.fix(theta[0])
         m.fs.gac.freund_ninv.fix(theta[1])
-        m.fs.gac.ds.fix(theta[2])
         # gac particle specifications
-        m.fs.gac.particle_dens_app.fix(682)
+        m.fs.gac.particle_dens_app.fix(962.89)
         m.fs.gac.particle_dia.fix(0.000127)
         # adsorber bed specifications
         m.fs.gac.ebct.fix(13.68)
-        m.fs.gac.bed_voidage.fix(0.2037)
+        m.fs.gac.bed_voidage.fix(0.44)
         m.fs.gac.velocity_sup.fix(0.002209)
         # design spec
-        m.fs.gac.conc_ratio_replace.fix(conc_ratio)
+        m.fs.gac.conc_ratio_replace.fix(0.20)
         # parameters
-        m.fs.gac.shape_correction_factor.fix(1)
-        m.fs.gac.a0.fix(6.31579e0)
-        m.fs.gac.a1.fix(56.8421)
-        m.fs.gac.b0.fix(0.865453)
-        m.fs.gac.b1.fix(0.157618)
-        m.fs.gac.b2.fix(0.444973)
-        m.fs.gac.b3.fix(0.001650)
-        m.fs.gac.b4.fix(0.148084)
+        m.fs.gac.a0.fix(0.8)
+        m.fs.gac.a1.fix(0)
+        m.fs.gac.b0.fix(0.023)
+        m.fs.gac.b1.fix(0.793673)
+        m.fs.gac.b2.fix(0.039324)
+        m.fs.gac.b3.fix(0.009326)
+        m.fs.gac.b4.fix(0.08275)
+        m.fs.gac.particle_porosity.fix(0.69)
+        m.fs.gac.tort.fix()
+        m.fs.gac.spdfr.fix()
+        m.fs.gac.shape_correction_factor.fix()
         m.fs.gac.conc_ratio_start_breakthrough = 0.001
 
         # scaling
@@ -430,7 +439,7 @@ def model_regressed_build(theta):
         propagate_state(m.fs.s01)
         m.fs.gac.initialize(optarg=optarg)
 
-        m = _model_solve(m)
+        m = model_solve(m)
 
         conc_ratio_list.append(m.fs.gac.conc_ratio_replace.value)
         bed_volumes_treated_list.append(m.fs.gac.bed_volumes_treated.value)
@@ -455,14 +464,20 @@ def model_regressed_build(theta):
 
 def _new_scaling_factors(m):
 
+    set_scaling_factor(m.fs.gac.ds, 1e17)
+    set_scaling_factor(m.fs.gac.dg, 1e-6)
+    set_scaling_factor(m.fs.gac.bed_diameter, 1e3)
+    set_scaling_factor(m.fs.gac.bed_mass_gac, 1e3)
+    set_scaling_factor(m.fs.gac.mass_adsorbed, 1e9)
+    set_scaling_factor(m.fs.gac.gac_usage_rate, 1e11)
+    """
     set_scaling_factor(m.fs.gac.mass_adsorbed, 1e10)
-    set_scaling_factor(m.fs.gac.mass_adsorbed_saturated, 1e9)
     set_scaling_factor(m.fs.gac.N_Bi, 1e-1)
     set_scaling_factor(m.fs.gac.kf, 1e4)
     set_scaling_factor(m.fs.gac.min_N_St, 1e-2)
     set_scaling_factor(m.fs.gac.equil_conc, 1e6)
     set_scaling_factor(m.fs.gac.gac_usage_rate, 1e9)
-    set_scaling_factor(m.fs.gac.dg, 1e-5)
+
     set_scaling_factor(m.fs.gac.bed_length, 1e2)
     set_scaling_factor(m.fs.gac.bed_diameter, 1e3)
     set_scaling_factor(m.fs.gac.bed_area, 1e5)
@@ -472,33 +487,39 @@ def _new_scaling_factors(m):
     set_scaling_factor(m.fs.gac.velocity_int, 1e2)
     set_scaling_factor(m.fs.gac.velocity_sup, 1e2)
     set_scaling_factor(m.fs.gac.conc_ratio_avg, 1e1)
+    """
 
     return m
 
 
-def _model_solve(model):
+def model_solve(model):
 
     # check model
     assert_units_consistent(model)  # check that units are consistent
     assert degrees_of_freedom(model) == 0
 
     # solve simulation
-    results = solver.solve(model, tee=False)
-    term_cond = results.solver.termination_condition
-    print("termination condition:", term_cond)
+    with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
+        results = solver.solve(model, tee=slc.tee)
+        term_cond = results.solver.termination_condition
+        print("termination condition:", term_cond)
 
-    # if not optimal try resolve
-    if not pyo.check_optimal_termination(results):
-        iter = 1
-        print("Trouble solving model, trying resolve")
-        while not pyo.check_optimal_termination(results):
-            results = solver.solve(model, tee=False)
-            term_cond = results.solver.termination_condition
-            print("termination condition:", term_cond)
-            if iter == 5:
-                print(f"Could not solve model in {iter} iterations")
-                break
-            iter = iter + 1
+    if not term_cond == "optimal":
+        model.display()
+        badly_scaled_var_list = badly_scaled_var_generator(model, large=1e2, small=1e-2)
+        print("----------------   badly_scaled_var_list   ----------------")
+        for x in badly_scaled_var_list:
+            print(f"{x[0].name}\t{x[0].value}\tsf: {get_scaling_factor(x[0])}")
+        print("---------------- variables_near_bounds_list ----------------")
+        variables_near_bounds_list = variables_near_bounds_generator(model)
+        for x in variables_near_bounds_list:
+            print(f"{x.name}\t{x.value}")
+        print("---------------- total_constraints_set_list ----------------")
+        total_constraints_set_list = total_constraints_set(model)
+        for x in total_constraints_set_list:
+            residual = abs(pyo.value(x.body) - pyo.value(x.lb))
+            if residual > 1e-8:
+                print(f"{x}\t{residual}")
 
     return model
 
