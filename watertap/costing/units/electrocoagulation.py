@@ -72,7 +72,7 @@ def build_electrocoagulation_cost_param_block(blk):
     )
 
     blk.sludge_handling_cost = pyo.Var(
-        initialize=0.1,
+        initialize=0,  # 0.025 $/kg from NMSU
         units=costing.base_currency / pyo.units.kg,
         doc="Cost per kg for handling generated solids",
     )
@@ -145,6 +145,7 @@ def cost_electrocoagulation(blk):
     make_fixed_operating_cost_var(blk)
 
     ec = blk.unit_model
+    comps = ec.config.property_package.solute_set
     flow_mgd = pyo.units.convert(
         ec.properties_in[0].flow_vol, to_units=pyo.units.Mgallons / pyo.units.day
     )
@@ -153,11 +154,12 @@ def cost_electrocoagulation(blk):
     )
     blk.annual_sludge_flow = pyo.units.convert(
         sum(
-            ec.properties_waste[0].flow_mass_comp[j] if j != "H2O" else 0
+            ec.properties_waste[0].flow_mass_phase_comp["Liq", j] if j != "H2O" else 0
             for j in ec.properties_waste[0].params.component_list
         ),
         to_units=pyo.units.kg / pyo.units.year,
     )
+
     base_currency = blk.config.flowsheet_costing_block.base_currency
 
     blk.number_chambers_system = pyo.Param(
@@ -313,10 +315,4 @@ def cost_electrocoagulation(blk):
         blk.annual_electrode_replacement_mass_flow, ec.config.electrode_material
     )
 
-    blk.electricity_flow = pyo.Expression(
-        expr=pyo.units.convert(
-            ec.applied_current * ec.cell_voltage, to_units=pyo.units.kW
-        )
-    )
-
-    blk.costing_package.cost_flow(blk.electricity_flow, "electricity")
+    blk.costing_package.cost_flow(ec.power_required, "electricity")
