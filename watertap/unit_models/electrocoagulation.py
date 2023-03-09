@@ -640,7 +640,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
                 )
 
             @self.Constraint(doc="Overpotential calculation")
-            def eq_overpotential(b):
+            def eq_nernst_overpotential(b):
                 return b.overpotential == abs(
                     b.cathode_cell_potential - b.anode_cell_potential
                 ) + b.anode_overpotential + abs(b.cathode_overpotential)
