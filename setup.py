@@ -35,14 +35,14 @@ for active use by water treatment researchers and engineers.""".replace(
 
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=2.0.0rc0",  # from PyPI
+    "idaes-pse==2.0.*",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse==2.0.0rc0",
+    "idaes-pse==2.0.*",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
