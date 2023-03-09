@@ -72,9 +72,7 @@ class SopParameterData(PhysicalParameterBlock):
         # ---default scaling---
         self.set_default_scaling("temperature", 1e-2)
         self.set_default_scaling("pressure", 1e-6)
-        self.set_default_scaling("visc_d_phase_comp", 1e3)
-        self.set_default_scaling("dens_mass_phase_comp", 1e-3)
-        self.set_default_scaling("dens_mass_phase", 1e-3)
+        self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
 
     @classmethod
     def define_metadata(cls, obj):
@@ -466,7 +464,24 @@ class SopStateBlockData(StateBlockData):
 
         # default scaling factors have already been set with
         # idaes.core.property_base.calculate_scaling_factors()
-        sf_dens_mass_phase = self.params.get_default_scaling("dens_mass_phase")
+        sf_dens_mass_phase = {}
+        for p in self.params.phase_list:
+            if self.is_property_constructed("dens_mass_phase"):
+                sf_dens_mass_phase[p] = iscale.get_scaling_factor(
+                    self.dens_mass_phase[p]
+                )
+            else:
+                sf_dens_mass_phase[p] = self.params.get_default_scaling(
+                    "dens_mass_phase", index=p
+                )
+
+        sf_flow_mass_phase = {}
+        for p in self.params.phase_list:
+            sf_flow_mass_phase[p] = 1 / (
+                1 / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "H2O"])
+                + 1 / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "oil"])
+            )
+
         # these variables should have user input
         for p in self.params.phase_list:
             if (
@@ -488,18 +503,17 @@ class SopStateBlockData(StateBlockData):
         # these variables do not typically require user input
         if self.is_property_constructed("flow_mass_phase"):
             for p in self.params.phase_list:
-                sf = 1 / (
-                    1 / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "H2O"])
-                    + 1 / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "oil"])
+                iscale.set_scaling_factor(
+                    self.flow_mass_phase[p], sf_flow_mass_phase[p]
                 )
-                iscale.set_scaling_factor(self.flow_mass_phase[p], sf)
 
         if self.is_property_constructed("mass_frac_phase_comp"):
             for p in self.params.phase_list:
                 for j in self.params.component_list:
-                    sf = iscale.get_scaling_factor(
-                        self.flow_mass_phase_comp[p, j]
-                    ) / iscale.get_scaling_factor(self.flow_mass_phase[p])
+                    sf = (
+                        iscale.get_scaling_factor(self.flow_mass_phase_comp[p, j])
+                        / sf_flow_mass_phase[p]
+                    )
                     iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], sf)
 
         if self.is_property_constructed("flow_vol_phase_comp"):
@@ -507,26 +521,13 @@ class SopStateBlockData(StateBlockData):
                 for j in self.params.component_list:
                     sf = (
                         iscale.get_scaling_factor(self.flow_mass_phase_comp[p, j])
-                        / sf_dens_mass_phase
+                        / sf_dens_mass_phase[p]
                     )
                     iscale.set_scaling_factor(self.flow_vol_phase_comp[p, j], sf)
 
         if self.is_property_constructed("flow_vol_phase"):
             for p in self.params.phase_list:
-                # check that flow_mass_phase was constructed. if it was, it will have received a scaling factor a few lines above.
-                if self.is_property_constructed("flow_mass_phase"):
-                    sf = (
-                        iscale.get_scaling_factor(self.flow_mass_phase[p])
-                        / sf_dens_mass_phase
-                    )
-                # if flow_mass_phase wasn't constructed, we could've assigned a default, but here's another way
-                else:
-                    mT = (
-                        self.flow_mass_phase_comp[p, "H2O"]
-                        + self.flow_mass_phase_comp[p, "oil"]
-                    )
-                    sf_mT = 1 / value(mT)
-                    sf = sf_mT / sf_dens_mass_phase
+                sf = sf_flow_mass_phase[p] / sf_dens_mass_phase[p]
                 iscale.set_scaling_factor(self.flow_vol_phase[p], sf)
 
         if self.is_property_constructed("vol_frac_phase_comp"):
@@ -542,7 +543,7 @@ class SopStateBlockData(StateBlockData):
                 for j in self.params.component_list:
                     sf = (
                         iscale.get_scaling_factor(self.mass_frac_phase_comp[p, j])
-                        * sf_dens_mass_phase
+                        * sf_dens_mass_phase[p]
                     )
                     iscale.set_scaling_factor(self.conc_mass_phase_comp[p, j], sf)
 
