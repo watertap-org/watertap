@@ -30,8 +30,9 @@ default:
     value: 0.7
     units: dimensionless
   removal_frac_mass_comp:
-    value: 0
-    units: dimensionless
+    tds:
+      value: 0.7
+      units: dimensionless
   capital_cost:
     ec_reactor_cap_base:
       value: 11500
