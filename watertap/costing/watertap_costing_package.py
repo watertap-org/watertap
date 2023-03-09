@@ -39,7 +39,6 @@ from watertap.unit_models import (
     Electrodialysis1D,
     IonExchange0D,
     GAC,
-    Electrocoagulation,
 )
 
 from .units.crystallizer import cost_crystallizer
@@ -56,7 +55,6 @@ from .units.pressure_exchanger import cost_pressure_exchanger
 from .units.pump import cost_pump
 from .units.reverse_osmosis import cost_reverse_osmosis
 from .units.uv_aop import cost_uv_aop
-from .units.electrocoagulation import cost_electrocoagulation
 
 
 class _DefinedFlowsDict(MutableMapping, dict):
@@ -99,7 +97,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         Electrodialysis1D: cost_electrodialysis,
         IonExchange0D: cost_ion_exchange,
         GAC: cost_gac,
-        Electrocoagulation: cost_electrocoagulation,
     }
 
     def build(self):
