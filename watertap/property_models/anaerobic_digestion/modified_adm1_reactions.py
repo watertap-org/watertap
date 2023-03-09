@@ -698,7 +698,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
         )
         self.Y_PO4 = pyo.Var(
             initialize=12.903e-3,
-            units=pyo.units.kmol / pyo.units.kg,
+            units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="Yield of biomass on phosphate (kmol P/kg COD)",
         )
@@ -2409,6 +2409,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                         b.params.k_dec_X_ac * b.conc_mass_comp_ref["X_ac"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
+                # TODO: Why does this equation deviate from the convention
                 elif r == "R18":
                     # R18: Decay of X_h2
                     return b.reaction_rate[r] == (
