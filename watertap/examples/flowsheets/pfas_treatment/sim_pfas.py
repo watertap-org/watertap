@@ -201,6 +201,8 @@ def model_init_build():
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.gac.inlet)
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
+    m.fs.gac.b4 = 1
+
     # adsorption isotherm
     m.fs.gac.freund_k.fix(guess_freund_k)
     m.fs.gac.freund_ninv.fix(guess_freund_ninv)
@@ -503,7 +505,7 @@ def model_solve(model, solver_log=True):
     return model
 
 
-def _model_debug(model):
+def model_debug(model):
 
     check_jac(model)
 
