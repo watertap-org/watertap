@@ -98,8 +98,8 @@ Sets
    "number of discretized operational time elements used for steady state approximation", ":math:`\text{ele_disc}`", "[0:elements_ss_approx]"
    "number of discretized trapezoidal area terms for steady state approximation", ":math:`\text{ele_index}`", "[1:elements_ss_approx]"
 
-| \*"target_species" is provided in the ``target_species`` argument of the unit model and corresponds to the single solute which is adsorbed.
-| \*``inert_species`` are the difference in ``component_list - target_species``.
+| \* target_species is provided in the ``target_species`` argument of the unit model and corresponds to the single solute which is adsorbed.
+| \* ``inert_species`` are the difference in ``component_list - target_species``.
 
 .. _GAC_variables:
 
@@ -152,7 +152,7 @@ variables in the model.
    "specific throughput from empirical equation by discrete element", ":math:`t_{min, e}`", "ele_min_operational_time", "ele_index", ":math:`\text{s}`"
    "minimum operational time of the bed from fresh to achieve a constant pattern solution by discrete element", ":math:`\left(\frac{C}{C_{0}}\right)_{ele}\bigg{|}_{z=L,/,t=t_{op_ e}}`", "ele_conc_ratio_replace", "ele_index", ":math:`\text{dimensionless}`"
    "effluent to inlet concentration ratio at operational time by discrete element", ":math:`t_{op, e}`", "ele_operational_time", "ele_disc", ":math:`\text{s}`"
-   "trapezoid rule of elements for numerical integration of average concentration ratio", ":math:`\term_{ele}`", "ele_conc_ratio_avg", "ele_disc", ":math:`\text{dimensionless}`"
+   "trapezoid rule of elements for numerical integration of average concentration ratio", ":math:`term_{ele}`", "ele_conc_ratio_avg", "ele_disc", ":math:`\text{dimensionless}`"
    "steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule", ":math:`\left(\frac{C}{C_{0}}\right)_{avg}`", "conc_ratio_avg", "None", ":math:`\text{dimensionless}`"
    "total mass of adsorbed species at operational time", ":math:`M_{solute}`", "mass_adsorbed", "None", ":math:`\text{kg}`"
    "gac usage/replacement/regeneration rate", ":math:`\dot{m}_{GAC}`", "gac_usage_rate", "None", ":math:`\text{m/s}`"
