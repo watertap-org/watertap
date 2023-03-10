@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 This module contains a zero-order representation of a Magprex reactor unit
 for struvite precipitation.
@@ -43,13 +42,13 @@ class MagprexZOData(ZeroOrderBaseData):
         self.magnesium_chloride_dosage = Var(
             units=pyunits.dimensionless,
             bounds=(0, None),
-            doc="Dosage of magnesium chloride per sludge",
+            doc="Dosage of magnesium chloride per phosphates",
         )
 
         self._fixed_perf_vars.append(self.magnesium_chloride_dosage)
 
         self._perf_var_dict[
-            "Dosage of magnesium chloride per sludge"
+            "Dosage of magnesium chloride per phosphates"
         ] = self.magnesium_chloride_dosage
 
         self.MgCl2_flowrate = Var(
@@ -69,7 +68,7 @@ class MagprexZOData(ZeroOrderBaseData):
             return b.MgCl2_flowrate[t] == (
                 b.magnesium_chloride_dosage
                 * pyunits.convert(
-                    b.properties_byproduct[t].flow_mass_comp["struvite"],
+                    b.properties_in[t].flow_mass_comp["phosphates"],
                     to_units=pyunits.kg / pyunits.hour,
                 )
             )
