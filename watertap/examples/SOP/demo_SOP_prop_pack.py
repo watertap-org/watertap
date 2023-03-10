@@ -9,7 +9,6 @@ import watertap.examples.SOP.SOP_prop_pack as props
 
 
 def detect_badly_scaled_vars(m):
-    print()
     badly_scaled_var_list = list(
         iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-8)
     )
@@ -63,6 +62,7 @@ def main():
     assert_optimal_termination(results)
     print("\n - display scaling factors -")
     m.fs.stream[0].scaling_factor.display()
+    print()
     detect_badly_scaled_vars(m)
 
     # display results
@@ -89,6 +89,7 @@ def main():
     assert_optimal_termination(results)
     print("\n - display scaling factors -")
     m.fs.stream[0].scaling_factor.display()
+    print()
     detect_badly_scaled_vars(m)
 
     # display resolved results

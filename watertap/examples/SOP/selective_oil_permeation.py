@@ -20,7 +20,7 @@ from pyomo.environ import (
     Suffix,
     NonNegativeReals,
     Reference,
-    units as pyunits,
+    units,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -183,10 +183,99 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         super().build()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # Add unit parameters
+        self.pore_diameter = Param(
+            mutable=True,
+            initialize=4e-8,
+            units=units_meta("length"),
+            doc="Average membrane pore diameter",
+        )
+
+        self.porosity = Param(
+            mutable=True,
+            initialize=0.4,
+            units=units.dimensionless,
+            doc="Membrane porosity",
+        )
+
+        self.membrane_thickness = Param(
+            mutable=True,
+            initialize=4e-5,
+            units=units_meta("length"),
+            doc="Membrane thickness",
+        )
+
+        self.permeability_constant = Param(
+            mutable=True,
+            initialize=150,
+            units=units.dimensionless,
+            doc="Permeability constant",
+        )
+
+        self.module_diameter = Param(
+            mutable=True,
+            initialize=0.064,
+            units=units_meta("length"),
+            doc="Module diameter",
+        )
+
+        self.num_constant = Param(
+            mutable=True,
+            initialize=1.65e12,
+            units=units.dimensionless,
+            doc="Numerator constant",
+        )
+
+        self.den_constant = Param(
+            mutable=True,
+            initialize=2.66e15,
+            units=units.dimensionless,
+            doc="Denominator constant",
+        )
+
+        self.num_mu_exp = Param(
+            mutable=True,
+            initialize=1.0,
+            units=units.dimensionless,
+            doc="Numerator viscosity exponent",
+        )
+
+        self.den_mu_exp = Param(
+            mutable=True,
+            initialize=1.1,
+            units=units.dimensionless,
+            doc="Denominator viscosity exponent",
+        )
+
+        self.num_PT_exp = Param(
+            mutable=True,
+            initialize=-1.6,
+            units=units.dimensionless,
+            doc="Numerator transmembrane pressure exponent",
+        )
+
+        self.den_PT_exp = Param(
+            mutable=True,
+            initialize=-2.1,
+            units=units.dimensionless,
+            doc="Denominator transmembrane pressure exponent",
+        )
+
+        self.num_v_exp = Param(
+            mutable=True,
+            initialize=0.3,
+            units=units.dimensionless,
+            doc="Numerator liquid velocity exponent",
+        )
+
+        self.den_v_exp = Param(
+            mutable=True,
+            initialize=0.4,
+            units=units.dimensionless,
+            doc="Denominator liquid velocity exponent",
+        )
 
         # Add unit variables
         self.flux_vol_oil = Var(
@@ -197,11 +286,27 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             doc="Oil volumetric flux",
         )
 
+        self.flux_vol_oil_pure = Var(
+            self.flowsheet().config.time,
+            initialize=1e-6,
+            bounds=(0.0, None),
+            units=units_meta("length") * units_meta("time") ** -1,
+            doc="Oil volumetric flux if the feed was pure oil",
+        )
+
+        self.effective_area_ratio = Var(
+            self.flowsheet().config.time,
+            initialize=0.1,
+            bounds=(0.0, 1.0),
+            units=units.dimensionless,
+            doc="Effective area ratio",
+        )
+
         self.recovery_frac_oil = Var(
             self.flowsheet().config.time,
             initialize=0.5,
             bounds=(0, 1),
-            units=pyunits.dimensionless,
+            units=units.dimensionless,
             doc="Oil recovery fraction on a mass basis",
         )
 
@@ -229,6 +334,15 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta("pressure"),
             doc="Average transmembrane pressure",
+        )
+
+        self.liquid_velocity = Var(
+            self.flowsheet().config.time,
+            initialize=0.01,
+            bounds=(0.0, 1e3),
+            domain=NonNegativeReals,
+            units=units_meta("length") * units_meta("time") ** -1,
+            doc="Liquid velocity at module inlet",
         )
 
         # Build control volume for feed side
@@ -278,7 +392,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            doc="Transmembrane pressure",
+            doc="Average transmembrane pressure",
         )
         def eq_pressure_transmemb(b, t):
             return (
@@ -342,109 +456,6 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
                 == b.properties_permeate[t].temperature
             )
 
-        # Add parameters
-        # TODO possibly move these higher up in the code
-        # TODO would we want some of these Params to be Vars instead? So we could find optimal values?
-        self.pore_diameter = Param(
-            mutable=True,
-            initialize=4e-8,
-            units=pyunits.m,
-            doc="Average membrane pore diameter",
-        )
-
-        self.porosity = Param(
-            mutable=True,
-            initialize=0.4,
-            units=pyunits.dimensionless,
-            doc="Membrane porosity",
-        )
-
-        self.membrane_thickness = Param(
-            mutable=True,
-            initialize=4e-5,
-            units=pyunits.m,
-            doc="Membrane thickness",
-        )
-
-        self.permeability_constant = Param(
-            mutable=True,
-            initialize=150,
-            units=pyunits.dimensionless,
-            doc="Permeability constant",
-        )
-
-        self.module_diameter = Param(
-            mutable=True,
-            initialize=0.064,
-            units=pyunits.m,
-            doc="Module diameter",
-        )
-
-        self.num_constant = Param(
-            mutable=True,
-            initialize=1.65e12,
-            units=pyunits.dimensionless,
-            doc="Numerator constant",
-        )
-
-        self.den_constant = Param(
-            mutable=True,
-            initialize=2.66e15,
-            units=pyunits.dimensionless,
-            doc="Denominator constant",
-        )
-
-        self.num_mu_exp = Param(
-            mutable=True,
-            initialize=1.0,
-            units=pyunits.dimensionless,
-            doc="Numerator viscosity exponent",
-        )
-
-        self.den_mu_exp = Param(
-            mutable=True,
-            initialize=1.1,
-            units=pyunits.dimensionless,
-            doc="Denominator viscosity exponent",
-        )
-
-        self.num_PT_exp = Param(
-            mutable=True,
-            initialize=-1.6,
-            units=pyunits.dimensionless,
-            doc="Numerator transmembrane pressure exponent",
-        )
-
-        self.den_PT_exp = Param(
-            mutable=True,
-            initialize=-2.1,
-            units=pyunits.dimensionless,
-            doc="Denominator transmembrane pressure exponent",
-        )
-
-        self.num_v_exp = Param(
-            mutable=True,
-            initialize=0.3,
-            units=pyunits.dimensionless,
-            doc="Numerator liquid velocity exponent",
-        )
-
-        self.den_v_exp = Param(
-            mutable=True,
-            initialize=0.4,
-            units=pyunits.dimensionless,
-            doc="Denominator liquid velocity exponent",
-        )
-
-        self.liquid_velocity = Var(
-            self.flowsheet().config.time,
-            initialize=0.01,
-            bounds=(0.0, 1e3),
-            domain=NonNegativeReals,
-            units=units_meta("length") * units_meta("time") ** -1,
-            doc="Liquid velocity at module inlet",
-        )
-
         @self.Constraint(
             self.flowsheet().config.time,
             doc="Liquid velocity",
@@ -452,7 +463,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         def eq_liquid_velocity(b, t):
             return (
                 b.feed_side.properties_in[t].flow_vol_phase["Liq"]
-                == b.liquid_velocity[t] * Constants.pi / 4 * b.module_diameter**2
+                == b.liquid_velocity[t] * 0.25 * Constants.pi * b.module_diameter**2
             )
 
         @self.Constraint(
@@ -461,11 +472,35 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         )
         def eq_flux_vol_oil(b, t):
             return (
-                b.flux_vol_oil[t]
-                == 1.0e-6
-                * units_meta("length")
-                * units_meta("time")
-                ** -1  # TODO implement the actual expression for oil flux
+                b.flux_vol_oil[t] == b.flux_vol_oil_pure[t] * b.effective_area_ratio[t]
+            )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Volumetric oil flux if the feed was pure oil",
+        )
+        def eq_flux_vol_oil_pure(b, t):
+            return b.flux_vol_oil_pure[t] == b.pressure_transmemb[
+                t
+            ] * b.pore_diameter**2 * b.porosity ** (
+                7 / 3
+            ) / b.permeability_constant / b.membrane_thickness / b.feed_side.properties_in[
+                t
+            ].visc_d_phase_comp[
+                "Liq", "oil"
+            ] / (
+                1 - b.porosity
+            ) ** (
+                4 / 3
+            )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Effective area ratio for oil transfer",
+        )
+        def eq_effective_area_ratio(b, t):
+            return (
+                b.effective_area_ratio[t] == 0.1  # TODO implement the actual expression
             )
 
         @self.Constraint(
@@ -562,6 +597,8 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         if hasattr(self, "deltaP"):
             var_dict["Pressure drop"] = self.deltaP[time_point]
         var_dict["Oil volumetric flux"] = self.flux_vol_oil[time_point]
+        var_dict["Pure oil volumetric flux"] = self.flux_vol_oil_pure[time_point]
+        var_dict["Effective area ratio"] = self.effective_area_ratio[time_point]
         var_dict["Oil recovery"] = self.recovery_frac_oil[time_point]
         return {"vars": var_dict, "exprs": expr_dict}
 
@@ -580,6 +617,8 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.area, 1e-1)
         iscale.set_scaling_factor(self.flux_vol_oil, 1e6)
+        iscale.set_scaling_factor(self.flux_vol_oil_pure, 1e6)
+        iscale.set_scaling_factor(self.effective_area_ratio, 1)
         iscale.set_scaling_factor(self.recovery_frac_oil, 1)
         iscale.set_scaling_factor(
             self.pressure_transmemb,

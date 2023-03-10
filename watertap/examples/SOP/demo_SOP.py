@@ -11,7 +11,6 @@ from watertap.examples.SOP.selective_oil_permeation import SelectiveOilPermeatio
 
 
 def detect_badly_scaled_vars(m):
-    print()
     badly_scaled_var_list = list(
         iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-8)
     )
@@ -46,14 +45,17 @@ def main():
     # feed
     m.fs.SOP.feed_side.properties_in[0].temperature.fix(298.15)
     m.fs.SOP.feed_side.properties_in[0].pressure.fix(2 * units.bar)
-    m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix(1)
-    m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "oil"].fix(0.2)
+    m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix(0.9)
+    m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "oil"].fix(0.1)
+    m.fs.SOP.feed_side.properties_out[0].pressure.fix(
+        1.5 * units.bar
+    )  # TODO is 1.5 bar what I want for outlet pressure? Why not atmospheric?
     # unit model
     m.fs.SOP.area.fix(10)
     m.fs.SOP.properties_permeate[0].pressure.fix(1 * units.bar)
-    m.fs.SOP.deltaP.fix(-0.5 * units.bar)
 
     print("DOF after specifying:", degrees_of_freedom(m.fs))
+    print()
 
     # solve model
     assert_units_consistent(m)  # check that units are consistent
@@ -61,16 +63,22 @@ def main():
         degrees_of_freedom(m) == 0
     )  # check that the degrees of freedom are what we expect
 
+    print("------- initialize model -------")
     m.fs.SOP.initialize()
     solver = get_solver()
-    print("\n--- display---")
+
+    print("\n------- solve model -------")
     results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
-    print("\n - display scaling factors -")
+
+    print("\n ------- display scaling factors -------")
     m.fs.SOP.scaling_factor.display()
+
+    print("\n ------- display badly scaled variables -------")
     detect_badly_scaled_vars(m)
 
     # display metrics
+    print("\n ------- display report -------")
     m.fs.SOP.report()
     return m
 
