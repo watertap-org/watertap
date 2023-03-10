@@ -21,6 +21,7 @@ from pyomo.environ import (
     NonNegativeReals,
     Reference,
     units,
+    value,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -228,25 +229,11 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             doc="Numerator constant",
         )
 
-        self.den_constant = Param(
-            mutable=True,
-            initialize=2.66e15,
-            units=units.dimensionless,
-            doc="Denominator constant",
-        )
-
         self.num_mu_exp = Param(
             mutable=True,
             initialize=1.0,
             units=units.dimensionless,
             doc="Numerator viscosity exponent",
-        )
-
-        self.den_mu_exp = Param(
-            mutable=True,
-            initialize=1.1,
-            units=units.dimensionless,
-            doc="Denominator viscosity exponent",
         )
 
         self.num_PT_exp = Param(
@@ -256,18 +243,32 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             doc="Numerator transmembrane pressure exponent",
         )
 
-        self.den_PT_exp = Param(
-            mutable=True,
-            initialize=-2.1,
-            units=units.dimensionless,
-            doc="Denominator transmembrane pressure exponent",
-        )
-
         self.num_v_exp = Param(
             mutable=True,
             initialize=0.3,
             units=units.dimensionless,
             doc="Numerator liquid velocity exponent",
+        )
+
+        self.den_constant = Param(
+            mutable=True,
+            initialize=2.66e15,
+            units=units.dimensionless,
+            doc="Denominator constant",
+        )
+
+        self.den_mu_exp = Param(
+            mutable=True,
+            initialize=1.1,
+            units=units.dimensionless,
+            doc="Denominator viscosity exponent",
+        )
+
+        self.den_PT_exp = Param(
+            mutable=True,
+            initialize=-2.1,
+            units=units.dimensionless,
+            doc="Denominator transmembrane pressure exponent",
         )
 
         self.den_v_exp = Param(
@@ -342,7 +343,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             bounds=(0.0, 1e3),
             domain=NonNegativeReals,
             units=units_meta("length") * units_meta("time") ** -1,
-            doc="Liquid velocity at module inlet",
+            doc="Shell side liquid velocity at module inlet",
         )
 
         # Build control volume for feed side
@@ -458,7 +459,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            doc="Liquid velocity",
+            doc="Shell side iquid velocity",
         )
         def eq_liquid_velocity(b, t):
             return (
@@ -494,13 +495,47 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
                 4 / 3
             )
 
+        def convert_dimensionless(expr, to_units=None):
+            """
+            Given a pyomo expression and desired units, detect the units of the
+            expression and convert to the desired units, and return only the
+            numerical value.
+            """
+            return units.convert_value(
+                value(expr), from_units=units.get_units(expr), to_units=to_units
+            )
+
         @self.Constraint(
             self.flowsheet().config.time,
             doc="Effective area ratio for oil transfer",
         )
         def eq_effective_area_ratio(b, t):
-            return (
-                b.effective_area_ratio[t] == 0.1  # TODO implement the actual expression
+            return b.effective_area_ratio[
+                t
+            ] == b.num_constant * b.feed_side.properties_in[t].vol_frac_phase_comp[
+                "Liq", "oil"
+            ] * convert_dimensionless(
+                b.feed_side.properties_in[t].visc_d_phase_comp["Liq", "oil"],
+                to_units=units.Pa * units.s,
+            ) ** b.num_mu_exp * convert_dimensionless(
+                b.pressure_transmemb[t], to_units=units.Pa
+            ) ** b.num_PT_exp * convert_dimensionless(
+                b.liquid_velocity[t], to_units=units.m * units.s**-1
+            ) ** b.num_v_exp / (
+                1
+                + b.den_constant
+                * b.feed_side.properties_in[t].vol_frac_phase_comp["Liq", "oil"]
+                * convert_dimensionless(
+                    b.feed_side.properties_in[t].visc_d_phase_comp["Liq", "oil"],
+                    to_units=units.Pa * units.s,
+                )
+                ** b.den_mu_exp
+                * convert_dimensionless(b.pressure_transmemb[t], to_units=units.Pa)
+                ** b.den_PT_exp
+                * convert_dimensionless(
+                    b.liquid_velocity[t], to_units=units.m * units.s**-1
+                )
+                ** b.den_v_exp
             )
 
         @self.Constraint(
@@ -600,6 +635,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         var_dict["Pure oil volumetric flux"] = self.flux_vol_oil_pure[time_point]
         var_dict["Effective area ratio"] = self.effective_area_ratio[time_point]
         var_dict["Oil recovery"] = self.recovery_frac_oil[time_point]
+        var_dict["Shell side liquid velocity"] = self.liquid_velocity[time_point]
         return {"vars": var_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
@@ -616,10 +652,11 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         super().calculate_scaling_factors()
 
         iscale.set_scaling_factor(self.area, 1e-1)
-        iscale.set_scaling_factor(self.flux_vol_oil, 1e6)
+        iscale.set_scaling_factor(self.flux_vol_oil, 1e9)
         iscale.set_scaling_factor(self.flux_vol_oil_pure, 1e6)
-        iscale.set_scaling_factor(self.effective_area_ratio, 1)
+        iscale.set_scaling_factor(self.effective_area_ratio, 1e2)
         iscale.set_scaling_factor(self.recovery_frac_oil, 1)
+        iscale.set_scaling_factor(self.liquid_velocity, 1e2)
         iscale.set_scaling_factor(
             self.pressure_transmemb,
             iscale.get_scaling_factor(self.feed_side.properties_in[0].pressure),
@@ -631,41 +668,4 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             ),
         )
 
-        # TODO any other scaling needed? I see that there are some unit models that also make calls to constraint_scaling_transform in this method
-
-    # TODO can the rest of these comments below be removed?
-    #     # setting scaling factors for variables
-    #     # these variables should have user input, if not there will be a warning
-    #     if iscale.get_scaling_factor(self.area) is None:
-    #         sf = iscale.get_scaling_factor(self.area, default=1, warning=True)
-    #         iscale.set_scaling_factor(self.area, sf)
-
-    #     # these variables do not typically require user input,
-    #     # will not override if the user does provide the scaling factor
-    #     if iscale.get_scaling_factor(self.dens_solvent) is None:
-    #         iscale.set_scaling_factor(self.dens_solvent, 1e-3)
-
-    #     for t, v in self.flux_vol_solvent.items():
-    #         if iscale.get_scaling_factor(v) is None:
-    #             iscale.set_scaling_factor(v, 1e6)
-
-    #     for (t, p, j), v in self.rejection_phase_comp.items():
-    #         if iscale.get_scaling_factor(v) is None:
-    #             iscale.set_scaling_factor(v, 1e1)
-
-    #     for (t, p, j), v in self.mass_transfer_phase_comp.items():
-    #         if iscale.get_scaling_factor(v) is None:
-    #             sf = 10 * iscale.get_scaling_factor(
-    #                 self.feed_side.properties_in[t].get_material_flow_terms(p, j)
-    #             )
-    #             iscale.set_scaling_factor(v, sf)
-    #     if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
-    #         iscale.set_scaling_factor(self.recovery_vol_phase, 1)
-
-    #     for (t, p, j), v in self.recovery_mass_phase_comp.items():
-    #         if j in self.config.property_package.solvent_set:
-    #             sf = 1
-    #         elif j in solute_set:
-    #             sf = 10
-    #         if iscale.get_scaling_factor(v) is None:
-    #             iscale.set_scaling_factor(v, sf)
+        # TODO is any additional scaling needed? I see that there are some unit models that also make calls to constraint_scaling_transform within their calculate_scaling_factors method
