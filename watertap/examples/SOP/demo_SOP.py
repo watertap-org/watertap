@@ -47,10 +47,7 @@ def main():
     m.fs.SOP.feed_side.properties_in[0].pressure.fix(2 * units.bar)
     m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix(0.9)
     m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "oil"].fix(0.1)
-    m.fs.SOP.feed_side.properties_out[0].pressure.fix(
-        1.5 * units.bar
-    )  # TODO is 1.5 bar what I want for outlet pressure? Why not atmospheric?
-    # unit model
+    m.fs.SOP.feed_side.properties_out[0].pressure.fix(1.8 * units.bar)
     m.fs.SOP.area.fix(10)
     m.fs.SOP.properties_permeate[0].pressure.fix(1 * units.bar)
 
