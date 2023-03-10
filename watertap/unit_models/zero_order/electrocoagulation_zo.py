@@ -449,18 +449,20 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         )
         costing_ec = costing.electrocoagulation
         if electrode_mat == "aluminum":
-            # Reference for Al cost: Anuf et al., 2022
+            # Reference for Al cost: Anuf et al., 2022 - https://doi.org/https://doi.org/10.1016/j.jwpe.2022.103074
             costing.defined_flows["aluminum"] = 2.23 * base_currency / pyunits.kg
             costing.register_flow_type("aluminum", 2.23 * base_currency / pyunits.kg)
             costing_ec.electrode_material_cost.fix(2.23)
         if electrode_mat == "iron":
-            # Reference for Fe cost: Anuf et al., 2022
+            # Reference for Fe cost: Anuf et al., 2022 - https://doi.org/https://doi.org/10.1016/j.jwpe.2022.103074
             costing.defined_flows["iron"] = 3.41 * base_currency / pyunits.kg
             costing.register_flow_type("iron", 3.41 * base_currency / pyunits.kg)
             costing_ec.electrode_material_cost.fix(3.41)
 
         if reactor_mat == "stainless_steel":
             # default is for PVC, so only need to change if it is stainless steel
+            # PVC coeff reference: Uludag-Demirer et al., 2020 - https://doi.org/10.3390/su12072697
+            # Steel coeff reference: Smith, 2005 - https://doi.org/10.1205/cherd.br.0509
             costing_ec.ec_reactor_cap_material_coeff.fix(3.4)
 
         blk.number_chambers_system = Param(
