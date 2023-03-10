@@ -26,52 +26,53 @@ derived from experimental data of the intended system to produce valid results. 
 found in both Hand, 1984 and Crittenden, 2012. The model is estimated to have within 10% error and therefore may be applied to bed lengths
 shorter than the minimum length determined by the CPHSDM within the error threshold (in addition to being applicable to bed lengths greater than the minimum length determined by the CPHSDM).
 
-The batch operation results of the CPS are converted to approximate steady-state results for intuitive use of the model for
-flowsheet purposes. A description of the transformation is provided in Figure 1.
+The batch operation results of the CPS are converted to approximate steady-state results for intuitive use of the model
+for flowsheet purposes. A visualization of the transformation is provided in Figure 1. For a traditional breakthrough
+curve the CPHSDM method calculates the single point, single conc_ratio_replace and operational_time, highlighted on the
+breakthrough curve. This operational time is the amount of elapsed time after startup that the bed is refreshed with new
+GAC adsorbent. Steady state concentration can be analogous to all of the effluent in this operational time being stored
+as holdup, therefore the average concentration ratio is significantly less than concentration ratio at the time of
+bed replacement as many days pass before the start of the breakthrough. To approximate the average effluent
+concentration in this time frame, the breakthrough curve is numerically integrated with the trapezoid rule. The curve is
+discretized with respect to the concentration ratio instead of the (traditionally done 'x' variable) operational time
+due to simplicity of solving the model equations.
 
 .. figure:: ../../_static/unit_models/gac.png
-    :width: 1200
+    :width: 800
     :align: center
 
-    Figure 1. (a) The mass transfer zone movement as a constant pattern for an arbitrary time of operation where the entire MTZ
-    is contained within the bed length. The dimensionless concentration of the adsorbent in both the liquid and adsorbate phase is
-    variable in the range of the MTZ as plotted with respect to the dimensionless length of the bed. (b) The breakthrough curve is
-    shown as a function of the elapsed time in operation of the bed. The dashed line indicates a breakthrough time where the bed operation will
-    be stopped (and the partially saturated GAC will be replaced) when the effluent concentration is 50% of the inlet. (c) For the breakthrough
-    time in b, some of the MTZ is still contained within the bed and therefore the GAC particles in this zone are not fully saturated. The
-    trapezoid rule for integration is used to approximate the degree of saturation of the entire bed. This degree of saturation corresponds
-    to a specific mass of contaminant adsorbed during the operation time and is used to transform the process to a steady state approximation.
+    Figure 1. Discretization of the breakthrough curve for the steady state approximation
 
 Degrees of Freedom
 ------------------
-In the default configuration of the GAC unit model there are 18 degrees of freedom in addition to the inlet state variables
+In the default configuration of the GAC unit model there are 17 degrees of freedom in addition to the inlet state variables
 (i.e., temperature, pressure, component flowrates) that should be fixed for the model to be fully specified.
 In association with using the Freundlich adsorption isotherm and empirical model, the following 9 variables are almost always fixed
 and may be derived from experimental data:
 
    * Freundlich isotherm :math:`k` parameter
    * Freundlich isotherm :math:`\frac{1}{n}` parameter
-   * Stanton number equation parameters :math:`a_0` and :math:`a_1`
-   * throughput ratio equation parameters :math:`b_0`, :math:`b_1`, :math:`b_2`, :math:`b_3` and :math:`b_4`
+   * Stanton number equation parameters (Hand, 1984),(Crittenden, 1987) :math:`a_0` and :math:`a_1`
+   * throughput ratio equation parameters (Hand, 1984) :math:`b_0`, :math:`b_1`, :math:`b_2`, :math:`b_3` and :math:`b_4`
 
 Additionally, the following 9 variables are traditionally fixed:
 
-   * the target dimensionless concentration *or* the dimensionless concentration at the time of replacement
+   * particle apparent density
+   * particle diameter
    * empty bed contact time
-   * bed voidage
+   * bed voidage *or* particle bulk density
    * superficial velocity *or* bed length
-   * GAC particle porosity
-   * GAC particle apparent density *or* GAC particle solid density
-   * GAC particle diameter
-   * liquid phase film transfer coefficient
+   * effluent to inlet concentration ratio at operational time *or* steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule *or* bed volumes treated
    * surface diffusion coefficient
+   * liquid phase film transfer coefficient
 
-When setting the configuration options to calculate the liquid phase film transfer coefficient and surface diffusion coefficient,
-these respective variables are no longer specified and 3 newly introduced variables must be fixed. This excludes new variables
+When setting the configuration options to calculate the surface diffusion coefficient and liquid phase film transfer coefficient,
+these respective variables are no longer specified and 4 newly introduced variables must be fixed. This excludes new variables
 or parameters that may be required to be specified within the property package when called by the GAC model. This is a net result of 19 degrees of freedom.
 Newly utilized variables that must be fixed include:
 
-   * GAC particle sphericity
+   * shape correction factor
+   * particle_porosity
    * tortuosity of the path that the adsorbate must take as compared to the radius
    * surface-to-pore diffusion flux ratio
 
@@ -89,9 +90,13 @@ Sets
 .. csv-table::
    :header: "Description", "Symbol", "Indices"
 
-   "Time", ":math:`t`", "[0]"
-   "Phases", ":math:`p`", "['Liq']"
-   "Components", ":math:`j`", "['H2O', 'target_species', 'background solutes]*"
+   "time", ":math:`t`", "[0]"
+   "phases", ":math:`p`", "['Liq']"
+   "components", ":math:`j`", "['H2O', 'target_species', 'background solutes]*"
+   "species adsorbed", ":math:`j`", "['target_species']"
+   "inert species", ":math:`j`", "['H2O', 'target_species', 'background solutes] - ['target_species']"
+   "number of discretized operational time elements used for steady state approximation", ":math:``", "[0:`\text{elements_ss_approx}`]"
+   "number of discretized trapezoidal area terms for steady state approximation", ":math:`ele_disc`", "[1:`\text{elements_ss_approx}`]"
 
 \*"target_species" is provided in the ``target_species`` argument of the unit model and corresponds to the single solute which is adsorbed.
 \*"background solutes" are the difference in ``component_list - target_species``.
@@ -110,48 +115,47 @@ variables in the model.
 
    "Freundlich isotherm k parameter", ":math:`k`", "freund_k", "None", ":math:`\left(\text{m}^3\text{/kg}\right)^\left( \frac{1}{n} \right)`"
    "Freundlich isotherm 1/n parameter", ":math:`\frac{1}{n}`", "freund_ninv", "None", ":math:`\text{dimensionless}`"
-   "Equilibrium concentration of adsorbed phase with liquid phase", ":math:`q_e`", "equil_conc", "None", ":math:`\left( \text{kg}_\text{adsorbate}\text{/kg}_\text{adsorbent} \right)`"
-   "Mass of contaminant adsorbed at the time of replacement", ":math:`M_{solute}`", "mass_adsorbed", "None", ":math:`\text{kg}`"
-   "Mass of contaminant adsorbed if fully saturated", ":math:`M_{solute\text{,}e}`", "mass_adsorbed_saturated", "None", ":math:`\text{kg}`"
-   "Adsorber bed void fraction", ":math:`\epsilon`", "bed_voidage", "None", ":math:`\text{dimensionless}`"
-   "Adsorber bed volume", ":math:`V`", "bed_volume", "None", ":math:`\text{m}^3`"
-   "Adsorber bed area", ":math:`A`", "bed_area", "None", ":math:`\text{m}^2`"
-   "Adsorber bed length", ":math:`L`", "bed_length", "None", ":math:`\text{m}`"
-   "Mass of fresh GAC in the bed", ":math:`M_{GAC}`", "bed_mass_gac", "None", ":math:`\text{kg}`"
-   "Superficial velocity", ":math:`v_s`", "velocity_sup", "None", ":math:`\text{m/s}`"
-   "Interstitial velocity", ":math:`v_i`", "velocity_int", "None", ":math:`\text{m/s}`"
-   "GAC particle porosity", ":math:`\epsilon_p`", "particle_porosity", "None", ":math:`\text{dimensionless}`"
-   "GAC particle apparent density", ":math:`\rho_a`", "particle_dens_app", "None", ":math:`\text{kg/}\text{m}^3`"
-   "GAC particle bulk density", ":math:`\rho_b`", "particle_dens_bulk", "None", ":math:`\text{kg/}\text{m}^3`"
-   "GAC particle solid density", ":math:`\rho_s`", "particle_dens_sol", "None", ":math:`\text{kg/}\text{m}^3`"
-   "GAC particle diameter", ":math:`d_p`", "particle_dia", "None", ":math:`\text{m}`"
-   "Average dimensionless concentration of the effluent in the operating duration", ":math:`\frac{\bar{C}}{C_{0}}\bigg{|}_{z=L}`", "conc_ratio_avg", "None", ":math:`\text{dimensionless}`"
-   "Dimensionless concentration of the effluent at the time of replacement", ":math:`\frac{C}{C_{0}}\bigg{|}_{z=L,\,t=t_{op}}`", "conc_ratio_replace", "None", ":math:`\text{dimensionless}`"
-   "Approximate saturation of the GAC in the bed at the time of replacement", ":math:`\frac{\bar{q}}{q_{e}}\bigg{|}_{t=t_{op}}`", "gac_saturation_replace", "None", ":math:`\text{dimensionless}`"
-   "Empty bed contact time", ":math:`EBCT`", "ebct", "None", ":math:`\text{s}`"
-   "Mass throughput ratio", ":math:`T`", "mass_throughput", "None", ":math:`\text{dimensionless}`"
-   "Residence time", ":math:`\tau`", "res_time", "None", ":math:`\text{s}`"
-   "Elapsed operation time", ":math:`t_{op}`", "elap_time", "None", ":math:`\text{s}`"
-   "Bed volumes treated", ":math:`BVT`", "bed_volumes_treated", "None", ":math:`\text{dimensionless}`"
-   "Steady state GAC replacement rate", ":math:`\dot{m}_{GAC}`", "gac_mass_replace_rate", "None", ":math:`\text{m/s}`"
-   "Liquid phase film transfer coefficient", ":math:`k_f`", "kf", "None", ":math:`\text{m/s}`"
-   "Surface diffusion coefficient", ":math:`D_s`", "ds", "None", ":math:`\text{m}^2\text{/s}`"
-   "Solute distribution parameter", ":math:`D_g`", "dg", "None", ":math:`\text{dimensionless}`"
+   "surface diffusion coefficient", ":math:`D_s`", "ds", "None", ":math:`\text{m}^2\text{/s}`"
+   "liquid phase film transfer coefficient", ":math:`k_f`", "kf", "None", ":math:`\text{m/s}`"
+   "equilibrium concentration of adsorbed phase with liquid phase", ":math:`q_e`", "equil_conc", "None", ":math:`\left( \text{kg}_\text{adsorbate}\text{/kg}_\text{adsorbent} \right)`"
+   "solute distribution parameter", ":math:`D_g`", "dg", "None", ":math:`\text{dimensionless}`"
    "Biot number", ":math:`Bi`", "N_Bi", "None", ":math:`\text{dimensionless}`"
-   "Minimum Stanton number for CPS", ":math:`St_{min}`", "min_N_St", "None", ":math:`\text{dimensionless}`"
-   "Minimum empty bed contact time for CPS", ":math:`EBCT_{min}`", "min_ebct", "None", ":math:`\text{s}`"
-   "Minimum residence time for CPS", ":math:`\tau_{min}`", "min_res_time", "None", ":math:`\text{s}`"
-   "Minimum elapsed operation time for CPS", ":math:`t_{min}`", "min_elap_time", "None", ":math:`\text{s}`"
-   "Mass throughput ratio for the upstream edge of the MTZ", ":math:`T\left( \frac{C}{C_{0}}\bigg{|}_{Upstream\,MTZ\,edge} \right)`", "mass_throughput_mtz_upstream", "None", ":math:`\text{dimensionless}`"
-   "Empty bed contact time of the partial MTZ at the time of replacement", ":math:`EBCT_{MTZ}`", "ebct_mtz_replace", "None", ":math:`\text{s}`"
-   "Length of the partial MTZ at the time of replacement", ":math:`L_{MTZ}`", "length_mtz_replace", "None", ":math:`\text{m}`"
+   "superficial velocity", ":math:`v_s`", "velocity_sup", "None", ":math:`\text{m/s}`"
+   "interstitial velocity", ":math:`v_i`", "velocity_int", "None", ":math:`\text{m/s}`"
+   "bed void fraction", ":math:`\epsilon`", "bed_voidage", "None", ":math:`\text{dimensionless}`"
+   "bed length", ":math:`L`", "bed_length", "None", ":math:`\text{m}`"
+   "bed diameter", ":math:`D`", "bed_diameter", "None", ":math:`\text{m}`"
+   "bed area", ":math:`A`", "bed_area", "None", ":math:`\text{m}^2`"
+   "bed volume", ":math:`V`", "bed_volume", "None", ":math:`\text{m}^3`"
+   "empty bed contact time", ":math:`EBCT`", "ebct", "None", ":math:`\text{s}`"
+   "fluid residence time in the bed", ":math:`\tau`", "residence_time", "None", ":math:`\text{s}`"
+   "mass of fresh gac in the bed", ":math:`M_{GAC}`", "bed_mass_gac", "None", ":math:`\text{kg}`"
+   "gac apparent density", ":math:`\rho_a`", "particle_dens_app", "None", ":math:`\text{kg/}\text{m}^3`"
+   "gac bulk density", ":math:`\rho_b`", "particle_dens_bulk", "None", ":math:`\text{kg/}\text{m}^3`"
+   "gac particle diameter", ":math:`d_p`", "particle_dia", "None", ":math:`\text{m}`"
    "Stanton equation parameter 0", ":math:`a_0`", "a0", "None", ":math:`\text{dimensionless}`"
    "Stanton equation parameter 1", ":math:`a_1`", "a1", "None", ":math:`\text{dimensionless}`"
-   "Throughput equation parameter 0", ":math:`b_0`", "b0", "None", ":math:`\text{dimensionless}`"
-   "Throughput equation parameter 1", ":math:`b_1`", "b1", "None", ":math:`\text{dimensionless}`"
-   "Throughput equation parameter 2", ":math:`b_2`", "b2", "None", ":math:`\text{dimensionless}`"
-   "Throughput equation parameter 3", ":math:`b_3`", "b3", "None", ":math:`\text{dimensionless}`"
-   "Throughput equation parameter 4", ":math:`b_4`", "b4", "None", ":math:`\text{dimensionless}`"
+   "throughput equation parameter 0", ":math:`b_0`", "b0", "None", ":math:`\text{dimensionless}`"
+   "throughput equation parameter 1", ":math:`b_1`", "b1", "None", ":math:`\text{dimensionless}`"
+   "throughput equation parameter 2", ":math:`b_2`", "b2", "None", ":math:`\text{dimensionless}`"
+   "throughput equation parameter 3", ":math:`b_3`", "b3", "None", ":math:`\text{dimensionless}`"
+   "throughput equation parameter 4", ":math:`b_4`", "b4", "None", ":math:`\text{dimensionless}`"
+   "minimum Stanton number to achieve a constant pattern solution", ":math:`St_{min}`", "min_N_St", "None", ":math:`\text{dimensionless}`"
+   "minimum empty bed contact time to achieve a constant pattern solution", ":math:`EBCT_{min}`", "min_ebct", "None", ":math:`\text{s}`"
+   "specific throughput from empirical equation", ":math:`T`", "throughput", "None", ":math:`\text{dimensionless}`"
+   "minimum fluid residence time in the bed to achieve a constant pattern solution", ":math:`\tau_{min}`", "min_residence_time", "None", ":math:`\text{s}`"
+   "minimum operational time of the bed from fresh to achieve a constant pattern solution", ":math:`t_{min}`", "min_operational_time", "None", ":math:`\text{s}`"
+   "effluent to inlet concentration ratio at operational time", ":math:`\frac{C}{C_{0}}\bigg{|}_{z=L,/,t=t_{op}}`", "conc_ratio_replace", "None", ":math:`\text{dimensionless}`"
+   "operational time of the bed from fresh", ":math:`t_{op}`", "operational_time", "None", ":math:`\text{s}`"
+   "bed volumes treated at operational time", ":math:`BVT`", "bed_volumes_treated", "None", ":math:`\text{dimensionless}`"
+   "ele_throughput", ":math:`x`", "ele_throughput", "None", ":math:`x`"
+   "specific throughput from empirical equation by discrete element", ":math:`T_e`", "ele_min_operational_time", "ele_index", ":math:`\text{s}`"
+   "minimum operational time of the bed from fresh to achieve a constant pattern solution by discrete element", ":math:`t_{min,e}`", "ele_conc_ratio_replace", "ele_index", ":math:`\text{dimensionless}`"
+   "effluent to inlet concentration ratio at operational time by discrete element", ":math:`{{\frac{C}{C_{0}}\bigg}_e}{|}_{z=L,\,t=t_{op}}`", "ele_operational_time", "ele_disc", ":math:`\text{s}`"
+   "trapezoid rule of elements for numerical integration of average concentration ratio", ":math:`\text{term}_{ele}`", "ele_conc_ratio_avg", "ele_disc", ":math:`\text{dimensionless}`"
+   "steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule", ":math:`\frac{\bar{C}}{C_{0}}\bigg{|}_{z=L}`", "conc_ratio_avg", "None", ":math:`\text{dimensionless}`"
+   "total mass of adsorbed species at operational time", ":math:`M_{solute}`", "mass_adsorbed", "None", ":math:`\text{kg}`"
+   "gac usage/replacement/regeneration rate", ":math:`\dot{m}_{GAC}`", "gac_usage_rate", "None", ":math:`\text{m/s}`"
 
 The following variables are only built when specific configuration options are selected.
 
@@ -162,15 +166,16 @@ if ``film_transfer_coefficient_type`` is set to ``calculated``:
 
    "Reynolds number", ":math:`Re`", "N_Re", "None", ":math:`\text{dimensionless}`"
    "Schmidt number", ":math:`Sc`", "N_Sc", "None", ":math:`\text{dimensionless}`"
-   "GAC particle sphericity", ":math:`\phi`", "sphericity", "None", ":math:`\text{dimensionless}`"
+   "shape correction factor", ":math:`SCF`", "shape_correction_factor", "None", ":math:`\text{dimensionless}`"
 
 if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Tortuosity of the path that the adsorbate must take as compared to the radius", ":math:`\tau_p`", "tort", "None", ":math:`\text{dimensionless}`"
-   "Surface-to-pore diffusion flux ratio", ":math:`S\!P\!D\!F\!R`", "spdfr", "None", ":math:`\text{dimensionless}`"
+   "gac particle porosity", ":math:`\epsilon_p`", "particle_porosity", "None", ":math:`\text{dimensionless}`"
+   "tortuosity of the path that the adsorbate must take as compared to the radius", ":math:`\tau_p`", "tort", "None", ":math:`\text{dimensionless}`"
+   "surface-to-pore diffusion flux ratio", ":math:`S\!P\!D\!F\!R`", "spdfr", "None", ":math:`\text{dimensionless}`"
 
 .. _GAC_equations:
 
@@ -222,7 +227,7 @@ if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Surface diffusion coefficient correlation (Crittenden, et al. 1987)", ":math:`D_s=\left( S\!P\!D\!F\!R \right)\left( \frac{\epsilon_pC_0D_l}{\rho_aq_e\tau_p} \right)`"
+   "Surface diffusion coefficient correlation (Crittenden, 1987)", ":math:`D_s=\left( S\!P\!D\!F\!R \right)\left( \frac{\epsilon_pC_0D_l}{\rho_aq_e\tau_p} \right)`"
 
 Costing Method
 ---------------

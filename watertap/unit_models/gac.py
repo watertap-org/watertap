@@ -483,14 +483,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="stanton equation parameter 0",
+            doc="Stanton equation parameter 0",
         )
         self.a1 = Var(
             initialize=1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="stanton equation parameter 1",
+            doc="Stanton equation parameter 1",
         )
         self.b0 = Var(
             initialize=0.1,
@@ -589,7 +589,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="bed volumes treated in operational time",
+            doc="bed volumes treated at operational time",
         )
 
         # ---------------------------------------------------------------------
