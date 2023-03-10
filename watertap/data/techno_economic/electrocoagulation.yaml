@@ -1,0 +1,79 @@
+default:
+  electrode_thick:
+    value: 0.001
+    units: m
+  current_density:
+    value: 300
+    units: A / m^2
+  electrolysis_time:
+    value: 50
+    units: min
+  metal_loading:
+    value: 0.000105
+    units: kg/L
+  number_electrode_pairs:
+    value: 10
+    units: dimensionless
+  electrode_gap:
+    value: 0.02
+    units: m
+  current_efficiency:
+    value: 1.83
+    units: dimensionless
+  overpotential:
+    value: 1.5
+    units: volt
+  recovery_frac_mass_H2O:
+    value: 0.99
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0.7
+    units: dimensionless
+  removal_frac_mass_comp:
+    tds:
+      value: 0.7
+      units: dimensionless
+  capital_cost:
+    ec_reactor_cap_base:
+      value: 11500
+      units: USD_2020
+    ec_reactor_cap_exp:
+      value: 0.45
+      units: dimensionless
+    ec_reactor_cap_material_coeff:
+      value: 3.4
+      units: dimensionless
+    ec_reactor_cap_safety_factor:
+      value: 2.5
+      units: dimensionless
+    ec_admin_lab_cap_base:
+      value: 69195
+      units: USD_2010
+    ec_admin_lab_cap_exp:
+      value: 0.5523
+      units: dimensionless
+    ec_power_supply_base:
+      value: 260000
+      units: USD_2020
+    ec_admin_lab_op_base:
+      value: 88589
+      units: USD_2010 / year
+    ec_admin_lab_op_exp:
+      value: 0.4589
+      units: dimensionless
+    sludge_handling_cost:
+      value: 0
+      units: USD_2020 / kg
+    ec_labor_maint_factor:
+      value: 0.063
+      units: USD_2020 / m^3
+    current_per_reactor:
+      value: 3000
+      units: ampere
+    number_redundant_reactors:
+      value: 2
+      units: dimensionless
+    electrode_material_cost:
+      value: 2
+      units: USD_2020 / kg
+
