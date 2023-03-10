@@ -14,15 +14,11 @@
 This module contains a zero-order representation of an electrocoagulation unit.
 """
 
-from copy import deepcopy
-
 from pyomo.environ import (
     Var,
     Param,
     Constraint,
     Expression,
-    log,
-    Suffix,
     units as pyunits,
 )
 from pyomo.common.config import ConfigValue, In
@@ -30,7 +26,6 @@ from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
 from idaes.core.util.constants import Constants
 from idaes.core.util.misc import StrEnum
-import idaes.core.util.scaling as iscale
 from watertap.core import build_sido, ZeroOrderBaseData
 
 
@@ -383,7 +378,6 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
     def cost_electrocoagulation(blk):
         costing = blk.config.flowsheet_costing_block
         base_currency = costing.base_currency
-        base_period = costing.base_period
         ec = blk.unit_model
         flow_mgd = pyunits.convert(
             ec.properties_in[0].flow_vol, to_units=pyunits.Mgallons / pyunits.day
