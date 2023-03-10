@@ -260,13 +260,6 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             doc="Current density",
         )
 
-        self.power_required = Var(
-            initialize=1,
-            bounds=(1, None),
-            units=pyunits.watt,
-            doc="Current density",
-        )
-
         self._fixed_perf_vars.append(self.electrode_thick)
         self._fixed_perf_vars.append(self.current_density)
         self._fixed_perf_vars.append(self.electrolysis_time)
@@ -366,9 +359,9 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 == b.electrode_volume_per * b.density_electrode_material
             )
 
-        @self.Constraint(doc="Power required")
-        def eq_power_required(b):
-            return b.power_required == b.cell_voltage * b.applied_current
+        @self.Expression(doc="Power required")
+        def power_required(b):
+            return b.cell_voltage * b.applied_current
 
     @property
     def default_costing_method(self):
@@ -376,9 +369,10 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
     @staticmethod
     def cost_electrocoagulation(blk):
+
+        ec = blk.unit_model
         costing = blk.config.flowsheet_costing_block
         base_currency = costing.base_currency
-        ec = blk.unit_model
         flow_mgd = pyunits.convert(
             ec.properties_in[0].flow_vol, to_units=pyunits.Mgallons / pyunits.day
         )
@@ -453,15 +447,21 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 "electrode_material_cost",
             ],
         )
-
+        costing_ec = costing.electrocoagulation
         if electrode_mat == "aluminum":
             # Reference for Al cost: Anuf et al., 2022
             costing.defined_flows["aluminum"] = 2.23 * base_currency / pyunits.kg
             costing.register_flow_type("aluminum", 2.23 * base_currency / pyunits.kg)
+            costing_ec.electrode_material_cost.fix(2.23)
         if electrode_mat == "iron":
-            # Reference for Al cost: Anuf et al., 2022
+            # Reference for Fe cost: Anuf et al., 2022
             costing.defined_flows["iron"] = 3.41 * base_currency / pyunits.kg
             costing.register_flow_type("iron", 3.41 * base_currency / pyunits.kg)
+            costing_ec.electrode_material_cost.fix(3.41)
+
+        if reactor_mat == "stainless_steel":
+            # default is for PVC, so only need to change if it is stainless steel
+            costing_ec.ec_reactor_cap_material_coeff.fix(3.4)
 
         blk.number_chambers_system = Param(
             initialize=3,
