@@ -120,8 +120,8 @@ variables in the model.
    "equilibrium concentration of adsorbed phase with liquid phase", ":math:`q_e`", "equil_conc", "None", ":math:`\left( \text{kg}_\text{adsorbate}\text{/kg}_\text{adsorbent} \right)`"
    "solute distribution parameter", ":math:`D_g`", "dg", "None", ":math:`\text{dimensionless}`"
    "Biot number", ":math:`Bi`", "N_Bi", "None", ":math:`\text{dimensionless}`"
-   "superficial velocity", ":math:`v_s`", "velocity_sup", "None", ":math:`\text{m/s}`"
-   "interstitial velocity", ":math:`v_i`", "velocity_int", "None", ":math:`\text{m/s}`"
+   "superficial velocity", ":math:`u_s`", "velocity_sup", "None", ":math:`\text{m/s}`"
+   "interstitial velocity", ":math:`u_i`", "velocity_int", "None", ":math:`\text{m/s}`"
    "bed void fraction", ":math:`\epsilon`", "bed_voidage", "None", ":math:`\text{dimensionless}`"
    "bed length", ":math:`L`", "bed_length", "None", ":math:`\text{m}`"
    "bed diameter", ":math:`D`", "bed_diameter", "None", ":math:`\text{m}`"
@@ -148,13 +148,13 @@ variables in the model.
    "effluent to inlet concentration ratio at operational time", ":math:`\frac{C}{C_{0}}\bigg{|}_{z=L,/,t=t_{op}}`", "conc_ratio_replace", "None", ":math:`\text{dimensionless}`"
    "operational time of the bed from fresh", ":math:`t_{op}`", "operational_time", "None", ":math:`\text{s}`"
    "bed volumes treated at operational time", ":math:`BVT`", "bed_volumes_treated", "None", ":math:`\text{dimensionless}`"
-   "ele_throughput", ":math:`T_e`", "ele_throughput", "None", ":math:`x`"
-   "specific throughput from empirical equation by discrete element", ":math:`t_{min, e}`", "ele_min_operational_time", "ele_index", ":math:`\text{s}`"
-   "minimum operational time of the bed from fresh to achieve a constant pattern solution by discrete element", ":math:`\left(\frac{C}{C_{0}}\right)_{ele}\bigg{|}_{z=L,/,t=t_{op_ e}}`", "ele_conc_ratio_replace", "ele_index", ":math:`\text{dimensionless}`"
-   "effluent to inlet concentration ratio at operational time by discrete element", ":math:`t_{op, e}`", "ele_operational_time", "ele_disc", ":math:`\text{s}`"
+   "specific throughput from empirical equation by discrete element", ":math:`T_{ele}`", "ele_throughput", "None", ":math:`x`"
+   "minimum operational time of the bed from fresh to achieve a constant pattern solution by discrete element", ":math:`t_{min, ele}`", "ele_min_operational_time", "ele_index", ":math:`\text{s}`"
+   "effluent to inlet concentration ratio at operational time by discrete element", ":math:`\left(\frac{C}{C_{0}}\right)_{ele}\bigg{|}_{z=L,/,t=t_{op_ e}}`", "ele_conc_ratio_replace", "ele_index", ":math:`\text{dimensionless}`"
+   "operational time of the bed from fresh by discrete element", ":math:`t_{op, ele}`", "ele_operational_time", "ele_disc", ":math:`\text{s}`"
    "trapezoid rule of elements for numerical integration of average concentration ratio", ":math:`term_{ele}`", "ele_conc_ratio_avg", "ele_disc", ":math:`\text{dimensionless}`"
    "steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule", ":math:`\left(\frac{C}{C_{0}}\right)_{avg}`", "conc_ratio_avg", "None", ":math:`\text{dimensionless}`"
-   "total mass of adsorbed species at operational time", ":math:`M_{solute}`", "mass_adsorbed", "None", ":math:`\text{kg}`"
+   "total mass of adsorbed species at operational time", ":math:`M`", "mass_adsorbed", "None", ":math:`\text{kg}`"
    "gac usage/replacement/regeneration rate", ":math:`\dot{m}_{GAC}`", "gac_usage_rate", "None", ":math:`\text{m/s}`"
 
 The following variables are only built when specific configuration options are selected.
@@ -185,30 +185,36 @@ Equations
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Equilibrium concentration", ":math:`q_e = kC_0^{1/n}`"
-   "Solute distribution parameter", ":math:`D_g=\frac{\rho_aq_e\left( 1-\epsilon \right)}{\epsilon C_0}`"
+   "equilibrium concentration", ":math:`q_e = kC_0^{1/n}`"
+   "solute distribution parameter", ":math:`D_g=\frac{\rho_aq_e\left( 1-\epsilon \right)}{\epsilon C_0}`"
    "Biot number", ":math:`Bi=\frac{k_fd_p\left( 1-\epsilon \right)}{2D_sD_g\epsilon}`"
-   "Minimum Stanton number to achieve CPS", ":math:`St_{min}=a_0Bi+a_1`"
-   "Minimum EBCT to achieve CPS", ":math:`EBCT_{min}=\frac{St_{min}d_p}{2k_f\left( 1-\epsilon \right)}`"
-   "Minimum residence time to achieve CPS", ":math:`\tau_{min}=EBCT_{min}\epsilon`"
-   "Residence time", ":math:`\tau=EBCT\epsilon`"
-   "Mass throughput ratio", ":math:`T=b_0+b_1\left( \frac{C}{C_0} \right)^{b_2}+\frac{b_3}{1.01-\left( \frac{C}{C_0} \right)^{b_4}}`"
-   "Minimum elapsed operation time to achieve CPS", ":math:`t_{min}=\tau_{min}\left( D_g+1 \right)T`"
-   "Elapsed operation time", ":math:`t_{op}=t_{min}+\left( \tau-\tau_{min} \right)\left( D_g+1 \right)`"
-   "Density relation to bed voidage", ":math:`\epsilon=1-\frac{\rho_b}{\rho_a}`"
-   "Density relation to particle porosity", ":math:`\epsilon_p=1-\frac{\rho_a}{\rho_s}`"
-   "Adsorber bed volume", ":math:`EBCT=\frac{V}{Q}`"
-   "Adsorbed bed area", ":math:`A=\frac{Q}{v_s}`"
-   "Adsorbed bed length", ":math:`EBCT=\frac{L}{v_s}`"
-   "Bed volumes treated", ":math:`BVT=\frac{t_{op}\epsilon}{\tau}`"
-   "Velocity relationship", ":math:`v_i=\frac{v_s}{\epsilon}`"
-   "Mass of GAC in a fresh adsorber bed", ":math:`M_{GAC}=V\rho_b`"
-   "Mass of solute adsorbed if the bed was fully saturated", ":math:`M_{solute\text{,}e}=q_eM_{GAC}`"
-   "Steady state GAC replacement rate", ":math:`\dot{m}_{GAC}=\frac{M_{GAC}}{t_{op}}`"
+   "bed void fraction based on gac particle densities", ":math:`\epsilon=1-\frac{\rho_b}{\rho_a}`"
+   "relating velocities based on bed voidage", ":math:`u_i=\frac{u_s}{\epsilon}`"
+   "bed length based on velocity and ebct", ":math:`L=(EBCT)u_s}`"
+   "bed diameter and area relation", ":math:`A=\frac{Q}{u_s}`"
+   "bed area based on velocity and volumetric flow", ":math:`A=\frac{Q}{u_s}`"
+   "bed volume based on cylindrical dimensions", ":math:`V=AL`"
+   "fluid residence time in the bed", ":math:`\tau=(EBCT)\epsilon`"
+   "total mass of gac in the bed", ":math:`M_{GAC}=V\rho_b`"
+   "minimum Stanton number to achieve constant pattern solution", ":math:`St_{min}=a_0Bi+a_1`"
+   "minimum empty bed contact time to achieve constant pattern solution", ":math:`EBCT_{min}=\frac{St_{min}d_p}{2k_f\left( 1-\epsilon \right)}`"
+   "throughput based on empirical 5-parameter regression", ":math:`T=b_0+b_1\left( \frac{C}{C_0} \right)^{b_2}+\frac{b_3}{1.01-\left( \frac{C}{C_0} \right)^{b_4}}`"
+   "minimum fluid residence time in the bed to achieve a constant pattern solution", ":math:`\tau_{min}=EBCT_{min}\epsilon`"
+   "minimum operational time of the bed from fresh to achieve a constant pattern solution", ":math:`t_{min}=\tau_{min}\left( D_g+1 \right)T`"
+   "elapsed operational time between a fresh bed and the theoretical bed replacement", ":math:`t_{op}=t_{min}+\left( \tau-\tau_{min} \right)\left( D_g+1 \right)`"
+   "bed volumes treated", ":math:`BVT=\frac{t_{op}\epsilon}{\tau}`"
+   "throughput based on empirical 5-parameter regression by discretized element", ":math:`T_{ele}=b_0+b_1\left(\frac{C}{C_{0}}\right)_{ele}^{b_2}+\frac{b_3}{1.01-\left(\frac{C}{C_{0}}\right)_{ele}^{b_4}}`"
+   "minimum operational time of the bed from fresh to achieve a constant pattern solution by discretized element", ":math:`t_{min, ele}=\tau_{min}\left( D_g+1 \right)T`"
+   "creating evenly spaced discretized elements", ":math:`\frac{C}{C_{0}}\bigg{|}_{t=t_{op, ele}}=0.01+(ele-1)*\frac{\left(\frac{C}{C_{0}}\bigg{|}_{t=t_{op}}-0.01\right)}{num\text{_}ele}`"
+   "finite element discretization of concentration ratios over time", ":math:`term_{ele}=\left(\frac{t_{op, ele}-t_{op, (ele-1)}}{t_{op}}\right)\frac{\left(\frac{C}{C_{0}}\bigg{|}_{t=t_{op, ele}}+{C_{0}}\bigg{|}_{t=t_{op, (ele-1)}}\right)}{2}`"
+   "summation of finite elements for average concentration during operating time", ":math:`\left(\frac{C}{C_{0}}\right)_{avg}=\sum_{ele\text{_}index}term_{ele}`"
+   "mass adsorbed in the operational time", ":math:`M=\frac{\dot{m}_{j}}{t_{op}}`"
+   "steady state rate of new gac mass required", ":math:`\dot{m}_{GAC}=\frac{M_{GAC}}{t_{op}}`"
+
    "Saturation fraction of the bed at the time of replacement", ":math:`\frac{\bar{q}}{q_{e}}\bigg{|}_{t=t_{op}}=\frac{M_{solute}}{M_{solute\text{,}e}}`"
    "Mass throughput ratio of the upstream edge of the MTZ", ":math:`T\big{|}_{Upstream\,MTZ\,edge}=b_0+b_1\left( \frac{C}{C_0}\bigg|_{Upstream\,MTZ\,edge} \right)^{b_2}+\frac{b_3}{1.01-\left( \frac{C}{C_0}\Big|_{Upstream\,MTZ\,edge} \right)^{b_4}}`"
    "EBCT of the partial MTZ at the time of replacement", ":math:`EBCT_{MTZ} = \left( T\big{|}_{Upstream\,MTZ\,edge}-T \right)EBCT_{min}`"
-   "Length EBCT of the partial MTZ at the time of replacement", ":math:`EBCT_{MTZ}=\frac{L_{MTZ}}{v_s}`"
+   "Length EBCT of the partial MTZ at the time of replacement", ":math:`EBCT_{MTZ}=\frac{L_{MTZ}}{u_s}`"
    "Saturation fraction of the bed at the time of replacement calculated by the trapezoid rule", ":math:`\frac{\bar{q}}{q_{e}}\bigg{|}_{t=t_{op}}=\frac{1\left( L-L_{MTZ} \right)+\frac{1}{2}\left( \frac{q}{q_{e}}\bigg|_{Upstream \ MTZ \ edge}+\frac{q}{q_{e}}\bigg|_{z=L}\right)\left( L_{MTZ} \right)}{L}`"
 
 if ``film_transfer_coefficient_type`` is set to ``calculated``:
@@ -216,11 +222,11 @@ if ``film_transfer_coefficient_type`` is set to ``calculated``:
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Reynolds number for packed beds*", ":math:`Re=\frac{\rho_s\phi d_pv_i}{\epsilon\mu_s}`"
-   "Schmidt number for packed beds*", ":math:`Sc=\frac{\mu_s}{\rho_sD_l}`"
-   "Gnielinski correlation", ":math:`k_f=\frac{\left[ 1+1.5\left( 1-\epsilon \right) \right]D_l}{d_p}\left( 2+0.644Re^{\frac{1}{2}}Sc^{\frac{1}{3}} \right)`"
+   "Reynolds number for packed beds*", ":math:`Re=\frac{\rho_ld_pu_i}{\mu_l}`"
+   "Schmidt number for packed beds*", ":math:`Sc=\frac{\mu_l}{\rho_sD_l}`"
+   "Gnielinski correlation", ":math:`k_f=SCF\frac{\left[ 1+1.5\left( 1-\epsilon \right) \right]D_l}{d_p}\left( 2+0.644Re^{\frac{1}{2}}Sc^{\frac{1}{3}} \right)`"
 
-\*Subscript :math:`s` denotes bulk liquid phase properties, here those are supplied by the property package.
+\*Subscript :math:`l` denotes bulk liquid phase properties, here those are supplied by the property package.
 
 if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 
@@ -319,7 +325,7 @@ Code Documentation
 -------------------
 
 * :mod:`watertap.unit_models.gac`
-* :meth:`watertap.costing.watertap_costing_package.WaterTAPCostingData.cost_gac`
+* :meth:`watertap.costing.watertap_costing_package.units.gac`
 
 References
 -----------
