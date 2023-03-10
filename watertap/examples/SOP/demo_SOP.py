@@ -34,21 +34,32 @@ def main():
     )
 
     # scale model
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "oil"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e5, index=("Liq", "oil")
+    )
     iscale.calculate_scaling_factors(m)
+    iscale.set_scaling_factor(
+        m.fs.SOP.properties_permeate[0].flow_mass_phase_comp["Liq", "H2O"], 1e8
+    )
 
     # print DOF before specifying
     print("DOF before specifying:", degrees_of_freedom(m.fs))
 
     # specify model
-    # feed
-    m.fs.SOP.feed_side.properties_in[0].temperature.fix(298.15)
-    m.fs.SOP.feed_side.properties_in[0].pressure.fix(2 * units.bar)
-    m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix(0.9)
-    m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "oil"].fix(0.1)
-    m.fs.SOP.feed_side.properties_out[0].pressure.fix(1.8 * units.bar)
-    m.fs.SOP.area.fix(10)
+    m.fs.SOP.feed_side.properties_in[0].temperature.fix(298.15)  # temp in K
+    m.fs.SOP.feed_side.properties_in[0].pressure.fix(1.48 * units.bar)
+    # The below feed data corresponds roughly to 3.8 L/min flow with 500 ppm oil
+    m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix(
+        6.3e-2
+    )  # H2O flow in kg/s
+    m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "oil"].fix(
+        3.2e-5
+    )  # oil flow in kg/s
+    m.fs.SOP.feed_side.properties_out[0].pressure.fix(1.20 * units.bar)
+    m.fs.SOP.area.fix(1.4)  # membrane area in m^2
     m.fs.SOP.properties_permeate[0].pressure.fix(1 * units.bar)
 
     print("DOF after specifying:", degrees_of_freedom(m.fs))
@@ -81,4 +92,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    m = main()
