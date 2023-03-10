@@ -37,11 +37,13 @@ default:
     ec_reactor_cap_base:
       value: 11500
       units: USD_2020
+      reference: Saad et al., 2022 - https://doi.org/10.1016/j.jksus.2022.102015; Smith, 2005 - https://doi.org/10.1205/cherd.br.0509
     ec_reactor_cap_exp:
       value: 0.45
       units: dimensionless
+      reference: Saad et al., 2022 - https://doi.org/10.1016/j.jksus.2022.102015; Smith, 2005 - https://doi.org/10.1205/cherd.br.0509
     ec_reactor_cap_material_coeff:
-      value: 3.4
+      value: 0.062 # default is for PVC
       units: dimensionless
     ec_reactor_cap_safety_factor:
       value: 2.5

@@ -393,6 +393,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             to_units=pyunits.kg / pyunits.year,
         )
         electrode_mat = ec.config.electrode_material
+        reactor_mat = ec.config.reactor_material
 
         # Add cost variable and constraint
         blk.capital_cost = Var(
@@ -454,9 +455,11 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         )
 
         if electrode_mat == "aluminum":
+            # Reference for Al cost: Anuf et al., 2022
             costing.defined_flows["aluminum"] = 2.23 * base_currency / pyunits.kg
             costing.register_flow_type("aluminum", 2.23 * base_currency / pyunits.kg)
         if electrode_mat == "iron":
+            # Reference for Al cost: Anuf et al., 2022
             costing.defined_flows["iron"] = 3.41 * base_currency / pyunits.kg
             costing.register_flow_type("iron", 3.41 * base_currency / pyunits.kg)
 
