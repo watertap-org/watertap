@@ -52,8 +52,8 @@ and may be derived from experimental data:
 
    * Freundlich isotherm :math:`k` parameter
    * Freundlich isotherm :math:`\frac{1}{n}` parameter
-   * Stanton number equation parameters (Hand, 1984),(Crittenden, 1987) :math:`a_0` and :math:`a_1`
-   * throughput ratio equation parameters (Hand, 1984) :math:`b_0`, :math:`b_1`, :math:`b_2`, :math:`b_3` and :math:`b_4`
+   * Stanton number equation parameters :math:`a_0` and :math:`a_1` (Hand, 1984), (Crittenden, 1987)
+   * throughput ratio equation parameters :math:`b_0`, :math:`b_1`, :math:`b_2`, :math:`b_3` and :math:`b_4` (Hand, 1984)
 
 Additionally, the following 9 variables are traditionally fixed:
 
@@ -190,8 +190,8 @@ Equations
    "Biot number", ":math:`Bi=\frac{k_fd_p\left( 1-\epsilon \right)}{2D_sD_g\epsilon}`"
    "bed void fraction based on gac particle densities", ":math:`\epsilon=1-\frac{\rho_b}{\rho_a}`"
    "relating velocities based on bed voidage", ":math:`u_i=\frac{u_s}{\epsilon}`"
-   "bed length based on velocity and ebct", ":math:`L=(EBCT)u_s}`"
-   "bed diameter and area relation", ":math:`A=\frac{Q}{u_s}`"
+   "bed length based on velocity and ebct", ":math:`L=(EBCT)u_s`"
+   "bed diameter and area relation", ":math:`A=\pi\left(\frac{D}{2}\right)^2`"
    "bed area based on velocity and volumetric flow", ":math:`A=\frac{Q}{u_s}`"
    "bed volume based on cylindrical dimensions", ":math:`V=AL`"
    "fluid residence time in the bed", ":math:`\tau=(EBCT)\epsilon`"
@@ -211,20 +211,14 @@ Equations
    "mass adsorbed in the operational time", ":math:`M=\frac{\dot{m}_{j}}{t_{op}}`"
    "steady state rate of new gac mass required", ":math:`\dot{m}_{GAC}=\frac{M_{GAC}}{t_{op}}`"
 
-   "Saturation fraction of the bed at the time of replacement", ":math:`\frac{\bar{q}}{q_{e}}\bigg{|}_{t=t_{op}}=\frac{M_{solute}}{M_{solute\text{,}e}}`"
-   "Mass throughput ratio of the upstream edge of the MTZ", ":math:`T\big{|}_{Upstream\,MTZ\,edge}=b_0+b_1\left( \frac{C}{C_0}\bigg|_{Upstream\,MTZ\,edge} \right)^{b_2}+\frac{b_3}{1.01-\left( \frac{C}{C_0}\Big|_{Upstream\,MTZ\,edge} \right)^{b_4}}`"
-   "EBCT of the partial MTZ at the time of replacement", ":math:`EBCT_{MTZ} = \left( T\big{|}_{Upstream\,MTZ\,edge}-T \right)EBCT_{min}`"
-   "Length EBCT of the partial MTZ at the time of replacement", ":math:`EBCT_{MTZ}=\frac{L_{MTZ}}{u_s}`"
-   "Saturation fraction of the bed at the time of replacement calculated by the trapezoid rule", ":math:`\frac{\bar{q}}{q_{e}}\bigg{|}_{t=t_{op}}=\frac{1\left( L-L_{MTZ} \right)+\frac{1}{2}\left( \frac{q}{q_{e}}\bigg|_{Upstream \ MTZ \ edge}+\frac{q}{q_{e}}\bigg|_{z=L}\right)\left( L_{MTZ} \right)}{L}`"
-
 if ``film_transfer_coefficient_type`` is set to ``calculated``:
 
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Reynolds number for packed beds*", ":math:`Re=\frac{\rho_ld_pu_i}{\mu_l}`"
-   "Schmidt number for packed beds*", ":math:`Sc=\frac{\mu_l}{\rho_sD_l}`"
-   "Gnielinski correlation", ":math:`k_f=SCF\frac{\left[ 1+1.5\left( 1-\epsilon \right) \right]D_l}{d_p}\left( 2+0.644Re^{\frac{1}{2}}Sc^{\frac{1}{3}} \right)`"
+   "Reynolds number calculation*", ":math:`Re=\frac{\rho_ld_pu_i}{\mu_l}`"
+   "Schmidt number calculation*", ":math:`Sc=\frac{\mu_l}{\rho_sD_l}`"
+   "liquid phase film transfer rate from the Gnielinshi correlation*", ":math:`k_f=(SCF)\frac{\left[ 1+1.5\left( 1-\epsilon \right) \right]D_l}{d_p}\left( 2+0.644Re^{\frac{1}{2}}Sc^{\frac{1}{3}} \right)`"
 
 \*Subscript :math:`l` denotes bulk liquid phase properties, here those are supplied by the property package.
 
@@ -233,7 +227,7 @@ if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Surface diffusion coefficient correlation (Crittenden, 1987)", ":math:`D_s=\left( S\!P\!D\!F\!R \right)\left( \frac{\epsilon_pC_0D_l}{\rho_aq_e\tau_p} \right)`"
+   "surface diffusion parameter (Crittenden, 1987)", ":math:`D_s=\left( S\!P\!D\!F\!R \right)\left( \frac{\epsilon_pC_0D_l}{\rho_aq_e\tau_p} \right)`"
 
 Costing Method
 ---------------
