@@ -28,11 +28,11 @@ shorter than the minimum length determined by the CPHSDM within the error thresh
 
 The batch operation results of the CPS are converted to approximate steady-state results for intuitive use of the model
 for flowsheet purposes. A visualization of the transformation is provided in Figure 1. For a traditional breakthrough
-curve the CPHSDM method calculates the single point, single conc_ratio_replace and operational_time, highlighted on the
+curve the CPHSDM method calculates the single point, single ``conc_ratio_replace`` and ``operational_time``, highlighted on the
 breakthrough curve. This operational time is the amount of elapsed time after startup that the bed is refreshed with new
 GAC adsorbent. Steady state concentration can be analogous to all of the effluent in this operational time being stored
 as holdup, therefore the average concentration ratio is significantly less than concentration ratio at the time of
-bed replacement as many days pass before the start of the breakthrough. To approximate the average effluent
+bed replacement, as many days pass before the start of the breakthrough. To approximate the average effluent
 concentration in this time frame, the breakthrough curve is numerically integrated with the trapezoid rule. The curve is
 discretized with respect to the concentration ratio instead of the (traditionally done 'x' variable) operational time
 due to simplicity of solving the model equations.
@@ -41,7 +41,10 @@ due to simplicity of solving the model equations.
     :width: 800
     :align: center
 
-    Figure 1. Discretization of the breakthrough curve for the steady state approximation
+    Figure 1. Discretization of the breakthrough curve for the steady state approximation. The ratio of the shaded area
+    to the area left of the vertical dotted line corresponding to ``operational_time`` is the calculated
+    ``conc_ratio_avg``. Expected values of ``conc_ratio_avg`` are often less than 0.25 depending on the
+    ``conc_ratio_replace`` setpoint.
 
 Degrees of Freedom
 ------------------
