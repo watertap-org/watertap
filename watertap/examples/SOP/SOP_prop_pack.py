@@ -16,7 +16,7 @@ Simple property package for selective oil permeation
 """
 
 from pyomo.environ import Constraint, Var, Param, NonNegativeReals, Suffix, value
-from pyomo.environ import units as pyunits
+from pyomo.environ import units
 
 # Import IDAES cores
 from idaes.core import (
@@ -96,11 +96,11 @@ class SopParameterData(PhysicalParameterBlock):
 
         obj.add_default_units(
             {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
+                "time": units.s,
+                "length": units.m,
+                "mass": units.kg,
+                "amount": units.mol,
+                "temperature": units.K,
             }
         )
 
@@ -239,7 +239,7 @@ class SopStateBlockData(StateBlockData):
             initialize={("Liq", "H2O"): 0.05, ("Liq", "oil"): 0.05},
             bounds=(1e-15, 100),
             domain=NonNegativeReals,
-            units=pyunits.kg / pyunits.s,
+            units=units.kg / units.s,
             doc="Mass flow rate",
         )
 
@@ -247,7 +247,7 @@ class SopStateBlockData(StateBlockData):
             initialize=298.15,
             bounds=(273.15, 1000),
             domain=NonNegativeReals,
-            units=pyunits.degK,
+            units=units.degK,
             doc="State temperature",
         )
 
@@ -255,7 +255,7 @@ class SopStateBlockData(StateBlockData):
             initialize=101325,
             bounds=(1e5, 5e7),
             domain=NonNegativeReals,
-            units=pyunits.Pa,
+            units=units.Pa,
             doc="State pressure",
         )
 
@@ -269,7 +269,7 @@ class SopStateBlockData(StateBlockData):
             self.params.component_list,
             mutable=True,
             initialize=1e-3,
-            units=pyunits.kg * pyunits.m**-1 * pyunits.s**-1,
+            units=units.kg * units.m**-1 * units.s**-1,
             doc="Dynamic viscosity",
         )
 
@@ -282,7 +282,7 @@ class SopStateBlockData(StateBlockData):
             self.params.component_list,
             mutable=True,
             initialize=1e3,
-            units=pyunits.kg * pyunits.m**-3,
+            units=units.kg * units.m**-3,
             doc="Component mass density",
         )
 
@@ -295,7 +295,7 @@ class SopStateBlockData(StateBlockData):
             self.params.component_list,
             initialize=0.1,
             bounds=(1e-15, None),
-            units=pyunits.dimensionless,
+            units=units.dimensionless,
             doc="Mass fraction",
         )
 
@@ -317,7 +317,7 @@ class SopStateBlockData(StateBlockData):
             self.params.component_list,
             initialize=1e-3,
             bounds=(None, None),
-            units=pyunits.m**3 / pyunits.s,
+            units=units.m**3 / units.s,
             doc="Component volumetric flowrate",
         )
 
@@ -338,7 +338,7 @@ class SopStateBlockData(StateBlockData):
             self.params.phase_list,
             initialize=1e-3,
             bounds=(None, None),
-            units=pyunits.m**3 / pyunits.s,
+            units=units.m**3 / units.s,
             doc="Volumetric flow rate",
         )
 
@@ -356,7 +356,7 @@ class SopStateBlockData(StateBlockData):
             self.params.phase_list,
             initialize=1e-3,
             bounds=(None, None),
-            units=pyunits.kg / pyunits.s,
+            units=units.kg / units.s,
             doc="Mass flow rate",
         )
 
@@ -374,7 +374,7 @@ class SopStateBlockData(StateBlockData):
             self.params.phase_list,
             initialize=1e3,
             bounds=(1e2, 2e3),
-            units=pyunits.kg * pyunits.m**-3,
+            units=units.kg * units.m**-3,
             doc="Mass density",
         )
 
@@ -391,7 +391,7 @@ class SopStateBlockData(StateBlockData):
             self.params.component_list,
             initialize=0.1,
             bounds=(None, None),
-            units=pyunits.dimensionless,
+            units=units.dimensionless,
             doc="Volumetric fraction",
         )
 
@@ -413,7 +413,7 @@ class SopStateBlockData(StateBlockData):
             self.params.component_list,
             initialize=1,
             bounds=(None, None),
-            units=pyunits.kg / pyunits.m**3,
+            units=units.kg / units.m**3,
             doc="Mass concentration",
         )
 
