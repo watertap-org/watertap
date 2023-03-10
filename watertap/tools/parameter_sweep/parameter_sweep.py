@@ -21,6 +21,8 @@ from idaes.core.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
 from pyomo.common.config import ConfigValue
+from pyomo.core.base import _VarData, _ExpressionData
+from pyomo.core.base.param import _ParamData
 
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
 from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
@@ -142,6 +144,18 @@ class _ParameterSweepBase(ABC):
             interpolate_nan_outputs=self.config.interpolate_nan_outputs,
             h5_parent_group_name=self.config.h5_parent_group_name,
         )
+
+    @staticmethod
+    def _assign_variable_names(model, outputs):
+
+        # Only assign output variable names to unassigned outputs
+        for output_name, _pyo_obj in outputs.items():
+            if not isinstance(_pyo_obj, (_VarData, _ExpressionData, _ParamData)):
+                # Add this object as an expression and assign a name
+                exprs = pyo.Expression(pyo.Any)
+                model.add_component(output_name, exprs)
+                exprs[output_name] = _pyo_obj
+                outputs[output_name] = exprs[output_name]
 
     def _build_combinations(self, d, sampling_type, num_samples):
         num_var_params = len(d)
@@ -596,6 +610,10 @@ class ParameterSweep(_ParameterSweepBase):
         local_values = self._divide_combinations(global_values)
         local_num_cases = np.shape(local_values)[0]
 
+        # Check if the outputs have the name attribute. If not, assign one.
+        if outputs is not None:
+            self._assign_variable_names(model, outputs)
+
         # Do the Loop
         if self.config.custom_do_param_sweep is None:
             local_results_dict = self._do_param_sweep(
@@ -730,6 +748,10 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         # Set the seed before sampling
         np.random.seed(seed)
+
+        # Check if the outputs have the name attribute. If not, assign one.
+        if outputs is not None:
+            self._assign_variable_names(model, outputs)
 
         n_samples_remaining = req_num_samples
         num_total_samples = req_num_samples

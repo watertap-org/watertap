@@ -328,6 +328,10 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         # divide the workload between processors
         local_values = self._divide_combinations(global_values)
 
+        # Check if the outputs have the name attribute. If not, assign one.
+        if outputs is not None:
+            self._assign_variable_names(model, outputs)
+
         # Create a dictionary to store all the differential ps_objects
         self.diff_ps_dict = {}
 
