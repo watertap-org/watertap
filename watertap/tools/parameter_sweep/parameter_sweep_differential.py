@@ -252,7 +252,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         _, differential_sweep_output_dict = diff_ps.parameter_sweep(
             model,
             diff_sweep_param_dict,
-            outputs=self.differential_outputs,
+            combined_outputs=self.differential_outputs,
             num_samples=self.config.num_diff_samples,
             seed=self.seed,
         )

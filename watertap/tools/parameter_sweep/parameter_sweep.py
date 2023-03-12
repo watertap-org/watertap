@@ -31,6 +31,7 @@ from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweep
 from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
 
 import watertap.tools.MPI as MPI
+from watertap.tools.parallel.parallel_manager import ParallelManager
 
 
 def _default_optimize(model, options=None, tee=False):
@@ -150,6 +151,10 @@ class _ParameterSweepBase(ABC):
         **options,
     ):
 
+        self.parallel_manager = ParallelManager.create_parallel_manager(
+            options.pop("parallel_manager_class", None)
+        )
+
         self.comm = options.pop("comm", MPI.COMM_WORLD)
         self.rank = self.comm.Get_rank()
         self.num_procs = self.comm.Get_size()
@@ -192,74 +197,92 @@ class _ParameterSweepBase(ABC):
 
             return requests.put(self.config.publish_address, data=publish_dict)
 
-    def _build_combinations(self, d, sampling_type, num_samples):
+    def _create_global_combo_array(self, d, sampling_type):
         num_var_params = len(d)
+        param_values = []
 
-        if self.rank == 0:
-            param_values = []
+        for k, v in d.items():
+            # Build a vector of discrete values for this parameter
+            p = v.sample()
+            param_values.append(p)
 
-            for k, v in d.items():
-                # Build a vector of discrete values for this parameter
-                p = v.sample()
-                param_values.append(p)
+        if sampling_type == SamplingType.FIXED:
+            # Form an array with every possible combination of parameter values
+            global_combo_array = np.array(np.meshgrid(*param_values, indexing="ij"))
+            global_combo_array = global_combo_array.reshape(num_var_params, -1).T
 
-            if sampling_type == SamplingType.FIXED:
-                # Form an array with every possible combination of parameter values
-                global_combo_array = np.array(np.meshgrid(*param_values, indexing="ij"))
-                global_combo_array = global_combo_array.reshape(num_var_params, -1).T
+        elif sampling_type == SamplingType.RANDOM:
+            sorting = np.argsort(param_values[0])
+            global_combo_array = np.vstack(param_values).T
+            global_combo_array = global_combo_array[sorting, :]
 
-            elif sampling_type == SamplingType.RANDOM:
-                sorting = np.argsort(param_values[0])
-                global_combo_array = np.vstack(param_values).T
-                global_combo_array = global_combo_array[sorting, :]
-
-            elif sampling_type == SamplingType.RANDOM_LHS:
-                lb = [val[0] for val in param_values]
-                ub = [val[1] for val in param_values]
-                lhs = sampling.LatinHypercubeSampling(
-                    [lb, ub], number_of_samples=v.num_samples, sampling_type="creation"
-                )
-                global_combo_array = lhs.sample_points()
-                sorting = np.argsort(global_combo_array[:, 0])
-                global_combo_array = global_combo_array[sorting, :]
-
-            else:
-                raise ValueError(f"Unknown sampling type: {sampling_type}")
-
-            # Test if the global_combo_array is in row-major order
-            if not global_combo_array.flags.c_contiguous:
-                # If not, return a copy of this array with row-major memory order
-                global_combo_array = np.ascontiguousarray(global_combo_array)
+        elif sampling_type == SamplingType.RANDOM_LHS:
+            lb = [val[0] for val in param_values]
+            ub = [val[1] for val in param_values]
+            lhs = sampling.LatinHypercubeSampling(
+                [lb, ub], number_of_samples=v.num_samples, sampling_type="creation"
+            )
+            global_combo_array = lhs.sample_points()
+            sorting = np.argsort(global_combo_array[:, 0])
+            global_combo_array = global_combo_array[sorting, :]
 
         else:
-            if sampling_type == SamplingType.FIXED:
-                nx = 1
-                for k, v in d.items():
-                    nx *= v.num_samples
-            elif (
-                sampling_type == SamplingType.RANDOM
-                or sampling_type == SamplingType.RANDOM_LHS
-            ):
-                # Make sure num_samples are the same here and across the SamplingTypes
-                for k, v in d.items():
-                    if v.num_samples != num_samples:
-                        raise RuntimeError(
-                            "The number of samples should be the same across all sweep parameters."
-                        )
-                nx = num_samples
-            else:
-                raise ValueError(f"Unknown sampling type: {sampling_type}")
+            raise ValueError(f"Unknown sampling type: {sampling_type}")
 
-            if not float(nx).is_integer():
-                raise RuntimeError(f"Total number of samples must be integer valued")
-            nx = int(nx)
+        # Test if the global_combo_array is in row-major order
+        if not global_combo_array.flags.c_contiguous:
+            # If not, return a copy of this array with row-major memory order
+            global_combo_array = np.ascontiguousarray(global_combo_array)
 
-            # Allocate memory to hold the Bcast array
-            global_combo_array = np.zeros((nx, num_var_params), dtype=float)
+        return global_combo_array
 
-        ### Broadcast the array to all processes
-        if self.num_procs > 1:
-            self.comm.Bcast(global_combo_array, root=0)
+    """
+    Create an empty buffer of the right size to hold the global array of combinations.
+    """
+
+    def _create_empty_global_combo_array(self, d, sampling_type, num_samples):
+        num_var_params = len(d)
+
+        if sampling_type == SamplingType.FIXED:
+            nx = 1
+            for k, v in d.items():
+                nx *= v.num_samples
+        elif (
+            sampling_type == SamplingType.RANDOM
+            or sampling_type == SamplingType.RANDOM_LHS
+        ):
+            # Make sure num_samples are the same here and across the SamplingTypes
+            for k, v in d.items():
+                if v.num_samples != num_samples:
+                    raise RuntimeError(
+                        "The number of samples should be the same across all sweep parameters."
+                    )
+            nx = num_samples
+        else:
+            raise ValueError(f"Unknown sampling type: {sampling_type}")
+
+        if not float(nx).is_integer():
+            raise RuntimeError(f"Total number of samples must be integer valued")
+        nx = int(nx)
+
+        # allocate the right amount of memory
+        return np.zeros((nx, num_var_params), dtype=float)
+
+    """
+    Put together all of the parameter combinations that the sweep will be run for.
+    """
+
+    def _build_combinations(self, d, sampling_type, num_samples):
+        # only build the full array of combinations on the root process. on the non-root
+        # processes, initialize an empty array of the right size that will be synced
+        # over from the root process.
+        if self.parallel_manager.is_root_process():
+            global_combo_array = self._create_global_combo_array(d, sampling_type)
+        else:
+            global_combo_array = self._create_empty_global_combo_array(d, sampling_type)
+
+        # make sure all processes running in parallel have an identical copy of the data
+        self.parallel_manager.sync_data(global_combo_array)
 
         return global_combo_array
 
@@ -619,26 +642,76 @@ class ParameterSweep(_ParameterSweepBase):
 
     CONFIG = _ParameterSweepBase.CONFIG()
 
-    def _aggregate_local_results(
-        self, global_values, local_output_dict, num_samples, local_num_cases
-    ):
+    """
+    Combine all of the results retrieved from calling gather().
+    - all_results is a list of Result objects, each representing the 
+    parameters and results from running the optimization on one process. 
+    """
 
-        # Create the dictionary
-        global_results_dict = self._create_global_output(local_output_dict, num_samples)
+    def _combine_gather_results(self, all_results):
+        if len(all_results) == 0:
+            return None
 
-        # Create the array
-        num_global_samples = np.shape(global_values)[0]
-        global_results_arr = self._aggregate_results_arr(
-            global_results_dict, num_global_samples
-        )
+        # create the output skeleton based on the first set of results
+        # we assume the results are in dict format
+        initial_results = all_results[0].results
 
-        return global_results_dict, global_results_arr
+        combined_results = copy.deepcopy(initial_results)
+
+        # remove any lingering pyomo objects, and convert inner results to numpy arrays
+        for key, val in combined_results.items():
+            if key != "solve_successful":
+                for subkey, subval in val.items():
+                    if "_pyo_obj" in subval:
+                        del subval["_pyo_obj"]
+
+        # for each result, concat the "value" array of results into the
+        # gathered results to combine them all
+        for result in all_results[1:]:
+            results = result.results
+            for key, val in results.items():
+                if key == "solve_successful":
+                    combined_results[key] = np.append(
+                        combined_results[key], copy.deepcopy(val)
+                    )
+                    continue
+
+                for subkey, subval in val.items():
+                    combined_results[key][subkey]["value"] = np.append(
+                        combined_results[key][subkey]["value"],
+                        copy.deepcopy(
+                            subval["value"],
+                        ),
+                    )
+
+        return combined_results
+
+    """
+    Build up a list of the outputs for each result of the optimization.
+    Returned as a list of lists, where each inner list is the results from
+    one process's run.
+    """
+
+    def _combine_outputs(self, gathered_results):
+        outputs = gathered_results["outputs"]
+        if len(outputs) == 0:
+            return []
+
+        # assume all output arrays have the same length
+        combined_outputs = [
+            np.asarray([]) for _ in range(len(list(outputs.values())[0]["value"]))
+        ]
+        for _, output in outputs.items():
+            for i in range(len(output["value"])):
+                combined_outputs[i] = np.append(combined_outputs[i], output["value"][i])
+
+        return np.asarray(combined_outputs)
 
     def parameter_sweep(
         self,
         model,
         sweep_params,
-        outputs=None,
+        combined_outputs=None,
         num_samples=None,
         seed=None,
     ):
@@ -649,52 +722,50 @@ class ParameterSweep(_ParameterSweepBase):
         # Set the seed before sampling
         np.random.seed(seed)
 
-        # Enumerate/Sample the parameter space
-        global_values = self._build_combinations(
+        # build the list of all parameters that need to be run as part of the sweep
+        all_parameter_combinations = self._build_combinations(
             sweep_params, sampling_type, num_samples
         )
 
-        # divide the workload between processors
-        local_values = self._divide_combinations(global_values)
-        local_num_cases = np.shape(local_values)[0]
-
         # Check if the outputs have the name attribute. If not, assign one.
-        if outputs is not None:
-            self._assign_variable_names(model, outputs)
+        if combined_outputs is not None:
+            self._assign_variable_names(model, combined_outputs)
 
         # Do the Loop
         if self.config.custom_do_param_sweep is None:
-            local_results_dict = self._do_param_sweep(
-                model,
-                sweep_params,
-                outputs,
-                local_values,
+            sweep_fn = lambda local_values: self._do_param_sweep(
+                model, sweep_params, combined_outputs, local_values
             )
         else:
-            local_results_dict = self.config.custom_do_param_sweep(
-                model,
-                sweep_params,
-                outputs,
-                local_values,
-                **self.config.custom_do_param_sweep_kwargs,
+            sweep_fn = lambda local_values: self.config.custom_do_param_sweep(
+                model, sweep_params, combined_outputs, local_values
             )
 
-        # Aggregate results on Master
-        global_results_dict, global_results_arr = self._aggregate_local_results(
-            global_values, local_results_dict, num_samples, local_num_cases
+        # scatter out the computation
+        self.parallel_manager.scatter(
+            all_parameter_combinations,
+            sweep_fn,
         )
+
+        # gather the results and combine them into the format we want
+        gather_results = self.parallel_manager.gather()
+        global_sweep_results = self._combine_gather_results(gather_results.all_results)
+        combined_outputs = self._combine_outputs(global_sweep_results)
+
+        local_parameters = gather_results.local_results.parameters
+        local_results_dict = gather_results.local_results.results
 
         # Save to file
         global_save_data = self.writer.save_results(
             sweep_params,
-            local_values,
-            global_values,
+            local_parameters,
+            all_parameter_combinations,
             local_results_dict,
-            global_results_dict,
-            global_results_arr,
+            global_sweep_results,
+            combined_outputs,
         )
 
-        return global_save_data, global_results_dict
+        return global_save_data, global_sweep_results
 
 
 class RecursiveParameterSweep(_ParameterSweepBase):
