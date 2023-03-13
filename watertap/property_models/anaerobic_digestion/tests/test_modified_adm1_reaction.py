@@ -15,7 +15,7 @@ Tests for ADM1 reaction package.
 Verified against results from:
 
 X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
-Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions fordynamic simulations of anaerobic digestion processes,
+Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes,
 Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
 
 Authors: Chenyu Wang, Marcus Holly
@@ -574,12 +574,9 @@ class TestReactor:
         m.fs.unit.inlet.cations[0].fix(0.04)
         m.fs.unit.inlet.anions[0].fix(0.02)
 
-        # m.fs.unit.volume_liquid.fix(3400)
-        # m.fs.unit.volume_vapor.fix(300)
+        m.fs.unit.volume_liquid.fix(3400)
+        m.fs.unit.volume_vapor.fix(300)
         m.fs.unit.liquid_outlet.temperature.fix(308.15)
-
-        m.fs.unit.vapor_phase[0].p_sat.fix(101325)
-        # iscale.set_scaling_factor(m.fs.unit.vapor_phase[0].p_sat, 1e-6)
 
         return m
 
