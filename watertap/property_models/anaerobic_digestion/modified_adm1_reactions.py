@@ -599,12 +599,12 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Fraction of proteins from biomass",
         )
-        self.f_si_xb = pyo.Var(
-            initialize=0,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Fraction of soluble inerts from biomass",
-        )
+        # self.f_si_xb = pyo.Var(
+        #     initialize=0,
+        #     units=pyo.units.dimensionless,
+        #     domain=pyo.PositiveReals,
+        #     doc="Fraction of soluble inerts from biomass",
+        # )
         self.K_I_h2s_ac = pyo.Var(
             initialize=460e-3,
             units=pyo.units.kg / pyo.units.m**3,
@@ -1157,7 +1157,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R12", "Liq", "S_I"): self.f_si_xb,
+            ("R12", "Liq", "S_I"): 0,
             ("R12", "Liq", "X_ch"): self.f_ch_xb,
             ("R12", "Liq", "X_pr"): self.f_pr_xb,
             ("R12", "Liq", "X_li"): self.f_li_xb,
@@ -1205,7 +1205,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R13", "Liq", "S_I"): self.f_si_xb,
+            ("R13", "Liq", "S_I"): 0,
             ("R13", "Liq", "X_ch"): self.f_ch_xb,
             ("R13", "Liq", "X_pr"): self.f_pr_xb,
             ("R13", "Liq", "X_li"): self.f_li_xb,
@@ -1253,7 +1253,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R14", "Liq", "S_I"): self.f_si_xb,
+            ("R14", "Liq", "S_I"): 0,
             ("R14", "Liq", "X_ch"): self.f_ch_xb,
             ("R14", "Liq", "X_pr"): self.f_pr_xb,
             ("R14", "Liq", "X_li"): self.f_li_xb,
@@ -1301,7 +1301,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R15", "Liq", "S_I"): self.f_si_xb,
+            ("R15", "Liq", "S_I"): 0,
             ("R15", "Liq", "X_ch"): self.f_ch_xb,
             ("R15", "Liq", "X_pr"): self.f_pr_xb,
             ("R15", "Liq", "X_li"): self.f_li_xb,
@@ -1349,7 +1349,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R16", "Liq", "S_I"): self.f_si_xb,
+            ("R16", "Liq", "S_I"): 0,
             ("R16", "Liq", "X_ch"): self.f_ch_xb,
             ("R16", "Liq", "X_pr"): self.f_pr_xb,
             ("R16", "Liq", "X_li"): self.f_li_xb,
@@ -1397,7 +1397,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R17", "Liq", "S_I"): self.f_si_xb,
+            ("R17", "Liq", "S_I"): 0,
             ("R17", "Liq", "X_ch"): self.f_ch_xb,
             ("R17", "Liq", "X_pr"): self.f_pr_xb,
             ("R17", "Liq", "X_li"): self.f_li_xb,
@@ -1445,7 +1445,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R18", "Liq", "S_I"): self.f_si_xb,
+            ("R18", "Liq", "S_I"): 0,
             ("R18", "Liq", "X_ch"): self.f_ch_xb,
             ("R18", "Liq", "X_pr"): self.f_pr_xb,
             ("R18", "Liq", "X_li"): self.f_li_xb,
@@ -1617,7 +1617,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_xi_xb * self.Pi["X_I"]
             )
             * mw_p,
-            ("R23", "Liq", "S_I"): self.f_si_xb,
+            ("R23", "Liq", "S_I"): 0,
             ("R23", "Liq", "X_ch"): self.f_ch_xb,
             ("R23", "Liq", "X_pr"): self.f_pr_xb,
             ("R23", "Liq", "X_li"): self.f_li_xb,
