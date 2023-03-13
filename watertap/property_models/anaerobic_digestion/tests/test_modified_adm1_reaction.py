@@ -568,11 +568,11 @@ class TestReactor:
         m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(0.010)
         m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(0.010)
         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(25)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(0.010)  # Check this value
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(0.010)  # Check this value
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(0.010)  # Check this value
-        m.fs.unit.inlet.conc_mass_comp[0, "X_K"].fix(0.010)  # Check this value
-        m.fs.unit.inlet.conc_mass_comp[0, "X_Mg"].fix(0.010)  # Check this value
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(0.1)  # Check this value
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(0.1)  # Check this value
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(0.1)  # Check this value
+        m.fs.unit.inlet.conc_mass_comp[0, "X_K"].fix(0.0010)  # Check this value
+        m.fs.unit.inlet.conc_mass_comp[0, "X_Mg"].fix(0.0010)  # Check this value
 
         m.fs.unit.inlet.cations[0].fix(0.04)
         m.fs.unit.inlet.anions[0].fix(0.02)
