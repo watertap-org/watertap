@@ -30,6 +30,7 @@ from pyomo.environ import (
     units,
     value,
     Var,
+    Param,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -342,6 +343,8 @@ class TestParamBlock(object):
             else:
                 assert pytest.approx(value(v), rel=1e-2) == 0
 
+        assert isinstance(model.rparams.Z_h2s, Param)
+        assert value(model.rparams.Z_h2s) == 0
         assert isinstance(model.rparams.f_sI_xc, Var)
         assert value(model.rparams.f_sI_xc) == 0.1
         assert isinstance(model.rparams.f_xI_xc, Var)
