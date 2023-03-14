@@ -167,16 +167,16 @@ def build_gac_cost_param_block(blk):
 )
 def cost_gac(blk, contactor_type=ContactorType.pressure):
     """
-    3 equation capital cost estimation for GAC systems with: (i), contactor/pressure vessel cost by polynomial
-    as a function of individual contactor volume; (ii), initial charge of GAC adsorbent cost by exponential as a
-    function of required mass of GAC adsorbent; and (iii), other process costs (vessels, pipes, instrumentation, and
-    controls) calculated by power law as a function of total contactor(s) volume. Operating costs calculated as the
-    required makeup and regeneration of GAC adsorbent. Energy for backwash and booster pumps considered negligible
-    compared to regeneration costs
+    3 equation capital cost estimation for GAC systems with: (i), contactor/pressure vessel cost by polynomial as a
+    function of individual contactor volume; (ii), initial charge of GAC adsorbent cost by exponential as a function of
+    required mass of GAC adsorbent; and (iii), other process costs (vessels, pipes, instrumentation, and controls)
+    calculated by power law as a function of total contactor(s) volume. Operating costs calculated as the required
+    makeup and regeneration of GAC adsorbent. Energy consumption is estimated from that required for booster, backwash,
+    and residual pumps as a function of total contactor(s) volume.
 
-        Args:
-        contactor_type - ContactorType Enum indicating whether to cost based on steel pressure vessels or concrete
-                         gravity basins (default = ContactorType.pressure)
+    Args:
+        contactor_type: ContactorType Enum indicating whether to cost based on steel pressure vessels or concrete,
+            default = ContactorType.pressure
     """
     make_capital_cost_var(blk)
     blk.contactor_cost = pyo.Var(
