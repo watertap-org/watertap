@@ -418,7 +418,7 @@ class TestGACRobust:
         mr.fs.unit.report()
 
     @pytest.mark.component
-    def test_robust_costing(self, gac_frame_robust):
+    def test_robust_costing_pressure(self, gac_frame_robust):
         mr = gac_frame_robust
 
         mr.fs.costing = WaterTAPCosting()
@@ -455,8 +455,59 @@ class TestGACRobust:
         assert pytest.approx(29520, rel=1e-3) == value(
             mr.fs.unit.costing.gac_regen_cost
         )
+        assert pytest.approx(0.01631, rel=1e-3) == value(
+            mr.fs.unit.costing.energy_consumption
+        )
         assert pytest.approx(43060, rel=1e-3) == value(
             mr.fs.unit.costing.fixed_operating_cost
+        )
+
+    @pytest.mark.component
+    def test_robust_costing_gravity(self, gac_frame_robust):
+        mr_grav = gac_frame_robust.clone()
+
+        mr_grav.fs.costing = WaterTAPCosting()
+        mr_grav.fs.costing.base_currency = pyo.units.USD_2020
+
+        mr_grav.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=mr_grav.fs.costing,
+            costing_method_arguments={"contactor_type": "gravity"},
+        )
+        mr_grav.fs.costing.cost_process()
+        results = solver.solve(mr_grav)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+        # Check for known cost solution of default twin alternating contactors
+        assert value(mr_grav.fs.costing.gac.num_contactors_op) == 1
+        assert value(mr_grav.fs.costing.gac.num_contactors_redundant) == 1
+        assert pytest.approx(163200, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.contactor_cost
+        )
+        assert pytest.approx(4.359, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.adsorbent_unit_cost
+        )
+        assert pytest.approx(17450, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.adsorbent_cost
+        )
+        assert pytest.approx(159500, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.other_process_cost
+        )
+        assert pytest.approx(340200, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.capital_cost
+        )
+        assert pytest.approx(13540, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.gac_makeup_cost
+        )
+        assert pytest.approx(29520, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.gac_regen_cost
+        )
+        assert pytest.approx(2.476, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.energy_consumption
+        )
+        assert pytest.approx(43060, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.fixed_operating_cost
         )
 
     @pytest.mark.component
@@ -730,4 +781,35 @@ class TestGACMulti:
                 property_package=me.fs.properties,
                 film_transfer_coefficient_type="calculated",
                 surface_diffusion_coefficient_type="calculated",
+            )
+
+        with pytest.raises(
+            ConfigurationError,
+            match="fs.unit received invalid argument for contactor_type:"
+            " vessel. Argument must be a member of the ContactorType Enum.",
+        ):
+            me = ConcreteModel()
+            me.fs = FlowsheetBlock(dynamic=False)
+
+            me.fs.properties = MCASParameterBlock(
+                solute_list=["TCE"],
+                mw_data={"H2O": 0.018, "TCE": 0.1314},
+                diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+                molar_volume_data={("Liq", "TCE"): 9.81e-5},
+            )
+            me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+            me.fs.properties.dens_mass_const = 1000
+
+            me.fs.unit = GAC(
+                property_package=me.fs.properties,
+                film_transfer_coefficient_type="calculated",
+                surface_diffusion_coefficient_type="calculated",
+            )
+
+            me.fs.costing = WaterTAPCosting()
+            me.fs.costing.base_currency = pyo.units.USD_2020
+
+            me.fs.unit.costing = UnitModelCostingBlock(
+                flowsheet_costing_block=me.fs.costing,
+                costing_method_arguments={"contactor_type": "vessel"},
             )

@@ -59,17 +59,17 @@ def build_gac_cost_param_block(blk):
         doc="GAC steel pressure contactor polynomial cost coefficient 3",
     )
     blk.grav_contactor_cost_coeff_0 = pyo.Var(
-        initialize=75131,
+        initialize=75131.3,
         units=pyo.units.USD_2020,
         doc="GAC concrete gravity contactor polynomial cost coefficient 0",
     )
     blk.grav_contactor_cost_coeff_1 = pyo.Var(
-        initialize=735.55,
+        initialize=735.550,
         units=pyo.units.USD_2020 * (pyo.units.m**3) ** -1,
         doc="GAC concrete gravity contactor polynomial cost coefficient 1",
     )
     blk.grav_contactor_cost_coeff_2 = pyo.Var(
-        initialize=-1.0183,
+        initialize=-1.01827,
         units=pyo.units.USD_2020 * (pyo.units.m**3) ** -2,
         doc="GAC concrete gravity contactor polynomial cost coefficient 2",
     )
@@ -105,12 +105,12 @@ def build_gac_cost_param_block(blk):
         doc="GAC other cost power law exponent",
     )
     blk.grav_other_cost_coeff = pyo.Var(
-        initialize=38847,
+        initialize=38846.9,
         units=pyo.units.USD_2020,
         doc="GAC other cost power law coefficient",
     )
     blk.grav_other_cost_exp = pyo.Var(
-        initialize=0.4906,
+        initialize=0.490571,
         units=pyo.units.dimensionless,
         doc="GAC other cost power law exponent",
     )
@@ -130,12 +130,12 @@ def build_gac_cost_param_block(blk):
         doc="Unit cost to makeup spent GAC adsorbent with fresh adsorbent",
     )
     blk.pres_energy_coeff_0 = pyo.Var(
-        initialize=0.0008,
+        initialize=8.09926e-4,
         units=pyo.units.kW,
         doc="GAC steel pressure contactor polynomial energy consumption coefficient 0",
     )
     blk.pres_energy_coeff_1 = pyo.Var(
-        initialize=0.0009,
+        initialize=8.70577e-4,
         units=pyo.units.kW * (pyo.units.m**3) ** -1,
         doc="GAC steel pressure contactor polynomial energy consumption coefficient 1",
     )
@@ -145,17 +145,17 @@ def build_gac_cost_param_block(blk):
         doc="GAC steel pressure contactor polynomial energy consumption coefficient 2",
     )
     blk.grav_energy_coeff_0 = pyo.Var(
-        initialize=0.1238,
+        initialize=0.123782,
         units=pyo.units.kW,
         doc="GAC concrete gravity contactor polynomial energy consumption coefficient 0",
     )
     blk.grav_energy_coeff_1 = pyo.Var(
-        initialize=0.1324,
+        initialize=0.132403,
         units=pyo.units.kW * (pyo.units.m**3) ** -1,
         doc="GAC concrete gravity contactor polynomial energy consumption coefficient 1",
     )
     blk.grav_energy_coeff_2 = pyo.Var(
-        initialize=-1e-5,
+        initialize=-1.41512e-5,
         units=pyo.units.kW * (pyo.units.m**3) ** -2,
         doc="GAC concrete gravity contactor polynomial energy consumption coefficient 2",
     )
