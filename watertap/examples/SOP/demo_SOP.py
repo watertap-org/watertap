@@ -6,8 +6,8 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 
-import watertap.examples.SOP.SOP_prop_pack as props
-from watertap.examples.SOP.selective_oil_permeation import SelectiveOilPermeation
+import watertap.property_models.SOP_prop_pack as props
+from watertap.unit_models.selective_oil_permeation import SelectiveOilPermeation
 
 
 def detect_badly_scaled_vars(m):

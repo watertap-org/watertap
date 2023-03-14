@@ -5,7 +5,7 @@ from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 
-import watertap.examples.SOP.SOP_prop_pack as props
+import watertap.property_models.SOP_prop_pack as props
 
 
 def detect_badly_scaled_vars(m):
