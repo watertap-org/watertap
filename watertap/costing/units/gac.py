@@ -175,8 +175,8 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
     compared to regeneration costs
 
         Args:
-        contactor_type: ContactorType Enum indicating whether to cost based on steel pressure vessels or concrete gravity beds,
-            default = ContactorType.pressure
+        contactor_type - ContactorType Enum indicating whether to cost based on steel pressure vessels or concrete
+                         gravity basins (default = ContactorType.pressure)
     """
     make_capital_cost_var(blk)
     blk.contactor_cost = pyo.Var(
