@@ -14,6 +14,9 @@ This module contains a utility function for the scaling of WaterTAP property mod
 """
 import pyomo.environ as pyo
 import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 
 def transform_property_constraints(self):
@@ -29,3 +32,10 @@ def transform_property_constraints(self):
                 for ind, c in con.items():
                     sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
                     iscale.constraint_scaling_transform(c, sf)
+            else:
+                msg = (
+                    f"One or more property constraints are not scaled. "
+                    "This suggests that the user defined a property in metadata but failed to "
+                    "follow the the naming convention for its constraint: 'eq_' + name in metadata."
+                )
+                _log.warning(msg)
