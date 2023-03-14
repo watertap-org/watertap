@@ -398,6 +398,11 @@ class WaterParameterData(PhysicalParameterBlock):
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
                 "enth_flow_phase": {"method": "_enth_flow_phase"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
                 "dh_vap_mass": {"method": "_dh_vap_mass"},
             }
         )
