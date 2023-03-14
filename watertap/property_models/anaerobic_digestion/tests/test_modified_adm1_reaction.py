@@ -31,6 +31,8 @@ from pyomo.environ import (
     value,
     Var,
     Param,
+    Objective,
+    SolverFactory,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -41,6 +43,7 @@ from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_diagnostics import DegeneracyHunter
 
 from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
@@ -52,6 +55,7 @@ from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import
     ModifiedADM1ReactionParameterBlock,
     ModifiedADM1ReactionBlock,
 )
+from watertap.core.util.model_diagnostics.infeasible import *
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -577,8 +581,8 @@ class TestReactor:
         m.fs.unit.inlet.cations[0].fix(0.04)
         m.fs.unit.inlet.anions[0].fix(0.02)
 
-        m.fs.unit.volume_liquid.fix(3400)
-        m.fs.unit.volume_vapor.fix(300)
+        m.fs.unit.volume_liquid.fix(3400)  # originally 3400
+        m.fs.unit.volume_vapor.fix(300)  # originally 300
         m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
         return m
@@ -608,7 +612,15 @@ class TestReactor:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-        model.fs.unit.initialize(optarg={"bound_push": 1e-8})
+        # model.fs.dummy_objective = Objective(expr=0)
+        # solver.options["max_iter"] = 1
+        # solver.solve(model, tee=True)
+        # dh = DegeneracyHunter(model, solver=SolverFactory("cbc"))
+        # dh.check_residuals(tol=0.1)
+        #
+        # print_close_to_bounds(model)
+        # print_infeasible_constraints(model)
+        model.fs.unit.initialize(outlvl=idaeslog.DEBUG)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

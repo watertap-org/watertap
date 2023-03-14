@@ -1784,7 +1784,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         add_object_reference(self, "temperature", self.state_ref.temperature)
 
         # Initial values of rates of reaction [2]
-        # TODO: Find rxn rate values for R19-25
+        # TODO: Recalculate these rxn rates
         self.rates = {
             "R1": 3.235e-06,
             "R2": 1.187e-05,
