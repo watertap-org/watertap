@@ -218,59 +218,39 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
         doc="Approximate GAC system energy consumption",
     )
 
+    # intermediate variables to shorten constraint code
+    num_contactors = (
+        blk.costing_package.gac.num_contactors_op
+        + blk.costing_package.gac.num_contactors_redundant
+    )
+    unit_contactor_volume = (
+        blk.unit_model.bed_volume / blk.costing_package.gac.num_contactors_op
+    )
+    total_bed_volume = num_contactors * unit_contactor_volume
+
     def rule_contactor_cost(b):
         if contactor_type == ContactorType.pressure:
-            return b.contactor_cost == (
-                b.costing_package.gac.num_contactors_op
-                + b.costing_package.gac.num_contactors_redundant
-            ) * pyo.units.convert(
+            return b.contactor_cost == num_contactors * pyo.units.convert(
                 (
                     b.costing_package.gac.pres_contactor_cost_coeff_3
-                    * (
-                        b.unit_model.bed_volume
-                        / b.costing_package.gac.num_contactors_op
-                    )
-                    ** 3
+                    * unit_contactor_volume**3
                     + b.costing_package.gac.pres_contactor_cost_coeff_2
-                    * (
-                        b.unit_model.bed_volume
-                        / b.costing_package.gac.num_contactors_op
-                    )
-                    ** 2
+                    * unit_contactor_volume**2
                     + b.costing_package.gac.pres_contactor_cost_coeff_1
-                    * (
-                        b.unit_model.bed_volume
-                        / b.costing_package.gac.num_contactors_op
-                    )
-                    ** 1
+                    * unit_contactor_volume**1
                     + b.costing_package.gac.pres_contactor_cost_coeff_0
                 ),
                 to_units=b.costing_package.base_currency,
             )
         elif contactor_type == ContactorType.gravity:
-            return b.contactor_cost == (
-                b.costing_package.gac.num_contactors_op
-                + b.costing_package.gac.num_contactors_redundant
-            ) * pyo.units.convert(
+            return b.contactor_cost == num_contactors * pyo.units.convert(
                 (
                     b.costing_package.gac.grav_contactor_cost_coeff_3
-                    * (
-                        b.unit_model.bed_volume
-                        / b.costing_package.gac.num_contactors_op
-                    )
-                    ** 3
+                    * unit_contactor_volume**3
                     + b.costing_package.gac.grav_contactor_cost_coeff_2
-                    * (
-                        b.unit_model.bed_volume
-                        / b.costing_package.gac.num_contactors_op
-                    )
-                    ** 2
+                    * unit_contactor_volume**2
                     + b.costing_package.gac.grav_contactor_cost_coeff_1
-                    * (
-                        b.unit_model.bed_volume
-                        / b.costing_package.gac.num_contactors_op
-                    )
-                    ** 1
+                    * unit_contactor_volume**1
                     + b.costing_package.gac.grav_contactor_cost_coeff_0
                 ),
                 to_units=b.costing_package.base_currency,
@@ -313,17 +293,7 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
                 (
                     b.costing_package.gac.pres_other_cost_coeff
                     * ((pyo.units.m**3) ** -b.costing_package.gac.pres_other_cost_exp)
-                    * (
-                        (
-                            b.costing_package.gac.num_contactors_op
-                            + b.costing_package.gac.num_contactors_redundant
-                        )
-                        * (
-                            b.unit_model.bed_volume
-                            / b.costing_package.gac.num_contactors_op
-                        )
-                    )
-                    ** b.costing_package.gac.pres_other_cost_exp
+                    * total_bed_volume**b.costing_package.gac.pres_other_cost_exp
                 ),
                 to_units=b.costing_package.base_currency,
             )
@@ -332,17 +302,7 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
                 (
                     b.costing_package.gac.grav_other_cost_coeff
                     * ((pyo.units.m**3) ** -b.costing_package.gac.grav_other_cost_exp)
-                    * (
-                        (
-                            b.costing_package.gac.num_contactors_op
-                            + b.costing_package.gac.num_contactors_redundant
-                        )
-                        * (
-                            b.unit_model.bed_volume
-                            / b.costing_package.gac.num_contactors_op
-                        )
-                    )
-                    ** b.costing_package.gac.grav_other_cost_exp
+                    * total_bed_volume**b.costing_package.gac.grav_other_cost_exp
                 ),
                 to_units=b.costing_package.base_currency,
             )
@@ -401,10 +361,6 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
     )
 
     def rule_energy_consumption(b):
-        total_bed_volume = (
-            b.costing_package.gac.num_contactors_op
-            + b.costing_package.gac.num_contactors_redundant
-        ) * (b.unit_model.bed_volume / b.costing_package.gac.num_contactors_op)
         if contactor_type == ContactorType.pressure:
             return b.energy_consumption == (
                 b.costing_package.gac.pres_energy_coeff_2 * (total_bed_volume**2)
