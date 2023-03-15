@@ -94,7 +94,7 @@ pressure_vessel:
       value: 2204.95
       units: USD_2020/m^3
     contactor_cost_coeff_2:
-      value: 15.9378
+      value: -15.9378
       units: USD_2020/m^6
     contactor_cost_coeff_3:
       value: 0.110592
@@ -146,16 +146,16 @@ gravity:
   capital_cost:
     cost_factor: None
     contactor_cost_coeff_0:
-      value: 10010.9
+      value: 75131.3
       units: USD_2020
     contactor_cost_coeff_1:
-      value: 2204.95
+      value: 735.550
       units: USD_2020/m^3
     contactor_cost_coeff_2:
-      value: 15.9378
+      value: -1.01827
       units: USD_2020/m^6
     contactor_cost_coeff_3:
-      value: 0.110592
+      value: 0
       units: USD_2020/m^9
     adsorbent_unit_cost_coeff:
       value: 4.58342
@@ -164,10 +164,10 @@ gravity:
       value: 1.25311e-5
       units: 1/kg
     other_cost_coeff:
-      value: 16660.7
+      value: 38846.9
       units: USD_2020
     other_cost_exp:
-      value: 0.552207
+      value: 0.490571
       units: dimensionless
     bed_mass_max_ref:
       value: 18143.7
