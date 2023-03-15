@@ -400,7 +400,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             initialize=0.8,
             mutable=True,
             units=pyunits.dimensionless,
-            bounds=(0, 1),
             doc="Pump efficiency",
         )
 
@@ -416,7 +415,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         self.rinse_bv = Param(
             initialize=5,
             mutable=True,
-            bounds=(2, 10),
             doc="Number of bed volumes for rinse step",
         )
 
@@ -424,7 +422,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             initialize=5,
             mutable=True,
             units=pyunits.m / pyunits.hour,
-            bounds=(4.5, 6.5),
             doc="Backwash loading rate [m/hr]",
         )
 
@@ -432,14 +429,12 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             initialize=600,
             mutable=True,
             units=pyunits.s,
-            bounds=(300, 1200),
             doc="Backwash time",
         )
 
         self.regen_recycle = Param(
             initialize=1,
             mutable=True,
-            bounds=(1, None),
             units=pyunits.dimensionless,
             doc="Number of cycles the regenerant can be reused before disposal",
         )
