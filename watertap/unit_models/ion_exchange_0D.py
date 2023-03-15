@@ -240,7 +240,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         if "regenerant" in self.config.keys():
             self.regen_chem = RegenerantChem(self.config["regenerant"])
 
-        # this creates blank scaling factors, which are populated later
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         self.process_flow = ControlVolume0DBlock(
@@ -266,7 +265,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
-        tmp_dict["defined_state"] = False  # inlet block is an inlet
+        tmp_dict["defined_state"] = False
 
         self.regeneration_stream = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
@@ -274,7 +273,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             **tmp_dict,
         )
 
-        # Add ports - oftentimes users interact with these rather than the state blocks
         self.add_inlet_port(name="inlet", block=self.process_flow)
         self.add_outlet_port(name="outlet", block=self.process_flow)
         self.add_outlet_port(name="regen", block=self.regeneration_stream)
@@ -436,11 +434,25 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Backwash time",
         )
 
+        self.service_to_regen_flow_ratio = Param(
+            initialize=3,
+            mutable=True,
+            units=pyunits.dimensionless,
+            doc="Ratio of service flow rate to regeneration flow rate",
+        )
+
         self.regen_recycle = Param(
             initialize=1,
             mutable=True,
             units=pyunits.dimensionless,
             doc="Number of cycles the regenerant can be reused before disposal",
+        )
+
+        self.number_columns_redund = Param(
+            initialize=1,
+            mutable=True,
+            units=pyunits.dimensionless,
+            doc="Number of redundant columns for ion exchange process",
         )
 
         # ====== Resin variables ====== #
@@ -556,25 +568,18 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Column diameter",
         )
 
-        self.col_vol_per = Var(
-            initialize=10,
-            bounds=(0.02, 70),
-            units=pyunits.m**3,
-            doc="Column volume",
-        )
+        # self.col_vol_per = Var(
+        #     initialize=10,
+        #     bounds=(0.02, 70),
+        #     units=pyunits.m**3,
+        #     doc="Column volume",
+        # )
 
         self.number_columns = Var(
             initialize=2,
             bounds=(1, None),
             units=pyunits.dimensionless,
             doc="Number of operational columns for ion exchange process",
-        )
-
-        self.number_columns_redund = Var(
-            initialize=1,
-            bounds=(1, None),
-            units=pyunits.dimensionless,
-            doc="Number of redundant columns for ion exchange process",
         )
 
         # ====== Kinetic variables ====== #
@@ -631,12 +636,12 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Height of a transfer unit",
         )
 
-        self.dimensionless_time = Var(
-            initialize=1,
-            # bounds=(-1, 1),
-            units=pyunits.dimensionless,
-            doc="Dimensionless time",
-        )
+        # self.dimensionless_time = Var(
+        #     initialize=1,
+        #     # bounds=(-1, 1),
+        #     units=pyunits.dimensionless,
+        #     doc="Dimensionless time",
+        # )
 
         self.mass_in = Var(
             self.target_ion_set,
@@ -740,13 +745,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )
 
         # ====== Regeneration ====== #
-
-        self.service_to_regen_flow_ratio = Var(
-            initialize=3,
-            bounds=(2, 7),  # WC&P
-            units=pyunits.dimensionless,
-            doc="Ratio of service flow rate to regeneration flow rate",
-        )
 
         self.regen_dose = Var(
             initialize=300,
@@ -947,11 +945,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Column volume calculated from bed volume")
         def eq_col_vol_per(b):
-            return b.col_vol_per == b.col_height * (b.bed_vol / b.bed_depth)
+            # return b.col_vol_per == b.col_height * (b.bed_vol / b.bed_depth)
+            return Constants.pi * (b.col_diam / 2) ** 2 == (b.bed_vol / b.bed_depth)
 
-        @self.Constraint(doc="Column volume calculated from column diameter")
-        def eq_col_vol_per2(b):
-            return b.col_vol_per == Constants.pi * (b.col_diam / 2) ** 2 * b.col_height
+        # @self.Constraint(doc="Column volume calculated from column diameter")
+        # def eq_col_vol_per2(b):
+        #     return b.col_vol_per == Constants.pi * (b.col_diam / 2) ** 2 * b.col_height
+        @self.Expression(doc="Column volume calculated from bed volume")
+        def col_vol_per(b):
+            return b.col_height * (b.bed_vol / b.bed_depth)
 
         @self.Constraint(doc="Column diameter calculation")
         def eq_col_diam_ratio(b):
@@ -999,22 +1001,44 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )
         def eq_fixed_pattern_soln(b, j):
             return (
-                b.num_transfer_units * (b.dimensionless_time - 1)
+                b.num_transfer_units
+                * (
+                    (
+                        (
+                            (b.vel_inter * b.t_breakthru * b.bed_porosity) / b.bed_depth
+                            - b.bed_porosity
+                        )
+                        / b.partition_ratio
+                    )
+                    - 1
+                )
                 == (log(b.c_norm[j]) - b.langmuir[j] * log(1 - b.c_norm[j]))
                 / (1 - b.langmuir[j])
                 + 1
             )
 
-        @self.Constraint(doc="Dimensionless time")
-        def eq_dimensionless_time(b):
+        @self.Expression(doc="Dimensionless time")
+        def dimensionless_time(b):
             return (
-                b.dimensionless_time
-                == (
-                    (b.vel_inter * b.t_breakthru * b.bed_porosity) / b.bed_depth
-                    - b.bed_porosity
-                )
-                / b.partition_ratio
-            )
+                (b.vel_inter * b.t_breakthru * b.bed_porosity) / b.bed_depth
+                - b.bed_porosity
+            ) / b.partition_ratio
+
+        @self.Expression(doc="Left hand side of constant pattern sol'n")
+        def lh(b):
+            return b.num_transfer_units * (b.dimensionless_time - 1)
+            # )
+
+        # @self.Constraint(doc="Dimensionless time")
+        # def eq_dimensionless_time(b):
+        #     return (
+        #         b.dimensionless_time
+        #         == (
+        #             (b.vel_inter * b.t_breakthru * b.bed_porosity) / b.bed_depth
+        #             - b.bed_porosity
+        #         )
+        #         / b.partition_ratio
+        #     )
 
         @self.Constraint(self.target_ion_set, doc="Number of mass-transfer units")
         def eq_num_transfer_units(b, j):
@@ -1030,10 +1054,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def eq_mass_in(b, j):
             prop_in = b.process_flow.properties_in[0]
             return (
-                b.mass_in[j]
-                == prop_in.flow_vol_phase["Liq"]
-                * prop_in.conc_equiv_phase_comp["Liq", j]
-                * b.t_breakthru
+                b.mass_in[j] == prop_in.flow_equiv_phase_comp["Liq", j] * b.t_breakthru
             )
 
         @self.Constraint(self.target_ion_set, doc="Removed total mass of ion")
@@ -1042,24 +1063,34 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 b.resin_eq_capacity * b.resin_bulk_dens * b.bed_vol * b.number_columns,
                 to_units=pyunits.mol,
             )
+            # return b.mass_removed[j] == b.process_flow.mass_transfer_term[0, "Liq", j] * b.t_breakthru
+            # return b.process_flow.mass_transfer_term[0, "Liq", j] * b.t_breakthru == pyunits.convert(
+            #     b.resin_eq_capacity * b.resin_bulk_dens * b.bed_vol * b.number_columns,
+            #     to_units=pyunits.mol,
+            # )
 
         @self.Constraint(self.target_ion_set, doc="Mass of ion in effluent")
         def eq_mass_out(b, j):
-            return b.mass_out[j] == b.mass_in[j] - b.mass_removed[j]
-
-        @self.Constraint(ion_set, doc="Steady-state effluent concentration")
-        def eq_ss_effluent(b, j):
-            prop_in = b.process_flow.properties_in[0]
             prop_out = b.process_flow.properties_out[0]
-            if j == target_ion:
-                return prop_out.conc_equiv_phase_comp["Liq", j] == b.mass_out[j] / (
-                    prop_in.flow_vol_phase["Liq"] * b.t_breakthru
-                )
-            else:
-                return (
-                    prop_out.conc_equiv_phase_comp["Liq", j]
-                    == prop_in.conc_equiv_phase_comp["Liq", j]
-                )
+            return (
+                b.mass_out[j]
+                == prop_out.flow_equiv_phase_comp["Liq", j] * b.t_breakthru
+            )
+            # return b.mass_out
+
+        # @self.Constraint(ion_set, doc="Steady-state effluent concentration")
+        # def eq_ss_effluent(b, j):
+        #     prop_in = b.process_flow.properties_in[0]
+        #     prop_out = b.process_flow.properties_out[0]
+        #     if j == target_ion:
+        #         return prop_out.conc_equiv_phase_comp["Liq", j] == b.mass_out[j] / (
+        #             prop_in.flow_vol_phase["Liq"] * b.t_breakthru
+        #         )
+        #     else:
+        #         return (
+        #             prop_out.conc_equiv_phase_comp["Liq", j]
+        #             == prop_in.conc_equiv_phase_comp["Liq", j]
+        #         )
 
         # @self.Constraint(ion_set, doc="Steady-state regen concentration")
         # def eq_ss_regen(b, j):
@@ -1338,7 +1369,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.mass_removed, 1e-5)
 
-        iscale.set_scaling_factor(self.mass_out, 1)
+        iscale.set_scaling_factor(self.mass_out, 1e-3)
 
         iscale.set_scaling_factor(self.vel_bed, 1e3)
 
@@ -1379,6 +1410,10 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     "Liq", self.config.target_ion
                 ]
             )
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_mass_removed.items():
+            sf = iscale.get_scaling_factor(self.mass_removed[ind])
             iscale.constraint_scaling_transform(c, sf)
 
     def _get_stream_table_contents(self, time_point=0):
