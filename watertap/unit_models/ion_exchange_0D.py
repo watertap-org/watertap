@@ -396,6 +396,54 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Pressure drop equation C",
         )
 
+        self.pump_efficiency = Param(
+            initialize=0.8,
+            mutable=True,
+            units=pyunits.dimensionless,
+            bounds=(0, 1),
+            doc="Pump efficiency",
+        )
+
+        # Rinse, Regen, Backwashing params
+
+        self.t_regen = Param(
+            initialize=1800,
+            mutable=True,
+            units=pyunits.s,
+            doc="Regeneration time",
+        )
+
+        self.rinse_bv = Param(
+            initialize=5,
+            mutable=True,
+            bounds=(2, 10),
+            doc="Number of bed volumes for rinse step",
+        )
+
+        self.bw_rate = Param(
+            initialize=5,
+            mutable=True,
+            units=pyunits.m / pyunits.hour,
+            bounds=(4.5, 6.5),
+            doc="Backwash loading rate [m/hr]",
+        )
+
+        self.t_bw = Param(
+            initialize=600,
+            mutable=True,
+            units=pyunits.s,
+            bounds=(300, 1200),
+            doc="Backwash time",
+        )
+
+        self.regen_recycle = Param(
+            initialize=1,
+            mutable=True,
+            bounds=(1, None),
+            units=pyunits.dimensionless,
+            doc="Number of cycles the regenerant can be reused before disposal",
+        )
+
         # ====== Resin variables ====== #
 
         self.resin_max_capacity = Var(
@@ -665,12 +713,12 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Service flow rate [BV/hr]",
         )
 
-        self.pressure_drop = Var(
-            initialize=14,
-            units=pyunits.psi,
-            bounds=(0, 25),
-            doc="Pressure drop across column",  # max pressure drop is 25 psi, MWH
-        )
+        # self.pressure_drop = Var(
+        #     initialize=14,
+        #     units=pyunits.psi,
+        #     bounds=(0, 25),
+        #     doc="Pressure drop across column",  # max pressure drop is 25 psi, MWH
+        # )
 
         # ====== Dimensionless variables ====== #
 
@@ -729,13 +777,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Ratio of service flow rate to regeneration flow rate",
         )
 
-        self.regen_recycle = Var(
-            initialize=1,
-            bounds=(1, None),
-            units=pyunits.dimensionless,
-            doc="Number of cycles the regenerant can be reused before disposal",
-        )
-
         self.regen_dose = Var(
             initialize=300,
             units=pyunits.kg / pyunits.m**3,
@@ -743,30 +784,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Regenerant dose required for regeneration per volume of resin [kg regenerant/m3 resin]",
         )
 
-        self.t_regen = Var(
-            initialize=1800,
-            units=pyunits.s,
-            doc="Regeneration time",
-        )
-
         # ====== Backwashing ====== #
-
-        self.bw_rate = Var(
-            initialize=5,
-            units=pyunits.m / pyunits.hour,
-            bounds=(4.5, 6.5),
-            doc="Backwash loading rate [m/hr]",
-        )
 
         self.bw_flow = Var(
             initialize=0.1,
             bounds=(0, None),
             units=pyunits.m**3 / pyunits.s,
             doc="Backwashing volumetric flow rate",
-        )
-
-        self.t_bw = Var(
-            initialize=600, units=pyunits.s, bounds=(300, 1200), doc="Backwash time"
         )
 
         self.bed_expansion_frac = Var(
@@ -784,12 +808,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )
 
         # ====== Rinse ====== #
-
-        self.rinse_bv = Var(
-            initialize=5,
-            bounds=(2, 10),
-            doc="Number of bed volumes for rinse step",
-        )
 
         self.rinse_flow = Var(
             initialize=0.1,
@@ -815,13 +833,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         self.rinse_pump_power = Var(
             initialize=0.1, units=pyunits.kW, doc="Rinse pump power"
-        )
-
-        self.pump_efficiency = Var(
-            initialize=0.8,
-            units=pyunits.dimensionless,
-            bounds=(0, 1),
-            doc="Pump efficiency",
         )
 
         # =========== EQUILIBRIUM ===========
