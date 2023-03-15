@@ -235,26 +235,43 @@ The following parameters are constructed when applying the GAC costing method in
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
 
-   "Number of GAC contactors in operation in parallel", ":math:`N_{op}`", "gac_num_contactors_op", "1", ":math:`\text{dimensionless}`"
-   "Number of off-line redundant GAC contactors in parallel", ":math:`N_{red}`", "gac_num_contactors_redundant", "1", ":math:`\text{dimensionless}`"
-   "GAC contactor polynomial cost coefficient 0", ":math:`x_0`", "gac_contactor_cost_coeff_0", "10010.9", ":math:`$`"
-   "GAC contactor polynomial cost coefficient 1", ":math:`x_1`", "gac_contactor_cost_coeff_1", "2204.95", ":math:`$/m^3`"
-   "GAC contactor polynomial cost coefficient 2", ":math:`x_2`", "gac_contactor_cost_coeff_2", "-15.9378", ":math:`$/\left( m^3 \right)^2`"
-   "GAC contactor polynomial cost coefficient 3", ":math:`x_3`", "gac_contactor_cost_coeff_3", "0.110592", ":math:`$/\left( m^3 \right)^3`"
+   "Number of GAC contactors in operation in parallel", ":math:`N_{op}`", "num_contactors_op", "1", ":math:`\text{dimensionless}`"
+   "Number of off-line redundant GAC contactors in parallel", ":math:`N_{red}`", "num_contactors_redundant", "1", ":math:`\text{dimensionless}`"
+   "GAC steel pressure contactor polynomial cost coefficient 0", ":math:`x_{p0}`", "pres_contactor_cost_coeff_0", "10010.9", ":math:`$`"
+   "GAC steel pressure contactor polynomial cost coefficient 1", ":math:`x_{p1}`", "pres_contactor_cost_coeff_1", "2204.95", ":math:`$/m^3`"
+   "GAC steel pressure contactor polynomial cost coefficient 2", ":math:`x_{p2}`", "pres_contactor_cost_coeff_2", "-15.9378", ":math:`$/\left( m^3 \right)^2`"
+   "GAC steel pressure contactor polynomial cost coefficient 3", ":math:`x_{p3}`", "pres_contactor_cost_coeff_3", "0.110592", ":math:`$/\left( m^3 \right)^3`"
+   "GAC concrete gravity contactor polynomial cost coefficient 0", ":math:`x_{g0}`", "grav_contactor_cost_coeff_0", "75131.3", ":math:`$`"
+   "GAC concrete gravity contactor polynomial cost coefficient 1", ":math:`x_{g1}`", "grav_contactor_cost_coeff_1", "735.550", ":math:`$/m^3`"
+   "GAC concrete gravity contactor polynomial cost coefficient 2", ":math:`x_{g2}`", "grav_contactor_cost_coeff_2", "-1.01827", ":math:`$/\left( m^3 \right)^2`"
+   "GAC concrete gravity contactor polynomial cost coefficient 3", ":math:`x_{g3}`", "grav_contactor_cost_coeff_3", "0", ":math:`$/\left( m^3 \right)^3`"
    "Reference maximum value of GAC mass needed for initial charge where economy of scale no longer discounts the unit price", ":math:`M_{GAC}^{ref}`", "bed_mass_gac_max_ref", "18143.7", ":math:`kg`"
-   "GAC adsorbent exponential cost pre-exponential coefficient", ":math:`y_0`", "gac_adsorbent_unit_cost_coeff", "4.58342", ":math:`$/kg`"
-   "GAC adsorbent exponential cost parameter coefficient", ":math:`y_1`", "gac_adsorbent_unit_cost_exp_coeff ", "-1.25311e-5", ":math:`kg^{-1}`"
-   "GAC other cost power law coefficient", ":math:`z_0`", "gac_other_cost_coeff", "16660.7", ":math:`$/\left( m^3 \right)^{z_1}`"
-   "GAC other cost power law exponent", ":math:`z_1`", "gac_other_cost_exp", "0.552207", ":math:`\text{dimensionless}`"
-   "Fraction of spent GAC adsorbent that can be regenerated for reuse", ":math:`f_{regen}`", "gac_regen_frac", "0.70", ":math:`\text{dimensionless}`"
-   "Unit cost to regenerate spent GAC adsorbent by an offsite regeneration facility", ":math:`C_{regen}`", "gac_regen_unit_cost", "4.28352", ":math:`$/kg`"
-   "Unit cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{makeup}`", "gac_makeup_unit_cost", "4.58223", ":math:`$/kg`"
+   "GAC adsorbent exponential cost pre-exponential coefficient", ":math:`y_0`", "adsorbent_unit_cost_coeff", "4.58342", ":math:`$/kg`"
+   "GAC adsorbent exponential cost parameter coefficient", ":math:`y_1`", "adsorbent_unit_cost_exp_coeff ", "-1.25311e-5", ":math:`kg^{-1}`"
+   "GAC pressure other cost power law coefficient", ":math:`z_{p0}`", "pres_other_cost_coeff", "16660.7", ":math:`$/\left( m^3 \right)^{z_1}`"
+   "GAC pressure other cost power law exponent", ":math:`z_{p1}`", "pres_other_cost_exp", "0.552207", ":math:`\text{dimensionless}`"
+   "GAC gravity other cost power law coefficient", ":math:`z_{g0}`", "grav_other_cost_coeff", "38846.9", ":math:`$/\left( m^3 \right)^{z_1}`"
+   "GAC gravity other cost power law exponent", ":math:`z_{g1}`", "grav_other_cost_exp", "0.490571", ":math:`\text{dimensionless}`"
+   "Fraction of spent GAC adsorbent that can be regenerated for reuse", ":math:`f_{regen}`", "regen_frac", "0.70", ":math:`\text{dimensionless}`"
+   "Unit cost to regenerate spent GAC adsorbent by an offsite regeneration facility", ":math:`C_{regen}`", "regen_unit_cost", "4.28352", ":math:`$/kg`"
+   "Unit cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{makeup}`", "makeup_unit_cost", "4.58223", ":math:`$/kg`"
+   "GAC steel pressure contactor polynomial energy consumption coefficient 0", ":math:`\alpha_{p0}`", "pres_energy_coeff_0", "", ":math:`kW`"
+   "GAC steel pressure contactor polynomial energy consumption coefficient 1", ":math:`\alpha_{p1}`", "pres_energy_coeff_1", "", ":math:`kW/m^3`"
+   "GAC steel pressure contactor polynomial energy consumption coefficient 2", ":math:`\alpha_{p2}`", "pres_energy_coeff_2", "", ":math:`kW/\left( m^3 \right)^2`"
+   "GAC steel pressure contactor polynomial energy consumption coefficient 3", ":math:`\alpha_{p3}`", "pres_energy_coeff_3", "", ":math:`kW/\left( m^3 \right)^3`"
+   "GAC concrete gravity contactor polynomial energy consumption coefficient 0", ":math:`\alpha_{g0}`", "grav_energy_coeff_0", "", ":math:`kW`"
+   "GAC concrete gravity contactor polynomial energy consumption coefficient 1", ":math:`\alpha_{g1}`", "grav_energy_coeff_1", "", ":math:`kW/m^3`"
+   "GAC concrete gravity contactor polynomial energy consumption coefficient 2", ":math:`\alpha_{g2}`", "grav_energy_coeff_2", "", ":math:`kW/\left( m^3 \right)^2`"
+   "GAC concrete gravity contactor polynomial energy consumption coefficient 3", ":math:`\alpha_{g3}`", "grav_energy_coeff_3", "", ":math:`kW/\left( m^3 \right)^3`"
 
 
 Costing GAC contactors is defaulted to purchasing 1 operational and 1 redundant contactor for alternating operation. For large systems this may be a poor
 assumption considering vessel sizing and achieving pseudo-steady state.  The number of contactors input by the user should justify reasonable
 (commercially available) dimensions of identical modular contactors in parallel. When costing several operational vessels, the area reported
-in the unit model should be interpreted as the sum of the areas across all operating GAC contactors.
+in the unit model should be interpreted as the sum of the areas across all operating GAC contactors. The costing
+parameters may be selected from either steel pressure-fed vessels or concrete gravity-fed basins by the
+``surface_diffusion_coefficient_type`` argument. Note this only effects costing calculations are volume dimensions
+within the model are only calculated assuming a cylindrical bed.
 
 The following variables are constructed when applying the GAC costing method in the ``watertap_costing_package``:
 
@@ -267,6 +284,9 @@ The following variables are constructed when applying the GAC costing method in 
    "Unit other process capital cost", ":math:`C_{cap,other}`", "other_process_cost", ":math:`$`"
    "Cost to regenerate spent GAC adsorbent by an offsite regeneration facility", ":math:`C_{op,regen}`", "gac_regen_cost", ":math:`$/year`"
    "Cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{op,makeup}`", "gac_makeup_cost", ":math:`$/year`"
+   "Approximate GAC system energy consumption*", ":math:`C_{op,makeup}`", "gac_makeup_cost", ":math:`$/year`"
+
+\*Energy consumption is the sum of energy required to operate booster, backwash, and residual pumps.
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
@@ -299,14 +319,14 @@ may be fixed to a value (:math:`y_0`) by setting :math:`y_1=0`.
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Operating costs are calculated as the cost to replace spent GAC adsorbent in the contactor beds. Energy for backwash and booster
-pumps are considered negligible compared to the regeneration costs. Since the replacement adsorbent purchases are expected to be
-purchased in bulk at smaller quantities than the initial charge, the cost of fresh GAC adsorbent for makeup has an independent
-cost per unit mass variable, expected to be higher than the initial charge unit cost.
+Operating costs are calculated as the cost to replace spent GAC adsorbent in the contactor beds. Energy is costed as a
+flow term by the WaterTAP costing method. Since the replacement adsorbent purchases are expected to be purchased in bulk
+at smaller quantities than the initial charge, the cost of fresh GAC adsorbent for makeup has an independent cost per
+unit mass variable, expected to be higher than the initial charge unit cost.
 
     .. math::
 
-        & C_{op,tot} = C_{op,regen}+C_{op,makeup} \\\\
+        & C_{op,tot} = C_{op,regen}+C_{op,makeup}\\\\
         & C_{op,regen} = f_{regen}C_{regen}\dot{m}_{GAC} \\\\
         & C_{op,makeup} = \left( 1-f_{regen} \right)C_{makeup}\dot{m}_{GAC}
 

@@ -97,22 +97,22 @@ def build_gac_cost_param_block(blk):
     blk.pres_other_cost_coeff = pyo.Var(
         initialize=16660.7,
         units=pyo.units.USD_2020,
-        doc="GAC other cost power law coefficient",
+        doc="GAC pressure other cost power law coefficient",
     )
     blk.pres_other_cost_exp = pyo.Var(
         initialize=0.552207,
         units=pyo.units.dimensionless,
-        doc="GAC other cost power law exponent",
+        doc="GAC pressure other cost power law exponent",
     )
     blk.grav_other_cost_coeff = pyo.Var(
         initialize=38846.9,
         units=pyo.units.USD_2020,
-        doc="GAC other cost power law coefficient",
+        doc="GAC gravity other cost power law coefficient",
     )
     blk.grav_other_cost_exp = pyo.Var(
         initialize=0.490571,
         units=pyo.units.dimensionless,
-        doc="GAC other cost power law exponent",
+        doc="GAC gravity other cost power law exponent",
     )
     blk.regen_frac = pyo.Var(
         initialize=0.70,
