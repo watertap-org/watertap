@@ -139,7 +139,7 @@ The condenser performance is related through the equations denoted by the footno
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Complete condensation condition", ":math:`P_{out} >= P_{sat,out}\left(T_{out}\right)}`"
+   "Complete condensation condition", ":math:`P_{out} >= P_{sat,out}\left(T_{out}\right)`"
 
 
 References
