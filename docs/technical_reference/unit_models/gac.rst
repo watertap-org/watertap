@@ -237,17 +237,17 @@ The following parameters are constructed when applying the GAC costing method in
 
    "Number of GAC contactors in operation in parallel", ":math:`N_{op}`", "num_contactors_op", "1", ":math:`\text{dimensionless}`"
    "Number of off-line redundant GAC contactors in parallel", ":math:`N_{red}`", "num_contactors_redundant", "1", ":math:`\text{dimensionless}`"
-   "GAC steel pressure contactor polynomial cost coefficient 0", ":math:`x_{p0}`", "pres_contactor_cost_coeff_0", "10010.9", ":math:`$`"
-   "GAC steel pressure contactor polynomial cost coefficient 1", ":math:`x_{p1}`", "pres_contactor_cost_coeff_1", "2204.95", ":math:`$/m^3`"
-   "GAC steel pressure contactor polynomial cost coefficient 2", ":math:`x_{p2}`", "pres_contactor_cost_coeff_2", "-15.9378", ":math:`$/\left( m^3 \right)^2`"
-   "GAC steel pressure contactor polynomial cost coefficient 3", ":math:`x_{p3}`", "pres_contactor_cost_coeff_3", "0.110592", ":math:`$/\left( m^3 \right)^3`"
+   "GAC steel pressure contactor polynomial cost coefficient 0 (U.S. EPA, 2021)", ":math:`x_{p0}`", "pres_contactor_cost_coeff_0", "10010.9", ":math:`$`"
+   "GAC steel pressure contactor polynomial cost coefficient 1 (U.S. EPA, 2021)", ":math:`x_{p1}`", "pres_contactor_cost_coeff_1", "2204.95", ":math:`$/m^3`"
+   "GAC steel pressure contactor polynomial cost coefficient 2 (U.S. EPA, 2021)", ":math:`x_{p2}`", "pres_contactor_cost_coeff_2", "-15.9378", ":math:`$/\left( m^3 \right)^2`"
+   "GAC steel pressure contactor polynomial cost coefficient 3 (U.S. EPA, 2021)", ":math:`x_{p3}`", "pres_contactor_cost_coeff_3", "0.110592", ":math:`$/\left( m^3 \right)^3`"
    "GAC concrete gravity contactor polynomial cost coefficient 0", ":math:`x_{g0}`", "grav_contactor_cost_coeff_0", "75131.3", ":math:`$`"
    "GAC concrete gravity contactor polynomial cost coefficient 1", ":math:`x_{g1}`", "grav_contactor_cost_coeff_1", "735.550", ":math:`$/m^3`"
    "GAC concrete gravity contactor polynomial cost coefficient 2", ":math:`x_{g2}`", "grav_contactor_cost_coeff_2", "-1.01827", ":math:`$/\left( m^3 \right)^2`"
    "GAC concrete gravity contactor polynomial cost coefficient 3", ":math:`x_{g3}`", "grav_contactor_cost_coeff_3", "0", ":math:`$/\left( m^3 \right)^3`"
    "Reference maximum value of GAC mass needed for initial charge where economy of scale no longer discounts the unit price", ":math:`M_{GAC}^{ref}`", "bed_mass_gac_max_ref", "18143.7", ":math:`kg`"
-   "GAC adsorbent exponential cost pre-exponential coefficient", ":math:`y_0`", "adsorbent_unit_cost_coeff", "4.58342", ":math:`$/kg`"
-   "GAC adsorbent exponential cost parameter coefficient", ":math:`y_1`", "adsorbent_unit_cost_exp_coeff ", "-1.25311e-5", ":math:`kg^{-1}`"
+   "GAC adsorbent exponential cost pre-exponential coefficient (U.S. EPA, 2021)", ":math:`y_0`", "adsorbent_unit_cost_coeff", "4.58342", ":math:`$/kg`"
+   "GAC adsorbent exponential cost parameter coefficient (U.S. EPA, 2021)", ":math:`y_1`", "adsorbent_unit_cost_exp_coeff ", "-1.25311e-5", ":math:`kg^{-1}`"
    "GAC pressure other cost power law coefficient", ":math:`z_{p0}`", "pres_other_cost_coeff", "16660.7", ":math:`$/\left( m^3 \right)^{z_1}`"
    "GAC pressure other cost power law exponent", ":math:`z_{p1}`", "pres_other_cost_exp", "0.552207", ":math:`\text{dimensionless}`"
    "GAC gravity other cost power law coefficient", ":math:`z_{g0}`", "grav_other_cost_coeff", "38846.9", ":math:`$/\left( m^3 \right)^{z_1}`"
@@ -255,15 +255,15 @@ The following parameters are constructed when applying the GAC costing method in
    "Fraction of spent GAC adsorbent that can be regenerated for reuse", ":math:`f_{regen}`", "regen_frac", "0.70", ":math:`\text{dimensionless}`"
    "Unit cost to regenerate spent GAC adsorbent by an offsite regeneration facility", ":math:`C_{regen}`", "regen_unit_cost", "4.28352", ":math:`$/kg`"
    "Unit cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{makeup}`", "makeup_unit_cost", "4.58223", ":math:`$/kg`"
-   "GAC steel pressure contactor polynomial energy consumption coefficient 0", ":math:`\alpha_{p0}`", "pres_energy_coeff_0", "", ":math:`kW`"
-   "GAC steel pressure contactor polynomial energy consumption coefficient 1", ":math:`\alpha_{p1}`", "pres_energy_coeff_1", "", ":math:`kW/m^3`"
-   "GAC steel pressure contactor polynomial energy consumption coefficient 2", ":math:`\alpha_{p2}`", "pres_energy_coeff_2", "", ":math:`kW/\left( m^3 \right)^2`"
-   "GAC steel pressure contactor polynomial energy consumption coefficient 3", ":math:`\alpha_{p3}`", "pres_energy_coeff_3", "", ":math:`kW/\left( m^3 \right)^3`"
-   "GAC concrete gravity contactor polynomial energy consumption coefficient 0", ":math:`\alpha_{g0}`", "grav_energy_coeff_0", "", ":math:`kW`"
-   "GAC concrete gravity contactor polynomial energy consumption coefficient 1", ":math:`\alpha_{g1}`", "grav_energy_coeff_1", "", ":math:`kW/m^3`"
-   "GAC concrete gravity contactor polynomial energy consumption coefficient 2", ":math:`\alpha_{g2}`", "grav_energy_coeff_2", "", ":math:`kW/\left( m^3 \right)^2`"
-   "GAC concrete gravity contactor polynomial energy consumption coefficient 3", ":math:`\alpha_{g3}`", "grav_energy_coeff_3", "", ":math:`kW/\left( m^3 \right)^3`"
+   "GAC steel pressure contactor polynomial energy consumption coefficient 0", ":math:`\alpha_{p0}`", "pres_energy_coeff_0", "8.09926e-4", ":math:`kW`"
+   "GAC steel pressure contactor polynomial energy consumption coefficient 1", ":math:`\alpha_{p1}`", "pres_energy_coeff_1", "8.70577e-4", ":math:`kW/m^3`"
+   "GAC steel pressure contactor polynomial energy consumption coefficient 2", ":math:`\alpha_{p2}`", "pres_energy_coeff_2", "0", ":math:`kW/\left( m^3 \right)^2`"
+   "GAC concrete gravity contactor polynomial energy consumption coefficient 0", ":math:`\alpha_{g0}`", "grav_energy_coeff_0", "0.123782", ":math:`kW`"
+   "GAC concrete gravity contactor polynomial energy consumption coefficient 1", ":math:`\alpha_{g1}`", "grav_energy_coeff_1", "0.132403", ":math:`kW/m^3`"
+   "GAC concrete gravity contactor polynomial energy consumption coefficient 2", ":math:`\alpha_{g2}`", "grav_energy_coeff_2", "-1.41512e-5", ":math:`kW/\left( m^3 \right)^2`"
 
+Variables with the (U.S. EPA, 2021) citation are directly taken from previously determined expressions. Other variables
+are regressed from higher detailed costing methods in (U.S. EPA, 2021).
 
 Costing GAC contactors is defaulted to purchasing 1 operational and 1 redundant contactor for alternating operation. For large systems this may be a poor
 assumption considering vessel sizing and achieving pseudo-steady state.  The number of contactors input by the user should justify reasonable
