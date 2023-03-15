@@ -29,6 +29,7 @@ except ImportError:
 
 # third-party
 import idaes.logger as idaeslog
+from idaes.core.util.model_statistics import degrees_of_freedom
 from pydantic import BaseModel, validator, Field
 import pyomo.environ as pyo
 
@@ -184,6 +185,7 @@ class FlowsheetExport(BaseModel):
     model_objects: Dict[str, ModelExport] = {}
     version: int = 2
     requires_idaes_solver: bool = False
+    dof: int = 0
 
     # set name dynamically from object
     @validator("name", always=True)
@@ -441,7 +443,8 @@ class FlowsheetInterface:
                     dst.obj.ub = pyo.value(u.convert(tmp, to_units=u.get_units(dst.obj)))
                     dst.ub = src.ub
         
-
+        #update degrees of freedom (dof)
+        self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         if missing:
             raise self.MissingObjectError(missing)
 
