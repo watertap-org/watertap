@@ -58,7 +58,7 @@ Sets
 
    "Time", ":math:`t`", "[0]"
    "Phases", ":math:`p`", "['Liq']"
-   "Components", ":math:`j`", "['H2O', 'other']"
+   "Components", ":math:`j`", "['H2O', other]"
 
 .. _MVC_variables:
 
@@ -74,7 +74,7 @@ outlet_brine, and outlet_vapor, respectively).
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Overall heat transfer coefficient", ":math:`U`", "U", "None", ":math:`W/m^2-K`"
+   "Overall heat transfer coefficient", ":math:`U`", "U", "None", ":math:`W/\left(m^2K\right)`"
    "Heat transfer area", ":math:`A`", "area", "None", ":math:`m^2`"
    "Approach temperature in", ":math:`\Delta T_{in}`", "delta_temperature_in", "None", ":math:`K`"
    "Approach temperature out", ":math:`\Delta T_{out}`", "delta_temperature_in", "None", ":math:`K`"
@@ -90,8 +90,8 @@ control volume.
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Pressure ratio", ":math:`PR`", "pressure_ratio", "None", ":math:`W/m^2-K`"
-   "Isentropic efficiency", ":math:`\eta`", "efficiency", "None", ":math:`\text{efficiency}`"
+   "Pressure ratio", ":math:`PR`", "pressure_ratio", "None", ":math:`W/\left(m^2K\right)`"
+   "Isentropic efficiency", ":math:`\eta`", "efficiency", "None", ":math:`\text{dimensionless}`"
 
 Condenser Variables
 ^^^^^^^^^^^^^^^^^^^
@@ -119,7 +119,7 @@ Evaporator Equations
    "Approach temperature out*", ":math:`\Delta T_{out} = T_{condenser,out}-T_{brine}`"
    "Heat transfer balance*", ":math:`Q_{evap} = -Q_{cond}`"
 
-\*Equations are directly dependent on the condenser through the ``connect_to_condenser`` method.
+\*Equations are coupled with the condenser through the ``connect_to_condenser`` method.
 
 Compressor Equations
 ^^^^^^^^^^^^^^^^^^^^
@@ -134,7 +134,7 @@ Compressor Equations
 Condenser Equations
 ^^^^^^^^^^^^^^^^^^^
 
-The condenser performance is related through the equations denoted by the footnote in the evaporator section
+The condenser performance is related through the equations denoted by the footnote in the evaporator section.
 
 .. csv-table::
    :header: "Description", "Equation"
