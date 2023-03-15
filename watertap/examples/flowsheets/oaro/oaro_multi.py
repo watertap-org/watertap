@@ -98,16 +98,16 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     # print_close_to_bounds(m)
     # print_infeasible_constraints(m)
 
-    optimize_set_up(m, water_recovery=system_recovery)
-    solve(m, solver=solver)
-
-    print("\n***---Optimization results---***")
-    display_system(m)
-    display_design(m)
-    if erd_type == ERDtype.pump_as_turbine:
-        display_state(m)
-    else:
-        pass
+    # optimize_set_up(m, water_recovery=system_recovery)
+    # solve(m, solver=solver)
+    #
+    # print("\n***---Optimization results---***")
+    # display_system(m)
+    # display_design(m)
+    # if erd_type == ERDtype.pump_as_turbine:
+    #     display_state(m)
+    # else:
+    #     pass
 
     return m
 
@@ -463,7 +463,7 @@ def set_operating_conditions(
     m.fs.RO.feed_side.spacer_porosity.fix(0.85)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO.width.fix(5)  # stage width [m]
-    m.fs.RO.area.fix(100)  # guess area for RO initialization
+    m.fs.RO.area.fix(50)  # guess area for RO initialization
 
     if m.fs.erd_type == ERDtype.pump_as_turbine:
         # energy recovery turbine - efficiency and outlet pressure
@@ -899,4 +899,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(2, system_recovery=0.3, erd_type=ERDtype.pump_as_turbine)
+    m = main(4, system_recovery=0.3, erd_type=ERDtype.pump_as_turbine)
