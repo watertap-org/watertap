@@ -294,6 +294,8 @@ class _NaClStateBlock(StateBlock):
             if number_unfixed_variables(self[k]) != 0:
                 skip_solve = False
 
+        init_log.info_high(f"skip_solve = {skip_solve}")
+
         if not skip_solve:
             # Initialize properties
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -308,12 +310,18 @@ class _NaClStateBlock(StateBlock):
                 return flags
             else:
                 self.release_state(flags)
+        init_log.info_high(
+            f"check_optimal_termination={check_optimal_termination(results)}"
+        )
+        logic = (not skip_solve) and (not check_optimal_termination(results))
+        init_log.info_high(f"raise initializationerror logic={logic}")
+        if logic:
+            # raise Exception(f"WTF {self.name} failed to initialize")
 
-        if (not skip_solve) and (not check_optimal_termination(results)):
-            raise InitializationError(
-                f"{self.name} failed to initialize successfully. Please "
-                f"check the output logs for more information."
-            )
+            raise InitializationError("WHY")
+            # "InitializationError: failed to initialize successfully. Please check the output logs for more information.")
+        else:
+            init_log.info_high(f"Initialization is fine. Sanity check.")
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
