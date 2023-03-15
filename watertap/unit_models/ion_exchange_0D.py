@@ -271,9 +271,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )
 
         # Add ports - oftentimes users interact with these rather than the state blocks
-        self.add_port(name="inlet", block=self.process_flow)
-        self.add_port(name="outlet", block=self.process_flow)
-        self.add_port(name="regen", block=self.regeneration_stream)
+        self.add_inlet_port(name="inlet", block=self.process_flow)
+        self.add_outlet_port(name="outlet", block=self.process_flow)
+        self.add_outlet_port(name="regen", block=self.regeneration_stream)
 
         self.diff_ion_resin = Param(
             initialize=1e-13,
@@ -1115,7 +1115,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(doc="Regen volumetric flow rate")
         def eq_regen_vol_flow(b):
             prop_in = b.process_flow.properties_in[0]
-            prop_regen = b.process_flow.properties_regen[0]
+            prop_regen = b.regeneration_stream[0]
             return (
                 prop_regen.flow_vol_phase["Liq"]
                 == (prop_in.flow_vol_phase["Liq"] * b.regen_recycle)
@@ -1272,7 +1272,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        flags = self.properties_in.initialize(
+        flags = self.process_flow.properties_in.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1352,7 +1352,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         init_log.info("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        self.properties_in.release_state(flags, outlvl=outlvl)
+        self.process_flow.properties_in.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
@@ -1500,7 +1500,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         for j, c in self.eq_ss_effluent.items():
             sf = iscale.get_scaling_factor(
-                self.properties_out[0].conc_equiv_phase_comp["Liq", j]
+                self.process_flow.properties_out[0].conc_equiv_phase_comp["Liq", j]
             )
             iscale.constraint_scaling_transform(c, sf)
 
@@ -1514,7 +1514,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         for ind, c in self.eq_regen_vol_flow.items():
             sf = iscale.get_scaling_factor(
-                self.properties_regen[0].flow_mol_phase_comp["Liq", "H2O"]
+                self.regeneration_stream[0].flow_mol_phase_comp["Liq", "H2O"]
             )
             iscale.constraint_scaling_transform(c, sf)
 
@@ -1524,7 +1524,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         for ind, c in self.eq_partition_ratio.items():
             sf = iscale.get_scaling_factor(
-                self.properties_in[0].conc_equiv_phase_comp[
+                self.process_flow.properties_in[0].conc_equiv_phase_comp[
                     "Liq", self.config.target_ion
                 ]
             )
