@@ -311,8 +311,7 @@ function with respect to the total system contactor volume were regressed using 
         & C_{cap,bed} = \left( N_{op}+N_{red} \right)\left( x_0+x_1\left( \frac{V}{N_{op}} \right)+x_2\left( \frac{V}{N_{op}} \right)^2+x_3\left( \frac{V}{N_{op}} \right)^3 \right) \\\\
         & C_{carbon} = y_0e^{y_1M_{GAC}^{ref}} \\\\
         & C_{cap,carbon} = C_{carbon}M_{GAC} \\\\
-        & C_{cap,other} = z_0\left( \left( N_{op}+N_{red} \right)\frac{V}{N_{op}} \right)^{z_1} \\\\
-        & P = \alpha_0+\alpha_1V+\alpha_2V^2
+        & C_{cap,other} = z_0\left( \left( N_{op}+N_{red} \right)\frac{V}{N_{op}} \right)^{z_1}
 
 Note that given the the ability to alter the parameters in these correlations, GAC adsorbent unit costs (:math:`C_{carbon}`)
 may be fixed to a value (:math:`y_0`) by setting :math:`y_1=0`.
@@ -329,7 +328,8 @@ unit mass variable, expected to be higher than the initial charge unit cost.
 
         & C_{op,tot} = C_{op,regen}+C_{op,makeup}\\\\
         & C_{op,regen} = f_{regen}C_{regen}\dot{m}_{GAC} \\\\
-        & C_{op,makeup} = \left( 1-f_{regen} \right)C_{makeup}\dot{m}_{GAC}
+        & C_{op,makeup} = \left( 1-f_{regen} \right)C_{makeup}\dot{m}_{GAC} \\\\
+        & P = \alpha_0+\alpha_1V+\alpha_2V^2
 
 Code Documentation
 -------------------
