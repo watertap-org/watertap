@@ -27,6 +27,9 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
 )
@@ -119,6 +122,59 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
     )
 
     CONFIG.declare(
+        "material_balance_type",
+        ConfigValue(
+            default=MaterialBalanceType.useDefault,
+            domain=In(MaterialBalanceType),
+            description="Material balance construction flag",
+            doc="""Indicates what type of mass balance should be constructed,
+    **default** - MaterialBalanceType.useDefault.
+    **Valid values:** {
+    **MaterialBalanceType.useDefault - refer to property package for default
+    balance type
+    **MaterialBalanceType.none** - exclude material balances,
+    **MaterialBalanceType.componentPhase** - use phase component balances,
+    **MaterialBalanceType.componentTotal** - use total component balances,
+    **MaterialBalanceType.elementTotal** - use total element balances,
+    **MaterialBalanceType.total** - use total material balance.}""",
+        ),
+    )
+    CONFIG.declare(
+        "energy_balance_type",
+        ConfigValue(
+            default=EnergyBalanceType.none,
+            domain=In(EnergyBalanceType),
+            description="Energy balance construction flag",
+            doc="""Indicates what type of energy balance should be constructed,
+    **default** - EnergyBalanceType.none.
+    **Valid values:** {
+    **EnergyBalanceType.useDefault - refer to property package for default
+    balance type
+    **EnergyBalanceType.none** - exclude energy balances,
+    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
+    **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
+    **EnergyBalanceType.energyTotal** - single energy balance for material,
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}""",
+        ),
+    )
+    CONFIG.declare(
+        "momentum_balance_type",
+        ConfigValue(
+            default=MomentumBalanceType.pressureTotal,
+            domain=In(MomentumBalanceType),
+            description="Momentum balance construction flag",
+            doc="""Indicates what type of momentum balance should be constructed,
+        **default** - MomentumBalanceType.pressureTotal.
+        **Valid values:** {
+        **MomentumBalanceType.none** - exclude momentum balances,
+        **MomentumBalanceType.pressureTotal** - single pressure balance for material,
+        **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
+        **MomentumBalanceType.momentumTotal** - single momentum balance for material,
+        **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}""",
+        ),
+    )
+
+    CONFIG.declare(
         "target_ion",
         ConfigValue(default="Ca_2+", domain=str, description="Target Ion"),
     )
@@ -194,7 +250,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         self.process_flow.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
-        # self.process_flow.add_energy_balances(balance_type=self.config,energy_balance_type, has_enthalpy_transfer=False)
+        self.process_flow.add_energy_balances(
+            balance_type=self.config.energy_balance_type, has_enthalpy_transfer=False
+        )
         self.process_flow.add_isothermal_assumption()
         self.process_flow.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
@@ -786,22 +844,28 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Pressure conservation")
         def eq_press_conservation(b):
-            return b.properties_in[0].pressure == b.properties_out[0].pressure
+            return (
+                b.process_flow.properties_in[0].pressure
+                == b.process_flow.properties_out[0].pressure
+            )
 
         @self.Constraint(doc="Temperature conservation")
         def eq_temp_conservation(b):
-            return b.properties_in[0].temperature == b.properties_out[0].temperature
+            return (
+                b.process_flow.properties_in[0].temperature
+                == b.process_flow.properties_out[0].temperature
+            )
 
         # =========== DIMENSIONLESS ===========
 
         @self.Constraint(doc="Reynolds number")
         def eq_Re(b):
-            prop_in = b.properties_in[0]
+            prop_in = b.process_flow.properties_in[0]
             return b.Re == (b.vel_bed * b.resin_diam) / prop_in.visc_k_phase["Liq"]
 
         @self.Constraint(self.target_ion_set, doc="Schmidt number")
         def eq_Sc(b, j):
-            prop_in = b.properties_in[0]
+            prop_in = b.process_flow.properties_in[0]
             return (
                 b.Sc[j]
                 == prop_in.visc_k_phase["Liq"] / prop_in.diffus_phase_comp["Liq", j]
@@ -854,7 +918,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Service flow rate")
         def eq_service_flow_rate(b):
-            prop_in = b.properties_in[0]
+            prop_in = b.process_flow.properties_in[0]
             return (
                 b.service_flow_rate
                 == pyunits.convert(
@@ -866,7 +930,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Flow through bed constraint")
         def eq_bed_flow(b):
-            prop_in = b.properties_in[0]
+            prop_in = b.process_flow.properties_in[0]
             return (b.bed_depth * b.bed_porosity) / b.vel_bed == (
                 (b.bed_porosity * b.bed_vol)
                 / (prop_in.flow_vol_phase["Liq"] / b.number_columns)
@@ -900,7 +964,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         # =========== KINETICS ===========
         @self.Constraint(self.target_ion_set, doc="Fluid mass transfer coeff")
         def eq_fluid_mass_transfer_coeff(b, j):
-            prop_in = b.properties_in[0]
+            prop_in = b.process_flow.properties_in[0]
             return (
                 b.fluid_mass_transfer_coeff[j]
                 == (prop_in.diffus_phase_comp["Liq", j] * b.Sh[j]) / b.resin_diam
@@ -924,7 +988,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Partition ratio")
         def eq_partition_ratio(b):
-            prop_in = b.properties_in[0]
+            prop_in = b.process_flow.properties_in[0]
             return b.partition_ratio == (
                 b.resin_eq_capacity * b.resin_bulk_dens
             ) / pyunits.convert(
@@ -967,18 +1031,18 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             )
 
         # =========== MASS BALANCE ===========
-        @self.Constraint(doc="Flow conservation")
-        def eq_flow_conservation(b):
-            prop_in = b.properties_in[0]
-            prop_out = b.properties_out[0]
-            prop_regen = b.properties_regen[0]
-            return (
-                prop_in.flow_vol_phase["Liq"]
-                - ((b.bw_flow * b.t_bw + b.rinse_flow * b.t_rinse) / b.t_cycle)
-                == prop_out.flow_vol_phase[  # assume backwash and rinse water comes from feed stream
-                    "Liq"
-                ]
-            )
+        # @self.Constraint(doc="Flow conservation")
+        # def eq_flow_conservation(b):
+        #     prop_in = b.properties_in[0]
+        #     prop_out = b.properties_out[0]
+        #     prop_regen = b.properties_regen[0]
+        #     return (
+        #         prop_in.flow_vol_phase["Liq"]
+        #         - ((b.bw_flow * b.t_bw + b.rinse_flow * b.t_rinse) / b.t_cycle)
+        #         == prop_out.flow_vol_phase[  # assume backwash and rinse water comes from feed stream
+        #             "Liq"
+        #         ]
+        #     )
 
         # @self.Constraint(doc="Flow conservation")
         # def eq_flow_conservation(b):
@@ -995,7 +1059,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(self.target_ion_set, doc="Influent total mass of ion")
         def eq_mass_in(b, j):
-            prop_in = b.properties_in[0]
+            prop_in = b.process_flow.properties_in[0]
             return (
                 b.mass_in[j]
                 == prop_in.flow_vol_phase["Liq"]
@@ -1016,8 +1080,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(ion_set, doc="Steady-state effluent concentration")
         def eq_ss_effluent(b, j):
-            prop_in = b.properties_in[0]
-            prop_out = b.properties_out[0]
+            prop_in = b.process_flow.properties_in[0]
+            prop_out = b.process_flow.properties_out[0]
             if j == target_ion:
                 return prop_out.conc_equiv_phase_comp["Liq", j] == b.mass_out[j] / (
                     prop_in.flow_vol_phase["Liq"] * b.t_breakthru
@@ -1030,7 +1094,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(ion_set, doc="Steady-state regen concentration")
         def eq_ss_regen(b, j):
-            prop_regen = b.properties_regen[0]
+            prop_regen = b.regeneration_stream[0]
             if j == target_ion:
                 return prop_regen.conc_equiv_phase_comp["Liq", j] == (
                     b.mass_removed[j] * b.regen_recycle
@@ -1050,8 +1114,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Regen volumetric flow rate")
         def eq_regen_vol_flow(b):
-            prop_in = b.properties_in[0]
-            prop_regen = b.properties_regen[0]
+            prop_in = b.process_flow.properties_in[0]
+            prop_regen = b.process_flow.properties_regen[0]
             return (
                 prop_regen.flow_vol_phase["Liq"]
                 == (prop_in.flow_vol_phase["Liq"] * b.regen_recycle)
@@ -1061,8 +1125,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(doc="Regen pump power")
         def eq_regen_pump_power(b):
             p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
-            prop_in = b.properties_in[0]
-            prop_regen = b.properties_regen[0]
+            prop_in = b.process_flow.properties_in[0]
+            prop_regen = b.regeneration_stream[0]
             return b.regen_pump_power == pyunits.convert(
                 (
                     prop_in.dens_mass_phase["Liq"]
@@ -1094,7 +1158,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Backwash pump power")
         def eq_bw_pump_power(b):
-            prop_in = b.properties_in[0]
+            prop_in = b.process_flow.properties_in[0]
             p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
             return b.bw_pump_power == pyunits.convert(
                 (
@@ -1119,7 +1183,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Rinse pump power")
         def eq_rinse_pump_power(b):
-            prop_in = b.properties_in[0]
+            prop_in = b.process_flow.properties_in[0]
             p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
             return b.rinse_pump_power == pyunits.convert(
                 (
@@ -1134,7 +1198,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Main pump power")
         def eq_main_pump_power(b):
-            prop_in = b.properties_in[0]
+            prop_in = b.process_flow.properties_in[0]
             p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
             return b.main_pump_power == pyunits.convert(
                 (
@@ -1155,6 +1219,26 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 == (b.p_drop_A + b.p_drop_B * vel_bed + b.p_drop_C * vel_bed**2)
                 * b.bed_depth
             )  # for 20C;
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Isothermal assumption for absorbed contaminant",
+        )
+        def eq_isothermal_regeneration_stream(b, t):
+            return (
+                b.process_flow.properties_in[t].temperature
+                == b.regeneration_stream[t].temperature
+            )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Isobaric assumption for absorbed contaminant",
+        )
+        def eq_isobaric_regeneration_stream(b, t):
+            return (
+                b.process_flow.properties_in[t].pressure
+                == b.regeneration_stream[t].pressure
+            )
 
         @self.Expression(doc="Total column volume required")
         def col_vol_tot(b):
@@ -1199,68 +1283,68 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Initialize other state blocks
         # Set state_args from inlet state
-        if state_args is None:
-            self.state_args = state_args = {}
-            state_dict = self.properties_in[
-                self.flowsheet().config.time.first()
-            ].define_port_members()
+        # if state_args is None:
+        #     self.state_args = state_args = {}
+        #     state_dict = self.properties_in[
+        #         self.flowsheet().config.time.first()
+        #     ].define_port_members()
 
-            for k in state_dict.keys():
-                if state_dict[k].is_indexed():
-                    state_args[k] = {}
-                    for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
-                else:
-                    state_args[k] = state_dict[k].value
-        state_args_out = deepcopy(state_args)
-        for p, j in self.properties_out.phase_component_set:
-            if j == self.config.target_ion:
-                state_args_out["flow_mol_phase_comp"][(p, j)] = (
-                    state_args["flow_mol_phase_comp"][(p, j)] * 1e-5
-                )
+        #     for k in state_dict.keys():
+        #         if state_dict[k].is_indexed():
+        #             state_args[k] = {}
+        #             for m in state_dict[k].keys():
+        #                 state_args[k][m] = state_dict[k][m].value
+        #         else:
+        #             state_args[k] = state_dict[k].value
+        # state_args_out = deepcopy(state_args)
+        # for p, j in self.properties_out.phase_component_set:
+        #     if j == self.config.target_ion:
+        #         state_args_out["flow_mol_phase_comp"][(p, j)] = (
+        #             state_args["flow_mol_phase_comp"][(p, j)] * 1e-5
+        #         )
 
-        self.properties_out.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args_out,
-        )
-        init_log.info("Initialization Step 1b Complete.")
+        # self.properties_out.initialize(
+        #     outlvl=outlvl,
+        #     optarg=optarg,
+        #     solver=solver,
+        #     state_args=state_args_out,
+        # )
+        # init_log.info("Initialization Step 1b Complete.")
 
-        state_args_regen = deepcopy(state_args)
+        # state_args_regen = deepcopy(state_args)
 
-        for p, j in self.properties_regen.phase_component_set:
-            if j == "H2O":
-                state_args_regen["flow_mol_phase_comp"][(p, j)] = (
-                    state_args["flow_mol_phase_comp"][(p, j)] * 0.01
-                )
-            elif j != self.config.target_ion:
-                state_args_regen["flow_mol_phase_comp"][(p, j)] = (
-                    state_args["flow_mol_phase_comp"][(p, j)] * 1e-8
-                )
-            elif j == self.config.target_ion:
-                state_args_regen["flow_mol_phase_comp"][(p, j)] = (
-                    state_args["flow_mol_phase_comp"][(p, j)] * 1e3
-                )
+        # for p, j in self.properties_regen.phase_component_set:
+        #     if j == "H2O":
+        #         state_args_regen["flow_mol_phase_comp"][(p, j)] = (
+        #             state_args["flow_mol_phase_comp"][(p, j)] * 0.01
+        #         )
+        #     elif j != self.config.target_ion:
+        #         state_args_regen["flow_mol_phase_comp"][(p, j)] = (
+        #             state_args["flow_mol_phase_comp"][(p, j)] * 1e-8
+        #         )
+        #     elif j == self.config.target_ion:
+        #         state_args_regen["flow_mol_phase_comp"][(p, j)] = (
+        #             state_args["flow_mol_phase_comp"][(p, j)] * 1e3
+        #         )
 
-        self.properties_regen.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args_regen,
-        )
+        # self.properties_regen.initialize(
+        #     outlvl=outlvl,
+        #     optarg=optarg,
+        #     solver=solver,
+        #     state_args=state_args_regen,
+        # )
 
-        self.state_args_out = state_args_out
-        self.state_args_regen = state_args_regen
+        # self.state_args_out = state_args_out
+        # self.state_args_regen = state_args_regen
 
         init_log.info("Initialization Step 1c Complete.")
 
         # Solve unit with coupling constraints deactivated
-        self.eq_flow_conservation.deactivate()
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=slc.tee)
-        init_log.info("Initialization Step 2 {}.".format(idaeslog.condition(res)))
-        self.eq_flow_conservation.activate()
+        # self.eq_flow_conservation.deactivate()
+        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        #     res = opt.solve(self, tee=slc.tee)
+        # init_log.info("Initialization Step 2 {}.".format(idaeslog.condition(res)))
+        # self.eq_flow_conservation.activate()
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
