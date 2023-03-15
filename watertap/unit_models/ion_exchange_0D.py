@@ -130,7 +130,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             domain=In(RegenerantChem),
             description="Regenerant chemical",
         ),
-    )  # TODO: add way to change regenerant chemical via CONFIG
+    )
 
     CONFIG.declare(
         "hazardous_waste",
@@ -200,6 +200,22 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=False,
         )
+
+        tmp_dict = dict(**self.config.property_package_args)
+        tmp_dict["has_phase_equilibrium"] = False
+        tmp_dict["parameters"] = self.config.property_package
+        tmp_dict["defined_state"] = False  # inlet block is an inlet
+
+        self.regeneration_stream = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of regeneration stream",
+            **tmp_dict,
+        )
+
+        # Add ports - oftentimes users interact with these rather than the state blocks
+        self.add_port(name="inlet", block=self.process_flow)
+        self.add_port(name="outlet", block=self.process_flow)
+        self.add_port(name="regen", block=self.regeneration_stream)
 
         self.diff_ion_resin = Param(
             initialize=1e-13,
@@ -743,31 +759,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             bounds=(0, 1),
             doc="Pump efficiency",
         )
-
-        tmp_dict = dict(**self.config.property_package_args)
-        tmp_dict["has_phase_equilibrium"] = False
-        tmp_dict["parameters"] = self.config.property_package
-        tmp_dict["defined_state"] = True  # inlet block is an inlet
-        self.properties_in = self.config.property_package.state_block_class(
-            self.flowsheet().config.time, doc="Material properties of inlet", **tmp_dict
-        )
-
-        # Add outlet and waste block
-        tmp_dict["defined_state"] = False  # outlet and waste block is not an inlet
-        self.properties_out = self.config.property_package.state_block_class(
-            self.flowsheet().config.time,
-            doc="Material properties of outlet",
-            **tmp_dict,
-        )
-
-        self.properties_regen = self.config.property_package.state_block_class(
-            self.flowsheet().config.time, doc="Material properties of waste", **tmp_dict
-        )
-
-        # Add ports - oftentimes users interact with these rather than the state blocks
-        self.add_port(name="inlet", block=self.properties_in)
-        self.add_port(name="outlet", block=self.properties_out)
-        self.add_port(name="regen", block=self.properties_regen)
 
         # =========== EQUILIBRIUM ===========
 
