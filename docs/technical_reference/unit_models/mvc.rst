@@ -65,8 +65,8 @@ Sets
 Variables
 ----------
 
-Evaporator
-^^^^^^^^^^
+Evaporator Variables
+^^^^^^^^^^^^^^^^^^^^
 
 The evaporator contains 3 state blocks corresponding to the feed inlet, brine outlet, and vapor outlet (inlet_feed,
 outlet_brine, and outlet_vapor, respectively).
@@ -81,8 +81,8 @@ outlet_brine, and outlet_vapor, respectively).
    "Log-mean temperature difference", ":math:`LMTD`", "lmtd", "None", ":math:`K`"
    "Evaporator heat requirement", ":math:`Q_{evap}`", "heat_transfer", "None", ":math:`W`"
 
-Compressor
-^^^^^^^^^^
+Compressor Variables
+^^^^^^^^^^^^^^^^^^^^
 
 The condenser consists of 1 ControlVolume0DBlock. Pressure differential and work variables are constructed on the
 control volume.
@@ -93,8 +93,8 @@ control volume.
    "Pressure ratio", ":math:`PR`", "pressure_ratio", "None", ":math:`W/m^2-K`"
    "Isentropic efficiency", ":math:`\eta`", "efficiency", "None", ":math:`\text{efficiency}`"
 
-Condenser
-^^^^^^^^^
+Condenser Variables
+^^^^^^^^^^^^^^^^^^^
 
 The condenser consists of 1 ControlVolume0DBlock. No additional variables are constructed outside of those on the
 control volume.
@@ -104,8 +104,8 @@ control volume.
 Equations
 -----------
 
-Evaporator
-^^^^^^^^^^
+Evaporator Equations
+^^^^^^^^^^^^^^^^^^^^
 
 .. csv-table::
    :header: "Description", "Equation"
@@ -121,8 +121,8 @@ Evaporator
 
 \*Equations are directly dependent on the condenser through the ``connect_to_condenser`` method.
 
-Compressor
-^^^^^^^^^^
+Compressor Equations
+^^^^^^^^^^^^^^^^^^^^
 
 .. csv-table::
    :header: "Description", "Equation"
@@ -131,8 +131,8 @@ Compressor
    "Isentropic temperature", ":math:`T_{out}=T_{in}(PR)^{1-\frac{1}{\gamma}}`"
    "Efficiency", ":math:`\eta\left(H_{out}-H_{in}\right) = H_{isentropic,out}-H_{in}`"
 
-Condenser
-^^^^^^^^^
+Condenser Equations
+^^^^^^^^^^^^^^^^^^^
 
 The condenser performance is related through the equations denoted by the footnote in the evaporator section
 
