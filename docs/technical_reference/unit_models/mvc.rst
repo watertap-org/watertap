@@ -76,8 +76,8 @@ outlet_brine, and outlet_vapor, respectively).
 
    "Overall heat transfer coefficient", ":math:`U`", "U", "None", ":math:`W/m^2-K`"
    "Heat transfer area", ":math:`A`", "area", "None", ":math:`m^2`"
-   "Approach temperature in", ":math:`\DeltaT_{in}`", "delta_temperature_in", "None", ":math:`K`"
-   "Approach temperature out", ":math:`\DeltaT_{out}`", "delta_temperature_in", "None", ":math:`K`"
+   "Approach temperature in", ":math:`\Delta T_{in}`", "delta_temperature_in", "None", ":math:`K`"
+   "Approach temperature out", ":math:`\Delta T_{out}`", "delta_temperature_in", "None", ":math:`K`"
    "Log-mean temperature difference", ":math:`LMTD`", "lmtd", "None", ":math:`K`"
    "Evaporator heat requirement", ":math:`Q_{evap}`", "heat_transfer", "None", ":math:`W`"
 
@@ -113,10 +113,10 @@ Evaporator Equations
    "Mass balance", ":math:`\dot{m}_{feed} = \dot{m}_{vapor}^{vap}+\dot{m}_{brine}^{liq}`"
    "Energy balance", ":math:`H_{vapor}^{vap}+H_{brine}^{vap}-H_{feed} = Q_{evap}`"
    "Vapor temperature", ":math:`T_{vapor} = T_{brine}`"
-   "Log-mean temperature difference (Chen, 1987)", ":math:`LMTD = \left(\frac{1}{2}\left(\DeltaT_{in}+\DeltaT_{out}\right)\DeltaT_{in}\DeltaT_{out}\right)^\frac{1}{3}`"
+   "Log-mean temperature difference (Chen, 1987)", ":math:`LMTD = \left(\frac{1}{2}\left(\Delta T_{in}+\Delta T_{out}\right)\Delta T_{in}\Delta T_{out}\right)^\frac{1}{3}`"
    "Evaporator heat requirement", ":math:`Q_{evap} = UA(LMTD)`"
-   "Approach temperature in*", ":math:`\DeltaT_{in} = T_{condenser,in}-T_{brine}`"
-   "Approach temperature out*", ":math:`\DeltaT_{out} = T_{condenser,out}-T_{brine}`"
+   "Approach temperature in*", ":math:`\Delta T_{in} = T_{condenser,in}-T_{brine}`"
+   "Approach temperature out*", ":math:`\Delta T_{out} = T_{condenser,out}-T_{brine}`"
    "Heat transfer balance*", ":math:`Q_{evap} = -Q_{cond}`"
 
 \*Equations are directly dependent on the condenser through the ``connect_to_condenser`` method.
@@ -139,7 +139,7 @@ The condenser performance is related through the equations denoted by the footno
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Complete condensation condition", ":math:`P_{out} >= P_{sat,out}\left(T_}out}\right}`"
+   "Complete condensation condition", ":math:`P_{out} >= P_{sat,out}\left(T_{out}\right)}`"
 
 
 References
