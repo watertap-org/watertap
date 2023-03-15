@@ -284,7 +284,7 @@ The following variables are constructed when applying the GAC costing method in 
    "Unit other process capital cost", ":math:`C_{cap,other}`", "other_process_cost", ":math:`$`"
    "Cost to regenerate spent GAC adsorbent by an offsite regeneration facility", ":math:`C_{op,regen}`", "gac_regen_cost", ":math:`$/year`"
    "Cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{op,makeup}`", "gac_makeup_cost", ":math:`$/year`"
-   "Approximate GAC system energy consumption*", ":math:`C_{op,makeup}`", "gac_makeup_cost", ":math:`$/year`"
+   "Approximate GAC system energy consumption*", ":math:`P", "gac_makeup_cost", ":math:`$/year`"
 
 \*Energy consumption is the sum of energy required to operate booster, backwash, and residual pumps.
 
@@ -311,7 +311,8 @@ function with respect to the total system contactor volume were regressed using 
         & C_{cap,bed} = \left( N_{op}+N_{red} \right)\left( x_0+x_1\left( \frac{V}{N_{op}} \right)+x_2\left( \frac{V}{N_{op}} \right)^2+x_3\left( \frac{V}{N_{op}} \right)^3 \right) \\\\
         & C_{carbon} = y_0e^{y_1M_{GAC}^{ref}} \\\\
         & C_{cap,carbon} = C_{carbon}M_{GAC} \\\\
-        & C_{cap,other} = z_0\left( \left( N_{op}+N_{red} \right)\frac{V}{N_{op}} \right)^{z_1}
+        & C_{cap,other} = z_0\left( \left( N_{op}+N_{red} \right)\frac{V}{N_{op}} \right)^{z_1} \\\\
+        & P = \alpha_0+\alpha_1V+\alpha_2V^2
 
 Note that given the the ability to alter the parameters in these correlations, GAC adsorbent unit costs (:math:`C_{carbon}`)
 may be fixed to a value (:math:`y_0`) by setting :math:`y_1=0`.
