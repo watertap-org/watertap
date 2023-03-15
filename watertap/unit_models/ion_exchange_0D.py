@@ -40,7 +40,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.core import InitializationMixin
+from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 __author__ = "Kurban Sitterley"
 
@@ -182,6 +182,24 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         # this creates blank scaling factors, which are populated later
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
+
+        self.process_flow = ControlVolume0DBlock(
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
+        )
+
+        self.process_flow.add_state_blocks(has_phase_equilibrium=False)
+        self.process_flow.add_material_balances(
+            balance_type=self.config.material_balance_type, has_mass_transfer=True
+        )
+        # self.process_flow.add_energy_balances(balance_type=self.config,energy_balance_type, has_enthalpy_transfer=False)
+        self.process_flow.add_isothermal_assumption()
+        self.process_flow.add_momentum_balances(
+            balance_type=self.config.momentum_balance_type,
+            has_pressure_change=False,
+        )
 
         self.diff_ion_resin = Param(
             initialize=1e-13,
@@ -952,19 +970,31 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             )
 
         # =========== MASS BALANCE ===========
-
         @self.Constraint(doc="Flow conservation")
         def eq_flow_conservation(b):
             prop_in = b.properties_in[0]
             prop_out = b.properties_out[0]
             prop_regen = b.properties_regen[0]
-            return prop_in.flow_vol_phase["Liq"] - (
-                (b.bw_flow * b.t_bw + b.rinse_flow * b.t_rinse) / b.t_cycle
-            ) == prop_out.flow_vol_phase[  # assume backwash and rinse water comes from feed stream
-                "Liq"
-            ] - (
-                (prop_regen.flow_vol_phase["Liq"] * b.t_regen) / b.t_cycle
-            )  # assume regen water comes from treated stream
+            return (
+                prop_in.flow_vol_phase["Liq"]
+                - ((b.bw_flow * b.t_bw + b.rinse_flow * b.t_rinse) / b.t_cycle)
+                == prop_out.flow_vol_phase[  # assume backwash and rinse water comes from feed stream
+                    "Liq"
+                ]
+            )
+
+        # @self.Constraint(doc="Flow conservation")
+        # def eq_flow_conservation(b):
+        #     prop_in = b.properties_in[0]
+        #     prop_out = b.properties_out[0]
+        #     prop_regen = b.properties_regen[0]
+        #     return prop_in.flow_vol_phase["Liq"] - (
+        #         (b.bw_flow * b.t_bw + b.rinse_flow * b.t_rinse) / b.t_cycle
+        #     ) == prop_out.flow_vol_phase[  # assume backwash and rinse water comes from feed stream
+        #         "Liq"
+        #     ] - (
+        #         (prop_regen.flow_vol_phase["Liq"] * b.t_regen) / b.t_cycle
+        #     )  # assume regen water comes from treated stream
 
         @self.Constraint(self.target_ion_set, doc="Influent total mass of ion")
         def eq_mass_in(b, j):
