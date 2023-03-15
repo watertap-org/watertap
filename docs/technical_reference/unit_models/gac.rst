@@ -245,7 +245,7 @@ The following parameters are constructed when applying the GAC costing method in
    "GAC concrete gravity contactor polynomial cost coefficient 1", ":math:`x_{g1}`", "grav_contactor_cost_coeff_1", "735.550", ":math:`$/m^3`"
    "GAC concrete gravity contactor polynomial cost coefficient 2", ":math:`x_{g2}`", "grav_contactor_cost_coeff_2", "-1.01827", ":math:`$/\left( m^3 \right)^2`"
    "GAC concrete gravity contactor polynomial cost coefficient 3", ":math:`x_{g3}`", "grav_contactor_cost_coeff_3", "0", ":math:`$/\left( m^3 \right)^3`"
-   "Reference maximum value of GAC mass needed for initial charge where economy of scale no longer discounts the unit price", ":math:`M_{GAC}^{ref}`", "bed_mass_gac_max_ref", "18143.7", ":math:`kg`"
+   "Reference maximum value of GAC mass needed for initial charge where economy of scale no longer discounts the unit price  (U.S. EPA, 2021)", ":math:`M_{GAC}^{ref}`", "bed_mass_gac_max_ref", "18143.7", ":math:`kg`"
    "GAC adsorbent exponential cost pre-exponential coefficient (U.S. EPA, 2021)", ":math:`y_0`", "adsorbent_unit_cost_coeff", "4.58342", ":math:`$/kg`"
    "GAC adsorbent exponential cost parameter coefficient (U.S. EPA, 2021)", ":math:`y_1`", "adsorbent_unit_cost_exp_coeff ", "-1.25311e-5", ":math:`kg^{-1}`"
    "GAC pressure other cost power law coefficient", ":math:`z_{p0}`", "pres_other_cost_coeff", "16660.7", ":math:`$/\left( m^3 \right)^{z_1}`"
