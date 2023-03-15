@@ -609,26 +609,12 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Breakthrough time",
         )
 
-        # self.t_cycle = Var(
-        #     initialize=1e5,
-        #     bounds=(0, None),
-        #     units=pyunits.s,
-        #     doc="Cycle time",
-        # )
-
         self.t_contact = Var(
             initialize=520,
             bounds=(120, None),
             units=pyunits.s,
             doc="Contact time",
         )
-
-        # self.t_waste = Var(
-        #     initialize=1800,
-        #     bounds=(1, None),
-        #     units=pyunits.s,
-        #     doc="Regen + Rinse + Backwash time",
-        # )
 
         self.num_transfer_units = Var(
             initialize=1e6,
@@ -769,56 +755,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Regenerant dose required for regeneration per volume of resin [kg regenerant/m3 resin]",
         )
 
-        # ====== Backwashing ====== #
-
-        self.bw_flow = Var(
-            initialize=0.1,
-            bounds=(0, None),
-            units=pyunits.m**3 / pyunits.s,
-            doc="Backwashing volumetric flow rate",
-        )
-
-        # self.bed_expansion_frac = Var(
-        #     initialize=0.5,
-        #     bounds=(0.4, 1.2),
-        #     units=pyunits.dimensionless,
-        #     doc="Fraction of bed depth increase during backwashing",
-        # )
-
-        # self.bed_expansion_h = Var(
-        #     initialize=0.5,
-        #     units=pyunits.m,
-        #     bounds=(0, None),
-        #     doc="Additional column sidewall height required for bed expansion",
-        # )
-
-        # ====== Rinse ====== #
-
-        # self.rinse_flow = Var(
-        #     initialize=0.1,
-        #     units=pyunits.m**3 / pyunits.s,
-        #     doc="Rinse volumetric flow rate",
-        # )
-
-        # self.t_rinse = Var(
-        #     initialize=360, units=pyunits.s, bounds=(120, None), doc="Rinse time"
-        # )
-
-        # self.main_pump_power = Var(
-        #     initialize=0.1, units=pyunits.kW, doc="Main pump power"
-        # )
-
-        # self.regen_pump_power = Var(
-        #     initialize=0.1, units=pyunits.kW, doc="Regen pump power"
-        # )
-
-        # self.bw_pump_power = Var(
-        #     initialize=0.1, units=pyunits.kW, doc="Backwash pump power"
-        # )
-
-        # self.rinse_pump_power = Var(
-        #     initialize=0.1, units=pyunits.kW, doc="Rinse pump power"
-        # )
         @self.Expression(doc="Bed expansion fraction from backwashing")
         def bed_expansion_frac(b):
             return (
@@ -846,6 +782,14 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Expression(doc="Cycle time")
         def t_cycle(b):
             return b.t_breakthru + b.t_waste
+
+        @self.Expression(doc="Backwashing flow rate")
+        def bw_flow(b):
+            return (
+                pyunits.convert(b.bw_rate, to_units=pyunits.m / pyunits.s)
+                * (b.bed_vol / b.bed_depth)
+                * b.number_columns
+            )
 
         # =========== EQUILIBRIUM ===========
 
@@ -1155,11 +1099,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         #         to_units=pyunits.kilowatts,
         #     )
 
-        @self.Constraint(doc="Backwashing flow rate")
-        def eq_bw_flow(b):
-            bw_rate = pyunits.convert(b.bw_rate, to_units=pyunits.m / pyunits.s)
-            return b.bw_flow == bw_rate * (b.bed_vol / b.bed_depth) * b.number_columns
-
         # @self.Constraint(doc="Backwash pump power")
         # def eq_bw_pump_power(b):
         #     prop_in = b.process_flow.properties_in[0]
@@ -1314,13 +1253,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         init_log.info("Initialization Step 1c Complete.")
 
-        # Solve unit with coupling constraints deactivated
-        # self.eq_flow_conservation.deactivate()
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #     res = opt.solve(self, tee=slc.tee)
-        # init_log.info("Initialization Step 2 {}.".format(idaeslog.condition(res)))
-        # self.eq_flow_conservation.activate()
-
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
@@ -1372,18 +1304,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.bed_depth_to_diam_ratio, 0.1)
 
-        # iscale.set_scaling_factor(self.bed_expansion_frac_A, 100)
-
-        # iscale.set_scaling_factor(self.bed_expansion_frac_B, 10)
-
-        # iscale.set_scaling_factor(self.bed_expansion_frac_C, 1000)
-
-        # iscale.set_scaling_factor(self.p_drop_A, 10)
-
-        # iscale.set_scaling_factor(self.p_drop_B, 10)
-
-        # iscale.set_scaling_factor(self.p_drop_C, 1e4)
-
         iscale.set_scaling_factor(self.bed_porosity, 10)
 
         iscale.set_scaling_factor(self.col_height, 1)
@@ -1400,8 +1320,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.HTU, 1e3)
 
-        # iscale.set_scaling_factor(self.lh, 1)
-
         iscale.set_scaling_factor(self.service_flow_rate, 1)
 
         iscale.set_scaling_factor(self.c_norm, 1)
@@ -1413,10 +1331,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         iscale.set_scaling_factor(self.rate_coeff, 1e4)
 
         iscale.set_scaling_factor(self.t_breakthru, 1e-5)
-
-        # iscale.set_scaling_factor(self.t_cycle, 1e-5)
-
-        # iscale.set_scaling_factor(self.t_waste, 1e-3)
 
         iscale.set_scaling_factor(self.t_contact, 1e-2)
 
@@ -1430,37 +1344,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.vel_inter, 1e3)
 
-        # iscale.set_scaling_factor(self.pressure_drop, 1)
-
-        # iscale.set_scaling_factor(self.bed_expansion_frac, 1)
-
-        # iscale.set_scaling_factor(self.bed_expansion_h, 1)
-
         iscale.set_scaling_factor(self.t_regen, 1e-3)
 
         iscale.set_scaling_factor(self.regen_dose, 1e-2)
 
         iscale.set_scaling_factor(self.service_to_regen_flow_ratio, 1)
 
-        # iscale.set_scaling_factor(self.bw_pump_power, 1e2)
-
         iscale.set_scaling_factor(self.bw_rate, 1)
 
         iscale.set_scaling_factor(self.t_bw, 1e-2)
-
-        iscale.set_scaling_factor(self.bw_flow, 1e3)
-
-        # iscale.set_scaling_factor(self.t_rinse, 1e-2)
-
-        # iscale.set_scaling_factor(self.rinse_bv, 1)
-
-        # iscale.set_scaling_factor(self.rinse_flow, 1e3)
-
-        # iscale.set_scaling_factor(self.rinse_pump_power, 1e2)
-
-        # iscale.set_scaling_factor(self.main_pump_power, 1e2)
-
-        # iscale.set_scaling_factor(self.regen_pump_power, 1e2)
 
         iscale.set_scaling_factor(self.pump_efficiency, 1)
 
@@ -1473,28 +1365,12 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.separation_factor)
             iscale.constraint_scaling_transform(c, sf)
 
-        # for j, c in self.eq_ss_effluent.items():
-        #     sf = iscale.get_scaling_factor(
-        #         self.process_flow.properties_out[0].conc_equiv_phase_comp["Liq", j]
-        #     )
-        #     iscale.constraint_scaling_transform(c, sf)
-
         for ind, c in self.eq_fluid_mass_transfer_coeff.items():
             sf = iscale.get_scaling_factor(self.fluid_mass_transfer_coeff[ind])
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_rate_coeff.items():
             sf = iscale.get_scaling_factor(self.rate_coeff[ind])
-            iscale.constraint_scaling_transform(c, sf)
-
-        # for ind, c in self.eq_regen_vol_flow.items():
-        #     sf = iscale.get_scaling_factor(
-        #         self.regeneration_stream[0].flow_mol_phase_comp["Liq", "H2O"]
-        #     )
-        #     iscale.constraint_scaling_transform(c, sf)
-
-        for ind, c in self.eq_bw_flow.items():
-            sf = iscale.get_scaling_factor(self.bw_flow)
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_partition_ratio.items():
