@@ -2,6 +2,7 @@ Mechanical Vapor Compression (MVC)
 ==================================
 Modeling a mechanical vapor compression (MVC) system is performed through flowsheet connectivity of individual model
 block components. The model is simulated under the following criteria:
+
    * property package(s) must support liquid and vapor phases
    * all model components are 0D
    * all model components support steady-state only
