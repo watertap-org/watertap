@@ -221,10 +221,14 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         # https://wcponline.com/2013/08/06/hydrodynamic-design-part-8-flow-ion-exchange-beds/
 
         ion_set = self.config.property_package.ion_set
+        solutes = self.config.property_package.solute_set
+        comps = self.config.property_package.component_list
         target_ion = self.config.target_ion
+
         self.target_ion_set = Set(
             initialize=[target_ion]
         )  # create set for future development of multi-component model
+        inerts = comps - self.target_ion_set
 
         if "+" in target_ion:
             self.ion_exchange_type = IonExchangeType.cation
@@ -848,18 +852,78 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 b.c_norm[j] * (1 - b.resin_eq_capacity / b.resin_max_capacity)
             ) == (b.resin_eq_capacity / b.resin_max_capacity * (1 - b.c_norm[j]))
 
-        @self.Constraint(doc="Pressure conservation")
-        def eq_press_conservation(b):
+        @self.Constraint(
+            comps,
+            doc="Mass transfer term for solutes",
+        )
+        def eq_mass_transfer_solute(b, j):
+            # charge = b.process_flow.properties_in[0].charge_comp
+            prop_in = b.process_flow.properties_in[0]
+            if j == target_ion:
+                return (1 - b.c_norm[j]) * prop_in.get_material_flow_terms(
+                    "Liq", j
+                ) * prop_in.charge_comp[j] == -b.process_flow.mass_transfer_term[
+                    0, "Liq", j
+                ]
+            elif j in ion_set:
+                return (
+                    prop_in.get_material_flow_terms("Liq", j) * prop_in.charge_comp[j]
+                    == -b.process_flow.mass_transfer_term[0, "Liq", j]
+                )
+            else:
+                return (
+                    prop_in.get_material_flow_terms("Liq", j)
+                    == -b.process_flow.mass_transfer_term[0, "Liq", j]
+                )
+
+        for j in inerts:
+            self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
+
+        @self.Constraint(
+            self.target_ion_set, doc="Mass transfer for regeneration stream"
+        )
+        def eq_mass_transfer_target(b, j):
+            regen = b.regeneration_stream[0]
+            # if j in ion_set:
             return (
-                b.process_flow.properties_in[0].pressure
-                == b.process_flow.properties_out[0].pressure
+                regen.get_material_flow_terms("Liq", j) * regen.charge_comp[j]
+                == -b.process_flow.mass_transfer_term[0, "Liq", j]
+            )
+            # else:
+            #     return regen.get_material_flow_terms("Liq", j) == -b.process_flow.mass_transfer_term[0, "Liq", j]
+
+        # @self.Constraint(doc="Pressure conservation")
+        # def eq_press_conservation(b):
+        #     return (
+        #         b.process_flow.properties_in[0].pressure
+        #         == b.process_flow.properties_out[0].pressure
+        #     )
+
+        # @self.Constraint(doc="Temperature conservation")
+        # def eq_temp_conservation(b):
+        #     return (
+        #         b.process_flow.properties_in[0].temperature
+        #         == b.process_flow.properties_out[0].temperature
+        #     )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Isothermal assumption for absorbed contaminant",
+        )
+        def eq_isothermal_regeneration_stream(b, t):
+            return (
+                b.process_flow.properties_in[t].temperature
+                == b.regeneration_stream[t].temperature
             )
 
-        @self.Constraint(doc="Temperature conservation")
-        def eq_temp_conservation(b):
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Isobaric assumption for absorbed contaminant",
+        )
+        def eq_isobaric_regeneration_stream(b, t):
             return (
-                b.process_flow.properties_in[0].temperature
-                == b.process_flow.properties_out[0].temperature
+                b.process_flow.properties_in[t].pressure
+                == b.regeneration_stream[t].pressure
             )
 
         # =========== DIMENSIONLESS ===========
@@ -968,7 +1032,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             ) ** 2
 
         # =========== KINETICS ===========
-        @self.Constraint(self.target_ion_set, doc="Fluid mass transfer coeff")
+        @self.Constraint(self.target_ion_set, doc="Fluid mass transfer coefficient")
         def eq_fluid_mass_transfer_coeff(b, j):
             prop_in = b.process_flow.properties_in[0]
             return (
@@ -1002,16 +1066,16 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 to_units=pyunits.mol / pyunits.L,
             )
 
-        @self.Constraint(doc="Left hand side of constant pattern sol'n")
-        def eq_lh(b):
-            return b.lh == b.num_transfer_units * (b.dimensionless_time - 1)
+        # @self.Constraint(doc="Left hand side of constant pattern sol'n")
+        # def eq_lh(b):
+        #     return b.lh ==
 
         @self.Constraint(
             self.target_ion_set, doc="Right hand side of constant pattern sol'n"
         )
         def eq_fixed_pattern_soln(b, j):
             return (
-                b.lh
+                b.num_transfer_units * (b.dimensionless_time - 1)
                 == (log(b.c_norm[j]) - b.langmuir[j] * log(1 - b.c_norm[j]))
                 / (1 - b.langmuir[j])
                 + 1
@@ -1084,29 +1148,29 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def eq_mass_out(b, j):
             return b.mass_out[j] == b.mass_in[j] - b.mass_removed[j]
 
-        @self.Constraint(ion_set, doc="Steady-state effluent concentration")
-        def eq_ss_effluent(b, j):
-            prop_in = b.process_flow.properties_in[0]
-            prop_out = b.process_flow.properties_out[0]
-            if j == target_ion:
-                return prop_out.conc_equiv_phase_comp["Liq", j] == b.mass_out[j] / (
-                    prop_in.flow_vol_phase["Liq"] * b.t_breakthru
-                )
-            else:
-                return (
-                    prop_out.conc_equiv_phase_comp["Liq", j]
-                    == prop_in.conc_equiv_phase_comp["Liq", j]
-                )
+        # @self.Constraint(ion_set, doc="Steady-state effluent concentration")
+        # def eq_ss_effluent(b, j):
+        #     prop_in = b.process_flow.properties_in[0]
+        #     prop_out = b.process_flow.properties_out[0]
+        #     if j == target_ion:
+        #         return prop_out.conc_equiv_phase_comp["Liq", j] == b.mass_out[j] / (
+        #             prop_in.flow_vol_phase["Liq"] * b.t_breakthru
+        #         )
+        #     else:
+        #         return (
+        #             prop_out.conc_equiv_phase_comp["Liq", j]
+        #             == prop_in.conc_equiv_phase_comp["Liq", j]
+        #         )
 
-        @self.Constraint(ion_set, doc="Steady-state regen concentration")
-        def eq_ss_regen(b, j):
-            prop_regen = b.regeneration_stream[0]
-            if j == target_ion:
-                return prop_regen.conc_equiv_phase_comp["Liq", j] == (
-                    b.mass_removed[j] * b.regen_recycle
-                ) / (prop_regen.flow_vol_phase["Liq"] * b.t_regen)
-            else:
-                return prop_regen.conc_equiv_phase_comp["Liq", j] == 0
+        # @self.Constraint(ion_set, doc="Steady-state regen concentration")
+        # def eq_ss_regen(b, j):
+        #     prop_regen = b.regeneration_stream[0]
+        #     if j == target_ion:
+        #         return prop_regen.conc_equiv_phase_comp["Liq", j] == (
+        #             b.mass_removed[j] * b.regen_recycle
+        #         ) / (prop_regen.flow_vol_phase["Liq"] * b.t_regen)
+        #     else:
+        #         return prop_regen.conc_equiv_phase_comp["Liq", j] == 0
 
         # =========== REGENERATION, RINSE, BACKWASHING ===========
 
@@ -1128,21 +1192,21 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 / b.service_to_regen_flow_ratio
             )
 
-        @self.Constraint(doc="Regen pump power")
-        def eq_regen_pump_power(b):
-            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
-            prop_in = b.process_flow.properties_in[0]
-            prop_regen = b.regeneration_stream[0]
-            return b.regen_pump_power == pyunits.convert(
-                (
-                    prop_in.dens_mass_phase["Liq"]
-                    * Constants.acceleration_gravity
-                    * p_drop_m
-                    * prop_regen.flow_vol_phase["Liq"]
-                )
-                / b.pump_efficiency,
-                to_units=pyunits.kilowatts,
-            )
+        # @self.Constraint(doc="Regen pump power")
+        # def eq_regen_pump_power(b):
+        #     p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
+        #     prop_in = b.process_flow.properties_in[0]
+        #     prop_regen = b.regeneration_stream[0]
+        #     return b.regen_pump_power == pyunits.convert(
+        #         (
+        #             prop_in.dens_mass_phase["Liq"]
+        #             * Constants.acceleration_gravity
+        #             * p_drop_m
+        #             * prop_regen.flow_vol_phase["Liq"]
+        #         )
+        #         / b.pump_efficiency,
+        #         to_units=pyunits.kilowatts,
+        #     )
 
         @self.Constraint(doc="Bed expansion fraction from backwashing")
         def eq_bed_expansion_frac(b):
@@ -1162,20 +1226,20 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             bw_rate = pyunits.convert(b.bw_rate, to_units=pyunits.m / pyunits.s)
             return b.bw_flow == bw_rate * (b.bed_vol / b.bed_depth) * b.number_columns
 
-        @self.Constraint(doc="Backwash pump power")
-        def eq_bw_pump_power(b):
-            prop_in = b.process_flow.properties_in[0]
-            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
-            return b.bw_pump_power == pyunits.convert(
-                (
-                    prop_in.dens_mass_phase["Liq"]
-                    * Constants.acceleration_gravity
-                    * p_drop_m
-                    * b.bw_flow
-                )
-                / b.pump_efficiency,
-                to_units=pyunits.kilowatts,
-            )
+        # @self.Constraint(doc="Backwash pump power")
+        # def eq_bw_pump_power(b):
+        #     prop_in = b.process_flow.properties_in[0]
+        #     p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
+        #     return b.bw_pump_power == pyunits.convert(
+        #         (
+        #             prop_in.dens_mass_phase["Liq"]
+        #             * Constants.acceleration_gravity
+        #             * p_drop_m
+        #             * b.bw_flow
+        #         )
+        #         / b.pump_efficiency,
+        #         to_units=pyunits.kilowatts,
+        #     )
 
         @self.Constraint(doc="Rinse time")
         def eq_rinse_time(b):
@@ -1187,64 +1251,44 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 b.rinse_flow == b.vel_bed * (b.bed_vol / b.bed_depth) * b.number_columns
             )
 
-        @self.Constraint(doc="Rinse pump power")
-        def eq_rinse_pump_power(b):
-            prop_in = b.process_flow.properties_in[0]
-            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
-            return b.rinse_pump_power == pyunits.convert(
-                (
-                    prop_in.dens_mass_phase["Liq"]
-                    * Constants.acceleration_gravity
-                    * p_drop_m
-                    * b.rinse_flow
-                )
-                / b.pump_efficiency,
-                to_units=pyunits.kilowatts,
-            )
+        # @self.Constraint(doc="Rinse pump power")
+        # def eq_rinse_pump_power(b):
+        #     prop_in = b.process_flow.properties_in[0]
+        #     p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
+        #     return b.rinse_pump_power == pyunits.convert(
+        #         (
+        #             prop_in.dens_mass_phase["Liq"]
+        #             * Constants.acceleration_gravity
+        #             * p_drop_m
+        #             * b.rinse_flow
+        #         )
+        #         / b.pump_efficiency,
+        #         to_units=pyunits.kilowatts,
+        #     )
 
-        @self.Constraint(doc="Main pump power")
-        def eq_main_pump_power(b):
-            prop_in = b.process_flow.properties_in[0]
-            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
-            return b.main_pump_power == pyunits.convert(
-                (
-                    prop_in.dens_mass_phase["Liq"]
-                    * Constants.acceleration_gravity
-                    * p_drop_m
-                    * prop_in.flow_vol_phase["Liq"]
-                )
-                / b.pump_efficiency,
-                to_units=pyunits.kilowatts,
-            )
+        # @self.Constraint(doc="Main pump power")
+        # def eq_main_pump_power(b):
+        #     prop_in = b.process_flow.properties_in[0]
+        #     p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
+        #     return b.main_pump_power == pyunits.convert(
+        #         (
+        #             prop_in.dens_mass_phase["Liq"]
+        #             * Constants.acceleration_gravity
+        #             * p_drop_m
+        #             * prop_in.flow_vol_phase["Liq"]
+        #         )
+        #         / b.pump_efficiency,
+        #         to_units=pyunits.kilowatts,
+        #     )
 
-        @self.Constraint(doc="Pressure drop")
-        def eq_pressure_drop(b):
-            vel_bed = pyunits.convert(b.vel_bed, to_units=pyunits.m / pyunits.hr)
-            return (
-                b.pressure_drop
-                == (b.p_drop_A + b.p_drop_B * vel_bed + b.p_drop_C * vel_bed**2)
-                * b.bed_depth
-            )  # for 20C;
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="Isothermal assumption for absorbed contaminant",
-        )
-        def eq_isothermal_regeneration_stream(b, t):
-            return (
-                b.process_flow.properties_in[t].temperature
-                == b.regeneration_stream[t].temperature
-            )
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="Isobaric assumption for absorbed contaminant",
-        )
-        def eq_isobaric_regeneration_stream(b, t):
-            return (
-                b.process_flow.properties_in[t].pressure
-                == b.regeneration_stream[t].pressure
-            )
+        # @self.Constraint(doc="Pressure drop")
+        # def eq_pressure_drop(b):
+        #     vel_bed = pyunits.convert(b.vel_bed, to_units=pyunits.m / pyunits.hr)
+        #     return (
+        #         b.pressure_drop
+        #         == (b.p_drop_A + b.p_drop_B * vel_bed + b.p_drop_C * vel_bed**2)
+        #         * b.bed_depth
+        #     )  # for 20C;
 
         @self.Expression(doc="Total column volume required")
         def col_vol_tot(b):
@@ -1461,7 +1505,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.vel_inter, 1e3)
 
-        iscale.set_scaling_factor(self.pressure_drop, 1)
+        # iscale.set_scaling_factor(self.pressure_drop, 1)
 
         iscale.set_scaling_factor(self.bed_expansion_frac, 1)
 
@@ -1504,11 +1548,11 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.separation_factor)
             iscale.constraint_scaling_transform(c, sf)
 
-        for j, c in self.eq_ss_effluent.items():
-            sf = iscale.get_scaling_factor(
-                self.process_flow.properties_out[0].conc_equiv_phase_comp["Liq", j]
-            )
-            iscale.constraint_scaling_transform(c, sf)
+        # for j, c in self.eq_ss_effluent.items():
+        #     sf = iscale.get_scaling_factor(
+        #         self.process_flow.properties_out[0].conc_equiv_phase_comp["Liq", j]
+        #     )
+        #     iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_fluid_mass_transfer_coeff.items():
             sf = iscale.get_scaling_factor(self.fluid_mass_transfer_coeff[ind])
