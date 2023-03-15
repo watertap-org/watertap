@@ -285,33 +285,29 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             initialize=0.33, units=pyunits.dimensionless, doc="Sherwood equation exp"
         )
 
-        self.bed_depth_to_diam_ratio = Var(
-            initialize=1,
-            bounds=(1, 100),
-            units=pyunits.dimensionless,
-            doc="Min ratio of bed depth to diameter",
-        )
-
         # Bed expansion is calculated as a fraction of the bed_depth
         # These coefficients are used to calculate that fraction (bed_expansion_frac) as a function of backwash rate (bw_rate, m/hr)
         # bed_expansion_frac = bed_expansion_A + bed_expansion_B * bw_rate + bed_expansion_C * bw_rate**2
         # Default is for strong-base type I acrylic anion exchanger resin (A-850, Purolite), @20C
         # Data extracted from MWH Chap 16, Figure 16-15 and fit with Excel
 
-        self.bed_expansion_frac_A = Var(
+        self.bed_expansion_frac_A = Param(
             initialize=-1.23e-2,
+            mutable=True,
             units=pyunits.dimensionless,
             doc="Bed expansion fraction eq intercept",
         )
 
-        self.bed_expansion_frac_B = Var(
+        self.bed_expansion_frac_B = Param(
             initialize=1.02e-1,
+            mutable=True,
             units=pyunits.hr / pyunits.m,
             doc="Bed expansion fraction equation B parameter",
         )
 
-        self.bed_expansion_frac_C = Var(
+        self.bed_expansion_frac_C = Param(
             initialize=-1.35e-3,
+            mutable=True,
             units=pyunits.hr**2 / pyunits.m**2,
             doc="Bed expansion fraction equation C parameter",
         )
@@ -321,20 +317,23 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         # Default is for strong-base type I acrylic anion exchanger resin (A-850, Purolite), @20C
         # Data extracted from MWH Chap 16, Figure 16-14 and fit with Excel
 
-        self.p_drop_A = Var(
+        self.p_drop_A = Param(
             initialize=0.609,
+            mutable=True,
             units=pyunits.psi / pyunits.m,
             doc="Pressure drop equation intercept",
         )
 
-        self.p_drop_B = Var(
+        self.p_drop_B = Param(
             initialize=0.173,
+            mutable=True,
             units=(pyunits.psi * pyunits.hr) / pyunits.m**2,
             doc="Pressure drop equation B",
         )
 
-        self.p_drop_C = Var(
+        self.p_drop_C = Param(
             initialize=8.28e-4,
+            mutable=True,
             units=(pyunits.psi * pyunits.hr**2) / pyunits.m**3,
             doc="Pressure drop equation C",
         )
@@ -407,6 +406,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )
 
         # ====== Bed/Column variables ====== #
+
+        self.bed_depth_to_diam_ratio = Var(
+            initialize=1,
+            bounds=(1, 100),
+            units=pyunits.dimensionless,
+            doc="Min ratio of bed depth to diameter",
+        )
 
         self.bed_vol = Var(
             initialize=1,
