@@ -284,7 +284,7 @@ The following variables are constructed when applying the GAC costing method in 
    "Unit other process capital cost", ":math:`C_{cap,other}`", "other_process_cost", ":math:`$`"
    "Cost to regenerate spent GAC adsorbent by an offsite regeneration facility", ":math:`C_{op,regen}`", "gac_regen_cost", ":math:`$/year`"
    "Cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{op,makeup}`", "gac_makeup_cost", ":math:`$/year`"
-   "Approximate GAC system energy consumption*", ":math:`P`", "gac_makeup_cost", ":math:`kW`"
+   "Approximate GAC system energy consumption*", ":math:`P`", "energy_consumption", ":math:`kW`"
 
 \*Energy consumption is the sum of energy required to operate booster, backwash, and residual pumps.
 
@@ -335,7 +335,7 @@ Code Documentation
 -------------------
 
 * :mod:`watertap.unit_models.gac`
-* :meth:`watertap.costing.watertap_costing_package.WaterTAPCostingData.cost_gac`
+* :meth:`watertap.costing.units.gac.cost_gac`
 
 References
 -----------
