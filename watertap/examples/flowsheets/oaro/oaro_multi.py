@@ -31,7 +31,7 @@ from pyomo.environ import (
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.core.util.exceptions import InitializationError, PropertyPackageError
+from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom, fixed_variables_set
 from idaes.core.util.initialization import (
     solve_indexed_blocks,
@@ -86,11 +86,8 @@ def main(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     # build, set, and initialize
     m = build(number_of_stages=number_of_stages, erd_type=erd_type)
     set_operating_conditions(m)
-    try:
-        initialize_system(m, solver=solver)
-    except PropertyPackageError:
-        print("DOF=", degrees_of_freedom(m))
-        raise
+    initialize_system(m, solver=solver)
+
     # print_close_to_bounds(m)
     # print_infeasible_constraints(m)
 
@@ -614,6 +611,7 @@ def initialize_system(m, solver=None, verbose=True):
     m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
     print(f"fixed variables set after RO: {fixed_variables_set(m.fs.RO)}")
     print(f"DOF after RO: {degrees_of_freedom(m)}")
+    assert False
 
     propagate_state(m.fs.ro_to_ERD)
     m.fs.EnergyRecoveryDevices[last_stage].initialize()

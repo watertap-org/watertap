@@ -316,11 +316,10 @@ class _NaClStateBlock(StateBlock):
         logic = (not skip_solve) and (not check_optimal_termination(results))
         init_log.info_high(f"raise initializationerror logic={logic}")
         if logic:
-            pass
-            # raise PropertyPackageError(
-            #     f"{self.name} failed to initialize successfully. Please check the output logs for more information."
-            # )
-            # # TODO: why can't InitializationError raise?
+            raise PropertyPackageError(
+                f"{self.name} failed to initialize successfully. Please check the output logs for more information."
+            )
+            # TODO: why can't InitializationError raise?
             # raise InitializationError(f"{self.name} failed to initialize successfully. Please check the output logs for more information.")
         else:
             init_log.info_high(f"Initialization is fine. Sanity check.")
