@@ -35,6 +35,7 @@ class ElectrodeMaterial(StrEnum):
     the model with iron electrodes, use :code:`ElectrocoagulationZO(electrode_material="iron")`;
     otherwise :code:`ElectrocoagulationZO()` with default to aluminum electrodes.
     """
+
     aluminum = "aluminum"
     iron = "iron"
 
@@ -45,6 +46,7 @@ class ReactorMaterial(StrEnum):
     model with stainless steel, use :code:`ElectrocoagulationZO(reactor_material="stainless_steel")`;
     otherwise, :code:`ElectrocoagulationZO()` will default to PVC.
     """
+
     pvc = "pvc"
     stainless_steel = "stainless_steel"
 
