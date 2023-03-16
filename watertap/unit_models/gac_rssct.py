@@ -10,6 +10,14 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import pyomo.environ as pyo
+from idaes.core.util.model_statistics import (
+    variables_near_bounds_generator,
+    total_constraints_set,
+)
+from idaes.core.util.scaling import (
+    badly_scaled_var_generator,
+)
 from pyomo.environ import (
     Var,
     Param,
@@ -60,7 +68,7 @@ class SurfaceDiffusionCoefficientType(Enum):
 
 
 # ---------------------------------------------------------------------
-@declare_process_block_class("GAC")
+@declare_process_block_class("GAC_RSSCT")
 class GACData(InitializationMixin, UnitModelBlockData):
     """
     Empirical CPHSDM Granular Activated Carbon Model -
@@ -400,49 +408,49 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="bed void fraction",
         )
         self.bed_length = Var(
-            initialize=5,
+            initialize=0.01,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length"),
             doc="bed length",
         )
         self.bed_diameter = Var(
-            initialize=1,
+            initialize=0.001,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length"),
             doc="bed diameter, valid if considering only a single adsorber",
         )
         self.bed_area = Var(
-            initialize=1,
+            initialize=1e-5,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length") ** 2,
             doc="bed area, single adsorber area or sum of areas for adsorbers in parallel",
         )
         self.bed_volume = Var(
-            initialize=5,
+            initialize=1e-6,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length") ** 3,
             doc="bed volume",
         )
         self.ebct = Var(
-            initialize=500,
+            initialize=10,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
             doc="empty bed contact time",
         )
         self.residence_time = Var(
-            initialize=100,
+            initialize=1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
             doc="fluid residence time in the bed",
         )
         self.bed_mass_gac = Var(
-            initialize=100,
+            initialize=1e-3,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass"),
@@ -553,7 +561,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="specific throughput from empirical equation",
         )
         self.min_residence_time = Var(
-            initialize=1000,
+            initialize=10,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
@@ -657,21 +665,21 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="trapezoid rule of elements for numerical integration of average concentration ratio",
         )
         self.conc_ratio_avg = Var(
-            initialize=0.1,
+            initialize=0.05,
             bounds=(0, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule",
         )
         self.mass_adsorbed = Var(
-            initialize=10,
+            initialize=1e-9,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass"),
             doc="total mass of adsorbed species at operational time",
         )
         self.gac_usage_rate = Var(
-            initialize=1e-2,
+            initialize=1e-10,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("time") ** -1,
@@ -709,9 +717,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Biot number")
         def eq_number_bi(b):
-            return 1 == (b.kf * (b.particle_dia / 2) * (1 - b.bed_voidage)) / (
-                b.N_Bi * b.ds * b.dg * b.bed_voidage
-            )
+            return b.N_Bi * b.ds * b.dg * b.bed_voidage == b.kf * (
+                b.particle_dia / 2
+            ) * (1 - b.bed_voidage)
 
         # ---------------------------------------------------------------------
         # bed dimensions, gac particle, and sizing calculations
@@ -1134,6 +1142,22 @@ class GACData(InitializationMixin, UnitModelBlockData):
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
+            """
+            badly_scaled_var_list = badly_scaled_var_generator(self, large=1e2, small=1e-2)
+            print("----------------   badly_scaled_var_list   ----------------")
+            for x in badly_scaled_var_list:
+                print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+            print("---------------- variables_near_bounds_list ----------------")
+            variables_near_bounds_list = variables_near_bounds_generator(self)
+            for x in variables_near_bounds_list:
+                print(f"{x.name}\t{x.value}")
+            print("---------------- total_constraints_set_list ----------------")
+            total_constraints_set_list = total_constraints_set(self)
+            for x in total_constraints_set_list:
+                residual = abs(pyo.value(x.body) - pyo.value(x.lb))
+                if residual > 1e-8:
+                    print(f"{x}\t{residual}")
+            """
             raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     # ---------------------------------------------------------------------
