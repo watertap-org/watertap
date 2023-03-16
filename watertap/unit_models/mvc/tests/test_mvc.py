@@ -25,6 +25,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.initialization import propagate_state
+from idaes.core.util.exceptions import InitializationError
 
 # Import components
 from watertap.unit_models.mvc.components import Evaporator
@@ -122,7 +123,10 @@ def initialize(m, solver=None):
 
     # initialize compressor
     propagate_state(m.fs.s01)
-    m.fs.compressor.initialize(outlvl=idaeslog.INFO_HIGH)
+    try:
+        m.fs.compressor.initialize(outlvl=idaeslog.DEBUG)
+    except InitializationError:
+        pass
 
     # initialize condenser
     propagate_state(m.fs.s02)
