@@ -32,6 +32,8 @@ import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pydantic import BaseModel, validator, Field
 import pyomo.environ as pyo
+from pyomo.core.expr.numeric_expr import ExpressionBase
+from pyomo.core.base.expression import Expression, _ExpressionData
 
 #: Forward-reference to a FlowsheetInterface type, used in
 #: :meth:`FlowsheetInterface.find`
@@ -540,7 +542,7 @@ class FlowsheetInterface:
         u = pyo.units
         for key, mo in self.fs_exp.model_objects.items():
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
-            try:
+            if not isinstance(mo.obj, (Expression, ExpressionBase, _ExpressionData)):
                 if mo.obj.ub is None:
                     mo.ub = mo.obj.ub
                 else:
@@ -553,8 +555,6 @@ class FlowsheetInterface:
                     tmp = pyo.Var(initialize=mo.obj.lb, units=u.get_units(mo.obj))
                     tmp.construct()
                     mo.lb = pyo.value(u.convert(tmp, to_units=mo.ui_units))
-            except Exception as e:
-                mo.has_bounds = False
 
     @classmethod
     def from_installed_packages(
