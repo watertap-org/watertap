@@ -544,7 +544,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )
 
         self.bed_depth = Var(
-            initialize=1, bounds=(0, 2), units=pyunits.m, doc="Bed depth"  # EPA-WBS
+            initialize=1, bounds=(0, 3.0), units=pyunits.m, doc="Bed depth"  # EPA-WBS
         )
 
         self.bed_porosity = Var(
@@ -691,7 +691,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         self.service_flow_rate = Var(
             initialize=10,
-            bounds=(1, 15),
+            bounds=(1, 40),
             units=pyunits.hr**-1,
             doc="Service flow rate [BV/hr]",
         )
@@ -815,9 +815,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             prop_in = b.process_flow.properties_in[0]
             return (1 - b.c_norm[j]) * prop_in.get_material_flow_terms(
                 "Liq", j
-            ) * prop_in.charge_comp[j] == -b.process_flow.mass_transfer_term[
-                0, "Liq", j
-            ]
+            ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
 
         for j in inerts:
             self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
@@ -828,7 +826,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def eq_mass_transfer_target(b, j):
             regen = b.regeneration_stream[0]
             return (
-                regen.get_material_flow_terms("Liq", j) * regen.charge_comp[j]
+                regen.get_material_flow_terms("Liq", j)
                 == -b.process_flow.mass_transfer_term[0, "Liq", j]
             )
 
@@ -999,7 +997,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(
             self.target_ion_set, doc="Right hand side of constant pattern sol'n"
         )
-        def eq_fixed_pattern_soln(b, j):
+        def eq_constant_pattern_soln(b, j):
             return (
                 b.num_transfer_units
                 * (
@@ -1050,12 +1048,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         # =========== MASS BALANCE ===========
 
-        @self.Constraint(self.target_ion_set, doc="Influent total mass of ion")
+        @self.Constraint(self.target_ion_set, doc="Mass in")
         def eq_mass_in(b, j):
             prop_in = b.process_flow.properties_in[0]
-            return (
-                b.mass_in[j] == prop_in.flow_equiv_phase_comp["Liq", j] * b.t_breakthru
-            )
+            return b.mass_in[j] == prop_in.flow_mol_phase_comp["Liq", j] * b.t_breakthru
+
+        @self.Constraint(self.target_ion_set, doc="Mass in")
+        def eq_mass_out(b, j):
+            prop_out = b.process_flow.properties_out[0]
+            return b.mass_out[j] == b.mass_in[j] - b.mass_removed[j]
 
         @self.Constraint(self.target_ion_set, doc="Removed total mass of ion")
         def eq_mass_removed(b, j):
@@ -1063,34 +1064,54 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 b.resin_eq_capacity * b.resin_bulk_dens * b.bed_vol * b.number_columns,
                 to_units=pyunits.mol,
             )
+
+        @self.Expression(self.target_ion_set, doc="Influent total mass of ion")
+        def mass_in_exp(b, j):
+            prop_in = b.process_flow.properties_in[0]
+            return prop_in.flow_mol_phase_comp["Liq", j] * b.t_breakthru
+
+        @self.Expression(self.target_ion_set, doc="Mass removed check")
+        def mass_out_exp(b, j):
+            prop_out = b.process_flow.properties_out[0]
+            return prop_out.flow_mol_phase_comp["Liq", j] * b.t_breakthru
+
+        @self.Expression(self.target_ion_set, doc="Mass removed check")
+        def mass_removed_check2(b, j):
+            prop_out = b.process_flow.properties_out[0]
+            return b.mass_in_exp[j] - b.mass_out_exp[j]
+
+        @self.Expression(self.target_ion_set, doc="Mass removed check")
+        def mass_removed_check(b, j):
+            return b.process_flow.mass_transfer_term[0, "Liq", j] * b.t_breakthru
             # return b.mass_removed[j] == b.process_flow.mass_transfer_term[0, "Liq", j] * b.t_breakthru
             # return b.process_flow.mass_transfer_term[0, "Liq", j] * b.t_breakthru == pyunits.convert(
             #     b.resin_eq_capacity * b.resin_bulk_dens * b.bed_vol * b.number_columns,
             #     to_units=pyunits.mol,
             # )
 
-        @self.Constraint(self.target_ion_set, doc="Mass of ion in effluent")
-        def eq_mass_out(b, j):
-            prop_out = b.process_flow.properties_out[0]
-            return (
-                b.mass_out[j]
-                == prop_out.flow_equiv_phase_comp["Liq", j] * b.t_breakthru
-            )
-            # return b.mass_out
-
-        # @self.Constraint(ion_set, doc="Steady-state effluent concentration")
-        # def eq_ss_effluent(b, j):
-        #     prop_in = b.process_flow.properties_in[0]
+        # @self.Constraint(self.target_ion_set, doc="Mass of ion in effluent")
+        # def eq_mass_out(b, j):
         #     prop_out = b.process_flow.properties_out[0]
-        #     if j == target_ion:
-        #         return prop_out.conc_equiv_phase_comp["Liq", j] == b.mass_out[j] / (
-        #             prop_in.flow_vol_phase["Liq"] * b.t_breakthru
-        #         )
-        #     else:
-        #         return (
-        #             prop_out.conc_equiv_phase_comp["Liq", j]
-        #             == prop_in.conc_equiv_phase_comp["Liq", j]
-        #         )
+        #     return (
+        #         b.mass_out[j]
+        #         == prop_out.flow_equiv_phase_comp["Liq", j] * b.t_breakthru
+        #     )
+        # return b.mass_out
+
+        @self.Constraint(ion_set, doc="Steady-state effluent concentration")
+        def eq_ss_effluent(b, j):
+            prop_in = b.process_flow.properties_in[0]
+            prop_out = b.process_flow.properties_out[0]
+            prop_regen = b.regeneration_stream[0]
+            if j == target_ion:
+                return prop_regen.flow_mol_phase_comp["Liq", j] == b.mass_out[j] / (
+                    b.t_breakthru
+                )
+            else:
+                return (
+                    prop_out.flow_mol_phase_comp["Liq", j]
+                    == prop_in.flow_mol_phase_comp["Liq", j]
+                )
 
         # @self.Constraint(ion_set, doc="Steady-state regen concentration")
         # def eq_ss_regen(b, j):
