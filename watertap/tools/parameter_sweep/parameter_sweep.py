@@ -21,6 +21,7 @@ from idaes.core.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
 from pyomo.common.config import ConfigValue
+from pyomo.common.modeling import unique_component_name
 from pyomo.core.base import _VarData, _ExpressionData
 from pyomo.core.base.param import _ParamData
 
