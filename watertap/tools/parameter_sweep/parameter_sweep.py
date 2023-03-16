@@ -151,7 +151,9 @@ class _ParameterSweepBase(ABC):
 
         # Only assign output variable names to unassigned outputs
         exprs = pyo.Expression(pyo.Any)
-        model.add_component( unique_component_name(model, "_parameter_sweep_expressions"), exprs )
+        model.add_component(
+            unique_component_name(model, "_parameter_sweep_expressions"), exprs
+        )
         for output_name, _pyo_obj in outputs.items():
             if not isinstance(_pyo_obj, (_VarData, _ExpressionData, _ParamData)):
                 # Add this object as an expression and assign a name
