@@ -270,7 +270,7 @@ assumption considering vessel sizing and achieving pseudo-steady state.  The num
 (commercially available) dimensions of identical modular contactors in parallel. When costing several operational vessels, the area reported
 in the unit model should be interpreted as the sum of the areas across all operating GAC contactors. The costing
 parameters may be selected from either steel pressure-fed vessels or concrete gravity-fed basins by the
-``contactor_type`` argument . Note this only affects costing calculations. Volume dimensions calculations
+``contactor_type`` argument. Note this only affects costing calculations. Volume dimensions calculations
 within the model remain assuming a cylindrical bed.
 
 The following variables are constructed when applying the GAC costing method in the ``watertap_costing_package``:
