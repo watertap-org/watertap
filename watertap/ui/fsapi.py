@@ -425,25 +425,28 @@ class FlowsheetInterface:
                 dst.obj.fixed = src.fixed
                 dst.fixed = src.fixed
 
-                #update bounds
-                if (src.lb is None or src.lb == ""):
+                # update bounds
+                if src.lb is None or src.lb == "":
                     dst.obj.lb = None
                     dst.lb = None
                 else:
                     tmp = pyo.Var(initialize=src.lb, units=ui_units)
                     tmp.construct()
-                    dst.obj.lb = pyo.value(u.convert(tmp, to_units=u.get_units(dst.obj)))
+                    dst.obj.lb = pyo.value(
+                        u.convert(tmp, to_units=u.get_units(dst.obj))
+                    )
                     dst.lb = src.lb
-                if (src.ub is None or src.ub == ""):
+                if src.ub is None or src.ub == "":
                     dst.obj.ub = None
                     dst.ub = None
                 else:
                     tmp = pyo.Var(initialize=src.ub, units=ui_units)
                     tmp.construct()
-                    dst.obj.ub = pyo.value(u.convert(tmp, to_units=u.get_units(dst.obj)))
+                    dst.obj.ub = pyo.value(
+                        u.convert(tmp, to_units=u.get_units(dst.obj))
+                    )
                     dst.ub = src.ub
-        
-        #update degrees of freedom (dof)
+        # update degrees of freedom (dof)
         self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         if missing:
             raise self.MissingObjectError(missing)
