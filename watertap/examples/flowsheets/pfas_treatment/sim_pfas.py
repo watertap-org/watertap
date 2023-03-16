@@ -80,7 +80,7 @@ source_name_list = [
     "Garden Grove",
     "IRWD",
 ]
-source_name = "Serrano Water District"
+source_name = "Santa Ana" # "Orange"  # "Serrano Water District"
 data = pd.read_csv("F400_PFOA.csv")
 
 # initial guess for regressed variables
@@ -99,6 +99,10 @@ pyo.SolverFactory.register("ipopt")(pyo.SolverFactory.get_class("ipopt-watertap"
 
 def main():
 
+    # data set
+    data_set = data[["data_iter", f"{source_name}_X", f"{source_name}_Y"]]
+    data_filtered = data_filter(data_set)
+
     # vars to estimate
     theta_names = [
         "fs.gac.freund_k",
@@ -112,17 +116,17 @@ def main():
     )
 
     # sum of squared error function as objective
-    expr_sf = 1e-4
+    expr_sf = 1e-10
 
-    def SSE(model, data):
-        expr = (float(data[f"{source_name}_X"]) - model.fs.gac.bed_volumes_treated) ** 2
+    def SSE(model, data_filtered):
+        expr = (float(data_filtered[f"{source_name}_X"]) - model.fs.gac.bed_volumes_treated) ** 2
         return expr * expr_sf
 
     print("--------------------------\tmodel regression\t--------------------------")
     # Create an instance of the parmest estimator
     pest = parmest.Estimator(
         parmest_regression,
-        data,
+        data_filtered,
         theta_names,
         SSE,
         tee=True,
@@ -144,7 +148,7 @@ def main():
     print("--------------------------\tmodel rebuild\t--------------------------")
     # rebuild model across CP to view regression results
     # theta = [guess_freund_k, guess_freund_ninv, guess_ds]
-    # plot_regression(theta)
+    plot_regression(theta, data_filtered)
 
 
 def model_build():
@@ -245,7 +249,7 @@ def parmest_regression(data):
     return m
 
 
-def plot_regression(m, theta):
+def plot_regression(theta, data_filtered):
 
     # build model
     m = model_build()
@@ -254,7 +258,6 @@ def plot_regression(m, theta):
     m.fs.gac.freund_k.fix(theta[0])
     m.fs.gac.freund_ninv.fix(theta[1])
     m.fs.gac.ds.fix(theta[2])
-    m.fs.gac.conc_ratio_replace.fix(0.5)
 
     # scaling
     model_scale(m)
@@ -263,7 +266,7 @@ def plot_regression(m, theta):
     model_init(m)
 
     # check profile against pilot data
-    conc_ratio_input = np.linspace(0.01, 0.95, 5)
+    conc_ratio_input = np.linspace(0.01, 0.95, 40)
     conc_ratio_list = []
     bed_volumes_treated_list = []
 
@@ -291,10 +294,14 @@ def plot_regression(m, theta):
     df.to_csv("pfas_regression_results.csv")
 
     # plot comparison
-    plt.plot(bed_volumes_treated_list, conc_ratio_list, label="regression results")
+    plt.plot(bed_volumes_treated_list, conc_ratio_list, 'b',  label="regression results")
     plt.plot(
-        data[f"{source_name}_X"], data[f"{source_name}_Y"], label=f"{source_name} data"
+        data[f"{source_name}_X"], data[f"{source_name}_Y"], 'ro',  label=f"{source_name} data"
     )
+    plt.plot(
+        data_filtered[f"{source_name}_X"], data_filtered[f"{source_name}_Y"], 'ro', mec='k', label=f"Filtered data"
+    )
+
     plt.legend()
     plt.show()
 
@@ -352,6 +359,28 @@ def model_solve(model, solver_log=True):
             if residual > 1e-8:
                 print(f"{x}\t{residual}")
 
+
+def data_filter(data):
+
+    for i, row in data.iterrows():
+        # skip last 2 iterations
+        if i >= 5:
+            continue
+
+        slope1 = (
+                data[f"{source_name}_Y"][i+1]-data[f"{source_name}_Y"][i]
+                ) / (
+                data[f"{source_name}_X"][i+1]-data[f"{source_name}_X"][i]
+        )
+        slope2 = (
+                data[f"{source_name}_Y"][i+2]-data[f"{source_name}_Y"][i]
+                ) / (
+                data[f"{source_name}_X"][i+2]-data[f"{source_name}_X"][i]
+        )
+        if slope1 < -1e-6 or slope2 < 1e-6:
+            data = data.drop(i)
+
+    return data
 
 if __name__ == "__main__":
     main()
