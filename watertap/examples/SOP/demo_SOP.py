@@ -29,9 +29,7 @@ def main():
     # attach property package
     m.fs.properties = props.SopParameterBlock()
     # build the unit model
-    m.fs.SOP = SelectiveOilPermeation(
-        property_package=m.fs.properties, has_pressure_change=True
-    )
+    m.fs.SOP = SelectiveOilPermeation(property_package=m.fs.properties)
 
     # scale model
     m.fs.properties.set_default_scaling(
@@ -41,9 +39,6 @@ def main():
         "flow_mass_phase_comp", 1e5, index=("Liq", "oil")
     )
     iscale.calculate_scaling_factors(m)
-    iscale.set_scaling_factor(
-        m.fs.SOP.properties_permeate[0].flow_mass_phase_comp["Liq", "H2O"], 1e8
-    )
 
     # print DOF before specifying
     print("DOF before specifying:", degrees_of_freedom(m.fs))
@@ -75,19 +70,25 @@ def main():
     m.fs.SOP.initialize()
     solver = get_solver()
 
+    print(
+        "\n------- display badly scaled variables - after initialize, before solve -------"
+    )
+    detect_badly_scaled_vars(m)
+
     print("\n------- solve model -------")
     results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
 
-    print("\n ------- display scaling factors -------")
+    print("\n------- display scaling factors -------")
     m.fs.SOP.scaling_factor.display()
 
-    print("\n ------- display badly scaled variables -------")
-    detect_badly_scaled_vars(m)
+    print("\n------- display badly scaled variables - after solve -------")
+    detect_badly_scaled_vars(m)  # TODO do I still want this here?
 
     # display metrics
-    print("\n ------- display report -------")
+    print("\n------- display report -------")
     m.fs.SOP.report()
+
     return m
 
 

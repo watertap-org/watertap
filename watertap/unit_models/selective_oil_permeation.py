@@ -142,12 +142,12 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
     CONFIG.declare(
         "has_pressure_change",
         ConfigValue(
-            default=False,
+            default=True,
             domain=In([True, False]),
             description="Pressure change term construction flag",
             doc="""Indicates whether terms for pressure change should be
     constructed,
-    **default** - False.
+    **default** - True.
     **Valid values:** {
     **True** - include pressure change terms,
     **False** - exclude pressure change terms.}""",
