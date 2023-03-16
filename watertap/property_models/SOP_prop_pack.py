@@ -236,7 +236,7 @@ class SopStateBlockData(StateBlockData):
         self.flow_mass_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
-            initialize={("Liq", "H2O"): 0.05, ("Liq", "oil"): 0.05},
+            initialize={("Liq", "H2O"): 1, ("Liq", "oil"): 0.01},
             bounds=(1e-15, 100),
             domain=NonNegativeReals,
             units=units.kg / units.s,
@@ -475,13 +475,6 @@ class SopStateBlockData(StateBlockData):
                     "dens_mass_phase", index=p
                 )
 
-        sf_flow_mass_phase = {}
-        for p in self.params.phase_list:
-            sf_flow_mass_phase[p] = 1 / (
-                1 / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "H2O"])
-                + 1 / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "oil"])
-            )
-
         # these variables should have user input
         for p in self.params.phase_list:
             if (
@@ -499,6 +492,13 @@ class SopStateBlockData(StateBlockData):
                 is None
             ):
                 iscale.set_scaling_factor(self.flow_mass_phase_comp[p, "oil"], 1e1)
+
+        sf_flow_mass_phase = {}
+        for p in self.params.phase_list:
+            sf_flow_mass_phase[p] = 1 / (
+                1 / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "H2O"])
+                + 1 / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "oil"])
+            )
 
         # these variables do not typically require user input
         if self.is_property_constructed("flow_mass_phase"):
