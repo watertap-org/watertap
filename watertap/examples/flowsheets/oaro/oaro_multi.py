@@ -608,10 +608,9 @@ def initialize_system(m, solver=None, verbose=True):
     propagate_state(m.fs.pump_to_ro)
     print(f"DOF after prop_state to RO: {degrees_of_freedom(m)}")
     print(f"fixed variables set after prop_state to RO: {fixed_variables_set(m.fs.RO)}")
-    m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
+    m.fs.RO.initialize()
     print(f"fixed variables set after RO: {fixed_variables_set(m.fs.RO)}")
     print(f"DOF after RO: {degrees_of_freedom(m)}")
-    assert False
 
     propagate_state(m.fs.ro_to_ERD)
     m.fs.EnergyRecoveryDevices[last_stage].initialize()
