@@ -30,11 +30,21 @@ from watertap.core import build_sido, ZeroOrderBaseData
 
 
 class ElectrodeMaterial(StrEnum):
+    """
+    Electrode material can be aluminum or iron. Default is aluminum. To run
+    the model with iron electrodes, use :code:`ElectrocoagulationZO(electrode_material="iron")`;
+    otherwise :code:`ElectrocoagulationZO()` with default to aluminum electrodes.
+    """
     aluminum = "aluminum"
     iron = "iron"
 
 
 class ReactorMaterial(StrEnum):
+    """
+    Reactor material can be PVC or stainless steel. Default is PVC. To run the
+    model with stainless steel, use :code:`ElectrocoagulationZO(reactor_material="stainless_steel")`;
+    otherwise, :code:`ElectrocoagulationZO()` will default to PVC.
+    """
     pvc = "pvc"
     stainless_steel = "stainless_steel"
 
@@ -369,16 +379,22 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
     @staticmethod
     def cost_electrocoagulation(blk):
+        """
+        General method for costing electrocoagulation.
+        """
 
         ec = blk.unit_model
         costing = blk.config.flowsheet_costing_block
         base_currency = costing.base_currency
+
         flow_mgd = pyunits.convert(
             ec.properties_in[0].flow_vol, to_units=pyunits.Mgallons / pyunits.day
         )
+
         flow_m3_yr = pyunits.convert(
             ec.properties_in[0].flow_vol, to_units=pyunits.m**3 / pyunits.year
         )
+
         blk.annual_sludge_flow = pyunits.convert(
             sum(
                 ec.properties_byproduct[0].flow_mass_comp[j] if j != "H2O" else 0
@@ -386,6 +402,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             ),
             to_units=pyunits.kg / pyunits.year,
         )
+
         electrode_mat = ec.config.electrode_material
         reactor_mat = ec.config.reactor_material
 
@@ -403,6 +420,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             bounds=(0, None),
             doc="Fixed operating cost of unit operation",
         )
+
         # Get parameter dict from database
         blk.parameter_dict = (
             parameter_dict
@@ -447,12 +465,15 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 "electrode_material_cost",
             ],
         )
+
         costing_ec = costing.electrocoagulation
+
         if electrode_mat == "aluminum":
             # Reference for Al cost: Anuf et al., 2022 - https://doi.org/https://doi.org/10.1016/j.jwpe.2022.103074
             costing.defined_flows["aluminum"] = 2.23 * base_currency / pyunits.kg
             costing.register_flow_type("aluminum", 2.23 * base_currency / pyunits.kg)
             costing_ec.electrode_material_cost.fix(2.23)
+
         if electrode_mat == "iron":
             # Reference for Fe cost: Anuf et al., 2022 - https://doi.org/https://doi.org/10.1016/j.jwpe.2022.103074
             costing.defined_flows["iron"] = 3.41 * base_currency / pyunits.kg
