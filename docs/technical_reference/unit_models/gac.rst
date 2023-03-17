@@ -330,7 +330,7 @@ Hand, D. W., Crittenden, J. C., & Thacker, W. E. (1984). Simplified models for d
 Journal of Environmental Engineering, 110(2), 440-456.
 
 Crittenden, J., Rhodes, R., Hand, D., Howe, K., & Tchobanoglous, G. (2012). MWHs Water Treatment. Principles and Design.
-EditorialJohn Wiley & Sons.
+John Wiley & Sons.
 
 Crittenden, J. C., Berrigan, J. K., Hand, D. W., & Lykins, B. (1987). Design of Rapid Fixed‐Bed Adsorption Tests for
 Nonconstant Diffusivities. Journal of Environmental Engineering, 113(2), 243–259.
