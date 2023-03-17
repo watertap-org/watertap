@@ -141,6 +141,12 @@ The condenser performance is related through the equations denoted by the footno
 
    "Complete condensation condition", ":math:`P_{out} >= P_{sat,out}\left(T_{out}\right)`"
 
+Code Documentation
+-------------------
+
+\* :mod:`watertap.unit_models.mvc.components.complete_condenser`
+\* :mod:`watertap.unit_models.mvc.components.compressor`
+\* :mod:`watertap.unit_models.mvc.components.evaporator`
 
 References
 -----------
