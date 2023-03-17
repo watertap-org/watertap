@@ -85,8 +85,8 @@ class TestParamBlock(object):
                 "X_PHA",
                 "X_PP",
                 "X_PAO",
-                "X_K",
-                "X_Mg",
+                "S_K",
+                "S_Mg",
                 "S_cat",
                 "S_an",
             ]
@@ -163,8 +163,8 @@ class TestStateBlock(object):
                 "X_PHA",
                 "X_PP",
                 "X_PAO",
-                "X_K",
-                "X_Mg",
+                "S_K",
+                "S_Mg",
             ]
             assert value(model.props[1].conc_mass_comp[i]) == 0.001
 

@@ -93,8 +93,8 @@ class ModifiedADM1ParameterData(PhysicalParameterBlock):
         self.X_PHA = Solute(doc="Polyhydroxyalkanoates")
         self.X_PP = Solute(doc="Polyphosphates")
         self.X_PAO = Solute(doc="Phosphorus accumulating organisms")
-        self.X_K = Solute(doc="Potassium")
-        self.X_Mg = Solute(doc="Magnesium")
+        self.S_K = Solute(doc="Potassium")
+        self.S_Mg = Solute(doc="Magnesium")
 
         # TODO: Additional components not in Table but referred to in text
 

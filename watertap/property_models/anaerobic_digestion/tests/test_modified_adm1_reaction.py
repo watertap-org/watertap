@@ -264,31 +264,31 @@ class TestParamBlock(object):
             ("R19", "Liq", "S_IP"): 0.012903 * mw_p,
             ("R19", "Liq", "X_PHA"): 1,
             ("R19", "Liq", "X_PP"): -0.012903,
-            ("R19", "Liq", "X_K"): 0.004301,
-            ("R19", "Liq", "X_Mg"): 0.004301,
+            ("R19", "Liq", "S_K"): 0.004301,
+            ("R19", "Liq", "S_Mg"): 0.004301,
             # R20: Storage of S_bu in X_PHA
             ("R20", "Liq", "S_bu"): -1,
             ("R20", "Liq", "S_IP"): 0.012903 * mw_p,
             ("R20", "Liq", "X_PHA"): 1,
             ("R20", "Liq", "X_PP"): -0.012903,
-            ("R20", "Liq", "X_K"): 0.004301,
-            ("R20", "Liq", "X_Mg"): 0.004301,
+            ("R20", "Liq", "S_K"): 0.004301,
+            ("R20", "Liq", "S_Mg"): 0.004301,
             # R21: Storage of S_pro in X_PHA
             ("R21", "Liq", "S_pro"): -1,
             ("R21", "Liq", "S_IC"): 0.001786 * mw_c,
             ("R21", "Liq", "S_IP"): 0.012903 * mw_p,
             ("R21", "Liq", "X_PHA"): 1,
             ("R21", "Liq", "X_PP"): -0.012903,
-            ("R21", "Liq", "X_K"): 0.004301,
-            ("R21", "Liq", "X_Mg"): 0.004301,
+            ("R21", "Liq", "S_K"): 0.004301,
+            ("R21", "Liq", "S_Mg"): 0.004301,
             # R22: Storage of S_ac in X_PHA
             ("R22", "Liq", "S_ac"): -1,
             ("R22", "Liq", "S_IC"): 0.006250 * mw_c,
             ("R22", "Liq", "S_IP"): 0.012903 * mw_p,
             ("R22", "Liq", "X_PHA"): 1,
             ("R22", "Liq", "X_PP"): -0.012903,
-            ("R22", "Liq", "X_K"): 0.004301,
-            ("R22", "Liq", "X_Mg"): 0.004301,
+            ("R22", "Liq", "S_K"): 0.004301,
+            ("R22", "Liq", "S_Mg"): 0.004301,
             # R23: Lysis of X_PAO
             ("R23", "Liq", "S_IC"): 0.002773 * mw_c,
             ("R23", "Liq", "S_IN"): 0.003551 * mw_n,
@@ -301,8 +301,8 @@ class TestParamBlock(object):
             # R24: Lysis of X_PP
             ("R24", "Liq", "S_IP"): 1 * mw_p,
             ("R24", "Liq", "X_PP"): -1,
-            ("R24", "Liq", "X_K"): 1 / 3,
-            ("R24", "Liq", "X_Mg"): 1 / 3,
+            ("R24", "Liq", "S_K"): 1 / 3,
+            ("R24", "Liq", "S_Mg"): 1 / 3,
             # R25: Lysis of X_PAO
             ("R25", "Liq", "S_va"): 0.1,
             ("R25", "Liq", "S_bu"): 0.1,
@@ -542,47 +542,47 @@ class TestReactor:
             has_pressure_change=False,
         )
 
-        # Feed conditions based on manual mass balance of inlet and recycle streams
-        m.fs.unit.inlet.flow_vol.fix(0.001967593)
+        # Feed conditions based on mass balance in Flores-Alsina, where 0 terms are expressed as 1e-9
+        m.fs.unit.inlet.flow_vol.fix(0.001967593)  # Double check this value
         m.fs.unit.inlet.temperature.fix(308.15)
         m.fs.unit.inlet.pressure.fix(101325)
 
-        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.001)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.001)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(0.001)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(0.001)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(0.001)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(0.001)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.001)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-8)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-5)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.48)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.14)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IP"].fix(0.14)  # Check this value
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.02)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.034597)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.015037)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.025072)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.34628)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.60014)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IP"].fix(0.22677)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.026599)
 
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(5)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(20)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(5)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-3)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0.010)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0.010)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0.010)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(0.010)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(0.010)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(0.010)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(25)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(0.1)  # Check this value
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(0.1)  # Check this value
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(0.1)  # Check this value
-        m.fs.unit.inlet.conc_mass_comp[0, "X_K"].fix(0.0010)  # Check this value
-        m.fs.unit.inlet.conc_mass_comp[0, "X_Mg"].fix(0.0010)  # Check this value
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(7.3687)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(7.7308)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(10.3288)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(12.7727)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(0.0022493)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(0.033584)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(3.4655)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(0.02268)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(0.02893)
 
-        m.fs.unit.inlet.cations[0].fix(0.04)
-        m.fs.unit.inlet.anions[0].fix(0.02)
+        m.fs.unit.inlet.cations[0].fix(0.04)  # Double check this value
+        m.fs.unit.inlet.anions[0].fix(0.02)  # Double check this value
 
-        m.fs.unit.volume_liquid.fix(3400)  # originally 3400
-        m.fs.unit.volume_vapor.fix(300)  # originally 300
+        m.fs.unit.volume_liquid.fix(3400)
+        m.fs.unit.volume_vapor.fix(300)
         m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
         return m
@@ -725,10 +725,10 @@ class TestReactor:
             model.fs.unit.liquid_outlet.conc_mass_comp[0, "X_PAO"]
         ) == pytest.approx(0.13730, rel=1e-2)
         assert value(
-            model.fs.unit.liquid_outlet.conc_mass_comp[0, "X_K"]
+            model.fs.unit.liquid_outlet.conc_mass_comp[0, "S_K"]
         ) == pytest.approx(0.13730, rel=1e-2)
         assert value(
-            model.fs.unit.liquid_outlet.conc_mass_comp[0, "X_Mg"]
+            model.fs.unit.liquid_outlet.conc_mass_comp[0, "S_Mg"]
         ) == pytest.approx(0.13730, rel=1e-2)
         assert value(model.fs.unit.liquid_outlet.anions[0]) == pytest.approx(
             2e-2, rel=1e-2
