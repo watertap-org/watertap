@@ -21,11 +21,7 @@ water Research Vol. 43 pp.1913–1923.
 """
 
 import pytest
-from pyomo.environ import (
-    ConcreteModel,
-    value,
-    assert_optimal_termination,
-)
+from pyomo.environ import ConcreteModel, value, assert_optimal_termination, Param
 
 from idaes.core import (
     FlowsheetBlock,
@@ -155,6 +151,13 @@ class TestAsm1Adm1(object):
     @pytest.mark.unit
     def test_build(self, asmadm):
 
+        assert isinstance(asmadm.fs.unit.i_xe, Param)
+        assert value(asmadm.fs.unit.i_xe) == 0.06
+        assert isinstance(asmadm.fs.unit.i_xb, Param)
+        assert value(asmadm.fs.unit.i_xb) == 0.08
+        assert isinstance(asmadm.fs.unit.f_xI, Param)
+        assert value(asmadm.fs.unit.f_xI) == 0.05
+
         assert hasattr(asmadm.fs.unit, "inlet")
         assert len(asmadm.fs.unit.inlet.vars) == 5
         assert hasattr(asmadm.fs.unit.inlet, "flow_vol")
@@ -200,9 +203,6 @@ class TestAsm1Adm1(object):
         solver = get_solver()
         results = solver.solve(asmadm, tee=True)
         assert_optimal_termination(results)
-
-        asmadm.fs.unit.report()
-        asmadm.fs.unit.display()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -337,7 +337,7 @@ class TestAsm1Adm1(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_cod(self, asmadm):
+    def test_cod_tkn_conservation(self, asmadm):
         assert (
             abs(
                 value(
@@ -381,22 +381,68 @@ class TestAsm1Adm1(object):
             <= 1e-5
         )
 
-        # assert (
-        #     abs(
-        #         value(
-        #             asmadm.fs.unit.TKN[0]
-        #             - (asmadm.fs.unit.outlet.conc_mass_comp[0, "S_IN"]
-        #             + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_su"]
-        #             + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_aa"]
-        #             + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_fa"]
-        #             + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_c4"]
-        #             + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_pro"]
-        #             + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_h2"]
-        #             + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_c"]
-        #             + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_ch"]
-        #             + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_pr"]
-        #             + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_li"])
-        #         )
-        #     )
-        #     <= 1e-6
-        # )
+        assert (
+            abs(
+                value(
+                    asmadm.fs.unit.TKN[0]
+                    - (
+                        asmadm.fs.unit.outlet.conc_mass_comp[0, "S_IN"]
+                        + asmadm.fs.unit.config.reaction_package.N_xc
+                        * 14
+                        * units.kg
+                        / units.kmol
+                        * asmadm.fs.unit.outlet.conc_mass_comp[0, "X_c"]
+                        + asmadm.fs.unit.config.reaction_package.N_I
+                        * 14
+                        * units.kg
+                        / units.kmol
+                        * (
+                            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_I"]
+                            + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_I"]
+                        )
+                        + asmadm.fs.unit.config.reaction_package.N_aa
+                        * 14
+                        * units.kg
+                        / units.kmol
+                        * (
+                            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_pr"]
+                            + asmadm.fs.unit.outlet.conc_mass_comp[0, "S_aa"]
+                        )
+                        + asmadm.fs.unit.config.reaction_package.N_bac
+                        * 14
+                        * units.kg
+                        / units.kmol
+                        * (
+                            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_su"]
+                            + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_aa"]
+                            + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_fa"]
+                            + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_c4"]
+                            + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_pro"]
+                            + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_ac"]
+                            + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_h2"]
+                        )
+                    )
+                )
+            )
+            <= 1e-6
+        )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_intermidiates(self, asmadm):
+        assert pytest.approx(0.00508, rel=1e-3) == value(asmadm.fs.unit.CODd[0])
+        assert value(asmadm.fs.unit.CODd2[0]) <= 1e-6
+        assert value(asmadm.fs.unit.CODd3[0]) <= 1e-6
+        assert value(asmadm.fs.unit.CODd4[0]) <= 1e-6
+        assert value(asmadm.fs.unit.CODd5[0]) <= 1e-6
+        assert pytest.approx(44.7310, rel=1e-3) == value(asmadm.fs.unit.COD_remain_a[0])
+        assert pytest.approx(44.703, rel=1e-3) == value(asmadm.fs.unit.COD_remain_b[0])
+        assert pytest.approx(44.026, rel=1e-3) == value(asmadm.fs.unit.COD_remain_c[0])
+        assert pytest.approx(2.5813, rel=1e-3) == value(asmadm.fs.unit.ORGN_remain_a[0])
+        assert pytest.approx(2.5796, rel=1e-3) == value(asmadm.fs.unit.ORGN_remain_b[0])
+        assert pytest.approx(2.5389, rel=1e-3) == value(asmadm.fs.unit.ORGN_remain_c[0])
+        assert pytest.approx(0.001684, rel=1e-3) == value(asmadm.fs.unit.ReqOrgNS[0])
+        assert pytest.approx(0.040699, rel=1e-3) == value(asmadm.fs.unit.ReqOrgNx[0])
+        assert pytest.approx(67.5251, rel=1e-3) == value(asmadm.fs.unit.ReqCODXc[0])
+        assert pytest.approx(0.04779, rel=1e-3) == value(asmadm.fs.unit.ReqCODs[0])

@@ -191,6 +191,9 @@ see reaction package for documentation.}""",
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after S_S")
+        # Includes smooth formulation for max(x, 0) to avoid having negative values
+        # formulation included in all subsecuent values for COD requirements and
+        # COD remains
         def CODd2(blk, t):
             return 0.5 * (
                 (blk.CODd[t] - blk.properties_in[t].conc_mass_comp["S_S"])
