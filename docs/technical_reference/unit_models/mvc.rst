@@ -34,7 +34,7 @@ evaporator has 3 degrees of freedom:
    * overall heat transfer coefficient
    * area for heat exchange
 
-The condenser which the vapor enters has 3 degrees of freedom:
+The compressor which the vapor enters has 3 degrees of freedom:
 
    * pressure ratio
    * work (control volume variable)
