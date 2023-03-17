@@ -17,6 +17,7 @@ This module contains a zero-order representation of an electrocoagulation unit.
 from pyomo.environ import (
     Var,
     Param,
+    PositiveReals,
     Constraint,
     Expression,
     units as pyunits,
@@ -88,16 +89,19 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             self.mw_electrode_material = Param(
                 initialize=0.027,
                 units=pyunits.kg / pyunits.mol,
+                within=PositiveReals,
                 doc="Molecular weight of electrode material",
             )
             self.valence_electrode_material = Param(
                 initialize=3,
                 units=pyunits.dimensionless,
+                within=PositiveReals,
                 doc="Number of valence electrons of electrode material",
             )
             self.density_electrode_material = Param(
                 initialize=2710,
                 units=pyunits.kg / pyunits.m**3,
+                within=PositiveReals,
                 doc="Density of electrode material",
             )
 
@@ -105,16 +109,19 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             self.mw_electrode_material = Param(
                 initialize=0.056,
                 units=pyunits.kg / pyunits.mol,
+                within=PositiveReals,
                 doc="Molecular weight of electrode material",
             )
             self.valence_electrode_material = Param(
                 initialize=2,
                 units=pyunits.dimensionless,
+                within=PositiveReals,
                 doc="Number of valence electrons of electrode material",
             )
             self.density_electrode_material = Param(
                 initialize=7860,
                 units=pyunits.kg / pyunits.m**3,
+                within=PositiveReals,
                 doc="Density of electrode material",
             )
 
@@ -122,6 +129,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             initialize=3000,
             units=pyunits.ampere,
             mutable=True,
+            within=PositiveReals,
             doc="Current required per reactor",
         )
 
@@ -129,6 +137,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             initialize=5e3,
             mutable=True,
             units=(pyunits.mg * pyunits.m) / (pyunits.liter * pyunits.S),
+            within=PositiveReals,
             doc="Conersion factor for mg/L TDS to S/m",
         )
 
@@ -492,12 +501,14 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             initialize=3,
             mutable=True,
             units=pyunits.dimensionless,
+            within=PositiveReals,
             doc="Number total chambers for system - EC chamber > flotation chamber > sedimentation chamber. All made of same material.",
         )
 
         blk.number_EC_reactors = Var(
             initialize=3,
             units=pyunits.dimensionless,
+            bounds=(0, None),
             doc="Number EC cells and power supplies",
         )
 
