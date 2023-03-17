@@ -62,8 +62,6 @@ sv_large = 1e2
 sv_small = 1e-2
 sv_zero = 1e-8
 
-print(isinstance({"species": "TCE"}, list))
-
 # -----------------------------------------------------------------------------
 class TestGACSimplified:
     @pytest.fixture(scope="class")
