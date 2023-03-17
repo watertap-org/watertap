@@ -427,7 +427,12 @@ class TestGACRobust:
         mr.fs.unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=mr.fs.costing
         )
-        mr.fs.costing.cost_process()
+
+        # testing gac costing block dof and initialization
+        assert degrees_of_freedom(mr) == 0
+        mr.fs.unit.costing.initialize()
+
+        # solve
         results = solver.solve(mr)
 
         # Check for optimal solution
