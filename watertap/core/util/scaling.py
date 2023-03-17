@@ -34,8 +34,10 @@ def transform_property_constraints(self):
                     iscale.constraint_scaling_transform(c, sf)
             else:
                 msg = (
-                    f"One or more property constraints are not scaled. "
-                    "This suggests that the user defined a property in metadata but failed to "
-                    "follow the the naming convention for its constraint: 'eq_' + name in metadata."
+                    f"If there was a property constraint written for the variable, {var}, that constraint was not "
+                    f"scaled. The transform_property_constraints tool expects constraints to have the following naming "
+                    f"convention: 'eq_' + '{var_str}'. This suggests that the user may have defined a property in "
+                    f"metadata but failed to follow the naming convention for its constraint. If there is no property "
+                    f"constraint associated with the {var_str}, this warning can be ignored."
                 )
                 _log.warning(msg)
