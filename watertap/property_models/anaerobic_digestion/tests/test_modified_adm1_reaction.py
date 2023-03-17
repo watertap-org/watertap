@@ -573,7 +573,7 @@ class TestReactor:
         m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(1e-9)
         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(12.7727)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(0.0022493)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(0.033584)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(1.04110)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(3.4655)
         m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(0.02268)
         m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(0.02893)

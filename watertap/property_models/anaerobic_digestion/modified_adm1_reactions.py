@@ -1783,34 +1783,34 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         add_object_reference(self, "conc_mass_comp_ref", self.state_ref.conc_mass_comp)
         add_object_reference(self, "temperature", self.state_ref.temperature)
 
-        # Initial values of rates of reaction [2]
-        # TODO: Recalculate these rxn rates
+        # Initial values of rates of reaction from Flores-Alsina 2016 GitHub
+        # TODO: Should R4-R11 be negative in this file and adm1_reactions?
         self.rates = {
-            "R1": 3.235e-06,
-            "R2": 1.187e-05,
-            "R3": 3.412e-06,
-            "R4": 3.404e-06,
-            "R5": 1.187e-05,
-            "R6": 3.185e-06,
-            "R7": 2.505e-06,
-            "R8": 3.230e-06,
-            "R9": 2.636e-06,
-            "R10": 1.220e-05,
-            "R11": 4.184e-06,
-            "R12": 9.726e-08,
-            "R13": 2.730e-07,
-            "R14": 5.626e-08,
-            "R15": 9.998e-08,
-            "R16": 3.178e-08,
-            "R17": 1.761e-07,
-            "R18": 7.338e-08,
-            "R19": 1.093e-05,
-            "R20": 1.555e-05,
-            "R21": 1.906e-05,
-            "R22": 6.227e-05,
-            "R23": 8.940e-06,
-            "R24": 3.472e-08,
-            "R25": 5.787e-07,
+            "R1": 1.651e-04,
+            "R2": 1.723e-04,
+            "R3": 2.290e-04,
+            "R4": -1.4875e-05,
+            "R5": -1.449e-05,
+            "R6": -1.802e-05,
+            "R7": -3.006e-06,
+            "R8": -5.012e-06,
+            "R9": -6.594e-06,
+            "R10": -4.282e-08,
+            "R11": -1.209e-05,
+            "R12": 1.294e-07,
+            "R13": 1.009e-07,
+            "R14": 9.406e-08,
+            "R15": 4.185e-08,
+            "R16": 2.294e-08,
+            "R17": 1.259e-07,
+            "R18": 6.535e-08,
+            "R19": 1.507e-06,
+            "R20": 2.078e-06,
+            "R21": 2.630e-06,
+            "R22": 1.195e-05,
+            "R23": 1.901e-06,
+            "R24": 1.481e-09,
+            "R25": 1.425e-06,
         }
 
     # Rate of reaction method
