@@ -63,7 +63,7 @@ class SurfaceDiffusionCoefficientType(Enum):
 @declare_process_block_class("GAC")
 class GACData(InitializationMixin, UnitModelBlockData):
     """
-    Empirical CPHSDM Granular Activated Carbon Model -
+    Empirical Constant-Pattern-Homogeneous-Surface-Diffusion Model (CPHSDM) for Granular Activated Carbon -
     currently only available to model with the multicomp_aq_sol_prop_pack
     """
 
