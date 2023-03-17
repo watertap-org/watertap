@@ -102,6 +102,7 @@ def main():
     global source_name
 
     fig, axs = plt.subplots(10, 1, sharex=True, sharey=True)
+    df_regression = pd.DataFrame()
 
     for source_name in source_name_list:
 
@@ -154,7 +155,9 @@ def main():
         print("--------------------------\tmodel rebuild\t--------------------------")
         # rebuild model across CP to view regression results
         theta = [guess_freund_k, guess_freund_ninv, guess_ds]
-        df_regression = solve_regression(theta, data_filtered, axs)
+        df_iter = solve_regression(theta, data_filtered, axs)
+
+        df_regression = pd.concat([df_regression, df_iter])
 
     print("--------------------------\tshow plot\t--------------------------")
     plt.show
@@ -293,19 +296,12 @@ def solve_regression(theta, data_filtered, axs):
         conc_ratio_list.append(m.fs.gac.conc_ratio_replace.value)
         bed_volumes_treated_list.append(m.fs.gac.bed_volumes_treated.value)
 
-        df_iter = {
-            "conc_ratio": conc_ratio_list,
-            "bed_volumes_treated": bed_volumes_treated_list,
-        }
+    df_iter = {f"{source_name}": {
+        "conc_ratio": conc_ratio_list,
+        "bed_volumes_treated": bed_volumes_treated_list,
+    }}
 
-    # write to DataFrame
-    df_regression = pd.DataFrame()
-    df_regression = df_regression.append({f"{source_name}": df_iter})
-    # df.to_csv("pfas_regression_results.csv")
-    # plot_regression(data_filtered, df_regression, axs)
-
-    return df_regression
-
+    return df_iter
 
 def plot_regression(data_filtered, df, axs):
 
