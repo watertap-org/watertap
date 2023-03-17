@@ -80,7 +80,7 @@ source_name_list = [
     "Garden Grove",
     "IRWD",
 ]
-source_name = "Santa Ana" # "Orange"  # "Serrano Water District"
+# source_name = "Santa Ana"  # "OCWD" "Orange" "Serrano Water District"
 data = pd.read_csv("F400_PFOA.csv")
 
 # initial guess for regressed variables
@@ -99,56 +99,65 @@ pyo.SolverFactory.register("ipopt")(pyo.SolverFactory.get_class("ipopt-watertap"
 
 def main():
 
-    # data set
-    data_set = data[["data_iter", f"{source_name}_X", f"{source_name}_Y"]]
-    data_filtered = data_filter(data_set)
+    global source_name
 
-    # vars to estimate
-    theta_names = [
-        "fs.gac.freund_k",
-        "fs.gac.freund_ninv",
-        "fs.gac.ds",
-    ]
-    # vars initial values
-    theta_values = pd.DataFrame(
-        data=[[guess_freund_k, guess_freund_ninv, guess_ds]],
-        columns=theta_names,
-    )
+    fig, axs = plt.subplots(10, 1, sharex=True, sharey=True)
 
-    # sum of squared error function as objective
-    expr_sf = 1e-10
+    for source_name in source_name_list:
 
-    def SSE(model, data_filtered):
-        expr = (float(data_filtered[f"{source_name}_X"]) - model.fs.gac.bed_volumes_treated) ** 2
-        return expr * expr_sf
+        # data set
+        data_set = data[["data_iter", f"{source_name}_X", f"{source_name}_Y"]]
+        data_filtered = data_filter(data_set)
+        """
+        # vars to estimate
+        theta_names = [
+            "fs.gac.freund_k",
+            "fs.gac.freund_ninv",
+            "fs.gac.ds",
+        ]
+        # vars initial values
+        theta_values = pd.DataFrame(
+            data=[[guess_freund_k, guess_freund_ninv, guess_ds]],
+            columns=theta_names,
+        )
+    
+        # sum of squared error function as objective
+        expr_sf = 1e-10
+    
+        def SSE(model, data_filtered):
+            expr = (float(data_filtered[f"{source_name}_X"]) - model.fs.gac.bed_volumes_treated) ** 2
+            return expr * expr_sf
+    
+        print("--------------------------\tmodel regression\t--------------------------")
+        # Create an instance of the parmest estimator
+        pest = parmest.Estimator(
+            parmest_regression,
+            data_filtered,
+            theta_names,
+            SSE,
+            tee=True,
+        )
+    
+        pest.objective_at_theta(
+            theta_values=theta_values,
+            initialize_parmest_model=True,
+        )
+    
+        # Parameter estimation
+        obj, theta = pest.theta_est()
+    
+        print("The SSE at the optimal solution is %0.6f" % (obj / expr_sf))
+        print("The values for the parameters are as follows:")
+        for k, v in theta.items():
+            print(k, "=", v)
+        """
+        print("--------------------------\tmodel rebuild\t--------------------------")
+        # rebuild model across CP to view regression results
+        theta = [guess_freund_k, guess_freund_ninv, guess_ds]
+        df_regression = solve_regression(theta, data_filtered, axs)
 
-    print("--------------------------\tmodel regression\t--------------------------")
-    # Create an instance of the parmest estimator
-    pest = parmest.Estimator(
-        parmest_regression,
-        data_filtered,
-        theta_names,
-        SSE,
-        tee=True,
-    )
-
-    pest.objective_at_theta(
-        theta_values=theta_values,
-        initialize_parmest_model=True,
-    )
-
-    # Parameter estimation
-    obj, theta = pest.theta_est()
-
-    print("The SSE at the optimal solution is %0.6f" % (obj / expr_sf))
-    print("The values for the parameters are as follows:")
-    for k, v in theta.items():
-        print(k, "=", v)
-
-    print("--------------------------\tmodel rebuild\t--------------------------")
-    # rebuild model across CP to view regression results
-    # theta = [guess_freund_k, guess_freund_ninv, guess_ds]
-    plot_regression(theta, data_filtered)
+    print("--------------------------\tshow plot\t--------------------------")
+    plt.show
 
 
 def model_build():
@@ -249,7 +258,7 @@ def parmest_regression(data):
     return m
 
 
-def plot_regression(theta, data_filtered):
+def solve_regression(theta, data_filtered, axs):
 
     # build model
     m = model_build()
@@ -266,7 +275,7 @@ def plot_regression(theta, data_filtered):
     model_init(m)
 
     # check profile against pilot data
-    conc_ratio_input = np.linspace(0.01, 0.95, 40)
+    conc_ratio_input = np.linspace(0.01, 0.95, 3)
     conc_ratio_list = []
     bed_volumes_treated_list = []
 
@@ -284,26 +293,42 @@ def plot_regression(theta, data_filtered):
         conc_ratio_list.append(m.fs.gac.conc_ratio_replace.value)
         bed_volumes_treated_list.append(m.fs.gac.bed_volumes_treated.value)
 
-    # write to DataFrame
-    df = pd.DataFrame(
-        {
+        df_iter = {
             "conc_ratio": conc_ratio_list,
             "bed_volumes_treated": bed_volumes_treated_list,
         }
-    )
-    df.to_csv("pfas_regression_results.csv")
+
+    # write to DataFrame
+    df_regression = pd.DataFrame()
+    df_regression = df_regression.append({f"{source_name}": df_iter})
+    # df.to_csv("pfas_regression_results.csv")
+    # plot_regression(data_filtered, df_regression, axs)
+
+    return df_regression
+
+
+def plot_regression(data_filtered, df, axs):
+
+    axs_ind = source_name_list.index(source_name)
 
     # plot comparison
-    plt.plot(bed_volumes_treated_list, conc_ratio_list, 'b',  label="regression results")
-    plt.plot(
-        data[f"{source_name}_X"], data[f"{source_name}_Y"], 'ro',  label=f"{source_name} data"
+    axs[axs_ind].plot(
+        df["bed_volumes_treated"], df["conc_ratio"], "b", label="regression results"
     )
-    plt.plot(
-        data_filtered[f"{source_name}_X"], data_filtered[f"{source_name}_Y"], 'ro', mec='k', label=f"Filtered data"
+    axs[axs_ind].plot(
+        data[f"{source_name}_X"],
+        data[f"{source_name}_Y"],
+        "ro",
+        label=f"{source_name} data",
     )
-
-    plt.legend()
-    plt.show()
+    axs[axs_ind].plot(
+        data_filtered[f"{source_name}_X"],
+        data_filtered[f"{source_name}_Y"],
+        "ro",
+        mec="k",
+        label=f"Filtered data",
+    )
+    axs[axs_ind].legend()
 
 
 def model_scale(model):
@@ -345,14 +370,14 @@ def model_solve(model, solver_log=True):
 
     if not term_cond == "optimal":
         badly_scaled_var_list = badly_scaled_var_generator(model)
-        print("----------------   badly_scaled_var_list   ----------------")
+        print("----------------\tbadly_scaled_var_list\t----------------")
         for x in badly_scaled_var_list:
             print(f"{x[0].name}\t{x[0].value}\tsf: {get_scaling_factor(x[0])}")
-        print("---------------- variables_near_bounds_list ----------------")
+        print("----------------\tvariables_near_bounds_list\t----------------")
         variables_near_bounds_list = variables_near_bounds_generator(model)
         for x in variables_near_bounds_list:
             print(f"{x.name}\t{x.value}")
-        print("---------------- total_constraints_set_list ----------------")
+        print("----------------\ttotal_constraints_set_list\t----------------")
         total_constraints_set_list = total_constraints_set(model)
         for x in total_constraints_set_list:
             residual = abs(pyo.value(x.body) - pyo.value(x.lb))
@@ -367,20 +392,17 @@ def data_filter(data):
         if i >= 5:
             continue
 
-        slope1 = (
-                data[f"{source_name}_Y"][i+1]-data[f"{source_name}_Y"][i]
-                ) / (
-                data[f"{source_name}_X"][i+1]-data[f"{source_name}_X"][i]
+        slope1 = (data[f"{source_name}_Y"][i + 1] - data[f"{source_name}_Y"][i]) / (
+            data[f"{source_name}_X"][i + 1] - data[f"{source_name}_X"][i]
         )
-        slope2 = (
-                data[f"{source_name}_Y"][i+2]-data[f"{source_name}_Y"][i]
-                ) / (
-                data[f"{source_name}_X"][i+2]-data[f"{source_name}_X"][i]
+        slope2 = (data[f"{source_name}_Y"][i + 2] - data[f"{source_name}_Y"][i]) / (
+            data[f"{source_name}_X"][i + 2] - data[f"{source_name}_X"][i]
         )
         if slope1 < -1e-6 or slope2 < 1e-6:
             data = data.drop(i)
 
     return data
+
 
 if __name__ == "__main__":
     main()
