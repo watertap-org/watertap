@@ -103,6 +103,7 @@ def main():
 
     data_regression = {}
     data_filtered = {}
+    param_results = {}
 
     for source_name in source_name_list:
 
@@ -138,7 +139,7 @@ def main():
             data_filtered_case,
             theta_names,
             SSE,
-            tee=True,
+            tee=False,
         )
     
         pest.objective_at_theta(
@@ -154,6 +155,8 @@ def main():
         for k, v in theta.items():
             print(k, "=", v)
 
+        param_results[f"{source_name}"] = theta
+
         print("--------------------------\tmodel rebuild\t--------------------------")
         # rebuild model across CP to view regression results
         # theta = [guess_freund_k, guess_freund_ninv, guess_ds]
@@ -163,6 +166,7 @@ def main():
 
     print("--------------------------\tshow plot\t--------------------------")
     plot_regression(data_regression, data_filtered)
+    print(param_results)
 
 
 
@@ -256,7 +260,7 @@ def parmest_regression(data):
     model_scale(m)
 
     # initialization
-    model_init(m)
+    model_init(m, outlvl=idaeslog.ERROR)
 
     # re-fix to conc_ratio spec from data
     m.fs.gac.conc_ratio_replace.fix(float(data[f"{source_name}_Y"]))
@@ -271,7 +275,7 @@ def solve_regression(theta):
     # scaling
     model_scale(m)
     # initialization
-    model_init(m)
+    model_init(m, outlvl=idaeslog.ERROR)
 
     # refix differing parameters
     m.fs.gac.freund_k.fix(theta[0])
@@ -279,10 +283,10 @@ def solve_regression(theta):
     m.fs.gac.ds.fix(theta[2])
 
     # initialization
-    model_init(m)
+    model_init(m, outlvl=idaeslog.ERROR)
 
     # check profile against pilot data
-    conc_ratio_input = np.linspace(0.01, 0.95, 20)
+    conc_ratio_input = np.linspace(0.01, 0.95, 40)
     conc_ratio_list = []
     bed_volumes_treated_list = []
 
@@ -323,10 +327,12 @@ def plot_regression(data_regression, data_filtered):
         '#f8cbad',
     ]
 
-    fig, axs = plt.subplots(nrows=5, ncols=2, sharex=True, sharey=True)
+    # fig1
+    fig1, axs = plt.subplots(nrows=5, ncols=2, sharex=True, sharey=True)
 
     i = 0
     for ax in axs.flat:
+
         ax.plot(
             data_regression[source_name_list[i]]["bed_volumes_treated"],
             data_regression[source_name_list[i]]["conc_ratio"],
@@ -350,9 +356,39 @@ def plot_regression(data_regression, data_filtered):
             label=f"Filtered data",
         )
         ax.legend()
+
         i = i+1
 
-    fig.subplots_adjust(hspace=0)
+    fig1.subplots_adjust(hspace=0)
+
+    plt.show()
+
+    # fig2
+    plt.figure(2)
+    for j in range(10):
+
+        plt.plot(
+            data_regression[source_name_list[j]]["bed_volumes_treated"],
+            data_regression[source_name_list[j]]["conc_ratio"],
+            color_code[j],
+            label=f"{source_name_list[j]} regression results"
+        )
+        plt.plot(
+            data[f"{source_name_list[j]}_X"],
+            data[f"{source_name_list[j]}_Y"],
+            "o",
+            mec=color_code[j],
+            mfc='None',
+        )
+        plt.plot(
+            data_filtered[source_name_list[j]][f"{source_name_list[j]}_X"],
+            data_filtered[source_name_list[j]][f"{source_name_list[j]}_Y"],
+            "o",
+            mec=color_code[j],
+            mfc=color_code[j],
+        )
+
+    plt.legend()
 
     plt.show()
 
@@ -369,12 +405,12 @@ def model_scale(model):
     iscale.calculate_scaling_factors(model)
 
 
-def model_init(model):
+def model_init(model, outlvl):
 
     optarg = solver.options
-    model.fs.feed.initialize(optarg=optarg)
+    model.fs.feed.initialize(optarg=optarg, outlvl=outlvl)
     propagate_state(model.fs.s01)
-    model.fs.gac.initialize(optarg=optarg)
+    model.fs.gac.initialize(optarg=optarg, outlvl=outlvl)
 
 
 def model_solve(model, solver_log=True):
@@ -414,7 +450,6 @@ def model_solve(model, solver_log=True):
 def data_filter(data):
 
     for i, row in data.iterrows():
-        print(i, row)
         # skip last 2 iterations
         if i >= 5:
             continue
@@ -426,14 +461,8 @@ def data_filter(data):
             data[f"{source_name}_X"][i + 2] - data[f"{source_name}_X"][i]
         )
 
-        print(slope1, slope2)
         if slope1 < -1e-6 or slope2 < 1e-6:
             data = data.drop(i)
-            print("dropped")
-        else:
-            print("kept")
-
-    print(data)
 
     return data
 
