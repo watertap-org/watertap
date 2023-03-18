@@ -101,15 +101,17 @@ def main():
 
     global source_name
 
-    fig, axs = plt.subplots(10, 1, sharex=True, sharey=True)
-    df_regression = pd.DataFrame()
+    data_regression = {}
+    data_filtered = {}
 
     for source_name in source_name_list:
 
+        print(f"--------------------------\t{source_name}\t--------------------------")
         # data set
         data_set = data[["data_iter", f"{source_name}_X", f"{source_name}_Y"]]
-        data_filtered = data_filter(data_set)
-        """
+        data_filtered[f"{source_name}"] = data_filter(data_set)
+        data_filtered_case = data_filtered[f"{source_name}"]
+
         # vars to estimate
         theta_names = [
             "fs.gac.freund_k",
@@ -125,15 +127,15 @@ def main():
         # sum of squared error function as objective
         expr_sf = 1e-10
     
-        def SSE(model, data_filtered):
-            expr = (float(data_filtered[f"{source_name}_X"]) - model.fs.gac.bed_volumes_treated) ** 2
+        def SSE(model, data_filtered_case):
+            expr = (float(data_filtered_case[f"{source_name}_X"]) - model.fs.gac.bed_volumes_treated) ** 2
             return expr * expr_sf
     
         print("--------------------------\tmodel regression\t--------------------------")
         # Create an instance of the parmest estimator
         pest = parmest.Estimator(
             parmest_regression,
-            data_filtered,
+            data_filtered_case,
             theta_names,
             SSE,
             tee=True,
@@ -151,16 +153,17 @@ def main():
         print("The values for the parameters are as follows:")
         for k, v in theta.items():
             print(k, "=", v)
-        """
+
         print("--------------------------\tmodel rebuild\t--------------------------")
         # rebuild model across CP to view regression results
-        theta = [guess_freund_k, guess_freund_ninv, guess_ds]
-        df_iter = solve_regression(theta, data_filtered, axs)
+        # theta = [guess_freund_k, guess_freund_ninv, guess_ds]
+        df_iter = solve_regression(theta)
 
-        df_regression = pd.concat([df_regression, df_iter])
+        data_regression[f"{source_name}"] = df_iter
 
     print("--------------------------\tshow plot\t--------------------------")
-    plt.show
+    plot_regression(data_regression, data_filtered)
+
 
 
 def model_build():
@@ -261,24 +264,25 @@ def parmest_regression(data):
     return m
 
 
-def solve_regression(theta, data_filtered, axs):
+def solve_regression(theta):
 
     # build model
     m = model_build()
+    # scaling
+    model_scale(m)
+    # initialization
+    model_init(m)
 
     # refix differing parameters
     m.fs.gac.freund_k.fix(theta[0])
     m.fs.gac.freund_ninv.fix(theta[1])
     m.fs.gac.ds.fix(theta[2])
 
-    # scaling
-    model_scale(m)
-
     # initialization
     model_init(m)
 
     # check profile against pilot data
-    conc_ratio_input = np.linspace(0.01, 0.95, 3)
+    conc_ratio_input = np.linspace(0.01, 0.95, 20)
     conc_ratio_list = []
     bed_volumes_treated_list = []
 
@@ -296,35 +300,61 @@ def solve_regression(theta, data_filtered, axs):
         conc_ratio_list.append(m.fs.gac.conc_ratio_replace.value)
         bed_volumes_treated_list.append(m.fs.gac.bed_volumes_treated.value)
 
-    df_iter = {f"{source_name}": {
+    df_iter = {
         "conc_ratio": conc_ratio_list,
         "bed_volumes_treated": bed_volumes_treated_list,
-    }}
+    }
 
     return df_iter
 
-def plot_regression(data_filtered, df, axs):
 
-    axs_ind = source_name_list.index(source_name)
+def plot_regression(data_regression, data_filtered):
 
-    # plot comparison
-    axs[axs_ind].plot(
-        df["bed_volumes_treated"], df["conc_ratio"], "b", label="regression results"
-    )
-    axs[axs_ind].plot(
-        data[f"{source_name}_X"],
-        data[f"{source_name}_Y"],
-        "ro",
-        label=f"{source_name} data",
-    )
-    axs[axs_ind].plot(
-        data_filtered[f"{source_name}_X"],
-        data_filtered[f"{source_name}_Y"],
-        "ro",
-        mec="k",
-        label=f"Filtered data",
-    )
-    axs[axs_ind].legend()
+    color_code = [
+        '#ffc000',
+        '#ed7d31',
+        '#c00000',
+        '#00b050',
+        '#7030a0',
+        '#0070c0',
+        '#bdd7ee',
+        '#000000',
+        '#a5a5a5',
+        '#f8cbad',
+    ]
+
+    fig, axs = plt.subplots(nrows=5, ncols=2, sharex=True, sharey=True)
+
+    i = 0
+    for ax in axs.flat:
+        ax.plot(
+            data_regression[source_name_list[i]]["bed_volumes_treated"],
+            data_regression[source_name_list[i]]["conc_ratio"],
+            color_code[i],
+            label=f"{source_name_list[i]} regression results"
+        )
+        ax.plot(
+            data[f"{source_name_list[i]}_X"],
+            data[f"{source_name_list[i]}_Y"],
+            "o",
+            mec=color_code[i],
+            mfc='None',
+            label=f"{source_name_list[i]} data",
+        )
+        ax.plot(
+            data_filtered[source_name_list[i]][f"{source_name_list[i]}_X"],
+            data_filtered[source_name_list[i]][f"{source_name_list[i]}_Y"],
+            "o",
+            mec=color_code[i],
+            mfc=color_code[i],
+            label=f"Filtered data",
+        )
+        ax.legend()
+        i = i+1
+
+    fig.subplots_adjust(hspace=0)
+
+    plt.show()
 
 
 def model_scale(model):
@@ -384,6 +414,7 @@ def model_solve(model, solver_log=True):
 def data_filter(data):
 
     for i, row in data.iterrows():
+        print(i, row)
         # skip last 2 iterations
         if i >= 5:
             continue
@@ -394,8 +425,15 @@ def data_filter(data):
         slope2 = (data[f"{source_name}_Y"][i + 2] - data[f"{source_name}_Y"][i]) / (
             data[f"{source_name}_X"][i + 2] - data[f"{source_name}_X"][i]
         )
+
+        print(slope1, slope2)
         if slope1 < -1e-6 or slope2 < 1e-6:
             data = data.drop(i)
+            print("dropped")
+        else:
+            print("kept")
+
+    print(data)
 
     return data
 
