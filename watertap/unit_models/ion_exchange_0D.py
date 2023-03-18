@@ -1174,6 +1174,42 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
+        target_ion = self.config.target_ion
+
+        if iscale.get_scaling_factor(self.resin_max_capacity) is None:
+            iscale.set_scaling_factor(self.resin_max_capacity, 1)
+
+        if iscale.get_scaling_factor(self.resin_eq_capacity) is None:
+            iscale.set_scaling_factor(self.resin_eq_capacity, 1)
+
+        if iscale.get_scaling_factor(self.resin_unused_capacity) is None:
+            iscale.set_scaling_factor(self.resin_unused_capacity, 1)
+
+        if iscale.get_scaling_factor(self.langmuir[target_ion]) is None:
+            iscale.set_scaling_factor(self.langmuir[target_ion], 10)
+
+        if iscale.get_scaling_factor(self.separation_factor[target_ion]) is None:
+            sf = 1 / iscale.get_scaling_factor(self.langmuir[target_ion])
+            iscale.set_scaling_factor(self.separation_factor[target_ion], sf)
+
+        if iscale.get_scaling_factor(self.num_transfer_units) is None:
+            iscale.set_scaling_factor(self.num_transfer_units, 1e-2)
+
+        if iscale.get_scaling_factor(self.partition_ratio) is None:
+            iscale.set_scaling_factor(self.partition_ratio, 1e-3)
+
+        if iscale.get_scaling_factor(self.mass_in[target_ion]) is None:
+            iscale.set_scaling_factor(self.mass_in[target_ion], 1e-5)
+
+        if iscale.get_scaling_factor(self.mass_removed[target_ion]) is None:
+            iscale.set_scaling_factor(self.mass_removed[target_ion], 1e-5)
+
+        if iscale.get_scaling_factor(self.mass_out[target_ion]) is None:
+            iscale.set_scaling_factor(self.mass_out[target_ion], 1e-3)
+
+        if iscale.get_scaling_factor(self.t_breakthru) is None:
+            iscale.set_scaling_factor(self.t_breakthru, 1e-5)
+
         iscale.set_scaling_factor(self.Re, 1)
 
         iscale.set_scaling_factor(self.Sc, 1e-2)
@@ -1186,19 +1222,11 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.number_columns, 1)
 
-        iscale.set_scaling_factor(self.resin_max_capacity, 1)
-
-        iscale.set_scaling_factor(self.resin_eq_capacity, 1)
-
-        iscale.set_scaling_factor(self.resin_unused_capacity, 1)
-
         iscale.set_scaling_factor(self.resin_diam, 1e4)
 
         iscale.set_scaling_factor(self.resin_bulk_dens, 10)
 
         iscale.set_scaling_factor(self.resin_particle_dens, 1)
-
-        iscale.set_scaling_factor(self.langmuir, 1)
 
         iscale.set_scaling_factor(self.resin_surf_per_vol, 1e-3)
 
@@ -1220,49 +1248,29 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.holdup, 1e-2)
 
-        iscale.set_scaling_factor(self.num_transfer_units, 1e-2)
-
-        iscale.set_scaling_factor(self.partition_ratio, 1e-3)
-
         iscale.set_scaling_factor(self.HTU, 1e3)
 
-        iscale.set_scaling_factor(self.service_flow_rate, 1)
+        iscale.set_scaling_factor(self.service_flow_rate, 0.1)
 
-        iscale.set_scaling_factor(self.c_norm, 1)
-
-        iscale.set_scaling_factor(self.separation_factor, 10)
+        iscale.set_scaling_factor(self.c_norm, 10)
 
         iscale.set_scaling_factor(self.fluid_mass_transfer_coeff, 1e5)
 
         iscale.set_scaling_factor(self.rate_coeff, 1e4)
 
-        iscale.set_scaling_factor(self.t_breakthru, 1e-5)
-
         iscale.set_scaling_factor(self.t_contact, 1e-2)
-
-        iscale.set_scaling_factor(self.mass_in, 1e-5)
-
-        iscale.set_scaling_factor(self.mass_removed, 1e-5)
-
-        iscale.set_scaling_factor(self.mass_out, 1e-3)
 
         iscale.set_scaling_factor(self.vel_bed, 1e3)
 
         iscale.set_scaling_factor(self.vel_inter, 1e3)
 
-        iscale.set_scaling_factor(self.t_regen, 1e-3)
-
         iscale.set_scaling_factor(self.regen_dose, 1e-2)
 
-        iscale.set_scaling_factor(self.service_to_regen_flow_ratio, 1)
-
-        iscale.set_scaling_factor(self.bw_rate, 1)
-
-        iscale.set_scaling_factor(self.t_bw, 1e-2)
-
-        iscale.set_scaling_factor(self.pump_efficiency, 1)
-
         # transforming constraints
+        for ind, c in self.eq_mass_transfer_solute.items():
+            sf = iscale.get_scaling_factor(self.mass_in[target_ion])
+            iscale.constraint_scaling_transform(c, sf)
+
         for ind, c in self.eq_vel_inter.items():
             sf = iscale.get_scaling_factor(self.vel_inter)
             iscale.constraint_scaling_transform(c, sf)
