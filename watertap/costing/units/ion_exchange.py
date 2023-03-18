@@ -221,6 +221,7 @@ def cost_ion_exchange(blk):
     """
     make_capital_cost_var(blk)
     make_fixed_operating_cost_var(blk)
+    regen_stream = blk.unit_model.regeneration_stream[0]
     # Conversions to use units from cost equations in reference
     col_vol_gal = pyo.units.convert(blk.unit_model.col_vol_per, to_units=pyo.units.gal)
     bed_vol_ft3 = pyo.units.convert(blk.unit_model.bed_vol, to_units=pyo.units.ft**3)
@@ -236,10 +237,7 @@ def cost_ion_exchange(blk):
         to_units=pyo.units.gal,
     )
     regen_tank_vol = pyo.units.convert(
-        (
-            blk.unit_model.properties_regen[0].flow_vol_phase["Liq"]
-            * blk.unit_model.t_regen
-        ),
+        (regen_stream.flow_vol_phase["Liq"] * blk.unit_model.t_regen),
         to_units=pyo.units.gal,
     )
     ix_type = blk.unit_model.ion_exchange_type
@@ -378,12 +376,4 @@ def cost_ion_exchange(blk):
         / (blk.unit_model.t_cycle)
     ) / blk.unit_model.regen_recycle
 
-    electricity_flow = (
-        blk.unit_model.main_pump_power
-        + blk.unit_model.regen_pump_power
-        + blk.unit_model.bw_pump_power
-        + blk.unit_model.rinse_pump_power
-    )
-
-    blk.costing_package.cost_flow(electricity_flow, "electricity")
     blk.costing_package.cost_flow(regen_soln_flow, blk.unit_model.regen_chem)
