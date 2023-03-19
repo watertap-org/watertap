@@ -328,24 +328,23 @@ def plot_regression(data_regression, data_filtered):
     ]
 
     # fig1
-    fig1, axs = plt.subplots(nrows=5, ncols=2, sharex=True, sharey=True)
+    fig1, axs = plt.subplots(
+        nrows=5,
+        ncols=2,
+        sharex=True,
+        sharey=True,
+    )
 
     i = 0
     for ax in axs.flat:
 
-        ax.plot(
-            data_regression[source_name_list[i]]["bed_volumes_treated"],
-            data_regression[source_name_list[i]]["conc_ratio"],
-            color_code[i],
-            label=f"{source_name_list[i]} regression results"
-        )
         ax.plot(
             data[f"{source_name_list[i]}_X"],
             data[f"{source_name_list[i]}_Y"],
             "o",
             mec=color_code[i],
             mfc='None',
-            label=f"{source_name_list[i]} data",
+            label="raw data",
         )
         ax.plot(
             data_filtered[source_name_list[i]][f"{source_name_list[i]}_X"],
@@ -353,13 +352,30 @@ def plot_regression(data_regression, data_filtered):
             "o",
             mec=color_code[i],
             mfc=color_code[i],
-            label=f"Filtered data",
+            label=f"filtered data",
         )
-        ax.legend()
+        ax.plot(
+            data_regression[source_name_list[i]]["bed_volumes_treated"],
+            data_regression[source_name_list[i]]["conc_ratio"],
+            color_code[i],
+            label="regression results"
+        )
+        ax.legend(
+            title=f"{source_name_list[i]}",
+            fontsize='x-small',
+            loc='lower right',
+        )
+
+        if i == 8:
+            ax.set_xlabel("bed volumes treated")
+            ax.set_ylabel("concentration ratio")
 
         i = i+1
 
-    fig1.subplots_adjust(hspace=0)
+    fig1.subplots_adjust(
+        left=0.1, bottom=0.1, right=0.9, top=0.9,
+        wspace=0, hspace=0
+    )
 
     plt.show()
 
@@ -371,7 +387,7 @@ def plot_regression(data_regression, data_filtered):
             data_regression[source_name_list[j]]["bed_volumes_treated"],
             data_regression[source_name_list[j]]["conc_ratio"],
             color_code[j],
-            label=f"{source_name_list[j]} regression results"
+            label=f"{source_name_list[j]}"
         )
         plt.plot(
             data[f"{source_name_list[j]}_X"],
@@ -388,7 +404,12 @@ def plot_regression(data_regression, data_filtered):
             mfc=color_code[j],
         )
 
-    plt.legend()
+    plt.xlabel("bed volumes treated")
+    plt.ylabel("concentration ratio")
+    plt.legend(
+        fontsize='x-small',
+        loc='lower right',
+    )
 
     plt.show()
 
