@@ -1002,11 +1002,12 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 doc="liquid phase film transfer rate from the Gnielinski correlation",
             )
             def eq_film_transfer_rate(b, t, j):
-                return 1 == (b.kf * b.particle_dia) / (b.shape_correction_factor * (
-                    1 + 1.5 * (1 - b.bed_voidage)
-                ) * b.process_flow.properties_in[t].diffus_phase_comp["Liq", j] * (
-                    2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc ** (1 / 3))
-                ))
+                return 1 == (b.kf * b.particle_dia) / (
+                    b.shape_correction_factor
+                    * (1 + 1.5 * (1 - b.bed_voidage))
+                    * b.process_flow.properties_in[t].diffus_phase_comp["Liq", j]
+                    * (2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc ** (1 / 3)))
+                )
 
         # ---------------------------------------------------------------------
         if (
