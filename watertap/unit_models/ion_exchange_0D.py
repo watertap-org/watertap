@@ -599,14 +599,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Fluid mass transfer coefficient",
         )
 
-        self.rate_coeff = Var(
-            self.target_ion_set,
-            initialize=2e-4,
-            bounds=(0, 1),
-            units=pyunits.m**3 / (pyunits.kg * pyunits.s),
-            doc="Rate coefficient",
-        )
-
         self.t_breakthru = Var(
             initialize=1e5,  # DOW, ~7 weeks max breakthru time
             bounds=(0, None),
@@ -626,14 +618,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             bounds=(0, None),
             units=pyunits.dimensionless,
             doc="Number of transfer units",
-        )
-
-        self.HTU = Var(
-            self.target_ion_set,
-            initialize=0.5,
-            bounds=(0, 1),
-            units=pyunits.m,
-            doc="Height of a transfer unit",
         )
 
         self.dimensionless_time = Var(
@@ -801,6 +785,24 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Expression(doc="Total column volume required")
         def col_vol_tot(b):
             return b.number_columns * b.col_vol_per
+
+        @self.Expression(doc="Left hand side of constant pattern sol'n")
+        def lh(b):
+            return b.num_transfer_units * (b.dimensionless_time - 1)
+
+        @self.Expression(self.target_ion_set, doc="Rate coefficient")
+        def rate_coeff(b, j):
+            return (6 * (1 - b.bed_porosity) * b.fluid_mass_transfer_coeff[j]) / (
+                pyunits.convert(b.resin_bulk_dens, to_units=pyunits.kg / pyunits.m**3)
+                * b.resin_diam
+            )
+
+        @self.Expression(self.target_ion_set, doc="Height of transfer unit - HTU")
+        def HTU(b, j):
+            return b.vel_bed / (
+                pyunits.convert(b.resin_bulk_dens, to_units=pyunits.kg / pyunits.m**3)
+                * b.rate_coeff[j]
+            )
 
         # =========== EQUILIBRIUM ===========
 
@@ -981,22 +983,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 == (prop_in.diffus_phase_comp["Liq", j] * b.Sh[j]) / b.resin_diam
             )
 
-        @self.Constraint(self.target_ion_set, doc="Rate coefficient")
-        def eq_rate_coeff(b, j):
-            return b.rate_coeff[j] == (
-                6 * (1 - b.bed_porosity) * b.fluid_mass_transfer_coeff[j]
-            ) / (
-                pyunits.convert(b.resin_bulk_dens, to_units=pyunits.kg / pyunits.m**3)
-                * b.resin_diam
-            )
-
-        @self.Constraint(self.target_ion_set, doc="Height of transfer unit - HTU")
-        def eq_HTU(b, j):
-            return b.HTU[j] == b.vel_bed / (
-                pyunits.convert(b.resin_bulk_dens, to_units=pyunits.kg / pyunits.m**3)
-                * b.rate_coeff[j]
-            )
-
         @self.Constraint(doc="Partition ratio")
         def eq_partition_ratio(b):
             prop_in = b.process_flow.properties_in[0]
@@ -1017,11 +1003,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 / (1 - b.langmuir[j])
                 + 1
             )
-
-        @self.Expression(doc="Left hand side of constant pattern sol'n")
-        def lh(b):
-            return b.num_transfer_units * (b.dimensionless_time - 1)
-            # )
 
         @self.Constraint(doc="Dimensionless time")
         def eq_dimensionless_time(b):
@@ -1248,7 +1229,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.holdup, 1e-2)
 
-        iscale.set_scaling_factor(self.HTU, 1e3)
+        # iscale.set_scaling_factor(self.HTU, 1e3)
 
         iscale.set_scaling_factor(self.service_flow_rate, 0.1)
 
@@ -1256,7 +1237,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.fluid_mass_transfer_coeff, 1e5)
 
-        iscale.set_scaling_factor(self.rate_coeff, 1e4)
+        # iscale.set_scaling_factor(self.rate_coeff, 1e4)
 
         iscale.set_scaling_factor(self.t_contact, 1e-2)
 
@@ -1276,15 +1257,11 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_sep_factor.items():
-            sf = iscale.get_scaling_factor(self.separation_factor)
+            sf = iscale.get_scaling_factor(self.separation_factor[ind])
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_fluid_mass_transfer_coeff.items():
             sf = iscale.get_scaling_factor(self.fluid_mass_transfer_coeff[ind])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for ind, c in self.eq_rate_coeff.items():
-            sf = iscale.get_scaling_factor(self.rate_coeff[ind])
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_partition_ratio.items():
