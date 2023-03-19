@@ -347,7 +347,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="surface diffusion coefficient",
         )
         self.kf = Var(
-            initialize=5e-5,
+            initialize=1e-5,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length") * units_meta("time") ** -1,
@@ -950,14 +950,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
         ):
 
             self.N_Re = Var(
-                initialize=1,
+                initialize=10,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Reynolds number, correlations using Reynolds number valid in Re < 2e4",
             )
             self.N_Sc = Var(
-                initialize=1000,
+                initialize=2000,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
@@ -999,14 +999,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
             @self.Constraint(
                 self.flowsheet().config.time,
                 self.target_species,
-                doc="liquid phase film transfer rate from the Gnielinshi correlation",
+                doc="liquid phase film transfer rate from the Gnielinski correlation",
             )
             def eq_film_transfer_rate(b, t, j):
-                return b.kf * b.particle_dia == b.shape_correction_factor * (
+                return 1 == (b.kf * b.particle_dia) / (b.shape_correction_factor * (
                     1 + 1.5 * (1 - b.bed_voidage)
                 ) * b.process_flow.properties_in[t].diffus_phase_comp["Liq", j] * (
                     2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc ** (1 / 3))
-                )
+                ))
 
         # ---------------------------------------------------------------------
         if (
