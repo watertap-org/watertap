@@ -10,60 +10,43 @@
 # "https://github.com/watertap-org/watertap/"
 ###############################################################################
 
-import pytest
 import pyomo.environ as pyo
-from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.network import Arc
-from pyomo.opt import SolverFactory
 
 import idaes.core.util.scaling as iscale
 from idaes.core.util.initialization import propagate_state
 from idaes.core import (
     FlowsheetBlock,
-    EnergyBalanceType,
-    MaterialBalanceType,
-    MomentumBalanceType,
 )
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
-    number_variables,
-    number_total_constraints,
-    number_unused_variables,
-    large_residuals_set,
     variables_near_bounds_generator,
     total_constraints_set,
 )
-from idaes.core.util.testing import initialization_tester
-from idaes.core.util.model_diagnostics import DegeneracyHunter
 from idaes.core.util.scaling import (
-    calculate_scaling_factors,
-    unscaled_variables_generator,
     badly_scaled_var_generator,
     get_scaling_factor,
     set_scaling_factor,
 )
-from idaes.core import UnitModelCostingBlock
 
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
     DiffusivityCalculation,
 )
-from idaes.models.unit_models import Feed, Product
-from watertap.unit_models.gac_rssct import (
+from idaes.models.unit_models import Feed
+from watertap.examples.flowsheets.pfas_treatment.gac_rssct import (
     GAC_RSSCT,
     FilmTransferCoefficientType,
     SurfaceDiffusionCoefficientType,
 )
-from watertap.costing import WaterTAPCosting
 
 import numpy as np
 import pandas as pd
 import pyomo.contrib.parmest.parmest as parmest
 import matplotlib.pyplot as plt
-from os.path import join, abspath, dirname
 
 __author__ = "Hunter Barber"
 
@@ -81,7 +64,7 @@ source_name_list = [
     "IRWD",
 ]
 # source_name = "Santa Ana"  # "OCWD" "Orange" "Serrano Water District"
-data = pd.read_csv("F400_PFOA.csv")
+data = pd.read_csv("watertap/examples/flowsheets/pfas_treatment/F400_PFOA.csv")
 
 # initial guess for regressed variables
 guess_freund_k = 10
@@ -312,6 +295,9 @@ def solve_regression(theta):
         "conc_ratio": conc_ratio_list,
         "bed_volumes_treated": bed_volumes_treated_list,
     }
+
+    m.fs.display()
+    assert False
 
     return df_iter
 
