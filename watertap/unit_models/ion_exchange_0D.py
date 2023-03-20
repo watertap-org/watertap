@@ -215,6 +215,10 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         # Inamuddin, & Luqman, M. (2012).
         # Ion Exchange Technology I: Theory and Materials.
 
+        # Vassilis J. Inglezakis and Stavros G. Poulopoulos
+        # Adsorption, Ion Exchange and Catalysis: Design of Operations and Environmental Applications (2006).
+        # doi.org/10.1016/B978-0-444-52783-7.X5000-9
+
         # Michaud, C.F. (2013)
         # Hydrodynamic Design, Part 8: Flow Through Ion Exchange Beds
         # Water Conditioning & Purification Magazine (WC&P)
@@ -996,7 +1000,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(
             self.target_ion_set, doc="Right hand side of constant pattern sol'n"
         )
-        def eq_constant_pattern_soln(b, j):
+        def eq_constant_pattern_soln(
+            b, j
+        ):  # Liquid-film diffusion control, Eq. 4.140, Inglezakis + Poulopoulos
             return (
                 b.num_transfer_units * (b.dimensionless_time - 1)
                 == (log(b.c_norm[j]) - b.langmuir[j] * log(1 - b.c_norm[j]))
@@ -1016,7 +1022,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             )
 
         @self.Constraint(self.target_ion_set, doc="Number of mass-transfer units")
-        def eq_num_transfer_units(b, j):
+        def eq_num_transfer_units(b, j):  # External mass transfer, Perry's Table 16-13
             return (
                 b.num_transfer_units
                 == (b.fluid_mass_transfer_coeff[j] * b.resin_surf_per_vol * b.bed_depth)
