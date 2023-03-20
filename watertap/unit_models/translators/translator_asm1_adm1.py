@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-Translator block representing the ADM1/ASM1 interface.
+Translator block representing the ASM1/ADM1 interface.
 
 Assumptions:
      * Steady-state only
@@ -58,9 +58,9 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Translator_ASM1_ADM1")
-class TranslatorDataAsm1Adm1(TranslatorData):
+class TranslatorDataASM1ADM1(TranslatorData):
     """
-    Standard Translator Block Class
+    Translator block representing the ASM1/ADM1 interface
     """
 
     CONFIG = TranslatorData.CONFIG()
@@ -99,20 +99,20 @@ see reaction package for documentation.}""",
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(TranslatorDataAsm1Adm1, self).build()
+        super(TranslatorDataASM1ADM1, self).build()
 
         self.i_xe = Param(
             initialize=0.06,
             units=pyunits.dimensionless,
             mutable=True,
-            doc="Nitrogen inert content",
+            doc="Fraction nitrogen in particulate products",
         )
 
         self.i_xb = Param(
             initialize=0.08,
             units=pyunits.dimensionless,
             mutable=True,
-            doc="Nitrogen inert content",
+            doc="Fraction nitrogen in biomass",
         )
 
         self.f_xI = Param(
@@ -192,7 +192,7 @@ see reaction package for documentation.}""",
 
         @self.Expression(self.flowsheet().time, doc="COD demand after S_S")
         # Includes smooth formulation for max(x, 0) to avoid having negative values
-        # formulation included in all subsecuent values for COD requirements and
+        # formulation included in all subsequent values for COD requirements and
         # COD remains
         def CODd2(blk, t):
             return 0.5 * (
@@ -335,13 +335,6 @@ see reaction package for documentation.}""",
         )
         def Saa_balance(blk, t):
             return blk.properties_out[t].conc_mass_comp["S_aa"] == blk.saa_mapping[t]
-
-        @self.Expression(
-            self.flowsheet().time,
-            doc="Monosacharides balance step A",
-        )
-        def Ssu_balance_A(blk, t):
-            return blk.ssu_mapping_A[t]
 
         @self.Expression(self.flowsheet().time, doc="COD remaining from step A")
         def COD_remain_a(blk, t):
@@ -671,8 +664,6 @@ see reaction package for documentation.}""",
             state_args=state_args_out,
         )
 
-        self.properties_in.release_state(flags=flags, outlvl=outlvl)
-
         if degrees_of_freedom(self) != 0:
             raise Exception(
                 f"{self.name} degrees of freedom were not 0 at the beginning "
@@ -682,10 +673,12 @@ see reaction package for documentation.}""",
         with idaeslog.solver_log(init_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
 
+        self.properties_in.release_state(flags=flags, outlvl=outlvl)
+
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
-        # if not check_optimal_termination(res):
-        #     raise InitializationError(
-        #         f"{self.name} failed to initialize successfully. Please check "
-        #         f"the output logs for more information."
-        #     )
+        if not check_optimal_termination(res):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information."
+            )

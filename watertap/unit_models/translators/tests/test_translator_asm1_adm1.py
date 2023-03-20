@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-Tests for Translator ADM1-ASM1 unit model.
+Tests for ASM1-ADM1 Translator unit model.
 
 Verified against approximated results results from:
 
