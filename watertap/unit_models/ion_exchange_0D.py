@@ -64,6 +64,11 @@ class RegenerantChem(StrEnum):
     MeOH = "MeOH"
 
 
+class IsothermType(StrEnum):
+    langmuir = "langmuir"
+    freundlich = "freundlich"
+
+
 @declare_process_block_class("IonExchange0D")
 class IonExchangeODData(InitializationMixin, UnitModelBlockData):
     """
@@ -176,7 +181,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
     CONFIG.declare(
         "target_ion",
-        ConfigValue(default="Ca_2+", domain=str, description="Target Ion"),
+        ConfigValue(default="Ca_2+", domain=str, description="Target ion"),
     )
 
     CONFIG.declare(
@@ -184,7 +189,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         ConfigValue(
             default=RegenerantChem.HCl,
             domain=In(RegenerantChem),
-            description="Regenerant chemical",
+            description="Chemical used for regeneration of fixed bed",
         ),
     )
 
@@ -194,6 +199,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             default=False,
             domain=bool,
             description="Designates if resin and residuals contain hazardous material",
+        ),
+    )
+
+    CONFIG.declare(
+        "isotherm",
+        ConfigValue(
+            default=IsothermType.langmuir,
+            domain=In(IsothermType),
+            description="Designates the isotherm type to use for equilibrium calculations",
         ),
     )
 
@@ -511,14 +525,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Langmuir isotherm coefficient",
         )
 
-        self.separation_factor = Var(
-            self.target_ion_set,
-            initialize=0.2,
-            bounds=(0, None),
-            units=pyunits.dimensionless,
-            doc="Separation factor",
-        )
-
         self.resin_surf_per_vol = Var(
             initialize=3333.33,
             bounds=(0, 1e5),
@@ -808,21 +814,23 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 * b.rate_coeff[j]
             )
 
-        # =========== EQUILIBRIUM ===========
-
-        @self.Constraint(
+        @self.Expression(
             self.target_ion_set,
             doc="Separation factor calc",
         )
-        def eq_sep_factor(b, j):
-            return b.separation_factor[j] == 1 / b.langmuir[j]
+        def separation_factor(b, j):
+            return 1 / b.langmuir[j]
+
+        # =========== EQUILIBRIUM ===========
+
+        # if IsothermType == "langmuir":
 
         @self.Constraint(
             self.target_ion_set,
             doc="Langmuir isotherm",
         )
         def eq_langmuir(b, j):
-            return b.separation_factor[j] * (
+            return (1 / b.langmuir[j]) * (
                 b.c_norm[j] * (1 - b.resin_eq_capacity / b.resin_max_capacity)
             ) == (b.resin_eq_capacity / b.resin_max_capacity * (1 - b.c_norm[j]))
 
@@ -1141,9 +1149,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             state_args=state_args_regen,
         )
 
-        # self.state_args_out = state_args_out
-        # self.state_args_regen = state_args_regen
-
         init_log.info("Initialization Step 1c Complete.")
 
         # Solve unit
@@ -1174,10 +1179,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.langmuir[target_ion]) is None:
             iscale.set_scaling_factor(self.langmuir[target_ion], 10)
-
-        if iscale.get_scaling_factor(self.separation_factor[target_ion]) is None:
-            sf = 1 / iscale.get_scaling_factor(self.langmuir[target_ion])
-            iscale.set_scaling_factor(self.separation_factor[target_ion], sf)
 
         if iscale.get_scaling_factor(self.num_transfer_units) is None:
             iscale.set_scaling_factor(self.num_transfer_units, 1e-2)
@@ -1235,15 +1236,11 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.holdup, 1e-2)
 
-        # iscale.set_scaling_factor(self.HTU, 1e3)
-
         iscale.set_scaling_factor(self.service_flow_rate, 0.1)
 
         iscale.set_scaling_factor(self.c_norm, 10)
 
         iscale.set_scaling_factor(self.fluid_mass_transfer_coeff, 1e5)
-
-        # iscale.set_scaling_factor(self.rate_coeff, 1e4)
 
         iscale.set_scaling_factor(self.t_contact, 1e-2)
 
@@ -1260,10 +1257,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         for ind, c in self.eq_vel_inter.items():
             sf = iscale.get_scaling_factor(self.vel_inter)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for ind, c in self.eq_sep_factor.items():
-            sf = iscale.get_scaling_factor(self.separation_factor[ind])
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_fluid_mass_transfer_coeff.items():
@@ -1307,7 +1300,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         var_dict["Bed Porosity"] = self.bed_porosity
         var_dict["Number Transfer Units"] = self.num_transfer_units
         var_dict["Dimensionless Time"] = self.dimensionless_time
-        # var_dict["LH of Constant Pattern Sol'n."] = self.lh
+        var_dict["LH of Constant Pattern Sol'n."] = self.lh
         var_dict["Partition Ratio"] = self.partition_ratio
         var_dict["Bed Velocity"] = self.vel_bed
         var_dict["Holdup"] = self.holdup
@@ -1323,9 +1316,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             sc = f"Schmidt Number for {ion}"
             sh = f"Sherwood Number for {ion}"
             var_dict[keq] = self.langmuir[i]
-            var_dict[req] = self.separation_factor[i]
             var_dict[kf] = self.fluid_mass_transfer_coeff[i]
-            var_dict[kd] = self.rate_coeff[i]
             var_dict[sc] = self.Sc[i]
             var_dict[sh] = self.Sh[i]
 
