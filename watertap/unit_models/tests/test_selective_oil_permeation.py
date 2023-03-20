@@ -42,6 +42,7 @@ from idaes.core.util.scaling import (
     unscaled_variables_generator,
     badly_scaled_var_generator,
 )
+import idaes.logger as idaeslog
 
 
 # -----------------------------------------------------------------------------
@@ -134,16 +135,19 @@ class TestSelectiveOilPermeation:
         assert len(unscaled_var_list) == 0
 
     @pytest.mark.component
-    def test_initialize(self, unit_frame):
-        initialization_tester(unit_frame)
-
-    @pytest.mark.component
     def test_var_scaling(self, unit_frame):
         m = unit_frame
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(m, large=1e2, small=1e-2)
         )
+        [print(i[0], i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
+
+    @pytest.mark.component
+    def test_initialize(self, unit_frame):
+        m = unit_frame
+        m.fs.unit.initialize(outlvl=idaeslog.DEBUG)
+        initialization_tester(unit_frame)
 
     @pytest.mark.component
     def test_solve(self, unit_frame):
