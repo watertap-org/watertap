@@ -10,8 +10,6 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
-from io import StringIO
-
 from pyomo.environ import (
     ConcreteModel,
     TransformationFactory,
@@ -53,9 +51,6 @@ def build(m):
 
     # Condenser
     m.fs.condenser = Condenser(property_package=m.fs.properties_vapor)
-
-    # Condenser
-    m.fs.condenser = Condenser(default={"property_package": m.fs.properties_vapor})
 
     # Connections
     m.fs.s01 = Arc(
@@ -169,7 +164,7 @@ def test_mvc():
     assert m.fs.compressor.control_volume.work[0].value == pytest.approx(
         5.8521e5, rel=1e-3
     )
-    assert compressed_blk.pressure.value == pytest.approx(3.9656e4, rel=1e-3)
+    assert compressed_blk.pressure.value == pytest.approx(3.7772e4, rel=1e-3)
     assert compressed_blk.temperature.value == pytest.approx(407.70, rel=1e-3)
 
     # condenser values

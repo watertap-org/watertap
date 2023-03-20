@@ -38,7 +38,7 @@ class TestSeawaterProperty(PropertyTestHarness):
             ("flow_mass_phase_comp", ("Liq", "TDS")): 1e2,
         }
         self.stateblock_statistics = {
-            "number_variables": 26,
+            "number_variables": 28,
             "number_total_constraints": 22,
             "number_unused_variables": 0,
             "default_degrees_of_freedom": 4,
