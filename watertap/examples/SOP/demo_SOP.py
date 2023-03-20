@@ -1,10 +1,17 @@
-from pyomo.environ import ConcreteModel, assert_optimal_termination, units, value
+from pyomo.environ import (
+    ConcreteModel,
+    assert_optimal_termination,
+    units,
+    value,
+    Objective,
+    SolverFactory,
+)
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
+from idaes.core.util.model_diagnostics import DegeneracyHunter
 
 import watertap.property_models.SOP_prop_pack as props
 from watertap.unit_models.selective_oil_permeation import SelectiveOilPermeation
@@ -31,15 +38,6 @@ def main():
     # build the unit model
     m.fs.SOP = SelectiveOilPermeation(property_package=m.fs.properties)
 
-    # scale model
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e2, index=("Liq", "H2O")
-    )
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e5, index=("Liq", "oil")
-    )
-    iscale.calculate_scaling_factors(m)
-
     # print DOF before specifying
     print("DOF before specifying:", degrees_of_freedom(m.fs))
 
@@ -56,24 +54,39 @@ def main():
     m.fs.SOP.feed_side.properties_out[0].pressure.fix(1.20 * units.bar)
     m.fs.SOP.area.fix(1.4)  # membrane area in m^2
     m.fs.SOP.properties_permeate[0].pressure.fix(1 * units.bar)
-
     print("DOF after specifying:", degrees_of_freedom(m.fs))
     print()
 
-    # solve model
-    assert_units_consistent(m)  # check that units are consistent
-    assert (
-        degrees_of_freedom(m) == 0
-    )  # check that the degrees of freedom are what we expect
-
-    print("------- initialize model -------")
-    m.fs.SOP.initialize()
-    solver = get_solver()
-
+    # scale model
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e5, index=("Liq", "oil")
+    )
+    iscale.calculate_scaling_factors(m)
     print(
         "\n------- display badly scaled variables - after initialize, before solve -------"
     )
     detect_badly_scaled_vars(m)
+    # solve model
+    assert_units_consistent(m)  # check that units are consistent
+
+    assert (
+        degrees_of_freedom(m) == 0
+    )  # check that the degrees of freedom are what we expect
+    solver = get_solver()
+
+    # Use of Degeneracy Hunter for troubleshooting model.
+    m.fs.dummy_objective = Objective(expr=0)
+    solver.options["max_iter"] = 0
+    solver.solve(m, tee=True)
+    dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
+    dh.check_residuals(tol=0.1)
+
+    print("------- initialize model -------")
+    solver.options["max_iter"] = 2000
+    m.fs.SOP.initialize()
 
     print("\n------- solve model -------")
     results = solver.solve(m, tee=True)
