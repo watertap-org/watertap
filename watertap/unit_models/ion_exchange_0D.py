@@ -517,13 +517,25 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Resin particle density",
         )
 
-        self.langmuir = Var(
-            self.target_ion_set,
-            initialize=1.5,
-            bounds=(0, None),
-            units=pyunits.dimensionless,
-            doc="Langmuir isotherm coefficient",
-        )
+        if self.config.isotherm == IsothermType.langmuir:
+
+            self.langmuir = Var(
+                self.target_ion_set,
+                initialize=0.5,  # La < 1 is favorable isotherm
+                bounds=(0, None),
+                units=pyunits.dimensionless,
+                doc="Langmuir isotherm coefficient",
+            )
+
+        if self.config.isotherm == IsothermType.freundlich:
+
+            self.freundlich = Var(
+                self.target_ion_set,
+                initialize=1.5,
+                bounds=(0, None),
+                units=pyunits.dimensionless,
+                doc="Freundlich isotherm coefficient",
+            )
 
         self.resin_surf_per_vol = Var(
             initialize=3333.33,
@@ -823,16 +835,37 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         # =========== EQUILIBRIUM ===========
 
-        # if IsothermType == "langmuir":
+        if self.config.isotherm == IsothermType.langmuir:
 
-        @self.Constraint(
-            self.target_ion_set,
-            doc="Langmuir isotherm",
-        )
-        def eq_langmuir(b, j):
-            return (1 / b.langmuir[j]) * (
-                b.c_norm[j] * (1 - b.resin_eq_capacity / b.resin_max_capacity)
-            ) == (b.resin_eq_capacity / b.resin_max_capacity * (1 - b.c_norm[j]))
+            @self.Constraint(
+                self.target_ion_set,
+                doc="Langmuir isotherm",
+            )
+            def eq_langmuir(b, j):
+                return (1 / b.langmuir[j]) * (
+                    b.c_norm[j] * (1 - b.resin_eq_capacity / b.resin_max_capacity)
+                ) == (b.resin_eq_capacity / b.resin_max_capacity * (1 - b.c_norm[j]))
+
+            @self.Constraint(
+                self.target_ion_set, doc="Right hand side of constant pattern sol'n"
+            )
+            def eq_constant_pattern_soln(
+                b, j
+            ):  # Liquid-film diffusion control, Eq. 4.140, Inglezakis + Poulopoulos
+                return (
+                    b.num_transfer_units * (b.dimensionless_time - 1)
+                    == (log(b.c_norm[j]) - b.langmuir[j] * log(1 - b.c_norm[j]))
+                    / (1 - b.langmuir[j])
+                    + 1
+                )
+
+        if self.config.isotherm == IsothermType.freundlich:
+
+            @self.Constraint(self.target_ion_set, doc="Freundlich isotherm")
+            def eq_freundlich(b, j):
+                b.resin_eq_capacity / b.resin_max_capacity == b.c_norm[
+                    j
+                ] ** b.freundlich[j]
 
         @self.Constraint(
             self.target_ion_set,
@@ -1003,19 +1036,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             ) / pyunits.convert(
                 prop_in.conc_equiv_phase_comp["Liq", target_ion],
                 to_units=pyunits.mol / pyunits.L,
-            )
-
-        @self.Constraint(
-            self.target_ion_set, doc="Right hand side of constant pattern sol'n"
-        )
-        def eq_constant_pattern_soln(
-            b, j
-        ):  # Liquid-film diffusion control, Eq. 4.140, Inglezakis + Poulopoulos
-            return (
-                b.num_transfer_units * (b.dimensionless_time - 1)
-                == (log(b.c_norm[j]) - b.langmuir[j] * log(1 - b.c_norm[j]))
-                / (1 - b.langmuir[j])
-                + 1
             )
 
         @self.Constraint(doc="Dimensionless time")
