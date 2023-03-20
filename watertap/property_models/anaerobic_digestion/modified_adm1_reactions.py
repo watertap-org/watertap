@@ -1784,19 +1784,18 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         add_object_reference(self, "temperature", self.state_ref.temperature)
 
         # Initial values of rates of reaction from Flores-Alsina 2016 GitHub
-        # TODO: Should R4-R11 be negative in this file and adm1_reactions?
         self.rates = {
             "R1": 1.651e-04,
             "R2": 1.723e-04,
             "R3": 2.290e-04,
-            "R4": -1.4875e-05,
-            "R5": -1.449e-05,
-            "R6": -1.802e-05,
-            "R7": -3.006e-06,
-            "R8": -5.012e-06,
-            "R9": -6.594e-06,
-            "R10": -4.282e-08,
-            "R11": -1.209e-05,
+            "R4": 5.312e-06,
+            "R5": 5.176e-06,
+            "R6": 6.436e-06,
+            "R7": 1.074e-06,
+            "R8": 1.790e-06,
+            "R9": 2.355e-06,
+            "R10": 5.531e-06,
+            "R11": 4.472e-06,
             "R12": 1.294e-07,
             "R13": 1.009e-07,
             "R14": 9.406e-08,
