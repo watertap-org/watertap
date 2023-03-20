@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 
 from pyomo.environ import ConcreteModel, assert_optimal_termination, value
@@ -61,7 +60,7 @@ def test_compressor():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    assert pytest.approx(1.1534e5, rel=1e-4) == value(
+    assert pytest.approx(1.1539e5, rel=1e-4) == value(
         m.fs.compressor.control_volume.work[0]
     )
     assert pytest.approx(1e-08, rel=1e-4) == value(

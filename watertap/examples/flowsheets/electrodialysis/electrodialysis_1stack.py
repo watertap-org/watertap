@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from pyomo.environ import (
     ConcreteModel,
@@ -18,25 +17,27 @@ from pyomo.environ import (
     Constraint,
     Objective,
     TransformationFactory,
-    assert_optimal_termination,
     units as pyunits,
 )
+import idaes.logger as idaeslog
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
-from idaes.core.util.model_statistics import degrees_of_freedom, report_statistics
+from idaes.core.util.model_statistics import report_statistics
 from idaes.models.unit_models import Feed, Product, Separator
 from pandas import DataFrame
 import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslogger
-from watertap.core.util.initialization import check_dof
+from watertap.core.util.initialization import check_dof, check_solve
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
-from watertap.costing.watertap_costing_package import (
-    WaterTAPCosting,
-)
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+
+from watertap.costing import WaterTAPCosting
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
+
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 __author__ = "Xiangyu Bi"
 
@@ -48,14 +49,16 @@ def main():
     m = build()
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
-    solve(m, solver=solver)
+    solve(m, solver=solver, checkpoint="solve flowsheet after initializing system")
 
     print("\n***---Simulation results---***")
     display_model_metrics(m)
 
     # Perform an optimization over selected variables
     initialize_system(m, solver=solver)
-    optimize_system(m, solver=solver)
+    optimize_system(
+        m, solver=solver, checkpoint="solve flowsheet after optimizing system"
+    )
     print("\n***---Optimization results---***")
     display_model_metrics(m)
 
@@ -70,7 +73,7 @@ def build():
         "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
         "charge": {"Na_+": 1, "Cl_-": -1},
     }
-    m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+    m.fs.properties = MCASParameterBlock(**ion_dict)
     m.fs.costing = WaterTAPCosting()
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.separator = Separator(
@@ -199,7 +202,7 @@ def set_operating_conditions(m):
     m.fs.EDstack.electrodes_resistance.fix(0)
     m.fs.EDstack.cell_pair_num.fix(100)
     m.fs.EDstack.current_utilization.fix(1)
-    m.fs.EDstack.spacer_thickness.fix(2.7e-4)
+    m.fs.EDstack.channel_height.fix(2.7e-4)
     m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
     m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
     m.fs.EDstack.cell_width.fix(0.1)
@@ -214,17 +217,17 @@ def set_operating_conditions(m):
     m.fs.EDstack.ion_trans_number_membrane["aem", "Na_+"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
+    m.fs.EDstack.spacer_porosity.fix(1)
 
     # check zero degrees of freedom
     check_dof(m)
 
 
-def solve(blk, solver=None, tee=False, check_termination=True):
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
-    results = solver.solve(blk, tee=True)
-    if check_termination:
-        assert_optimal_termination(results)
+    results = solver.solve(blk, tee=tee)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
 
@@ -249,7 +252,7 @@ def initialize_system(m, solver=None):
     m.fs.costing.initialize()
 
 
-def optimize_system(m, solver=None):
+def optimize_system(m, solver=None, checkpoint=None, fail_flag=True):
 
     # Below is an example of optimizing the operational voltage and cell pair number (which translates to membrane use)
     # Define a system with zero dof
@@ -263,9 +266,9 @@ def optimize_system(m, solver=None):
     m.fs.EDstack.cell_pair_num.unfix()
     m.fs.EDstack.cell_pair_num.set_value(10)
     # Give narrower bounds to optimizing variables if available
-    m.fs.EDstack.voltage_applied[0].setlb(0.01)
+    m.fs.EDstack.voltage_applied[0].setlb(0.5)
     m.fs.EDstack.voltage_applied[0].setub(20)
-    m.fs.EDstack.cell_pair_num.setlb(1)
+    m.fs.EDstack.cell_pair_num.setlb(5)
     m.fs.EDstack.cell_pair_num.setub(500)
 
     # Set a treatment goal
@@ -276,7 +279,7 @@ def optimize_system(m, solver=None):
     if solver is None:
         solver = get_solver()
     results = solver.solve(m, tee=True)
-    assert_optimal_termination(results)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
 
 
 def display_model_metrics(m):

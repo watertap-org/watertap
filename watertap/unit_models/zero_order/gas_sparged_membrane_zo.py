@@ -1,18 +1,18 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 This module contains a zero-order representation of a gas-sparged membrane unit.
 """
+from types import MethodType
 from idaes.core import declare_process_block_class
 
 from watertap.core import pump_electricity, ZeroOrderBaseData
@@ -65,8 +65,8 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         self._tech_type = "gas_sparged_membrane"
 
         self._has_recovery_removal = True
-        self._initialize = initialize_sido
-        self._scaling = calculate_scaling_factors_gas_extraction
+        self._initialize = MethodType(initialize_sido, self)
+        self._scaling = MethodType(calculate_scaling_factors_gas_extraction, self)
 
         # Create state blocks for inlet and outlets
         tmp_dict = dict(**self.config.property_package_args)
@@ -205,7 +205,7 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         self._perf_var_dict["Water Recovery"] = self.recovery_frac_mass_H2O
         self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_comp
 
-        self._get_Q = _get_Q_gas_extraction
+        self._get_Q = MethodType(_get_Q_gas_extraction, self)
 
         self._Q = Reference(self.properties_in[:].flow_vol)
         pump_electricity(self, self._Q)

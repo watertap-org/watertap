@@ -1,20 +1,20 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 This module contains the methods for constructing the material balances for
 zero-order pass-through unit models (i.e. units with a single inlet and single
 outlet where flow and composition do not change, such as pumps).
 """
+from types import MethodType
 from pyomo.environ import check_optimal_termination
 
 import idaes.logger as idaeslog
@@ -44,8 +44,8 @@ def build_pt(self):
     the inlet volumetric flow rate.
     """
     self._has_recovery_removal = False
-    self._initialize = initialize_pt
-    self._scaling = calculate_scaling_factors_pt
+    self._initialize = MethodType(initialize_pt, self)
+    self._scaling = MethodType(calculate_scaling_factors_pt, self)
 
     # Create state blocks for inlet and outlet
     tmp_dict = dict(**self.config.property_package_args)
@@ -62,7 +62,7 @@ def build_pt(self):
 
     self._stream_table_dict = {"Inlet": self.inlet, "Outlet": self.outlet}
 
-    self._get_Q = _get_Q_pt
+    self._get_Q = MethodType(_get_Q_pt, self)
 
 
 def initialize_pt(

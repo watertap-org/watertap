@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 from io import StringIO
 
@@ -88,7 +87,7 @@ def test_evaporator():
     # check values, TODO: make a report for the evaporator
     vapor_blk = m.fs.evaporator.properties_vapor[0]
     assert vapor_blk.flow_mass_phase_comp["Vap", "H2O"].value == pytest.approx(
-        0.4171, rel=1e-3
+        0.4183, rel=1e-3
     )
     assert m.fs.evaporator.lmtd.value == pytest.approx(13.79, rel=1e-3)
     assert m.fs.evaporator.heat_transfer.value == pytest.approx(1.379e6, rel=1e-3)

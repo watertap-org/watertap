@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from copy import deepcopy
 from enum import Enum, auto
@@ -72,6 +71,16 @@ class PressureChangeType(Enum):
     fixed_per_stage = auto()
     fixed_per_unit_length = auto()
     calculated = auto()
+
+
+class FrictionFactor(Enum):
+    """
+    flat_sheet: Darcy's friction factor correlation by Guillen & Hoek
+    spiral_wound: Darcy's friction factor correlation by Schock & Miquel, 1987
+    """
+
+    flat_sheet = auto()
+    spiral_wound = auto()
 
 
 CONFIG_Template = ConfigDict()
@@ -263,6 +272,26 @@ CONFIG_Template.declare(
     ),
 )
 
+CONFIG_Template.declare(
+    "friction_factor",
+    ConfigValue(
+        default=FrictionFactor.flat_sheet,
+        domain=In(FrictionFactor),
+        description="Darcy friction factor correlation",
+        doc="""
+        Options to account for friction factor correlations.
+
+        **default** - ``FrictionFactor.flat_sheet`` 
+
+    .. csv-table::
+        :header: "Configuration Options", "Description"
+
+        "``FrictionFactor.flat_sheet``", "Friction factor correlation for flat-sheet membrane modules"
+        "``FrictionFactor.spiral_wound``", "Friction factor correlation for spiral-wound membranes"
+    """,
+    ),
+)
+
 
 class MembraneChannelMixin:
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
@@ -301,6 +330,7 @@ class MembraneChannelMixin:
         has_pressure_change=True,
         pressure_change_type=PressureChangeType.calculated,
         custom_term=None,
+        friction_factor=FrictionFactor.flat_sheet,
     ):
         super().add_total_pressure_balances(
             has_pressure_change=has_pressure_change, custom_term=custom_term
@@ -320,9 +350,9 @@ class MembraneChannelMixin:
             self._add_pressure_change(pressure_change_type=pressure_change_type)
 
         if pressure_change_type == PressureChangeType.calculated:
-            self._add_calculated_pressure_change()
+            self._add_calculated_pressure_change(friction_factor=friction_factor)
 
-    def add_isothermal_conditions(self):
+    def add_interface_isothermal_conditions(self):
 
         # ==========================================================================
         # Bulk and interface connections on the feed-side
@@ -338,6 +368,23 @@ class MembraneChannelMixin:
             return (
                 b.properties[t, x].temperature
                 == b.properties_interface[t, x].temperature
+            )
+
+    def add_control_volume_isothermal_conditions(self):
+
+        ## ==========================================================================
+        # Feed-side isothermal conditions
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.length_domain,
+            doc="Isothermal assumption for feed channel",
+        )
+        def eq_feed_isothermal(b, t, x):
+            if x == b.length_domain.first():
+                return Constraint.Skip
+            return (
+                b.properties[t, b.length_domain.first()].temperature
+                == b.properties[t, x].temperature
             )
 
     def add_extensive_flow_to_interface(self):
@@ -407,7 +454,7 @@ class MembraneChannelMixin:
             solute_set,
             doc="Concentration polarization modulus",
         )
-        def eq_cp_modulus(b, t, x, j):
+        def eq_cp_modulus(b, t, x, j):  # pylint: disable=function-redefined
             if b._skip_element(x):
                 return Constraint.Skip
             return (
@@ -464,18 +511,22 @@ class MembraneChannelMixin:
     def _add_calculated_mass_transfer_coefficient(self):
         self._add_calculated_pressure_change_mass_transfer_components()
 
-        self.N_Sc = Var(
+        solute_set = self.config.property_package.solute_set
+
+        self.N_Sc_comp = Var(
             self.flowsheet().config.time,
             self.length_domain,
+            solute_set,
             initialize=5e2,
             bounds=(1e2, 2e3),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Schmidt number in membrane channel",
         )
-        self.N_Sh = Var(
+        self.N_Sh_comp = Var(
             self.flowsheet().config.time,
             self.length_domain,
+            solute_set,
             initialize=1e2,
             bounds=(1, 3e2),
             domain=NonNegativeReals,
@@ -495,28 +546,32 @@ class MembraneChannelMixin:
             return (
                 b.K[t, x, j] * b.dh
                 # TODO: add diff coefficient to SW prop and consider multi-components
-                == b.properties[t, x].diffus_phase_comp["Liq", j] * b.N_Sh[t, x]
+                == b.properties[t, x].diffus_phase_comp["Liq", j] * b.N_Sh_comp[t, x, j]
             )
 
         @self.Constraint(
-            self.flowsheet().config.time, self.length_domain, doc="Sherwood number"
+            self.flowsheet().config.time,
+            self.length_domain,
+            self.config.property_package.solute_set,
+            doc="Sherwood number",
         )
-        def eq_N_Sh(b, t, x):
-            return b.N_Sh[t, x] == 0.46 * (b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.36
+        def eq_N_Sh_comp(b, t, x, j):
+            return (
+                b.N_Sh_comp[t, x, j]
+                == 0.46 * (b.N_Re[t, x] * b.N_Sc_comp[t, x, j]) ** 0.36
+            )
 
         @self.Constraint(
-            self.flowsheet().config.time, self.length_domain, doc="Schmidt number"
+            self.flowsheet().config.time,
+            self.length_domain,
+            self.config.property_package.solute_set,
+            doc="Schmidt number",
         )
-        def eq_N_Sc(b, t, x):
-            # # TODO: This needs to be revisted. Diffusion is now by component, but
-            #   not H2O and this var should also be by component, but the implementation
-            #   is not immediately clear.
+        def eq_N_Sc_comp(b, t, x, j):
             return (
-                b.N_Sc[t, x]
+                b.N_Sc_comp[t, x, j]
                 * b.properties[t, x].dens_mass_phase["Liq"]
-                * b.properties[t, x].diffus_phase_comp[
-                    "Liq", b.properties[t, x].params.component_list.last()
-                ]
+                * b.properties[t, x].diffus_phase_comp["Liq", j]
                 == b.properties[t, x].visc_d_phase["Liq"]
             )
 
@@ -626,7 +681,9 @@ class MembraneChannelMixin:
             **tmp_dict,
         )
 
-    def _add_calculated_pressure_change(self):
+    def _add_calculated_pressure_change(
+        self, friction_factor=FrictionFactor.flat_sheet
+    ):
         self._add_calculated_pressure_change_mass_transfer_components()
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
@@ -665,14 +722,31 @@ class MembraneChannelMixin:
 
         ## ==========================================================================
         # Darcy friction factor based on eq. S27 in SI for Cost Optimization of Osmotically Assisted Reverse Osmosis
-        # TODO: this relationship for friction factor is specific to a particular spacer geometry. Add alternatives.
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.length_domain,
-            doc="Darcy friction factor constraint",
-        )
-        def eq_friction_factor_darcy(b, t, x):
-            return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
+        if friction_factor == FrictionFactor.flat_sheet:
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.length_domain,
+                doc="Darcy friction factor constraint for flat sheet membranes",
+            )
+            def eq_friction_factor(b, t, x):
+                return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
+
+        # Darcy friction factor based on eq. 24 in Mass transfer and pressure loss in spiral wound modules (Schock & Miquel, 1987)
+        elif friction_factor == FrictionFactor.spiral_wound:
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.length_domain,
+                doc="Darcy friction factor constraint for spiral-wound membranes",
+            )
+            def eq_friction_factor(b, t, x):
+                return b.friction_factor_darcy[t, x] == 6.23 * b.N_Re[t, x] ** -0.3
+
+        else:
+            raise ConfigurationError(
+                f"Unrecognized friction_factor type {friction_factor}"
+            )
 
         ## ==========================================================================
         # Pressure change per unit length due to friction
@@ -718,11 +792,6 @@ class MembraneChannelMixin:
             initialize_guess["solvent_recovery"] = 0.5
         if "solute_recovery" not in initialize_guess:
             initialize_guess["solute_recovery"] = 0.01
-        if "cp_modulus" not in initialize_guess:
-            if hasattr(self, "cp_modulus"):
-                initialize_guess["cp_modulus"] = 1.1
-            else:
-                initialize_guess["cp_modulus"] = 1
 
         # Get source block
         # TODO: need to re-visit for counterflow
@@ -766,8 +835,39 @@ class MembraneChannelMixin:
                 1 - initialize_guess["solute_recovery"]
             )
 
-        state_args_interface_in = deepcopy(state_args)
-        state_args_interface_out = deepcopy(state_args_retentate)
+        # slightly modify initial values for other state blocks
+        state_args_permeate = deepcopy(state_args)
+
+        state_args_permeate["pressure"] = 101325  # 1 bar
+        for j in self.config.property_package.solvent_set:
+            state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
+                "solvent_recovery"
+            ]
+        for j in self.config.property_package.solute_set:
+            state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
+                "solute_recovery"
+            ]
+
+        return {
+            "feed_side": state_args,
+            "retentate": state_args_retentate,
+            "permeate": state_args_permeate,
+        }
+
+    def _get_state_args_interface(self, initialize_guess, prop_in, prop_out):
+        if initialize_guess is None:
+            initialize_guess = {}
+        if "cp_modulus" not in initialize_guess:
+            if hasattr(self, "cp_modulus"):
+                if self._flow_direction == FlowDirection.forward:
+                    initialize_guess["cp_modulus"] = 1.1
+                else:
+                    initialize_guess["cp_modulus"] = 0.9
+            else:
+                initialize_guess["cp_modulus"] = 1
+
+        state_args_interface_in = deepcopy(prop_in)
+        state_args_interface_out = deepcopy(prop_out)
 
         for j in self.config.property_package.solute_set:
             state_args_interface_in["flow_mass_phase_comp"][
@@ -776,32 +876,6 @@ class MembraneChannelMixin:
             state_args_interface_out["flow_mass_phase_comp"][
                 ("Liq", j)
             ] *= initialize_guess["cp_modulus"]
-
-        # TODO: I think this is what we'd like to do, but IDAES needs to be changed
-        # state_args_interface = {}
-        # for t in self.flowsheet().config.time:
-        #     for x in self.length_domain:
-        #         assert 0.0 <= x <= 1.0
-        #         state_args_tx = {}
-        #         for k in state_args_interface_in:
-        #             if isinstance(state_args_interface_in[k], dict):
-        #                 if k not in state_args_tx:
-        #                     state_args_tx[k] = {}
-        #                 for index in state_args_interface_in[k]:
-        #                     state_args_tx[k][index] = (
-        #                         1.0 - x
-        #                     ) * state_args_interface_in[k][
-        #                         index
-        #                     ] + x * state_args_interface_out[
-        #                         k
-        #                     ][
-        #                         index
-        #                     ]
-        #             else:
-        #                 state_args_tx[k] = (1.0 - x) * state_args_interface_in[
-        #                     k
-        #                 ] + x * state_args_interface_out[k]
-        #         state_args_interface[t, x] = state_args_tx
 
         x = 0.5
         state_args_tx = {}
@@ -819,11 +893,7 @@ class MembraneChannelMixin:
                 ] + x * state_args_interface_out[k]
         state_args_interface = state_args_tx
 
-        return {
-            "feed_side": state_args,
-            "retentate": state_args_retentate,
-            "interface": state_args_interface,
-        }
+        return state_args_interface
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -850,15 +920,15 @@ class MembraneChannelMixin:
                 if iscale.get_scaling_factor(self.N_Re[t, x]) is None:
                     iscale.set_scaling_factor(self.N_Re[t, x], 1e-2)
 
-        if hasattr(self, "N_Sc"):
-            for t, x in self.N_Sc.keys():
-                if iscale.get_scaling_factor(self.N_Sc[t, x]) is None:
-                    iscale.set_scaling_factor(self.N_Sc[t, x], 1e-2)
+        if hasattr(self, "N_Sc_comp"):
+            for v in self.N_Sc_comp.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e-2)
 
-        if hasattr(self, "N_Sh"):
-            for t, x in self.N_Sh.keys():
-                if iscale.get_scaling_factor(self.N_Sh[t, x]) is None:
-                    iscale.set_scaling_factor(self.N_Sh[t, x], 1e-2)
+        if hasattr(self, "N_Sh_comp"):
+            for v in self.N_Sh_comp.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e-2)
 
         if hasattr(self, "velocity"):
             for v in self.velocity.values():
@@ -922,4 +992,12 @@ def validate_membrane_config_args(unit):
                 unit.config.mass_transfer_coefficient,
                 unit.config.concentration_polarization_type,
             )
+        )
+
+    if (
+        unit.config.pressure_change_type != PressureChangeType.calculated
+        and unit.config.friction_factor != unit.config.get("friction_factor")._default
+    ):
+        raise ConfigurationError(
+            "\nChanging the 'friction_factor' will have no effect if the 'pressure_change_type' is not `PressureChangeType.calculated`"
         )

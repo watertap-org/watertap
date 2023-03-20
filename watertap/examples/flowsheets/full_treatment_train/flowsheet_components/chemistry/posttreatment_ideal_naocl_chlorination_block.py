@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """
     Ideal NaOCl Chlorination posttreatment process
@@ -153,6 +152,7 @@ ideal_naocl_thermo_config = {
                 "temperature_crit": (647, pyunits.K),
                 # Comes from Perry's Handbook:  p. 2-98
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -226,6 +226,7 @@ ideal_naocl_thermo_config = {
             "parameter_data": {
                 "mw": (1.00784, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -258,6 +259,7 @@ ideal_naocl_thermo_config = {
             "parameter_data": {
                 "mw": (22.989769, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.252, pyunits.kmol * pyunits.m**-3),
                     "2": (0.347, pyunits.dimensionless),
                     "3": (1595.8, pyunits.K),
@@ -287,6 +289,7 @@ ideal_naocl_thermo_config = {
             "parameter_data": {
                 "mw": (35.453, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (4.985, pyunits.kmol * pyunits.m**-3),
                     "2": (0.36, pyunits.dimensionless),
                     "3": (1464.06, pyunits.K),
@@ -319,6 +322,7 @@ ideal_naocl_thermo_config = {
             "parameter_data": {
                 "mw": (17.008, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -351,6 +355,7 @@ ideal_naocl_thermo_config = {
             "parameter_data": {
                 "mw": (52.46, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (4.985, pyunits.kmol * pyunits.m**-3),
                     "2": (0.36, pyunits.dimensionless),
                     "3": (1464.06, pyunits.K),
@@ -383,6 +388,7 @@ ideal_naocl_thermo_config = {
             "parameter_data": {
                 "mw": (51.46, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (4.985, pyunits.kmol * pyunits.m**-3),
                     "2": (0.36, pyunits.dimensionless),
                     "3": (1464.06, pyunits.K),

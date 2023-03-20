@@ -1,3 +1,14 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 """
 Simple flowsheet interface API
 """
@@ -18,8 +29,12 @@ except ImportError:
 
 # third-party
 import idaes.logger as idaeslog
+from idaes.core.util.model_statistics import degrees_of_freedom
 from pydantic import BaseModel, validator, Field
 import pyomo.environ as pyo
+from pyomo.core.expr.numeric_expr import ExpressionBase
+from pyomo.core.base.expression import Expression, _ExpressionData
+from pyomo.core.base.param import ScalarParam
 
 #: Forward-reference to a FlowsheetInterface type, used in
 #: :meth:`FlowsheetInterface.find`
@@ -70,11 +85,16 @@ class ModelExport(BaseModel):
     input_category: Optional[str]
     output_category: Optional[str]
     obj_key: str = None
+    fixed: bool = True
+    lb: Union[None, float] = 0.0
+    ub: Union[None, float] = 0.0
+    has_bounds: bool = True
 
     class Config:
         arbitrary_types_allowed = True
 
     @validator("obj", always=True, pre=True)
+    @classmethod
     def ensure_obj_is_supported(cls, v):
         if v is not None:
             cls._ensure_supported_type(v)
@@ -112,6 +132,7 @@ class ModelExport(BaseModel):
 
     # Get value from object
     @validator("value", always=True)
+    @classmethod
     def validate_value(cls, v, values):
         if values.get("obj", None) is None:
             return v
@@ -120,6 +141,7 @@ class ModelExport(BaseModel):
 
     # Derive display_units from ui_units
     @validator("display_units", always=True)
+    @classmethod
     def validate_units(cls, v, values):
         if not v:
             u = values.get("ui_units", pyo.units.dimensionless)
@@ -128,6 +150,7 @@ class ModelExport(BaseModel):
 
     # set name dynamically from object
     @validator("name", always=True)
+    @classmethod
     def validate_name(cls, v, values):
         if not v:
             obj = cls._get_supported_obj(values, allow_none=False)
@@ -138,6 +161,7 @@ class ModelExport(BaseModel):
         return v
 
     @validator("is_readonly", always=True, pre=True)
+    @classmethod
     def set_readonly_default(cls, v, values):
         if v is None:
             v = True
@@ -147,6 +171,7 @@ class ModelExport(BaseModel):
         return v
 
     @validator("obj_key", always=True, pre=True)
+    @classmethod
     def set_obj_key_default(cls, v, values):
         if v is None:
             obj = cls._get_supported_obj(values, allow_none=False)
@@ -163,9 +188,11 @@ class FlowsheetExport(BaseModel):
     model_objects: Dict[str, ModelExport] = {}
     version: int = 2
     requires_idaes_solver: bool = False
+    dof: int = 0
 
     # set name dynamically from object
     @validator("name", always=True)
+    @classmethod
     def validate_name(cls, v, values):
         if not v:
             try:
@@ -177,6 +204,7 @@ class FlowsheetExport(BaseModel):
         return v
 
     @validator("description", always=True)
+    @classmethod
     def validate_description(cls, v, values):
         if not v:
             try:
@@ -397,6 +425,32 @@ class FlowsheetInterface:
                 # Don't convert units when setting the exported value
                 dst.value = src.value
 
+                dst.obj.fixed = src.fixed
+                dst.fixed = src.fixed
+
+                # update bounds
+                if src.lb is None or src.lb == "":
+                    dst.obj.lb = None
+                    dst.lb = None
+                else:
+                    tmp = pyo.Var(initialize=src.lb, units=ui_units)
+                    tmp.construct()
+                    dst.obj.lb = pyo.value(
+                        u.convert(tmp, to_units=u.get_units(dst.obj))
+                    )
+                    dst.lb = src.lb
+                if src.ub is None or src.ub == "":
+                    dst.obj.ub = None
+                    dst.ub = None
+                else:
+                    tmp = pyo.Var(initialize=src.ub, units=ui_units)
+                    tmp.construct()
+                    dst.obj.ub = pyo.value(
+                        u.convert(tmp, to_units=u.get_units(dst.obj))
+                    )
+                    dst.ub = src.ub
+        # update degrees of freedom (dof)
+        self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         if missing:
             raise self.MissingObjectError(missing)
 
@@ -489,6 +543,30 @@ class FlowsheetInterface:
         u = pyo.units
         for key, mo in self.fs_exp.model_objects.items():
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
+            if not isinstance(
+                mo.obj,
+                (
+                    Expression,
+                    ExpressionBase,
+                    _ExpressionData,
+                    ScalarParam,
+                    type(None),
+                ),
+            ):
+                if mo.obj.ub is None:
+                    mo.ub = mo.obj.ub
+                else:
+                    tmp = pyo.Var(initialize=mo.obj.ub, units=u.get_units(mo.obj))
+                    tmp.construct()
+                    mo.ub = pyo.value(u.convert(tmp, to_units=mo.ui_units))
+                if mo.obj.lb is None:
+                    mo.lb = mo.obj.lb
+                else:
+                    tmp = pyo.Var(initialize=mo.obj.lb, units=u.get_units(mo.obj))
+                    tmp.construct()
+                    mo.lb = pyo.value(u.convert(tmp, to_units=mo.ui_units))
+            else:
+                mo.has_bounds = False
 
     @classmethod
     def from_installed_packages(

@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """
     This test is to establish that the core chemistry packages in IDAES
@@ -157,6 +156,7 @@ thermo_config = {
                 "temperature_crit": (647, pyunits.K),
                 # Comes from Perry's Handbook:  p. 2-98
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -230,6 +230,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (1.00784, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -262,6 +263,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (17.008, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -293,6 +295,7 @@ thermo_config = {
                 "pressure_crit": (113e5, pyunits.Pa),
                 "temperature_crit": (405.4, pyunits.K),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (3.5383, pyunits.kmol * pyunits.m**-3),
                     "2": (0.25443, pyunits.dimensionless),
                     "3": (405.65, pyunits.K),
@@ -366,6 +369,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (18.039, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (3.5383, pyunits.kmol * pyunits.m**-3),
                     "2": (0.25443, pyunits.dimensionless),
                     "3": (405.65, pyunits.K),
@@ -398,6 +402,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (52.46, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (4.985, pyunits.kmol * pyunits.m**-3),
                     "2": (0.36, pyunits.dimensionless),
                     "3": (1464.06, pyunits.K),
@@ -430,6 +435,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (51.46, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (4.985, pyunits.kmol * pyunits.m**-3),
                     "2": (0.36, pyunits.dimensionless),
                     "3": (1464.06, pyunits.K),
@@ -459,6 +465,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (51.48, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (4.519, pyunits.kmol * pyunits.m**-3),
                     "2": (0.444, pyunits.dimensionless),
                     "3": (988.9, pyunits.K),
@@ -488,6 +495,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (85.92, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (4.519, pyunits.kmol * pyunits.m**-3),
                     "2": (0.444, pyunits.dimensionless),
                     "3": (988.9, pyunits.K),
@@ -517,6 +525,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (120.365, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (4.519, pyunits.kmol * pyunits.m**-3),
                     "2": (0.444, pyunits.dimensionless),
                     "3": (988.9, pyunits.K),

@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 import numpy as np
@@ -33,11 +32,11 @@ from idaes.core import (
     MomentumBalanceType,
     ControlVolume0DBlock,
 )
-from watertap.property_models.ion_DSPMDE_prop_pack import (
-    DSPMDEParameterBlock,
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
     ActivityCoefficientModel,
     DensityCalculation,
-    DSPMDEStateBlock,
+    MCASStateBlock,
 )
 from watertap.unit_models.nanofiltration_DSPMDE_0D import (
     NanofiltrationDSPMDE0D,
@@ -60,7 +59,10 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
 )
 from idaes.core.util.initialization import propagate_state
-from idaes.generic_models.unit_models import Feed
+from idaes.models.unit_models import (
+    Feed,
+)
+import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -71,9 +73,16 @@ solver = get_solver()
 def test_config_with_CP():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
         charge={"Ca_2+": 2, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
+        diffusivity_data={
+            ("Liq", "Ca_2+"): 9.2e-10,
+            ("Liq", "SO4_2-"): 1.06e-09,
+            ("Liq", "Mg_2+"): 7.06e-10,
+            ("Liq", "Na_+"): 1.33e-09,
+            ("Liq", "Cl_-"): 2.03e-09,
+        },
     )
     m.fs.unit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
 
@@ -114,9 +123,16 @@ def test_config_with_CP():
 def test_config_without_CP():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
         charge={"Ca_2+": 2, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
+        diffusivity_data={
+            ("Liq", "Ca_2+"): 9.2e-10,
+            ("Liq", "SO4_2-"): 1.06e-09,
+            ("Liq", "Mg_2+"): 7.06e-10,
+            ("Liq", "Na_+"): 1.33e-09,
+            ("Liq", "Cl_-"): 2.03e-09,
+        },
     )
     m.fs.unit = NanofiltrationDSPMDE0D(
         property_package=m.fs.properties,
@@ -159,7 +175,7 @@ class TestNanoFiltration_with_CP_5ions:
     def NF_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(
+        m.fs.properties = MCASParameterBlock(
             solute_list=["Ca_2+", "SO4_2-", "Mg_2+", "Na_+", "Cl_-"],
             diffusivity_data={
                 ("Liq", "Ca_2+"): 9.2e-10,
@@ -281,21 +297,21 @@ class TestNanoFiltration_with_CP_5ions:
         # feed side
         for sb_str in cv_stateblock_lst:
             sb = getattr(m.fs.unit.feed_side, sb_str)
-            assert isinstance(sb, DSPMDEStateBlock)
+            assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
         for (obj_str, obj_type) in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
-        assert isinstance(m.fs.unit.permeate_side, DSPMDEStateBlock)
-        assert isinstance(m.fs.unit.mixed_permeate, DSPMDEStateBlock)
+        assert isinstance(m.fs.unit.permeate_side, MCASStateBlock)
+        assert isinstance(m.fs.unit.mixed_permeate, MCASStateBlock)
         # membrane
-        assert isinstance(m.fs.unit.pore_entrance, DSPMDEStateBlock)
-        assert isinstance(m.fs.unit.pore_exit, DSPMDEStateBlock)
+        assert isinstance(m.fs.unit.pore_entrance, MCASStateBlock)
+        assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 561
+        assert number_variables(m) == 566
         assert number_total_constraints(m) == 526
         assert number_unused_variables(m) == 11
 
@@ -416,7 +432,7 @@ class TestNanoFiltration_without_CP_5ions:
     def NF_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(
+        m.fs.properties = MCASParameterBlock(
             solute_list=["Ca_2+", "SO4_2-", "Mg_2+", "Na_+", "Cl_-"],
             diffusivity_data={
                 ("Liq", "Ca_2+"): 9.2e-10,
@@ -540,21 +556,21 @@ class TestNanoFiltration_without_CP_5ions:
         # feed side
         for sb_str in cv_stateblock_lst:
             sb = getattr(m.fs.unit.feed_side, sb_str)
-            assert isinstance(sb, DSPMDEStateBlock)
+            assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
         for (obj_str, obj_type) in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
-        assert isinstance(m.fs.unit.permeate_side, DSPMDEStateBlock)
-        assert isinstance(m.fs.unit.mixed_permeate, DSPMDEStateBlock)
+        assert isinstance(m.fs.unit.permeate_side, MCASStateBlock)
+        assert isinstance(m.fs.unit.mixed_permeate, MCASStateBlock)
         # membrane
-        assert isinstance(m.fs.unit.pore_entrance, DSPMDEStateBlock)
-        assert isinstance(m.fs.unit.pore_exit, DSPMDEStateBlock)
+        assert isinstance(m.fs.unit.pore_entrance, MCASStateBlock)
+        assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 527
+        assert number_variables(m) == 532
         assert number_total_constraints(m) == 494
         assert number_unused_variables(m) == 11
 
@@ -675,7 +691,7 @@ class TestNanoFiltration_with_CP_2ions:
     def NF_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(
+        m.fs.properties = MCASParameterBlock(
             solute_list=["Na_+", "Cl_-"],
             diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
             mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
@@ -775,21 +791,21 @@ class TestNanoFiltration_with_CP_2ions:
         # feed side
         for sb_str in cv_stateblock_lst:
             sb = getattr(m.fs.unit.feed_side, sb_str)
-            assert isinstance(sb, DSPMDEStateBlock)
+            assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
         for (obj_str, obj_type) in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
-        assert isinstance(m.fs.unit.permeate_side, DSPMDEStateBlock)
-        assert isinstance(m.fs.unit.mixed_permeate, DSPMDEStateBlock)
+        assert isinstance(m.fs.unit.permeate_side, MCASStateBlock)
+        assert isinstance(m.fs.unit.mixed_permeate, MCASStateBlock)
         # membrane
-        assert isinstance(m.fs.unit.pore_entrance, DSPMDEStateBlock)
-        assert isinstance(m.fs.unit.pore_exit, DSPMDEStateBlock)
+        assert isinstance(m.fs.unit.pore_entrance, MCASStateBlock)
+        assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 318
+        assert number_variables(m) == 320
         assert number_total_constraints(m) == 286
         assert number_unused_variables(m) == 11
 
@@ -904,7 +920,7 @@ class TestNanoFiltration_without_CP_2ions:
     def NF_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(
+        m.fs.properties = MCASParameterBlock(
             solute_list=["Na_+", "Cl_-"],
             diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
             mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
@@ -1006,21 +1022,21 @@ class TestNanoFiltration_without_CP_2ions:
         # feed side
         for sb_str in cv_stateblock_lst:
             sb = getattr(m.fs.unit.feed_side, sb_str)
-            assert isinstance(sb, DSPMDEStateBlock)
+            assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
         for (obj_str, obj_type) in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
-        assert isinstance(m.fs.unit.permeate_side, DSPMDEStateBlock)
-        assert isinstance(m.fs.unit.mixed_permeate, DSPMDEStateBlock)
+        assert isinstance(m.fs.unit.permeate_side, MCASStateBlock)
+        assert isinstance(m.fs.unit.mixed_permeate, MCASStateBlock)
         # membrane
-        assert isinstance(m.fs.unit.pore_entrance, DSPMDEStateBlock)
-        assert isinstance(m.fs.unit.pore_exit, DSPMDEStateBlock)
+        assert isinstance(m.fs.unit.pore_entrance, MCASStateBlock)
+        assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 302
+        assert number_variables(m) == 304
         assert number_total_constraints(m) == 272
         assert number_unused_variables(m) == 11
 
@@ -1126,7 +1142,7 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
     def NF_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(
+        m.fs.properties = MCASParameterBlock(
             solute_list=["Ca_2+", "SO4_2-", "Mg_2+", "Na_+", "Cl_-"],
             diffusivity_data={
                 ("Liq", "Ca_2+"): 9.2e-10,
@@ -1248,21 +1264,21 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         # feed side
         for sb_str in cv_stateblock_lst:
             sb = getattr(m.fs.unit.feed_side, sb_str)
-            assert isinstance(sb, DSPMDEStateBlock)
+            assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
         for (obj_str, obj_type) in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
-        assert isinstance(m.fs.unit.permeate_side, DSPMDEStateBlock)
-        assert isinstance(m.fs.unit.mixed_permeate, DSPMDEStateBlock)
+        assert isinstance(m.fs.unit.permeate_side, MCASStateBlock)
+        assert isinstance(m.fs.unit.mixed_permeate, MCASStateBlock)
         # membrane
-        assert isinstance(m.fs.unit.pore_entrance, DSPMDEStateBlock)
-        assert isinstance(m.fs.unit.pore_exit, DSPMDEStateBlock)
+        assert isinstance(m.fs.unit.pore_entrance, MCASStateBlock)
+        assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 561
+        assert number_variables(m) == 566
         assert number_total_constraints(m) == 526
         assert number_unused_variables(m) == 11
 
@@ -1382,7 +1398,7 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
 def test_inverse_solve():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Cl_-"],
         diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
         mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
@@ -1511,7 +1527,7 @@ def test_inverse_solve():
 def test_mass_transfer_coeff_fixed():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Cl_-"],
         diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
         mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
@@ -1641,7 +1657,7 @@ def test_mass_transfer_coeff_fixed():
 def test_mass_transfer_CP_config_errors():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Cl_-"],
         diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
         mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
@@ -1699,7 +1715,7 @@ def test_pressure_recovery_step_2_ions():
     "Test optimal termination across a range of pressures and recovery rates for 2 ion system"
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Cl_-"],
         diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
         mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
@@ -1789,8 +1805,8 @@ def calc_scale(value):
 def test_pressure_recovery_step_5_ions():
     "Test optimal termination across a range of pressures and recovery rates for 5 ion system"
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    default = {
+    m.fs = FlowsheetBlock(dynamic=False)
+    property_kwds = {
         "solute_list": [
             "Ca_2+",
             "SO4_2-",
@@ -1831,11 +1847,11 @@ def test_pressure_recovery_step_5_ions():
         "density_calculation": DensityCalculation.constant,
     }
 
-    m.fs.properties = DSPMDEParameterBlock(default=default)
+    m.fs.properties = MCASParameterBlock(**property_kwds)
 
-    m.fs.feed = Feed(default={"property_package": m.fs.properties})
+    m.fs.feed = Feed(property_package=m.fs.properties)
 
-    m.fs.nfUnit = NanofiltrationDSPMDE0D(default={"property_package": m.fs.properties})
+    m.fs.nfUnit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
 
     m.fs.feed_to_nf = Arc(source=m.fs.feed.outlet, destination=m.fs.nfUnit.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)

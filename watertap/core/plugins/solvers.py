@@ -1,17 +1,17 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pyomo.environ as pyo
+from pyomo.opt import WriterFactory
 from pyomo.core.base.block import _BlockData
 from pyomo.core.kernel.block import IBlock
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
@@ -25,6 +25,7 @@ from idaes.core.util.scaling import (
 from idaes.logger import getLogger
 
 _log = getLogger("watertap.core")
+_default_nl_writer = WriterFactory.get_class("nl")
 
 
 @pyo.SolverFactory.register(
@@ -54,6 +55,9 @@ class IpoptWaterTAP(IPOPT):
             self.options["tol"] = 1e-08
         if "constr_viol_tol" not in self.options:
             self.options["constr_viol_tol"] = 1e-08
+
+        # temporarily switch to nl_v1 writer
+        WriterFactory.register("nl")(WriterFactory.get_class("nl_v1"))
 
         if not self._is_user_scaling():
             self._cleanup_needed = False
@@ -148,6 +152,7 @@ class IpoptWaterTAP(IPOPT):
             raise
 
     def _cleanup(self):
+        WriterFactory.register("nl")(_default_nl_writer)
         if self._cleanup_needed:
             self._reset_scaling_factors()
             self._reset_bounds()

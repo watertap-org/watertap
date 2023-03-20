@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -23,14 +22,14 @@ from pyomo.environ import (
     units as pyunits,
 )
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
     MaterialBalanceType,
     MomentumBalanceType,
+    EnergyBalanceType,
     UnitModelBlockData,
     useDefault,
 )
@@ -41,7 +40,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.core import InitializationMixin
+from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 __author__ = "Austin Ladshaw"
 
@@ -100,23 +99,33 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
         ),
     )
 
-    # NOTE: This option is temporarily disabled
-    '''
-    CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.useDefault,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed,
-    **default** - EnergyBalanceType.useDefault.
-    **Valid values:** {
+    CONFIG.declare(
+        "is_isothermal",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="""Assume isothermal conditions for control volume(s); energy_balance_type must be EnergyBalanceType.none,
+    **default** - True.""",
+        ),
+    )
+
+    CONFIG.declare(
+        "energy_balance_type",
+        ConfigValue(
+            default=EnergyBalanceType.none,
+            domain=In(EnergyBalanceType),
+            description="Energy balance construction flag",
+            doc="""Indicates what type of energy balance should be constructed,
+    **default** - EnergyBalanceType.none.
     **EnergyBalanceType.useDefault - refer to property package for default
     balance type
     **EnergyBalanceType.none** - exclude energy balances,
     **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
     **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
     **EnergyBalanceType.energyTotal** - single energy balance for material,
-    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    '''
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}""",
+        ),
+    )
 
     CONFIG.declare(
         "momentum_balance_type",
@@ -196,6 +205,15 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
         ),
     )
 
+    def _validate_config(self):
+        if (
+            self.config.is_isothermal
+            and self.config.energy_balance_type != EnergyBalanceType.none
+        ):
+            raise ConfigurationError(
+                "If the isothermal assumption is used then the energy balance type must be none"
+            )
+
     def build(self):
         # build always starts by calling super().build()
         # This triggers a lot of boilerplate in the background for you
@@ -206,6 +224,9 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
 
         # Next, get the base units of measurement from the property definition
         units_meta = self.config.property_package.get_metadata().get_derived_units
+
+        # Check configs for errors
+        self._validate_config()
 
         # check the optional config arg 'chemical_additives'
         common_msg = (
@@ -222,9 +243,12 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
             + "     }, \n"
             + "}\n\n"
         )
+
+        # Populate temp dicts for parameter and variable setting
         mw_adds = {}
         mw_salts = {}
         molar_rat = {}
+
         for j in self.config.chemical_additives:
             if type(self.config.chemical_additives[j]) != dict:
                 raise ConfigurationError(
@@ -275,7 +299,6 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
                     + common_msg
                 )
 
-            # Populate temp dicts for parameter and variable setting
             mw_adds[j] = pyunits.convert_value(
                 self.config.chemical_additives[j]["parameter_data"]["mw_additive"][0],
                 from_units=self.config.chemical_additives[j]["parameter_data"][
@@ -490,12 +513,13 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
 
-        # NOTE: This checks for if an energy_balance_type is defined
-        if hasattr(self.config, "energy_balance_type"):
-            self.control_volume.add_energy_balances(
-                balance_type=self.config.energy_balance_type,
-                has_enthalpy_transfer=False,
-            )
+        self.control_volume.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.is_isothermal:
+            self.control_volume.add_isothermal_assumption()
 
         self.control_volume.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=False
@@ -527,17 +551,6 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
                     [p for p in self.config.property_package._phase_component_set]
                 )
             )
-
-        # -------- Add constraints ---------
-        # Adds isothermal constraint if no energy balance present
-        if not hasattr(self.config, "energy_balance_type"):
-
-            @self.Constraint(self.flowsheet().config.time, doc="Isothermal condition")
-            def eq_isothermal(self, t):
-                return (
-                    self.control_volume.properties_out[t].temperature
-                    == self.control_volume.properties_in[t].temperature
-                )
 
         # Constraint for tss loss rate based on measured final turbidity
         self.tss_loss_rate = Var(
@@ -849,7 +862,7 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
 
     # initialize method
     def initialize_build(
-        blk,
+        self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -870,14 +883,14 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize holdup block
-        flags = blk.control_volume.initialize(
+        flags = self.control_volume.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -889,16 +902,16 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.control_volume.release_state(flags, outlvl + 1)
+        self.control_volume.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 from pyomo.environ import (
@@ -62,12 +61,12 @@ def test_config():
     m.fs.properties = props.PropParameterBlock()
     m.fs.unit = NanofiltrationZO(property_package=m.fs.properties)
 
-    assert len(m.fs.unit.config) == 8
+    assert len(m.fs.unit.config) == 9
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
-    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.useDefault
+    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
     assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.has_pressure_change
     assert m.fs.unit.config.property_package is m.fs.properties

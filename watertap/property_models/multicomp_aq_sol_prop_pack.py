@@ -1,18 +1,21 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
-Initial property package for multi-ionic system for use in the
-Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE)
+This property package computes a multi-component aqueous solution that can
+contain ionic and/or neutral solute species. It supports basic calculation 
+of component quanitities and some physical, chemical and electrical properties. 
+
+This property package was formerly named as "ion_DSPMDE_prop_pack" for its use of
+Donnan Steric Pore Model with Dielectric Exclusion (DSPMDE).
 """
 
 # TODO:
@@ -51,7 +54,7 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Solute, Solvent, Cation, Anion
+from idaes.core.base.components import Component, Ion, Solute, Solvent, Cation, Anion
 from idaes.core.base.phases import AqueousPhase
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
@@ -67,6 +70,7 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
+from watertap.core.util.scaling import transform_property_constraints
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -80,9 +84,12 @@ class ActivityCoefficientModel(Enum):
 class DensityCalculation(Enum):
     constant = auto()  # constant @ 1000 kg/m3
     seawater = auto()  # seawater correlation for TDS from Sharqawy
-    laliberte = (
-        auto()
-    )  # Laliberte correlation using apparent density #TODO add this later with reference
+    # TODO: add laliberte mixing correlation and/or ideal aqueous solution rule
+
+
+class DiffusivityCalculation(Enum):
+    none = auto()
+    HaydukLaudie = auto()
 
 
 class ElectricalMobilityCalculation(Enum):
@@ -100,8 +107,8 @@ class TransportNumberCalculation(Enum):
     ElectricalMobility = auto()
 
 
-@declare_process_block_class("DSPMDEParameterBlock")
-class DSPMDEParameterData(PhysicalParameterBlock):
+@declare_process_block_class("MCASParameterBlock")
+class MCASParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     CONFIG.declare(
@@ -122,6 +129,14 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             default={},
             domain=dict,
             description="Dict of solute species names and bulk ion diffusivity data",
+        ),
+    )
+    CONFIG.declare(
+        "molar_volume_data",
+        ConfigValue(
+            default={},
+            domain=dict,
+            description="Dict of solute species names and molar volume of aqueous species",
         ),
     )
     CONFIG.declare(
@@ -189,9 +204,27 @@ class DSPMDEParameterData(PhysicalParameterBlock):
        .. csv-table::
            :header: "Configuration Options", "Description"
 
-           "``DensityCalculation.constant``", "Solution density assumed constant at 1000 kg/m3"
+           "``DensityCalculation.constant``", "Solution density assumed constant at 1000 kg/m3 by default in dens_mass_const parameter"
            "``DensityCalculation.seawater``", "Solution density based on correlation for seawater (TDS)"
-           "``DensityCalculation.laliberte``", "Solution density based on mixing correlation from Laliberte"
+       """,
+        ),
+    )
+    CONFIG.declare(
+        "diffus_calculation",
+        ConfigValue(
+            default=DiffusivityCalculation.none,
+            domain=In(DiffusivityCalculation),
+            description="Diffusivity calculation flag",
+            doc="""
+           Options to account for ionic or molecular diffusivity.
+
+           **default** - ``DiffusivityCalculation.none``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``DiffusivityCalculation.none``", "Users provide data via the diffusivity_data configuration"
+           "``DiffusivityCalculation.HaydukLaudie``", "Allow the nonelectrolyte (neutral) species to get diffusivity from the Hayduk Laudie equation"
        """,
         ),
     )
@@ -261,24 +294,33 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         """
         super().build()
 
-        self._state_block_class = DSPMDEStateBlock
+        self._state_block_class = MCASStateBlock
 
         # phases
         self.Liq = AqueousPhase()
 
         # list to hold all species (including water)
-        self.component_list = Set()
+        self.component_list = Set(dimen=1)
 
         # components
         self.H2O = Solvent()
 
-        # blank sets
-        self.cation_set = Set()
-        self.anion_set = Set()
-        self.solute_set = Set()
-        self.ion_set = Set()
+        # Other component sets
+        self.solute_set = Set(dimen=1)  # All components except Solvent() ("H2O")
+        self.cation_set = Set(dimen=1)  # Components with charge >0
+        self.anion_set = Set(dimen=1)  # Components with charge <0
+        self.neutral_set = Set(dimen=1)  # Components with charge =0
+        self.ion_set = Set(dimen=1)  # All Ion Components (cations + anions)
 
+        # Group components into different sets
         for j in self.config.solute_list:
+            if j == "H2O":
+                raise ConfigurationError(
+                    "'H2O'is reserved as the default solvent and cannot be a solute."
+                )
+            # Add valid members of solute_list into IDAES's Solute() class.
+            # This triggers the addition of j into component_list and solute_set.
+            self.add_component(j, Solute())
             if j in self.config.charge:
                 if self.config.charge[j] == 0:
                     raise ConfigurationError(
@@ -286,22 +328,26 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                             j
                         )
                     )
-                elif self.config.charge[j] > 0:
+                if self.config.charge[j] > 0:
+                    # Run a "del_component" and "add_component" to move ion j from IDAES's Solute to Cation class.
+                    # Ion j has to be added into Solute to be registered in the compolist and solute_set.
+                    # Reference to idaes.core.base.components.
+                    self.del_component(j)
                     self.add_component(
-                        str(j),
+                        j,
                         Cation(charge=self.config.charge[j], _electrolyte=True),
                     )
-                    self.component_list.add(str(j))
-                    self.ion_set.add(str(j))
+                    self.ion_set.add(j)
                 else:
+                    # The same to the notes above goes for anions.
+                    self.del_component(j)
                     self.add_component(
-                        str(j),
+                        j,
                         Anion(charge=self.config.charge[j], _electrolyte=True),
                     )
-                    self.component_list.add(str(j))
-                    self.ion_set.add(str(j))
+                    self.ion_set.add(j)
             else:
-                self.add_component(str(j), Solute())
+                self.neutral_set.add(j)
 
         # reference
         # Todo: enter any relevant references
@@ -318,21 +364,21 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         )
         # Stokes radius
         self.radius_stokes_comp = Param(
-            self.ion_set | self.solute_set,
+            self.solute_set,
             mutable=True,
             default=1e-10,
             initialize=self.config.stokes_radius_data,
             units=pyunits.m,
             doc="Stokes radius of solute",
         )
-        self.diffus_phase_comp = Param(
+        self.molar_volume_phase_comp = Param(
             self.phase_list,
-            self.ion_set | self.solute_set,
+            self.solute_set,
             mutable=True,
-            default=1e-9,
-            initialize=self.config.diffusivity_data,
-            units=pyunits.m**2 * pyunits.s**-1,
-            doc="Bulk diffusivity of ion",
+            default=1e-5,
+            initialize=self.config.molar_volume_data,
+            units=pyunits.m**3 / pyunits.mol,
+            doc="molar volume of solutes",
         )
         self.visc_d_phase = Param(
             self.phase_list,
@@ -352,6 +398,29 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             units=pyunits.dimensionless,
             doc="Ion charge",
         )
+
+        if self.config.diffus_calculation == DiffusivityCalculation.none:
+            # Retrieve component string names from user-provided diffusivity_data configuration
+            diffus_data_indices = [i[1] for i in self.config.diffusivity_data.keys()]
+            # identify component string names that were not specified in diffusivity_data
+            missing_diffus_ind = [
+                i for i in self.solute_set if i not in diffus_data_indices
+            ]
+            # warning for components with no diffusivity_data entry
+            if not missing_diffus_ind == []:
+                _log.warning(
+                    f"Diffusivity data was not provided for {missing_diffus_ind}. "
+                )
+
+            self.diffus_phase_comp = Var(
+                self.phase_list,
+                self.solute_set,
+                initialize=self.config.diffusivity_data,
+                units=pyunits.m**2 * pyunits.s**-1,
+                doc="Mass diffusivity of solute components",
+            )
+            self.diffus_phase_comp.fix()
+
         # Dielectric constant of water
         self.dielectric_constant = Param(
             mutable=True,
@@ -368,7 +437,17 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             doc="Debye Huckel constant b",
         )
 
-        # Mass density parameters, eq. 8 in Sharqawy et al. (2010)
+        # Mass density
+        # For constant density
+        self.dens_mass_const = Param(
+            mutable=True,
+            default=1000,
+            initialize=1000,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Mass density used in DensityCalculation.constant",
+        )
+
+        # Parameters for seawater density, eq. 8 in Sharqawy et al. (2010)
         dens_units = pyunits.kg / pyunits.m**3
         t_inv_units = pyunits.K**-1
 
@@ -458,13 +537,13 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                 "conc_equiv_phase_comp": {"method": "_conc_equiv_phase_comp"},
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
-                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
                 "flow_vol": {"method": "_flow_vol"},
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
                 "conc_mol_phase_comp": {"method": "_conc_mol_phase_comp"},
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
                 "molality_phase_comp": {"method": "_molality_phase_comp"},
+                "molar_volume_phase_comp": {"method": "_molar_volume_phase_comp"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
                 "visc_k_phase": {"method": "_visc_k_phase"},
@@ -477,6 +556,12 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                 "elec_cond_phase": {"method": "_elec_cond_phase"},
                 "charge_comp": {"method": "_charge_comp"},
                 "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
+                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
                 "dielectric_constant": {"method": "_dielectric_constant"},
                 "debye_huckel_constant": {"method": "_debye_huckel_constant"},
                 "ionic_strength_molal": {"method": "_ionic_strength_molal"},
@@ -494,10 +579,10 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         )
 
 
-class _DSPMDEStateBlock(StateBlock):
+class _MCASStateBlock(StateBlock):
     """
-    This Class contains methods which should be applied to Property Blocks as a
-    whole, rather than individual elements of indexed Property Blocks.
+    This Class contains methods which should be applied to Property Blocks as a whole, rather
+    than individual elements of indexed Property Blocks.
     """
 
     def initialize(
@@ -511,44 +596,38 @@ class _DSPMDEStateBlock(StateBlock):
     ):
         """
         Initialization routine for property package.
+
         Keyword Arguments:
             state_args : Dictionary with initial guesses for the state vars
-                         chosen. Note that if this method is triggered
-                         through the control volume, and if initial guesses
-                         were not provided at the unit model level, the
-                         control volume passes the inlet values as initial
-                         guess.The keys for the state_args dictionary are:
-
-                         flow_mol_phase_comp : value at which to initialize
-                                               phase component flows
-                         pressure : value at which to initialize pressure
-                         temperature : value at which to initialize temperature
+                         chosen. Note that if this method is triggered through the control
+                         volume, and if initial guesses were not provided at the unit model
+                         level, the control volume passes the inlet values as initial guess.
+                         The keys for the state_args dictionary are:
+                         flow_mol_phase_comp : value to initialize phase component flows;
+                         pressure : value at which to initialize pressure;
+                         temperature : value at which to initialize temperature.
             outlvl : sets output level of initialization routine (default=idaeslog.NOTSET)
             optarg : solver options dictionary object (default=None)
-            state_vars_fixed: Flag to denote if state vars have already been
-                              fixed.
-                              - True - states have already been fixed by the
-                                       control volume 1D. Control volume 0D
-                                       does not fix the state vars, so will
-                                       be False if this state block is used
-                                       with 0D blocks.
-                             - False - states have not been fixed. The state
-                                       block will deal with fixing/unfixing.
-            solver : Solver object to use during initialization if None is provided
-                     it will use the default solver for IDAES (default = None)
+            state_vars_fixed : Flag to denote if state vars have already
+                               been fixed.
+                               - True - states have already been fixed by the control volume
+                               1D. Control volume 0D does not fix the state vars, so will be
+                               False if this state block is used with 0D blocks.
+                               - False - states have not been fixed. The state block will deal
+                               with fixing/unfixing.
+            solver : Solver object to use during initialization. If None
+                     is provided, it will use the default solver for IDAES (default = None)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states variables are not unfixed, and
-                                 a dict of returned containing flags for
-                                 which states were fixed during
-                                 initialization.
-                        - False - state variables are unfixed after
-                                 initialization by calling the
-                                 release_state method
+                         - True - state variables are not unfixed, and a dict of returned
+                         containing flags for which states were fixed during initialization.
+                         - False - state variables are unfixed after initialization by calling
+                         the release_state method.
+
         Returns:
-            If hold_states is True, returns a dict containing flags for
-            which states were fixed during initialization.
+            If hold_states is True, returns a dict containing flags for which states were fixed
+            during initialization.
         """
         # Get loggers
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
@@ -599,8 +678,8 @@ class _DSPMDEStateBlock(StateBlock):
                         )
                     )
 
-            # Vars indexed by ion_set | solute_set
-            for j in self[k].params.ion_set | self[k].params.solute_set:
+            # Vars indexed by solute_set
+            for j in self[k].params.solute_set:
                 if self[k].is_property_constructed("molality_phase_comp"):
                     self[k].molality_phase_comp["Liq", j].set_value(
                         self[k].flow_mol_phase_comp["Liq", j]
@@ -651,14 +730,14 @@ class _DSPMDEStateBlock(StateBlock):
                     * sum(
                         self[k].charge_comp[j] ** 2
                         * self[k].molality_phase_comp["Liq", j]
-                        for j in self[k].params.ion_set | self[k].params.solute_set
+                        for j in self[k].params.solute_set
                     )
                 )
             if self[k].is_property_constructed("pressure_osm_phase"):
                 self[k].pressure_osm_phase["Liq"].set_value(
                     sum(
                         self[k].conc_mol_phase_comp["Liq", j]
-                        for j in self[k].params.ion_set | self[k].params.solute_set
+                        for j in self[k].params.solute_set
                     )
                     * Constants.gas_constant
                     * self[k].temperature
@@ -712,28 +791,28 @@ class _DSPMDEStateBlock(StateBlock):
         skip_solve = True  # skip solve if only state variables are present
         for k in self.keys():
             if number_unfixed_variables(self[k]) != 0:
-
                 skip_solve = False
 
         if not skip_solve:
             # Initialize properties
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = solve_indexed_blocks(opt, [self], tee=slc.tee)
-                if not check_optimal_termination(results):
-                    raise InitializationError(
-                        "The property package failed to solve during initialization."
-                    )
             init_log.info_high(
                 "Property initialization: {}.".format(idaeslog.condition(results))
             )
 
-        # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
                 self.release_state(flags)
+
+        if (not skip_solve) and (not check_optimal_termination(results)):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please "
+                f"check the output logs for more information."
+            )
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
@@ -760,20 +839,23 @@ class _DSPMDEStateBlock(StateBlock):
         optarg=None,
     ):
         """
-        Solves state blocks given a set of variables and their values. These variables can
-        be state variables or properties. This method is typically used before
-        initialization to solve for state variables because non-state variables (i.e. properties)
-        cannot be fixed in initialization routines.
+        Solves state blocks given a set of variables and their values. These variables can be
+        state variables or properties. This method is typically used before initialization to
+        solve for state variables because non-state variables (i.e. properties) cannot be fixed
+        in initialization routines.
 
         Keyword Arguments:
-            var_args : dictionary with variables and their values, they can be state variables or properties
+            var_args : dictionary with variables and their values, they
+                       can be state variables or properties
                        {(VAR_NAME, INDEX): VALUE}
-            hold_state : flag indicating whether all of the state variables should be fixed after calculate state.
+            hold_state : flag indicating whether all of the state
+                         variables should be fixed after calculate state.
                          True - State variables will be fixed.
                          False - State variables will remain unfixed, unless already fixed.
-            outlvl : idaes logger object that sets output level of solve call (default=idaeslog.NOTSET)
-            solver : solver name string if None is provided the default solver
-                     for IDAES will be used (default = None)
+            outlvl : idaes logger object that sets output level of solve
+                     call (default=idaeslog.NOTSET)
+            solver : solver name string if None is provided the default
+                     solver for IDAES will be used (default = None)
             optarg : solver options dictionary object (default={})
 
         Returns:
@@ -861,8 +943,8 @@ class _DSPMDEStateBlock(StateBlock):
         return results
 
 
-@declare_process_block_class("DSPMDEStateBlock", block_class=_DSPMDEStateBlock)
-class DSPMDEStateBlockData(StateBlockData):
+@declare_process_block_class("MCASStateBlock", block_class=_MCASStateBlock)
+class MCASStateBlockData(StateBlockData):
     def build(self):
         """Callable method for Block construction."""
         super().build()
@@ -908,15 +990,15 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Mass fraction",
         )
 
-        def rule_mass_frac_phase_comp(b, j):
-            return b.mass_frac_phase_comp["Liq", j] == b.flow_mass_phase_comp[
-                "Liq", j
-            ] / sum(
-                b.flow_mass_phase_comp["Liq", j] for j in self.params.component_list
+        def rule_mass_frac_phase_comp(b, p, j):
+            return b.mass_frac_phase_comp[p, j] == b.flow_mass_phase_comp[p, j] / sum(
+                b.flow_mass_phase_comp[p, j] for j in self.params.component_list
             )
 
         self.eq_mass_frac_phase_comp = Constraint(
-            self.params.component_list, rule=rule_mass_frac_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_mass_frac_phase_comp,
         )
 
     def _dens_mass_phase(self):
@@ -928,16 +1010,16 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Mass density",
         )
         # TODO: reconsider this approach for solution density based on arbitrary solute_list
-        def rule_dens_mass_phase(b):
+        def rule_dens_mass_phase(b, p):
             if b.params.config.density_calculation == DensityCalculation.constant:
-                return b.dens_mass_phase["Liq"] == 1000 * pyunits.kg * pyunits.m**-3
+                add_object_reference(
+                    self, "dens_mass_const", self.params.dens_mass_const
+                )
+                return b.dens_mass_phase[p] == self.dens_mass_const
             elif b.params.config.density_calculation == DensityCalculation.seawater:
                 # density, eq. 8 in Sharqawy #TODO- add Sharqawy reference
                 t = b.temperature - 273.15 * pyunits.K
-                s = sum(
-                    b.mass_frac_phase_comp["Liq", j]
-                    for j in b.params.ion_set | b.params.solute_set
-                )
+                s = sum(b.mass_frac_phase_comp[p, j] for j in b.params.solute_set)
                 dens_mass = (
                     b.dens_mass_solvent
                     + b.params.dens_mass_param_B1 * s
@@ -946,9 +1028,9 @@ class DSPMDEStateBlockData(StateBlockData):
                     + b.params.dens_mass_param_B4 * s * t**3
                     + b.params.dens_mass_param_B5 * s**2 * t**2
                 )
-                return b.dens_mass_phase["Liq"] == dens_mass
+                return b.dens_mass_phase[p] == dens_mass
 
-        self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
+        self.eq_dens_mass_phase = Constraint(["Liq"], rule=rule_dens_mass_phase)
 
     def _dens_mass_solvent(self):
         self.dens_mass_solvent = Var(
@@ -980,17 +1062,19 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Volumetric flow rate",
         )
 
-        def rule_flow_vol_phase(b):
+        def rule_flow_vol_phase(b, p):
             return (
-                b.flow_vol_phase["Liq"]
+                b.flow_vol_phase[p]
                 == sum(
-                    b.flow_mol_phase_comp["Liq", j] * b.mw_comp[j]
+                    b.flow_mol_phase_comp[p, j] * b.mw_comp[j]
                     for j in self.params.component_list
                 )
-                / b.dens_mass_phase["Liq"]
+                / b.dens_mass_phase[p]
             )
 
-        self.eq_flow_vol_phase = Constraint(rule=rule_flow_vol_phase)
+        self.eq_flow_vol_phase = Constraint(
+            self.params.phase_list, rule=rule_flow_vol_phase
+        )
 
     def _flow_vol(self):
         def rule_flow_vol(b):
@@ -1008,14 +1092,16 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Molar concentration",
         )
 
-        def rule_conc_mol_phase_comp(b, j):
+        def rule_conc_mol_phase_comp(b, p, j):
             return (
-                b.conc_mol_phase_comp["Liq", j] * b.params.mw_comp[j]
-                == b.conc_mass_phase_comp["Liq", j]
+                b.conc_mol_phase_comp[p, j] * b.params.mw_comp[j]
+                == b.conc_mass_phase_comp[p, j]
             )
 
         self.eq_conc_mol_phase_comp = Constraint(
-            self.params.component_list, rule=rule_conc_mol_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_conc_mol_phase_comp,
         )
 
     def _conc_mass_phase_comp(self):
@@ -1028,14 +1114,16 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Mass concentration",
         )
 
-        def rule_conc_mass_phase_comp(b, j):
+        def rule_conc_mass_phase_comp(b, p, j):
             return (
-                b.conc_mass_phase_comp["Liq", j]
-                == b.dens_mass_phase["Liq"] * b.mass_frac_phase_comp["Liq", j]
+                b.conc_mass_phase_comp[p, j]
+                == b.dens_mass_phase[p] * b.mass_frac_phase_comp[p, j]
             )
 
         self.eq_conc_mass_phase_comp = Constraint(
-            self.params.component_list, rule=rule_conc_mass_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_conc_mass_phase_comp,
         )
 
     def _flow_mass_phase_comp(self):
@@ -1048,14 +1136,16 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Component Mass flowrate",
         )
 
-        def rule_flow_mass_phase_comp(b, j):
+        def rule_flow_mass_phase_comp(b, p, j):
             return (
-                b.flow_mass_phase_comp["Liq", j]
-                == b.flow_mol_phase_comp["Liq", j] * b.params.mw_comp[j]
+                b.flow_mass_phase_comp[p, j]
+                == b.flow_mol_phase_comp[p, j] * b.params.mw_comp[j]
             )
 
         self.eq_flow_mass_phase_comp = Constraint(
-            self.params.component_list, rule=rule_flow_mass_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_flow_mass_phase_comp,
         )
 
     def _flow_equiv_phase_comp(self):
@@ -1068,13 +1158,13 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Component equivalent charge flowrate",
         )
 
-        def rule_flow_equiv_phase_comp(b, j):
-
-            return b.flow_equiv_phase_comp["Liq", j] == b.flow_mol_phase_comp[
-                "Liq", j
-            ] * abs(b.params.charge_comp[j])
+        def rule_flow_equiv_phase_comp(b, p, j):
+            return b.flow_equiv_phase_comp[p, j] == b.flow_mol_phase_comp[p, j] * abs(
+                b.params.charge_comp[j]
+            )
 
         self.eq_flow_equiv_phase_comp = Constraint(
+            self.params.phase_list,
             self.params.ion_set,
             rule=rule_flow_equiv_phase_comp,
         )
@@ -1089,13 +1179,14 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Equivalent charge concentration",
         )
 
-        def rule_conc_equiv_phase_comp(b, j):
+        def rule_conc_equiv_phase_comp(b, p, j):
 
-            return b.conc_equiv_phase_comp["Liq", j] == b.conc_mol_phase_comp[
-                "Liq", j
-            ] * abs(b.params.charge_comp[j])
+            return b.conc_equiv_phase_comp[p, j] == b.conc_mol_phase_comp[p, j] * abs(
+                b.params.charge_comp[j]
+            )
 
         self.eq_conc_equiv_phase_comp = Constraint(
+            self.params.phase_list,
             self.params.ion_set,
             rule=rule_conc_equiv_phase_comp,
         )
@@ -1110,35 +1201,39 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Mole fraction",
         )
 
-        def rule_mole_frac_phase_comp(b, j):
-            return b.mole_frac_phase_comp["Liq", j] == b.flow_mol_phase_comp[
-                "Liq", j
-            ] / sum(b.flow_mol_phase_comp["Liq", j] for j in b.params.component_list)
+        def rule_mole_frac_phase_comp(b, p, j):
+            return b.mole_frac_phase_comp[p, j] == b.flow_mol_phase_comp[p, j] / sum(
+                b.flow_mol_phase_comp[p, j] for j in b.params.component_list
+            )
 
         self.eq_mole_frac_phase_comp = Constraint(
-            self.params.component_list, rule=rule_mole_frac_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_mole_frac_phase_comp,
         )
 
     def _molality_phase_comp(self):
         self.molality_phase_comp = Var(
             self.params.phase_list,
-            self.params.ion_set | self.params.solute_set,
+            self.params.solute_set,
             initialize=1,
             bounds=(0, 10),
             units=pyunits.mole / pyunits.kg,
             doc="Molality",
         )
 
-        def rule_molality_phase_comp(b, j):
+        def rule_molality_phase_comp(b, p, j):
             return (
-                b.molality_phase_comp["Liq", j]
-                == b.flow_mol_phase_comp["Liq", j]
-                / b.flow_mol_phase_comp["Liq", "H2O"]
+                b.molality_phase_comp[p, j]
+                == b.flow_mol_phase_comp[p, j]
+                / b.flow_mol_phase_comp[p, "H2O"]
                 / b.params.mw_comp["H2O"]
             )
 
         self.eq_molality_phase_comp = Constraint(
-            self.params.ion_set | self.params.solute_set, rule=rule_molality_phase_comp
+            self.params.phase_list,
+            self.params.solute_set,
+            rule=rule_molality_phase_comp,
         )
 
     def _visc_k_phase(self):
@@ -1150,19 +1245,122 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Kinematic Viscosity",
         )
 
-        def rule_visc_k_phase(b):
-            return (
-                b.visc_d_phase["Liq"]
-                == b.visc_k_phase["Liq"] * b.dens_mass_phase["Liq"]
-            )
+        def rule_visc_k_phase(b, p):
+            return b.visc_d_phase[p] == b.visc_k_phase[p] * b.dens_mass_phase[p]
 
-        self.eq_visc_k_phase = Constraint(rule=rule_visc_k_phase)
+        self.eq_visc_k_phase = Constraint(["Liq"], rule=rule_visc_k_phase)
 
     def _radius_stokes_comp(self):
         add_object_reference(self, "radius_stokes_comp", self.params.radius_stokes_comp)
 
+    def _molar_volume_phase_comp(self):
+        add_object_reference(
+            self, "molar_volume_phase_comp", self.params.molar_volume_phase_comp
+        )
+
     def _diffus_phase_comp(self):
-        add_object_reference(self, "diffus_phase_comp", self.params.diffus_phase_comp)
+        if self.params.config.diffus_calculation == DiffusivityCalculation.HaydukLaudie:
+            # Retrieve component string names from diffusivity_data configuration
+            diffus_data_indices = {
+                i[1] for i in self.params.config.diffusivity_data.keys()
+            }
+            # Retrieve component string names from molar_volume_data configuration
+            molar_volume_data_indices = {
+                i[1] for i in self.params.config.molar_volume_data.keys()
+            }
+            missing_diffus_ind = [
+                i
+                for i in self.params.solute_set
+                if i not in (molar_volume_data_indices | diffus_data_indices)
+            ]
+            # warning for components with neither diffusivity_data nor molar_volume_data entry
+            if not missing_diffus_ind == []:
+                _log.warning(
+                    f"Neither diffusivity_data nor molar_volume_data was provided for {missing_diffus_ind}; "
+                    "there will be no diffus_phase_comp properties for these components."
+                )
+            common_ind = [
+                i for i in molar_volume_data_indices if i in diffus_data_indices
+            ]
+            if not common_ind == []:
+                # warning for components whose diffusivity_data will be overwritten by the HaydukLaudie method.
+                _log.warning(
+                    f"Both diffusivity_data and molar_volume_data were provided for {common_ind}; "
+                    f"since the the HaydukLaudie method was selected, the diffus_phase_comp property of these components will "
+                    f"be calculated based on their molar_volume_data and overwritten."
+                )
+            self.diffus_phase_comp = Var(
+                self.params.phase_list,
+                molar_volume_data_indices | diffus_data_indices,
+                initialize=1e-9,
+                units=pyunits.m**2 * pyunits.s**-1,
+                doc="Mass diffusivity of solute components",
+            )
+            self.hl_diffus_cont = Param(
+                mutable=True,
+                default=13.26e-9,
+                initialize=13.26e-9,
+                units=pyunits.dimensionless,
+                doc="Hayduk Laudie correlation constant",
+            )
+            self.hl_visc_coeff = Param(
+                mutable=True,
+                default=1.14,
+                initialize=1.14,
+                units=pyunits.dimensionless,
+                doc="Hayduk Laudie viscosity coefficient",
+            )
+            self.hl_molar_volume_coeff = Param(
+                mutable=True,
+                default=0.589,
+                initialize=0.589,
+                units=pyunits.dimensionless,
+                doc="Hayduk Laudie molar volume coefficient",
+            )
+
+            def rule_diffus_phase_comp(b, p, j):
+                if (
+                    self.params.config.diffus_calculation
+                    == DiffusivityCalculation.HaydukLaudie
+                ):
+
+                    if j not in molar_volume_data_indices:
+                        b.diffus_phase_comp[p, j].fix(
+                            self.params.config.diffusivity_data[p, j]
+                        )
+                        return Constraint.Skip
+                    else:
+
+                        diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
+                        visc_solvent_inv_units = pyunits.cP**-1
+                        molar_volume_inv_units = pyunits.mol * pyunits.cm**-3
+                        return (b.diffus_phase_comp[p, j] * diffus_coeff_inv_units) * (
+                            (
+                                pyunits.convert(b.visc_d_phase[p], to_units=pyunits.cP)
+                                * visc_solvent_inv_units
+                            )
+                            ** b.hl_visc_coeff
+                        ) * (
+                            (
+                                pyunits.convert(
+                                    b.molar_volume_phase_comp[p, j],
+                                    to_units=pyunits.cm**3 * pyunits.mol**-1,
+                                )
+                                * molar_volume_inv_units
+                            )
+                            ** b.hl_molar_volume_coeff
+                        ) == b.hl_diffus_cont
+
+            self.eq_diffus_phase_comp = Constraint(
+                self.params.phase_list,
+                molar_volume_data_indices | diffus_data_indices,
+                rule=rule_diffus_phase_comp,
+            )
+
+        elif self.params.config.diffus_calculation == DiffusivityCalculation.none:
+            add_object_reference(
+                self, "diffus_phase_comp", self.params.diffus_phase_comp
+            )
 
     def _visc_d_phase(self):
         add_object_reference(self, "visc_d_phase", self.params.visc_d_phase)
@@ -1179,12 +1377,12 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Ion electrical mobility",
         )
 
-        def rule_elec_mobility_phase_comp(b, j):
+        def rule_elec_mobility_phase_comp(b, p, j):
             if (
                 self.params.config.elec_mobility_calculation
                 == ElectricalMobilityCalculation.none
             ):
-                if ("Liq", j) not in self.params.config.elec_mobility_data.keys():
+                if (p, j) not in self.params.config.elec_mobility_data.keys():
                     raise ConfigurationError(
                         """ 
                         Missing the "elec_mobility_data" configuration to build the elec_mobility_phase_comp 
@@ -1196,14 +1394,14 @@ class DSPMDEStateBlockData(StateBlockData):
                     )
                 else:
                     return (
-                        b.elec_mobility_phase_comp["Liq", j]
-                        == self.params.config.elec_mobility_data["Liq", j]
+                        b.elec_mobility_phase_comp[p, j]
+                        == self.params.config.elec_mobility_data[p, j]
                         * pyunits.meter**2
                         * pyunits.volt**-1
                         * pyunits.second**-1
                     )
             else:
-                if ("Liq", j) not in self.params.config.diffusivity_data.keys():
+                if (p, j) not in self.params.config.diffusivity_data.keys():
                     raise ConfigurationError(
                         """
                         Missing a valid diffusivity_data configuration to use EinsteinRelation 
@@ -1214,23 +1412,24 @@ class DSPMDEStateBlockData(StateBlockData):
                         )
                     )
                 else:
-                    if ("Liq", j) in self.params.config.elec_mobility_data.keys():
+                    if (p, j) in self.params.config.elec_mobility_data.keys():
                         _log.warning(
                             """
-                            The provided elec_mobility_data of {} will be overritten 
+                            The provided elec_mobility_data of {} will be overwritten 
                             by the calculated data for {} because the EinsteinRelation 
                             method is selected.""".format(
                                 j, self.name
                             )
                         )
 
-                    return b.elec_mobility_phase_comp["Liq", j] == b.diffus_phase_comp[
-                        "Liq", j
+                    return b.elec_mobility_phase_comp[p, j] == b.diffus_phase_comp[
+                        p, j
                     ] * abs(b.charge_comp[j]) * Constants.faraday_constant / (
                         Constants.gas_constant * b.temperature
                     )
 
         self.eq_elec_mobility_phase_comp = Constraint(
+            self.params.phase_list,
             self.params.ion_set,
             rule=rule_elec_mobility_phase_comp,
         )
@@ -1245,8 +1444,8 @@ class DSPMDEStateBlockData(StateBlockData):
 
     def _act_coeff_phase_comp(self):
         self.act_coeff_phase_comp = Var(
-            self.phase_list,
-            self.params.ion_set | self.params.solute_set,
+            self.params.phase_list,
+            self.params.solute_set,
             initialize=0.7,
             domain=NonNegativeReals,
             bounds=(0, 1.001),
@@ -1254,26 +1453,28 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="activity coefficient of component",
         )
 
-        def rule_act_coeff_phase_comp(b, j):
+        def rule_act_coeff_phase_comp(b, p, j):
             if (
                 b.params.config.activity_coefficient_model
                 == ActivityCoefficientModel.ideal
             ):
-                return b.act_coeff_phase_comp["Liq", j] == 1
+                return b.act_coeff_phase_comp[p, j] == 1
             elif (
                 b.params.config.activity_coefficient_model
                 == ActivityCoefficientModel.davies
             ):
                 I = b.ionic_strength_molal
                 return log(
-                    b.act_coeff_phase_comp["Liq", j]
+                    b.act_coeff_phase_comp[p, j]
                 ) == -b.debye_huckel_constant * b.charge_comp[j] ** 2 * (
                     I**0.5 / (1 * pyunits.mole**0.5 / pyunits.kg**0.5 + I**0.5)
                     - b.params.debye_huckel_b * I
                 )
 
         self.eq_act_coeff_phase_comp = Constraint(
-            self.params.ion_set | self.params.solute_set, rule=rule_act_coeff_phase_comp
+            self.params.phase_list,
+            self.params.solute_set,
+            rule=rule_act_coeff_phase_comp,
         )
 
     # TODO: note- assuming molal ionic strength goes into Debye Huckel relationship;
@@ -1289,7 +1490,7 @@ class DSPMDEStateBlockData(StateBlockData):
         def rule_ionic_strength_molal(b):
             return b.ionic_strength_molal == 0.5 * sum(
                 b.charge_comp[j] ** 2 * b.molality_phase_comp["Liq", j]
-                for j in self.params.ion_set | self.params.solute_set
+                for j in self.params.ion_set
             )
 
         self.eq_ionic_strength_molal = Constraint(rule=rule_ionic_strength_molal)
@@ -1342,18 +1543,17 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="van't Hoff Osmotic pressure",
         )
 
-        def rule_pressure_osm_phase(b):
+        def rule_pressure_osm_phase(b, p):
             return (
-                b.pressure_osm_phase["Liq"]
-                == sum(
-                    b.conc_mol_phase_comp["Liq", j]
-                    for j in self.params.ion_set | self.params.solute_set
-                )
+                b.pressure_osm_phase[p]
+                == sum(b.conc_mol_phase_comp[p, j] for j in self.params.solute_set)
                 * Constants.gas_constant
                 * b.temperature
             )
 
-        self.eq_pressure_osm_phase = Constraint(rule=rule_pressure_osm_phase)
+        self.eq_pressure_osm_phase = Constraint(
+            self.params.phase_list, rule=rule_pressure_osm_phase
+        )
 
     def _trans_num_phase_comp(self):
         self.trans_num_phase_comp = Var(
@@ -1364,12 +1564,12 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Ion transport number in the liquid phase",
         )
 
-        def rule_trans_num_phase_comp(b, j):
+        def rule_trans_num_phase_comp(b, p, j):
             if (
                 self.params.config.trans_num_calculation
                 == TransportNumberCalculation.none
             ):
-                if ("Liq", j) not in self.params.config.trans_num_data.keys():
+                if (p, j) not in self.params.config.trans_num_data.keys():
                     raise ConfigurationError(
                         """ 
                         Missing a valid trans_num_data configuration to build "trans_num_phase_comp" for {} in {}.  
@@ -1380,11 +1580,11 @@ class DSPMDEStateBlockData(StateBlockData):
                     )
                 else:
                     return (
-                        b.trans_num_phase_comp["Liq", j]
-                        == self.params.config.trans_num_data["Liq", j]
+                        b.trans_num_phase_comp[p, j]
+                        == self.params.config.trans_num_data[p, j]
                     )
             else:
-                if ("Liq", j) in self.params.config.trans_num_data.keys():
+                if (p, j) in self.params.config.trans_num_data.keys():
                     _log.warning(
                         """
                         The provided trans_num_data of {} will be overritten by the calculated data for {}
@@ -1392,18 +1592,19 @@ class DSPMDEStateBlockData(StateBlockData):
                             j, self.name
                         )
                     )
-                return b.trans_num_phase_comp["Liq", j] == abs(
+                return b.trans_num_phase_comp[p, j] == abs(
                     b.charge_comp[j]
-                ) * b.elec_mobility_phase_comp["Liq", j] * b.conc_mol_phase_comp[
-                    "Liq", j
+                ) * b.elec_mobility_phase_comp[p, j] * b.conc_mol_phase_comp[
+                    p, j
                 ] / sum(
                     abs(b.charge_comp[j])
-                    * b.elec_mobility_phase_comp["Liq", j]
-                    * b.conc_mol_phase_comp["Liq", j]
+                    * b.elec_mobility_phase_comp[p, j]
+                    * b.conc_mol_phase_comp[p, j]
                     for j in self.params.ion_set
                 )
 
         self.eq_trans_num_phase_comp = Constraint(
+            self.params.phase_list,
             self.params.ion_set,
             rule=rule_trans_num_phase_comp,
         )
@@ -1416,12 +1617,12 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Total equivalent electrical conducitivty of the liquid phase",
         )
 
-        def rule_equiv_conductivity_phase(b):
+        def rule_equiv_conductivity_phase(b, p):
             if (
                 self.params.config.equiv_conductivity_calculation
                 == EquivalentConductivityCalculation.none
             ):
-                if "Liq" not in self.params.config.equiv_conductivity_phase_data.keys():
+                if p not in self.params.config.equiv_conductivity_phase_data.keys():
                     raise ConfigurationError(
                         """ 
                         Missing a valid equiv_conductivity_phase_data configuration to build 
@@ -1441,8 +1642,8 @@ class DSPMDEStateBlockData(StateBlockData):
                             is recommended."""
                         )
                     return (
-                        b.equiv_conductivity_phase["Liq"]
-                        == self.params.config.equiv_conductivity_phase_data["Liq"]
+                        b.equiv_conductivity_phase[p]
+                        == self.params.config.equiv_conductivity_phase_data[p]
                         * pyunits.meter**2
                         * pyunits.ohm**-1
                         * pyunits.mol**-1
@@ -1456,19 +1657,19 @@ class DSPMDEStateBlockData(StateBlockData):
                             self.name
                         )
                     )
-                return b.equiv_conductivity_phase["Liq"] == sum(
+                return b.equiv_conductivity_phase[p] == sum(
                     Constants.faraday_constant
                     * abs(b.charge_comp[j])
-                    * b.elec_mobility_phase_comp["Liq", j]
-                    * b.conc_mol_phase_comp["Liq", j]
+                    * b.elec_mobility_phase_comp[p, j]
+                    * b.conc_mol_phase_comp[p, j]
                     for j in self.params.ion_set
                 ) / sum(
-                    abs(b.charge_comp[j]) * b.conc_mol_phase_comp["Liq", j]
+                    abs(b.charge_comp[j]) * b.conc_mol_phase_comp[p, j]
                     for j in self.params.cation_set
                 )
 
         self.eq_equiv_conductivity_phase = Constraint(
-            rule=rule_equiv_conductivity_phase
+            self.params.phase_list, rule=rule_equiv_conductivity_phase
         )
 
     def _elec_cond_phase(self):
@@ -1479,13 +1680,15 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Electrical conductivity",
         )
 
-        def rule_elec_cond_phase(b):
-            return b.elec_cond_phase["Liq"] == b.equiv_conductivity_phase["Liq"] * sum(
-                abs(b.charge_comp[j]) * b.conc_mol_phase_comp["Liq", j]
+        def rule_elec_cond_phase(b, p):
+            return b.elec_cond_phase[p] == b.equiv_conductivity_phase[p] * sum(
+                abs(b.charge_comp[j]) * b.conc_mol_phase_comp[p, j]
                 for j in self.params.cation_set
             )
 
-        self.eq_elec_cond_phase = Constraint(rule=rule_elec_cond_phase)
+        self.eq_elec_cond_phase = Constraint(
+            self.params.phase_list, rule=rule_elec_cond_phase
+        )
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -1555,7 +1758,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     "adjust_by_ion must be set to the name of an ion in the ion_set."
                 )
         if defined_state:
-            for j in self.params.ion_set | self.params.solute_set:
+            for j in self.params.solute_set:
                 if (
                     not self.flow_mol_phase_comp["Liq", j].is_fixed()
                     and adjust_by_ion != j
@@ -1567,7 +1770,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 if adjust_by_ion == j and self.flow_mol_phase_comp["Liq", j].is_fixed():
                     self.flow_mol_phase_comp["Liq", j].unfix()
         else:
-            for j in self.params.ion_set | self.params.solute_set:
+            for j in self.params.solute_set:
                 if self.flow_mol_phase_comp["Liq", j].is_fixed():
                     raise AssertionError(
                         f"{self.flow_mol_phase_comp['Liq', j]} was fixed. Either set defined_state=True or unfix "
@@ -1671,7 +1874,7 @@ class DSPMDEStateBlockData(StateBlockData):
             )
             iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"], sf)
 
-        for j in self.params.ion_set | self.params.solute_set:
+        for j in self.params.solute_set:
             if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j]) is None:
                 sf = iscale.get_scaling_factor(
                     self.flow_mol_phase_comp["Liq", j], default=1, warning=True
@@ -1684,7 +1887,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     sf = iscale.get_scaling_factor(self.flow_mol_phase_comp[j])
                     iscale.set_scaling_factor(self.flow_equiv_phase_comp[j], sf)
 
-        # The following variables and parameters have computed scalling factors;
+        # The following variables and parameters have computed scaling factors;
         # Users do not have to input scaling factors but, if they do, their value
         # will override.
         for j, v in self.mw_comp.items():
@@ -1812,7 +2015,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     * sum(
                         iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
                         ** 2
-                        for j in self.params.ion_set | self.params.solute_set
+                        for j in self.params.solute_set
                     )
                     ** 0.5
                 )
@@ -1900,7 +2103,7 @@ class DSPMDEStateBlockData(StateBlockData):
             iscale.set_scaling_factor(self.flow_vol, sf)
 
         if self.is_property_constructed("molality_phase_comp"):
-            for j in self.params.ion_set | self.params.solute_set:
+            for j in self.params.solute_set:
                 if (
                     iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
                     is None
@@ -1915,7 +2118,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(self.molality_phase_comp["Liq", j], sf)
 
         if self.is_property_constructed("act_coeff_phase_comp"):
-            for j in self.params.ion_set | self.params.solute_set:
+            for j in self.params.solute_set:
                 if (
                     iscale.get_scaling_factor(self.act_coeff_phase_comp["Liq", j])
                     is None
@@ -1930,60 +2133,19 @@ class DSPMDEStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.ionic_strength_molal) is None:
                 sf = min(
                     iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
-                    for j in self.params.ion_set | self.params.solute_set
+                    for j in self.params.solute_set
                 )
                 iscale.set_scaling_factor(self.ionic_strength_molal, sf)
 
         # transforming constraints
-        # property relationships with no index, simple constraint
-        for v_str in ["dens_mass_solvent"]:
-            if self.is_property_constructed(v_str):
-                v = getattr(self, v_str)
-                sf = iscale.get_scaling_factor(v, default=1, warning=True)
-                c = getattr(self, "eq_" + v_str)
-                iscale.constraint_scaling_transform(c, sf)
-
-        # # property relationships with phase index, but simple constraint
-        for v_str in [
-            "pressure_osm_phase",
-            "flow_vol_phase",
-            "dens_mass_phase",
-            "equiv_conductivity_phase",
-            "elec_cond_phase",
-            "visc_k_phase",
-        ]:
-            if self.is_property_constructed(v_str):
-                v = getattr(self, v_str)
-                sf = iscale.get_scaling_factor(v["Liq"], default=1, warning=True)
-                c = getattr(self, "eq_" + v_str)
-                iscale.constraint_scaling_transform(c, sf)
-
-        # property relationships indexed by component and phase
-        v_str_lst_phase_comp = [
-            "mass_frac_phase_comp",
-            "conc_mass_phase_comp",
-            "flow_mass_phase_comp",
-            "flow_equiv_phase_comp",
-            "mole_frac_phase_comp",
-            "conc_mol_phase_comp",
-            "conc_equiv_phase_comp",
-            "act_coeff_phase_comp",
-            "molality_phase_comp",
-            "elec_mobility_phase_comp",
-            "trans_num_phase_comp",
-        ]
-        for v_str in v_str_lst_phase_comp:
-            if self.is_property_constructed(v_str):
-                v_comp = getattr(self, v_str)
-                c_comp = getattr(self, "eq_" + v_str)
-                for j, c in c_comp.items():
-                    sf = iscale.get_scaling_factor(
-                        v_comp["Liq", j], default=1, warning=True
-                    )
-                    iscale.constraint_scaling_transform(c, sf)
+        transform_property_constraints(self)
 
         if self.is_property_constructed("debye_huckel_constant"):
             iscale.constraint_scaling_transform(self.eq_debye_huckel_constant, 10)
 
         if self.is_property_constructed("ionic_strength_molal"):
             iscale.constraint_scaling_transform(self.eq_ionic_strength_molal, 1)
+
+        if hasattr(self, "eq_diffus_phase_comp"):
+            for ind, v in self.eq_diffus_phase_comp.items():
+                iscale.constraint_scaling_transform(v, 1e9)

@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """
 Simple property package for Na-Ca-Mg-SO4-Cl solution represented with ions
@@ -125,6 +124,11 @@ class PropParameterData(PhysicalParameterBlock):
                 "flow_vol": {"method": "_flow_vol"},
                 "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "conc_mol_phase_comp": {"method": "_conc_mol_phase_comp"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
                 "enth_flow": {"method": "_enth_flow"},
             }
         )
@@ -426,7 +430,7 @@ class PropStateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def define_state_vars(self):

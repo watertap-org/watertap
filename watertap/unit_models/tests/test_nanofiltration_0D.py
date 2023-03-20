@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 from pyomo.environ import (
@@ -185,7 +184,7 @@ class TestNanoFiltration:
             assert hasattr(blk[0], var_str)
 
         # test statistics
-        assert number_variables(m) == 73
+        assert number_variables(m) == 68
         assert number_total_constraints(m) == 45
         assert number_unused_variables(m) == 7  # vars from property package parameters
 
@@ -277,3 +276,7 @@ class TestNanoFiltration:
         assert pytest.approx(1.717e-2, rel=1e-3) == value(
             m.fs.unit.properties_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         )
+
+    @pytest.mark.unit
+    def test_report(self, NF_frame):
+        NF_frame.fs.unit.report()

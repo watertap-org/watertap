@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 
 # Imports from idaes core
@@ -45,7 +44,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
 from watertap.unit_models.boron_removal import BoronRemoval
 from pyomo.environ import (
@@ -144,7 +143,7 @@ class TestBoronRemoval_IonPropPack_Min:
         }
 
         # attach prop pack to flowsheet
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
 
         map = {
             "boron_name": "B[OH]3",  # [is required]
@@ -315,7 +314,7 @@ class TestBoronRemoval_IonPropPack_with_ResAlk:
         }
 
         # attach prop pack to flowsheet
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
 
         map = {
             "boron_name": "B[OH]3",  # [is required]
@@ -466,7 +465,7 @@ class TestBoronRemoval_IonPropPack_with_ResBase:
         }
 
         # attach prop pack to flowsheet
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
 
         map = {
             "boron_name": "B[OH]3",  # [is required]
@@ -921,7 +920,7 @@ class TestBoronRemoval_BadConfigs:
         }
 
         # attach prop pack to flowsheet
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
 
         return m
 

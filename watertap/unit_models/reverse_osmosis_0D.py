@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -86,23 +85,12 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
                 == b.mixed_permeate[t].flow_vol_phase["Liq"]
             )
 
-        # not in 1DRO
         @self.Expression(self.flowsheet().config.time, doc="Over pressure ratio")
         def over_pressure_ratio(b, t):
             return (
                 b.feed_side.properties_out[t].pressure_osm_phase["Liq"]
                 - b.permeate_side[t, 1.0].pressure_osm_phase["Liq"]
             ) / b.feed_side.properties_out[t].pressure
-
-        # not in 1DRO
-        @self.Constraint(
-            self.flowsheet().config.time, doc="Enthalpy transfer from feed to permeate"
-        )
-        def eq_connect_enthalpy_transfer(b, t):
-            return (
-                b.mixed_permeate[t].get_enthalpy_flow_terms("Liq")
-                == -b.feed_side.enthalpy_transfer[t]
-            )
 
         # mass transfer
         def mass_transfer_phase_comp_initialize(b, t, p, j):

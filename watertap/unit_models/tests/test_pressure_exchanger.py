@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 from pyomo.environ import (
     ConcreteModel,
@@ -62,12 +61,12 @@ def test_config_no_mass_transfer():
     m.fs.unit = PressureExchanger(property_package=m.fs.properties)
 
     # check unit config arguments
-    assert len(m.fs.unit.config) == 8
+    assert len(m.fs.unit.config) == 9
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
-    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.useDefault
+    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
     assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
     assert m.fs.unit.config.property_package is m.fs.properties
 
@@ -146,7 +145,6 @@ def test_build(has_mass_transfer=False, extra_variables=0, extra_constraint=0):
     cv_var_lst = ["deltaP"]
     if has_mass_transfer:
         cv_var_lst.append("mass_transfer_term")
-    cv_con_lst = ["eq_isothermal_temperature"]
     cv_exp_lst = ["work"]
 
     for cv_str in cv_list:
@@ -155,9 +153,6 @@ def test_build(has_mass_transfer=False, extra_variables=0, extra_constraint=0):
         for cv_var_str in cv_var_lst:
             cv_var = getattr(cv, cv_var_str)
             assert isinstance(cv_var, Var)
-        for cv_con_str in cv_con_lst:
-            cv_con = getattr(cv, cv_con_str)
-            assert isinstance(cv_con, Constraint)
         for cv_exp_str in cv_exp_lst:
             cv_exp = getattr(cv, cv_exp_str)
             assert isinstance(cv_exp, Expression)

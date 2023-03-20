@@ -1,20 +1,20 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import os, pathlib, warnings
 import h5py
 import itertools
 import pprint
+import copy
 import numpy as np
 
 from scipy.interpolate import griddata
@@ -55,6 +55,15 @@ class ParameterSweepWriter:
             default=False,
             domain=bool,
             description="Bool to decide whether to interpolate NaN outputs.",
+        ),
+    )
+
+    CONFIG.declare(
+        "h5_parent_group_name",
+        ConfigValue(
+            default=None,
+            domain=str,
+            description="Parent group name (container like objects, similar to a folder/directory in a file system) for parameter sweep outputs to be saved.",
         ),
     )
 
@@ -128,53 +137,6 @@ class ParameterSweepWriter:
 
         return global_results_clean
 
-    def save_results(
-        self,
-        sweep_params,
-        local_values,
-        global_values,
-        local_results_dict,
-        global_results_dict,
-        global_results_arr,
-    ):
-
-        if self.rank == 0:
-            if self.config["debugging_data_dir"] is not None:
-                os.makedirs(self.config["debugging_data_dir"], exist_ok=True)
-            if self.config["h5_results_file_name"] is not None:
-                pathlib.Path(self.config["h5_results_file_name"]).parent.mkdir(
-                    parents=True, exist_ok=True
-                )
-            if self.config["csv_results_file_name"] is not None:
-                pathlib.Path(self.config["csv_results_file_name"]).parent.mkdir(
-                    parents=True, exist_ok=True
-                )
-
-        self.comm.Barrier()
-
-        # Handle values in the debugging data_directory
-        if self.config["debugging_data_dir"] is not None:
-            self._write_debug_data(
-                sweep_params,
-                local_values,
-                local_results_dict,
-                self.config["h5_results_file_name"] is not None,
-                self.config["csv_results_file_name"] is not None,
-            )
-
-        global_save_data = self._write_to_csv(
-            sweep_params,
-            global_values,
-            global_results_dict,
-            global_results_arr,
-        )
-
-        if self.rank == 0 and self.config["h5_results_file_name"] is not None:
-            # Save the data of output dictionary
-            self._write_outputs(global_results_dict, txt_options="keys")
-
-        return global_save_data
-
     def _write_debug_data(
         self,
         sweep_params,
@@ -196,7 +158,7 @@ class ParameterSweepWriter:
             data_header = ",".join(itertools.chain(sweep_params))
             local_results = np.zeros(
                 (np.shape(local_values)[0], len(local_results_dict["outputs"])),
-                dtype=np.float64,
+                dtype=float,
             )
             for i, (key, item) in enumerate(local_results_dict["outputs"].items()):
                 data_header = ",".join([data_header, key])
@@ -220,28 +182,45 @@ class ParameterSweepWriter:
         # We will also create a companion txt file by default which contains
         # the metadata of the h5 file in a user readable format.
         txt_fname = self.config["h5_results_file_name"] + ".txt"
-        if "solve_successful" in output_dict.keys():
-            output_dict.pop("solve_successful")
-        if txt_options == "metadata":
-            my_dict = copy.deepcopy(output_dict)
-            for key, value in my_dict.items():
-                for subkey, subvalue in value.items():
-                    subvalue.pop("value")
-        elif txt_options == "keys":
-            my_dict = {}
-            for key, value in output_dict.items():
-                my_dict[key] = list(value.keys())
-        else:
-            my_dict = output_dict
 
-        with open(txt_fname, "w") as log_file:
-            pprint.pprint(my_dict, log_file)
+        if (
+            self.config.h5_parent_group_name is None
+            and os.path.isfile(txt_fname) is False
+        ):
+            if txt_options == "metadata":
+                my_dict = copy.deepcopy(output_dict)
+                for key, value in my_dict.items():
+                    for subkey, subvalue in value.items():
+                        subvalue.pop("value")
+            elif txt_options == "keys":
+                my_dict = {}
+                for key, value in output_dict.items():
+                    if key != "solve_successful":
+                        my_dict[key] = list(value.keys())
+            else:
+                my_dict = output_dict
+
+            with open(txt_fname, "w") as log_file:
+                pprint.pprint(my_dict, log_file)
 
     def _write_output_to_h5(self, output_dict, h5_results_file_name):
 
-        f = h5py.File(h5_results_file_name, "w")
+        if self.config.h5_parent_group_name is None:
+            # No parent groups exists, a new file will be created regardless
+            f = h5py.File(h5_results_file_name, "w")
+            parent_grp = f
+        else:
+            if os.path.isfile(h5_results_file_name):
+                # File exists, we only need to add the new parent group
+                f = h5py.File(h5_results_file_name, "a")
+                parent_grp = f.require_group(self.config.h5_parent_group_name)
+            else:
+                # Create a new file since none exists and add the parent group
+                f = h5py.File(h5_results_file_name, "w")
+                parent_grp = f.require_group(self.config.h5_parent_group_name)
+
         for key, item in output_dict.items():
-            grp = f.create_group(key)
+            grp = parent_grp.create_group(key)
             if key != "solve_successful":
                 for subkey, subitem in item.items():
                     subgrp = grp.create_group(subkey)
@@ -307,5 +286,52 @@ class ParameterSweepWriter:
                         delimiter=",",
                         fmt="%.6e",
                     )
+
+        return global_save_data
+
+    def save_results(
+        self,
+        sweep_params,
+        local_values,
+        global_values,
+        local_results_dict,
+        global_results_dict,
+        global_results_arr,
+    ):
+
+        if self.rank == 0:
+            if self.config["debugging_data_dir"] is not None:
+                os.makedirs(self.config["debugging_data_dir"], exist_ok=True)
+            if self.config["h5_results_file_name"] is not None:
+                pathlib.Path(self.config["h5_results_file_name"]).parent.mkdir(
+                    parents=True, exist_ok=True
+                )
+            if self.config["csv_results_file_name"] is not None:
+                pathlib.Path(self.config["csv_results_file_name"]).parent.mkdir(
+                    parents=True, exist_ok=True
+                )
+
+        self.comm.Barrier()
+
+        # Handle values in the debugging data_directory
+        if self.config["debugging_data_dir"] is not None:
+            self._write_debug_data(
+                sweep_params,
+                local_values,
+                local_results_dict,
+                self.config["h5_results_file_name"] is not None,
+                self.config["csv_results_file_name"] is not None,
+            )
+
+        global_save_data = self._write_to_csv(
+            sweep_params,
+            global_values,
+            global_results_dict,
+            global_results_arr,
+        )
+
+        if self.rank == 0 and self.config["h5_results_file_name"] is not None:
+            # Save the data of output dictionary
+            self._write_outputs(global_results_dict, txt_options="keys")
 
         return global_save_data

@@ -1,15 +1,14 @@
-###############################################################################
-# ProteusLib Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
-# "https://github.com/nawi-hub/proteuslib/"
-#
-###############################################################################
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 import re
 
 import pytest
@@ -31,11 +30,12 @@ from idaes.core import (
 from idaes.core.util.scaling import calculate_scaling_factors, get_scaling_factor
 
 from pyomo.util.check_units import assert_units_consistent
-from watertap.property_models.ion_DSPMDE_prop_pack import (
-    DSPMDEParameterBlock,
-    DSPMDEStateBlock,
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MCASStateBlock,
     ActivityCoefficientModel,
     DensityCalculation,
+    DiffusivityCalculation,
     ElectricalMobilityCalculation,
     EquivalentConductivityCalculation,
     TransportNumberCalculation,
@@ -74,7 +74,7 @@ def model():
     m = ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["A", "B", "C", "D"],
         diffusivity_data={
             ("Liq", "A"): 1e-09,
@@ -104,15 +104,28 @@ def test_parameter_block(model):
     assert isinstance(model.fs.properties.solvent_set, Set)
     for j in model.fs.properties.solvent_set:
         assert j in ["H2O"]
-    assert isinstance(model.fs.properties.ion_set, Set)
-    for j in model.fs.properties.ion_set | model.fs.properties.solute_set:
+    # solute set and ion set are identical when all components in component_list are ions given hierarchy
+    assert isinstance(model.fs.properties.solute_set, Set)
+    for j in model.fs.properties.solute_set:
         assert j in ["A", "B", "C", "D"]
+    assert isinstance(model.fs.properties.ion_set, Set)
+    for j in model.fs.properties.ion_set:
+        assert j in ["A", "B", "C", "D"]
+    assert isinstance(model.fs.properties.anion_set, Set)
+    for j in model.fs.properties.anion_set:
+        assert j in ["B", "D"]
+    assert isinstance(model.fs.properties.cation_set, Set)
+    for j in model.fs.properties.cation_set:
+        assert j in ["A", "C"]
+    # neutral set is always constructed, even when no neutrals are present in component_list
+    assert isinstance(model.fs.properties.neutral_set, Set)
+    assert model.fs.properties.neutral_set == []
 
     assert isinstance(model.fs.properties.phase_list, Set)
     for j in model.fs.properties.phase_list:
         assert j in ["Liq"]
 
-    assert model.fs.properties._state_block_class is DSPMDEStateBlock
+    assert model.fs.properties._state_block_class is MCASStateBlock
 
     assert isinstance(model.fs.properties.mw_comp, Param)
     assert model.fs.properties.mw_comp["A"].value == 10e-3
@@ -120,12 +133,6 @@ def test_parameter_block(model):
     assert model.fs.properties.mw_comp["C"].value == 100e-3
     assert model.fs.properties.mw_comp["D"].value == 125e-3
     assert model.fs.properties.mw_comp["H2O"].value == 18e-3
-
-    assert isinstance(model.fs.properties.diffus_phase_comp, Param)
-    assert model.fs.properties.diffus_phase_comp["Liq", "A"].value == 1e-9
-    assert model.fs.properties.diffus_phase_comp["Liq", "B"].value == 1e-10
-    assert model.fs.properties.diffus_phase_comp["Liq", "C"].value == 1e-7
-    assert model.fs.properties.diffus_phase_comp["Liq", "D"].value == 1e-11
 
     assert isinstance(model.fs.properties.radius_stokes_comp, Param)
     assert model.fs.properties.radius_stokes_comp["A"].value == 1e-9
@@ -155,11 +162,10 @@ def test_property_ions(model):
     m.fs.stream[0].assert_electroneutrality(defined_state=True)
 
     m.fs.stream[0].mole_frac_phase_comp
-
     m.fs.stream[0].flow_mass_phase_comp
-
     m.fs.stream[0].molality_phase_comp
     m.fs.stream[0].pressure_osm_phase
+    m.fs.stream[0].diffus_phase_comp
     m.fs.stream[0].elec_cond_phase
     m.fs.stream[0].dens_mass_phase
     m.fs.stream[0].conc_mol_phase_comp
@@ -177,6 +183,10 @@ def test_property_ions(model):
     results = solver.solve(m)
     assert_optimal_termination(results)
 
+    assert model.fs.stream[0].diffus_phase_comp["Liq", "A"].value == 1e-9
+    assert model.fs.stream[0].diffus_phase_comp["Liq", "B"].value == 1e-10
+    assert model.fs.stream[0].diffus_phase_comp["Liq", "C"].value == 1e-7
+    assert model.fs.stream[0].diffus_phase_comp["Liq", "D"].value == 1e-11
     assert value(m.fs.stream[0].conc_mass_phase_comp["Liq", "A"]) == pytest.approx(
         2.1206e-1, rel=1e-3
     )
@@ -198,6 +208,9 @@ def test_property_ions(model):
     assert value(m.fs.stream[0].trans_num_phase_comp["Liq", "B"]) == pytest.approx(
         0.563, rel=1e-3
     )
+    assert isinstance(model.fs.properties.diffus_phase_comp, Var)
+    for v in model.fs.properties.diffus_phase_comp.values():
+        assert v.fixed
 
 
 @pytest.fixture(scope="module")
@@ -205,7 +218,7 @@ def model2():
     m = ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["A", "B", "C", "D"], charge={"A": 1, "B": -2, "C": 2, "D": -1}
     )
 
@@ -225,11 +238,6 @@ def test_property_ions_2(model2):
     stream[0].flow_mol_phase_comp["Liq", "H2O"].fix(0.99046)
     stream[0].temperature.fix(298.15)
     stream[0].pressure.fix(101325)
-
-    stream[0].diffus_phase_comp["Liq", "A"] = 1e-9
-    stream[0].diffus_phase_comp["Liq", "B"] = 1e-10
-    stream[0].diffus_phase_comp["Liq", "C"] = 1e-7
-    stream[0].diffus_phase_comp["Liq", "D"] = 1e-11
 
     stream[0].mw_comp["H2O"] = 18e-3
     stream[0].mw_comp["A"] = 10e-3
@@ -271,7 +279,7 @@ def model3():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
         diffusivity_data={
             ("Liq", "Ca_2+"): 7.92e-10,
@@ -310,21 +318,21 @@ def test_build(model3):
     metadata = m.fs.properties.get_metadata().properties
 
     # check that properties are not built if not demanded
-    for v_name in metadata:
-        if metadata[v_name]["method"] is not None:
-            if m.fs.stream[0].is_property_constructed(v_name):
+    for v in metadata.list_supported_properties():
+        if metadata[v.name].method is not None:
+            if m.fs.stream[0].is_property_constructed(v.name):
                 raise PropertyAttributeError(
                     "Property {v_name} is an on-demand property, but was found "
-                    "on the stateblock without being demanded".format(v_name=v_name)
+                    "on the stateblock without being demanded".format(v_name=v.name)
                 )
 
     # check that properties are built if demanded
-    for v_name in metadata:
-        if metadata[v_name]["method"] is not None:
-            if not hasattr(m.fs.stream[0], v_name):
+    for v in metadata.list_supported_properties():
+        if metadata[v.name].method is not None:
+            if not hasattr(m.fs.stream[0], v.name):
                 raise PropertyAttributeError(
                     "Property {v_name} is an on-demand property, but was not built "
-                    "when demanded".format(v_name=v_name)
+                    "when demanded".format(v_name=v.name)
                 )
 
     assert m.fs.stream[0].is_property_constructed("act_coeff_phase_comp")
@@ -352,7 +360,7 @@ def test_build(model3):
         c = getattr(m.fs.stream[0], "eq_" + v)
         assert isinstance(c, Constraint)
 
-    assert number_variables(m) == 87
+    assert number_variables(m) == 92
     assert number_total_constraints(m) == 69
     [print(i) for i in unused_variables_set(m)]
     assert number_unused_variables(m) == 6
@@ -401,8 +409,8 @@ def test_scaling(model3):
     # m.fs.stream.initialize()
     metadata = m.fs.properties.get_metadata().properties
 
-    for v_name in metadata:
-        getattr(m.fs.stream[0], v_name)
+    for v in metadata.list_supported_properties():
+        getattr(m.fs.stream[0], v.name)
 
     calculate_scaling_factors(m)
 
@@ -435,7 +443,7 @@ def test_scaling(model3):
 def test_seawater_data():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
         diffusivity_data={
             ("Liq", "Ca_2+"): 7.92e-10,
@@ -500,8 +508,8 @@ def test_seawater_data():
     )
 
     metadata = m.fs.properties.get_metadata().properties
-    for v_name in metadata:
-        getattr(stream[0], v_name)
+    for v in metadata.list_supported_properties():
+        getattr(stream[0], v.name)
     assert stream[0].is_property_constructed("conc_mol_phase_comp")
 
     assert_units_consistent(m)
@@ -695,7 +703,7 @@ def test_seawater_data():
 def test_assert_electroneutrality_get_property():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
         diffusivity_data={
             ("Liq", "Ca_2+"): 7.92e-10,
@@ -788,7 +796,7 @@ def test_assert_electroneutrality_get_property():
 def test_assert_electroneutrality_get_property_2():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
         mw_data={
             "H2O": 0.018,
@@ -890,7 +898,7 @@ def model4():
     m4 = ConcreteModel()
 
     m4.fs = FlowsheetBlock(dynamic=False)
-    m4.fs.properties = DSPMDEParameterBlock(
+    m4.fs.properties = MCASParameterBlock(
         solute_list=["A", "B", "C", "D", "E"],
         diffusivity_data={
             ("Liq", "A"): 1e-09,
@@ -1119,13 +1127,15 @@ def test_parameter_block_comparison(model4):
     for j in m_ion.fs.properties.ion_set:
         assert j in ["A", "B", "C", "D"]
 
+    assert isinstance(m_ion.fs.properties.neutral_set, Set)
+    for j in m_ion.fs.properties.neutral_set:
+        assert j in ["E"]
+
     assert isinstance(m_ion.fs.properties.solute_set, Set)
     assert isinstance(m_generic.fs.properties.solute_set, Set)
-    assert len(m_ion.fs.properties.solute_set) == len(
-        m_generic.fs.properties.solute_set
-    )
     for j in m_ion.fs.properties.solute_set:
-        assert j in ["E"]
+        assert j in ["A", "B", "C", "D", "E"]
+        assert m_ion.fs.properties.get_component(j).is_solute()
 
     assert m_ion.fs.properties.charge_comp["B"].value == -2
     # NOTE: Below is how you grab charge from the generic package
@@ -1160,8 +1170,8 @@ def model5():
     m2 = ConcreteModel()
     m1.fs = FlowsheetBlock(dynamic=False)
     m2.fs = FlowsheetBlock(dynamic=False)
-    m1.fs.properties = DSPMDEParameterBlock(**dic0)
-    m2.fs.properties = DSPMDEParameterBlock(**dic1)
+    m1.fs.properties = MCASParameterBlock(**dic0)
+    m2.fs.properties = MCASParameterBlock(**dic1)
     m1.fs.stream = m1.fs.properties.build_state_block([0], defined_state=True)
     m2.fs.stream = m2.fs.properties.build_state_block([0], defined_state=True)
     for m in (m1, m2):
@@ -1250,11 +1260,6 @@ def model6():
             ("Liq", "N"): 1.5e-9,
         }
     }
-    dic_elec_mob = {
-        "elec_mobility_data": {"Na_+": 5.19e-8, "Cl_-": 7.92e-8},
-    }
-    dic_transnum = {"trans_num_data": {("Liq", "Na_+"): 0.4, ("Liq", "Cl_-"): 0.6}}
-    dic_equivcond = {"equiv_conductivity_phase_data": {"Liq": 0.01}}
     dic_config = {
         "elec_mobility_calculation": ElectricalMobilityCalculation.EinsteinRelation,
         "equiv_conductivity_calculation": EquivalentConductivityCalculation.none,
@@ -1270,8 +1275,8 @@ def model6():
     m1.fs = FlowsheetBlock(dynamic=False)
     m2.fs = FlowsheetBlock(dynamic=False)
     m3.fs = FlowsheetBlock(dynamic=False)
-    m2.fs.properties = DSPMDEParameterBlock(**dic2)
-    m3.fs.properties = DSPMDEParameterBlock(**dic3)
+    m2.fs.properties = MCASParameterBlock(**dic2)
+    m3.fs.properties = MCASParameterBlock(**dic3)
     m2.fs.stream = m2.fs.properties.build_state_block([0], defined_state=True)
     m3.fs.stream = m3.fs.properties.build_state_block([0], defined_state=True)
     for m in (m2, m3):
@@ -1305,18 +1310,19 @@ def test_elec_properties_errormsg(model6):
         ConfigurationError,
         match="The charge property should not be assigned to the neutral component",
     ):
-        m[0].fs.properties = DSPMDEParameterBlock(
+        m[0].fs.properties = MCASParameterBlock(
             solute_list=["Na_+", "Cl_-", "N"],
             mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
             charge={"N": 0, "Na_+": 1, "Cl_-": -1},
         )
-    m[0].fs.properties = DSPMDEParameterBlock(
+    m[0].fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Cl_-", "N"],
         mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
         charge={"Na_+": 1, "Cl_-": -1},
         elec_mobility_calculation=ElectricalMobilityCalculation.EinsteinRelation,
     )
     m[0].fs.stream = m[0].fs.properties.build_state_block([0], defined_state=True)
+
     with pytest.raises(
         ConfigurationError,
         match="""Missing a valid diffusivity_data configuration to use EinsteinRelation 
@@ -1341,3 +1347,116 @@ def test_elec_properties_errormsg(model6):
         match="""Missing a valid trans_num_data configuration to build "trans_num_phase_comp" """,
     ):
         m[2].fs.stream[0].trans_num_phase_comp
+
+
+@pytest.mark.unit
+def test_solute_list_errormsg():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    with pytest.raises(
+        ConfigurationError,
+        match="'H2O'is reserved as the default solvent and cannot be a solute.",
+    ):
+        m.fs.properties = MCASParameterBlock(
+            solute_list=["H2O", "Na_+", "Cl_-", "N"],
+            mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
+            charge={"Na_+": 1, "Cl_-": -1},
+        )
+
+
+@pytest.fixture(scope="module")
+def model7():
+    m_hl = ConcreteModel()
+
+    m_hl.fs = FlowsheetBlock(dynamic=False)
+
+    m_hl.fs.properties = MCASParameterBlock(
+        solute_list=["A", "B", "C", "D", "E", "F", "G"],
+        charge={"E": 1, "F": -1},
+        diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+        molar_volume_data={
+            ("Liq", "A"): 96e-6,  # tested for benzene
+            ("Liq", "B"): 100e-6,  # arbitrary
+            ("Liq", "C"): 60e-6,  # arbitrary
+            ("Liq", "D"): 200e-6,  # arbitrary
+        },
+        diffusivity_data={("Liq", "E"): 1.33e-9, ("Liq", "F"): 2.03e-9},
+    )
+    # build state block
+    m_hl.fs.sb = m_hl.fs.properties.build_state_block([0], defined_state=True)
+    # touch on demand var when hayduklaudie is selected
+    m_hl.fs.sb[0].diffus_phase_comp
+    m_hl.fs.properties.visc_d_phase["Liq"] = 1.0e-3
+
+    return m_hl
+
+
+@pytest.mark.unit
+def test_diffus_hl(model7):
+    m = model7
+
+    assert (
+        m.fs.properties.config.diffus_calculation == DiffusivityCalculation.HaydukLaudie
+    )
+
+    check_dof(m, fail_flag=True)
+    assert_units_consistent(m)
+
+    # init and solve
+    m.fs.sb.initialize()
+    calculate_scaling_factors(m.fs)
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+
+    assert isinstance(m.fs.properties.molar_volume_phase_comp, Param)
+    assert m.fs.properties.molar_volume_phase_comp["Liq", "A"].value == 96e-6
+    assert m.fs.properties.molar_volume_phase_comp["Liq", "B"].value == 100e-6
+    assert m.fs.properties.molar_volume_phase_comp["Liq", "C"].value == 60e-6
+    assert m.fs.properties.molar_volume_phase_comp["Liq", "D"].value == 200e-6
+
+    sb = m.fs.sb[0]
+
+    assert sb.diffus_phase_comp["Liq", "A"].value == pytest.approx(
+        9.015e-10, rel=1e-3
+    )  # tested for benzene
+    assert sb.diffus_phase_comp["Liq", "B"].value == pytest.approx(8.801e-10, rel=1e-3)
+    assert sb.diffus_phase_comp["Liq", "C"].value == pytest.approx(1.189e-09, rel=1e-3)
+    assert sb.diffus_phase_comp["Liq", "D"].value == pytest.approx(5.851e-10, rel=1e-3)
+    assert sb.diffus_phase_comp["Liq", "E"].value == pytest.approx(1.33e-09, rel=1e-3)
+    assert sb.diffus_phase_comp["Liq", "F"].value == pytest.approx(2.03e-09, rel=1e-3)
+
+
+@pytest.mark.unit
+def test_diffus_properties_errormsg(model7):
+    m = model7
+    with pytest.raises(
+        KeyError,
+        match=("Index"),
+    ):
+        m.fs.sb[0].diffus_phase_comp["Liq", "G"]
+
+
+@pytest.mark.component
+def test_solute_list_longer_than_diff_data():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["A", "B", "C", "D", "E", "F", "G", "H"],
+        charge={"E": 1, "F": -1},
+        diffus_calculation=DiffusivityCalculation.none,
+        molar_volume_data={
+            ("Liq", "A"): 96e-6,  # tested for benzene
+            ("Liq", "B"): 100e-6,  # arbitrary
+            ("Liq", "C"): 60e-6,  # arbitrary
+            ("Liq", "D"): 200e-6,  # arbitrary
+        },
+        diffusivity_data={
+            ("Liq", "A"): 1e-11,
+            ("Liq", "E"): 1.33e-9,
+            ("Liq", "F"): 2.03e-9,
+        },
+    )
+    m.fs.properties.visc_d_phase["Liq"] = 1.0e-3
+
+    m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
+    calculate_scaling_factors(m.fs)

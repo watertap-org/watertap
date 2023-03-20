@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 
 from pyomo.environ import ConcreteModel, assert_optimal_termination, value
@@ -82,14 +81,16 @@ def test_heat_exchanger():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    assert pytest.approx(89050.0, rel=1e-4) == value(m.fs.unit.heat_duty[0])
+    assert pytest.approx(88038.104, rel=1e-4) == value(m.fs.unit.heat_duty[0])
     assert pytest.approx(1.0, rel=1e-4) == value(
         m.fs.unit.hot_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
     )
     assert pytest.approx(0.01, rel=1e-4) == value(
         m.fs.unit.hot_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
     )
-    assert pytest.approx(328.69, rel=1e-4) == value(m.fs.unit.hot_outlet.temperature[0])
+    assert pytest.approx(328.668, rel=1e-4) == value(
+        m.fs.unit.hot_outlet.temperature[0]
+    )
     assert pytest.approx(2.0e5, rel=1e-4) == value(m.fs.unit.hot_outlet.pressure[0])
     assert pytest.approx(0.5, rel=1e-4) == value(
         m.fs.unit.cold_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
@@ -97,7 +98,7 @@ def test_heat_exchanger():
     assert pytest.approx(0.01, rel=1e-4) == value(
         m.fs.unit.cold_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
     )
-    assert pytest.approx(340.78, rel=1e-4) == value(
+    assert pytest.approx(341.021, rel=1e-4) == value(
         m.fs.unit.cold_outlet.temperature[0]
     )
     assert pytest.approx(2.0e5, rel=1e-4) == value(m.fs.unit.cold_outlet.pressure[0])

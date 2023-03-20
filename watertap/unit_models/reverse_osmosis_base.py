@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from copy import deepcopy
 from pyomo.common.collections import ComponentSet
@@ -96,17 +95,15 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
 
-        self.feed_side.add_energy_balances(
-            balance_type=self.config.energy_balance_type, has_enthalpy_transfer=True
-        )
-
         self.feed_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
             has_pressure_change=self.config.has_pressure_change,
+            friction_factor=self.config.friction_factor,
         )
 
-        self.feed_side.add_isothermal_conditions()
+        self.feed_side.add_control_volume_isothermal_conditions()
+        self.feed_side.add_interface_isothermal_conditions()
 
         self.feed_side.add_extensive_flow_to_interface()
 
@@ -515,6 +512,8 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         Returns:
             None
         """
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         source_flags = self.feed_side.initialize(
             state_args=state_args,
@@ -523,15 +522,8 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             solver=solver,
             initialize_guess=initialize_guess,
         )
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        if degrees_of_freedom(self) != 0:
-            # TODO: should we have a separate error for DoF?
-            raise Exception(
-                f"{self.name} degrees of freedom were not 0 at the beginning "
-                f"of initialization. DoF = {degrees_of_freedom(self)}"
-            )
+        init_log.info_high("Initialization Step 1a (feed side) Complete")
 
         state_args_permeate = self._get_state_args_permeate(
             initialize_guess, state_args
@@ -551,9 +543,18 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             state_args=state_args_permeate,
         )
 
+        init_log.info_high("Initialization Step 1b (permeate side) Complete")
+
+        if degrees_of_freedom(self) != 0:
+            # TODO: should we have a separate error for DoF?
+            raise Exception(
+                f"{self.name} degrees of freedom were not 0 at the beginning "
+                f"of initialization. DoF = {degrees_of_freedom(self)}"
+            )
+
         # Create solver
         opt = get_solver(solver, optarg)
-        # ---------------------------------------------------------------------
+
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
@@ -563,7 +564,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                     f"Trouble solving unit model {self.name}, trying one more time"
                 )
                 res = opt.solve(self, tee=slc.tee)
-
+        init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}")
         # release inlet state, in case this error is caught
 
         self.feed_side.release_state(source_flags, outlvl)

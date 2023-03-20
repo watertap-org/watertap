@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 # Import Pyomo libraries
 from pyomo.environ import Suffix, check_optimal_termination
@@ -234,6 +233,7 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
                 b.control_volume.properties_out[t].pressure
                 >= b.control_volume.properties_out[t].pressure_sat
             )
+
         # @self.Constraint(self.flowsheet().time, doc="Saturation temperature constraint")
         # def eq_condenser_T_sat(b,t):
         #     return (b.control_volume.properties_out[t].temperature <= b.properties_condensing[0].temperature)
@@ -242,7 +242,7 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
         self.add_port(name="outlet", block=self.control_volume.properties_out)
 
     def initialize_build(
-        blk,
+        self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -267,14 +267,14 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize control volume
-        flags = blk.control_volume.initialize(
+        flags = self.control_volume.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -284,15 +284,15 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
         # # ---------------------------------------------------------------------
         # check if guess is needed for the heat based on degrees of freedom
         has_guessed_heat = False
-        if degrees_of_freedom(blk) > 1:
+        if degrees_of_freedom(self) > 1:
             raise RuntimeError(
                 "The model has {} degrees of freedom rather than 0 or 1 (with a guessed heat) for initialization."
                 " This error suggests that an outlet condition has not been fixed"
-                " for initialization.".format(degrees_of_freedom(blk))
+                " for initialization.".format(degrees_of_freedom(self))
             )
-        elif degrees_of_freedom(blk) == 1:
+        elif degrees_of_freedom(self) == 1:
             if heat is not None:
-                blk.control_volume.heat.fix(heat)
+                self.control_volume.heat.fix(heat)
                 has_guessed_heat = True
             else:
                 raise RuntimeError(
@@ -302,7 +302,7 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
@@ -310,13 +310,13 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
             pass
         else:
             # Release Inlet state
-            blk.control_volume.release_state(flags, outlvl=outlvl)
+            self.control_volume.release_state(flags, outlvl=outlvl)
             init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
         if has_guessed_heat:
-            blk.control_volume.heat.unfix()
+            self.control_volume.heat.unfix()
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
         return flags
 

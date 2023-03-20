@@ -91,10 +91,10 @@ fs.RO.feed_side.K[0.0,0.0,NaCl]: 3.4512803512388215e-05
 fs.RO.feed_side.K[0.0,1.0,NaCl]: 2.7060824531310153e-05
 fs.RO.feed_side.N_Re[0.0,0.0]: 339.4894225951861
 fs.RO.feed_side.N_Re[0.0,1.0]: 164.77295340586087
-fs.RO.feed_side.N_Sc[0.0,0.0]: 701.8820660532529
-fs.RO.feed_side.N_Sc[0.0,1.0]: 727.7593431217747
-fs.RO.feed_side.N_Sh[0.0,0.0]: 39.674400521449414
-fs.RO.feed_side.N_Sh[0.0,1.0]: 30.98506199148124
+fs.RO.feed_side.N_Sc_comp[0.0,0.0,NaCl]: 701.8820660532529
+fs.RO.feed_side.N_Sc_comp[0.0,1.0,NaCl]: 727.7593431217747
+fs.RO.feed_side.N_Sh_comp[0.0,0.0,NaCl]: 39.674400521449414
+fs.RO.feed_side.N_Sh_comp[0.0,1.0,NaCl]: 30.98506199148124
 fs.RO.area: 80.13575502542317
 fs.RO.costing.capital_cost: 2404.0726507626946
 fs.RO.costing.fixed_operating_cost: 480.81453015253896
@@ -102,7 +102,6 @@ fs.RO.feed_side.dP_dx[0.0,0.0]: -12678.679050434575
 fs.RO.feed_side.dP_dx[0.0,1.0]: -5318.296444828698
 fs.RO.feed_side.dh: 0.001691998543711759
 fs.RO.feed_side.deltaP[0.0]: -144220.12194869615
-fs.RO.feed_side.enthalpy_transfer[0.0]: -51702.861568992426
 fs.RO.feed_side.mass_transfer_term[0.0,Liq,H2O]: -0.49285444999999994
 fs.RO.feed_side.mass_transfer_term[0.0,Liq,NaCl]: -0.00016337190673426118
 fs.RO.feed_side.properties_in[0.0].conc_mass_phase_comp[Liq,H2O]: 985.7089
@@ -233,7 +232,7 @@ fs.S1.split_fraction[0.0,P1]: 0.49475489729022726
 fs.S1.split_fraction[0.0,PXR]: 0.5052451027097727
 fs.costing.LCOW: 0.46090440122852394
 fs.costing.aggregate_capital_cost: 12709.589772436626
-fs.costing.total_investment_cost: 25419.179544873252
+fs.costing.total_capital_cost: 25419.179544873252
 fs.costing.maintenance_labor_chemical_operating_cost: 762.5753863461975
 fs.costing.total_operating_cost: 3942.7469500005436
 fs.disposal.properties[0.0].flow_mass_phase_comp[Liq,H2O]: 0.49285444999999994

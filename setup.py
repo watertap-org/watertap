@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Project setup with setuptools
 """
@@ -36,14 +35,14 @@ for active use by water treatment researchers and engineers.""".replace(
 
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=2.0.0a3",  # from PyPI
+    "idaes-pse==2.0.*",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/2.0.0a3.zip"
+    "idaes-pse==2.0.*",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -52,7 +51,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="0.7.0dev",
+    version="0.8.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/plain",
@@ -86,7 +85,10 @@ setup(
         "Programming Language :: Python :: 3 :: Only",
     ],
     keywords="water systems, chemical engineering, process modeling, filtration, desalination, nawi",
-    packages=find_namespace_packages(),
+    # just include watertap and everything under it
+    packages=find_namespace_packages(
+        include=("watertap*",),
+    ),
     python_requires=">=3.7",
     install_requires=[
         # primary requirements for unit and property models
@@ -114,9 +116,9 @@ setup(
             "json-schema-for-humans",
             "mongomock",
             "pandas",
+            "nbmake",
         ],
         "dev": [
-            "myst-parser",  # markdown support for Sphinx
             "nbsphinx",  # jupyter notebook support for sphinx
             "jinja2<3.1.0",  # see watertap-org/watertap#449
             "Sphinx",  # docs
@@ -129,6 +131,7 @@ setup(
             "pytest",  # test framework
             "pytest-cov",  # code coverage
             "mongomock",  # mongodb mocking for testing
+            "nbmake",
         ],
     },
     package_data={  # Optional

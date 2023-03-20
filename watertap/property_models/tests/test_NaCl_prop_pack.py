@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 import watertap.property_models.NaCl_prop_pack as props
@@ -43,8 +42,8 @@ class TestNaClProperty(PropertyTestHarness):
         self.stateblock_statistics = {
             "number_variables": 20,
             "number_total_constraints": 16,
-            "number_unused_variables": 1,  # pressure is unused
-            "default_degrees_of_freedom": 3,
+            "number_unused_variables": 0,
+            "default_degrees_of_freedom": 4,
         }  # 4 state vars, but pressure is not active
         self.default_solution = {
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.965,
@@ -62,7 +61,7 @@ class TestNaClProperty(PropertyTestHarness):
             ("visc_d_phase", "Liq"): 1.055e-3,
             ("osm_coeff", None): 0.9271,
             ("pressure_osm_phase", "Liq"): 2.853e6,
-            ("enth_mass_phase", "Liq"): 9.974e4,
+            ("enth_mass_phase", "Liq"): 1.045e5,
         }
 
 
@@ -101,7 +100,7 @@ class TestNaClPropertySolution_1(PropertyRegressionTest):
             ("visc_d_phase", "Liq"): 1.0875e-3,
             ("osm_coeff", None): 0.9347,
             ("pressure_osm_phase", "Liq"): 4.174e6,
-            ("enth_mass_phase", "Liq"): 9.752e4,
+            ("enth_mass_phase", "Liq"): 1.093e5,
         }
 
 
@@ -140,7 +139,7 @@ class TestNaClPropertySolution_2(PropertyRegressionTest):
             ("visc_d_phase", "Liq"): 1.539e-3,
             ("osm_coeff", None): 1.274,
             ("pressure_osm_phase", "Liq"): 3.796e7,
-            ("enth_mass_phase", "Liq"): 6.645e4,
+            ("enth_mass_phase", "Liq"): 1.087e5,
         }
 
 
@@ -179,7 +178,7 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
             ("visc_d_phase", "Liq"): 9.822e-4,
             ("osm_coeff", None): 0.918,
             ("pressure_osm_phase", "Liq"): 7.797e4,
-            ("enth_mass_phase", "Liq"): 1.048e5,
+            ("enth_mass_phase", "Liq"): 1.055e5,
         }
 
 

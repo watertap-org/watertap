@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from pyomo.environ import (
     Block,
@@ -207,14 +206,14 @@ def display_costing(m):
     # UNITS FOR ALL COST COMPONENTS [=] $/m3 of permeate water produced
     cost_dict = {
         "LCOW": m.fs.costing.LCOW,  # Total LCOW
-        "Total CAPEX": m.fs.costing.total_investment_cost
+        "Total CAPEX": m.fs.costing.total_capital_cost
         * crf
         / m.fs.costing.annual_water_production,  # Direct + Indirect CAPEX
-        "Direct CAPEX": m.fs.costing.total_capital_cost
+        "Direct CAPEX": m.fs.costing.aggregate_capital_cost
         * crf
         / m.fs.costing.annual_water_production,  # Direct CAPEX for all system components
         "Indirect CAPEX": (
-            m.fs.costing.total_investment_cost - m.fs.costing.total_capital_cost
+            m.fs.costing.total_capital_cost - m.fs.costing.aggregate_capital_cost
         )
         * crf
         / m.fs.costing.annual_water_production,  # Indirect CAPEX for miscellaneous items

@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 from math import fabs
@@ -47,23 +46,17 @@ class PropertyAttributeError(AttributeError):
     WaterTAP exception for generic attribute errors arising from property package testing.
     """
 
-    pass
-
 
 class PropertyValueError(ValueError):
     """
     WaterTAP exception for generic value errors arising from property package testing.
     """
 
-    pass
-
 
 class PropertyRuntimeError(RuntimeError):
     """
     WaterTAP exception for generic runtime errors arising from property package testing.
     """
-
-    pass
 
 
 class PropertyTestHarness:
@@ -98,7 +91,6 @@ class PropertyTestHarness:
         default_solution: dictionary of property values at default initialized state variables
             keys = (string name of variable, tuple index), values = value
         """
-        pass
 
     @pytest.fixture(scope="class")
     def frame_stateblock(self):
@@ -150,8 +142,9 @@ class PropertyTestHarness:
 
         # check that state variables are in metadata
         metadata = m.fs.properties.get_metadata().properties
+        metadata_strs = [v.name for v in metadata.list_supported_properties()]
         for sv_name in state_vars_dict:
-            if sv_name not in metadata:
+            if sv_name not in metadata_strs:
                 raise PropertyAttributeError(
                     "State variable {sv_name} is not included in the "
                     "metadata".format(sv_name=sv_name)
@@ -161,12 +154,12 @@ class PropertyTestHarness:
     def test_permanent_properties(self, frame_stateblock):
         m = frame_stateblock
         metadata = m.fs.properties.get_metadata().properties
-        for v_name in metadata:
-            if metadata[v_name]["method"] is None:
-                if not hasattr(m.fs.stream[0], v_name):
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is None:
+                if not hasattr(m.fs.stream[0], v.name):
                     raise PropertyAttributeError(
                         "Property {v_name} is included in the metadata but is not found "
-                        "on the stateblock".format(v_name=v_name)
+                        "on the stateblock".format(v_name=v.name)
                     )
 
     @pytest.mark.unit
@@ -175,21 +168,21 @@ class PropertyTestHarness:
         metadata = m.fs.properties.get_metadata().properties
 
         # check that properties are not built if not demanded
-        for v_name in metadata:
-            if metadata[v_name]["method"] is not None:
-                if m.fs.stream[0].is_property_constructed(v_name):
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if m.fs.stream[0].is_property_constructed(v.name):
                     raise PropertyAttributeError(
                         "Property {v_name} is an on-demand property, but was found "
-                        "on the stateblock without being demanded".format(v_name=v_name)
+                        "on the stateblock without being demanded".format(v_name=v.name)
                     )
 
         # check that properties are built if demanded
-        for v_name in metadata:
-            if metadata[v_name]["method"] is not None:
-                if not hasattr(m.fs.stream[0], v_name):
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if not hasattr(m.fs.stream[0], v.name):
                     raise PropertyAttributeError(
                         "Property {v_name} is an on-demand property, but was not built "
-                        "when demanded".format(v_name=v_name)
+                        "when demanded".format(v_name=v.name)
                     )
 
     @pytest.mark.unit
@@ -480,7 +473,6 @@ class PropertyRegressionTest:
         regression_solution: dictionary of property values for the specified state variables
             keys = (string name of variable, tuple index), values = value
         """
-        pass
 
     @pytest.mark.component
     def test_property_regression(self):
@@ -503,8 +495,8 @@ class PropertyRegressionTest:
 
         # touch all properties
         metadata = m.fs.properties.get_metadata().properties
-        for v_str in metadata.keys():
-            getattr(m.fs.stream[0], v_str)
+        for p in metadata.list_supported_properties():
+            getattr(m.fs.stream[0], p.name)
 
         # scale model
         calculate_scaling_factors(m)
@@ -578,7 +570,6 @@ class PropertyCalculateStateTest:
         state_solution: dictionary of the values for the state variables
             keys = (string name of variable, tuple index), values = value
         """
-        pass
 
     @pytest.mark.component
     def test_calculate_state(self):
@@ -593,6 +584,10 @@ class PropertyCalculateStateTest:
         # set default scaling
         for (v_str, ind), sf in self.scaling_args.items():
             m.fs.properties.set_default_scaling(v_str, sf, index=ind)
+
+        # touch all properties in scaling
+        for (v_name, ind), val in self.scaling_args.items():
+            getattr(m.fs.stream[0], v_name)
 
         # touch all properties in var_args
         for (v_name, ind), val in self.var_args.items():

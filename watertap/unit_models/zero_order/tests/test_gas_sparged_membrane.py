@@ -1,21 +1,20 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order gas-sparged membrane unit
 """
 import pytest
 
-
+from types import MethodType
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
@@ -68,9 +67,11 @@ class TestGasSpargedMembraneZO:
         assert model.fs.unit.config.database is model.db
 
         assert model.fs.unit._has_recovery_removal is True
-        assert model.fs.unit._initialize is initialize_sido
-        assert model.fs.unit._scaling is calculate_scaling_factors_gas_extraction
-        assert model.fs.unit._get_Q is _get_Q_gas_extraction
+        assert model.fs.unit._initialize == MethodType(initialize_sido, model.fs.unit)
+        assert model.fs.unit._scaling == MethodType(
+            calculate_scaling_factors_gas_extraction, model.fs.unit
+        )
+        assert model.fs.unit._get_Q == MethodType(_get_Q_gas_extraction, model.fs.unit)
         assert model.fs.unit._stream_table_dict == {
             "Inlet": model.fs.unit.inlet,
             "Treated": model.fs.unit.treated,
@@ -249,7 +250,6 @@ class TestGasSpargedMembraneZO:
                     <= 1e-6
                 )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_report(self, model):
 

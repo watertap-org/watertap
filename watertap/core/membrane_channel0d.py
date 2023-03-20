@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from pyomo.environ import (
     NegativeReals,
@@ -235,8 +234,14 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         state_args = self._get_state_args(initialize_guess, state_args)
 
         # intialize self.properties
+        state_args_properties_in = state_args["feed_side"]
+        if self._flow_direction == FlowDirection.forward:
+            state_args_properties_out = state_args["retentate"]
+        else:
+            state_args_properties_out = state_args["permeate"]
+
         source_flags = self.properties_in.initialize(
-            state_args=state_args["feed_side"],
+            state_args=state_args_properties_in,
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -244,17 +249,20 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         )
 
         self.properties_out.initialize(
-            state_args=state_args["retentate"],
+            state_args=state_args_properties_out,
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
         )
 
+        state_args_interface = self._get_state_args_interface(
+            initialize_guess, state_args_properties_in, state_args_properties_out
+        )
         self.properties_interface.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args["interface"],
+            state_args=state_args_interface,
         )
 
         init_log.info("Initialization Complete")

@@ -1,44 +1,43 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from pyomo.environ import (
     Var,
-    check_optimal_termination,
     Param,
     Suffix,
     NonNegativeReals,
     units as pyunits,
     check_optimal_termination,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 from enum import Enum, auto
 
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
     MaterialBalanceType,
+    EnergyBalanceType,
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
 )
 from idaes.core.solvers import get_solver
+from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.core import InitializationMixin
+from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 __author__ = "Hunter Barber"
 
@@ -135,6 +134,34 @@ class GACData(InitializationMixin, UnitModelBlockData):
         ),
     )
     CONFIG.declare(
+        "is_isothermal",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="""Assume isothermal conditions for control volume(s); energy_balance_type must be EnergyBalanceType.none,
+    **default** - True.""",
+        ),
+    )
+
+    CONFIG.declare(
+        "energy_balance_type",
+        ConfigValue(
+            default=EnergyBalanceType.none,
+            domain=In(EnergyBalanceType),
+            description="Energy balance construction flag",
+            doc="""Indicates what type of energy balance should be constructed,
+    **default** - EnergyBalanceType.none.
+    **Valid values:** {
+    **EnergyBalanceType.useDefault - refer to property package for default
+    balance type
+    **EnergyBalanceType.none** - exclude energy balances,
+    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
+    **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
+    **EnergyBalanceType.energyTotal** - single energy balance for material,
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}""",
+        ),
+    )
+    CONFIG.declare(
         "momentum_balance_type",
         ConfigValue(
             default=MomentumBalanceType.pressureTotal,
@@ -193,6 +220,15 @@ class GACData(InitializationMixin, UnitModelBlockData):
     )
 
     # ---------------------------------------------------------------------
+    def _validate_config(self):
+        if (
+            self.config.is_isothermal
+            and self.config.energy_balance_type != EnergyBalanceType.none
+        ):
+            raise ConfigurationError(
+                "If the isothermal assumption is used then the energy balance type must be none"
+            )
+
     def build(self):
 
         super().build()
@@ -201,6 +237,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
         # get default units from property package
         units_meta = self.config.property_package.get_metadata().get_derived_units
+        # Check configs for errors
+        self._validate_config()
 
         # separate target species to be adsorbed and other species considered inert
         component_set = self.config.property_package.component_list
@@ -208,6 +246,12 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # apply target species automatically if arg left to default and only one viable option exists
         if self.config.target_species is None and len(solute_set) == 1:
             self.config.target_species = solute_set
+        if self.config.target_species is None:
+            raise ConfigurationError(
+                "'target species' is not specified for the GAC unit model, "
+                "either specify 'target species' argument or reduce solute set "
+                "to a single component"
+            )
         target_species = self.config.target_species
         inert_species = component_set - self.config.target_species
 
@@ -222,16 +266,18 @@ class GACData(InitializationMixin, UnitModelBlockData):
         self.process_flow.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
+        self.process_flow.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.is_isothermal:
+            self.process_flow.add_isothermal_assumption()
+
         self.process_flow.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=False,
         )
-
-        @self.process_flow.Constraint(
-            self.flowsheet().config.time, doc="Isothermal assumption for process flow"
-        )
-        def eq_isothermal(b, t):
-            return b.properties_in[t].temperature == b.properties_out[t].temperature
 
         # add port for absorbed contaminant contained in nearly saturated GAC particles
         tmp_dict = dict(**self.config.property_package_args)
@@ -280,22 +326,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
             " of the mass transfer zone, typically 0.95 or 0.99",
         )
 
-        self.visc_water = Param(
-            default=1.3097e-3,
-            initialize=1.3097e-3,
-            domain=NonNegativeReals,
-            units=units_meta("pressure") * units_meta("time"),
-            doc="Water viscosity",
-        )
-
-        self.dens_water = Param(
-            default=997,
-            initialize=997,
-            domain=NonNegativeReals,
-            units=units_meta("mass") * units_meta("length") ** -3,
-            doc="Water density",
-        )
-
         # ---------------------------------------------------------------------
         # Freundlich isotherm parameters and adsorption variables
         self.freund_k = Var(
@@ -316,7 +346,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         self.equil_conc = Var(
             initialize=1e-4,
-            bounds=(1e-8, None),
+            bounds=(1e-20, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Equilibrium concentration of adsorbed phase with liquid phase",
@@ -361,7 +391,15 @@ class GACData(InitializationMixin, UnitModelBlockData):
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length") ** 2,
-            doc="Adsorber bed area",
+            doc="Adsorber bed area, single adsorber area or sum of areas for adsorbers in parallel",
+        )
+
+        self.bed_diameter = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length"),
+            doc="Adsorber bed diameter, valid if considering only a single adsorber",
         )
 
         self.bed_length = Var(
@@ -495,6 +533,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta("time"),
             doc="Elapsed time between GAC replacement in adsorber bed in operation",
+        )
+
+        self.bed_volumes_treated = Var(
+            initialize=10000,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Bed volumes treated",
         )
 
         self.gac_mass_replace_rate = Var(
@@ -761,11 +807,11 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 b.dg + 1
             )
 
-        @self.Constraint(doc="Relate void fraction and GAC densities")
+        @self.Constraint(doc="Relate bed void fraction and GAC densities")
         def eq_bed_voidage(b):
             return b.bed_voidage == 1 - (b.particle_dens_bulk / b.particle_dens_app)
 
-        @self.Constraint(doc="Relate void fraction and GAC densities")
+        @self.Constraint(doc="Relate particle void fraction and GAC densities")
         def eq_particle_porosity(b):
             return b.particle_porosity == 1 - (
                 b.particle_dens_app / b.particle_dens_sol
@@ -782,6 +828,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 == b.bed_volume
             )
 
+        @self.Constraint(doc="Adsorber bed area")
+        def eq_bed_area(b):
+            return b.bed_area == Constants.pi * (b.bed_diameter**2) / 4
+
+        @self.Constraint(doc="Adsorber bed dimensions")
+        def eq_bed_dimensions(b):
+            return b.bed_volume == b.bed_area * b.bed_length
+
         @self.Constraint(doc="Total gac mass in the adsorbed bed")
         def eq_mass_gac_bed(b):
             return b.bed_mass_gac == b.particle_dens_bulk * b.bed_volume
@@ -790,16 +844,13 @@ class GACData(InitializationMixin, UnitModelBlockData):
         def eq_velocity_relation(b):
             return b.velocity_int * b.bed_voidage == b.velocity_sup
 
-        @self.Constraint(doc="Adsorber bed area")
-        def eq_area_bed(b):
-            return (
-                b.bed_area * b.velocity_sup
-                == b.process_flow.properties_in[0].flow_vol_phase["Liq"]
-            )
-
         @self.Constraint(doc="Adsorber bed length")
         def eq_length_bed(b):
             return b.bed_length == b.velocity_sup * b.ebct
+
+        @self.Constraint(doc="Bed volumes treated")
+        def eq_bed_volumes_treated(b):
+            return b.bed_volumes_treated * b.res_time == b.elap_time * b.bed_voidage
 
         @self.Constraint(
             target_species,
@@ -840,7 +891,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 == (b.mass_throughput_mtz_upstream - b.mass_throughput) * b.min_ebct
             )
 
-        @self.Constraint(doc="Adsorber bed length")
+        @self.Constraint(doc="Length of the mass transfer zone")
         def eq_length_mtz(b):
             return b.length_mtz_replace == b.velocity_sup * b.ebct_mtz_replace
 
@@ -857,57 +908,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if (
             self.config.film_transfer_coefficient_type
             == FilmTransferCoefficientType.calculated
-            or self.config.surface_diffusion_coefficient_type
-            == SurfaceDiffusionCoefficientType.calculated
         ):
-            self.diffus_liq = Var(
-                initialize=1e-10,
-                bounds=(0, None),
-                domain=NonNegativeReals,
-                units=units_meta("length") ** 2 * units_meta("time") ** -1,
-                doc="Molecular diffusion coefficient",
-            )
-
-            # TODO: Determine whether the LeBas method can be implemented or embed in prop pack
-            self.molal_volume = Var(
-                initialize=1e-5,
-                bounds=(0, None),
-                domain=NonNegativeReals,
-                units=units_meta("length") ** 3 * units_meta("amount") ** -1,
-                doc="Molal volume",
-            )
-
-            @self.Constraint(
-                doc="Molecular diffusion coefficient calculated by the Hayduk-Laudie correlation "
-                "in specified units for organic compounds in water",
-            )
-            def eq_molecular_diffusion_coefficient(b):
-                molecular_diffusion_coefficient_inv_units = (
-                    units_meta("time") * units_meta("length") ** -2
-                )
-                visc_water_inv_units = (
-                    units_meta("pressure") ** -1 * units_meta("time") ** -1
-                )
-                molal_volume_inv_units = (
-                    units_meta("amount") * units_meta("length") ** -3
-                )
-                return (b.diffus_liq * molecular_diffusion_coefficient_inv_units) * (
-                    (b.visc_water * 1e3 * visc_water_inv_units) ** 1.14
-                ) * (
-                    (b.molal_volume * 1e6 * molal_volume_inv_units) ** 0.589
-                ) == 13.26e-9
-
-        # ---------------------------------------------------------------------
-        if (
-            self.config.film_transfer_coefficient_type
-            == FilmTransferCoefficientType.calculated
-        ):
+            # TODO check N_Re formulation for packed beds
             self.N_Re = Var(
                 initialize=1,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="Reynolds number, Re < 2e4",  # TODO check N_Re formulation for packed beds
+                doc="Reynolds number, correlation using Schmidt number valid in Re < 2e4",
             )
 
             self.N_Sc = Var(
@@ -915,7 +923,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="Schmidt number, 0.7< Sc < 1e4",
+                doc="Schmidt number, correlation using Schmidt number valid in 0.7 < Sc < 1e4",
             )
 
             self.sphericity = Var(
@@ -929,21 +937,34 @@ class GACData(InitializationMixin, UnitModelBlockData):
             @self.Constraint(doc="Reynolds number calculation")
             def eq_reynolds_number(b):
                 return (
-                    b.N_Re * b.visc_water * b.bed_voidage
-                    == b.dens_water * b.sphericity * b.particle_dia * b.velocity_sup
+                    b.N_Re
+                    * b.process_flow.properties_in[0].visc_d_phase["Liq"]
+                    * b.bed_voidage
+                    == b.process_flow.properties_in[0].dens_mass_phase["Liq"]
+                    * b.sphericity
+                    * b.particle_dia
+                    * b.velocity_sup
                 )
 
-            @self.Constraint(doc="Schmidt number calculation")
-            def eq_schmidt_number(b):
-                return b.N_Sc * b.dens_water * b.diffus_liq == b.visc_water
+            @self.Constraint(target_species, doc="Schmidt number calculation")
+            def eq_schmidt_number(b, j):
+                return (
+                    b.N_Sc
+                    * b.process_flow.properties_in[0].dens_mass_phase["Liq"]
+                    * b.process_flow.properties_in[0].diffus_phase_comp["Liq", j]
+                    == b.process_flow.properties_in[0].visc_d_phase["Liq"]
+                )
 
             @self.Constraint(
-                doc="Liquid phase film transfer rate from the Gnielinshi correlation"
+                target_species,
+                doc="Liquid phase film transfer rate from the Gnielinshi correlation",
             )
-            def eq_film_transfer_rate(b):
+            def eq_film_transfer_rate(b, j):
                 return b.kf * b.particle_dia == b.sphericity * (
                     1 + 1.5 * (1 - b.bed_voidage)
-                ) * b.diffus_liq * (2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc ** (1 / 3)))
+                ) * b.process_flow.properties_in[0].diffus_phase_comp["Liq", j] * (
+                    2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc ** (1 / 3))
+                )
 
         # ---------------------------------------------------------------------
         if (
@@ -974,14 +995,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 return (
                     b.ds * b.tort * b.equil_conc * b.particle_dens_app
                     == b.spdfr
-                    * b.diffus_liq
+                    * b.process_flow.properties_in[0].diffus_phase_comp["Liq", j]
                     * b.process_flow.properties_in[0].conc_mass_phase_comp["Liq", j]
                 )
 
     # ---------------------------------------------------------------------
     # initialize method
     def initialize_build(
-        blk,
+        self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -1002,8 +1023,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
 
@@ -1011,8 +1032,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # Set state_args from inlet state
         if state_args is None:
             state_args = {}
-            state_dict = blk.process_flow.properties_in[
-                blk.flowsheet().config.time.first()
+            state_dict = self.process_flow.properties_in[
+                self.flowsheet().config.time.first()
             ].define_port_members()
 
             for k in state_dict.keys():
@@ -1026,14 +1047,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # specify conditions to solve at a feasible point during initialization
         # necessary to invert user provided scaling factor due to
         # low values creating infeasible initialization conditions
-        for j in blk.config.property_package.component_list:
+        for j in self.config.property_package.component_list:
             temp_scale = iscale.get_scaling_factor(
-                blk.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
+                self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
             )
             state_args["flow_mol_phase_comp"][("Liq", j)] = temp_scale**-1
 
         # Initialize control volume
-        flags = blk.process_flow.initialize(
+        flags = self.process_flow.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1043,10 +1064,10 @@ class GACData(InitializationMixin, UnitModelBlockData):
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
         # Initialize adsorbed_contam port
-        for j in blk.config.property_package.component_list:
-            if j in blk.config.target_species:
+        for j in self.config.property_package.component_list:
+            if j in self.config.target_species:
                 temp_scale = iscale.get_scaling_factor(
-                    blk.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
+                    self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
                 )
                 state_args["flow_mol_phase_comp"][("Liq", j)] = temp_scale**-1
             else:
@@ -1054,7 +1075,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                     ("Liq", j)
                 ] = 0  # all non-adsorbed species initialized to 0
 
-        blk.adsorbed_contam.initialize(
+        self.adsorbed_contam.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1065,15 +1086,15 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # --------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.process_flow.release_state(flags, outlvl + 1)
+        self.process_flow.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     # ---------------------------------------------------------------------
 
@@ -1092,6 +1113,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         var_dict["Adsorber bed void fraction"] = self.bed_voidage
         var_dict["Adsorber bed volume"] = self.bed_volume
         var_dict["Adsorber bed area"] = self.bed_area
+        var_dict["Adsorber bed diameter"] = self.bed_diameter
         var_dict["Adsorber bed length"] = self.bed_length
         var_dict["Mass of fresh GAC in the adsorber bed"] = self.bed_mass_gac
         var_dict["Superficial velocity"] = self.velocity_sup
@@ -1117,10 +1139,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         var_dict["Liquid phase film transfer coefficient"] = self.kf
         var_dict["Surface diffusion coefficient"] = self.ds
         var_dict["Solute distribution parameter"] = self.dg
-        if hasattr(self, "diffus_liq"):
-            var_dict["Molecular diffusion coefficient"] = self.diffus_liq
-        if hasattr(self, "molal_volume"):
-            var_dict["Molal volume"] = self.molal_volume
 
         # loop through desired state block properties indexed by [phase, comp]
         phase_comp_prop_dict = {
@@ -1240,6 +1258,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.bed_area) is None:
             iscale.set_scaling_factor(self.bed_area, sf_solvent * 1e1)
 
+        if iscale.get_scaling_factor(self.bed_diameter) is None:
+            iscale.set_scaling_factor(self.bed_diameter, sf_solvent * 1e2)
+
         if iscale.get_scaling_factor(self.bed_mass_gac) is None:
             iscale.set_scaling_factor(self.bed_mass_gac, sf_solvent * 1e-1)
 
@@ -1304,6 +1325,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.elap_time) is None:
             iscale.set_scaling_factor(self.elap_time, 1e-6)
 
+        if iscale.get_scaling_factor(self.bed_volumes_treated) is None:
+            iscale.set_scaling_factor(self.bed_volumes_treated, 1e-5)
+
         if iscale.get_scaling_factor(self.kf) is None:
             iscale.set_scaling_factor(self.kf, 1e5)
 
@@ -1344,14 +1368,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         iscale.set_scaling_factor(self.b2, 1)
         iscale.set_scaling_factor(self.b3, 10)
         iscale.set_scaling_factor(self.b4, 1)
-
-        if hasattr(self, "diffus_liq"):
-            if iscale.get_scaling_factor(self.diffus_liq) is None:
-                iscale.set_scaling_factor(self.diffus_liq, 1e10)
-
-        if hasattr(self, "molal_volume"):
-            if iscale.get_scaling_factor(self.molal_volume) is None:
-                iscale.set_scaling_factor(self.molal_volume, 1e5)
 
         if hasattr(self, "N_Re"):
             if iscale.get_scaling_factor(self.N_Re) is None:

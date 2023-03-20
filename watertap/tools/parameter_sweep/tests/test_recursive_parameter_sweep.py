@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 import os
@@ -181,14 +180,15 @@ def test_recursive_parameter_sweep(model, tmp_path):
 
     solver = pyo.SolverFactory("ipopt")
 
+    num_samples = 10
     sweep_params = {}
-    sweep_params["a_val"] = UniformSample(m.fs.a, 0.0, 1.0)
+    sweep_params["a_val"] = UniformSample(m.fs.a, 0.0, 1.0, num_samples)
 
     outputs = {}
     outputs["x_val"] = m.fs.x
 
     # Run the parameter sweep study using num_samples randomly drawn from the above range
-    num_samples = 10
+
     seed = 0
 
     # Run the parameter sweep
@@ -319,14 +319,14 @@ def test_recursive_parameter_sweep_function(model, tmp_path):
 
     solver = pyo.SolverFactory("ipopt")
 
+    num_samples = 10
     sweep_params = {}
-    sweep_params["a_val"] = UniformSample(m.fs.a, 0.0, 1.0)
+    sweep_params["a_val"] = UniformSample(m.fs.a, 0.0, 1.0, num_samples)
 
     outputs = {}
     outputs["x_val"] = m.fs.x
 
     # Run the parameter sweep study using num_samples randomly drawn from the above range
-    num_samples = 10
     seed = 0
 
     results_fname = os.path.join(tmp_path, "global_results")

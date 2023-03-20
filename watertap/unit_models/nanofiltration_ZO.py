@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -21,11 +20,10 @@ from pyomo.environ import (
     Reference,
     units as pyunits,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
     MaterialBalanceType,
     EnergyBalanceType,
@@ -41,7 +39,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.core import InitializationMixin
+from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 
 _log = idaeslog.getLogger(__name__)
@@ -97,13 +95,23 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         ),
     )
     CONFIG.declare(
+        "is_isothermal",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="""Assume isothermal conditions for control volume(s); energy_balance_type must be EnergyBalanceType.none,
+    **default** - True.""",
+        ),
+    )
+
+    CONFIG.declare(
         "energy_balance_type",
         ConfigValue(
-            default=EnergyBalanceType.useDefault,
+            default=EnergyBalanceType.none,
             domain=In(EnergyBalanceType),
             description="Energy balance construction flag",
             doc="""Indicates what type of energy balance should be constructed,
-    **default** - EnergyBalanceType.useDefault.
+    **default** - EnergyBalanceType.none.
     **Valid values:** {
     **EnergyBalanceType.useDefault - refer to property package for default
     balance type
@@ -192,6 +200,15 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 "The NF model was expecting at least one solute or ion and did not receive any."
             )
 
+    def _validate_config(self):
+        if (
+            self.config.is_isothermal
+            and self.config.energy_balance_type != EnergyBalanceType.none
+        ):
+            raise ConfigurationError(
+                "If the isothermal assumption is used then the energy balance type must be none"
+            )
+
     def build(self):
         # Call UnitModel.build to setup dynamics
         super().build()
@@ -200,6 +217,8 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
+        # Check configs for errors
+        self._validate_config()
         self._process_config()
 
         if hasattr(self.config.property_package, "ion_set"):
@@ -291,11 +310,13 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
 
-        @self.feed_side.Constraint(
-            self.flowsheet().config.time, doc="isothermal energy balance for feed_side"
+        self.feed_side.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
         )
-        def eq_isothermal(b, t):
-            return b.properties_in[t].temperature == b.properties_out[t].temperature
+
+        if self.config.is_isothermal:
+            self.feed_side.add_isothermal_assumption()
 
         self.feed_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
@@ -452,7 +473,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             )
 
     def initialize_build(
-        blk,
+        self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -473,14 +494,14 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize holdup block
-        flags = blk.feed_side.initialize(
+        flags = self.feed_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -492,8 +513,8 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         # Set state_args from inlet state
         if state_args is None:
             state_args = {}
-            state_dict = blk.feed_side.properties_in[
-                blk.flowsheet().config.time.first()
+            state_dict = self.feed_side.properties_in[
+                self.flowsheet().config.time.first()
             ].define_port_members()
 
             for k in state_dict.keys():
@@ -504,7 +525,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        blk.properties_permeate.initialize(
+        self.properties_permeate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -515,16 +536,16 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.feed_side.release_state(flags, outlvl + 1)
+        self.feed_side.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     def _get_performance_contents(self, time_point=0):
         for k in ("ion_set", "solute_set"):
@@ -658,9 +679,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 iscale.set_scaling_factor(v, sf)
 
         # transforming constraints
-        for ind, c in self.feed_side.eq_isothermal.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].temperature)
-            iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_mass_transfer_term.items():
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
@@ -681,6 +699,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         for t, c in self.eq_permeate_isothermal.items():
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].temperature)
             iscale.constraint_scaling_transform(c, sf)
+
         for t, c in self.eq_recovery_vol_phase.items():
             sf = iscale.get_scaling_factor(self.recovery_vol_phase[t, "Liq"])
             iscale.constraint_scaling_transform(c, sf)

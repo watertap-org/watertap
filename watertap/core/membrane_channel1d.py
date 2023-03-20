@@ -1,15 +1,16 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
+
+from copy import deepcopy
 
 from pyomo.common.config import ConfigValue, In
 from pyomo.environ import (
@@ -161,29 +162,6 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
         super().add_state_blocks(has_phase_equilibrium=has_phase_equilibrium)
         self._add_interface_stateblock(has_phase_equilibrium)
 
-    def add_total_enthalpy_balances(self, **kwrags):
-        # make this a no-op for MC1D
-        return None
-
-    def add_isothermal_conditions(self, **kwargs):
-
-        super().add_isothermal_conditions(**kwargs)
-
-        ## ==========================================================================
-        # Feed-side isothermal conditions
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.length_domain,
-            doc="Isothermal assumption for feed channel",
-        )
-        def eq_feed_isothermal(b, t, x):
-            if self._skip_element(x):
-                return Constraint.Skip
-            return (
-                b.properties[t, b.length_domain.first()].temperature
-                == b.properties[t, x].temperature
-            )
-
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         add_object_reference(self, "dP_dx", self.deltaP)
 
@@ -239,19 +217,28 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
         state_args = self._get_state_args(initialize_guess, state_args)
 
         # intialize self.properties
+        state_args_properties_in = state_args["feed_side"]
+        if self._flow_direction == FlowDirection.forward:
+            state_args_properties_out = state_args["retentate"]
+        else:
+            state_args_properties_out = state_args["permeate"]
+
         source_flags = super().initialize(
-            state_args=state_args["feed_side"],
+            state_args=state_args_properties_in,
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             hold_state=True,
         )
 
+        state_args_interface = self._get_state_args_interface(
+            initialize_guess, state_args_properties_in, state_args_properties_out
+        )
         self.properties_interface.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args["interface"],
+            state_args=state_args_interface,
         )
 
         if hold_state:

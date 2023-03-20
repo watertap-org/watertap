@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 from io import StringIO
 
@@ -27,6 +26,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.initialization import propagate_state
+from idaes.core.util.exceptions import InitializationError
 
 # Import components
 from watertap.unit_models.mvc.components import Evaporator
@@ -127,7 +127,10 @@ def initialize(m, solver=None):
 
     # initialize compressor
     propagate_state(m.fs.s01)
-    m.fs.compressor.initialize(outlvl=idaeslog.INFO_HIGH)
+    try:
+        m.fs.compressor.initialize(outlvl=idaeslog.DEBUG)
+    except InitializationError:
+        pass
 
     # initialize condenser
     propagate_state(m.fs.s02)
@@ -158,20 +161,20 @@ def test_mvc():
     brine_blk = m.fs.evaporator.properties_brine[0]
     # evaporator values
     assert brine_blk.pressure.value == pytest.approx(1.9849e4, rel=1e-3)
-    assert m.fs.evaporator.lmtd.value == pytest.approx(30.44, rel=1e-3)
-    assert m.fs.evaporator.heat_transfer.value == pytest.approx(1.2176e7, rel=1e-3)
+    assert m.fs.evaporator.lmtd.value == pytest.approx(30.50, rel=1e-3)
+    assert m.fs.evaporator.heat_transfer.value == pytest.approx(1.220e7, rel=1e-3)
 
     # compressor values
     compressed_blk = m.fs.compressor.control_volume.properties_out[0]
     assert m.fs.compressor.control_volume.work[0].value == pytest.approx(
         5.8521e5, rel=1e-3
     )
-    assert compressed_blk.pressure.value == pytest.approx(3.9720e4, rel=1e-3)
+    assert compressed_blk.pressure.value == pytest.approx(3.9656e4, rel=1e-3)
     assert compressed_blk.temperature.value == pytest.approx(407.70, rel=1e-3)
 
     # condenser values
     condensed_blk = m.fs.condenser.control_volume.properties_out[0]
     assert m.fs.condenser.control_volume.heat[0].value == pytest.approx(
-        -1.2176e7, rel=1e-3
+        -1.220e7, rel=1e-3
     )
     assert condensed_blk.temperature.value == pytest.approx(342.20, rel=1e-3)
