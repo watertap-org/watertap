@@ -124,15 +124,20 @@ def main():
             data=[[guess_freund_k, guess_freund_ninv, guess_ds]],
             columns=theta_names,
         )
-    
+
         # sum of squared error function as objective
         expr_sf = 1e-10
-    
+
         def SSE(model, data_filtered_case):
-            expr = (float(data_filtered_case[f"{source_name}_X"]) - model.fs.gac.bed_volumes_treated) ** 2
+            expr = (
+                float(data_filtered_case[f"{source_name}_X"])
+                - model.fs.gac.bed_volumes_treated
+            ) ** 2
             return expr * expr_sf
-    
-        print("--------------------------\tmodel regression\t--------------------------")
+
+        print(
+            "--------------------------\tmodel regression\t--------------------------"
+        )
         # Create an instance of the parmest estimator
         pest = parmest.Estimator(
             parmest_regression,
@@ -141,15 +146,15 @@ def main():
             SSE,
             tee=False,
         )
-    
+
         pest.objective_at_theta(
             theta_values=theta_values,
             initialize_parmest_model=True,
         )
-    
+
         # Parameter estimation
         obj, theta = pest.theta_est()
-    
+
         print("The SSE at the optimal solution is %0.6f" % (obj / expr_sf))
         print("The values for the parameters are as follows:")
         for k, v in theta.items():
@@ -167,7 +172,6 @@ def main():
     print("--------------------------\tshow plot\t--------------------------")
     plot_regression(data_regression, data_filtered)
     print(param_results)
-
 
 
 def model_build():
@@ -237,7 +241,7 @@ def model_build():
     m.fs.gac.velocity_sup.fix(0.002209)
     # design spec
     m.fs.gac.conc_ratio_replace.fix(0.20)
-    # parameters
+    # parameters TODO: use lookup table of regression to define a and b as f(N_Bi(ds))
     m.fs.gac.a0.fix(0.8)
     m.fs.gac.a1.fix(0)
     m.fs.gac.b0.fix(0.023)
@@ -315,16 +319,16 @@ def solve_regression(theta):
 def plot_regression(data_regression, data_filtered):
 
     color_code = [
-        '#ffc000',
-        '#ed7d31',
-        '#c00000',
-        '#00b050',
-        '#7030a0',
-        '#0070c0',
-        '#bdd7ee',
-        '#000000',
-        '#a5a5a5',
-        '#f8cbad',
+        "#ffc000",
+        "#ed7d31",
+        "#c00000",
+        "#00b050",
+        "#7030a0",
+        "#0070c0",
+        "#bdd7ee",
+        "#000000",
+        "#a5a5a5",
+        "#f8cbad",
     ]
 
     # fig1
@@ -343,7 +347,7 @@ def plot_regression(data_regression, data_filtered):
             data[f"{source_name_list[i]}_Y"],
             "o",
             mec=color_code[i],
-            mfc='None',
+            mfc="None",
             label="raw data",
         )
         ax.plot(
@@ -358,24 +362,21 @@ def plot_regression(data_regression, data_filtered):
             data_regression[source_name_list[i]]["bed_volumes_treated"],
             data_regression[source_name_list[i]]["conc_ratio"],
             color_code[i],
-            label="regression results"
+            label="regression results",
         )
         ax.legend(
             title=f"{source_name_list[i]}",
-            fontsize='x-small',
-            loc='lower right',
+            fontsize="x-small",
+            loc="lower right",
         )
 
         if i == 8:
             ax.set_xlabel("bed volumes treated")
             ax.set_ylabel("concentration ratio")
 
-        i = i+1
+        i = i + 1
 
-    fig1.subplots_adjust(
-        left=0.1, bottom=0.1, right=0.9, top=0.9,
-        wspace=0, hspace=0
-    )
+    fig1.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0, hspace=0)
 
     plt.show()
 
@@ -387,14 +388,14 @@ def plot_regression(data_regression, data_filtered):
             data_regression[source_name_list[j]]["bed_volumes_treated"],
             data_regression[source_name_list[j]]["conc_ratio"],
             color_code[j],
-            label=f"{source_name_list[j]}"
+            label=f"{source_name_list[j]}",
         )
         plt.plot(
             data[f"{source_name_list[j]}_X"],
             data[f"{source_name_list[j]}_Y"],
             "o",
             mec=color_code[j],
-            mfc='None',
+            mfc="None",
         )
         plt.plot(
             data_filtered[source_name_list[j]][f"{source_name_list[j]}_X"],
@@ -407,8 +408,8 @@ def plot_regression(data_regression, data_filtered):
     plt.xlabel("bed volumes treated")
     plt.ylabel("concentration ratio")
     plt.legend(
-        fontsize='x-small',
-        loc='lower right',
+        fontsize="x-small",
+        loc="lower right",
     )
 
     plt.show()
