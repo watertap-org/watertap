@@ -315,8 +315,8 @@ class SopStateBlockData(StateBlockData):
         self.flow_vol_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
-            initialize=1e-3,
-            bounds=(None, None),
+            initialize=1e-6,
+            domain=NonNegativeReals,
             units=units.m**3 / units.s,
             doc="Component volumetric flowrate",
         )

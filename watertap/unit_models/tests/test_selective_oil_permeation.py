@@ -137,9 +137,7 @@ class TestSelectiveOilPermeation:
     @pytest.mark.component
     def test_var_scaling(self, unit_frame):
         m = unit_frame
-        badly_scaled_var_lst = list(
-            badly_scaled_var_generator(m, large=1e2, small=1e-2)
-        )
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         [print(i[0], i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
@@ -197,6 +195,9 @@ class TestSelectiveOilPermeation:
         )
         assert pytest.approx(0.19118, rel=1e-3) == value(m.fs.unit.recovery_frac_oil[0])
         assert pytest.approx(1.9596e-2, rel=1e-3) == value(m.fs.unit.liquid_velocity[0])
+        assert pytest.approx(6.1178e-6, rel=1e-3) == value(
+            m.fs.unit.mass_transfer_oil[0]
+        )
 
     @pytest.mark.unit
     def test_report(self, unit_frame):

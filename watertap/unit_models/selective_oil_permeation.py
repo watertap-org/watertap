@@ -313,8 +313,8 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
 
         self.mass_transfer_oil = Var(
             self.flowsheet().config.time,
-            initialize=1,
-            bounds=(0.0, 1e6),
+            initialize=1e-6,
+            bounds=(0.0, None),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("time") ** -1,
             doc="Mass transfer of oil to permeate",
