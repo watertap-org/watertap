@@ -13,6 +13,7 @@
 import numpy as np
 import pandas as pd
 import idaes.core.surrogate.pysmo_surrogate as surrogate
+from idaes.core.surrogate.pysmo import radial_basis_function
 from idaes.core.surrogate.plotting.sm_plotter import (
     surrogate_scatter2D,
     surrogate_parity,
@@ -24,7 +25,7 @@ __author__ = "Hunter Barber"
 
 def main():
 
-    min_st_regression()
+    # min_st_regression()
     throughput_regression()
 
 
@@ -92,10 +93,17 @@ def min_st_regression():
         input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
     }
 
-    show = False
     pysmo_surr = surrogate.PysmoSurrogate(
         pysmo_surr_expr, input_labels, output_labels, input_bounds
     )
+
+    # To save a model
+    model = pysmo_surr.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/min_st_surrogate.json",
+        overwrite=True,
+    )
+
+    show = False
     surrogate_scatter2D(
         pysmo_surr,
         min_st_df,
@@ -119,12 +127,6 @@ def min_st_regression():
         min_st_df,
         filename="watertap/examples/flowsheets/pfas_treatment/min_st_residual.pdf",
         show=show,
-    )
-
-    # To save a model
-    model = pysmo_surr.save_to_file(
-        "watertap/examples/flowsheets/pfas_treatment/min_st_surrogate.json",
-        overwrite=True,
     )
 
 
@@ -196,7 +198,7 @@ def throughput_regression():
 
     # ---------------------------------------------------------------------
     # throughput equation surrogate training
-
+    """
     trainer = surrogate.PysmoKrigingTrainer(
         input_labels=["ninv", "bi", "conc_ratio"],
         output_labels=["throughput"],
@@ -211,10 +213,17 @@ def throughput_regression():
         input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
     }
 
-    show = False
     pysmo_surr = surrogate.PysmoSurrogate(
         pysmo_surr_expr, input_labels, output_labels, input_bounds
     )
+    
+    # To save a model
+    model = pysmo_surr.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/throughput_surrogate.json",
+        overwrite=True,
+    )
+    
+    show = False
     surrogate_scatter2D(
         pysmo_surr,
         throughput_df,
@@ -239,11 +248,62 @@ def throughput_regression():
         filename="watertap/examples/flowsheets/pfas_treatment/throughput_residual.pdf",
         show=show,
     )
+    """
+    # ---------------------------------------------------------------------
+    # throughput equation surrogate training - testing radial basis function
+
+    rbf_trainer = surrogate.PysmoRBFTrainer(
+        input_labels=["ninv", "bi", "conc_ratio"],
+        output_labels=["throughput"],
+        training_dataframe=throughput_df,
+    )
+    # Set PySMO options
+    rbf_trainer.config.basis_function = "gaussian"
+
+    # Train the model
+    rbf_train = rbf_trainer.train_surrogate()
+
+    input_labels = rbf_trainer._input_labels
+    output_labels = rbf_trainer._output_labels
+    xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
+    input_bounds = {
+        input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
+    }
+
+    pysmo_surr = surrogate.PysmoSurrogate(
+        rbf_train, input_labels, output_labels, input_bounds
+    )
 
     # To save a model
     model = pysmo_surr.save_to_file(
-        "watertap/examples/flowsheets/pfas_treatment/throughput_surrogate.json",
+        "watertap/examples/flowsheets/pfas_treatment/throughput_surrogate_rbf_gaussian.json",
         overwrite=True,
+    )
+
+    show = False
+    surrogate_scatter2D(
+        pysmo_surr,
+        throughput_df,
+        filename="watertap/examples/flowsheets/pfas_treatment/throughput_rbf_gaussian_scatter2D.pdf",
+        show=show,
+    )
+    surrogate_scatter2D(
+        pysmo_surr,
+        throughput_df,
+        filename="watertap/examples/flowsheets/pfas_treatment/throughput_rbf_gaussian_scatter3D.pdf",
+        show=show,
+    )
+    surrogate_parity(
+        pysmo_surr,
+        throughput_df,
+        filename="watertap/examples/flowsheets/pfas_treatment/throughput_rbf_gaussian_parity.pdf",
+        show=show,
+    )
+    surrogate_residual(
+        pysmo_surr,
+        throughput_df,
+        filename="watertap/examples/flowsheets/pfas_treatment/throughput_rbf_gaussian_residual.pdf",
+        show=show,
     )
 
 
