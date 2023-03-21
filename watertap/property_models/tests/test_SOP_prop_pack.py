@@ -10,18 +10,11 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-import pytest
 import watertap.property_models.SOP_prop_pack as props
-from idaes.models.properties.tests.test_harness import (
-    PropertyTestHarness as PropertyTestHarness_idaes,
-)
 from watertap.property_models.tests.property_test_harness import (
     PropertyTestHarness,
     PropertyRegressionTest,
-    PropertyCalculateStateTest,
 )
-
-# TODO remove unused imports
 
 # -----------------------------------------------------------------------------
 class TestSOPProperty(PropertyTestHarness):
@@ -32,7 +25,7 @@ class TestSOPProperty(PropertyTestHarness):
             ("flow_mass_phase_comp", ("Liq", "H2O")): 1,
             ("flow_mass_phase_comp", ("Liq", "oil")): 1e2,
         }
-        self.stateblock_statistics = {  # TODO update statistics values
+        self.stateblock_statistics = {
             "number_variables": 15,
             "number_total_constraints": 11,
             "number_unused_variables": 2,
