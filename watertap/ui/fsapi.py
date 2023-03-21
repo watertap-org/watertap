@@ -29,8 +29,12 @@ except ImportError:
 
 # third-party
 import idaes.logger as idaeslog
+from idaes.core.util.model_statistics import degrees_of_freedom
 from pydantic import BaseModel, validator, Field
 import pyomo.environ as pyo
+from pyomo.core.expr.numeric_expr import ExpressionBase
+from pyomo.core.base.expression import Expression, _ExpressionData
+from pyomo.core.base.param import ScalarParam
 
 #: Forward-reference to a FlowsheetInterface type, used in
 #: :meth:`FlowsheetInterface.find`
@@ -81,6 +85,10 @@ class ModelExport(BaseModel):
     input_category: Optional[str]
     output_category: Optional[str]
     obj_key: str = None
+    fixed: bool = True
+    lb: Union[None, float] = 0.0
+    ub: Union[None, float] = 0.0
+    has_bounds: bool = True
 
     class Config:
         arbitrary_types_allowed = True
@@ -180,6 +188,7 @@ class FlowsheetExport(BaseModel):
     model_objects: Dict[str, ModelExport] = {}
     version: int = 2
     requires_idaes_solver: bool = False
+    dof: int = 0
 
     # set name dynamically from object
     @validator("name", always=True)
@@ -416,6 +425,32 @@ class FlowsheetInterface:
                 # Don't convert units when setting the exported value
                 dst.value = src.value
 
+                dst.obj.fixed = src.fixed
+                dst.fixed = src.fixed
+
+                # update bounds
+                if src.lb is None or src.lb == "":
+                    dst.obj.lb = None
+                    dst.lb = None
+                else:
+                    tmp = pyo.Var(initialize=src.lb, units=ui_units)
+                    tmp.construct()
+                    dst.obj.lb = pyo.value(
+                        u.convert(tmp, to_units=u.get_units(dst.obj))
+                    )
+                    dst.lb = src.lb
+                if src.ub is None or src.ub == "":
+                    dst.obj.ub = None
+                    dst.ub = None
+                else:
+                    tmp = pyo.Var(initialize=src.ub, units=ui_units)
+                    tmp.construct()
+                    dst.obj.ub = pyo.value(
+                        u.convert(tmp, to_units=u.get_units(dst.obj))
+                    )
+                    dst.ub = src.ub
+        # update degrees of freedom (dof)
+        self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         if missing:
             raise self.MissingObjectError(missing)
 
@@ -508,6 +543,30 @@ class FlowsheetInterface:
         u = pyo.units
         for key, mo in self.fs_exp.model_objects.items():
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
+            if not isinstance(
+                mo.obj,
+                (
+                    Expression,
+                    ExpressionBase,
+                    _ExpressionData,
+                    ScalarParam,
+                    type(None),
+                ),
+            ):
+                if mo.obj.ub is None:
+                    mo.ub = mo.obj.ub
+                else:
+                    tmp = pyo.Var(initialize=mo.obj.ub, units=u.get_units(mo.obj))
+                    tmp.construct()
+                    mo.ub = pyo.value(u.convert(tmp, to_units=mo.ui_units))
+                if mo.obj.lb is None:
+                    mo.lb = mo.obj.lb
+                else:
+                    tmp = pyo.Var(initialize=mo.obj.lb, units=u.get_units(mo.obj))
+                    tmp.construct()
+                    mo.lb = pyo.value(u.convert(tmp, to_units=mo.ui_units))
+            else:
+                mo.has_bounds = False
 
     @classmethod
     def from_installed_packages(
