@@ -281,7 +281,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         # Add unit variables
         self.flux_vol_oil = Var(
             self.flowsheet().config.time,
-            initialize=1e-6,
+            initialize=1e-8,
             bounds=(0.0, None),
             units=units_meta("length") * units_meta("time") ** -1,
             doc="Oil volumetric flux",
@@ -289,7 +289,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
 
         self.flux_vol_oil_pure = Var(
             self.flowsheet().config.time,
-            initialize=1e-6,
+            initialize=1e-8,
             bounds=(0.0, None),
             units=units_meta("length") * units_meta("time") ** -1,
             doc="Oil volumetric flux if the feed was pure oil",
@@ -667,5 +667,3 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
                 self.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "oil"]
             ),
         )
-
-        # TODO is any additional scaling needed? I see that there are some unit models that also make calls to constraint_scaling_transform within their calculate_scaling_factors method
