@@ -122,7 +122,10 @@ def min_st_regression():
     )
 
     # To save a model
-    model = pysmo_surr.save_to_file("min_st_surrogate.json", overwrite=True)
+    model = pysmo_surr.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/min_st_surrogate.json",
+        overwrite=True,
+    )
 
 
 def throughput_regression():
@@ -238,7 +241,10 @@ def throughput_regression():
     )
 
     # To save a model
-    model = pysmo_surr.save_to_file("throughput_surrogate.json", overwrite=True)
+    model = pysmo_surr.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/throughput_surrogate.json",
+        overwrite=True,
+    )
 
 
 if __name__ == "__main__":
