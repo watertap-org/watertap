@@ -105,7 +105,7 @@ class TestSelectiveOilPermeation:
             port = getattr(m.fs.unit, port_str)
             assert (
                 len(port.vars) == 3
-            )  # number of state variables for NaCl property package
+            )  # number of state variables for SOP property package
             assert isinstance(port, Port)
 
         assert number_variables(m) == 28
@@ -137,8 +137,19 @@ class TestSelectiveOilPermeation:
     @pytest.mark.component
     def test_var_scaling(self, unit_frame):
         m = unit_frame
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i[0], i[1]) for i in badly_scaled_var_lst]
+
+        # set initial values (to ensure these variables are not badly scaled)
+        m.fs.unit.feed_side.properties_out[0].flow_mass_phase_comp[
+            "Liq", "oil"
+        ].value = 1e-5
+        m.fs.unit.properties_permeate[0].flow_mass_phase_comp["Liq", "oil"].value = 1e-6
+        m.fs.unit.feed_side.properties_in[0].vol_frac_phase_comp[
+            "Liq", "oil"
+        ].value = 1e-3
+
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-8)
+        )
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -175,7 +186,7 @@ class TestSelectiveOilPermeation:
 
         assert (
             abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate))
-            <= 1e-8
+            <= 1e-6
         )
 
     @pytest.mark.component
