@@ -65,10 +65,18 @@ def main():
         "flow_mass_phase_comp", 1e5, index=("Liq", "oil")
     )
     iscale.calculate_scaling_factors(m)
+    print("\n------- display badly scaled variables - before initialization -------")
+    detect_badly_scaled_vars(m)
+
+    # set initial values for badly scaled variables
+    m.fs.SOP.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "oil"].value = 1e-5
+    m.fs.SOP.properties_permeate[0].flow_mass_phase_comp["Liq", "oil"].value = 1e-6
+    m.fs.SOP.feed_side.properties_in[0].vol_frac_phase_comp["Liq", "oil"].value = 1e-3
     print(
-        "\n------- display badly scaled variables - after initialize, before solve -------"
+        "\n------- display badly scaled variables - before initialization, after fixing bad scaling -------"
     )
     detect_badly_scaled_vars(m)
+
     # solve model
     assert_units_consistent(m)  # check that units are consistent
 
@@ -77,30 +85,45 @@ def main():
     )  # check that the degrees of freedom are what we expect
     solver = get_solver()
 
-    # Use of Degeneracy Hunter for troubleshooting model.
+    # use of Degeneracy Hunter for troubleshooting model
+    print("\n------- use degeneracy hunter -------")
     m.fs.dummy_objective = Objective(expr=0)
     solver.options["max_iter"] = 0
     solver.solve(m, tee=True)
     dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
     dh.check_residuals(tol=0.1)
 
-    print("------- initialize model -------")
+    print("\n------- initialize model -------")
     solver.options["max_iter"] = 2000
     m.fs.SOP.initialize()
 
     print("\n------- solve model -------")
+    solver.options["tol"] = 1e-10
     results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
 
     print("\n------- display scaling factors -------")
+    print("--- feed inlet ---")
+    m.fs.SOP.feed_side.properties_in[0].scaling_factor.display()
+    print("--- feed outlet ---")
+    m.fs.SOP.feed_side.properties_in[0].scaling_factor.display()
+    print("--- permeate ---")
+    m.fs.SOP.properties_permeate[0].scaling_factor.display()
+    print("--- unit model ---")
     m.fs.SOP.scaling_factor.display()
 
     print("\n------- display badly scaled variables - after solve -------")
-    detect_badly_scaled_vars(m)  # TODO do I still want this here?
+    detect_badly_scaled_vars(m)
 
     # display metrics
     print("\n------- display report -------")
     m.fs.SOP.report()
+    print("\n------- display feed side inlet stream -------")
+    m.fs.SOP.feed_side.properties_in[0].display()
+    print("\n------- display feed side outlet stream -------")
+    m.fs.SOP.feed_side.properties_out[0].display()
+    print("\n------- display permeate stream -------")
+    m.fs.SOP.properties_permeate[0].display()
 
     return m
 
