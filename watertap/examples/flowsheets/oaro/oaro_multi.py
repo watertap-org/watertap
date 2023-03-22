@@ -98,16 +98,16 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     # print_close_to_bounds(m)
     # print_infeasible_constraints(m)
 
-    # optimize_set_up(m, water_recovery=system_recovery)
-    # solve(m, solver=solver)
-    #
-    # print("\n***---Optimization results---***")
-    # display_system(m)
-    # display_design(m)
-    # if erd_type == ERDtype.pump_as_turbine:
-    #     display_state(m)
-    # else:
-    #     pass
+    optimize_set_up(m, water_recovery=system_recovery)
+    solve(m, solver=solver)
+
+    print("\n***---Optimization results---***")
+    display_system(m)
+    display_design(m)
+    if erd_type == ERDtype.pump_as_turbine:
+        display_state(m)
+    else:
+        pass
 
     return m
 
@@ -400,24 +400,36 @@ def set_operating_conditions(
     m.fs.feed.properties[0].temperature.fix(feed_temperature)  # feed temperature [K]
 
     # properties (cannot be fixed for initialization routines, must calculate the state variables)
-    feed_flow_mass = 1
-    feed_mass_frac_NaCl = 0.07
-    feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"].fix(
-        feed_flow_mass * feed_mass_frac_NaCl
-    )
-    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(
-        feed_flow_mass * feed_mass_frac_H2O
+    # feed_flow_mass = 1
+    # feed_mass_frac_NaCl = 0.07
+    # feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+    # m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"].fix(
+    #     feed_flow_mass * feed_mass_frac_NaCl
+    # )
+    # m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(
+    #     feed_flow_mass * feed_mass_frac_H2O
+    # )
+
+    Cin = 70
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"] = Cin
+    m.fs.feed.properties.calculate_state(
+        var_args={
+            ("conc_mass_phase_comp", ("Liq", "NaCl")): value(
+                m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
+            ),  # feed mass concentration
+            ("flow_vol_phase", "Liq"): 1e-3,
+        },  # volumetric feed flowrate [-]
+        hold_state=True,  # fixes the calculated component mass flow rates
     )
 
     # primary pumps
     for idx, pump in m.fs.PrimaryPumps.items():
-        pump.control_volume.properties_out[0].pressure = 65e5
+        pump.control_volume.properties_out[0].pressure = 65e5 / float(idx)
         pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
-    for pump in m.fs.RecyclePumps.values():
-        pump.control_volume.properties_out[0].pressure = 4e5
+    for idx, pump in m.fs.RecyclePumps.items():
+        pump.control_volume.properties_out[0].pressure = 10e5 / float(idx)
         pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
@@ -439,7 +451,8 @@ def set_operating_conditions(
     # Initialize OARO
     membrane_area = 50
     A = 4.2e-12
-    B = 1.3e-8
+    B = 3.5e-8
+    spacer_porosity = 0.85
 
     for stage in m.fs.OAROUnits.values():
 
@@ -450,17 +463,19 @@ def set_operating_conditions(
 
         stage.structural_parameter.fix(300e-6)
 
-        stage.permeate_side.channel_height.fix(0.001)
-        stage.permeate_side.spacer_porosity.fix(0.75)
-        stage.feed_side.channel_height.fix(0.002)
-        stage.feed_side.spacer_porosity.fix(0.75)
-        stage.feed_side.velocity[0, 0].fix(0.2)
+        stage.permeate_side.channel_height.fix(1e-3)
+        stage.permeate_side.spacer_porosity.fix(spacer_porosity)
+        stage.feed_side.channel_height.fix(1e-3)
+        stage.feed_side.spacer_porosity.fix(spacer_porosity)
+        stage.feed_side.velocity[0, 0].fix(0.1)
 
     # RO unit
-    m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
-    m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
+    m.fs.RO.A_comp.fix(A)  # membrane water permeability coefficient [m/s-Pa]
+    m.fs.RO.B_comp.fix(B)  # membrane salt permeability coefficient [m/s]
     m.fs.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
-    m.fs.RO.feed_side.spacer_porosity.fix(0.85)  # spacer porosity in membrane stage [-]
+    m.fs.RO.feed_side.spacer_porosity.fix(
+        spacer_porosity
+    )  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO.width.fix(5)  # stage width [m]
     m.fs.RO.area.fix(50)  # guess area for RO initialization
@@ -543,26 +558,11 @@ def initialize_loop(m, solver):
 
         # ---initialize loop---
         propagate_state(m.fs.pump_to_OARO[stage])
-        # recycle_pump_initializer(
-        #     m.fs.RecyclePumps[stage + 1],
-        #     m.fs.OAROUnits[stage],
-        #     solvent_multiplier=0.8,
-        #     solute_multiplier=0.5,
-        # )
-        feed_temperature = 273.15 + 25
-        m.fs.RecyclePumps[stage + 1].control_volume.properties_out[
-            0
-        ].temperature.value = feed_temperature
-        m.fs.RecyclePumps[stage + 1].control_volume.properties_out[
-            0
-        ].flow_mass_phase_comp["Liq", "H2O"].value = (
-            m.fs.OAROUnits[stage].feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"] * 0.8
-        )
-        m.fs.RecyclePumps[stage + 1].control_volume.properties_out[
-            0
-        ].flow_mass_phase_comp["Liq", "NaCl"].value = (
-            m.fs.OAROUnits[stage].feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
-            * 0.5
+        recycle_pump_initializer(
+            m.fs.RecyclePumps[stage + 1],
+            m.fs.OAROUnits[stage],
+            solvent_multiplier=0.8,
+            solute_multiplier=0.5,
         )
         propagate_state(m.fs.recyclepump_to_OARO[stage + 1])
         m.fs.OAROUnits[stage].initialize()
@@ -613,11 +613,12 @@ def initialize_system(m, solver=None, verbose=True):
     m.fs.PrimaryPumps[last_stage].initialize()
 
     propagate_state(m.fs.pump_to_ro)
-    print(f"DOF after prop_state to RO: {degrees_of_freedom(m)}")
-    print(f"fixed variables set after prop_state to RO: {fixed_variables_set(m.fs.RO)}")
-    m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
-    print(f"fixed variables set after RO: {fixed_variables_set(m.fs.RO)}")
-    print(f"DOF after RO: {degrees_of_freedom(m)}")
+    # print(f"DOF after prop_state to RO: {degrees_of_freedom(m)}")
+    # print(f"fixed variables set after prop_state to RO: {fixed_variables_set(m.fs.RO)}")
+    # m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
+    m.fs.RO.initialize()
+    # print(f"fixed variables set after RO: {fixed_variables_set(m.fs.RO)}")
+    # print(f"DOF after RO: {degrees_of_freedom(m)}")
 
     propagate_state(m.fs.ro_to_ERD)
     m.fs.EnergyRecoveryDevices[last_stage].initialize()
@@ -709,13 +710,13 @@ def optimize_set_up(
     # # OARO Units
     for stage in m.fs.OAROUnits.values():
         stage.area.unfix()
-    #     stage.area.setlb(1)
-    #     stage.area.setub(2000)
-    #
+        stage.area.setlb(1)
+        stage.area.setub(20000)
+
     # RO
     m.fs.RO.area.unfix()
-    # m.fs.RO.area.setlb(1)
-    # m.fs.RO.area.setub(2000)
+    m.fs.RO.area.setlb(1)
+    m.fs.RO.area.setub(20000)
 
     # additional specifications
     m.fs.product_salinity = Param(
@@ -832,7 +833,7 @@ def display_design(m):
             % (stage, m.fs.OAROUnits[stage].A_comp[0, "H2O"].value * (3.6e11))
         )
         print(
-            "OARO Stage %d salt perm. coeff.  %.1f LMH"
+            "OARO Stage %d salt perm. coeff.  %.1f LMH/bar"
             % (stage, m.fs.OAROUnits[stage].B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
         )
     print(
@@ -899,4 +900,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(4, system_recovery=0.3, erd_type=ERDtype.pump_as_turbine)
+    m = main(3, system_recovery=0.35, erd_type=ERDtype.pump_as_turbine)
