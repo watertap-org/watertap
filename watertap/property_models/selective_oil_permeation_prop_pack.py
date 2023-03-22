@@ -35,6 +35,7 @@ from idaes.core.util.initialization import (
     revert_state_vars,
     solve_indexed_blocks,
 )
+from idaes.core.util.misc import add_object_reference
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables,
@@ -73,6 +74,25 @@ class SopParameterData(PhysicalParameterBlock):
         self.set_default_scaling("temperature", 1e-2)
         self.set_default_scaling("pressure", 1e-6)
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
+
+        # parameters
+        self.visc_d_phase_comp = Param(
+            self.phase_list,
+            self.component_list,
+            mutable=True,
+            initialize={("Liq", "H2O"): 1e-3, ("Liq", "oil"): 3.5e-3},
+            units=units.kg * units.m**-1 * units.s**-1,
+            doc="Dynamic viscosity",
+        )
+
+        self.dens_mass_phase_comp = Param(
+            self.phase_list,
+            self.component_list,
+            mutable=True,
+            initialize={("Liq", "H2O"): 1e3, ("Liq", "oil"): 780},
+            units=units.kg * units.m**-3,
+            doc="Component mass density",
+        )
 
     @classmethod
     def define_metadata(cls, obj):
@@ -237,7 +257,7 @@ class SopStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize={("Liq", "H2O"): 1, ("Liq", "oil"): 0.01},
-            bounds=(1e-15, 100),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units.kg / units.s,
             doc="Mass flow rate",
@@ -245,7 +265,7 @@ class SopStateBlockData(StateBlockData):
 
         self.temperature = Var(
             initialize=298.15,
-            bounds=(273.15, 1000),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units.degK,
             doc="State temperature",
@@ -253,7 +273,7 @@ class SopStateBlockData(StateBlockData):
 
         self.pressure = Var(
             initialize=101325,
-            bounds=(1e5, 5e7),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units.Pa,
             doc="State pressure",
@@ -264,37 +284,20 @@ class SopStateBlockData(StateBlockData):
     # these property methods build variables and constraints on demand (i.e. only when asked
     # for by a user or unit model)
     def _visc_d_phase_comp(self):
-        self.visc_d_phase_comp = Param(
-            self.params.phase_list,
-            self.params.component_list,
-            mutable=True,
-            initialize=1e-3,
-            units=units.kg * units.m**-1 * units.s**-1,
-            doc="Dynamic viscosity",
-        )
-
-        self.visc_d_phase_comp["Liq", "H2O"] = 1e-3
-        self.visc_d_phase_comp["Liq", "oil"] = 3.5e-3
+        add_object_reference(self, "visc_d_phase_comp", self.params.visc_d_phase_comp)
 
     def _dens_mass_phase_comp(self):
-        self.dens_mass_phase_comp = Param(
-            self.params.phase_list,
-            self.params.component_list,
-            mutable=True,
-            initialize=1e3,
-            units=units.kg * units.m**-3,
-            doc="Component mass density",
+        add_object_reference(
+            self, "dens_mass_phase_comp", self.params.dens_mass_phase_comp
         )
-
-        self.dens_mass_phase_comp["Liq", "H2O"] = 1e3
-        self.dens_mass_phase_comp["Liq", "oil"] = 780
 
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-15, None),
+            bounds=(0, 1),
+            domain=NonNegativeReals,
             units=units.dimensionless,
             doc="Mass fraction",
         )
@@ -316,6 +319,7 @@ class SopStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=1e-6,
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units.m**3 / units.s,
             doc="Component volumetric flowrate",
@@ -337,7 +341,8 @@ class SopStateBlockData(StateBlockData):
         self.flow_vol_phase = Var(
             self.params.phase_list,
             initialize=1e-3,
-            bounds=(None, None),
+            bounds=(0, None),
+            domain=NonNegativeReals,
             units=units.m**3 / units.s,
             doc="Volumetric flow rate",
         )
@@ -355,7 +360,8 @@ class SopStateBlockData(StateBlockData):
         self.flow_mass_phase = Var(
             self.params.phase_list,
             initialize=1e-3,
-            bounds=(None, None),
+            bounds=(0, None),
+            domain=NonNegativeReals,
             units=units.kg / units.s,
             doc="Mass flow rate",
         )
@@ -373,7 +379,8 @@ class SopStateBlockData(StateBlockData):
         self.dens_mass_phase = Var(
             self.params.phase_list,
             initialize=1e3,
-            bounds=(1e2, 2e3),
+            bounds=(0, None),
+            domain=NonNegativeReals,
             units=units.kg * units.m**-3,
             doc="Mass density",
         )
@@ -390,7 +397,8 @@ class SopStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(None, None),
+            bounds=(0, 1),
+            domain=NonNegativeReals,
             units=units.dimensionless,
             doc="Volumetric fraction",
         )
@@ -412,7 +420,8 @@ class SopStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=1,
-            bounds=(None, None),
+            bounds=(0, None),
+            domain=NonNegativeReals,
             units=units.kg / units.m**3,
             doc="Mass concentration",
         )

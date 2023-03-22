@@ -195,7 +195,9 @@ class TestSelectiveOilPermeation:
         assert pytest.approx(6.1178e-6, rel=1e-3) == value(
             m.fs.unit.properties_permeate[0].flow_mass_phase_comp["Liq", "oil"]
         )
-        assert pytest.approx(3.4e4, rel=1e-3) == value(m.fs.unit.pressure_transmemb[0])
+        assert pytest.approx(3.4e4, rel=1e-3) == value(
+            m.fs.unit.pressure_transmemb_avg[0]
+        )
         assert pytest.approx(-2.8e4, rel=1e-3) == value(m.fs.unit.deltaP[0])
         assert pytest.approx(5.6024e-9, rel=1e-3) == value(m.fs.unit.flux_vol_oil[0])
         assert pytest.approx(6.0346e-7, rel=1e-3) == value(
@@ -205,7 +207,9 @@ class TestSelectiveOilPermeation:
             m.fs.unit.effective_area_ratio[0]
         )
         assert pytest.approx(0.19118, rel=1e-3) == value(m.fs.unit.recovery_frac_oil[0])
-        assert pytest.approx(1.9596e-2, rel=1e-3) == value(m.fs.unit.liquid_velocity[0])
+        assert pytest.approx(1.9596e-2, rel=1e-3) == value(
+            m.fs.unit.liquid_velocity_in[0]
+        )
         assert pytest.approx(6.1178e-6, rel=1e-3) == value(
             m.fs.unit.mass_transfer_oil[0]
         )
