@@ -253,10 +253,7 @@ def cost_gac(blk):
         == pyo.units.convert(
             (
                 blk.costing_package.gac.regen_unit_cost
-                * (
-                    blk.costing_package.gac.regen_frac
-                    * blk.unit_model.gac_mass_replace_rate
-                )
+                * (blk.costing_package.gac.regen_frac * blk.unit_model.gac_usage_rate)
             ),
             to_units=blk.costing_package.base_currency
             / blk.costing_package.base_period,
@@ -269,7 +266,7 @@ def cost_gac(blk):
                 blk.costing_package.gac.makeup_unit_cost
                 * (
                     (1 - blk.costing_package.gac.regen_frac)
-                    * blk.unit_model.gac_mass_replace_rate
+                    * blk.unit_model.gac_usage_rate
                 )
             ),
             to_units=blk.costing_package.base_currency
