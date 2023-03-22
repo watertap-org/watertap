@@ -317,8 +317,6 @@ see reaction package for documentation.}""",
             state_args=state_args_out,
         )
 
-        self.properties_in.release_state(flags=flags, outlvl=outlvl)
-
         if degrees_of_freedom(self) != 0:
             raise Exception(
                 f"{self.name} degrees of freedom were not 0 at the beginning "
@@ -327,6 +325,8 @@ see reaction package for documentation.}""",
 
         with idaeslog.solver_log(init_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
+
+        self.properties_in.release_state(flags=flags, outlvl=outlvl)
 
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
