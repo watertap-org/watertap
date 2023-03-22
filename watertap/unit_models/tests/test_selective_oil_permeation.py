@@ -26,7 +26,7 @@ from idaes.core import (
     MomentumBalanceType,
 )
 from watertap.unit_models.selective_oil_permeation import SelectiveOilPermeation
-import watertap.property_models.SOP_prop_pack as props
+import watertap.property_models.selective_oil_permeation_prop_pack as props
 from watertap.core.util.initialization import assert_no_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 
