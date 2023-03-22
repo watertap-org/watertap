@@ -35,14 +35,13 @@ from pyomo.environ import (
     SolverFactory,
 )
 from pyomo.util.check_units import assert_units_consistent
-
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.anaerobic_digestor import AD
 from idaes.core import MaterialFlowBasis
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set
 from idaes.core.util.model_diagnostics import DegeneracyHunter
 
 from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
@@ -60,6 +59,10 @@ from watertap.core.util.model_diagnostics.infeasible import *
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
+
+# TODO: Fix and unfix all variables and run at max_iter:0 to see which constraints fail using large_residual_set
+# TODO: Double check the values for X_PP, X_fa, and X_c4 in the Petersen matrix and reaction rates (double check signs)
+# TODO: Play around with scaling in property file
 
 
 class TestParamBlock(object):
@@ -549,13 +552,13 @@ class TestReactor:
 
         m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.034597)
         m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.015037)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(1e-9)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(1e-9)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(1e-9)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(1e-2)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(1e-2)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(1e-2)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(1e-2)
         m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.025072)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-9)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-2)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-2)
         m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.34628)
         m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.60014)
         m.fs.unit.inlet.conc_mass_comp[0, "S_IP"].fix(0.22677)
@@ -564,19 +567,83 @@ class TestReactor:
         m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(7.3687)
         m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(7.7308)
         m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(10.3288)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-9)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(1e-9)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(1e-9)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(1e-9)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(1e-9)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(1e-9)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(1e-9)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-2)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(1e-2)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(1e-2)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(1e-2)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(1e-2)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(1e-2)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(1e-2)
         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(12.7727)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(0.0022493)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(1.04110)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(3.4655)
         m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(0.02268)
         m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(0.02893)
+
+        # Fix outlet concentrations
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_su"].fix(0.014098)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_aa"].fix(0.0062996)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_fa"].fix(0.1274)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_va"].fix(0.012967)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_bu"].fix(0.016897)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_pro"].fix(0.020643)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ac"].fix(0.082418)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_h2"].fix(2.8541e-7)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ch4"].fix(0.054409)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IC"].fix(1.09363)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IN"].fix(1.11129)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IP"].fix(0.95207)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_I"].fix(0.026599)
+
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ch"].fix(1.4267)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_pr"].fix(1.4888)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_li"].fix(1.9788)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_su"].fix(0.55896)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_aa"].fix(0.4357)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_fa"].fix(0.40632)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c4"].fix(0.18079)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_pro"].fix(0.099109)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ac"].fix(0.54383)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_h2"].fix(0.28232)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_I"].fix(13.1179)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_PHA"].fix(0.61566)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_PP"].fix(0.00064)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_PAO"].fix(0.82117)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_K"].fix(0.45895)
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_Mg"].fix(0.003)
+
+        # Unfix outlet conditions
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_su"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_aa"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_fa"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_va"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_bu"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_pro"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ac"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_h2"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ch4"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IC"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IN"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IP"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_I"].unfix()
+
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ch"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_pr"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_li"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_su"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_aa"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_fa"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c4"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_pro"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ac"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_h2"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_I"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_PHA"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_PP"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_PAO"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_K"].unfix()
+        m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_Mg"].unfix()
 
         m.fs.unit.inlet.cations[0].fix(0.04)  # Double check this value
         m.fs.unit.inlet.anions[0].fix(0.02)  # Double check this value
@@ -608,19 +675,19 @@ class TestReactor:
         for _ in iscale.badly_scaled_var_generator(m):
             assert False
 
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_initialize(self, model):
-        # model.fs.dummy_objective = Objective(expr=0)
-        # solver.options["max_iter"] = 1
-        # solver.solve(model, tee=True)
-        # dh = DegeneracyHunter(model, solver=SolverFactory("cbc"))
-        # dh.check_residuals(tol=0.1)
-        #
-        # print_close_to_bounds(model)
-        # print_infeasible_constraints(model)
-        model.fs.unit.initialize(outlvl=idaeslog.DEBUG)
+    # @pytest.mark.solver
+    # @pytest.mark.skipif(solver is None, reason="Solver not available")
+    # @pytest.mark.component
+    # def test_initialize(self, model):
+    #     model.fs.dummy_objective = Objective(expr=0)
+    #     solver.options["max_iter"] = 0
+    #     solver.solve(model, tee=True)
+    #     dh = DegeneracyHunter(model, solver=SolverFactory("cbc"))
+    #     dh.check_residuals(tol=0.1)
+    #
+    #     print_close_to_bounds(model)
+    #     print_infeasible_constraints(model)
+    #     model.fs.unit.initialize(outlvl=idaeslog.DEBUG)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -628,6 +695,8 @@ class TestReactor:
     def test_solve(self, model):
         solver = get_solver(options={"bound_push": 1e-8})
         results = solver.solve(model, tee=True)
+        model.display()
+        print(large_residuals_set(model))
 
         assert check_optimal_termination(results)
 

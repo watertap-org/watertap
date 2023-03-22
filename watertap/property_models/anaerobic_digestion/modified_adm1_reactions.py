@@ -1817,7 +1817,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         self.reaction_rate = pyo.Var(
             self.params.rate_reaction_idx,
             initialize=self.rates,
-            bounds=(1e-9, 1e-4),
+            bounds=(1e-12, 1e-4),
             doc="Rate of reaction",
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
         )
