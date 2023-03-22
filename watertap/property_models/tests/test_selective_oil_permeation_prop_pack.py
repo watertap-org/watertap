@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-import watertap.property_models.SOP_prop_pack as props
+import watertap.property_models.selective_oil_permeation_prop_pack as props
 from watertap.property_models.tests.property_test_harness import (
     PropertyTestHarness,
     PropertyRegressionTest,
