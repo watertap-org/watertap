@@ -285,7 +285,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             initialize=1,
             bounds=(0, None),
             units=pyunits.watt,
-            doc="Power requireds",
+            doc="Power required",
         )
 
         self._fixed_perf_vars.append(self.electrode_thick)
