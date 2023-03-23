@@ -19,7 +19,6 @@ from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     Constraint,
-    Expression,
     Param,
     value,
     Var,
@@ -79,7 +78,7 @@ class TestECZO_AL:
         assert isinstance(model.fs.unit.density_electrode_material, Param)
         assert isinstance(model.fs.unit.recovery_frac_mass_H2O, Var)
         assert isinstance(model.fs.unit.removal_frac_mass_comp, Var)
-        assert isinstance(model.fs.unit.power_required, Expression)
+        assert isinstance(model.fs.unit.power_required, Var)
         assert isinstance(model.fs.unit.overpotential, Var)
         assert isinstance(model.fs.unit.ohmic_resistance, Var)
 
@@ -234,7 +233,7 @@ class TestECZO_FE:
         assert isinstance(model.fs.unit.density_electrode_material, Param)
         assert isinstance(model.fs.unit.recovery_frac_mass_H2O, Var)
         assert isinstance(model.fs.unit.removal_frac_mass_comp, Var)
-        assert isinstance(model.fs.unit.power_required, Expression)
+        assert isinstance(model.fs.unit.power_required, Var)
         assert isinstance(model.fs.unit.overpotential, Var)
         assert isinstance(model.fs.unit.ohmic_resistance, Var)
 

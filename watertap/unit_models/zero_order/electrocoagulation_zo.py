@@ -281,6 +281,13 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             doc="Current density",
         )
 
+        self.power_required = Var(
+            initialize=1,
+            bounds=(0, None),
+            units=pyunits.watt,
+            doc="Power requireds",
+        )
+
         self._fixed_perf_vars.append(self.electrode_thick)
         self._fixed_perf_vars.append(self.current_density)
         self._fixed_perf_vars.append(self.electrolysis_time)
@@ -380,9 +387,9 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 == b.electrode_volume_per * b.density_electrode_material
             )
 
-        @self.Expression(doc="Power required")
-        def power_required(b):
-            return b.cell_voltage * b.applied_current
+        @self.Constraint(doc="Power required")
+        def eq_power_required(b):
+            return b.power_required == b.cell_voltage * b.applied_current
 
     @property
     def default_costing_method(self):
@@ -639,9 +646,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             )
         )
 
-        blk.electricity_flow = Expression(
-            expr=pyunits.convert(ec.power_required, to_units=pyunits.kW)
-        )
+        blk.electricity_flow = pyunits.convert(ec.power_required, to_units=pyunits.kW)
 
         costing.cost_flow(
             blk.annual_electrode_replacement_mass_flow, ec.config.electrode_material
