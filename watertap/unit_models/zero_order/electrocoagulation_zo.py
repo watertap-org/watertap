@@ -138,7 +138,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             mutable=True,
             units=(pyunits.mg * pyunits.m) / (pyunits.liter * pyunits.S),
             within=PositiveReals,
-            doc="Conersion factor for mg/L TDS to S/m",
+            doc="Conversion factor for mg/L TDS to S/m",
         )
 
         self.electrode_width = Var(
