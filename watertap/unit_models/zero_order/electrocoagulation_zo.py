@@ -34,7 +34,7 @@ class ElectrodeMaterial(StrEnum):
     """
     Electrode material can be aluminum or iron. Default is aluminum. To run
     the model with iron electrodes, use :code:`ElectrocoagulationZO(electrode_material="iron")`;
-    otherwise :code:`ElectrocoagulationZO()` with default to aluminum electrodes.
+    otherwise :code:`ElectrocoagulationZO()` will default to aluminum electrodes.
     """
 
     aluminum = "aluminum"
