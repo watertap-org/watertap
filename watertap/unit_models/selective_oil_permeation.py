@@ -51,8 +51,9 @@ _log = idaeslog.getLogger(__name__)
 @declare_process_block_class("SelectiveOilPermeation")
 class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
     """
-    Selective oil permeation model based on A.Y. Mercelat, C.M. Cooper, K.A. Kinney, F. Seibert, L.E. Katz, Mechanisms for Direct Separation of Oil from Water with Hydrophobic Hollow Fiber Membrane Contactors, ACS EST Eng. 1 (2021) 1074–1083. https://doi.org/10.1021/acsestengg.1c00055.
-
+    Selective oil permeation model based on A.Y. Mercelat, C.M. Cooper, K.A. Kinney, F. Seibert, L.E. Katz,
+    Mechanisms for Direct Separation of Oil from Water with Hydrophobic Hollow Fiber Membrane Contactors,
+    ACS EST Eng. 1 (2021) 1074–1083. https://doi.org/10.1021/acsestengg.1c00055.
     """
 
     CONFIG = ConfigBlock()
