@@ -68,6 +68,7 @@ Additional Constraints
 
 .. currentmodule:: watertap.unit_models.zero_order.electrocoagulation_zo
 
+
 Class Documentation
 -------------------
 
