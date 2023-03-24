@@ -38,13 +38,9 @@ class ClarifierZOData(ZeroOrderBaseData):
         self._tech_type = "clarifier"
 
         build_sido(self)
+        constant_intensity(self)
 
-        if (
-            self.config.process_subtype == "default"
-            or self.config.process_subtype is None
-        ):
-            constant_intensity(self)
-        else:
+        if self.config.process_subtype == "HRCS_clarifier":
 
             self.ferric_chloride_dose = Var(
                 self.flowsheet().time,
