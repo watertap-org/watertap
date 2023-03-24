@@ -22,8 +22,8 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Dosage of magnesium chloride per sludge", "magnesium_chloride_dosage", ":math:`dimensionless`"
-   "Magnesium chloride flowrate", "MgCl2_flowrate", ":math:`kg/hr`"
+   "Dosage of magnesium chloride per phosphates", "magnesium_chloride_dosage", ":math:`dimensionless`"
+   "Magnesium chloride flowrate", "MgCl2_flowrate", ":math:`kg/h`"
 
 Additional Constraints
 ----------------------

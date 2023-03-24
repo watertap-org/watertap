@@ -22,7 +22,7 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Water flux through membrane", "water_flux", ":math:`m/hr`"
+   "Water flux through membrane", "water_flux", ":math:`m/h`"
    "Membrane area", "membrane_area", ":math:`m^2`"
 
 Additional Constraints
