@@ -38,7 +38,6 @@ class ClarifierZOData(ZeroOrderBaseData):
         self._tech_type = "clarifier"
 
         build_sido(self)
-        constant_intensity(self)
 
         if (
             self.config.process_subtype == "default"
