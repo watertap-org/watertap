@@ -1,8 +1,5 @@
 Zero-Order Unit Models
 ======================
-
-The zero-order models rely on default model parameter values specified in YAML files. Users should supply their own values, if possible, instead of relying on the default parameter values. The YAML database files for the zero-order models are located in :code:`watertap/data/techno_economic/`. The name of the YAML file should match the associated model name without the ZO letters and use snake case style. For example, the YAML file for the :code:`DualMediaFiltrationZO()` zero-order model is named :code:`dual_media_filtration.yaml`.
-
 .. toctree::
    :maxdepth: 1
 

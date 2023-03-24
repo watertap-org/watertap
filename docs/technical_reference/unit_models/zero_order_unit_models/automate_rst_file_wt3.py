@@ -297,8 +297,7 @@ for i, u in enumerate(unit_name_list):
     with open("index.rst", "a") as f:
         f.write(f"   {zo_name_list[i]}\n")
 
-    with open(f"{zo_name_list[i]}.rst", "w") as f:
-
+    with open(f"{zo_name_list[i]}.rst", "w", encoding="utf-8") as f:
         # write doc title based on unit name
         if zo_name_list[i] in title_exceptions:
             f.write(f"{title_exceptions[zo_name_list[i]]} (ZO)")
