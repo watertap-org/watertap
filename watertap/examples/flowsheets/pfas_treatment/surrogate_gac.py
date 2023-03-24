@@ -19,6 +19,8 @@ from idaes.core.surrogate.plotting.sm_plotter import (
     surrogate_parity,
     surrogate_residual,
 )
+from idaes.core.surrogate.metrics import compute_fit_metrics
+import matplotlib as plt
 
 __author__ = "Hunter Barber"
 
@@ -77,7 +79,7 @@ def min_st_regression():
     )
 
     # ---------------------------------------------------------------------
-    # minimum stanton number surrogate training
+    # minimum stanton number surrogate trainging
 
     trainer = surrogate.PysmoKrigingTrainer(
         input_labels=["ninv", "bi"],
@@ -93,41 +95,258 @@ def min_st_regression():
         input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
     }
 
-    pysmo_surr = surrogate.PysmoSurrogate(
+    min_st_pysmo_surr_kriging = surrogate.PysmoSurrogate(
         pysmo_surr_expr, input_labels, output_labels, input_bounds
     )
 
     # To save a model
-    model = pysmo_surr.save_to_file(
-        "watertap/examples/flowsheets/pfas_treatment/min_st_surrogate.json",
+    model = min_st_pysmo_surr_kriging.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/min_st_kriging.json",
         overwrite=True,
     )
 
-    show = False
-    surrogate_scatter2D(
-        pysmo_surr,
-        min_st_df,
-        filename="watertap/examples/flowsheets/pfas_treatment/min_st_scatter2D.pdf",
-        show=show,
+    # ---------------------------------------------------------------------
+
+    rbf_trainer = surrogate.PysmoRBFTrainer(
+        input_labels=["ninv", "bi"],
+        output_labels=["min_st"],
+        training_dataframe=min_st_df,
     )
-    surrogate_scatter2D(
-        pysmo_surr,
-        min_st_df,
-        filename="watertap/examples/flowsheets/pfas_treatment/min_st_scatter3D.pdf",
-        show=show,
+    rbf_trainer.config.basis_function = "linear"
+    rbf_train = rbf_trainer.train_surrogate()
+
+    input_labels = trainer._input_labels
+    output_labels = trainer._output_labels
+    xmin, xmax = [0, 0.5], [1, 100]
+    input_bounds = {
+        input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
+    }
+
+    min_st_pysmo_surr_linear = surrogate.PysmoSurrogate(
+        rbf_train, input_labels, output_labels, input_bounds
     )
-    surrogate_parity(
-        pysmo_surr,
-        min_st_df,
-        filename="watertap/examples/flowsheets/pfas_treatment/min_st_parity.pdf",
-        show=show,
+
+    # To save a model
+    model = min_st_pysmo_surr_linear.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_linear.json",
+        overwrite=True,
     )
-    surrogate_residual(
-        pysmo_surr,
-        min_st_df,
-        filename="watertap/examples/flowsheets/pfas_treatment/min_st_residual.pdf",
-        show=show,
+
+    # ---------------------------------------------------------------------
+
+    rbf_trainer = surrogate.PysmoRBFTrainer(
+        input_labels=["ninv", "bi"],
+        output_labels=["min_st"],
+        training_dataframe=min_st_df,
     )
+    rbf_trainer.config.basis_function = "cubic"
+    rbf_train = rbf_trainer.train_surrogate()
+
+    input_labels = trainer._input_labels
+    output_labels = trainer._output_labels
+    xmin, xmax = [0, 0.5], [1, 100]
+    input_bounds = {
+        input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
+    }
+
+    min_st_pysmo_surr_cubic = surrogate.PysmoSurrogate(
+        rbf_train, input_labels, output_labels, input_bounds
+    )
+
+    # To save a model
+    model = min_st_pysmo_surr_cubic.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_cubic.json",
+        overwrite=True,
+    )
+
+    # ---------------------------------------------------------------------
+
+    rbf_trainer = surrogate.PysmoRBFTrainer(
+        input_labels=["ninv", "bi"],
+        output_labels=["min_st"],
+        training_dataframe=min_st_df,
+    )
+    rbf_trainer.config.basis_function = "spline"
+    rbf_train = rbf_trainer.train_surrogate()
+
+    input_labels = trainer._input_labels
+    output_labels = trainer._output_labels
+    xmin, xmax = [0, 0.5], [1, 100]
+    input_bounds = {
+        input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
+    }
+
+    min_st_pysmo_surr_spline = surrogate.PysmoSurrogate(
+        rbf_train, input_labels, output_labels, input_bounds
+    )
+
+    # To save a model
+    model = min_st_pysmo_surr_spline.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_spline.json",
+        overwrite=True,
+    )
+
+    # ---------------------------------------------------------------------
+
+    rbf_trainer = surrogate.PysmoRBFTrainer(
+        input_labels=["ninv", "bi"],
+        output_labels=["min_st"],
+        training_dataframe=min_st_df,
+    )
+    rbf_trainer.config.basis_function = "gaussian"
+    rbf_train = rbf_trainer.train_surrogate()
+
+    input_labels = trainer._input_labels
+    output_labels = trainer._output_labels
+    xmin, xmax = [0, 0.5], [1, 100]
+    input_bounds = {
+        input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
+    }
+
+    min_st_pysmo_surr_gaussian = surrogate.PysmoSurrogate(
+        rbf_train, input_labels, output_labels, input_bounds
+    )
+
+    # To save a model
+    model = min_st_pysmo_surr_gaussian.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_gaussian.json",
+        overwrite=True,
+    )
+
+    # ---------------------------------------------------------------------
+
+    rbf_trainer = surrogate.PysmoRBFTrainer(
+        input_labels=["ninv", "bi"],
+        output_labels=["min_st"],
+        training_dataframe=min_st_df,
+    )
+    rbf_trainer.config.basis_function = "mq"
+    rbf_train = rbf_trainer.train_surrogate()
+
+    input_labels = trainer._input_labels
+    output_labels = trainer._output_labels
+    xmin, xmax = [0, 0.5], [1, 100]
+    input_bounds = {
+        input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
+    }
+
+    min_st_pysmo_surr_mq = surrogate.PysmoSurrogate(
+        rbf_train, input_labels, output_labels, input_bounds
+    )
+
+    # To save a model
+    model = min_st_pysmo_surr_mq.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_mq.json",
+        overwrite=True,
+    )
+
+    # ---------------------------------------------------------------------
+
+    rbf_trainer = surrogate.PysmoRBFTrainer(
+        input_labels=["ninv", "bi"],
+        output_labels=["min_st"],
+        training_dataframe=min_st_df,
+    )
+    rbf_trainer.config.basis_function = "imq"
+    rbf_train = rbf_trainer.train_surrogate()
+
+    input_labels = trainer._input_labels
+    output_labels = trainer._output_labels
+    xmin, xmax = [0, 0.5], [1, 100]
+    input_bounds = {
+        input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
+    }
+
+    min_st_pysmo_surr_imq = surrogate.PysmoSurrogate(
+        rbf_train, input_labels, output_labels, input_bounds
+    )
+
+    # To save a model
+    model = min_st_pysmo_surr_imq.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_imq.json",
+        overwrite=True,
+    )
+
+    # ---------------------------------------------------------------------
+    plt.figure(2)
+    surrogate_models = [
+        min_st_pysmo_surr_kriging,
+        min_st_pysmo_surr_linear,
+        min_st_pysmo_surr_cubic,
+        min_st_pysmo_surr_spline,
+        min_st_pysmo_surr_gaussian,
+        min_st_pysmo_surr_mq,
+        min_st_pysmo_surr_imq,
+    ]
+    res_names = []
+    for m in range(0, len(surrogate_models)):
+        err = compute_fit_metrics(surrogate_models[m], min_st_df)
+        err = pd.DataFrame.from_dict(err)
+        print(err)
+        res_names.append(err)
+
+    # Plot metrics
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12))
+
+    df = pd.DataFrame(
+        {
+            "Kriging": res_names[0].loc["R2"],
+            "Linear-RBF": res_names[1].loc["R2"],
+            "Cubic-RBF": res_names[2].loc["R2"],
+            "Spline-RBF": res_names[3].loc["R2"],
+            "Gaussian-RBF": res_names[4].loc["R2"],
+            "MQ-RBF": res_names[4].loc["R2"],
+            "IMQ-RBF": res_names[4].loc["R2"],
+        }
+    )
+    df.plot.bar(rot=0, ax=axes[0, 0])
+    axes[0, 0].set_title("R2")
+    axes[0, 0].set_ylabel("R2")
+
+    df = pd.DataFrame(
+        {
+            "Kriging": res_names[0].loc["RSME"],
+            "Linear-RBF": res_names[1].loc["RSME"],
+            "Cubic-RBF": res_names[2].loc["RSME"],
+            "Spline-RBF": res_names[3].loc["RSME"],
+            "Gaussian-RBF": res_names[4].loc["RSME"],
+            "MQ-RBF": res_names[4].loc["RSME"],
+            "IMQ-RBF": res_names[4].loc["RSME"],
+        }
+    )
+    df.plot.bar(rot=0, ax=axes[0, 1], logy=True)
+    axes[0, 1].set_title("RMSE")
+    axes[0, 1].set_ylabel("Log(RMSE)")
+
+    df = pd.DataFrame(
+        {
+            "Kriging": res_names[0].loc["MAE"],
+            "Linear-RBF": res_names[1].loc["MAE"],
+            "Cubic-RBF": res_names[2].loc["MAE"],
+            "Spline-RBF": res_names[3].loc["MAE"],
+            "Gaussian-RBF": res_names[4].loc["MAE"],
+            "MQ-RBF": res_names[4].loc["MAE"],
+            "IMQ-RBF": res_names[4].loc["MAE"],
+        }
+    )
+    df.plot.bar(rot=0, ax=axes[1, 0], logy=True)
+    axes[1, 0].set_title("MAE")
+    axes[1, 0].set_ylabel("Log(MAE)")
+
+    df = pd.DataFrame(
+        {
+            "Kriging": res_names[0].loc["maxAE"],
+            "Linear-RBF": res_names[1].loc["maxAE"],
+            "Cubic-RBF": res_names[2].loc["maxAE"],
+            "Spline-RBF": res_names[3].loc["maxAE"],
+            "Gaussian-RBF": res_names[4].loc["maxAE"],
+            "MQ-RBF": res_names[4].loc["maxAE"],
+            "IMQ-RBF": res_names[4].loc["maxAE"],
+        }
+    )
+    df.plot.bar(rot=0, ax=axes[1, 1], logy=True)
+    axes[1, 1].set_ylabel("Log(maxAE)")
+    axes[1, 1].set_title("maxAE")
 
 
 def throughput_regression():
@@ -197,8 +416,8 @@ def throughput_regression():
     )
 
     # ---------------------------------------------------------------------
-    # throughput equation surrogate training
-    """
+    # throughput surrogate trainging
+
     trainer = surrogate.PysmoKrigingTrainer(
         input_labels=["ninv", "bi", "conc_ratio"],
         output_labels=["throughput"],
@@ -213,98 +432,287 @@ def throughput_regression():
         input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
     }
 
-    pysmo_surr = surrogate.PysmoSurrogate(
+    throughput_pysmo_surr_kriging = surrogate.PysmoSurrogate(
         pysmo_surr_expr, input_labels, output_labels, input_bounds
     )
-    
+
     # To save a model
-    model = pysmo_surr.save_to_file(
-        "watertap/examples/flowsheets/pfas_treatment/throughput_surrogate.json",
+    model = throughput_pysmo_surr_kriging.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/throughput_kriging.json",
         overwrite=True,
     )
-    
-    show = False
-    surrogate_scatter2D(
-        pysmo_surr,
-        throughput_df,
-        filename="watertap/examples/flowsheets/pfas_treatment/throughput_scatter2D.pdf",
-        show=show,
-    )
-    surrogate_scatter2D(
-        pysmo_surr,
-        throughput_df,
-        filename="watertap/examples/flowsheets/pfas_treatment/throughput_scatter3D.pdf",
-        show=show,
-    )
-    surrogate_parity(
-        pysmo_surr,
-        throughput_df,
-        filename="watertap/examples/flowsheets/pfas_treatment/throughput_parity.pdf",
-        show=show,
-    )
-    surrogate_residual(
-        pysmo_surr,
-        throughput_df,
-        filename="watertap/examples/flowsheets/pfas_treatment/throughput_residual.pdf",
-        show=show,
-    )
-    """
+
     # ---------------------------------------------------------------------
-    # throughput equation surrogate training - testing radial basis function
 
     rbf_trainer = surrogate.PysmoRBFTrainer(
         input_labels=["ninv", "bi", "conc_ratio"],
         output_labels=["throughput"],
         training_dataframe=throughput_df,
     )
-    # Set PySMO options
-    rbf_trainer.config.basis_function = "gaussian"
-
-    # Train the model
+    rbf_trainer.config.basis_function = "linear"
     rbf_train = rbf_trainer.train_surrogate()
 
-    input_labels = rbf_trainer._input_labels
-    output_labels = rbf_trainer._output_labels
+    input_labels = trainer._input_labels
+    output_labels = trainer._output_labels
     xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
     input_bounds = {
         input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
     }
 
-    pysmo_surr = surrogate.PysmoSurrogate(
+    throughput_pysmo_surr_linear = surrogate.PysmoSurrogate(
         rbf_train, input_labels, output_labels, input_bounds
     )
 
     # To save a model
-    model = pysmo_surr.save_to_file(
-        "watertap/examples/flowsheets/pfas_treatment/throughput_surrogate_rbf_gaussian.json",
+    model = throughput_pysmo_surr_linear.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_linear.json",
         overwrite=True,
     )
 
-    show = False
-    surrogate_scatter2D(
-        pysmo_surr,
-        throughput_df,
-        filename="watertap/examples/flowsheets/pfas_treatment/throughput_rbf_gaussian_scatter2D.pdf",
-        show=show,
+    # ---------------------------------------------------------------------
+
+    rbf_trainer = surrogate.PysmoRBFTrainer(
+        input_labels=["ninv", "bi", "conc_ratio"],
+        output_labels=["throughput"],
+        training_dataframe=throughput_df,
     )
-    surrogate_scatter2D(
-        pysmo_surr,
-        throughput_df,
-        filename="watertap/examples/flowsheets/pfas_treatment/throughput_rbf_gaussian_scatter3D.pdf",
-        show=show,
+    rbf_trainer.config.basis_function = "cubic"
+    rbf_train = rbf_trainer.train_surrogate()
+
+    input_labels = trainer._input_labels
+    output_labels = trainer._output_labels
+    xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
+    input_bounds = {
+        input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
+    }
+
+    throughput_pysmo_surr_cubic = surrogate.PysmoSurrogate(
+        rbf_train, input_labels, output_labels, input_bounds
     )
-    surrogate_parity(
-        pysmo_surr,
-        throughput_df,
-        filename="watertap/examples/flowsheets/pfas_treatment/throughput_rbf_gaussian_parity.pdf",
-        show=show,
+
+    # To save a model
+    model = throughput_pysmo_surr_cubic.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_cubic.json",
+        overwrite=True,
     )
-    surrogate_residual(
-        pysmo_surr,
-        throughput_df,
-        filename="watertap/examples/flowsheets/pfas_treatment/throughput_rbf_gaussian_residual.pdf",
-        show=show,
+
+    # ---------------------------------------------------------------------
+
+    rbf_trainer = surrogate.PysmoRBFTrainer(
+        input_labels=["ninv", "bi", "conc_ratio"],
+        output_labels=["throughput"],
+        training_dataframe=throughput_df,
     )
+    rbf_trainer.config.basis_function = "spline"
+    rbf_train = rbf_trainer.train_surrogate()
+
+    input_labels = trainer._input_labels
+    output_labels = trainer._output_labels
+    xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
+    input_bounds = {
+        input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
+    }
+
+    throughput_pysmo_surr_spline = surrogate.PysmoSurrogate(
+        rbf_train, input_labels, output_labels, input_bounds
+    )
+
+    # To save a model
+    model = throughput_pysmo_surr_spline.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_spline.json",
+        overwrite=True,
+    )
+
+    # ---------------------------------------------------------------------
+
+    rbf_trainer = surrogate.PysmoRBFTrainer(
+        input_labels=["ninv", "bi", "conc_ratio"],
+        output_labels=["throughput"],
+        training_dataframe=throughput_df,
+    )
+    rbf_trainer.config.basis_function = "gaussian"
+    rbf_train = rbf_trainer.train_surrogate()
+
+    input_labels = trainer._input_labels
+    output_labels = trainer._output_labels
+    xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
+    input_bounds = {
+        input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
+    }
+
+    throughput_pysmo_surr_gaussian = surrogate.PysmoSurrogate(
+        rbf_train, input_labels, output_labels, input_bounds
+    )
+
+    # To save a model
+    model = throughput_pysmo_surr_gaussian.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_gaussian.json",
+        overwrite=True,
+    )
+
+    # ---------------------------------------------------------------------
+
+    rbf_trainer = surrogate.PysmoRBFTrainer(
+        input_labels=["ninv", "bi", "conc_ratio"],
+        output_labels=["throughput"],
+        training_dataframe=throughput_df,
+    )
+    rbf_trainer.config.basis_function = "mq"
+    rbf_train = rbf_trainer.train_surrogate()
+
+    input_labels = trainer._input_labels
+    output_labels = trainer._output_labels
+    xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
+    input_bounds = {
+        input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
+    }
+
+    throughput_pysmo_surr_mq = surrogate.PysmoSurrogate(
+        rbf_train, input_labels, output_labels, input_bounds
+    )
+
+    # To save a model
+    model = throughput_pysmo_surr_mq.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_mq.json",
+        overwrite=True,
+    )
+
+    # ---------------------------------------------------------------------
+
+    rbf_trainer = surrogate.PysmoRBFTrainer(
+        input_labels=["ninv", "bi", "conc_ratio"],
+        output_labels=["throughput"],
+        training_dataframe=throughput_df,
+    )
+    rbf_trainer.config.basis_function = "imq"
+    rbf_train = rbf_trainer.train_surrogate()
+
+    input_labels = trainer._input_labels
+    output_labels = trainer._output_labels
+    xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
+    input_bounds = {
+        input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
+    }
+
+    throughput_pysmo_surr_imq = surrogate.PysmoSurrogate(
+        rbf_train, input_labels, output_labels, input_bounds
+    )
+
+    # To save a model
+    model = throughput_pysmo_surr_imq.save_to_file(
+        "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_imq.json",
+        overwrite=True,
+    )
+
+    # ---------------------------------------------------------------------
+    plt.figure(2)
+    surrogate_models = [
+        throughput_pysmo_surr_kriging,
+        throughput_pysmo_surr_linear,
+        throughput_pysmo_surr_cubic,
+        throughput_pysmo_surr_spline,
+        throughput_pysmo_surr_gaussian,
+        throughput_pysmo_surr_mq,
+        throughput_pysmo_surr_imq,
+    ]
+    res_names = []
+    for m in range(0, len(surrogate_models)):
+        err = compute_fit_metrics(surrogate_models[m], throughput_df)
+        err = pd.DataFrame.from_dict(err)
+        print(err)
+        res_names.append(err)
+
+    # Plot metrics
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12))
+
+    df = pd.DataFrame(
+        {
+            "Kriging": res_names[0].loc["R2"],
+            "Linear-RBF": res_names[1].loc["R2"],
+            "Cubic-RBF": res_names[2].loc["R2"],
+            "Spline-RBF": res_names[3].loc["R2"],
+            "Gaussian-RBF": res_names[4].loc["R2"],
+            "MQ-RBF": res_names[4].loc["R2"],
+            "IMQ-RBF": res_names[4].loc["R2"],
+        }
+    )
+    df.plot.bar(rot=0, ax=axes[0, 0])
+    axes[0, 0].set_title("R2")
+    axes[0, 0].set_ylabel("R2")
+
+    df = pd.DataFrame(
+        {
+            "Kriging": res_names[0].loc["RSME"],
+            "Linear-RBF": res_names[1].loc["RSME"],
+            "Cubic-RBF": res_names[2].loc["RSME"],
+            "Spline-RBF": res_names[3].loc["RSME"],
+            "Gaussian-RBF": res_names[4].loc["RSME"],
+            "MQ-RBF": res_names[4].loc["RSME"],
+            "IMQ-RBF": res_names[4].loc["RSME"],
+        }
+    )
+    df.plot.bar(rot=0, ax=axes[0, 1], logy=True)
+    axes[0, 1].set_title("RMSE")
+    axes[0, 1].set_ylabel("Log(RMSE)")
+
+    df = pd.DataFrame(
+        {
+            "Kriging": res_names[0].loc["MAE"],
+            "Linear-RBF": res_names[1].loc["MAE"],
+            "Cubic-RBF": res_names[2].loc["MAE"],
+            "Spline-RBF": res_names[3].loc["MAE"],
+            "Gaussian-RBF": res_names[4].loc["MAE"],
+            "MQ-RBF": res_names[4].loc["MAE"],
+            "IMQ-RBF": res_names[4].loc["MAE"],
+        }
+    )
+    df.plot.bar(rot=0, ax=axes[1, 0], logy=True)
+    axes[1, 0].set_title("MAE")
+    axes[1, 0].set_ylabel("Log(MAE)")
+
+    df = pd.DataFrame(
+        {
+            "Kriging": res_names[0].loc["maxAE"],
+            "Linear-RBF": res_names[1].loc["maxAE"],
+            "Cubic-RBF": res_names[2].loc["maxAE"],
+            "Spline-RBF": res_names[3].loc["maxAE"],
+            "Gaussian-RBF": res_names[4].loc["maxAE"],
+            "MQ-RBF": res_names[4].loc["maxAE"],
+            "IMQ-RBF": res_names[4].loc["maxAE"],
+        }
+    )
+    df.plot.bar(rot=0, ax=axes[1, 1], logy=True)
+    axes[1, 1].set_ylabel("Log(maxAE)")
+    axes[1, 1].set_title("maxAE")
+
+
+"""
+show = False
+surrogate_scatter2D(
+    pysmo_surr,
+    throughput_df,
+    filename="watertap/examples/flowsheets/pfas_treatment/throughput_scatter2D.pdf",
+    show=show,
+)
+surrogate_scatter2D(
+    pysmo_surr,
+    throughput_df,
+    filename="watertap/examples/flowsheets/pfas_treatment/throughput_scatter3D.pdf",
+    show=show,
+)
+surrogate_parity(
+    pysmo_surr,
+    throughput_df,
+    filename="watertap/examples/flowsheets/pfas_treatment/throughput_parity.pdf",
+    show=show,
+)
+surrogate_residual(
+    pysmo_surr,
+    throughput_df,
+    filename="watertap/examples/flowsheets/pfas_treatment/throughput_residual.pdf",
+    show=show,
+)
+"""
 
 
 if __name__ == "__main__":
