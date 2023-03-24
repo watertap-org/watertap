@@ -9,34 +9,29 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-import os
+
 from pyomo.environ import (
     ConcreteModel,
     value,
     Constraint,
-    Expression,
     Objective,
     Var,
     Param,
     NonNegativeReals,
     TransformationFactory,
     units as pyunits,
-    assert_optimal_termination,
     check_optimal_termination,
 )
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (
-    solve_indexed_blocks,
     propagate_state,
 )
-from idaes.models.unit_models import Mixer, Separator, Product, Feed
+from idaes.models.unit_models import Product, Feed
 from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
 
 import watertap.property_models.NaCl_prop_pack as props
@@ -48,8 +43,6 @@ from watertap.unit_models.reverse_osmosis_0D import (
 )
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
     OsmoticallyAssistedReverseOsmosis0D,
-    MassTransferCoefficient,
-    PressureChangeType,
 )
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
