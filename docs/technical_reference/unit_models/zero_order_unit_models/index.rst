@@ -38,6 +38,7 @@ The zero-order models rely on default model parameter values specified in YAML f
    dmbr_zo
    dual_media_filtration_zo
    electrochemical_nutrient_removal_zo
+   electrocoagulation_zo
    electrodialysis_reversal_zo
    energy_recovery_zo
    evaporation_pond_zo
