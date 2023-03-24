@@ -17,6 +17,7 @@ This module contains utility functions for initialization of WaterTAP models.
 __author__ = "Adam Atia"
 
 from pyomo.environ import check_optimal_termination
+from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 
@@ -61,7 +62,7 @@ def check_solve(results, checkpoint=None, logger=_log, fail_flag=False):
             )
         if fail_flag:
             logger.error(msg)
-            raise ValueError(msg)
+            raise InitializationError(msg)
         else:
             logger.warning(msg)
 
@@ -101,7 +102,7 @@ def check_dof(blk, fail_flag=False, logger=_log, expected_dof=0):
             )
         if fail_flag:
             logger.error(msg)
-            raise ValueError(msg)
+            raise InitializationError(msg)
         else:
             logger.warning(msg)
 
