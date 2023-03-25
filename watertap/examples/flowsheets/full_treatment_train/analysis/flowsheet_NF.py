@@ -11,27 +11,19 @@
 #################################################################################
 from pyomo.environ import (
     ConcreteModel,
-    Objective,
     Expression,
     Constraint,
     Param,
     TransformationFactory,
-    value,
-    units as pyunits,
 )
 from pyomo.network import Arc
-from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
-    unscaled_constraints_generator,
-    unscaled_variables_generator,
-    badly_scaled_var_generator,
 )
 from idaes.core.util.initialization import propagate_state
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
     pretreatment_NF,
-    desalination,
     gypsum_saturation_index,
     translator_block,
     costing,
