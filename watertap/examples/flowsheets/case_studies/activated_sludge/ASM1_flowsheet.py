@@ -115,7 +115,7 @@ def build_flowsheet():
     m.fs.MX6 = Mixer(property_package=m.fs.props, inlet_list=["clarifier", "reactor"])
     # Product Blocks
     m.fs.Treated = Product(property_package=m.fs.props)
-    m.fs.Sludge = Product(property_package=m.fs.props)
+    # m.fs.Sludge = Product(property_package=m.fs.props)
     # Recycle pressure changer - use a simple isothermal unit for now
     m.fs.P1 = PressureChanger(property_package=m.fs.props)
 
@@ -131,7 +131,7 @@ def build_flowsheet():
     m.fs.stream9 = Arc(source=m.fs.SP5.underflow, destination=m.fs.MX6.reactor)
     m.fs.stream10 = Arc(source=m.fs.CL1.effluent, destination=m.fs.Treated.inlet)
     m.fs.stream11 = Arc(source=m.fs.CL1.underflow, destination=m.fs.SP6.inlet)
-    m.fs.stream102 = Arc(source=m.fs.SP6.waste, destination=m.fs.Sludge.inlet)
+
     m.fs.stream13 = Arc(source=m.fs.SP6.recycle, destination=m.fs.MX6.clarifier)
     m.fs.stream14 = Arc(source=m.fs.MX6.outlet, destination=m.fs.P1.inlet)
     m.fs.stream15 = Arc(source=m.fs.P1.outlet, destination=m.fs.MX1.recycle)
@@ -178,7 +178,7 @@ def build_flowsheet():
 
     # Feed Water Conditions
     m.fs.FeedWater.flow_vol.fix(18446 * pyo.units.m**3 / pyo.units.day)
-    m.fs.FeedWater.temperature.fix(298.15 * pyo.units.K)
+    m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
     m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(30 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_S"].fix(69.5 * pyo.units.g / pyo.units.m**3)
@@ -234,7 +234,7 @@ def build_flowsheet():
     m.fs.CL1.split_fraction[0, "effluent", "S_ALK"].fix(0.48956)
 
     # Sludge purge separator
-    m.fs.SP6.split_fraction[:, "recycle"].fix(0.97955)
+    m.fs.SP6.split_fraction[:, "recycle"].fix(0.975)
 
     # Outlet pressure from recycle pump
     m.fs.P1.outlet.pressure.fix(101325)

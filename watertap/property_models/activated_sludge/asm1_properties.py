@@ -344,6 +344,11 @@ class ASM1StateBlockData(StateBlockData):
             rule=energy_density_expression, doc="Energy density term"
         )
 
+        iscale.set_scaling_factor(self.flow_vol, 1e1)
+        iscale.set_scaling_factor(self.temperature, 1e-1)
+        iscale.set_scaling_factor(self.pressure, 1e-3)
+        iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
+
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]
 

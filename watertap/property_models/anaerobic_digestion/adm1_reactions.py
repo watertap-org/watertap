@@ -1205,7 +1205,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             "R13": 9.726e-08,
             "R14": 2.730e-07,
             "R15": 5.626e-08,
-            "R16": 9.998e-08,
+            "R16": 5.998e-08,
             "R17": 3.178e-08,
             "R18": 1.761e-07,
             "R19": 7.338e-08,
@@ -1216,7 +1216,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         self.reaction_rate = pyo.Var(
             self.params.rate_reaction_idx,
             initialize=self.rates,
-            bounds=(1e-9, 1e-4),
+            bounds=(1e-10, 1e-4),
             doc="Rate of reaction",
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
         )
@@ -1325,7 +1325,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         # Equation from [2]
         def CO2_acid_base_equilibrium_rule(self, t):
             return (
-                self.K_a_co2
+                self.K_a_co2 * 1e-2
                 == (
                     4.46684e-07
                     * pyo.exp(
@@ -1336,6 +1336,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                         * ((1 / self.params.temperature_ref) - (1 / self.temperature))
                     )
                 )
+                * 1e-2
                 * pyo.units.kilomole
                 / pyo.units.meter**3
             )
@@ -1810,4 +1811,4 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         for i, c in self.rate_expression.items():
             # TODO: Need to work out how to calculate good scaling factors
             # instead of a fixed 1e3.
-            iscale.constraint_scaling_transform(c, 1e5, overwrite=True)
+            iscale.constraint_scaling_transform(c, 1e3, overwrite=True)
