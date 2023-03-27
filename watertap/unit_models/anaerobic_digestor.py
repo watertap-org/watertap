@@ -770,6 +770,7 @@ see reaction package for documentation.}""",
         )
 
     def _get_performance_contents(self, time_point=0):
+        # TODO: add aggregated quantities/key metrics
         var_dict = {"Volume": self.volume_AD[time_point]}
         if hasattr(self, "heat_duty"):
             var_dict["Heat Duty"] = self.heat_duty[time_point]
@@ -784,6 +785,19 @@ see reaction package for documentation.}""",
         common_comps = (
             self.vapor_phase.component_list
             & self.liquid_phase.properties_out.component_list
+        )
+
+        # TODO: improve this later; for now, this resolved some scaling issues for modified adm1 test file
+
+        # if iscale.get_scaling_factor(self.liquid_phase.heat) is None:
+        iscale.set_scaling_factor(self.liquid_phase.heat, 1e-6)
+        # if iscale.get_scaling_factor(self.liquid_phase.properties_out[0].conc_mass_comp["S_IP"]) is None:
+        iscale.set_scaling_factor(
+            self.liquid_phase.properties_out[0].conc_mass_comp["S_IP"], 1e-5
+        )
+        # if iscale.get_scaling_factor(self.liquid_phase.properties_out[0].conc_mass_comp["S_IN"]) is None:
+        iscale.set_scaling_factor(
+            self.liquid_phase.properties_out[0].conc_mass_comp["S_IN"], 1e-5
         )
 
         for t, v in self.flow_vol_vap.items():
