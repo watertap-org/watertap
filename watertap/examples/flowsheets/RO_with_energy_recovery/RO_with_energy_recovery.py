@@ -9,17 +9,14 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-import os
+
 from pyomo.environ import (
     ConcreteModel,
     value,
     Constraint,
-    Expression,
     Objective,
-    Var,
     Param,
     TransformationFactory,
-    units as pyunits,
     assert_optimal_termination,
 )
 from pyomo.network import Arc
