@@ -374,8 +374,16 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Sherwood equation A parameter",
         )
 
-        self.Sh_exp = Param(
-            initialize=0.33, units=pyunits.dimensionless, doc="Sherwood equation exp"
+        self.Sh_exp_A = Param(
+            initialize=0.33,
+            units=pyunits.dimensionless,
+            doc="Sherwood equation exponent A",
+        )
+
+        self.Sh_exp_B = Param(
+            initialize=0.66,
+            units=pyunits.dimensionless,
+            doc="Sherwood equation exponent B",
         )
 
         # Bed expansion is calculated as a fraction of the bed_depth
@@ -1273,9 +1281,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def eq_Sh(b, j):
             # return (
             #     b.Sh[j]
-            #     == b.Sh_A / b.bed_porosity * b.Re**b.Sh_exp * b.Sc[j] ** b.Sh_exp
+            #     == b.Sh_A / b.bed_porosity * b.Re** * b.Sc[j] ** b.Sh_exp
             # )
-            return 2.4 * b.bed_porosity**0.66 * b.Re**0.34 * b.Sc[j] ** 0.33
+            return (
+                b.Sh[j]
+                == b.Sh_A
+                * b.bed_porosity**b.Sh_exp_A
+                * b.Re**b.Sh_exp_B
+                * b.Sc[j] ** b.Sh_exp_B
+            )
 
         @self.Constraint(doc="Bed Peclet number")
         def eq_Pe_bed(b):
