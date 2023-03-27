@@ -1462,11 +1462,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     state_args[k] = state_dict[k].value
 
         self.state_args_out = state_args_out = deepcopy(state_args)
-        for p, j in self.process_flow.properties_out.phase_component_set:
-            if j == self.config.target_ion:
-                state_args_out["flow_mol_phase_comp"][(p, j)] = (
-                    state_args["flow_mol_phase_comp"][(p, j)] * 1e-6
-                )
 
         self.process_flow.properties_out.initialize(
             outlvl=outlvl,
@@ -1477,20 +1472,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         init_log.info("Initialization Step 1b Complete.")
 
         self.state_args_regen = state_args_regen = deepcopy(state_args)
-
-        # for p, j in self.regeneration_stream.phase_component_set:
-        #     if j == "H2O":
-        #         state_args_regen["flow_mol_phase_comp"][(p, j)] = (
-        #             state_args["flow_mol_phase_comp"][(p, j)] * 0.01
-        #         )
-        #     elif j != self.config.target_ion:
-        #         state_args_regen["flow_mol_phase_comp"][(p, j)] = (
-        #             state_args["flow_mol_phase_comp"][(p, j)] * 1e-8
-        #         )
-        #     elif j == self.config.target_ion:
-        #         state_args_regen["flow_mol_phase_comp"][(p, j)] = (
-        #             state_args["flow_mol_phase_comp"][(p, j)] * 1e3
-        #         )
 
         self.regeneration_stream.initialize(
             outlvl=outlvl,
@@ -1504,14 +1485,20 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
+            if not check_optimal_termination(res):
+                init_log.warning(
+                    f"Trouble solving unit model {self.name}, trying one more time"
+                )
+                res = opt.solve(self, tee=slc.tee)
+
         init_log.info("Initialization Step 3 {}.".format(idaeslog.condition(res)))
-        # ---------------------------------------------------------------------
+
         # Release Inlet state
         self.process_flow.properties_in.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
-        # if not check_optimal_termination(res):
-        #     raise InitializationError(f"Unit model {self.name} failed to initialize")
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -1568,8 +1555,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.resin_surf_per_vol, 1e-3)
 
-        # iscale.set_scaling_factor(self.bed_vol, 1)
-
         iscale.set_scaling_factor(self.bed_vol_tot, 0.1)
 
         iscale.set_scaling_factor(self.bed_depth, 1)
@@ -1579,8 +1564,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         iscale.set_scaling_factor(self.bed_porosity, 10)
 
         iscale.set_scaling_factor(self.col_height, 1)
-
-        # iscale.set_scaling_factor(self.col_vol_per, 1)
 
         iscale.set_scaling_factor(self.col_diam, 1)
 
