@@ -38,7 +38,7 @@ from pyomo.environ import units as pyunits, Expression, NonNegativeReals
 
 # Imports from idaes core
 from idaes.core import AqueousPhase
-from idaes.core.base.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.components import Solvent, Solute, Anion
 from idaes.core.base.phases import PhaseType as PT
 from idaes.core.util.math import smooth_min
 
@@ -60,45 +60,23 @@ from idaes.models.properties.modular_properties.base.generic_reaction import (
 # Import the object/function for heat of reaction
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 
-# Import safe log power law equation
-from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
-    log_power_law_equil,
-)
-
-# Import built-in van't Hoff function
-from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    van_t_hoff,
-)
-
 # Import specific pyomo objects
 from pyomo.environ import (
     ConcreteModel,
     Var,
     Constraint,
-    SolverStatus,
-    TerminationCondition,
     TransformationFactory,
     value,
-    Suffix,
 )
 
 from pyomo.network import Arc
 from idaes.core.util.initialization import propagate_state
 
-from idaes.core.util import scaling as iscale
-from idaes.core.util.initialization import fix_state_vars, revert_state_vars
-
-# Import pyomo methods to check the system units
-from pyomo.util.check_units import assert_units_consistent
-
-
 from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
-    property_models,
-)
+
 from idaes.core.solvers import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -128,14 +106,10 @@ from idaes.models.unit_models.separator import (
     EnergySplittingType,
 )
 
-from idaes.models.unit_models.translator import Translator
-
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
 
-
 # Import log10 function from pyomo
-
 import idaes.logger as idaeslog
 
 # Grab the scaling utilities

@@ -12,21 +12,14 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
-    Set,
     Var,
-    Param,
     Suffix,
-    NonNegativeReals,
-    Reference,
-    Constraint,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
     UnitModelBlockData,
     useDefault,
@@ -37,6 +30,7 @@ import idaes.logger as idaeslog
 
 
 _log = idaeslog.getLogger(__name__)
+
 
 # when using this file the name "Filtration" is what is imported
 @declare_process_block_class("Filtration")
