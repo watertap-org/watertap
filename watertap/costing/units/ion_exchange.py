@@ -193,6 +193,16 @@ def build_ion_exhange_cost_param_block(blk):
         units=pyo.units.USD_2020 * pyo.units.gal**-1,
         doc="Hazardous liquid disposal cost - EPA",
     )
+    blk.regen_recycle = pyo.Var(
+        initialize=1,
+        units=pyo.units.dimensionless,
+        doc="Number of cycles the regenerant can be reused before disposal",
+    )
+    blk.total_installed_cost_factor = pyo.Var(
+        initialize=1.65,
+        units=pyo.units.dimensionless,
+        doc="Costing factor to account for total installed cost of equipment",
+    )
 
 
 @register_costing_parameter_block(
@@ -221,7 +231,7 @@ def cost_ion_exchange(blk):
     """
     make_capital_cost_var(blk)
     make_fixed_operating_cost_var(blk)
-    regen_stream = blk.unit_model.regeneration_stream[0]
+    ion_exchange_params = blk.costing_package.ion_exchange
     # Conversions to use units from cost equations in reference
     col_vol_gal = pyo.units.convert(blk.unit_model.col_vol_per, to_units=pyo.units.gal)
     bed_vol_ft3 = pyo.units.convert(blk.unit_model.bed_vol, to_units=pyo.units.ft**3)
@@ -237,11 +247,11 @@ def cost_ion_exchange(blk):
         to_units=pyo.units.gal,
     )
     regen_tank_vol = pyo.units.convert(
-        (regen_stream.flow_vol_phase["Liq"] * blk.unit_model.t_regen),
+        blk.unit_model.regen_tank_vol,
         to_units=pyo.units.gal,
     )
     ix_type = blk.unit_model.ion_exchange_type
-    TIC = 1.65
+
     blk.capital_cost_vessel = pyo.Var(
         initialize=1e5,
         domain=pyo.NonNegativeReals,
@@ -273,9 +283,6 @@ def cost_ion_exchange(blk):
         doc="Operating cost for hazardous waste disposal",
     )
 
-    ion_exchange_params = blk.costing_package.ion_exchange
-
-    # TODO: add way to have other regen chemicals
     if ix_type == "cation":
         resin_cost = ion_exchange_params.cation_exchange_resin_cost
 
@@ -331,7 +338,7 @@ def cost_ion_exchange(blk):
                 + blk.capital_cost_backwash_tank
                 + blk.capital_cost_regen_tank
             )
-            * TIC,
+            * ion_exchange_params.total_installed_cost_factor,
             to_units=blk.costing_package.base_currency,
         )
     )
@@ -374,6 +381,6 @@ def cost_ion_exchange(blk):
             * (blk.unit_model.number_columns + blk.unit_model.number_columns_redund)
         )
         / (blk.unit_model.t_cycle)
-    ) / blk.unit_model.regen_recycle
+    ) / ion_exchange_params.regen_recycle
 
     blk.costing_package.cost_flow(regen_soln_flow, blk.unit_model.regen_chem)

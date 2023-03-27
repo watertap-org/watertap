@@ -482,13 +482,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Ratio of service flow rate to regeneration flow rate",
         )
 
-        self.regen_recycle = Param(
-            initialize=1,
-            mutable=True,
-            units=pyunits.dimensionless,
-            doc="Number of cycles the regenerant can be reused before disposal",
-        )
-
         self.number_columns_redund = Param(
             initialize=1,
             mutable=True,
@@ -699,13 +692,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="Min ratio of bed depth to diameter",
         )
-
-        # self.bed_vol = Var(
-        #     initialize=1,
-        #     units=pyunits.m**3,
-        #     doc="Bed volume of one unit",
-        # )
-
         self.bed_vol_tot = Var(
             initialize=2,
             units=pyunits.m**3,
@@ -736,13 +722,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             units=pyunits.m,
             doc="Column diameter",
         )
-
-        # self.col_vol_per = Var(
-        #     initialize=10,
-        #     bounds=(0.02, 70),
-        #     units=pyunits.m**3,
-        #     doc="Column volume",
-        # )
 
         self.number_columns = Var(
             initialize=2,
@@ -993,6 +972,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )
         def bv(b):
             return (b.vel_bed * b.t_breakthru) / b.bed_depth
+
+        @self.Expression(doc="Regen tank volume")
+        def regen_tank_vol(b):
+            prop_in = b.process_flow.properties_in[0]
+            return (
+                prop_in.flow_vol_phase["Liq"] / b.service_to_regen_flow_ratio
+            ) * b.t_regen
 
         # =========== EQUILIBRIUM ===========
 
