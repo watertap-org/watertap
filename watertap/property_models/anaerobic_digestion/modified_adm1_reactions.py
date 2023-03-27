@@ -22,6 +22,7 @@ Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article
 
 # Import Pyomo libraries
 import pyomo.environ as pyo
+from pyomo.environ import Suffix
 
 # Import IDAES cores
 from idaes.core import (
@@ -55,6 +56,8 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
         Callable method for Block construction.
         """
         super().build()
+
+        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         self._reaction_block_class = ModifiedADM1ReactionBlock
 
@@ -609,7 +612,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
         self.f_si_xb = pyo.Var(
             initialize=0,
             units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
+            domain=pyo.NonNegativeReals,
             doc="Fraction of soluble inerts from biomass",
         )
         self.K_I_h2s_ac = pyo.Var(
@@ -1817,7 +1820,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         self.reaction_rate = pyo.Var(
             self.params.rate_reaction_idx,
             initialize=self.rates,
-            bounds=(1e-12, 1e-4),
+            domain=pyo.NonNegativeReals,
             doc="Rate of reaction",
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
         )
@@ -2537,7 +2540,12 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.rate_expression)
             raise
 
-        iscale.set_scaling_factor(self.reaction_rate, 1e6)
+    def get_reaction_rate_basis(self):
+        return MaterialFlowBasis.mass
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
         iscale.set_scaling_factor(self.conc_mass_va, 1e2)
         iscale.set_scaling_factor(self.conc_mass_bu, 1e2)
         iscale.set_scaling_factor(self.conc_mass_pro, 1e2)
@@ -2547,18 +2555,20 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         iscale.set_scaling_factor(self.conc_mol_co2, 1e1)
         iscale.set_scaling_factor(self.conc_mol_nh4, 1e1)
         iscale.set_scaling_factor(self.S_H, 1e7)
-        iscale.set_scaling_factor(self.S_OH, 1e8)
-        iscale.set_scaling_factor(self.KW, 1e14)
+        iscale.set_scaling_factor(self.S_OH, 1e-1)
+        iscale.set_scaling_factor(self.KW, 1e7)
         iscale.set_scaling_factor(self.K_a_co2, 1e7)
         iscale.set_scaling_factor(self.K_a_IN, 1e9)
 
-    def get_reaction_rate_basis(self):
-        return MaterialFlowBasis.mass
-
-    def calculate_scaling_factors(self):
-        super().calculate_scaling_factors()
+        for var in self.reaction_rate.values():
+            iscale.set_variable_scaling_from_current_value(var)
+        # iscale.set_scaling_factor(self.reaction_rate, 1e6)
 
         for i, c in self.rate_expression.items():
             # TODO: Need to work out how to calculate good scaling factors
             # instead of a fixed 1e3.
             iscale.constraint_scaling_transform(c, 1e5, overwrite=True)
+
+        iscale.constraint_scaling_transform(self.Dissociation, 1e7)
+        iscale.constraint_scaling_transform(self.CO2_acid_base_equilibrium, 1e7)
+        iscale.constraint_scaling_transform(self.IN_acid_base_equilibrium, 1e9)
