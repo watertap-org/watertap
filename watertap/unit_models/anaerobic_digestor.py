@@ -39,6 +39,7 @@ from pyomo.environ import (
     units as pyunits,
     check_optimal_termination,
     exp,
+    Suffix,
 )
 
 
@@ -64,6 +65,7 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Alejandro Garciadiego, Andrew Lee"
 
@@ -285,6 +287,8 @@ see reaction package for documentation.}""",
         """
         # Call UnitModel.build to setup dynamics
         super(ADData, self).build()
+
+        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         # Check phase lists match assumptions
         if self.config.vapor_property_package.phase_list != ["Vap"]:
@@ -755,6 +759,16 @@ see reaction package for documentation.}""",
         iscale.set_scaling_factor(self.KH_ch4, 1e3)
         iscale.set_scaling_factor(self.KH_h2, 1e4)
 
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Liquid Inlet": self.inlet,
+                "Liquid Outlet": self.liquid_outlet,
+                "Vapor Outlet": self.vapor_outlet,
+            },
+            time_point=time_point,
+        )
+
     def _get_performance_contents(self, time_point=0):
         var_dict = {"Volume": self.volume_AD[time_point]}
         if hasattr(self, "heat_duty"):
@@ -948,10 +962,14 @@ see reaction package for documentation.}""",
         init_log.info_high("Initialization Step 2 Complete.")
 
         # ---------------------------------------------------------------------
-        # Solve unit model
+        # # Solve unit model
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solverobj.solve(self)
-
+            results = solverobj.solve(self, tee=slc.tee)
+            if not check_optimal_termination(results):
+                init_log.warning(
+                    f"Trouble solving unit model {self.name}, trying one more time"
+                )
+                results = solverobj.solve(self, tee=slc.tee)
         init_log.info_high(
             "Initialization Step 3 {}.".format(idaeslog.condition(results))
         )
