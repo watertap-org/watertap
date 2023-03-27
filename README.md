@@ -21,7 +21,7 @@ To quickly install and start using WaterTAP, head over to the [Getting Started](
 The WaterTAP documentation is available online at <https://watertap.readthedocs.io>.
 ## Developer notes
 
-Refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en/stable/getting_started/install.html#for-watertap-developers) section of the documentation.
+Refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en/stable/getting_started.html#for-watertap-developers) section of the documentation.
 
 ## Cite this work
 

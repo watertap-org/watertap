@@ -12,9 +12,7 @@
 
 import sys
 import os
-import time
 
-from pyomo.environ import Constraint
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination as dye_desalination
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination_withRO as dye_desalination_withRO

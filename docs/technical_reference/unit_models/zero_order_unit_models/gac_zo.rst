@@ -21,12 +21,13 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Empty bed contact time of unit", "empty_bed_contact_time", ":math:`hr`"
+   "Empty bed contact time of unit", "empty_bed_contact_time", ":math:`h`"
    "Electricity consumption of unit", "electricity", ":math:`kW`"
    "Parameter for calculating electricity based on empty bed contact time", "electricity_intensity_parameter", ":math:`kW/m^3`"
    "Electricity intensity with respect to inlet flowrate of unit", "energy_electric_flow_vol_inlet", ":math:`kWh/m^3`"
    "Replacement rate of activated carbon", "activated_carbon_replacement", ":math:`kg/m^3`"
-   "Demand for activated carbon", "activated_carbon_demand", ":math:`kg/hr`"
+   "Demand for activated carbon", "activated_carbon_demand", ":math:`kg/h`"
+   "Bulk density, total mass of GAC per total bed volume", "activated_carbon_bulk_density", ":math:`kg/m^3`"
 
 Additional Constraints
 ----------------------

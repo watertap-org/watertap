@@ -15,6 +15,7 @@ import pytest
 from pyomo.environ import ConcreteModel, Var, Constraint, Block, SolverFactory
 
 from idaes.core.solvers import get_solver
+from idaes.core.util.exceptions import InitializationError
 from watertap.core.util.initialization import (
     check_dof,
     assert_degrees_of_freedom,
@@ -50,18 +51,18 @@ class TestCheckDOF:
     def test_more_expected(self, m):
         check_dof(m, fail_flag=False, expected_dof=3)
         msg = r"Unexpected degrees of freedom: Degrees of freedom on unknown = 1. Expected 3. Unfix 2 variable\(s\)"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(InitializationError, match=msg):
             check_dof(m, fail_flag=True, expected_dof=3)
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(InitializationError, match=msg):
             assert_degrees_of_freedom(m, 3)
 
     @pytest.mark.unit
     def test_less_expected(self, m):
         check_dof(m, fail_flag=False, expected_dof=-1)
         msg = r"Unexpected degrees of freedom: Degrees of freedom on unknown = 1. Expected -1. Fix 2 variable\(s\)"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(InitializationError, match=msg):
             check_dof(m, fail_flag=True, expected_dof=-1)
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(InitializationError, match=msg):
             assert_degrees_of_freedom(m, -1)
 
     @pytest.mark.unit
@@ -70,9 +71,9 @@ class TestCheckDOF:
         check_dof(m, fail_flag=False)
         msg = r"Non-zero degrees of freedom: Degrees of freedom on unknown = 1. Fix 1 more variable\(s\)"
         # Verify error is raised since DOF!=0
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(InitializationError, match=msg):
             check_dof(m, fail_flag=True)
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(InitializationError, match=msg):
             assert_no_degrees_of_freedom(m)
 
     @pytest.mark.unit
@@ -102,7 +103,7 @@ class TestCheckSolve:
         check_solve(results, logger=_log, fail_flag=False)
         # expect the solve to fail and raise error
         with pytest.raises(
-            ValueError,
+            InitializationError,
             match="The solver failed to converge to an optimal solution. This suggests that the "
             "user provided infeasible inputs or that the model is poorly scaled.",
         ):
@@ -115,7 +116,7 @@ class TestCheckSolve:
         check_solve(results, checkpoint="test", logger=_log, fail_flag=False)
         # expect the solve to fail and raise error
         with pytest.raises(
-            ValueError,
+            InitializationError,
             match="The solver at the test step failed to converge to an optimal solution."
             "This suggests that the user provided infeasible inputs or that the model "
             "is poorly scaled, poorly initialized, or degenerate.",

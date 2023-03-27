@@ -22,7 +22,7 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Hydraulic retention time of water treatment unit", "HRT", ":math:`hr`"
+   "Hydraulic retention time of water treatment unit", "HRT", ":math:`h`"
    "Average mass of an E. coli cell", "ecoli_cell_mass", ":math:`kg`"
    "Weight fraction of PAA in disinfection solution", "disinfection_solution_wt_frac_PAA", ":math:`dimensionless`"
    "Disinfection solution density", "disinfection_solution_density", ":math:`kg/l`"
