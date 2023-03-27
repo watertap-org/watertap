@@ -235,12 +235,162 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
 
     m.fs.costing.cost_process()
+
     product_flow_vol_total = m.fs.product.properties[0].flow_vol
-    m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_electrical_carbon_intensity(
-        m.fs.product.properties[0].flow_vol
+    m.fs.costing.add_annual_water_production(product_flow_vol_total)
+    m.fs.costing.add_LCOW(product_flow_vol_total)
+    m.fs.costing.add_specific_energy_consumption(product_flow_vol_total)
+    m.fs.costing.add_specific_electrical_carbon_intensity(product_flow_vol_total)
+
+    # objective
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
+
+    # Expressions for parameter sweep -----------------------------------------
+    # Final permeate concentration as mass fraction
+    m.fs.product.properties[0].mass_frac_phase_comp
+
+    # Touch feed concentration as mass concentration
+    m.fs.feed.properties[0].conc_mass_phase_comp
+
+    # Touch final brine concentration as mass concentration
+    m.fs.disposal.properties[0].conc_mass_phase_comp
+
+    # Touch final brine concentration as mass fraction
+    m.fs.disposal.properties[0].mass_frac_phase_comp
+
+    m.fs.mass_water_recovery = Expression(
+        expr=m.fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]
+        / m.fs.feed.flow_mass_phase_comp[0, "Liq", "H2O"]
+    )
+
+    m.fs.system_salt_rejection = Expression(
+        expr=1
+        - m.fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
+        / m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
+    )
+    m.fs.annual_feed = Expression(
+        expr=pyunits.convert(
+            m.fs.feed.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.year
+        )
+        * m.fs.costing.utilization_factor
+    )
+    m.fs.final_permeate_concentration = Expression(
+        expr=m.fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]
+        / sum(m.fs.product.flow_mass_phase_comp[0, "Liq", j] for j in ["H2O", "NaCl"])
+    )
+    m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol, name="LCOW_feed")
+
+    m.fs.costing.add_specific_energy_consumption(
+        m.fs.feed.properties[0].flow_vol, name="specific_energy_consumption_feed"
+    )
+
+    # @m.fs.Expression(m.fs.NonFinalStages)
+    # def stage_recovery_vol(fs, stage):
+    #     return (
+    #             fs.OAROUnits[stage].mixed_permeate[0].flow_vol
+    #             / fs.PrimaryPumps[stage].control_volume.properties_in[0].flow_vol
+    #     )
+    #
+    # @m.fs.Expression(m.fs.NonFinalStages)
+    # def stage_recovery_mass_H2O(fs, stage):
+    #     return (
+    #             fs.OAROUnits[stage].mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
+    #             / m.fs.PrimaryPumps[stage]
+    #             .control_volume.properties_in[0]
+    #             .flow_mass_phase_comp["Liq", "H2O"]
+    #     )
+
+    m.fs.costing.primary_pump_capex_lcow = Expression(
+        expr=m.fs.costing.factor_capital_annualization
+        * sum(m.fs.PrimaryPumps[n].costing.capital_cost for n in m.fs.Stages)
+        / m.fs.costing.annual_water_production
+    )
+
+    m.fs.total_membrane_area = Expression(
+        expr=sum(oaro.area for oaro in m.fs.OAROUnits.values()) + m.fs.RO.area
+    )
+
+    m.fs.costing.recycle_pump_capex_lcow = Expression(
+        expr=m.fs.costing.factor_capital_annualization
+        * (
+            sum(m.fs.RecyclePumps[n].costing.capital_cost for n in m.fs.NonFirstStages)
+            if number_of_stages > 1
+            else 0 * m.fs.costing.base_currency
+        )
+        / m.fs.costing.annual_water_production,
+    )
+
+    m.fs.costing.erd_capex_lcow = Expression(
+        expr=m.fs.costing.factor_capital_annualization
+        * sum(erd.costing.capital_cost for erd in m.fs.EnergyRecoveryDevices.values())
+        / m.fs.costing.annual_water_production
+    )
+
+    m.fs.costing.electricity_lcow = Expression(
+        expr=m.fs.costing.aggregate_flow_costs["electricity"]
+        * m.fs.costing.utilization_factor
+        / m.fs.costing.annual_water_production
+    )
+
+    m.fs.costing.pumping_energy_aggregate_lcow = Expression(
+        expr=m.fs.costing.factor_total_investment
+        * (
+            m.fs.costing.primary_pump_capex_lcow
+            + (
+                m.fs.costing.recycle_pump_capex_lcow
+                if number_of_stages > 1
+                else 0 * m.fs.costing.base_currency
+            )
+            + m.fs.costing.erd_capex_lcow
+        )
+        * (
+            1
+            + m.fs.costing.factor_maintenance_labor_chemical
+            / m.fs.costing.factor_capital_annualization
+        )
+        + m.fs.costing.electricity_lcow
+    )
+
+    m.fs.costing.membrane_capex_lcow = Expression(
+        expr=m.fs.costing.factor_capital_annualization
+        * (
+            sum(m.fs.OAROUnits[n].costing.capital_cost for n in m.fs.NonFinalStages)
+            + m.fs.RO.costing.capital_cost
+        )
+        / m.fs.costing.annual_water_production
+    )
+
+    m.fs.costing.indirect_capex_lcow = Expression(
+        expr=m.fs.costing.factor_capital_annualization
+        * (m.fs.costing.total_capital_cost - m.fs.costing.aggregate_capital_cost)
+        / m.fs.costing.annual_water_production
+    )
+
+    m.fs.costing.membrane_replacement_lcow = Expression(
+        expr=(
+            sum(
+                m.fs.OAROUnits[n].costing.fixed_operating_cost
+                for n in m.fs.NonFinalStages
+            )
+            + m.fs.RO.costing.fixed_operating_cost
+        )
+        / m.fs.costing.annual_water_production
+    )
+
+    m.fs.costing.chemical_labor_maintenance_lcow = Expression(
+        expr=m.fs.costing.maintenance_labor_chemical_operating_cost
+        / m.fs.costing.annual_water_production
+    )
+
+    m.fs.costing.membrane_aggregate_lcow = Expression(
+        expr=m.fs.costing.factor_total_investment
+        * m.fs.costing.membrane_capex_lcow
+        * (
+            1
+            + m.fs.costing.factor_maintenance_labor_chemical
+            / m.fs.costing.factor_capital_annualization
+        )
+        + m.fs.costing.membrane_replacement_lcow
     )
 
     # system water recovery
@@ -256,18 +406,18 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         == m.fs.product.properties[0].flow_vol_phase["Liq"]
     )
 
-    m.fs.mass_water_recovery = Var(
-        initialize=0.5,
-        bounds=(0, 1),
-        domain=NonNegativeReals,
-        units=pyunits.dimensionless,
-        doc="System Water Recovery",
-    )
-    m.fs.eq_mass_water_recovery = Constraint(
-        expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-        * m.fs.mass_water_recovery
-        == m.fs.product.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-    )
+    # m.fs.mass_water_recovery = Var(
+    #     initialize=0.5,
+    #     bounds=(0, 1),
+    #     domain=NonNegativeReals,
+    #     units=pyunits.dimensionless,
+    #     doc="System Water Recovery",
+    # )
+    # m.fs.eq_mass_water_recovery = Constraint(
+    #     expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+    #     * m.fs.mass_water_recovery
+    #     == m.fs.product.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+    # )
 
     # connections
     if erd_type == ERDtype.pump_as_turbine:
@@ -410,7 +560,7 @@ def set_operating_conditions(
     #     feed_flow_mass * feed_mass_frac_H2O
     # )
 
-    Cin = 70
+    Cin = 35
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"] = Cin
     m.fs.feed.properties.calculate_state(
         var_args={
@@ -424,12 +574,12 @@ def set_operating_conditions(
 
     # primary pumps
     for idx, pump in m.fs.PrimaryPumps.items():
-        pump.control_volume.properties_out[0].pressure = 65e5 / float(idx)
+        pump.control_volume.properties_out[0].pressure = 55e5 / float(idx)
         pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
     for idx, pump in m.fs.RecyclePumps.items():
-        pump.control_volume.properties_out[0].pressure = 10e5 / float(idx)
+        pump.control_volume.properties_out[0].pressure = 5e5 / float(idx)
         pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
@@ -449,7 +599,7 @@ def set_operating_conditions(
     #     ].value = (permeate_flow_mass * permeate_mass_frac_NaCl)
 
     # Initialize OARO
-    membrane_area = 50
+    membrane_area = 100
     A = 4.2e-12
     B = 3.5e-8
     spacer_porosity = 0.85
@@ -478,7 +628,7 @@ def set_operating_conditions(
     )  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO.width.fix(5)  # stage width [m]
-    m.fs.RO.area.fix(50)  # guess area for RO initialization
+    m.fs.RO.area.fix(100)  # guess area for RO initialization
 
     if m.fs.erd_type == ERDtype.pump_as_turbine:
         # energy recovery turbine - efficiency and outlet pressure
@@ -541,13 +691,31 @@ def recycle_pump_initializer(pump, oaro, solvent_multiplier, solute_multiplier):
     )
 
 
-def solve(blk, solver=None, tee=True):
+# def solve(blk, solver=None, tee=True):
+#     if solver is None:
+#         solver = get_solver()
+#     results = solver.solve(blk, tee=tee)
+#     if not check_optimal_termination(results):
+#         results = solver.solve(blk, tee=tee)
+#     return results
+
+
+def solve(model, solver=None, tee=False, raise_on_failure=False):
+    # ---solving---
     if solver is None:
         solver = get_solver()
-    results = solver.solve(blk, tee=tee)
-    if not check_optimal_termination(results):
-        results = solver.solve(blk, tee=tee)
-    return results
+
+    results = solver.solve(model, tee=tee)
+    if check_optimal_termination(results):
+        return results
+    msg = (
+        "The current configuration is infeasible. Please adjust the decision variables."
+    )
+    if raise_on_failure:
+        raise RuntimeError(msg)
+    else:
+        print(msg)
+        return results
 
 
 def initialize_loop(m, solver):
@@ -720,7 +888,7 @@ def optimize_set_up(
 
     # additional specifications
     m.fs.product_salinity = Param(
-        initialize=500e-6, mutable=True
+        initialize=1000e-6, mutable=True
     )  # product NaCl mass fraction [-]
     m.fs.minimum_water_flux = Param(
         initialize=1.0 / 3600.0, mutable=True
@@ -737,9 +905,9 @@ def optimize_set_up(
     iscale.constraint_scaling_transform(
         m.fs.eq_product_quality, 1e3
     )  # scaling constraint
-    m.fs.eq_minimum_water_flux = Constraint(
-        expr=m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"] >= m.fs.minimum_water_flux
-    )
+    # m.fs.eq_minimum_water_flux = Constraint(
+    #     expr=m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"] >= m.fs.minimum_water_flux
+    # )
 
     # ---checking model---
     # assert_degrees_of_freedom(m, 2 * m.fs.NumberOfStages)
@@ -829,11 +997,11 @@ def display_design(m):
             % (stage, m.fs.OAROUnits[stage].area.value)
         )
         print(
-            "OARO Stage %d water perm. coeff.  %.1f LMH/bar"
+            "OARO Stage %d water perm. coeff.  %.3f LMH/bar"
             % (stage, m.fs.OAROUnits[stage].A_comp[0, "H2O"].value * (3.6e11))
         )
         print(
-            "OARO Stage %d salt perm. coeff.  %.1f LMH/bar"
+            "OARO Stage %d salt perm. coeff.  %.3f LMH/bar"
             % (stage, m.fs.OAROUnits[stage].B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
         )
     print(
@@ -845,11 +1013,11 @@ def display_design(m):
     )
     print("RO membrane area      %.1f m2" % (m.fs.RO.area.value))
     print(
-        "RO water perm. coeff.  %.1f LMH/bar"
+        "RO water perm. coeff.  %.3f LMH/bar"
         % (m.fs.RO.A_comp[0, "H2O"].value * (3.6e11))
     )
     print(
-        "RO salt perm. coeff.  %.1f LMH"
+        "RO salt perm. coeff.  %.3f LMH"
         % (m.fs.RO.B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
     )
 
@@ -900,4 +1068,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(3, system_recovery=0.35, erd_type=ERDtype.pump_as_turbine)
+    m = main(2, system_recovery=0.55, erd_type=ERDtype.pump_as_turbine)
