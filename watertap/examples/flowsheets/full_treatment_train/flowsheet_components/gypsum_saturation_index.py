@@ -12,8 +12,7 @@
 
 """eNRTL property blocks to calculate and constrain gypsum saturation index"""
 
-from pyomo.environ import Block, Var, Expression, Constraint, value, units as pyunits
-from pyomo.environ import units as pyunits
+from pyomo.environ import Block, Var, Expression, Constraint, units as pyunits
 
 
 def build(m, section="desalination", pretrt_type="NF", **kwargs):

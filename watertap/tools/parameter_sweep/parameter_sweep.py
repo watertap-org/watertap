@@ -21,6 +21,9 @@ from idaes.core.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
 from pyomo.common.config import ConfigValue
+from pyomo.common.modeling import unique_component_name
+from pyomo.core.base import _VarData, _ExpressionData
+from pyomo.core.base.param import _ParamData
 
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
 from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
@@ -105,6 +108,23 @@ class _ParameterSweepBase(ABC):
         ),
     )
 
+    CONFIG.declare(
+        "custom_do_param_sweep",
+        ConfigValue(
+            default=None,
+            description="Alternative implementation of the parameter sweep function in case the user is doing unique analyses.",
+        ),
+    )
+
+    CONFIG.declare(
+        "custom_do_param_sweep_kwargs",
+        ConfigValue(
+            default=dict(),
+            domain=dict,
+            description="Alternative implementation of the parameter sweep function in case the user is doing unique analyses.",
+        ),
+    )
+
     def __init__(
         self,
         **options,
@@ -125,6 +145,20 @@ class _ParameterSweepBase(ABC):
             interpolate_nan_outputs=self.config.interpolate_nan_outputs,
             h5_parent_group_name=self.config.h5_parent_group_name,
         )
+
+    @staticmethod
+    def _assign_variable_names(model, outputs):
+
+        # Only assign output variable names to unassigned outputs
+        exprs = pyo.Expression(pyo.Any)
+        model.add_component(
+            unique_component_name(model, "_parameter_sweep_expressions"), exprs
+        )
+        for output_name, _pyo_obj in outputs.items():
+            if not isinstance(_pyo_obj, (_VarData, _ExpressionData, _ParamData)):
+                # Add this object as an expression and assign a name
+                exprs[output_name] = _pyo_obj
+                outputs[output_name] = exprs[output_name]
 
     def _build_combinations(self, d, sampling_type, num_samples):
         num_var_params = len(d)
@@ -282,13 +316,11 @@ class _ParameterSweepBase(ABC):
         if outputs is None:
             # No outputs are specified, so every Var, Expression, and Objective on the model should be saved
             for pyo_obj in model.component_data_objects(
-                (pyo.Var, pyo.Expression, pyo.Objective), active=True
+                (pyo.Var, pyo.Expression, pyo.Objective, pyo.Param), active=True
             ):
-                # Only need to save this variable if it isn't one of the value in sweep_params
-                if pyo_obj not in sweep_param_objs:
-                    output_dict["outputs"][
-                        pyo_obj.name
-                    ] = self._create_component_output_skeleton(pyo_obj, num_samples)
+                output_dict["outputs"][
+                    pyo_obj.name
+                ] = self._create_component_output_skeleton(pyo_obj, num_samples)
 
         else:
             # Save only the outputs specified in the outputs dictionary
@@ -316,12 +348,12 @@ class _ParameterSweepBase(ABC):
 
         # Add information to this output that WILL NOT be written as part
         # of the file saving step.
-        comp_dict["_pyo_obj"] = component
+        comp_dict["full_name"] = component.name
 
         return comp_dict
 
     def _update_local_output_dict(
-        self, sweep_params, case_number, run_successful, output_dict
+        self, model, sweep_params, case_number, run_successful, output_dict
     ):
 
         # Get the inputs
@@ -332,24 +364,23 @@ class _ParameterSweepBase(ABC):
 
         # Get the outputs from model
         if run_successful:
-            for label, val in output_dict["outputs"].items():
-                output_dict["outputs"][label]["value"][case_number] = pyo.value(
-                    val["_pyo_obj"]
+            for var_name, specs in output_dict["outputs"].items():
+                pyo_obj = model.find_component(specs["full_name"])
+                output_dict["outputs"][var_name]["value"][case_number] = pyo.value(
+                    pyo_obj
                 )
 
         else:
-            for label in output_dict["outputs"].keys():
-                output_dict["outputs"][label]["value"][case_number] = np.nan
+            for label, specs in output_dict["outputs"].items():
+                pyo_obj = model.find_component(specs["full_name"])
+                if pyo_obj.name in sweep_params.keys():
+                    output_dict["outputs"][label]["value"][case_number] = pyo.value(
+                        pyo_obj
+                    )
+                else:
+                    output_dict["outputs"][label]["value"][case_number] = np.nan
 
     def _create_global_output(self, local_output_dict, req_num_samples=None):
-
-        # Before we can create the global dictionary, we need to delete the pyomo
-        # object contained within the dictionary
-        for key, val in local_output_dict.items():
-            if key != "solve_successful":
-                for subval in val.values():
-                    if "_pyo_obj" in subval:
-                        del subval["_pyo_obj"]
 
         # We make the assumption that the parameter sweep is running the same
         # flowsheet num_samples number of times, i.e., the structure of the
@@ -487,6 +518,7 @@ class _ParameterSweepBase(ABC):
 
         # Update the loop based on the reinitialization
         self._update_local_output_dict(
+            model,
             sweep_params,
             k,
             run_successful,
@@ -581,13 +613,26 @@ class ParameterSweep(_ParameterSweepBase):
         local_values = self._divide_combinations(global_values)
         local_num_cases = np.shape(local_values)[0]
 
+        # Check if the outputs have the name attribute. If not, assign one.
+        if outputs is not None:
+            self._assign_variable_names(model, outputs)
+
         # Do the Loop
-        local_results_dict = self._do_param_sweep(
-            model,
-            sweep_params,
-            outputs,
-            local_values,
-        )
+        if self.config.custom_do_param_sweep is None:
+            local_results_dict = self._do_param_sweep(
+                model,
+                sweep_params,
+                outputs,
+                local_values,
+            )
+        else:
+            local_results_dict = self.config.custom_do_param_sweep(
+                model,
+                sweep_params,
+                outputs,
+                local_values,
+                **self.config.custom_do_param_sweep_kwargs,
+            )
 
         # Aggregate results on Master
         global_results_dict, global_results_arr = self._aggregate_local_results(
@@ -707,6 +752,10 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         # Set the seed before sampling
         np.random.seed(seed)
 
+        # Check if the outputs have the name attribute. If not, assign one.
+        if outputs is not None:
+            self._assign_variable_names(model, outputs)
+
         n_samples_remaining = req_num_samples
         num_total_samples = req_num_samples
 
@@ -731,12 +780,23 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             if loop_ctr == 0:
                 true_local_num_cases = local_num_cases
 
-            local_output_collection[loop_ctr] = self._do_param_sweep(
-                model,
-                sweep_params,
-                outputs,
-                local_values,
-            )
+            if self.config.custom_do_param_sweep is None:
+                local_output_collection[loop_ctr] = self._do_param_sweep(
+                    model,
+                    sweep_params,
+                    outputs,
+                    local_values,
+                )
+            else:
+                local_output_collection[
+                    loop_ctr
+                ] = self.self.config.custom_do_param_sweep(
+                    model,
+                    sweep_params,
+                    outputs,
+                    local_values,
+                    **self.config.custom_do_param_sweep_kwargs,
+                )
 
             # Get the number of successful solves on this proc (sum of boolean flags)
             success_count = sum(local_output_collection[loop_ctr]["solve_successful"])
