@@ -309,12 +309,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         self.add_outlet_port(name="outlet", block=self.process_flow)
         self.add_outlet_port(name="regen", block=self.regeneration_stream)
 
-        self.diff_ion_resin = Param(
-            initialize=1e-13,
-            units=pyunits.m**2 / pyunits.s,
-            doc="Diffusivity of ion through resin bead",  # Perry's
-        )
-
         self.underdrain_h = Param(
             initialize=0.5, units=pyunits.m, doc="Underdrain height"  # Perry's
         )
@@ -614,6 +608,34 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     bounds=(None, None),
                     units=pyunits.dimensionless,
                     doc="",
+                )
+
+            if self.config.diffusion_control == DiffusionControlType.solid:
+
+                self.phi_solid_coeff_A = Param(
+                    initialize=0.894,
+                    units=pyunits.dimensionless,
+                    doc="Driving force correction factor A coefficient",
+                )
+
+                self.phi_solid_coeff_B = Param(
+                    initialize=0.106,
+                    units=pyunits.dimensionless,
+                    doc="Driving force correction factor B coefficient",
+                )
+
+                self.phi_solid_coeff_C = Param(
+                    initialize=0.5,
+                    units=pyunits.dimensionless,
+                    doc="Driving force correction factor C coefficient",
+                )
+
+                self.diff_resin_comp = Var(
+                    self.target_ion_set,
+                    initialize=1e-10,  # default value is for Na+ in 8% crosslinked polystyrene-divinylbenzene IX resin (Dowex 50) @ 25% (approximate) -- Perry's Table 16-8
+                    bounds=(0, None),
+                    units=pyunits.m**2 / pyunits.s,
+                    doc="Diffusivity of ion through resin bead",  # Perry's
                 )
 
         if self.config.isotherm == IsothermType.freundlich:
@@ -1085,24 +1107,28 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     / b.partition_ratio
                 )
 
-            @self.Constraint(self.target_ion_set, doc="Number of mass-transfer units")
-            def eq_num_transfer_units(
-                b, j
-            ):  # External mass transfer, Perry's Table 16-13
-                return (
-                    b.num_transfer_units
-                    == (
-                        b.fluid_mass_transfer_coeff[j]
-                        * b.resin_surf_per_vol
-                        * b.bed_depth
-                    )
-                    / b.vel_bed
-                )
-
             if self.config.diffusion_control == DiffusionControlType.liquid:
 
                 @self.Constraint(
-                    self.target_ion_set, doc="Right hand side of constant pattern sol'n"
+                    self.target_ion_set,
+                    doc="Number of mass-transfer units for fluid-film controlling diffusion",
+                )
+                def eq_num_transfer_units(
+                    b, j
+                ):  # External mass transfer, Perry's Table 16-13
+                    return (
+                        b.num_transfer_units
+                        == (
+                            b.fluid_mass_transfer_coeff[j]
+                            * b.resin_surf_per_vol
+                            * b.bed_depth
+                        )
+                        / b.vel_bed
+                    )
+
+                @self.Constraint(
+                    self.target_ion_set,
+                    doc="Constant pattern sol'n - fluid film diffuion controlling",
                 )
                 def eq_constant_pattern_soln(
                     b, j
@@ -1112,6 +1138,43 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                         == (log(b.c_norm[j]) - b.langmuir[j] * log(1 - b.c_norm[j]))
                         / (1 - b.langmuir[j])
                         + 1
+                    )
+
+            if self.config.diffusion_control == DiffusionControlType.solid:
+
+                @self.Expression(
+                    self.target_ion_set, doc="Driving force correction factor equation"
+                )
+                def phi_solid(b, j):
+                    return b.phi_solid_coeff_A / (
+                        1 - b.phi_solid_coeff_B * b.langmuir[j] ** b.phi_solid_coeff_C
+                    )
+
+                @self.Constraint(
+                    self.target_ion_set,
+                    doc="Number of mass-transfer units for solid phase controlling",
+                )
+                def eq_num_transfer_units(
+                    b, j
+                ):  # External mass transfer, Perry's Table 16-13
+                    r = b.resin_diam / 2
+                    return b.num_transfer_units == (
+                        15 * b.diff_resin_comp[j] * b.partition_ratio * b.bed_depth
+                    ) / (b.vel_bed * r**2)
+
+                @self.Constraint(
+                    self.target_ion_set,
+                    doc="Constant pattern sol'n - solid diffusion controlling",
+                )
+                def eq_constant_pattern_soln(
+                    b, j
+                ):  # Solid diffusion control, _____ ADD REFERENCE _____, Inglezakis + Poulopoulos
+                    return b.num_transfer_units * (b.dimensionless_time - 1) == (
+                        1 / b.phi_solid[j]
+                    ) * (
+                        (b.langmuir[j] * log(b.c_norm[j]) - log(1 - b.c_norm[j]))
+                        / (1 - b.langmuir[j])
+                        - 1
                     )
 
             if self.config.diffusion_control == DiffusionControlType.combination:
@@ -1193,7 +1256,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             def eq_solid_mass_transfer_coeff(b, j):
                 r = b.resin_diam / 2
                 return b.solid_mass_transfer_coeff[j] == (
-                    15 * b.diff_ion_resin * b.resin_bulk_dens
+                    15 * b.diff_resin_comp[j] * b.resin_bulk_dens
                 ) / (r**2 * b.resin_surf_per_vol)
 
             @self.Constraint(self.target_ion_set, doc="Gamma")
@@ -1593,6 +1656,10 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.t_breakthru) is None:
             iscale.set_scaling_factor(self.t_breakthru, 1e-5)
+
+        if self.config.diffusion_control == DiffusionControlType.solid:
+            if iscale.get_scaling_factor(self.diff_resin_comp[target_ion]) is None:
+                iscale.set_scaling_factor(self.diff_resin_comp[target_ion], 1e11)
 
         iscale.set_scaling_factor(self.Re, 1)
 
