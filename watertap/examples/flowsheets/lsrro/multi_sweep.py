@@ -9,14 +9,10 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-import os
 
 from pyomo.environ import (
     units as pyunits,
-    check_optimal_termination,
-    value,
     Expression,
-    Param,
 )
 
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep

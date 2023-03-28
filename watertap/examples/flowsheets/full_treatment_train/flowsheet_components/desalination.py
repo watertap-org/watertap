@@ -12,7 +12,7 @@
 
 """Desalination flowsheet components"""
 
-from pyomo.environ import ConcreteModel, TransformationFactory, Constraint
+from pyomo.environ import ConcreteModel, TransformationFactory
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import Mixer
@@ -37,7 +37,6 @@ from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )
-from idaes.core.util.model_statistics import fixed_variables_generator
 
 
 def build_desalination(
