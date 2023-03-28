@@ -55,19 +55,19 @@ import math
 import pandas as pd
 
 def main():
-    # build and initialize
     m = build()
     add_Q_ext(m, time_point=m.fs.config.time)
     set_operating_conditions(m)
+
     initialize_system(m)
-    # rescale costs after initialization because scaling depends on flow rates
-    scale_costs(m)
-    fix_outlet_pressures(m)
-    # set up for minimizing Q_ext
+    scale_costs(m) # rescale costs after initialization because scaling depends on flow rates
+    fix_outlet_pressures(m) # outlet pressure are initially unfixed for initialization
+
+    # set up for minimizing Q_ext in first solve
     print('DOF after initialization: ', degrees_of_freedom(m)) # should be 1 because Q_ext is unfixed
     m.fs.objective = Objective(expr=m.fs.Q_ext[0])
 
-    print('First solve - simulation')
+    print('\nFirst solve - simulation results')
     solver = get_solver()
     results = solve(m,tee=False)
     print(results.solver.termination_condition)
@@ -75,21 +75,20 @@ def main():
         debug_infeasible(m.fs, solver)
     display_results(m)
 
-    print('Second solve - optimize')
-    add_evap_hx_material_factor_equal_constraint(m)
-    add_material_factor_brine_salinity_constraint(m)
-    # add_energy_efficiency_expression(m)
-    m.fs.evaporator.properties_vapor[0].temperature.setub(75+273.15)
+    print('\nSecond solve - optimization results')
+    # add_evap_hx_material_factor_equal_constraint(m)
+    # add_material_factor_brine_salinity_constraint(m)
+    # m.fs.evaporator.properties_vapor[0].temperature.setub(75+273.15)
     m.fs.Q_ext[0].fix(0) # no longer want external heating in evaporator
     del m.fs.objective
     set_up_optimization(m)
     results = solve(m, tee=False)
     print(results.solver.termination_condition)
     display_results(m)
-    # display_exergy_destruction(m)
     if results.solver.termination_condition == "infeasible":
         debug_infeasible(m.fs, solver)
-    # assert False
+    assert False
+
     print('Third solve - optimization - new case')
     m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].fix(0.02)
     m.fs.recovery[0].fix(0.45)
@@ -100,6 +99,7 @@ def main():
         debug_infeasible(m.fs, solver)
 
     assert_units_consistent(m)
+
 
 def build():
     # flowsheet set up
@@ -313,10 +313,11 @@ def build():
 
     return m
 
+
 def add_Q_ext(m,time_point=None):
     if time_point is None:
         time_point = m.fs.config.time
-    m.fs.Q_ext = Var(time_point, initialize=0, units=pyunits.J/pyunits.s)#, bounds=(0,1e7))
+    m.fs.Q_ext = Var(time_point, initialize=0, units=pyunits.J/pyunits.s)
     m.fs.Q_ext[0].setlb(0)
     m.fs.evaporator.eq_energy_balance.deactivate()
     m.fs.evaporator.eq_energy_balance_with_additional_Q = Constraint(expr=
@@ -324,6 +325,7 @@ def add_Q_ext(m,time_point=None):
         + m.fs.evaporator.properties_vapor[0].enth_flow_phase["Vap"]
     )
     iscale.set_scaling_factor(m.fs.Q_ext, 1e-6)
+
 
 def add_costing(m):
     m.fs.costing = WaterTAPCosting()
@@ -341,6 +343,7 @@ def add_costing(m):
     m.fs.costing.add_LCOW(m.fs.distillate.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.distillate.properties[0].flow_vol)
 
+
 def add_pressure_drop_to_hx(hx_blk, time_point):
     # input: hx_blk - heat exchanger block
     # output: deactivates control volume pressure balance and adds pressure drop to pressure balance equation
@@ -356,6 +359,7 @@ def add_pressure_drop_to_hx(hx_blk, time_point):
         expr=hx_blk.hot.properties_in[0].pressure
         == hx_blk.hot.properties_out[0].pressure + hx_blk.hot.deltaP[0]
     )
+
 
 def set_operating_conditions(m):
     m.fs.costing.base_currency = pyo.units.USD_2020
@@ -390,13 +394,12 @@ def set_operating_conditions(m):
 
     # evaporator specifications
     m.fs.evaporator.inlet_feed.temperature[0] = 50+273.15 # provide guess
-    m.fs.evaporator.outlet_brine.temperature[0].fix(70+273.15) #358.73
+    m.fs.evaporator.outlet_brine.temperature[0].fix(70+273.15)
     m.fs.evaporator.U.fix(3e3)  # W/K-m^2
-    # m.fs.evaporator.area.fix(600)  # m^2 # 1000 (original) # 1287 (optimal)
     m.fs.evaporator.area.setub(1e4)
+
     # compressor
-    m.fs.compressor.pressure_ratio.fix(1.6) # 2
-    #m.fs.compressor.control_volume.properties_out[0].temperature = 400
+    m.fs.compressor.pressure_ratio.fix(1.6)
     m.fs.compressor.efficiency.fix(0.8)
 
     # Brine pump
@@ -417,33 +420,14 @@ def set_operating_conditions(m):
     m.fs.costing.evaporator.material_factor_cost.fix(5)
     m.fs.costing.compressor.unit_cost.fix(1*7364)
 
-    # Change upper bound of compressed vapor temperature
+    # Temperature bounds
     m.fs.evaporator.properties_vapor[0].temperature.setub(75+273.15)
     # m.fs.evaporator.properties_vapor[0].temperature.setlb(50+273.15)
     m.fs.compressor.control_volume.properties_out[0].temperature.setub(450)
+
     # check degrees of freedom
     print("DOF after setting operating conditions: ", degrees_of_freedom(m))
 
-def add_evap_hx_material_factor_equal_constraint(m):
-    m.fs.costing.heat_exchanger.material_factor_cost.unfix()
-    # m.fs.costing.heat_exchanger.unit_cost.fix(300) # fix unit cost to material factor of 1
-    # make HX material factor equal to evaporator material factor
-    m.fs.costing.hx_material_factor_constraint = Constraint(expr=m.fs.costing.heat_exchanger.material_factor_cost == m.fs.costing.evaporator.material_factor_cost)
-    # m.fs.costing.heat_exchanger.material_factor_cost = m.fs.costing.evaporator.material_factor_cost.value
-
-def add_material_factor_brine_salinity_constraint(m):
-    # evaporator
-    m.fs.costing.evaporator.unit_cost.fix(1000) #fix unit cost to material factor of 1
-    m.fs.costing.evaporator.material_factor_cost.unfix()
-    def rule_material_factor_brine_salinity(b):
-        w_min = 0.035 # brine salinity
-        w_max = 0.26 # brine salinity
-        f_min = 3
-        f_max = 9
-        slope = (f_max-f_min)/(w_max-w_min)
-        return b.costing.evaporator.material_factor_cost == \
-               (slope*(b.brine.properties[0].mass_frac_phase_comp['Liq','TDS'] - w_min) + f_min)
-    m.fs.evap_material_factor_constraint = Constraint(rule=rule_material_factor_brine_salinity)
 
 def initialize_system(m, solver=None):
     if solver is None:
