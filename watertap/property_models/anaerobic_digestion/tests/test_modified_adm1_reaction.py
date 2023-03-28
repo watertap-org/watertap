@@ -578,8 +578,8 @@ class TestReactor:
         m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(0.02268)
         m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(0.02893)
 
-        m.fs.unit.inlet.cations[0].fix(0.04)  # Double check this value
-        m.fs.unit.inlet.anions[0].fix(0.02)  # Double check this value
+        m.fs.unit.inlet.cations[0].fix(0.04)
+        m.fs.unit.inlet.anions[0].fix(0.02)
 
         m.fs.unit.volume_liquid.fix(3400)
         m.fs.unit.volume_vapor.fix(300)
@@ -755,6 +755,12 @@ class TestReactor:
         assert value(
             model.fs.unit.liquid_phase.reactions[0].conc_mol_nh4
         ) == pytest.approx(0.074527, rel=1e-2)
+        # assert value(
+        #     model.fs.unit.liquid_phase.reactions[0].conc_mol_Mg
+        # ) == pytest.approx(0.074527, rel=1e-2)
+        # assert value(
+        #     model.fs.unit.liquid_phase.reactions[0].conc_mol_K
+        # ) == pytest.approx(0.074527, rel=1e-2)
 
         assert value(model.fs.unit.liquid_phase.reactions[0].S_H) == pytest.approx(
             1.97135e-9, rel=1e-2

@@ -1888,6 +1888,18 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             doc="molar concentration of nh4",
             units=pyo.units.kmol / pyo.units.m**3,
         )
+        # self.conc_mol_Mg = pyo.Var(
+        #     initialize=4.5822e-05,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="molar concentration of Mg+2",
+        #     units=pyo.units.kmol / pyo.units.m**3,
+        # )
+        # self.conc_mol_K = pyo.Var(
+        #     initialize=0.010934,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="molar concentration of K+",
+        #     units=pyo.units.kmol / pyo.units.m**3,
+        # )
         self.S_H = pyo.Var(
             initialize=3.4e-8,
             domain=pyo.NonNegativeReals,
@@ -2057,6 +2069,30 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             doc="constraint concentration of nh4",
         )
 
+        # def concentration_of_Mg_rule(self):
+        #     return (
+        #         self.conc_mol_Mg
+        #         == self.conc_mass_comp_ref["X_PP"]
+        #         / (300.41 * pyo.units.kg / pyo.units.kmol)
+        #     )
+        #
+        # self.concentration_of_Mg = pyo.Constraint(
+        #     rule=concentration_of_Mg_rule,
+        #     doc="constraint concentration of Mg",
+        # )
+        #
+        # def concentration_of_K_rule(self):
+        #     return (
+        #         self.conc_mol_Mg
+        #         == self.conc_mass_comp_ref["X_PP"]
+        #         / (300.41 * pyo.units.kg / pyo.units.kmol)
+        #     )
+        #
+        # self.concentration_of_K = pyo.Constraint(
+        #     rule=concentration_of_K_rule,
+        #     doc="constraint concentration of K",
+        # )
+
         def S_OH_rule(self):
             return self.S_OH == self.KW / self.S_H
 
@@ -2064,11 +2100,12 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             rule=S_OH_rule,
             doc="constraint concentration of OH",
         )
-        # TODO: Add Mg and K rules and incorporate into this constraint
+        # TODO: Fix initialization issues caused by Mg and K (unmute 1891-1902, 2072-2094, 2108-2109, and 2589-2590)
         def S_H_rule(self):
             return (
-                self.state_ref.cations
-                + self.conc_mol_nh4
+                self.state_ref.cations + self.conc_mol_nh4
+                # + self.conc_mol_Mg
+                # + self.conc_mol_K
                 + self.S_H
                 - self.conc_mol_hco3
                 - self.conc_mass_ac / (64 * pyo.units.kg / pyo.units.kmol)
@@ -2548,6 +2585,8 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         iscale.set_scaling_factor(self.conc_mol_nh3, 1e1)
         iscale.set_scaling_factor(self.conc_mol_co2, 1e1)
         iscale.set_scaling_factor(self.conc_mol_nh4, 1e1)
+        # iscale.set_scaling_factor(self.conc_mol_Mg, 1e5)
+        # iscale.set_scaling_factor(self.conc_mol_K, 1e2)
         iscale.set_scaling_factor(self.S_H, 1e7)
         iscale.set_scaling_factor(self.S_OH, 1e-1)
         iscale.set_scaling_factor(self.KW, 1e7)
