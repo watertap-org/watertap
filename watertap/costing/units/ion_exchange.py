@@ -383,4 +383,12 @@ def cost_ion_exchange(blk):
         / (blk.unit_model.t_cycle)
     ) / ion_exchange_params.regen_recycle
 
+    electricity_flow = (
+        blk.unit_model.main_pump_power
+        + blk.unit_model.regen_pump_power
+        + blk.unit_model.bw_pump_power
+        + blk.unit_model.rinse_pump_power
+    )
+
+    blk.costing_package.cost_flow(electricity_flow, "electricity")
     blk.costing_package.cost_flow(regen_soln_flow, blk.unit_model.regen_chem)

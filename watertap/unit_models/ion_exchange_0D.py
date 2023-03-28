@@ -254,7 +254,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         # https://wcponline.com/2013/08/06/hydrodynamic-design-part-8-flow-ion-exchange-beds/
 
         ion_set = self.config.property_package.ion_set
-        solutes = self.config.property_package.solute_set
         comps = self.config.property_package.component_list
         target_ion = self.config.target_ion
 
@@ -932,7 +931,12 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Expression(self.target_ion_set, doc="Mass removed calculation from CV")
         def mass_removed_check(b, j):
-            return -1 * (b.process_flow.mass_transfer_term[0, "Liq", j] * b.t_breakthru)
+            charge = b.process_flow.properties_in[0].charge_comp
+            return -1 * (
+                b.process_flow.mass_transfer_term[0, "Liq", j]
+                * b.t_breakthru
+                * charge[j]
+            )
 
         @self.Expression(doc="Volume per column")
         def col_vol_per(b):
@@ -979,6 +983,73 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             return (
                 prop_in.flow_vol_phase["Liq"] / b.service_to_regen_flow_ratio
             ) * b.t_regen
+
+        @self.Expression(doc="Pressure drop")
+        def pressure_drop(b):
+            vel_bed = pyunits.convert(b.vel_bed, to_units=pyunits.m / pyunits.hr)
+            return (
+                b.p_drop_A + b.p_drop_B * vel_bed + b.p_drop_C * vel_bed**2
+            ) * b.bed_depth  # for 20C;
+
+        @self.Expression(doc="Backwash pump power")
+        def bw_pump_power(b):
+            prop_in = b.process_flow.properties_in[0]
+            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
+            return pyunits.convert(
+                (
+                    prop_in.dens_mass_phase["Liq"]
+                    * Constants.acceleration_gravity
+                    * p_drop_m
+                    * b.bw_flow
+                )
+                / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            )
+
+        @self.Expression(doc="Rinse pump power")
+        def rinse_pump_power(b):
+            prop_in = b.process_flow.properties_in[0]
+            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
+            return pyunits.convert(
+                (
+                    prop_in.dens_mass_phase["Liq"]
+                    * Constants.acceleration_gravity
+                    * p_drop_m
+                    * b.rinse_flow
+                )
+                / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            )
+
+        @self.Expression(doc="Rinse pump power")
+        def regen_pump_power(b):
+            prop_in = b.process_flow.properties_in[0]
+            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
+            return pyunits.convert(
+                (
+                    prop_in.dens_mass_phase["Liq"]
+                    * Constants.acceleration_gravity
+                    * p_drop_m
+                    * (prop_in.flow_vol_phase["Liq"] / b.service_to_regen_flow_ratio)
+                )
+                / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            )
+
+        @self.Expression(doc="Main pump power")
+        def main_pump_power(b):
+            prop_in = b.process_flow.properties_in[0]
+            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
+            return pyunits.convert(
+                (
+                    prop_in.dens_mass_phase["Liq"]
+                    * Constants.acceleration_gravity
+                    * p_drop_m
+                    * prop_in.flow_vol_phase["Liq"]
+                )
+                / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            )
 
         # =========== EQUILIBRIUM ===========
 
@@ -1223,16 +1294,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )
         def eq_mass_transfer_solute(b, j):
             prop_in = b.process_flow.properties_in[0]
-            return (1 - b.mass_out[j] / b.mass_in[j]) * prop_in.flow_equiv_phase_comp[
+            return (1 - b.mass_out[j] / b.mass_in[j]) * prop_in.get_material_flow_terms(
                 "Liq", j
-            ] == -b.process_flow.mass_transfer_term[
-                0, "Liq", j
-            ] * prop_in.params.charge_comp[
-                j
-            ]
+            ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
 
         for j in inerts:
             self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
+            self.regeneration_stream[0].get_material_flow_terms("Liq", j).fix(0)
 
         @self.Constraint(
             self.target_ion_set, doc="Mass transfer for regeneration stream"
@@ -1240,9 +1308,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def eq_mass_transfer_target(b, j):
             regen = b.regeneration_stream[0]
             return (
-                regen.flow_equiv_phase_comp["Liq", j]
+                regen.get_material_flow_terms("Liq", j)
                 == -b.process_flow.mass_transfer_term[0, "Liq", j]
-                * regen.params.charge_comp[j]
             )
 
         @self.Constraint(
