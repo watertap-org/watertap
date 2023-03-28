@@ -488,7 +488,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # constants in empirical equations
-
+        """
         self.a0 = Var(
             initialize=1,
             bounds=(0, None),
@@ -538,7 +538,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="throughput equation parameter 4",
         )
-
+        """
         # ---------------------------------------------------------------------
         # conditions to achieve a constant pattern solution
 
@@ -767,12 +767,13 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # gac CPHSDM intermediate equations
-
+        """
         @self.Constraint(
             doc="minimum Stanton number to achieve constant pattern solution"
         )
         def eq_min_number_st_cps(b):
             return b.min_N_St == b.a0 * b.N_Bi + b.a1
+        """
 
         @self.Constraint(
             doc="minimum empty bed contact time to achieve constant pattern solution"
@@ -782,11 +783,13 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 b.particle_dia / 2
             )
 
+        """
         @self.Constraint(doc="throughput based on empirical 5-parameter regression")
         def eq_throughput(b):
             return b.throughput == b.b0 + b.b1 * (
                 b.conc_ratio_replace**b.b2
             ) + b.b3 / (1.01 - (b.conc_ratio_replace**b.b4))
+        """
 
         @self.Constraint(
             doc="minimum fluid residence time in the bed to achieve a constant pattern solution"
@@ -826,7 +829,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         self.ele_conc_ratio_replace[0].fix(0)
         self.ele_operational_time[0].fix(0)
-
+        """
         @self.Constraint(
             ele_index,
             doc="throughput based on empirical 5-parameter regression by discretized element",
@@ -835,6 +838,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             return b.ele_throughput[ele] == b.b0 + b.b1 * (
                 b.ele_conc_ratio_replace[ele] ** b.b2
             ) + b.b3 / (1.01 - b.ele_conc_ratio_replace[ele] ** b.b4)
+        """
 
         @self.Constraint(
             ele_index,
@@ -1145,11 +1149,15 @@ class GACData(InitializationMixin, UnitModelBlockData):
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            """
-            badly_scaled_var_list = badly_scaled_var_generator(self, large=1e2, small=1e-2)
+
+            badly_scaled_var_list = badly_scaled_var_generator(
+                self, large=1e2, small=1e-2
+            )
             print("----------------   badly_scaled_var_list   ----------------")
             for x in badly_scaled_var_list:
-                print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+                print(
+                    f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}"
+                )
             print("---------------- variables_near_bounds_list ----------------")
             variables_near_bounds_list = variables_near_bounds_generator(self)
             for x in variables_near_bounds_list:
@@ -1160,7 +1168,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 residual = abs(pyo.value(x.body) - pyo.value(x.lb))
                 if residual > 1e-8:
                     print(f"{x}\t{residual}")
-            """
+
             raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     # ---------------------------------------------------------------------
@@ -1367,7 +1375,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.particle_dia) is None:
             iscale.set_scaling_factor(self.particle_dia, 1e3)
-
+        """
         iscale.set_scaling_factor(self.a0, 1)
         iscale.set_scaling_factor(self.a1, 1)
         iscale.set_scaling_factor(self.b0, 1)
@@ -1375,7 +1383,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         iscale.set_scaling_factor(self.b2, 1)
         iscale.set_scaling_factor(self.b3, 10)
         iscale.set_scaling_factor(self.b4, 1)
-
+        """
         if iscale.get_scaling_factor(self.min_N_St) is None:
             iscale.set_scaling_factor(self.min_N_St, 1e-1)
 

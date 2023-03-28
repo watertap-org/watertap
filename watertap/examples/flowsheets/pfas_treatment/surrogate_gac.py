@@ -27,8 +27,9 @@ __author__ = "Hunter Barber"
 
 def main():
 
-    min_st_regression(rerun=False)
-    throughput_regression(rerun=False)
+    rerun = False
+    min_st_regression(rerun=rerun)
+    throughput_regression(rerun=rerun)
 
 
 def min_st_regression(rerun=False):
@@ -298,84 +299,84 @@ def min_st_regression(rerun=False):
 
         # ---------------------------------------------------------------------
 
-    surrogate_models = [
-        min_st_pysmo_surr_kriging,
-        min_st_pysmo_surr_linear,
-        min_st_pysmo_surr_cubic,
-        min_st_pysmo_surr_spline,
-        min_st_pysmo_surr_gaussian,
-        min_st_pysmo_surr_mq,
-        min_st_pysmo_surr_imq,
-    ]
-    res_names = []
-    for m in range(0, len(surrogate_models)):
-        err = compute_fit_metrics(surrogate_models[m], min_st_df)
-        err = pd.DataFrame.from_dict(err)
-        print(err)
-        res_names.append(err)
+        surrogate_models = [
+            min_st_pysmo_surr_kriging,
+            min_st_pysmo_surr_linear,
+            min_st_pysmo_surr_cubic,
+            min_st_pysmo_surr_spline,
+            min_st_pysmo_surr_gaussian,
+            min_st_pysmo_surr_mq,
+            min_st_pysmo_surr_imq,
+        ]
+        res_names = []
+        for m in range(0, len(surrogate_models)):
+            err = compute_fit_metrics(surrogate_models[m], min_st_df)
+            err = pd.DataFrame.from_dict(err)
+            print(err)
+            res_names.append(err)
 
-    # Plot metrics
-    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12))
+        # Plot metrics
+        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12))
 
-    df = pd.DataFrame(
-        {
-            "Kriging": res_names[0].loc["R2"],
-            "Linear-RBF": res_names[1].loc["R2"],
-            "Cubic-RBF": res_names[2].loc["R2"],
-            "Spline-RBF": res_names[3].loc["R2"],
-            "Gaussian-RBF": res_names[4].loc["R2"],
-            "MQ-RBF": res_names[4].loc["R2"],
-            "IMQ-RBF": res_names[4].loc["R2"],
-        }
-    )
-    df.plot.bar(rot=0, ax=axes[0, 0])
-    axes[0, 0].set_title("R2")
-    axes[0, 0].set_ylabel("R2")
+        df = pd.DataFrame(
+            {
+                "Kriging": res_names[0].loc["R2"],
+                "Linear-RBF": res_names[1].loc["R2"],
+                "Cubic-RBF": res_names[2].loc["R2"],
+                "Spline-RBF": res_names[3].loc["R2"],
+                "Gaussian-RBF": res_names[4].loc["R2"],
+                "MQ-RBF": res_names[4].loc["R2"],
+                "IMQ-RBF": res_names[4].loc["R2"],
+            }
+        )
+        df.plot.bar(rot=0, ax=axes[0, 0])
+        axes[0, 0].set_title("R2")
+        axes[0, 0].set_ylabel("R2")
 
-    df = pd.DataFrame(
-        {
-            "Kriging": res_names[0].loc["RMSE"],
-            "Linear-RBF": res_names[1].loc["RMSE"],
-            "Cubic-RBF": res_names[2].loc["RMSE"],
-            "Spline-RBF": res_names[3].loc["RMSE"],
-            "Gaussian-RBF": res_names[4].loc["RMSE"],
-            "MQ-RBF": res_names[4].loc["RMSE"],
-            "IMQ-RBF": res_names[4].loc["RMSE"],
-        }
-    )
-    df.plot.bar(rot=0, ax=axes[0, 1], logy=True)
-    axes[0, 1].set_title("RMSE")
-    axes[0, 1].set_ylabel("Log(RMSE)")
+        df = pd.DataFrame(
+            {
+                "Kriging": res_names[0].loc["RMSE"],
+                "Linear-RBF": res_names[1].loc["RMSE"],
+                "Cubic-RBF": res_names[2].loc["RMSE"],
+                "Spline-RBF": res_names[3].loc["RMSE"],
+                "Gaussian-RBF": res_names[4].loc["RMSE"],
+                "MQ-RBF": res_names[4].loc["RMSE"],
+                "IMQ-RBF": res_names[4].loc["RMSE"],
+            }
+        )
+        df.plot.bar(rot=0, ax=axes[0, 1], logy=True)
+        axes[0, 1].set_title("RMSE")
+        axes[0, 1].set_ylabel("Log(RMSE)")
 
-    df = pd.DataFrame(
-        {
-            "Kriging": res_names[0].loc["MAE"],
-            "Linear-RBF": res_names[1].loc["MAE"],
-            "Cubic-RBF": res_names[2].loc["MAE"],
-            "Spline-RBF": res_names[3].loc["MAE"],
-            "Gaussian-RBF": res_names[4].loc["MAE"],
-            "MQ-RBF": res_names[4].loc["MAE"],
-            "IMQ-RBF": res_names[4].loc["MAE"],
-        }
-    )
-    df.plot.bar(rot=0, ax=axes[1, 0], logy=True)
-    axes[1, 0].set_title("MAE")
-    axes[1, 0].set_ylabel("Log(MAE)")
+        df = pd.DataFrame(
+            {
+                "Kriging": res_names[0].loc["MAE"],
+                "Linear-RBF": res_names[1].loc["MAE"],
+                "Cubic-RBF": res_names[2].loc["MAE"],
+                "Spline-RBF": res_names[3].loc["MAE"],
+                "Gaussian-RBF": res_names[4].loc["MAE"],
+                "MQ-RBF": res_names[4].loc["MAE"],
+                "IMQ-RBF": res_names[4].loc["MAE"],
+            }
+        )
+        df.plot.bar(rot=0, ax=axes[1, 0], logy=True)
+        axes[1, 0].set_title("MAE")
+        axes[1, 0].set_ylabel("Log(MAE)")
 
-    df = pd.DataFrame(
-        {
-            "Kriging": res_names[0].loc["maxAE"],
-            "Linear-RBF": res_names[1].loc["maxAE"],
-            "Cubic-RBF": res_names[2].loc["maxAE"],
-            "Spline-RBF": res_names[3].loc["maxAE"],
-            "Gaussian-RBF": res_names[4].loc["maxAE"],
-            "MQ-RBF": res_names[4].loc["maxAE"],
-            "IMQ-RBF": res_names[4].loc["maxAE"],
-        }
-    )
-    df.plot.bar(rot=0, ax=axes[1, 1], logy=True)
-    axes[1, 1].set_ylabel("Log(maxAE)")
-    axes[1, 1].set_title("maxAE")
+        df = pd.DataFrame(
+            {
+                "Kriging": res_names[0].loc["maxAE"],
+                "Linear-RBF": res_names[1].loc["maxAE"],
+                "Cubic-RBF": res_names[2].loc["maxAE"],
+                "Spline-RBF": res_names[3].loc["maxAE"],
+                "Gaussian-RBF": res_names[4].loc["maxAE"],
+                "MQ-RBF": res_names[4].loc["maxAE"],
+                "IMQ-RBF": res_names[4].loc["maxAE"],
+            }
+        )
+        df.plot.bar(rot=0, ax=axes[1, 1], logy=True)
+        axes[1, 1].set_ylabel("Log(maxAE)")
+        axes[1, 1].set_title("maxAE")
 
 
 def throughput_regression(rerun=False):
@@ -459,7 +460,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
+        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -486,7 +487,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
+        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -513,7 +514,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
+        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -540,7 +541,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
+        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -567,7 +568,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
+        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -594,7 +595,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
+        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -621,7 +622,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.01], [1, 100, 0.99]
+        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -664,114 +665,114 @@ def throughput_regression(rerun=False):
 
         # ---------------------------------------------------------------------
 
-    surrogate_models = [
-        throughput_pysmo_surr_kriging,
-        throughput_pysmo_surr_linear,
-        throughput_pysmo_surr_cubic,
-        throughput_pysmo_surr_spline,
-        throughput_pysmo_surr_gaussian,
-        throughput_pysmo_surr_mq,
-        throughput_pysmo_surr_imq,
-    ]
-    res_names = []
-    for m in range(0, len(surrogate_models)):
-        err = compute_fit_metrics(surrogate_models[m], throughput_df)
-        err = pd.DataFrame.from_dict(err)
-        print(err)
-        res_names.append(err)
+        surrogate_models = [
+            throughput_pysmo_surr_kriging,
+            throughput_pysmo_surr_linear,
+            throughput_pysmo_surr_cubic,
+            throughput_pysmo_surr_spline,
+            throughput_pysmo_surr_gaussian,
+            throughput_pysmo_surr_mq,
+            throughput_pysmo_surr_imq,
+        ]
+        res_names = []
+        for m in range(0, len(surrogate_models)):
+            err = compute_fit_metrics(surrogate_models[m], throughput_df)
+            err = pd.DataFrame.from_dict(err)
+            print(err)
+            res_names.append(err)
 
-    # Plot metrics
-    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12))
+        # Plot metrics
+        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12))
 
-    df = pd.DataFrame(
-        {
-            "Kriging": res_names[0].loc["R2"],
-            "Linear-RBF": res_names[1].loc["R2"],
-            "Cubic-RBF": res_names[2].loc["R2"],
-            "Spline-RBF": res_names[3].loc["R2"],
-            "Gaussian-RBF": res_names[4].loc["R2"],
-            "MQ-RBF": res_names[4].loc["R2"],
-            "IMQ-RBF": res_names[4].loc["R2"],
-        }
-    )
-    df.plot.bar(rot=0, ax=axes[0, 0])
-    axes[0, 0].set_title("R2")
-    axes[0, 0].set_ylabel("R2")
+        df = pd.DataFrame(
+            {
+                "Kriging": res_names[0].loc["R2"],
+                "Linear-RBF": res_names[1].loc["R2"],
+                "Cubic-RBF": res_names[2].loc["R2"],
+                "Spline-RBF": res_names[3].loc["R2"],
+                "Gaussian-RBF": res_names[4].loc["R2"],
+                "MQ-RBF": res_names[4].loc["R2"],
+                "IMQ-RBF": res_names[4].loc["R2"],
+            }
+        )
+        df.plot.bar(rot=0, ax=axes[0, 0])
+        axes[0, 0].set_title("R2")
+        axes[0, 0].set_ylabel("R2")
 
-    df = pd.DataFrame(
-        {
-            "Kriging": res_names[0].loc["RMSE"],
-            "Linear-RBF": res_names[1].loc["RMSE"],
-            "Cubic-RBF": res_names[2].loc["RMSE"],
-            "Spline-RBF": res_names[3].loc["RMSE"],
-            "Gaussian-RBF": res_names[4].loc["RMSE"],
-            "MQ-RBF": res_names[4].loc["RMSE"],
-            "IMQ-RBF": res_names[4].loc["RMSE"],
-        }
-    )
-    df.plot.bar(rot=0, ax=axes[0, 1], logy=True)
-    axes[0, 1].set_title("RMSE")
-    axes[0, 1].set_ylabel("Log(RMSE)")
+        df = pd.DataFrame(
+            {
+                "Kriging": res_names[0].loc["RMSE"],
+                "Linear-RBF": res_names[1].loc["RMSE"],
+                "Cubic-RBF": res_names[2].loc["RMSE"],
+                "Spline-RBF": res_names[3].loc["RMSE"],
+                "Gaussian-RBF": res_names[4].loc["RMSE"],
+                "MQ-RBF": res_names[4].loc["RMSE"],
+                "IMQ-RBF": res_names[4].loc["RMSE"],
+            }
+        )
+        df.plot.bar(rot=0, ax=axes[0, 1], logy=True)
+        axes[0, 1].set_title("RMSE")
+        axes[0, 1].set_ylabel("Log(RMSE)")
 
-    df = pd.DataFrame(
-        {
-            "Kriging": res_names[0].loc["MAE"],
-            "Linear-RBF": res_names[1].loc["MAE"],
-            "Cubic-RBF": res_names[2].loc["MAE"],
-            "Spline-RBF": res_names[3].loc["MAE"],
-            "Gaussian-RBF": res_names[4].loc["MAE"],
-            "MQ-RBF": res_names[4].loc["MAE"],
-            "IMQ-RBF": res_names[4].loc["MAE"],
-        }
-    )
-    df.plot.bar(rot=0, ax=axes[1, 0], logy=True)
-    axes[1, 0].set_title("MAE")
-    axes[1, 0].set_ylabel("Log(MAE)")
+        df = pd.DataFrame(
+            {
+                "Kriging": res_names[0].loc["MAE"],
+                "Linear-RBF": res_names[1].loc["MAE"],
+                "Cubic-RBF": res_names[2].loc["MAE"],
+                "Spline-RBF": res_names[3].loc["MAE"],
+                "Gaussian-RBF": res_names[4].loc["MAE"],
+                "MQ-RBF": res_names[4].loc["MAE"],
+                "IMQ-RBF": res_names[4].loc["MAE"],
+            }
+        )
+        df.plot.bar(rot=0, ax=axes[1, 0], logy=True)
+        axes[1, 0].set_title("MAE")
+        axes[1, 0].set_ylabel("Log(MAE)")
 
-    df = pd.DataFrame(
-        {
-            "Kriging": res_names[0].loc["maxAE"],
-            "Linear-RBF": res_names[1].loc["maxAE"],
-            "Cubic-RBF": res_names[2].loc["maxAE"],
-            "Spline-RBF": res_names[3].loc["maxAE"],
-            "Gaussian-RBF": res_names[4].loc["maxAE"],
-            "MQ-RBF": res_names[4].loc["maxAE"],
-            "IMQ-RBF": res_names[4].loc["maxAE"],
-        }
-    )
-    df.plot.bar(rot=0, ax=axes[1, 1], logy=True)
-    axes[1, 1].set_ylabel("Log(maxAE)")
-    axes[1, 1].set_title("maxAE")
+        df = pd.DataFrame(
+            {
+                "Kriging": res_names[0].loc["maxAE"],
+                "Linear-RBF": res_names[1].loc["maxAE"],
+                "Cubic-RBF": res_names[2].loc["maxAE"],
+                "Spline-RBF": res_names[3].loc["maxAE"],
+                "Gaussian-RBF": res_names[4].loc["maxAE"],
+                "MQ-RBF": res_names[4].loc["maxAE"],
+                "IMQ-RBF": res_names[4].loc["maxAE"],
+            }
+        )
+        df.plot.bar(rot=0, ax=axes[1, 1], logy=True)
+        axes[1, 1].set_ylabel("Log(maxAE)")
+        axes[1, 1].set_title("maxAE")
 
-    plt.show()
+        plt.show()
 
-    """
-    show = True
-    surrogate_scatter2D(
-        throughput_pysmo_surr_linear,
-        throughput_df,
-        filename=None,
-        show=show,
-    )
-    surrogate_scatter2D(
-        throughput_pysmo_surr_linear,
-        throughput_df,
-        filename=None,
-        show=show,
-    )
-    surrogate_parity(
-        throughput_pysmo_surr_linear,
-        throughput_df,
-        filename=None,
-        show=show,
-    )
-    surrogate_residual(
-        throughput_pysmo_surr_linear,
-        throughput_df,
-        filename=None,
-        show=show,
-    )
-    """
+        """
+        show = True
+        surrogate_scatter2D(
+            throughput_pysmo_surr_linear,
+            throughput_df,
+            filename=None,
+            show=show,
+        )
+        surrogate_scatter2D(
+            throughput_pysmo_surr_linear,
+            throughput_df,
+            filename=None,
+            show=show,
+        )
+        surrogate_parity(
+            throughput_pysmo_surr_linear,
+            throughput_df,
+            filename=None,
+            show=show,
+        )
+        surrogate_residual(
+            throughput_pysmo_surr_linear,
+            throughput_df,
+            filename=None,
+            show=show,
+        )
+        """
 
 
 if __name__ == "__main__":

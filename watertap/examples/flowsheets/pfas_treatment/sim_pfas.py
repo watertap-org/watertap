@@ -43,6 +43,8 @@ from watertap.examples.flowsheets.pfas_treatment.gac_rssct import (
     SurfaceDiffusionCoefficientType,
 )
 
+from idaes.core.surrogate.surrogate_block import SurrogateBlock
+from idaes.core.surrogate.pysmo_surrogate import PysmoSurrogate
 import numpy as np
 import pandas as pd
 import pyomo.contrib.parmest.parmest as parmest
@@ -225,15 +227,81 @@ def model_build():
     # design spec
     m.fs.gac.conc_ratio_replace.fix(0.20)
     # parameters TODO: use lookup table of regression to define a and b as f(N_Bi(ds))
-    m.fs.gac.a0.fix(0.8)
-    m.fs.gac.a1.fix(0)
-    m.fs.gac.b0.fix(0.023)
-    m.fs.gac.b1.fix(0.793673)
-    m.fs.gac.b2.fix(0.039324)
-    m.fs.gac.b3.fix(0.009326)
-    m.fs.gac.b4.fix(0.08275)
     m.fs.gac.shape_correction_factor.fix()
     m.fs.gac.conc_ratio_start_breakthrough = 0.001
+    print("DOF before surrogate:", degrees_of_freedom(m))
+
+    min_st_surrogate = PysmoSurrogate.load_from_file(
+        "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_spline.json",
+    )
+    throughput_surrogate = PysmoSurrogate.load_from_file(
+        "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_linear.json",
+    )
+
+    m.fs.min_st_surrogate = SurrogateBlock(concrete=True)
+    m.fs.min_st_surrogate.build_model(
+        min_st_surrogate,
+        input_vars=[m.fs.gac.freund_ninv, m.fs.gac.N_Bi],
+        output_vars=[m.fs.gac.min_N_St],
+    )
+    m.fs.throughput_surrogate = SurrogateBlock(concrete=True)
+    m.fs.throughput_surrogate.build_model(
+        throughput_surrogate,
+        input_vars=[m.fs.gac.freund_ninv, m.fs.gac.N_Bi, m.fs.gac.conc_ratio_replace],
+        output_vars=[m.fs.gac.throughput],
+    )
+    m.fs.ele_throughput_surrogate_1 = SurrogateBlock(concrete=True)
+    m.fs.ele_throughput_surrogate_1.build_model(
+        throughput_surrogate,
+        input_vars=[
+            m.fs.gac.freund_ninv,
+            m.fs.gac.N_Bi,
+            m.fs.gac.ele_conc_ratio_replace[1],
+        ],
+        output_vars=[m.fs.gac.ele_throughput[1]],
+    )
+    m.fs.ele_throughput_surrogate_2 = SurrogateBlock(concrete=True)
+    m.fs.ele_throughput_surrogate_2.build_model(
+        throughput_surrogate,
+        input_vars=[
+            m.fs.gac.freund_ninv,
+            m.fs.gac.N_Bi,
+            m.fs.gac.ele_conc_ratio_replace[2],
+        ],
+        output_vars=[m.fs.gac.ele_throughput[2]],
+    )
+    m.fs.ele_throughput_surrogate_3 = SurrogateBlock(concrete=True)
+    m.fs.ele_throughput_surrogate_3.build_model(
+        throughput_surrogate,
+        input_vars=[
+            m.fs.gac.freund_ninv,
+            m.fs.gac.N_Bi,
+            m.fs.gac.ele_conc_ratio_replace[3],
+        ],
+        output_vars=[m.fs.gac.ele_throughput[3]],
+    )
+    m.fs.ele_throughput_surrogate_4 = SurrogateBlock(concrete=True)
+    m.fs.ele_throughput_surrogate_4.build_model(
+        throughput_surrogate,
+        input_vars=[
+            m.fs.gac.freund_ninv,
+            m.fs.gac.N_Bi,
+            m.fs.gac.ele_conc_ratio_replace[4],
+        ],
+        output_vars=[m.fs.gac.ele_throughput[4]],
+    )
+    m.fs.ele_throughput_surrogate_5 = SurrogateBlock(concrete=True)
+    m.fs.ele_throughput_surrogate_5.build_model(
+        throughput_surrogate,
+        input_vars=[
+            m.fs.gac.freund_ninv,
+            m.fs.gac.N_Bi,
+            m.fs.gac.ele_conc_ratio_replace[5],
+        ],
+        output_vars=[m.fs.gac.ele_throughput[5]],
+    )
+
+    print("DOF after surrogate:", degrees_of_freedom(m))
 
     return m
 
