@@ -61,10 +61,6 @@ from idaes.core.util.testing import initialization_tester
 # Get default solver for testing
 solver = get_solver()
 
-# TODO: Fix and unfix all variables and run at max_iter:0 to see which constraints fail using large_residual_set
-# TODO: Double check the values for X_PP, X_fa, and X_c4 in the Petersen matrix and reaction rates (double check signs)
-# TODO: Play around with scaling in property file
-
 
 class TestParamBlock(object):
     @pytest.fixture(scope="class")

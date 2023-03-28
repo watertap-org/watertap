@@ -205,7 +205,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
         mw_c = 12 * pyo.units.kg / pyo.units.kmol
         mw_p = 31 * pyo.units.kg / pyo.units.kmol
 
-        # TODO: Inherit these parameters from ADM1 such that there is less repeated code?
+        # TODO: Consider inheriting these parameters from ADM1 such that there is less repeated code
 
         # Stoichiometric Parameters (Table 1.1 and 2.1 in Flores-Alsina et al., 2016)
         self.Z_h2s = pyo.Param(
@@ -693,7 +693,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Saturation coefficient for acetate",
         )
-        # TODO: Check the units for K_A and K_PP (K_PP not dimensionless in the reference)
         self.K_PP = pyo.Var(
             initialize=0.32e-3,
             units=pyo.units.dimensionless,
@@ -712,7 +711,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Yield of biomass on phosphate (kmol P/kg COD)",
         )
-        # TODO: Find better doc description for K_XPP and Mg_XPP?
         self.K_XPP = pyo.Var(
             initialize=1 / 3,
             units=pyo.units.dimensionless,
@@ -1786,7 +1784,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         add_object_reference(self, "conc_mass_comp_ref", self.state_ref.conc_mass_comp)
         add_object_reference(self, "temperature", self.state_ref.temperature)
 
-        # Initial values of rates of reaction from Flores-Alsina 2016 GitHub
+        # Initial values of rates of reaction derived from Flores-Alsina 2016 GitHub
         self.rates = {
             "R1": 1.651e-04,
             "R2": 1.723e-04,
@@ -1903,7 +1901,6 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             units=pyo.units.kmol / pyo.units.m**3,
         )
 
-        # Equation from [2]
         def Dissociation_rule(self, t):
             return (
                 self.KW
@@ -1926,7 +1923,6 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             doc="Dissociation constant constraint",
         )
 
-        # Equation from [2]
         def CO2_acid_base_equilibrium_rule(self, t):
             return (
                 self.K_a_co2
@@ -1949,7 +1945,6 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             doc="Carbon dioxide acid-base equilibrium constraint",
         )
 
-        # Equation from [2]
         def IN_acid_base_equilibrium_rule(self, t):
             return (
                 self.K_a_IN
@@ -2059,7 +2054,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
 
         self.concentration_of_nh4 = pyo.Constraint(
             rule=concentration_of_nh4_rule,
-            doc="constraint concentration of pro-",
+            doc="constraint concentration of nh4",
         )
 
         def S_OH_rule(self):
@@ -2069,7 +2064,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             rule=S_OH_rule,
             doc="constraint concentration of OH",
         )
-
+        # TODO: Add Mg and K rules and incorporate into this constraint
         def S_H_rule(self):
             return (
                 self.state_ref.cations
@@ -2087,7 +2082,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
 
         self.S_H_cons = pyo.Constraint(
             rule=S_H_rule,
-            doc="constraint concentration of pro-",
+            doc="constraint concentration of H",
         )
 
         def rule_pH(self):
@@ -2139,7 +2134,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             doc="hydrogen inhibition attributed to propionate uptake",
         )
 
-        # TODO: revisit Z_h2s values and if we have ref state for S_h2s
+        # TODO: revisit Z_h2s value if we have ref state for S_h2s (currently assumed to be 0)
         def rule_I_h2s_ac(self):
             return 1 / (1 + self.params.Z_h2s / self.params.K_I_h2s_ac)
 
@@ -2412,12 +2407,11 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                         b.params.k_dec_X_ac * b.conc_mass_comp_ref["X_ac"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
-                # TODO: Why does this equation deviate from the convention
                 elif r == "R18":
                     # R18: Decay of X_h2
-                    return b.reaction_rate[r] == (
-                        pyo.units.convert(b.params.k_dec_X_h2, to_units=1 / pyo.units.s)
-                        * b.conc_mass_comp_ref["X_h2"]
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_dec_X_h2 * b.conc_mass_comp_ref["X_h2"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R19":
                     # R19: Storage of S_va in X_PHA

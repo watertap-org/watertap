@@ -96,8 +96,6 @@ class ModifiedADM1ParameterData(PhysicalParameterBlock):
         self.S_K = Solute(doc="Potassium")
         self.S_Mg = Solute(doc="Magnesium")
 
-        # TODO: Additional components not in Table but referred to in text
-
         self.S_cat = Component(doc="Total cation equivalents concentration")
         self.S_an = Component(doc="Total anion equivalents concentration")
 
