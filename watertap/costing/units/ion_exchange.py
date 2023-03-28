@@ -233,6 +233,7 @@ def cost_ion_exchange(blk):
     make_fixed_operating_cost_var(blk)
     ion_exchange_params = blk.costing_package.ion_exchange
     # Conversions to use units from cost equations in reference
+    tot_num_col = blk.unit_model.number_columns + blk.unit_model.number_columns_redund
     col_vol_gal = pyo.units.convert(blk.unit_model.col_vol_per, to_units=pyo.units.gal)
     bed_vol_ft3 = pyo.units.convert(blk.unit_model.bed_vol, to_units=pyo.units.ft**3)
     bed_mass_ton = pyo.units.convert(
@@ -348,7 +349,9 @@ def cost_ion_exchange(blk):
             == pyo.units.convert(
                 (
                     bw_tank_vol * ion_exchange_params.hazardous_regen_disposal
-                    + bed_mass_ton * ion_exchange_params.hazardous_resin_disposal
+                    + bed_mass_ton
+                    * tot_num_col
+                    * ion_exchange_params.hazardous_resin_disposal
                 )
                 * ion_exchange_params.annual_resin_replacement_factor
                 + ion_exchange_params.hazardous_min_cost,
@@ -364,6 +367,7 @@ def cost_ion_exchange(blk):
             (
                 (
                     bed_vol_ft3
+                    * tot_num_col
                     * ion_exchange_params.annual_resin_replacement_factor
                     * resin_cost
                 )
