@@ -13,11 +13,8 @@
 from pyomo.environ import (
     ConcreteModel,
     value,
-    Set,
     Constraint,
-    Expression,
     Objective,
-    Param,
     Var,
     TransformationFactory,
     units as pyunits,
@@ -42,7 +39,7 @@ from idaes.models.unit_models.heat_exchanger import (
     HeatExchanger,
     HeatExchangerFlowPattern,
 )
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -53,7 +50,7 @@ from watertap.unit_models.mvc.components.lmtd_chen_callback import (
 from watertap.unit_models.pressure_changer import Pump
 import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w
-from watertap.costing import WaterTAPCosting, PumpType
+from watertap.costing import WaterTAPCosting
 import math
 import pandas as pd
 
@@ -101,29 +98,8 @@ def main():
     display_results(m)
     if results.solver.termination_condition == "infeasible":
         debug_infeasible(m.fs, solver)
-    # assert False
-    print('Fourth solve - optimization - new parameters')
-    # m.fs.compressor.efficiency.fix(0.9)
-    # m.fs.costing.evaporator.material_factor_cost.fix(8.733333*1.25)
-    # m.fs.evaporator.properties_vapor[0].temperature.setub(100+273.15)
-    # m.fs.hx_brine.overall_heat_transfer_coefficient.fix(2.5e3)
-    # m.fs.hx_distillate.overall_heat_transfer_coefficient.fix(2.5e3)
-    # m.fs.evaporator.properties_brine[0].temperature.fix(75+273.15)
-    results = solve(m, tee=False)
-    print(results.solver.termination_condition)
-    display_results(m)
-    if results.solver.termination_condition == "infeasible":
-        debug_infeasible(m.fs, solver)
-    assert False
-    # Resolve optimization - see if same solution
 
     assert_units_consistent(m)
-    results = solve(m, tee=True)
-    display_results(m)
-    display_exergy_destruction(m)
-    if results.solver.termination_condition == "infeasible":
-        debug_infeasible(m.fs, solver)
-    return m
 
 def build():
     # flowsheet set up

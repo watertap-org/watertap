@@ -40,7 +40,7 @@ from watertap.unit_models import (
     IonExchange0D,
     GAC,
 )
-from watertap.unit_models.mvc import (
+from watertap.unit_models.mvc.components import (
     Evaporator,
     Compressor
 )
