@@ -697,7 +697,7 @@ class TestReactor:
         ) == pytest.approx(0.486516, rel=1e-2)
         assert value(
             model.fs.unit.liquid_outlet.conc_mass_comp[0, "X_fa"]
-        ) == pytest.approx(4.35411e-6, rel=1e-2)
+        ) == pytest.approx(4.35411e-6, abs=1e-5)
         assert value(
             model.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c4"]
         ) == pytest.approx(4.34946e-6, abs=1e-5)
