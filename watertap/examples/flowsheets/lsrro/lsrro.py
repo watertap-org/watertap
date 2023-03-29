@@ -945,6 +945,8 @@ def optimize_set_up(
         or AB_tradeoff == ABTradeoff.inequality_constraint
     ):
         m.fs.AB_tradeoff_coeff = Param(initialize=0.01333, mutable=True)
+        if AB_gamma_factor is None:
+            AB_gamma_factor = 1
         m.fs.AB_tradeoff_coeff.set_value(
             AB_gamma_factor * value(m.fs.AB_tradeoff_coeff)
         )
