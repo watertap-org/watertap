@@ -580,6 +580,8 @@ def cost_high_pressure_pump_lsrro(blk, cost_electricity_flow=True):
 
 def set_operating_conditions(m, Cin=None, Qin=None):
     # ---specifications---
+    if Qin is None:
+        Qin = 1e-3
     # parameters
     pump_efi = 0.75  # pump efficiency [-]
     erd_efi = 0.8  # energy recovery device efficiency [-]
@@ -595,8 +597,7 @@ def set_operating_conditions(m, Cin=None, Qin=None):
     # feed_flow_mass = 1*pyunits.kg/pyunits.s
     if Cin is None:
         Cin = 70
-    if Qin is None:
-        Qin = 1e-3
+
     feed_temperature = 273.15 + 20
 
     # initialize feed
