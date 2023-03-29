@@ -380,25 +380,25 @@ def set_operating_conditions(m):
     # Separator
     m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"] = m.fs.recovery[0].value
 
-    # distillate HX
+    # Distillate HX
     m.fs.hx_distillate.overall_heat_transfer_coefficient.fix(2e3)
     m.fs.hx_distillate.area.fix(125)
     m.fs.hx_distillate.cold.deltaP[0].fix(7e3)
     m.fs.hx_distillate.hot.deltaP[0].fix(7e3)
 
-    # brine HX
+    # Brine HX
     m.fs.hx_brine.overall_heat_transfer_coefficient.fix(2e3)
     m.fs.hx_brine.area.fix(115)
     m.fs.hx_brine.cold.deltaP[0].fix(7e3)
     m.fs.hx_brine.hot.deltaP[0].fix(7e3)
 
-    # evaporator specifications
+    # Evaporator
     m.fs.evaporator.inlet_feed.temperature[0] = 50+273.15 # provide guess
     m.fs.evaporator.outlet_brine.temperature[0].fix(70+273.15)
     m.fs.evaporator.U.fix(3e3)  # W/K-m^2
     m.fs.evaporator.area.setub(1e4)
 
-    # compressor
+    # Compressor
     m.fs.compressor.pressure_ratio.fix(1.6)
     m.fs.compressor.efficiency.fix(0.8)
 
@@ -453,7 +453,6 @@ def initialize_system(m, solver=None):
     # initialize feed pump
     propagate_state(m.fs.s01)
     m.fs.pump_feed.initialize_build(optarg=optarg)
-    # m.fs.pump_feed.report()
 
     # initialize separator
     propagate_state(m.fs.s02)
@@ -485,7 +484,6 @@ def initialize_system(m, solver=None):
     ] = m.fs.evaporator.outlet_brine.temperature[0].value
     m.fs.hx_distillate.hot_inlet.pressure[0] = 101325
     m.fs.hx_distillate.initialize_build()
-    # m.fs.hx_distillate.report()
 
     # initialize brine heat exchanger
     propagate_state(m.fs.s04)
@@ -502,28 +500,25 @@ def initialize_system(m, solver=None):
     m.fs.hx_brine.hot_inlet.temperature[0] = m.fs.evaporator.outlet_brine.temperature[0].value
     m.fs.hx_brine.hot_inlet.pressure[0] = 101325
     m.fs.hx_brine.initialize_build()
-    # m.fs.hx_brine.report()
 
     # initialize mixer
     propagate_state(m.fs.s05)
     propagate_state(m.fs.s06)
     m.fs.mixer_feed.initialize_build()
     m.fs.mixer_feed.pressure_equality_constraints[0,2].deactivate()
-    # m.fs.mixer_feed.report()
 
     # initialize evaporator
     propagate_state(m.fs.s07)
     m.fs.Q_ext[0].fix()
     m.fs.evaporator.initialize_build(
-        delta_temperature_in=91, delta_temperature_out=14
+        delta_temperature_in=60, delta_temperature_out=10
     )  # fixes and unfixes those values
     m.fs.Q_ext[0].unfix()
-    # m.fs.evaporator.display()
-    # assert False
+    m.fs.evaporator.display()
     # initialize compressor
     propagate_state(m.fs.s08)
     m.fs.compressor.initialize_build()
-    # m.fs.compressor.report()
+    m.fs.compressor.report()
 
     # initialize condenser
     propagate_state(m.fs.s09)
