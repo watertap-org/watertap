@@ -81,6 +81,7 @@ def run_lsrro_case(
     number_of_stages,
     water_recovery=None,
     Cin=None,
+    Qin=None,
     Cbrine=None,
     A_case=ACase.fixed,
     B_case=BCase.optimize,
@@ -102,7 +103,7 @@ def run_lsrro_case(
         number_of_RO_finite_elements,
         B_max,
     )
-    set_operating_conditions(m, Cin)
+    set_operating_conditions(m, Cin, Qin)
 
     initialize(m)
     solve(m)
@@ -577,7 +578,7 @@ def cost_high_pressure_pump_lsrro(blk, cost_electricity_flow=True):
         )
 
 
-def set_operating_conditions(m, Cin=None):
+def set_operating_conditions(m, Cin=None, Qin=None):
     # ---specifications---
     # parameters
     pump_efi = 0.75  # pump efficiency [-]
@@ -586,14 +587,16 @@ def set_operating_conditions(m, Cin=None):
     mem_B = 3.5e-8  # membrane salt permeability coefficient [m/s]
     height = 1e-3  # channel height in membrane stage [m]
     spacer_porosity = 0.85  # spacer porosity in membrane stage [-]
-    width = 5  # effective membrane width [m]
-    area = 100  # membrane area [m^2]
+    width = 5 * Qin / 1e-3  # effective membrane width [m]
+    area = 100 * Qin / 1e-3  # membrane area [m^2]
     pressure_atm = 101325  # atmospheric pressure [Pa]
 
     # feed
     # feed_flow_mass = 1*pyunits.kg/pyunits.s
     if Cin is None:
         Cin = 70
+    if Qin is None:
+        Qin = 1e-3
     feed_temperature = 273.15 + 20
 
     # initialize feed
@@ -605,7 +608,7 @@ def set_operating_conditions(m, Cin=None):
             ("conc_mass_phase_comp", ("Liq", "NaCl")): value(
                 m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
             ),  # feed mass concentration
-            ("flow_vol_phase", "Liq"): 1e-3,
+            ("flow_vol_phase", "Liq"): Qin,
         },  # volumetric feed flowrate [-]
         hold_state=True,  # fixes the calculated component mass flow rates
     )
@@ -951,9 +954,10 @@ def optimize_set_up(
         stage.area.unfix()
         stage.width.unfix()
         stage.area.setlb(1)
-        stage.area.setub(20000)
-        stage.width.setlb(0.1)
-        stage.width.setub(1000)
+        stage.area.setub(None)
+        stage.width.setlb(1)
+        stage.width.setub(None)
+        stage.length.setlb(1)
 
         if (
             stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
@@ -1209,3 +1213,24 @@ def display_system(m):
 def display_RO_reports(m):
     for stage in m.fs.ROUnits.values():
         stage.report()
+
+
+if __name__ == "__main__":
+    m, results = run_lsrro_case(
+        number_of_stages=3,
+        water_recovery=0.50,
+        Cin=70,  # inlet NaCl conc kg/m3,
+        Qin=1e-3,  # inlet feed flowrate m3/s
+        Cbrine=None,  # brine conc kg/m3
+        A_case=ACase.optimize,
+        B_case=BCase.optimize,
+        AB_tradeoff=ABTradeoff.equality_constraint,
+        # A_value=4.2e-12, #membrane water permeability coeff m/s-Pa
+        has_NaCl_solubility_limit=True,
+        has_calculated_concentration_polarization=True,
+        has_calculated_ro_pressure_drop=True,
+        permeate_quality_limit=500e-6,
+        AB_gamma_factor=1,
+        B_max=3.5e-6,
+        number_of_RO_finite_elements=10,
+    )
