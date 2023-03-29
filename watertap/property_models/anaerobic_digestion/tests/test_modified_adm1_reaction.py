@@ -610,6 +610,7 @@ class TestReactor:
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_solve(self, model):
         solver = get_solver(options={"bound_push": 1e-8})
         results = solver.solve(model, tee=True)
@@ -620,6 +621,7 @@ class TestReactor:
 
     # TO DO: retest after conversion changes
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_solution(self, model):
         assert value(model.fs.unit.liquid_outlet.flow_vol[0]) == pytest.approx(
             0.0019675, rel=1e-2
