@@ -86,7 +86,7 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     # build, set, and initialize
     m = build(number_of_stages=number_of_stages, erd_type=erd_type)
     set_operating_conditions(m)
-    initialize_system(m, solver=solver)
+    initialize_system(m, number_of_stages, solver=solver)
     solve(m, solver=solver)
     print("\n***---Simulation results---***")
     display_system(m)
@@ -746,7 +746,7 @@ def initialize_loop(m, solver):
         m.fs.OAROUnits[stage - 1].initialize()
 
 
-def initialize_system(m, solver=None, verbose=True):
+def initialize_system(m, number_of_stages=None, solver=None, verbose=True):
     if solver is None:
         solver = get_solver()
 
@@ -760,25 +760,26 @@ def initialize_system(m, solver=None, verbose=True):
     m.fs.PrimaryPumps[first_stage].initialize()
 
     # ---initialize first OARO unit---
-    propagate_state(m.fs.pump_to_OARO[first_stage])
-    recycle_pump_initializer(
-        m.fs.RecyclePumps[first_stage + 1],
-        m.fs.OAROUnits[first_stage],
-        solvent_multiplier=0.8,
-        solute_multiplier=0.5,
-    )
-    # print(m.fs.recyclepump_to_OARO[first_stage + 1].destination.name)
-    # m.fs.recyclepump_to_OARO[first_stage + 1].destination.display()
-    propagate_state(m.fs.recyclepump_to_OARO[first_stage + 1])
-    m.fs.OAROUnits[first_stage].initialize()
+    if number_of_stages > 1:
+        propagate_state(m.fs.pump_to_OARO[first_stage])
+        recycle_pump_initializer(
+            m.fs.RecyclePumps[first_stage + 1],
+            m.fs.OAROUnits[first_stage],
+            solvent_multiplier=0.8,
+            solute_multiplier=0.5,
+        )
+        # print(m.fs.recyclepump_to_OARO[first_stage + 1].destination.name)
+        # m.fs.recyclepump_to_OARO[first_stage + 1].destination.display()
+        propagate_state(m.fs.recyclepump_to_OARO[first_stage + 1])
+        m.fs.OAROUnits[first_stage].initialize()
 
-    print(f"DOF before loop: {degrees_of_freedom(m)}")
-    initialize_loop(m, solver)
-    print(f"DOF after loop: {degrees_of_freedom(m)}")
+        print(f"DOF before loop: {degrees_of_freedom(m)}")
+        initialize_loop(m, solver)
+        print(f"DOF after loop: {degrees_of_freedom(m)}")
 
-    # ---initialize RO loop---
-    propagate_state(m.fs.OARO_to_pump[last_stage - 1])
-    m.fs.PrimaryPumps[last_stage].initialize()
+        # ---initialize RO loop---
+        propagate_state(m.fs.OARO_to_pump[last_stage - 1])
+        m.fs.PrimaryPumps[last_stage].initialize()
 
     propagate_state(m.fs.pump_to_ro)
     # print(f"DOF after prop_state to RO: {degrees_of_freedom(m)}")
@@ -788,21 +789,20 @@ def initialize_system(m, solver=None, verbose=True):
     # print(f"fixed variables set after RO: {fixed_variables_set(m.fs.RO)}")
     # print(f"DOF after RO: {degrees_of_freedom(m)}")
 
-    propagate_state(m.fs.ro_to_ERD)
-    m.fs.EnergyRecoveryDevices[last_stage].initialize()
+    if number_of_stages > 1:
+        propagate_state(m.fs.ro_to_ERD)
+        m.fs.EnergyRecoveryDevices[last_stage].initialize()
 
-    propagate_state(m.fs.ERD_to_recyclepump[last_stage])
-    m.fs.RecyclePumps[last_stage].initialize()
+        propagate_state(m.fs.ERD_to_recyclepump[last_stage])
+        m.fs.RecyclePumps[last_stage].initialize()
 
-    print(f"DOF before last OARO: {degrees_of_freedom(m)}")
-    propagate_state(m.fs.recyclepump_to_OARO[last_stage])
-    propagate_state(m.fs.pump_to_OARO[last_stage - 1])
-    m.fs.OAROUnits[last_stage - 1].initialize()
-    print(f"DOF after last OARO: {degrees_of_freedom(m)}")
+        propagate_state(m.fs.recyclepump_to_OARO[last_stage])
+        propagate_state(m.fs.pump_to_OARO[last_stage - 1])
+        m.fs.OAROUnits[last_stage - 1].initialize()
 
-    # ---initialize first ERD---
-    propagate_state(m.fs.OARO_to_ERD[first_stage])
-    m.fs.EnergyRecoveryDevices[first_stage].initialize()
+        # ---initialize first ERD---
+        propagate_state(m.fs.OARO_to_ERD[first_stage])
+        m.fs.EnergyRecoveryDevices[first_stage].initialize()
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
@@ -1068,4 +1068,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(2, system_recovery=0.55, erd_type=ERDtype.pump_as_turbine)
+    m = main(1, system_recovery=0.55, erd_type=ERDtype.pump_as_turbine)
