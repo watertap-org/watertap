@@ -610,7 +610,6 @@ class TestReactor:
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    @pytest.mark.requires_idaes_solver
     def test_solve(self, model):
         solver = get_solver(options={"bound_push": 1e-8})
         results = solver.solve(model, tee=True)
