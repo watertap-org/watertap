@@ -94,6 +94,7 @@ def run_lsrro_case(
     AB_gamma_factor=None,
     B_max=None,
     number_of_RO_finite_elements=10,
+    set_default_bounds_on_module_dimensions=True,
 ):
     m = build(
         number_of_stages,
@@ -123,6 +124,7 @@ def run_lsrro_case(
         permeate_quality_limit,
         AB_gamma_factor,
         B_max,
+        set_default_bounds_on_module_dimensions,
     )
     res = solve(m, raise_on_failure=False, tee=False)
     print("\n***---Optimization results---***")
@@ -835,6 +837,7 @@ def solve(model, solver=None, tee=False, raise_on_failure=False):
 
 def optimize_set_up(
     m,
+    set_default_bounds_on_module_dimensions,
     water_recovery=None,
     Cbrine=None,
     A_case=ACase.fixed,
@@ -956,11 +959,18 @@ def optimize_set_up(
     for idx, stage in m.fs.ROUnits.items():
         stage.area.unfix()
         stage.width.unfix()
-        stage.area.setlb(1)
-        stage.area.setub(None)
-        stage.width.setlb(1)
-        stage.width.setub(None)
-        stage.length.setlb(1)
+        if not set_default_bounds_on_module_dimensions:
+            stage.area.setlb(1)
+            stage.area.setub(None)
+            stage.width.setlb(1)
+            stage.width.setub(None)
+            stage.length.setlb(1)
+        else:
+            # bounds originally set for Cost Optimization of LSRRO paper
+            stage.area.setlb(1)
+            stage.area.setub(20000)
+            stage.width.setlb(0.1)
+            stage.width.setub(1000)
 
         if (
             stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
@@ -1236,4 +1246,5 @@ if __name__ == "__main__":
         AB_gamma_factor=1,
         B_max=3.5e-6,
         number_of_RO_finite_elements=10,
+        set_default_bounds_on_module_dimensions=True,
     )
