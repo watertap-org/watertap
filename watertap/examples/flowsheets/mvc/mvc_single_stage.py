@@ -55,10 +55,10 @@ import math
 import pandas as pd
 
 def main():
+    # build, set operating conditions, initialize for simulation
     m = build()
-    add_Q_ext(m, time_point=m.fs.config.time)
     set_operating_conditions(m)
-
+    add_Q_ext(m, time_point=m.fs.config.time)
     initialize_system(m)
     scale_costs(m) # rescale costs after initialization because scaling depends on flow rates
     fix_outlet_pressures(m) # outlet pressure are initially unfixed for initialization
@@ -69,29 +69,16 @@ def main():
 
     print('\nFirst solve - simulation results')
     solver = get_solver()
-    results = solve(m,tee=False)
+    results = solve(m, solver=solver, tee=False)
     print(results.solver.termination_condition)
     if results.solver.termination_condition == "infeasible":
         debug_infeasible(m.fs, solver)
     display_results(m)
 
     print('\nSecond solve - optimization results')
-    # add_evap_hx_material_factor_equal_constraint(m)
-    # add_material_factor_brine_salinity_constraint(m)
-    # m.fs.evaporator.properties_vapor[0].temperature.setub(75+273.15)
     m.fs.Q_ext[0].fix(0) # no longer want external heating in evaporator
     del m.fs.objective
     set_up_optimization(m)
-    results = solve(m, tee=False)
-    print(results.solver.termination_condition)
-    display_results(m)
-    if results.solver.termination_condition == "infeasible":
-        debug_infeasible(m.fs, solver)
-    assert False
-
-    print('Third solve - optimization - new case')
-    m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].fix(0.02)
-    m.fs.recovery[0].fix(0.45)
     results = solve(m, tee=False)
     print(results.solver.termination_condition)
     display_results(m)
@@ -393,10 +380,10 @@ def set_operating_conditions(m):
     m.fs.hx_brine.hot.deltaP[0].fix(7e3)
 
     # Evaporator
-    m.fs.evaporator.inlet_feed.temperature[0] = 50+273.15 # provide guess
+    m.fs.evaporator.inlet_feed.temperature[0] = 50+273.15  # provide guess
     m.fs.evaporator.outlet_brine.temperature[0].fix(70+273.15)
     m.fs.evaporator.U.fix(3e3)  # W/K-m^2
-    m.fs.evaporator.area.setub(1e4)
+    m.fs.evaporator.area.setub(1e4) # m^2
 
     # Compressor
     m.fs.compressor.pressure_ratio.fix(1.6)
@@ -510,10 +497,15 @@ def initialize_system(m, solver=None):
     # initialize evaporator
     propagate_state(m.fs.s07)
     m.fs.Q_ext[0].fix()
+    # m.fs.evaporator.initialize_build(
+    #     delta_temperature_in=60, delta_temperature_out=10
+    # )  # fixes and unfixes those values
+    m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix()
     m.fs.evaporator.initialize_build(
-        delta_temperature_in=60, delta_temperature_out=10
+        delta_temperature_in=60
     )  # fixes and unfixes those values
     m.fs.Q_ext[0].unfix()
+    m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].unfix()
     m.fs.evaporator.display()
     # initialize compressor
     propagate_state(m.fs.s08)
@@ -566,7 +558,7 @@ def scale_costs(m):
     calculate_cost_sf(m.fs.compressor.costing.capital_cost)
     calculate_cost_sf(m.fs.costing.aggregate_capital_cost)
     calculate_cost_sf(m.fs.costing.aggregate_flow_costs['electricity'])
-    calculate_cost_sf(m.fs.costing.total_investment_cost)
+    calculate_cost_sf(m.fs.costing.total_capital_cost)
     calculate_cost_sf(m.fs.costing.maintenance_labor_chemical_operating_cost)
     calculate_cost_sf(m.fs.costing.total_operating_cost)
 
@@ -580,37 +572,6 @@ def solve(model, solver=None, tee=False, raise_on_failure=False):
         solver = get_solver()
 
     results = solver.solve(model, tee=tee)
-    if check_optimal_termination(results):
-        return results
-    msg = (
-        "The current configuration is infeasible. Please adjust the decision variables."
-    )
-    if raise_on_failure:
-        raise RuntimeError(msg)
-    else:
-        print(msg)
-        return results
-
-def sweep_solve(model, solver=None, tee=False, raise_on_failure=False):
-    # ---solving---
-    if solver is None:
-        solver = get_solver()
-
-    # First simulate minimizing Q_ext
-    model.fs.objective = Objective(expr=model.fs.Q_ext[0])
-    results = solver.solve(model, tee=tee)
-    print(results.solver.termination_condition)
-    display_results(model)
-    # Now optimize
-    model.fs.Q_ext[0].fix(0)
-    del model.fs.objective
-    set_up_optimization(model)
-    results = solver.solve(model)
-    display_results(model)
-    # solve again
-    results = solver.solve(model)
-    results = solver.solve(model)
-
     if check_optimal_termination(results):
         return results
     msg = (
@@ -656,7 +617,7 @@ def set_up_optimization(m):
 
     print("DOF for optimization: ", degrees_of_freedom(m))
 
-def display_results(m):
+def display_results(m): # TODO: break up display results into operating, design, metrics
     print("Feed flow rate:                          ", m.fs.feed.properties[0].flow_mass_phase_comp['Liq','H2O'].value+
           m.fs.feed.properties[0].flow_mass_phase_comp['Liq','TDS'].value)
     print("Feed salinity:                           ", m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].value *1e3, " g/kg")
@@ -687,7 +648,6 @@ def display_results(m):
     print('Evaporator material factor:              ', m.fs.costing.evaporator.material_factor_cost.value)
     print('Total investment factor:                 ', m.fs.costing.factor_total_investment.value)
     print('LCOW:                                    ', m.fs.costing.LCOW.value)
-    print('Capex-Opex ratio                         ', value(m.fs.costing.LCOW_percentage['capex_opex_ratio']))
     print('External Q:                              ', m.fs.Q_ext[0].value)
 
 
