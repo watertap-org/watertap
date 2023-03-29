@@ -2080,7 +2080,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         )
 
         def concentration_of_K_rule(self):
-            return self.conc_mol_Mg == self.conc_mass_comp_ref["X_PP"] / (
+            return self.conc_mol_K == self.conc_mass_comp_ref["X_PP"] / (
                 300.41 * pyo.units.kg / pyo.units.kmol
             )
 
