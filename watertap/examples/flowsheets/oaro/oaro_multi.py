@@ -86,7 +86,7 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     # build, set, and initialize
     m = build(number_of_stages=number_of_stages, erd_type=erd_type)
     set_operating_conditions(m)
-    initialize_system(m, number_of_stages, solver=solver)
+    initialize_system(m, number_of_stages, system_recovery, solver=solver)
     solve(m, solver=solver)
     print("\n***---Simulation results---***")
     display_system(m)
@@ -560,7 +560,7 @@ def set_operating_conditions(
     #     feed_flow_mass * feed_mass_frac_H2O
     # )
 
-    Cin = 35
+    Cin = 70
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"] = Cin
     m.fs.feed.properties.calculate_state(
         var_args={
@@ -574,7 +574,7 @@ def set_operating_conditions(
 
     # primary pumps
     for idx, pump in m.fs.PrimaryPumps.items():
-        pump.control_volume.properties_out[0].pressure = 55e5 / float(idx)
+        pump.control_volume.properties_out[0].pressure = 65e5 / float(idx)
         pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
@@ -691,31 +691,31 @@ def recycle_pump_initializer(pump, oaro, solvent_multiplier, solute_multiplier):
     )
 
 
-# def solve(blk, solver=None, tee=True):
-#     if solver is None:
-#         solver = get_solver()
-#     results = solver.solve(blk, tee=tee)
-#     if not check_optimal_termination(results):
-#         results = solver.solve(blk, tee=tee)
-#     return results
-
-
-def solve(model, solver=None, tee=False, raise_on_failure=False):
-    # ---solving---
+def solve(blk, solver=None, tee=True):
     if solver is None:
         solver = get_solver()
+    results = solver.solve(blk, tee=tee)
+    if not check_optimal_termination(results):
+        results = solver.solve(blk, tee=tee)
+    return results
 
-    results = solver.solve(model, tee=tee)
-    if check_optimal_termination(results):
-        return results
-    msg = (
-        "The current configuration is infeasible. Please adjust the decision variables."
-    )
-    if raise_on_failure:
-        raise RuntimeError(msg)
-    else:
-        print(msg)
-        return results
+
+# def solve(model, solver=None, tee=False, raise_on_failure=False):
+#     # ---solving---
+#     if solver is None:
+#         solver = get_solver()
+#
+#     results = solver.solve(model, tee=tee)
+#     if check_optimal_termination(results):
+#         return results
+#     msg = (
+#         "The current configuration is infeasible. Please adjust the decision variables."
+#     )
+#     if raise_on_failure:
+#         raise RuntimeError(msg)
+#     else:
+#         print(msg)
+#         return results
 
 
 def initialize_loop(m, solver):
@@ -746,7 +746,9 @@ def initialize_loop(m, solver):
         m.fs.OAROUnits[stage - 1].initialize()
 
 
-def initialize_system(m, number_of_stages=None, solver=None, verbose=True):
+def initialize_system(
+    m, number_of_stages=None, water_recovery=None, solver=None, verbose=True
+):
     if solver is None:
         solver = get_solver()
 
@@ -813,6 +815,10 @@ def initialize_system(m, number_of_stages=None, solver=None, verbose=True):
     for stage in m.fs.NonFinalStages:
         m.fs.OAROUnits[stage].permeate_side.properties_out[0].pressure.fix(101325)
         m.fs.PrimaryPumps[stage + 1].control_volume.properties_out[0].pressure.unfix()
+
+    if water_recovery is not None:
+        m.fs.water_recovery.fix(water_recovery)
+        m.fs.PrimaryPumps[1].control_volume.properties_out[0].pressure.unfix()
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
@@ -1068,4 +1074,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(1, system_recovery=0.55, erd_type=ERDtype.pump_as_turbine)
+    m = main(2, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)

@@ -46,7 +46,7 @@ def _oaro_presweep(number_of_stages=2):
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix()
     m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
     oaro.optimize_set_up(m)
-    # oaro.solve(m)
+    oaro.solve(m)
 
     return m
 
@@ -86,7 +86,7 @@ def run_case(number_of_stages, nx, output_filename=None):
     # Sweep parameters ------------------------------------------------------------------------
 
     sweep_params["Feed Concentration"] = LinearSample(
-        m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"], 5, 100, nx
+        m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"], 5, 120, nx
     )
 
     sweep_params["Volumetric Recovery Rate"] = LinearSample(
@@ -360,6 +360,6 @@ def run_case(number_of_stages, nx, output_filename=None):
 
 
 if __name__ == "__main__":
-    for n in range(1, 4):
-        global_results, sweep_params, m = run_case(number_of_stages=n, nx=20)
+    for n in range(1, 5):
+        global_results, sweep_params, m = run_case(number_of_stages=n, nx=19)
         print(global_results)
