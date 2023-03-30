@@ -101,13 +101,13 @@ from idaes.core import FlowsheetBlock
 # ========================== (3 & 4) ================================
 # Import ElectrolyteDB object
 from watertap.edb import ElectrolyteDB
-from watertap.examples.edb.the_basics import (
+from the_basics import (
     connect_to_edb,
     is_thermo_config_valid,
     grab_base_reaction_config,
     is_thermo_reaction_pair_valid,
 )
-from watertap.examples.edb.simple_acid import (
+from simple_acid import (
     get_components_and_add_to_idaes_config,
     add_equilibrium_reactions_to_react_base,
     build_equilibrium_model,
