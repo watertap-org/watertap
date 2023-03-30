@@ -115,6 +115,7 @@ def run_lsrro_case(
 
     optimize_set_up(
         m,
+        set_default_bounds_on_module_dimensions,
         water_recovery,
         Cbrine,
         A_case,
@@ -124,7 +125,6 @@ def run_lsrro_case(
         permeate_quality_limit,
         AB_gamma_factor,
         B_max,
-        set_default_bounds_on_module_dimensions,
     )
     res = solve(m, raise_on_failure=False, tee=False)
     print("\n***---Optimization results---***")
