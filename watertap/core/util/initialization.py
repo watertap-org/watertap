@@ -44,21 +44,19 @@ def check_solve(results, checkpoint=None, logger=_log, fail_flag=False):
     """
     if check_optimal_termination(results):
         if checkpoint is None:
-            logger.info("Solve successful.")
+            logger.info(f"Solve successful.")
         else:
             logger.info(f"{checkpoint} successful.")
     else:
         if checkpoint is None:
             msg = (
                 f"The solver failed to converge to an optimal solution. "
-                "This suggests that the user provided infeasible inputs or that the model "
-                "is poorly scaled, poorly initialized, or degenerate."
+                f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
             )
         else:
             msg = (
-                f" The solver at the {checkpoint} step failed to converge to an optimal solution."
-                "This suggests that the user provided infeasible inputs or that the model "
-                "is poorly scaled, poorly initialized, or degenerate."
+                f"{checkpoint} failed. The solver failed to converge to an optimal solution. "
+                f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
             )
         if fail_flag:
             logger.error(msg)

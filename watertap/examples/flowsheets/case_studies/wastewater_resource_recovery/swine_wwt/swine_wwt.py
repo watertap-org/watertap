@@ -10,13 +10,14 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import os
-import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
+    Set,
     Expression,
     value,
     TransformationFactory,
     units as pyunits,
+    assert_optimal_termination,
     Block,
 )
 from pyomo.network import Arc, SequentialDecomposition
@@ -28,7 +29,7 @@ from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
 
-from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
+from watertap.core.util.initialization import assert_degrees_of_freedom
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
@@ -46,9 +47,6 @@ from idaes.models.unit_models import Mixer, MomentumMixingType, MixingType
 from watertap.core.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
 
-# Set up logger
-_log = idaeslog.getLogger(__name__)
-
 
 def main():
     m = build()
@@ -59,14 +57,16 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m, checkpoint="solve flowsheet after initializing system")
-    display_results(m)
+    results = solve(m)
+    assert_optimal_termination(results)
+    # display_results(m.fs)
 
     add_costing(m)
     assert_degrees_of_freedom(m, 0)
     m.fs.costing.initialize()
 
-    results = solve(m, checkpoint="solve flowsheet after costing")
+    results = solve(m)
+    assert_optimal_termination(results)
 
     display_metrics_results(m)
     display_additional_results(m)
@@ -209,7 +209,7 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "ammonium_as_nitrogen"].fix(conc_mass_nh4)
     m.fs.feed.conc_mass_comp[0, "phosphates"].fix(conc_mass_po4)
     m.fs.feed.conc_mass_comp[0, "nonbiodegradable_cod"].fix(1e-8)
-    solve(m.fs.feed, checkpoint="solve feed block")
+    solve(m.fs.feed)
 
     # anaerobic fermentation and MEC
     m.fs.mbr_mec.load_parameters_from_database(use_default_removal=True)
@@ -224,7 +224,7 @@ def set_operating_conditions(m):
     m.fs.food_waste.conc_mass_comp[0, "ammonium_as_nitrogen"].fix(1e-8)
     m.fs.food_waste.conc_mass_comp[0, "phosphates"].fix(1e-8)
     m.fs.food_waste.conc_mass_comp[0, "nonbiodegradable_cod"].fix(1e-8)
-    solve(m.fs.food_waste, checkpoint="solve food waste block")
+    solve(m.fs.food_waste)
 
     # cofermentation
     m.fs.cofermentation.load_parameters_from_database(use_default_removal=True)
@@ -251,11 +251,12 @@ def initialize_system(m):
     seq.run(m, lambda u: u.initialize())
 
 
-def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
+def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
+    if check_termination:
+        assert_optimal_termination(results)
     return results
 
 

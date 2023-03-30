@@ -17,27 +17,25 @@ from pyomo.environ import (
     Constraint,
     Objective,
     TransformationFactory,
+    assert_optimal_termination,
     units as pyunits,
 )
-import idaes.logger as idaeslog
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
-from idaes.core.util.model_statistics import report_statistics
+from idaes.core.util.model_statistics import degrees_of_freedom, report_statistics
 from idaes.models.unit_models import Feed, Product, Separator
 from pandas import DataFrame
 import idaes.core.util.scaling as iscale
-from watertap.core.util.initialization import check_dof, check_solve
+import idaes.logger as idaeslogger
+from watertap.core.util.initialization import check_dof
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 
 from watertap.costing import WaterTAPCosting
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
-
-# Set up logger
-_log = idaeslog.getLogger(__name__)
 
 __author__ = "Xiangyu Bi"
 
@@ -49,16 +47,14 @@ def main():
     m = build()
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
-    solve(m, solver=solver, checkpoint="solve flowsheet after initializing system")
+    solve(m, solver=solver)
 
     print("\n***---Simulation results---***")
     display_model_metrics(m)
 
     # Perform an optimization over selected variables
     initialize_system(m, solver=solver)
-    optimize_system(
-        m, solver=solver, checkpoint="solve flowsheet after optimizing system"
-    )
+    optimize_system(m, solver=solver)
     print("\n***---Optimization results---***")
     display_model_metrics(m)
 
@@ -223,11 +219,12 @@ def set_operating_conditions(m):
     check_dof(m)
 
 
-def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
+def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
         solver = get_solver()
-    results = solver.solve(blk, tee=tee)
-    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
+    results = solver.solve(blk, tee=True)
+    if check_termination:
+        assert_optimal_termination(results)
     return results
 
 
@@ -252,7 +249,7 @@ def initialize_system(m, solver=None):
     m.fs.costing.initialize()
 
 
-def optimize_system(m, solver=None, checkpoint=None, fail_flag=True):
+def optimize_system(m, solver=None):
 
     # Below is an example of optimizing the operational voltage and cell pair number (which translates to membrane use)
     # Define a system with zero dof
@@ -279,7 +276,7 @@ def optimize_system(m, solver=None, checkpoint=None, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(m, tee=True)
-    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
+    assert_optimal_termination(results)
 
 
 def display_model_metrics(m):

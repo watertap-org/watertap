@@ -11,13 +11,14 @@
 #################################################################################
 
 import os
-import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
+    Set,
     Expression,
     value,
     TransformationFactory,
     units as pyunits,
+    assert_optimal_termination,
 )
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
@@ -30,15 +31,12 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
-from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
+from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.unit_models.zero_order import (
     FeedZO,
     SuboxicASMZO,
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
-
-# Set up logger
-_log = idaeslog.getLogger(__name__)
 
 
 def main():
@@ -50,15 +48,17 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m, checkpoint="solve flowsheet after initializing system")
-    display_results(m)
+    results = solve(m)
+    assert_optimal_termination(results)
+    # display_reports(m)
 
     add_costing(m)
     initialize_costing(m)
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
-    results = solve(m, checkpoint="solve flowsheet after costing")
+    results = solve(m)
+    assert_optimal_termination(results)
 
     display_metrics_results(m)
     display_additional_results(m)
@@ -104,7 +104,7 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "tss"].fix(conc_tss)
     m.fs.feed.conc_mass_comp[0, "tkn"].fix(conc_tkn)
     m.fs.feed.conc_mass_comp[0, "phosphorus"].fix(conc_phosphorus)
-    solve(m.fs.feed, checkpoint="solve feed block")
+    solve(m.fs.feed)
 
     # suboxicASM
     m.fs.suboxicASM.load_parameters_from_database(use_default_removal=True)
@@ -117,11 +117,12 @@ def initialize_system(m):
     seq.run(m, lambda u: u.initialize())
 
 
-def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
+def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
+    if check_termination:
+        assert_optimal_termination(results)
     return results
 
 

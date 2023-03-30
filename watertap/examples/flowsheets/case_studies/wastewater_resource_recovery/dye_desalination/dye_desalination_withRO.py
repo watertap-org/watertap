@@ -10,7 +10,6 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import os
-import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
     Block,
@@ -19,6 +18,7 @@ from pyomo.environ import (
     value,
     TransformationFactory,
     units as pyunits,
+    assert_optimal_termination,
 )
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
@@ -39,7 +39,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump
-from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
+from watertap.core.util.initialization import assert_degrees_of_freedom
 
 import watertap.property_models.seawater_prop_pack as prop_SW
 from watertap.unit_models.reverse_osmosis_0D import (
@@ -48,7 +48,6 @@ from watertap.unit_models.reverse_osmosis_0D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
-
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
 from watertap.unit_models.zero_order import (
@@ -59,9 +58,6 @@ from watertap.unit_models.zero_order import (
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
-
-# Set up logger
-_log = idaeslog.getLogger(__name__)
 
 
 def main():
@@ -74,7 +70,7 @@ def main():
     initialize_system(m)
     assert_degrees_of_freedom(m, 0)
 
-    results = solve(m, checkpoint="solve flowsheet after initializing system")
+    results = solve(m)
 
     add_costing(m)
     initialize_costing(m)
@@ -82,7 +78,7 @@ def main():
 
     optimize_operation(m)  # unfixes specific variables for cost optimization
 
-    solve(m, checkpoint="solve flowsheet after costing")
+    solve(m)
     display_results(m)
     display_costing(m)
 
@@ -234,7 +230,7 @@ def set_operating_conditions(m):
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "dye"].fix(conc_mass_dye)
     m.fs.feed.conc_mass_comp[0, "tds"].fix(conc_mass_tds)
-    solve(m.fs.feed, checkpoint="solve feed block")
+    solve(m.fs.feed)
 
     # pretreatment
     prtrt.wwtp.load_parameters_from_database(use_default_removal=True)
@@ -279,7 +275,7 @@ def initialize_system(m):
     desal = m.fs.desalination
 
     # initialize feed
-    solve(m.fs.feed, checkpoint="solve flowsheet after initializing feed")
+    solve(m.fs.feed)
 
     # pretreatment
     propagate_state(m.fs.s_feed)
@@ -319,7 +315,7 @@ def initialize_system(m):
         desal.P2.control_volume.properties_out[0].pressure
     )
     desal.RO.initialize()
-    solve(desal, checkpoint="solve flowsheet after initializing desalination")
+    solve(desal)
     return
 
 
@@ -362,11 +358,12 @@ def optimize_operation(m):
     return
 
 
-def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
+def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
+    if check_termination:
+        assert_optimal_termination(results)
     return results
 
 
