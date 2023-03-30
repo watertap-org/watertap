@@ -35,7 +35,10 @@ def _lsrro_presweep(
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix()
     m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
     lsrro.optimize_set_up(
-        m, A_value=A_value, permeate_quality_limit=permeate_quality_limit
+        m,
+        set_default_bounds_on_module_dimensions=True,
+        A_value=A_value,
+        permeate_quality_limit=permeate_quality_limit,
     )
 
     return m
