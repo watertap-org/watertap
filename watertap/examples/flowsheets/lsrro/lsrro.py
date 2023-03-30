@@ -959,18 +959,18 @@ def optimize_set_up(
     for idx, stage in m.fs.ROUnits.items():
         stage.area.unfix()
         stage.width.unfix()
-        if not set_default_bounds_on_module_dimensions:
-            stage.area.setlb(1)
-            stage.area.setub(None)
-            stage.width.setlb(1)
-            stage.width.setub(None)
-            stage.length.setlb(1)
-        else:
+        if set_default_bounds_on_module_dimensions:
             # bounds originally set for Cost Optimization of LSRRO paper
             stage.area.setlb(1)
             stage.area.setub(20000)
             stage.width.setlb(0.1)
             stage.width.setub(1000)
+        else:
+            stage.area.setlb(1)
+            stage.area.setub(None)
+            stage.width.setlb(1)
+            stage.width.setub(None)
+            stage.length.setlb(1)
 
         if (
             stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
