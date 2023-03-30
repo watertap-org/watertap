@@ -80,4 +80,4 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
 
 
 if __name__ == "__main__":
-    results, sweep_params, m = run_analysis(*sys.argv[1:])
+    results, sweep_params, m = run_analysis()
