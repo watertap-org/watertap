@@ -21,7 +21,7 @@ import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.me
 
 def set_up_sensitivity(m):
     outputs = {}
-    optimize_kwargs = {"check_termination": False}  # None
+    optimize_kwargs = {"fail_flag": False}  # None
     opt_function = metab.solve
 
     # tie parameters together

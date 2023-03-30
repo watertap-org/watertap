@@ -17,7 +17,7 @@ import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.am
 
 def set_up_sensitivity(m):
     outputs = {}
-    optimize_kwargs = {"check_termination": False}
+    optimize_kwargs = {"fail_flag": False}
     opt_function = magprex.solve
 
     # create outputs

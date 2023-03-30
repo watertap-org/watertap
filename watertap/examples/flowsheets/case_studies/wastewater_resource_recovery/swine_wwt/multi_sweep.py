@@ -20,7 +20,7 @@ import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.sw
 
 def set_up_sensitivity(m):
     outputs = {}
-    optimize_kwargs = {"check_termination": False}
+    optimize_kwargs = {"fail_flag": False}
     opt_function = swine_wwt.solve
 
     # create outputs

@@ -31,7 +31,7 @@ def set_up_sensitivity(m, withRO):
     else:
         opt_function = dye_desalination.solve
 
-    optimize_kwargs = {"check_termination": False}
+    optimize_kwargs = {"fail_flag": False}
     return outputs, optimize_kwargs, opt_function
 
 
