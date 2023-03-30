@@ -132,6 +132,7 @@ def base_units():
 def solver():
     s = get_solver()
     s.options["max_iter"] = 200
+    #s.options["halt_on_ampl_error"] = "yes"
     return s
 
 
@@ -585,7 +586,8 @@ class TestPureWater:
 
     @pytest.fixture
     def model_solve(self, model, solver):
-        results = solver.solve(model, tee=True)
+        model.write("bah.nl", io_options={"symbolic_solver_labels":True})
+        results = solver.solve(model, symbolic_solver_labels=True, tee=True)
         return model, results
 
     @pytest.mark.component
