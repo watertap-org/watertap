@@ -149,7 +149,7 @@ from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 from pyomo.environ import log10
 
 # Import scaling helper functions
-from watertap.examples.chemistry.chem_scaling_utils import (
+from chem_scaling_utils import (
     _set_eps_vals,
     _set_equ_rxn_scaling,
     _set_mat_bal_scaling_FpcTP,
