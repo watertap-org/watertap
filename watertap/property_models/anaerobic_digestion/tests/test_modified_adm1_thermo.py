@@ -279,6 +279,6 @@ class TestStateBlock(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def check_units(self, model):
         assert_units_consistent(model)
