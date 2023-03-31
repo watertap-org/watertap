@@ -9,10 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-import sys
-import os
 import time
-
 from pyomo.environ import Constraint
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 import watertap.tools.MPI as MPI
@@ -39,14 +36,11 @@ def set_up_sensitivity(m):
 
     # new baseline parameters
     m.fs.costing.metab.bead_cost["hydrogen"].fix(14.4)
-    # m.fs.costing.metab.hydraulic_retention_time['hydrogen'].fix()
-    # m.fs.costing.metab.hydraulic_retention_time['methane'].fix()
 
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
     outputs["LCOH"] = m.fs.costing.LCOH
     outputs["LCOM"] = m.fs.costing.LCOM
-    # outputs["Effluent Volumetric Flow Rate"] = m.fs.product_H2O.properties[0].flow_vol
 
     return outputs, optimize_kwargs, opt_function
 
@@ -137,7 +131,6 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
         csv_results_file_name=output_filename,
         optimize_function=opt_function,
         optimize_kwargs=optimize_kwargs,
-        # debugging_data_dir=os.path.split(output_filename)[0] + '/local',
         interpolate_nan_outputs=interpolate_nan_outputs,
     )
 
@@ -174,14 +167,4 @@ def main(case_num=1, nx=11, interpolate_nan_outputs=True):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 1:
-        print(
-            "Usage: Specify the conditions in the run_analysis function and then run 'python multi_sweep.py' "
-            "Case number (case_num) is an integer, number_of_samples (nx) is an integer, interpolate_nan_outputs is a"
-            "boolean and results_path is the file path where the results will be created and displayed."
-        )
-        print(
-            f"Results will be written to {os.path.dirname(os.path.abspath(__file__))}"
-        )
-    else:
-        results, sweep_params, m = run_analysis(*sys.argv[1:])
+    results, sweep_params = run_analysis()
