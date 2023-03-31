@@ -1486,6 +1486,58 @@ class TestParallelManager:
             )
 
     @pytest.mark.component
+    def test_parameter_sweep_bad_optimization_call(self, model, tmp_path):
+
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            optimize_kwargs={"foo": "bar"},
+        )
+
+        m = model
+        m.fs.slack_penalty = 1000.0
+        m.fs.slack.setub(0)
+
+        A = m.fs.input["a"]
+        B = m.fs.input["b"]
+        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+
+        with pytest.raises(TypeError):
+            # Call the parameter_sweep function
+            ps.parameter_sweep(
+                m,
+                sweep_params,
+                outputs=None,
+            )
+
+    @pytest.mark.component
+    def test_parameter_sweep_bad_reinitialize_call(self, model, tmp_path):
+        def reinit(a=42):
+            pass
+
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            reinitialize_before_sweep=True,
+            reinitialize_function=reinit,
+            reinitialize_kwargs={"foo": "bar"},
+        )
+
+        m = model
+        m.fs.slack_penalty = 1000.0
+        m.fs.slack.setub(0)
+
+        A = m.fs.input["a"]
+        B = m.fs.input["b"]
+        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+
+        with pytest.raises(TypeError):
+            # Call the parameter_sweep function
+            ps.parameter_sweep(
+                m,
+                sweep_params,
+                outputs=None,
+            )
+
+    @pytest.mark.component
     def test_parameter_sweep_probe_fail(self, model, tmp_path):
 
         comm = MPI.COMM_WORLD
