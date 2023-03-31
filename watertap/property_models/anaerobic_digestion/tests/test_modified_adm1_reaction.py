@@ -340,18 +340,6 @@ class TestParamBlock(object):
                 assert pytest.approx(value(v), rel=1e-2) == 0
 
         assert isinstance(model.rparams.Z_h2s, Param)
-        assert value(model.rparams.Z_h2s) == 0
-        assert isinstance(model.rparams.f_sI_xc, Var)
-        assert value(model.rparams.f_sI_xc) == 0.1
-        assert isinstance(model.rparams.f_xI_xc, Var)
-        assert value(model.rparams.f_xI_xc) == 0.20
-        assert isinstance(model.rparams.f_ch_xc, Var)
-        assert value(model.rparams.f_ch_xc) == 0.2
-        assert isinstance(model.rparams.f_pr_xc, Var)
-        assert value(model.rparams.f_pr_xc) == 0.2
-        assert isinstance(model.rparams.f_li_xc, Var)
-        assert value(model.rparams.f_li_xc) == 0.30
-
         assert isinstance(model.rparams.f_fa_li, Var)
         assert value(model.rparams.f_fa_li) == 0.95
         assert isinstance(model.rparams.f_h2_su, Var)
@@ -473,6 +461,57 @@ class TestParamBlock(object):
         assert value(model.rparams.K_a_pro) == 1.32e-5
         assert isinstance(model.rparams.K_a_ac, Var)
         assert value(model.rparams.K_a_ac) == 1.74e-5
+
+        assert isinstance(model.rparams.f_xi_xb, Var)
+        assert value(model.rparams.f_xi_xb) == 0.1
+        assert isinstance(model.rparams.f_ch_xb, Var)
+        assert value(model.rparams.f_ch_xb) == 0.275
+        assert isinstance(model.rparams.f_li_xb, Var)
+        assert value(model.rparams.f_li_xb) == 0.35
+        assert isinstance(model.rparams.f_pr_xb, Var)
+        assert value(model.rparams.f_pr_xb) == 0.275
+        assert isinstance(model.rparams.f_si_xb, Var)
+        assert value(model.rparams.f_si_xb) == 0
+
+        assert isinstance(model.rparams.K_I_h2s_ac, Var)
+        assert value(model.rparams.K_I_h2s_ac) == 460e-3
+        assert isinstance(model.rparams.K_I_h2s_c4, Var)
+        assert value(model.rparams.K_I_h2s_c4) == 481e-3
+        assert isinstance(model.rparams.K_I_h2s_h2, Var)
+        assert value(model.rparams.K_I_h2s_h2) == 400e-3
+        assert isinstance(model.rparams.K_I_h2s_pro, Var)
+        assert value(model.rparams.K_I_h2s_pro) == 481e-3
+        assert isinstance(model.rparams.K_S_IP, Var)
+        assert value(model.rparams.K_S_IP) == 2e-5
+
+        assert isinstance(model.rparams.b_PAO, Var)
+        assert value(model.rparams.b_PAO) == 0.2
+        assert isinstance(model.rparams.b_PHA, Var)
+        assert value(model.rparams.b_PHA) == 0.2
+        assert isinstance(model.rparams.b_PP, Var)
+        assert value(model.rparams.b_PP) == 0.2
+
+        assert isinstance(model.rparams.f_ac_PHA, Var)
+        assert value(model.rparams.f_ac_PHA) == 0.4
+        assert isinstance(model.rparams.f_bu_PHA, Var)
+        assert value(model.rparams.f_bu_PHA) == 0.1
+        assert isinstance(model.rparams.f_pro_PHA, Var)
+        assert value(model.rparams.f_pro_PHA) == 0.4
+        assert isinstance(model.rparams.f_va_PHA, Var)
+        assert value(model.rparams.f_va_PHA) == 0.1
+
+        assert isinstance(model.rparams.K_A, Var)
+        assert value(model.rparams.K_A) == 4e-3
+        assert isinstance(model.rparams.K_PP, Var)
+        assert value(model.rparams.K_PP) == 0.32e-3
+        assert isinstance(model.rparams.q_PHA, Var)
+        assert value(model.rparams.q_PHA) == 3
+        assert isinstance(model.rparams.Y_PO4, Var)
+        assert value(model.rparams.Y_PO4) == 12.903e-3
+        assert isinstance(model.rparams.K_XPP, Var)
+        assert value(model.rparams.K_XPP) == 1 / 3
+        assert isinstance(model.rparams.Mg_XPP, Var)
+        assert value(model.rparams.Mg_XPP) == 1 / 3
 
 
 class TestReactionBlock(object):

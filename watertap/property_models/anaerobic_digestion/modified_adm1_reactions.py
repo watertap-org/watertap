@@ -215,36 +215,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             doc="Reference component mass concentrations of hydrogen sulfide",
             units=pyo.units.kg / pyo.units.m**3,
         )
-        self.f_sI_xc = pyo.Var(
-            initialize=0.1,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Soluble inerts from composites",
-        )
-        self.f_xI_xc = pyo.Var(
-            initialize=0.20,  # replacing 0.25 with 0.2 in accordance with Rosen & Jeppsson, 2006
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Particulate inerts from composites",
-        )
-        self.f_ch_xc = pyo.Var(
-            initialize=0.2,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Carbohydrates from composites",
-        )
-        self.f_pr_xc = pyo.Var(
-            initialize=0.2,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Proteins from composites",
-        )
-        self.f_li_xc = pyo.Var(
-            initialize=0.30,  # replacing 0.25 with 0.3 in accordance with Rosen & Jeppsson, 2006
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Lipids from composites",
-        )
 
         self.f_fa_li = pyo.Var(
             initialize=0.95,
