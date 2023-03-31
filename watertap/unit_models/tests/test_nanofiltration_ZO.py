@@ -30,7 +30,10 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from watertap.property_models.seawater_ion_generic import configuration
-import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as props
+
+# import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as props
+import watertap.property_models.seawater_ion_prop_pack as props
+
 from watertap.core.util.initialization import assert_no_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 
