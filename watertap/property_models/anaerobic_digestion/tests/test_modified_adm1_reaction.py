@@ -340,6 +340,17 @@ class TestParamBlock(object):
                 assert pytest.approx(value(v), rel=1e-2) == 0
 
         assert isinstance(model.rparams.Z_h2s, Param)
+        assert isinstance(model.rparams.f_xi_xb, Var)
+        assert value(model.rparams.f_xi_xb) == 0.1
+        assert isinstance(model.rparams.f_ch_xb, Var)
+        assert value(model.rparams.f_ch_xb) == 0.275
+        assert isinstance(model.rparams.f_li_xb, Var)
+        assert value(model.rparams.f_li_xb) == 0.35
+        assert isinstance(model.rparams.f_pr_xb, Var)
+        assert value(model.rparams.f_pr_xb) == 0.275
+        assert isinstance(model.rparams.f_si_xb, Var)
+        assert value(model.rparams.f_si_xb) == 0
+
         assert isinstance(model.rparams.f_fa_li, Var)
         assert value(model.rparams.f_fa_li) == 0.95
         assert isinstance(model.rparams.f_h2_su, Var)
@@ -461,17 +472,6 @@ class TestParamBlock(object):
         assert value(model.rparams.K_a_pro) == 1.32e-5
         assert isinstance(model.rparams.K_a_ac, Var)
         assert value(model.rparams.K_a_ac) == 1.74e-5
-
-        assert isinstance(model.rparams.f_xi_xb, Var)
-        assert value(model.rparams.f_xi_xb) == 0.1
-        assert isinstance(model.rparams.f_ch_xb, Var)
-        assert value(model.rparams.f_ch_xb) == 0.275
-        assert isinstance(model.rparams.f_li_xb, Var)
-        assert value(model.rparams.f_li_xb) == 0.35
-        assert isinstance(model.rparams.f_pr_xb, Var)
-        assert value(model.rparams.f_pr_xb) == 0.275
-        assert isinstance(model.rparams.f_si_xb, Var)
-        assert value(model.rparams.f_si_xb) == 0
 
         assert isinstance(model.rparams.K_I_h2s_ac, Var)
         assert value(model.rparams.K_I_h2s_ac) == 460e-3
