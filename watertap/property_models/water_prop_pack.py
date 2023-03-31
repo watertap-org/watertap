@@ -42,7 +42,7 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.components import Component
 from idaes.core.base.phases import LiquidPhase, VaporPhase
 from idaes.core.util.initialization import (
     fix_state_vars,
