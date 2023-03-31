@@ -19,20 +19,20 @@ from pyomo.environ import ConcreteModel, value
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
 from pyomo.util.check_units import assert_units_consistent
+from watertap.property_models import seawater_ion_prop_pack
 from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )
-import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as property_seawater_ions
 import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_salt_prop_pack as property_seawater_salts
 
-# -----------------------------------------------------------------------------
+
 @pytest.mark.component
 def test_property_seawater_ions():
     m = ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = property_seawater_ions.PropParameterBlock()
+    m.fs.properties = seawater_ion_prop_pack.PropParameterBlock()
     m.fs.stream = m.fs.properties.build_state_block([0])
 
     # specify
@@ -100,7 +100,7 @@ def test_property_seawater_ions():
 
 class TestPropertySeawaterIons(PropertyTestHarness):
     def configure(self):
-        self.prop_pack = property_seawater_ions.PropParameterBlock
+        self.prop_pack = seawater_ion_prop_pack.PropParameterBlock
         self.param_args = {}
         self.scaling_args = {
             ("flow_mass_phase_comp", ("Liq", "H2O")): 1,
