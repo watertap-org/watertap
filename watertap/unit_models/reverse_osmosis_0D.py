@@ -21,7 +21,6 @@ from idaes.core import declare_process_block_class
 from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
 from watertap.core import (
-    ConcentrationPolarizationType,
     MembraneChannel0DBlock,
     MassTransferCoefficient,
     PressureChangeType,
