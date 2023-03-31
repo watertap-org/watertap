@@ -28,7 +28,6 @@ import idaes.logger as idaeslog
 from watertap.core.membrane_channel_base import (
     MembraneChannelMixin,
     PressureChangeType,
-    CONFIG_Template,
 )
 
 
