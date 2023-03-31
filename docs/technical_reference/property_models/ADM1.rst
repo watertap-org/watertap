@@ -142,7 +142,6 @@ Kinetic Parameters
    "Valerate acid-base equilibrium constant, K_a_va", ":math:`K_{a,va}`", "K_a_va", 1.38e-5, ":math:`\text{kmol/}\text{m}^3`"
    "Butyrate acid-base equilibrium constant, K_a_bu", ":math:`K_{a,bu}`", "K_a_bu", 1.5e-5, ":math:`\text{kmol/}\text{m}^3`"
    "Propionate acid-base equilibrium constant, K_a_pro", ":math:`K_{a,pro}`", "K_a_bu", 1.32e-5, ":math:`\text{kmol/}\text{m}^3`"
-   "Propionate acid-base equilibrium constant, K_a_ac", ":math:`K_{a,ac}`", "K_a_ac", 1.74e-5, ":math:`\text{kmol/}\text{m}^3`"
    "Acetate acid-base equilibrium constant, K_a_ac", ":math:`K_{a,ac}`", "K_a_ac", 1.74e-5, ":math:`\text{kmol/}\text{m}^3`"
    "Carbon dioxide acid-base equilibrium constant, K_a_co2", ":math:`K_{a,co2}`", "K_a_co2", 4.94e-7, ":math:`\text{kmol/}\text{m}^3`"
    "Inorganic nitrogen acid-base equilibrium constant, K_a_IN", ":math:`K_{a,IN}`", "K_a_IN", 1.11e-9, ":math:`\text{kmol/}\text{m}^3`"
