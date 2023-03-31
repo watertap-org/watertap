@@ -57,8 +57,6 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, save_path=None
         interpolate_nan_outputs=interpolate_nan_outputs,
     )
 
-    print(global_results)
-
     return global_results, sweep_params, m
 
 
