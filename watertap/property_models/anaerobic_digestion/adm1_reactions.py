@@ -1110,15 +1110,6 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R19", "Liq", "X_I"): 0,
         }
 
-        s_ic_rxns = ["R5", "R6", "R10", "R11", "R12"]
-
-        for R in s_ic_rxns:
-            self.rate_reaction_stoichiometry[R, "Liq", "S_IC"] = -sum(
-                self.Ci[S] * self.rate_reaction_stoichiometry[R, "Liq", S] * mw_c
-                for S in Ci_dict.keys()
-                if S != "S_IC"
-            )
-
         for R in self.rate_reaction_idx:
             self.rate_reaction_stoichiometry[R, "Liq", "S_cat"] = 0
             self.rate_reaction_stoichiometry[R, "Liq", "S_an"] = 0

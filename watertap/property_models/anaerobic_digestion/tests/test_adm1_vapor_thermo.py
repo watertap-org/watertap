@@ -241,11 +241,13 @@ class TestStateBlock(object):
             0.1692, rel=1e-4
         )
 
-        assert value(model.props[1].p_sat["S_h2"]) == pytest.approx(1.6397, rel=1e-4)
-        assert value(model.props[1].p_sat["S_ch4"]) == pytest.approx(
+        assert value(model.props[1].pressure_sat["S_h2"]) == pytest.approx(
+            1.6397, rel=1e-4
+        )
+        assert value(model.props[1].pressure_sat["S_ch4"]) == pytest.approx(
             65077.382, rel=1e-4
         )
-        assert value(model.props[1].p_sat["S_co2"]) == pytest.approx(
+        assert value(model.props[1].pressure_sat["S_co2"]) == pytest.approx(
             36125.633, rel=1e-4
         )
 
