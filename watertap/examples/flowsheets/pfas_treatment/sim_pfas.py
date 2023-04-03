@@ -31,20 +31,21 @@ from idaes.core.util.scaling import (
     get_scaling_factor,
     set_scaling_factor,
 )
+from idaes.core.surrogate.surrogate_block import SurrogateBlock
+from idaes.core.surrogate.pysmo_surrogate import PysmoSurrogate
 
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
     DiffusivityCalculation,
 )
 from idaes.models.unit_models import Feed
-from watertap.examples.flowsheets.pfas_treatment.gac_rssct import (
-    GAC_RSSCT,
+from watertap.unit_models.gac import (
+    GAC,
     FilmTransferCoefficientType,
     SurfaceDiffusionCoefficientType,
 )
 
-from idaes.core.surrogate.surrogate_block import SurrogateBlock
-from idaes.core.surrogate.pysmo_surrogate import PysmoSurrogate
+
 import numpy as np
 import pandas as pd
 import pyomo.contrib.parmest.parmest as parmest
@@ -91,7 +92,7 @@ def main():
     param_results = {}
 
     for source_name in source_name_list:
-
+        """
         print(f"--------------------------\t{source_name}\t--------------------------")
         # data set
         data_set = data[["data_iter", f"{source_name}_X", f"{source_name}_Y"]]
@@ -146,10 +147,10 @@ def main():
             print(k, "=", v)
 
         param_results[f"{source_name}"] = theta
-
+        """
         print("--------------------------\tmodel rebuild\t--------------------------")
         # rebuild model across CP to view regression results
-        # theta = [guess_freund_k, guess_freund_ninv, guess_ds]
+        theta = [guess_freund_k, guess_freund_ninv, guess_ds]
         df_iter = solve_regression(theta)
 
         data_regression[f"{source_name}"] = df_iter
@@ -175,10 +176,11 @@ def model_build():
     m.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
     m.fs.properties.dens_mass_const = 1000
     m.fs.feed = Feed(property_package=m.fs.properties)
-    m.fs.gac = GAC_RSSCT(
+    m.fs.gac = GAC(
         property_package=m.fs.properties,
         film_transfer_coefficient_type="calculated",
         surface_diffusion_coefficient_type="fixed",
+        finite_elements_ss_approximation=5,
     )
 
     # touch properties and scaling
@@ -226,11 +228,28 @@ def model_build():
     m.fs.gac.velocity_sup.fix(0.002209)
     # design spec
     m.fs.gac.conc_ratio_replace.fix(0.20)
-    # parameters TODO: use lookup table of regression to define a and b as f(N_Bi(ds))
+    # parameters
+    m.fs.gac.a0.fix(0.8)
+    m.fs.gac.a1.fix(0)
+    m.fs.gac.b0.fix(0.023)
+    m.fs.gac.b1.fix(0.793673)
+    m.fs.gac.b2.fix(0.039324)
+    m.fs.gac.b3.fix(0.009326)
+    m.fs.gac.b4.fix(0.08275)
     m.fs.gac.shape_correction_factor.fix()
     m.fs.gac.conc_ratio_start_breakthrough = 0.001
-    print("DOF before surrogate:", degrees_of_freedom(m))
 
+    # deactivate old equations
+    m.fs.gac.eq_min_number_st_cps.deactivate()
+    m.fs.gac.eq_throughput.deactivate()
+    m.fs.gac.eq_ele_throughput[1].deactivate()
+    m.fs.gac.eq_ele_throughput[1].deactivate()
+    m.fs.gac.eq_ele_throughput[2].deactivate()
+    m.fs.gac.eq_ele_throughput[3].deactivate()
+    m.fs.gac.eq_ele_throughput[4].deactivate()
+    m.fs.gac.eq_ele_throughput[5].deactivate()
+
+    # establish new surrogates
     min_st_surrogate = PysmoSurrogate.load_from_file(
         "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_spline.json",
     )
@@ -300,8 +319,6 @@ def model_build():
         ],
         output_vars=[m.fs.gac.ele_throughput[5]],
     )
-
-    print("DOF after surrogate:", degrees_of_freedom(m))
 
     return m
 
@@ -471,17 +488,34 @@ def plot_regression(data_regression, data_filtered):
 
 def model_scale(model):
 
-    set_scaling_factor(model.fs.gac.ds, 1e17)
+    # variable scaling
+    set_scaling_factor(model.fs.gac.equil_conc, 1e6)
+    set_scaling_factor(model.fs.gac.ds, 1e15)
     set_scaling_factor(model.fs.gac.dg, 1e-6)
     set_scaling_factor(model.fs.gac.bed_diameter, 1e3)
-    set_scaling_factor(model.fs.gac.bed_mass_gac, 1e3)
+    set_scaling_factor(model.fs.gac.bed_length, 1e2)
+    set_scaling_factor(model.fs.gac.bed_area, 1e5)
+    set_scaling_factor(model.fs.gac.bed_volume, 1e6)
+    set_scaling_factor(model.fs.gac.bed_mass_gac, 1e4)
     set_scaling_factor(model.fs.gac.mass_adsorbed, 1e9)
     set_scaling_factor(model.fs.gac.gac_usage_rate, 1e11)
-
     iscale.calculate_scaling_factors(model)
+
+    # constraint scaling as needed
+    iscale.constraint_scaling_transform(model.fs.gac.eq_bed_area[0], 1e1)
 
 
 def model_init(model, outlvl):
+
+    model.fs.gac.equil_conc = 1e-6
+    model.fs.gac.dg = 1e6
+    model.fs.gac.bed_diameter = 1e-3
+    model.fs.gac.bed_length = 1e-2
+    model.fs.gac.bed_area = 3e-5
+    model.fs.gac.bed_volume = 1e-6
+    model.fs.gac.bed_mass_gac = 1e-4
+    model.fs.gac.mass_adsorbed = 1e-9
+    model.fs.gac.gac_usage_rate = 1e-11
 
     optarg = solver.options
     model.fs.feed.initialize(optarg=optarg, outlvl=outlvl)
