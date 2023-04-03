@@ -4,16 +4,19 @@ Modified ADM1 Property Package
 
     <style> .red {color:red} </style>
     <style> .green {color:green} </style>
+    <style> .blue {color:blue} </style>
 
 .. role:: red
 
 .. role:: green
 
-This package is an extension of the base ADM1 model and implements properties and reactions of an anaerobic digestion model for wastewater treatment using an anaerobic digester as provided in
+.. role:: blue
+
+This package is an extension of the base Anaerobic Digestion Model no.1 (ADM1) and implements properties and reactions of an anaerobic digestion model for wastewater treatment using an anaerobic digester as provided in
 `Batstone, D. J. et al. (2002) <https://iwaponline.com/wst/article-abstract/45/10/65/6034>`_ and `Rosen and Jeppsson (2006) <https://www.iea.lth.se/WWTmodels_download/TR_ADM1.pdf>`_.
 
-This Anaerobic Digestion Model no.1 (ADM1) makes the following modifications to the base ADM1 model as provided in: `Flores-Alsina, X. et al. (2016) <https://www.sciencedirect.com/science/article/pii/S0043135416301397>`_
-Throughout this documentation, text in :red:`red` have been removed from the Modified ADM1 model and text in :green:`green` have been added into the Modified ADM1 model.
+Throughout this documentation, text in :red:`red` have been removed in the Modified ADM1 model, text in :green:`green` have been added, and text in :blue:`blue` have been modified from its base ADM1 implementation.
+The following modifications have been made to the base ADM1 model as provided in: `Flores-Alsina, X. et al. (2016) <https://www.sciencedirect.com/science/article/pii/S0043135416301397>`_
    * tracks inorganic phosphorus (S_IP), polyhydroxyalkanoates (X_PHA), polyphosphates (X_PP), phosphorus accumulating organisms (X_PAO), potassium (S_K), and magnesium (S_Mg)
    * removes the composite material variable (X_C) and the associated disintegration reaction
    * adds 7 additional reactions
@@ -31,8 +34,8 @@ Sets
   "Components", ":math:`j`", "['H2O', 'S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac', 'S_h2', 'S_ch4', 'S_IC', 'S_IN', 'S_IP', 'S_I', 'X_ch', 'X_pr', 'X_li', 'X_su', 'X_aa', 'X_fa', 'X_c4', 'X_pro', 'X_ac', 'X_h2', 'X_I', 'X_PHA', 'X_PP', 'X_PAO', 'S_K', 'S_Mg', 'S_cat', 'S_an', 'S_co2']"
   "Phases", ":math:`p`", "['Liq', 'Vap']"
 
-Base ADM1 Components
---------------------
+Components
+----------
 .. csv-table::
   :header: "Description", "Symbol", "Variable"
 
@@ -47,9 +50,9 @@ Base ADM1 Components
   "Methane gas, S_ch4", ":math:`S_{ch4}`", "S_ch4"
   "Inorganic carbon, S_IC", ":math:`S_{IC}`", "S_IC"
   "Inorganic nitrogen, S_IN", ":math:`S_{IN}`", "S_IN"
-  :green:`Inorganic phosphorus, S_IP`, ":math:`S_{IP}`", "S_IP"
+  ":green:`Inorganic phosphorus, S_IP`", ":math:`S_{IP}`", "S_IP"
   "Soluble inerts, S_I", ":math:`S_I`", "S_I"
-  :red:`Composites, X_c`, ":math:`X_c`", "X_c"
+  ":red:`Composites, X_c`", ":math:`X_c`", "X_c"
   "Carbohydrates, X_ch", ":math:`X_{ch}`", "X_ch"
   "Proteins, X_pr", ":math:`X_{pr}`", "X_pr"
   "Lipids, X_li", ":math:`X_{li}`", "X_li"
@@ -61,39 +64,16 @@ Base ADM1 Components
   "Acetate degraders, X_ac", ":math:`X_{ac}`", "X_ac"
   "Hydrogen degraders, X_h2", ":math:`X_{h2}`", "X_h2"
   "Particulate inerts, X_I", ":math:`X_I`", "X_I"
-  :green:`Polyhydroxyalkanoates, X_PHA`, ":math:`X_{PHA}`", "X_PHA"
-  :green:`Polyphosphates, X_PP`, ":math:`X_{PP}`", "X_PP"
-  :green:`Phosphorus accumulating organisms, X_{PAO}", ":math:`X_PAO`", "X_PAO"
-  :green:`Potassium, S_K", ":math:`S_K`", "S_K"
-  :green:`Magnesium, S_Mg`, ":math:`S_{Mg}`", "S_Mg"
+  ":green:`Polyhydroxyalkanoates, X_PHA`", ":math:`X_{PHA}`", "X_PHA"
+  ":green:`Polyphosphates, X_PP`", ":math:`X_{PP}`", "X_PP"
+  ":green:`Phosphorus accumulating organisms, X_{PAO}`", ":math:`X_PAO`", "X_PAO"
+  ":green:`Potassium, S_K`", ":math:`S_K`", "S_K"
+  ":green:`Magnesium, S_Mg`", ":math:`S_{Mg}`", "S_Mg"
   "Total cation equivalents concentration, S_cat", ":math:`S_{cat}`", "S_cat"
   "Total anion equivalents concentration, S_an", ":math:`S_{an}`", "S_an"
   "Carbon dioxide, S_co2", ":math:`S_{co2}`", "S_co2"
 
 **NOTE: S_h2 and S_ch4 have vapor phase and liquid phase, S_co2 only has vapor phase, and the other components only have liquid phase**
-
-Deleted Components
-------------------
-.. csv-table::
-  :header: "Description", "Symbol", "Variable"
-
-  "Composites, X_c", ":math:`X_c`", "X_c"
-
-**NOTE: This component is not present in the implementation of the Modified ADM1 model.**
-
-Additional Components
----------------------
-.. csv-table::
-  :header: "Description", "Symbol", "Variable"
-
-  "Inorganic phosphorus, S_IP", ":math:`S_{IP}`", "S_IP"
-  "Polyhydroxyalkanoates, X_PHA", ":math:`X_{PHA}`", "X_PHA"
-  "Polyphosphates, X_PP", ":math:`X_{PP}`", "X_PP"
-  "Phosphorus accumulating organisms, X_{PAO}", ":math:`X_PAO`", "X_PAO"
-  "Potassium, S_K", ":math:`S_K`", "S_K"
-  "Magnesium, S_Mg", ":math:`S_{Mg}`", "S_Mg"
-
-**NOTE: These components have been added into the implementation of the Modified ADM1 model.**
 
 State variables
 ---------------
@@ -114,11 +94,21 @@ Stoichiometric Parameters
 .. csv-table::
  :header: "Description", "Symbol", "Parameter", "Value at 20 C", "Units"
 
-   "Fraction of inert particulate organics from biomass, f_xi_xb", ":math:`f_{xi,xb}`", "f_xi_xb", 0.1, ":math:`\text{dimensionless}`"
-   "Fraction of carbohydrates from biomass, f_ch_xb", ":math:`f_{ch,xb}`", "f_ch_xb", 0.275, ":math:`\text{dimensionless}`"
-   "Fraction of lipids from biomass, f_li_xb", ":math:`f_{li,xb}`", "f_li_xb", 0.35, ":math:`\text{dimensionless}`"
-   "Fraction of proteins from biomass, f_pr_xb", ":math:`f_{pr,xb}`", "f_pr_xb", 0.275, ":math:`\text{dimensionless}`"
-   "Fraction of soluble inerts from biomass, f_si_xb", ":math:`f_{si,xb}`", "f_si_xb", 0, ":math:`\text{dimensionless}`"
+   ":red:`Soluble inerts from composites, f_sI_xc`", ":math:`f_{sI,xc}`", "f_sI_xc", 0.1, ":math:`\text{dimensionless}`"
+   ":red:`Particulate inerts from composites, f_xI_xc`", ":math:`f_{xI,xc}`", "f_xI_xc", 0.2, ":math:`\text{dimensionless}`"
+   ":red:`Carbohydrates from composites, f_ch_xc`", ":math:`f_{ch,xc}`", "f_ch_xc", 0.2, ":math:`\text{dimensionless}`"
+   ":red:`Proteins from composites, f_pr_xc`", ":math:`f_{pr,xc}`", "f_pr_xc", 0.2, ":math:`\text{dimensionless}`"
+   ":red:`Lipids from composites, f_li_xc`", ":math:`f_{li,xc}`", "f_li_xc", 0.3, ":math:`\text{dimensionless}`"
+   ":red:`Nitrogen content of composites, N_xc`", ":math:`N_{xc}`", "N_xc", 0.0376/14, ":math:`\text{kmol-N/}\text{kg-COD}`"
+   ":red:`Nitrogen content of inerts, N_I`", ":math:`N_I`", "N_I", 0.06/14, ":math:`\text{kmol-N/}\text{kg-COD}`"
+   ":red:`Nitrogen in amino acids and proteins, N_aa`", ":math:`N_{aa}`", "N_aa", 0.007, ":math:`\text{kmol-N/}\text{kg-COD}`"
+   ":red:`Nitrogen content in bacteria, N_bac`", ":math:`N_{bac}`", "N_bac", 0.08/14, ":math:`\text{kmol-N/}\text{kg-COD}`"
+   ":green:`Reference component mass concentration of hydrogen sulfide, Z_h2s`", ":math:`Z_{h2s}`", "Z_h2s", 0, ":math:`\text{kg/}\text{m}^3`"
+   ":green:`Fraction of inert particulate organics from biomass, f_xi_xb`", ":math:`f_{xi,xb}`", "f_xi_xb", 0.1, ":math:`\text{dimensionless}`"
+   ":green:`Fraction of carbohydrates from biomass, f_ch_xb`", ":math:`f_{ch,xb}`", "f_ch_xb", 0.275, ":math:`\text{dimensionless}`"
+   ":green:`Fraction of lipids from biomass, f_li_xb`", ":math:`f_{li,xb}`", "f_li_xb", 0.35, ":math:`\text{dimensionless}`"
+   ":green:`Fraction of proteins from biomass, f_pr_xb`", ":math:`f_{pr,xb}`", "f_pr_xb", 0.275, ":math:`\text{dimensionless}`"
+   ":green:`Fraction of soluble inerts from biomass, f_si_xb`", ":math:`f_{si,xb}`", "f_si_xb", 0, ":math:`\text{dimensionless}`"
    "Fatty acids from lipids, f_fa_li", ":math:`f_{fa,li}`", "f_fa_li", 0.95, ":math:`\text{dimensionless}`"
    "Hydrogen from sugars, f_h2_su", ":math:`f_{h2,su}`", "f_h2_su", 0.19, ":math:`\text{dimensionless}`"
    "Butyrate from sugars, f_bu_su", ":math:`f_{bu,su}`", "f_bu_su", 0.13, ":math:`\text{dimensionless}`"
@@ -142,6 +132,7 @@ Kinetic Parameters
 .. csv-table::
  :header: "Description", "Symbol", "Parameter", "Value at 20 C", "Units"
 
+   ":red:`First-order kinetic parameter for disintegration, k_dis`", ":math:`k_{dis}`", "k_dis", 0.5, ":math:`\text{d}^{-1}`"
    "First-order kinetic parameter for hydrolysis of carbohydrates, k_hyd_ch", ":math:`k_{hyd,ch}`", "k_hyd_ch", 10, ":math:`\text{d}^{-1}`"
    "First-order kinetic parameter for hydrolysis of proteins, k_hyd_pr", ":math:`k_{hyd,pr}`", "k_hyd_pr", 10, ":math:`\text{d}^{-1}`"
    "First-order kinetic parameter for hydrolysis of lipids, k_hyd_li", ":math:`k_{hyd,li}`", "k_hyd_li", 10, ":math:`\text{d}^{-1}`"
@@ -182,24 +173,24 @@ Kinetic Parameters
    "Butyrate acid-base equilibrium constant, K_a_bu", ":math:`K_{a,bu}`", "K_a_bu", 1.5e-5, ":math:`\text{kmol/}\text{m}^3`"
    "Propionate acid-base equilibrium constant, K_a_pro", ":math:`K_{a,pro}`", "K_a_bu", 1.32e-5, ":math:`\text{kmol/}\text{m}^3`"
    "Acetate acid-base equilibrium constant, K_a_ac", ":math:`K_{a,ac}`", "K_a_ac", 1.74e-5, ":math:`\text{kmol/}\text{m}^3`"
-   "50% inhibitory concentration of H2S on acetogens, K_I_h2s_ac", ":math:`K_{I,h2s_{ac}}`", "K_I_h2s_ac", 460e-3, ":math:`\text{kg/}\text{m}^3`"
-   "50% inhibitory concentration of H2S on c4 degraders, K_I_h2s_c4", ":math:`K_{I,h2s_{c4}}`", "K_I_h2s_c4", 481e-3, ":math:`\text{kg/}\text{m}^3`"
-   "50% inhibitory concentration of H2S on hydrogenotrophic methanogens, K_I_h2s_h2", ":math:`K_{I,h2s_{h2}}`", "K_I_h2s_h2", 481e-3, ":math:`\text{kg/}\text{m}^3`"
-   "50% inhibitory concentration of H2S on propionate degraders, K_I_h2s_pro", ":math:`K_{I,h2s_{pro}}`", "K_I_h2s_pro", 481e-3, ":math:`\text{kg/}\text{m}^3`"
-   "Phosphorus limitation for inorganic phosphorus, K_S_IP", ":math:`K_{s,IP}`", "K_S_IP", 2e-5, ":math:`\text{kmol/}\text{m}^3`"
-   "Lysis rate of phosphorus accumulating organisms, b_PAO", ":math:`b_{PAO}`", "b_PAO", 0.2, ":math:`\text{d}^{-1}`"
-   "Lysis rate of polyhydroxyalkanoates, b_PHA", ":math:`b_{PHA}`", "b_PHA", 0.2, ":math:`\text{d}^{-1}`"
-   "Lysis rate of polyphosphates, b_PP", ":math:`b_{PP}`", "b_PP", 0.2, ":math:`\text{d}^{-1}`"
-   "Yield of acetate on polyhydroxyalkanoates, f_ac_PHA", ":math:`f_{ac,PHA}`", "f_ac_PHA", 0.4, ":math:`\text{dimensionless}`"
-   "Yield of butyrate on polyhydroxyalkanoates, f_bu_PHA", ":math:`f_{bu,PHA}`", "f_bu_PHA", 0.1, ":math:`\text{dimensionless}`"
-   "Yield of propionate on polyhydroxyalkanoates, f_pro_PHA", ":math:`f_{pro,PHA}`", "f_pro_PHA", 0.4, ":math:`\text{dimensionless}`"
-   "Yield of valerate on polyhydroxyalkanoates, f_va_PHA", ":math:`f_{va,PHA}`", "f_va_PHA", 0.1, ":math:`\text{dimensionless}`"
-   "Saturation coefficient for acetate, K_A", ":math:`K_{A}`", "K_A", 4e-3, ":math:`\text{kg/}\text{m}^3`"
-   "Saturation coefficient for polyphosphate, K_PP", ":math:`K_{PP}`", "k_PP", 0.32e-3, ":math:`\text{dimensionless}`"
-   "Rate constant for storage of polyhydroxyalkanoates, q_PHA", ":math:`q_{PHA}`", "q_PHA", 3, ":math:`\text{d}^{-1}`"
-   "Yield of biomass on phosphate (kmol P/kg COD), Y_PO4", ":math:`Y_{PO4}`", "Y_PO4", 12.903e-3, ":math:`\text{dimensionless}`"
-   "Potassium coefficient for polyphosphates, K_PP", ":math:`K_{PP}`", "K_PP", 1/3, ":math:`\text{dimensionless}`"
-   "Magnesium coefficient for polyphosphates, Mg_PP", ":math:`Mg_{PP}`", "Mg_PP", 1/3, ":math:`\text{dimensionless}`"
+   ":green:`50% inhibitory concentration of H2S on acetogens, K_I_h2s_ac`", ":math:`K_{I,h2s_{ac}}`", "K_I_h2s_ac", 460e-3, ":math:`\text{kg/}\text{m}^3`"
+   ":green:`50% inhibitory concentration of H2S on c4 degraders, K_I_h2s_c4`", ":math:`K_{I,h2s_{c4}}`", "K_I_h2s_c4", 481e-3, ":math:`\text{kg/}\text{m}^3`"
+   ":green:`50% inhibitory concentration of H2S on hydrogenotrophic methanogens, K_I_h2s_h2`", ":math:`K_{I,h2s_{h2}}`", "K_I_h2s_h2", 481e-3, ":math:`\text{kg/}\text{m}^3`"
+   ":green:`50% inhibitory concentration of H2S on propionate degraders, K_I_h2s_pro`", ":math:`K_{I,h2s_{pro}}`", "K_I_h2s_pro", 481e-3, ":math:`\text{kg/}\text{m}^3`"
+   ":green:`Phosphorus limitation for inorganic phosphorus, K_S_IP`", ":math:`K_{s,IP}`", "K_S_IP", 2e-5, ":math:`\text{kmol/}\text{m}^3`"
+   ":green:`Lysis rate of phosphorus accumulating organisms, b_PAO`", ":math:`b_{PAO}`", "b_PAO", 0.2, ":math:`\text{d}^{-1}`"
+   ":green:`Lysis rate of polyhydroxyalkanoates, b_PHA`", ":math:`b_{PHA}`", "b_PHA", 0.2, ":math:`\text{d}^{-1}`"
+   ":green:`Lysis rate of polyphosphates, b_PP`", ":math:`b_{PP}`", "b_PP", 0.2, ":math:`\text{d}^{-1}`"
+   ":green:`Yield of acetate on polyhydroxyalkanoates, f_ac_PHA`", ":math:`f_{ac,PHA}`", "f_ac_PHA", 0.4, ":math:`\text{dimensionless}`"
+   ":green:`Yield of butyrate on polyhydroxyalkanoates, f_bu_PHA`", ":math:`f_{bu,PHA}`", "f_bu_PHA", 0.1, ":math:`\text{dimensionless}`"
+   ":green:`Yield of propionate on polyhydroxyalkanoates, f_pro_PHA`", ":math:`f_{pro,PHA}`", "f_pro_PHA", 0.4, ":math:`\text{dimensionless}`"
+   ":green:`Yield of valerate on polyhydroxyalkanoates, f_va_PHA`", ":math:`f_{va,PHA}`", "f_va_PHA", 0.1, ":math:`\text{dimensionless}`"
+   ":green:`Saturation coefficient for acetate, K_A`", ":math:`K_{A}`", "K_A", 4e-3, ":math:`\text{kg/}\text{m}^3`"
+   ":green:`Saturation coefficient for polyphosphate, K_PP`", ":math:`K_{PP}`", "k_PP", 0.32e-3, ":math:`\text{dimensionless}`"
+   ":green:`Rate constant for storage of polyhydroxyalkanoates, q_PHA`", ":math:`q_{PHA}`", "q_PHA", 3, ":math:`\text{d}^{-1}`"
+   ":green:`Yield of biomass on phosphate (kmol P/kg COD), Y_PO4`", ":math:`Y_{PO4}`", "Y_PO4", 12.903e-3, ":math:`\text{dimensionless}`"
+   ":green:`Potassium coefficient for polyphosphates, K_PP`", ":math:`K_{PP}`", "K_PP", 1/3, ":math:`\text{dimensionless}`"
+   ":green:`Magnesium coefficient for polyphosphates, Mg_PP`", ":math:`Mg_{PP}`", "Mg_PP", 1/3, ":math:`\text{dimensionless}`"
    "Carbon dioxide acid-base equilibrium constant, K_a_co2", ":math:`K_{a,co2}`", "K_a_co2", 4.94e-7, ":math:`\text{kmol/}\text{m}^3`"
    "Inorganic nitrogen acid-base equilibrium constant, K_a_IN", ":math:`K_{a,IN}`", "K_a_IN", 1.11e-9, ":math:`\text{kmol/}\text{m}^3`"
 
@@ -216,17 +207,18 @@ Process Rate Equations
 .. csv-table::
    :header: "Description", "Equation"
 
+   ":red:`Disintegration`", ":math:`\rho_1 = k_{dis} C_{X_c}`"
    "Hydrolysis of carbohydrates", ":math:`\rho_1 = k_{hyd,ch} C_{X_{ch}}`"
    "Hydrolysis of proteins", ":math:`\rho_2 = k_{hyd,pr} C_{X_{pr}}`"
    "Hydrolysis of lipids", ":math:`\rho_3 = k_{hyd,li} C_{X_{li}}`"
-   "Uptake of sugars", ":math:`\rho_4 = k_{m_{su}} \frac{C_{S_{su}}}{K_{S_{su}}+C_{S_{su}}} C_{X_{su}} \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,aa}`"
-   "Uptake of amino acids", ":math:`\rho_5 = k_{m_{aa}} \frac{C_{S_{aa}}}{K_{S_{aa}}+C_{S_{aa}}} C_{X_{aa}} \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,aa}`"
-   "Uptake of long chain fatty acids (LCFAs)", ":math:`\rho_6 = k_{m_{fa}} \frac{C_{S_{fa}}}{K_{S_{fa}}+C_{S_{fa}}} C_{X_{fa}} \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + C_{S_{h2}}/K_{I,h2_{fa}}} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,aa}`"
-   "Uptake of valerate", ":math:`\rho_7 = k_{m_{c4}} \frac{C_{S_{va}}}{K_{S_{c4}}+C_{S_{va}}} C_{X_{c4}} \frac{C_{S_{va}}}{C_{S_{bu}} + C_{S_{va}}} \cdot \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + C_{S_{h2}}/K_{I,h2_{c4}}} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,aa}`"
-   "Uptake of butyrate", ":math:`\rho_8 = k_{m_{c4}} \frac{C_{S_{bu}}}{K_{S_{c4}}+C_{S_{bu}}} C_{X_{c4}} \frac{C_{S_{bu}}}{C_{S_{bu}} + C_{S_{va}}} \cdot \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + C_{S_{h2}}/K_{I,h2_{c4}}} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,aa}`"
-   "Uptake of propionate", ":math:`\rho_9 = k_{m_{pro}} \frac{C_{S_{pro}}}{K_{S_{pro}}+C_{S_{pro}}} C_{X_{pro}} \cdot \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + C_{S_{h2}}/K_{I,h2_{pro}}} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,aa}`"
-   "Uptake of acetate", ":math:`\rho_{10} = k_{m_{ac}} \frac{C_{S_{ac}}}{K_{S_{ac}}+C_{S_{ac}}} C_{X_{ac}} \cdot \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + C_{NH3}/K_{I,nh3}} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,ac}`"
-   "Uptake of hydrogen", ":math:`\rho_{11} = k_{m_{h2}} \frac{C_{S_{h2}}}{K_{S_{h2}}+C_{S_{h2}}} C_{X_{h2}} \cdot \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,h2}`"
+   ":blue:`Uptake of sugars`", ":math:`\rho_4 = k_{m_{su}} \frac{C_{S_{su}}}{K_{S_{su}}+C_{S_{su}}} C_{X_{su}} \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,aa}`"
+   ":blue:`Uptake of amino acids`", ":math:`\rho_5 = k_{m_{aa}} \frac{C_{S_{aa}}}{K_{S_{aa}}+C_{S_{aa}}} C_{X_{aa}} \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,aa}`"
+   ":blue:`Uptake of long chain fatty acids (LCFAs)`", ":math:`\rho_6 = k_{m_{fa}} \frac{C_{S_{fa}}}{K_{S_{fa}}+C_{S_{fa}}} C_{X_{fa}} \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + C_{S_{h2}}/K_{I,h2_{fa}}} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,aa}`"
+   ":blue:`Uptake of valerate`", ":math:`\rho_7 = k_{m_{c4}} \frac{C_{S_{va}}}{K_{S_{c4}}+C_{S_{va}}} C_{X_{c4}} \frac{C_{S_{va}}}{C_{S_{bu}} + C_{S_{va}}} \cdot \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + C_{S_{h2}}/K_{I,h2_{c4}}} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,aa} I_{h2s, c4}`"
+   ":blue:`Uptake of butyrate`", ":math:`\rho_8 = k_{m_{c4}} \frac{C_{S_{bu}}}{K_{S_{c4}}+C_{S_{bu}}} C_{X_{c4}} \frac{C_{S_{bu}}}{C_{S_{bu}} + C_{S_{va}}} \cdot \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + C_{S_{h2}}/K_{I,h2_{c4}}} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,aa} I_{h2s, c4}`"
+   ":blue:`Uptake of propionate`", ":math:`\rho_9 = k_{m_{pro}} \frac{C_{S_{pro}}}{K_{S_{pro}}+C_{S_{pro}}} C_{X_{pro}} \cdot \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + C_{S_{h2}}/K_{I,h2_{pro}}} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,aa} I_{h2s, pro}`"
+   ":blue:`Uptake of acetate`", ":math:`\rho_{10} = k_{m_{ac}} \frac{C_{S_{ac}}}{K_{S_{ac}}+C_{S_{ac}}} C_{X_{ac}} \cdot \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + C_{NH3}/K_{I,nh3}} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,ac} I_{h2s, ac}`"
+   ":blue:`Uptake of hydrogen`", ":math:`\rho_{11} = k_{m_{h2}} \frac{C_{S_{h2}}}{K_{S_{h2}}+C_{S_{h2}}} C_{X_{h2}} \cdot \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + K_{S_{IP}}/C_{S_{IP}}/31} I_{pH,h2} I_{h2s, h2}`"
    "Decay of X_su", ":math:`\rho_{12} = k_{dec, X_{su}} C_{X_{su}}`"
    "Decay of X_aa", ":math:`\rho_{13} = k_{dec, X_{aa}} C_{X_{aa}}`"
    "Decay of X_fa", ":math:`\rho_{14} = k_{dec, X_{fa}} C_{X_{fa}}`"
@@ -234,16 +226,16 @@ Process Rate Equations
    "Decay of X_pro", ":math:`\rho_{16} = k_{dec, X_{pro}} C_{X_{pro}}`"
    "Decay of X_ac", ":math:`\rho_{17} = k_{dec, X_{ac}} C_{X_{ac}}`"
    "Decay of X_h2", ":math:`\rho_{18} = k_{dec, X_{h2}} C_{X_{h2}}`"
-   "Storage of S_va in X_PHA", ":math:`\rho_{19} = q_{PHA} \frac{C_{S_{va}}}{K_{A} + C_{S{va}}} \cdot \frac{C_{X_{PP}} / C_{X_{PAO}}}{K_{PP} + \frac{C_{X_{PP}}}{C_{X_{PAO}}}} C_{X_{PAO}} \frac{C_{S_{va}}}{C_{S_{va}} + C_{S_{bu}} + C_{S_{pro}} + C_{S_{ac}}}`"
-   "Storage of S_bu in X_PHA", ":math:`\rho_{20} = q_{PHA} \frac{C_{S_{bu}}}{K_{A} + C_{S{bu}}} \cdot \frac{C_{X_{PP}} / C_{X_{PAO}}}{K_{PP} + \frac{C_{X_{PP}}}{C_{X_{PAO}}}} C_{X_{PAO}} \frac{C_{S_{bu}}}{C_{S_{va}} + C_{S_{bu}} + C_{S_{pro}} + C_{S_{ac}}}`"
-   "Storage of S_pro in X_PHA", ":math:`\rho_{21} = q_{PHA} \frac{C_{S_{pro}}}{K_{A} + C_{S{pro}}} \cdot \frac{C_{X_{PP}} / C_{X_{PAO}}}{K_{PP} + \frac{C_{X_{PP}}}{C_{X_{PAO}}}} C_{X_{PAO}} \frac{C_{S_{pro}}}{C_{S_{va}} + C_{S_{bu}} + C_{S_{pro}} + C_{S_{ac}}}`"
-   "Storage of S_ac in X_PHA", ":math:`\rho_{22} = q_{PHA} \frac{C_{S_{ac}}}{K_{A} + C_{S{ac}}} \cdot \frac{C_{X_{PP}} / C_{X_{PAO}}}{K_{PP} + \frac{C_{X_{PP}}}{C_{X_{PAO}}}} C_{X_{PAO}} \frac{C_{S_{ac}}}{C_{S_{va}} + C_{S_{bu}} + C_{S_{pro}} + C_{S_{ac}}}`"
-   "Lysis of X_PAO", ":math:`\rho_{23} = b_{PAO} C_{X_{PAO}}`"
-   "Lysis of X_PP", ":math:`\rho_{24} = b_{PP} C_{X_{PP}}`"
-   "Lysis of X_PHA", ":math:`\rho_{25} = b_{PHA} C_{X_{PHA}}`"
+   ":green:`Storage of S_va in X_PHA`", ":math:`\rho_{19} = q_{PHA} \frac{C_{S_{va}}}{K_{A} + C_{S{va}}} \cdot \frac{C_{X_{PP}} / C_{X_{PAO}}}{K_{PP} + \frac{C_{X_{PP}}}{C_{X_{PAO}}}} C_{X_{PAO}} \frac{C_{S_{va}}}{C_{S_{va}} + C_{S_{bu}} + C_{S_{pro}} + C_{S_{ac}}}`"
+   ":green:`Storage of S_bu in X_PHA`", ":math:`\rho_{20} = q_{PHA} \frac{C_{S_{bu}}}{K_{A} + C_{S{bu}}} \cdot \frac{C_{X_{PP}} / C_{X_{PAO}}}{K_{PP} + \frac{C_{X_{PP}}}{C_{X_{PAO}}}} C_{X_{PAO}} \frac{C_{S_{bu}}}{C_{S_{va}} + C_{S_{bu}} + C_{S_{pro}} + C_{S_{ac}}}`"
+   ":green:`Storage of S_pro in X_PHA`", ":math:`\rho_{21} = q_{PHA} \frac{C_{S_{pro}}}{K_{A} + C_{S{pro}}} \cdot \frac{C_{X_{PP}} / C_{X_{PAO}}}{K_{PP} + \frac{C_{X_{PP}}}{C_{X_{PAO}}}} C_{X_{PAO}} \frac{C_{S_{pro}}}{C_{S_{va}} + C_{S_{bu}} + C_{S_{pro}} + C_{S_{ac}}}`"
+   ":green:`Storage of S_ac in X_PHA`", ":math:`\rho_{22} = q_{PHA} \frac{C_{S_{ac}}}{K_{A} + C_{S{ac}}} \cdot \frac{C_{X_{PP}} / C_{X_{PAO}}}{K_{PP} + \frac{C_{X_{PP}}}{C_{X_{PAO}}}} C_{X_{PAO}} \frac{C_{S_{ac}}}{C_{S_{va}} + C_{S_{bu}} + C_{S_{pro}} + C_{S_{ac}}}`"
+   ":green:`Lysis of X_PAO`", ":math:`\rho_{23} = b_{PAO} C_{X_{PAO}}`"
+   ":green:`Lysis of X_PP`", ":math:`\rho_{24} = b_{PP} C_{X_{PP}}`"
+   ":green:`Lysis of X_PHA`", ":math:`\rho_{25} = b_{PHA} C_{X_{PHA}}`"
 
 
-The rules for pH inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH,aa}`), acetate-utilizing microorganisms (:math:`I_{pH,ac}`), and hydrogen-utilizing microorganisms (:math:`I_{pH,h2}`) are:
+The rules for pH inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH,aa}`), acetate-utilizing microorganisms (:math:`I_{pH,ac}`), hydrogen-utilizing microorganisms (:math:`I_{pH,h2}`) are:
 
     .. math::
 
@@ -265,6 +257,17 @@ The rules for pH inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH
          1 & \text{for } pH > pH_{UL,h2}
        \end{cases}
 
+The rules for hydrogen sulfide inhibition factors are shown below; however, since :math:`Z_{h2s}` is assumed to be 0, all of these inhibition factors are negligible
+
+    .. math::
+
+       I_{h2s, ac} = \frac{1}{1 + \frac{Z_{h2s}}{K_{I,h2s,ac}}}
+
+       I_{h2s, c4}= \frac{1}{1 + \frac{Z_{h2s}}{K_{I,h2s,c4}}}
+
+       I_{h2s, h2}= \frac{1}{1 + \frac{Z_{h2s}}{K_{I,h2s,h2}}}
+
+       I_{h2s, pro}= \frac{1}{1 + \frac{Z_{h2s}}{K_{I,h2s,pro}}}
 
 Classes
 -------

@@ -212,7 +212,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             within=pyo.NonNegativeReals,
             mutable=True,
             default=0,
-            doc="Reference component mass concentrations of hydrogen sulfide",
+            doc="Reference component mass concentration of hydrogen sulfide",
             units=pyo.units.kg / pyo.units.m**3,
         )
         self.f_xi_xb = pyo.Var(
