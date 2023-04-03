@@ -63,7 +63,7 @@ class SurfaceDiffusionCoefficientType(Enum):
 @declare_process_block_class("GAC")
 class GACData(InitializationMixin, UnitModelBlockData):
     """
-    Empirical CPHSDM Granular Activated Carbon Model -
+    Empirical Constant-Pattern-Homogeneous-Surface-Diffusion Model (CPHSDM) for Granular Activated Carbon -
     currently only available to model with the multicomp_aq_sol_prop_pack
     """
 
@@ -347,7 +347,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="surface diffusion coefficient",
         )
         self.kf = Var(
-            initialize=5e-5,
+            initialize=1e-5,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length") * units_meta("time") ** -1,
@@ -483,14 +483,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="stanton equation parameter 0",
+            doc="Stanton equation parameter 0",
         )
         self.a1 = Var(
             initialize=1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="stanton equation parameter 1",
+            doc="Stanton equation parameter 1",
         )
         self.b0 = Var(
             initialize=0.1,
@@ -589,7 +589,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="bed volumes treated in operational time",
+            doc="bed volumes treated at operational time",
         )
 
         # ---------------------------------------------------------------------
@@ -709,9 +709,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Biot number")
         def eq_number_bi(b):
-            return 1 == (b.kf * (b.particle_dia / 2) * (1 - b.bed_voidage)) / (
-                b.N_Bi * b.ds * b.dg * b.bed_voidage
-            )
+            return b.N_Bi * b.ds * b.dg * b.bed_voidage == b.kf * (
+                b.particle_dia / 2
+            ) * (1 - b.bed_voidage)
 
         # ---------------------------------------------------------------------
         # bed dimensions, gac particle, and sizing calculations
@@ -950,14 +950,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
         ):
 
             self.N_Re = Var(
-                initialize=1,
+                initialize=10,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Reynolds number, correlations using Reynolds number valid in Re < 2e4",
             )
             self.N_Sc = Var(
-                initialize=1000,
+                initialize=2000,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
@@ -999,13 +999,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
             @self.Constraint(
                 self.flowsheet().config.time,
                 self.target_species,
-                doc="liquid phase film transfer rate from the Gnielinshi correlation",
+                doc="liquid phase film transfer rate from the Gnielinski correlation",
             )
             def eq_film_transfer_rate(b, t, j):
-                return b.kf * b.particle_dia == b.shape_correction_factor * (
-                    1 + 1.5 * (1 - b.bed_voidage)
-                ) * b.process_flow.properties_in[t].diffus_phase_comp["Liq", j] * (
-                    2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc ** (1 / 3))
+                return 1 == (b.kf * b.particle_dia) / (
+                    b.shape_correction_factor
+                    * (1 + 1.5 * (1 - b.bed_voidage))
+                    * b.process_flow.properties_in[t].diffus_phase_comp["Liq", j]
+                    * (2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc ** (1 / 3)))
                 )
 
         # ---------------------------------------------------------------------

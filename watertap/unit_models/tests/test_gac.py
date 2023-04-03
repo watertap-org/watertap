@@ -62,8 +62,6 @@ sv_large = 1e2
 sv_small = 1e-2
 sv_zero = 1e-8
 
-print(isinstance({"species": "TCE"}, list))
-
 # -----------------------------------------------------------------------------
 class TestGACSimplified:
     @pytest.fixture(scope="class")
@@ -166,8 +164,8 @@ class TestGACSimplified:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(ms) == 102
-        assert number_total_constraints(ms) == 66
+        assert number_variables(ms) == 100
+        assert number_total_constraints(ms) == 64
         assert number_unused_variables(ms) == 11  # dens parameters from properties
 
     @pytest.mark.unit
@@ -350,8 +348,8 @@ class TestGACRobust:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(mr) == 121
-        assert number_total_constraints(mr) == 86
+        assert number_variables(mr) == 119
+        assert number_total_constraints(mr) == 84
         assert number_unused_variables(mr) == 10  # dens parameters from properties
 
     @pytest.mark.unit
@@ -437,7 +435,7 @@ class TestGACRobust:
         mr.fs.unit.report()
 
     @pytest.mark.component
-    def test_robust_costing(self, gac_frame_robust):
+    def test_robust_costing_pressure(self, gac_frame_robust):
         mr = gac_frame_robust
 
         mr.fs.costing = WaterTAPCosting()
@@ -446,7 +444,12 @@ class TestGACRobust:
         mr.fs.unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=mr.fs.costing
         )
-        mr.fs.costing.cost_process()
+
+        # testing gac costing block dof and initialization
+        assert degrees_of_freedom(mr) == 0
+        mr.fs.unit.costing.initialize()
+
+        # solve
         results = solver.solve(mr)
 
         # Check for optimal solution
@@ -468,14 +471,65 @@ class TestGACRobust:
             mr.fs.unit.costing.other_process_cost
         )
         assert pytest.approx(156000, rel=1e-3) == value(mr.fs.unit.costing.capital_cost)
-        assert pytest.approx(27660, rel=1e-3) == value(
-            mr.fs.unit.costing.gac_regen_cost
-        )
         assert pytest.approx(12680, rel=1e-3) == value(
             mr.fs.unit.costing.gac_makeup_cost
         )
-        assert pytest.approx(40350, rel=1e-3) == value(
+        assert pytest.approx(27660, rel=1e-3) == value(
+            mr.fs.unit.costing.gac_regen_cost
+        )
+        assert pytest.approx(0.01631, rel=1e-3) == value(
+            mr.fs.unit.costing.energy_consumption
+        )
+        assert pytest.approx(40370, rel=1e-3) == value(
             mr.fs.unit.costing.fixed_operating_cost
+        )
+
+    @pytest.mark.component
+    def test_robust_costing_gravity(self, gac_frame_robust):
+        mr_grav = gac_frame_robust.clone()
+
+        mr_grav.fs.costing = WaterTAPCosting()
+        mr_grav.fs.costing.base_currency = pyo.units.USD_2020
+
+        mr_grav.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=mr_grav.fs.costing,
+            costing_method_arguments={"contactor_type": "gravity"},
+        )
+        mr_grav.fs.costing.cost_process()
+        results = solver.solve(mr_grav)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+        # Check for known cost solution of default twin alternating contactors
+        assert value(mr_grav.fs.costing.gac.num_contactors_op) == 1
+        assert value(mr_grav.fs.costing.gac.num_contactors_redundant) == 1
+        assert pytest.approx(163200, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.contactor_cost
+        )
+        assert pytest.approx(4.359, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.adsorbent_unit_cost
+        )
+        assert pytest.approx(17450, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.adsorbent_cost
+        )
+        assert pytest.approx(159500, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.other_process_cost
+        )
+        assert pytest.approx(340200, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.capital_cost
+        )
+        assert pytest.approx(12680, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.gac_makeup_cost
+        )
+        assert pytest.approx(27660, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.gac_regen_cost
+        )
+        assert pytest.approx(2.476, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.energy_consumption
+        )
+        assert pytest.approx(40370, rel=1e-3) == value(
+            mr_grav.fs.unit.costing.fixed_operating_cost
         )
 
     @pytest.mark.component
@@ -706,122 +760,154 @@ class TestGACMulti:
         mm = gac_frame_multi
         mm.fs.unit.report()
 
-    # -----------------------------------------------------------------------------
-    class TestGACErrorLog:
-        @pytest.mark.unit
-        def test_error(self):
 
-            with pytest.raises(
-                ConfigurationError,
-                match="'target species' is not specified for the GAC unit model, "
-                "either specify 'target species' argument or reduce solute set "
-                "to a single component",
-            ):
-                me = ConcreteModel()
-                me.fs = FlowsheetBlock(dynamic=False)
+# -----------------------------------------------------------------------------
+class TestGACErrorLog:
+    @pytest.mark.unit
+    def test_error(self):
 
-                # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
-                # arbitrary diffusivity data for non-target species
-                me.fs.properties = MCASParameterBlock(
-                    solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
-                    mw_data={
-                        "H2O": 0.018,
-                        "TCE": 0.1314,
-                        "BGSOL": 0.1,
-                        "BGCAT": 0.1,
-                        "BGAN": 0.1,
-                    },
-                    charge={"BGCAT": 1, "BGAN": -2},
-                    diffus_calculation=DiffusivityCalculation.HaydukLaudie,
-                    molar_volume_data={("Liq", "TCE"): 9.81e-5},
-                    diffusivity_data={
-                        ("Liq", "BGSOL"): 1e-5,
-                        ("Liq", "BGCAT"): 1e-5,
-                        ("Liq", "BGAN"): 1e-5,
-                    },
-                )
-                me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
-                me.fs.properties.dens_mass_const = 1000
+        with pytest.raises(
+            ConfigurationError,
+            match="'target species' is not specified for the GAC unit model, "
+            "either specify 'target species' argument or reduce solute set "
+            "to a single component",
+        ):
+            me = ConcreteModel()
+            me.fs = FlowsheetBlock(dynamic=False)
 
-                # testing target_species arg
-                me.fs.unit = GAC(
-                    property_package=me.fs.properties,
-                    film_transfer_coefficient_type="calculated",
-                    surface_diffusion_coefficient_type="calculated",
-                )
+            # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
+            # arbitrary diffusivity data for non-target species
+            me.fs.properties = MCASParameterBlock(
+                solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
+                mw_data={
+                    "H2O": 0.018,
+                    "TCE": 0.1314,
+                    "BGSOL": 0.1,
+                    "BGCAT": 0.1,
+                    "BGAN": 0.1,
+                },
+                charge={"BGCAT": 1, "BGAN": -2},
+                diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+                molar_volume_data={("Liq", "TCE"): 9.81e-5},
+                diffusivity_data={
+                    ("Liq", "BGSOL"): 1e-5,
+                    ("Liq", "BGCAT"): 1e-5,
+                    ("Liq", "BGAN"): 1e-5,
+                },
+            )
+            me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+            me.fs.properties.dens_mass_const = 1000
 
-            with pytest.raises(
-                ConfigurationError,
-                match="item 0 within 'target_species' list is not of data type str",
-            ):
-                me = ConcreteModel()
-                me.fs = FlowsheetBlock(dynamic=False)
+            # testing target_species arg
+            me.fs.unit = GAC(
+                property_package=me.fs.properties,
+                film_transfer_coefficient_type="calculated",
+                surface_diffusion_coefficient_type="calculated",
+            )
 
-                # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
-                # arbitrary diffusivity data for non-target species
-                me.fs.properties = MCASParameterBlock(
-                    solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
-                    mw_data={
-                        "H2O": 0.018,
-                        "TCE": 0.1314,
-                        "BGSOL": 0.1,
-                        "BGCAT": 0.1,
-                        "BGAN": 0.1,
-                    },
-                    charge={"BGCAT": 1, "BGAN": -2},
-                    diffus_calculation=DiffusivityCalculation.HaydukLaudie,
-                    molar_volume_data={("Liq", "TCE"): 9.81e-5},
-                    diffusivity_data={
-                        ("Liq", "BGSOL"): 1e-5,
-                        ("Liq", "BGCAT"): 1e-5,
-                        ("Liq", "BGAN"): 1e-5,
-                    },
-                )
-                me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
-                me.fs.properties.dens_mass_const = 1000
+        with pytest.raises(
+            ConfigurationError,
+            match="fs.unit received invalid argument for contactor_type:"
+            " vessel. Argument must be a member of the ContactorType Enum.",
+        ):
+            me = ConcreteModel()
+            me.fs = FlowsheetBlock(dynamic=False)
 
-                # testing target_species arg
-                me.fs.unit = GAC(
-                    property_package=me.fs.properties,
-                    film_transfer_coefficient_type="calculated",
-                    surface_diffusion_coefficient_type="calculated",
-                    target_species=range(2),
-                )
+            me.fs.properties = MCASParameterBlock(
+                solute_list=["TCE"],
+                mw_data={"H2O": 0.018, "TCE": 0.1314},
+                diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+                molar_volume_data={("Liq", "TCE"): 9.81e-5},
+            )
+            me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+            me.fs.properties.dens_mass_const = 1000
 
-            with pytest.raises(
-                ConfigurationError,
-                match="item species within 'target_species' list is not in 'component_list",
-            ):
-                me = ConcreteModel()
-                me.fs = FlowsheetBlock(dynamic=False)
+            me.fs.unit = GAC(
+                property_package=me.fs.properties,
+                film_transfer_coefficient_type="calculated",
+                surface_diffusion_coefficient_type="calculated",
+            )
 
-                # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
-                # arbitrary diffusivity data for non-target species
-                me.fs.properties = MCASParameterBlock(
-                    solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
-                    mw_data={
-                        "H2O": 0.018,
-                        "TCE": 0.1314,
-                        "BGSOL": 0.1,
-                        "BGCAT": 0.1,
-                        "BGAN": 0.1,
-                    },
-                    charge={"BGCAT": 1, "BGAN": -2},
-                    diffus_calculation=DiffusivityCalculation.HaydukLaudie,
-                    molar_volume_data={("Liq", "TCE"): 9.81e-5},
-                    diffusivity_data={
-                        ("Liq", "BGSOL"): 1e-5,
-                        ("Liq", "BGCAT"): 1e-5,
-                        ("Liq", "BGAN"): 1e-5,
-                    },
-                )
-                me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
-                me.fs.properties.dens_mass_const = 1000
+            me.fs.costing = WaterTAPCosting()
+            me.fs.costing.base_currency = pyo.units.USD_2020
 
-                # testing target_species arg
-                me.fs.unit = GAC(
-                    property_package=me.fs.properties,
-                    film_transfer_coefficient_type="calculated",
-                    surface_diffusion_coefficient_type="calculated",
-                    target_species={"species": "TCE"},
-                )
+            me.fs.unit.costing = UnitModelCostingBlock(
+                flowsheet_costing_block=me.fs.costing,
+                costing_method_arguments={"contactor_type": "vessel"},
+            )
+
+        with pytest.raises(
+            ConfigurationError,
+            match="item 0 within 'target_species' list is not of data type str",
+        ):
+            me = ConcreteModel()
+            me.fs = FlowsheetBlock(dynamic=False)
+
+            # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
+            # arbitrary diffusivity data for non-target species
+            me.fs.properties = MCASParameterBlock(
+                solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
+                mw_data={
+                    "H2O": 0.018,
+                    "TCE": 0.1314,
+                    "BGSOL": 0.1,
+                    "BGCAT": 0.1,
+                    "BGAN": 0.1,
+                },
+                charge={"BGCAT": 1, "BGAN": -2},
+                diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+                molar_volume_data={("Liq", "TCE"): 9.81e-5},
+                diffusivity_data={
+                    ("Liq", "BGSOL"): 1e-5,
+                    ("Liq", "BGCAT"): 1e-5,
+                    ("Liq", "BGAN"): 1e-5,
+                },
+            )
+            me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+            me.fs.properties.dens_mass_const = 1000
+
+            # testing target_species arg
+            me.fs.unit = GAC(
+                property_package=me.fs.properties,
+                film_transfer_coefficient_type="calculated",
+                surface_diffusion_coefficient_type="calculated",
+                target_species=range(2),
+            )
+
+        with pytest.raises(
+            ConfigurationError,
+            match="item species within 'target_species' list is not in 'component_list",
+        ):
+            me = ConcreteModel()
+            me.fs = FlowsheetBlock(dynamic=False)
+
+            # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
+            # arbitrary diffusivity data for non-target species
+            me.fs.properties = MCASParameterBlock(
+                solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
+                mw_data={
+                    "H2O": 0.018,
+                    "TCE": 0.1314,
+                    "BGSOL": 0.1,
+                    "BGCAT": 0.1,
+                    "BGAN": 0.1,
+                },
+                charge={"BGCAT": 1, "BGAN": -2},
+                diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+                molar_volume_data={("Liq", "TCE"): 9.81e-5},
+                diffusivity_data={
+                    ("Liq", "BGSOL"): 1e-5,
+                    ("Liq", "BGCAT"): 1e-5,
+                    ("Liq", "BGAN"): 1e-5,
+                },
+            )
+            me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+            me.fs.properties.dens_mass_const = 1000
+
+            # testing target_species arg
+            me.fs.unit = GAC(
+                property_package=me.fs.properties,
+                film_transfer_coefficient_type="calculated",
+                surface_diffusion_coefficient_type="calculated",
+                target_species={"species": "TCE"},
+            )

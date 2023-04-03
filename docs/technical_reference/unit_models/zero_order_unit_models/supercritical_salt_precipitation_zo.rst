@@ -21,7 +21,7 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Inlet mass flowrate", "flow_mass_in", ":math:`t/hr`"
+   "Inlet mass flowrate", "flow_mass_in", ":math:`t/h`"
    "Electricity consumption of unit", "electricity", ":math:`kW`"
    "Electricity intensity with respect to inlet flowrate", "energy_electric_flow_mass", ":math:`kWh/t`"
 

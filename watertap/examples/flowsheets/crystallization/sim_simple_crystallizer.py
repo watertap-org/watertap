@@ -11,34 +11,13 @@
 #################################################################################
 from pyomo.environ import (
     ConcreteModel,
-    SolverFactory,
     TerminationCondition,
-    value,
-    Constraint,
-    Var,
-    Objective,
-    Expression,
 )
-from pyomo.environ import units as pyunits
-from pyomo.util.check_units import (
-    assert_units_consistent,
-    assert_units_equivalent,
-    check_units_equivalent,
-)
-import pyomo.util.infeasible as infeas
-from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    number_variables,
-    number_total_constraints,
-    number_activated_constraints,
-    number_unfixed_variables_in_activated_equalities,
-    number_activated_equalities,
-    number_unused_variables,
-)
+from pyomo.util.check_units import assert_units_consistent
 
-import idaes.core.util.model_statistics as stats
-from idaes.core.util.constants import Constants
+from idaes.core import FlowsheetBlock
+from idaes.core.util.model_statistics import degrees_of_freedom
+
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
@@ -50,9 +29,6 @@ from watertap.costing import WaterTAPCosting, CrystallizerCostType
 
 from io import StringIO
 from pyomo.util.infeasible import (
-    log_active_constraints,
-    log_close_to_bounds,
-    log_infeasible_bounds,
     log_infeasible_constraints,
 )
 from pyomo.common.log import LoggingIntercept

@@ -39,4 +39,3 @@ def test_sweep(case_num, tmp_path):
     )
     os.remove(temp.name)
     os.chdir(cwd)
-    return
