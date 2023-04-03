@@ -108,10 +108,6 @@ class ADM1_vaporParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "temperature": {"method": None},
                 "conc_mass_comp": {"method": None},
-            }
-        )
-        obj.define_custom_properties(
-            {
                 "pressure_sat": {"method": None},
             }
         )

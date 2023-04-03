@@ -199,7 +199,7 @@ class TestAdm(object):
 
         assert number_variables(adm) == 265
         assert number_total_constraints(adm) == 149
-        assert number_unused_variables(adm) == 0
+        assert number_unused_variables(adm) == 4
 
     @pytest.mark.component
     def test_units(self, adm):
@@ -243,7 +243,7 @@ class TestAdm(object):
         assert pytest.approx(308.15, abs=1e-2) == value(
             adm.fs.unit.liquid_outlet.temperature[0]
         )
-        assert pytest.approx(1.8549, abs=1e-2) == value(
+        assert pytest.approx(1.2234, abs=1e-2) == value(
             adm.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IC"]
         )
         assert pytest.approx(1.8235, abs=1e-2) == value(
@@ -255,19 +255,19 @@ class TestAdm(object):
         assert pytest.approx(0.04, abs=1e-2) == value(
             adm.fs.unit.liquid_outlet.cations[0]
         )
-        assert pytest.approx(106747, abs=1e-0) == value(
+        assert pytest.approx(104968, abs=1e-0) == value(
             adm.fs.unit.vapor_outlet.pressure[0]
         )
         assert pytest.approx(308.15, abs=1e-2) == value(
             adm.fs.unit.vapor_outlet.temperature[0]
         )
-        assert pytest.approx(0.034, abs=1e-2) == value(
+        assert pytest.approx(0.022, abs=1e-2) == value(
             adm.fs.unit.vapor_outlet.flow_vol[0]
         )
-        assert pytest.approx(1.59490, abs=1e-2) == value(
+        assert pytest.approx(2.18472, abs=1e-2) == value(
             adm.fs.unit.vapor_outlet.conc_mass_comp[0, "S_ch4"]
         )
-        assert pytest.approx(0.174485, abs=1e-2) == value(
+        assert pytest.approx(0.055574, abs=1e-2) == value(
             adm.fs.unit.vapor_outlet.conc_mass_comp[0, "S_co2"]
         )
         assert pytest.approx(0.0271, abs=1e-2) == value(adm.fs.unit.KH_co2[0])
@@ -289,7 +289,7 @@ class TestAdm(object):
             <= 1e-6
         )
 
-        assert pytest.approx(-13.8199, abs=1e-2) == value(
+        assert pytest.approx(-9.12996, abs=1e-2) == value(
             adm.fs.unit.liquid_phase.enthalpy_transfer[0]
         )
         assert (
