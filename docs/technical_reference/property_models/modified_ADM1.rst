@@ -1,10 +1,19 @@
 Modified ADM1 Property Package
 ==============================
+.. raw:: html
+
+    <style> .red {color:red} </style>
+    <style> .green {color:green} </style>
+
+.. role:: red
+
+.. role:: green
 
 This package is an extension of the base ADM1 model and implements properties and reactions of an anaerobic digestion model for wastewater treatment using an anaerobic digester as provided in
 `Batstone, D. J. et al. (2002) <https://iwaponline.com/wst/article-abstract/45/10/65/6034>`_ and `Rosen and Jeppsson (2006) <https://www.iea.lth.se/WWTmodels_download/TR_ADM1.pdf>`_.
 
 This Anaerobic Digestion Model no.1 (ADM1) makes the following modifications to the base ADM1 model as provided in: `Flores-Alsina, X. et al. (2016) <https://www.sciencedirect.com/science/article/pii/S0043135416301397>`_
+Throughout this documentation, text in :red:`red` have been removed from the Modified ADM1 model and text in :green:`green` have been added into the Modified ADM1 model.
    * tracks inorganic phosphorus (S_IP), polyhydroxyalkanoates (X_PHA), polyphosphates (X_PP), phosphorus accumulating organisms (X_PAO), potassium (S_K), and magnesium (S_Mg)
    * removes the composite material variable (X_C) and the associated disintegration reaction
    * adds 7 additional reactions
@@ -12,6 +21,7 @@ This Anaerobic Digestion Model no.1 (ADM1) makes the following modifications to 
 This modified ADM1 property/reaction package:
    * supports 'H2O', 'S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac', 'S_h2', 'S_ch4', 'S_IC', 'S_IN', 'S_IP', 'S_I', 'X_ch', 'X_pr', 'X_li', 'X_su', 'X_aa', 'X_fa', 'X_c4', 'X_pro', 'X_ac', 'X_h2', 'X_I', 'X_PHA', 'X_PP', 'X_PAO', 'S_K', 'S_Mg', 'S_cat', 'S_an', and 'S_co2' as components
    * supports only liquid and vapor phase
+   * only makes changes to the liquid phase modelling
 
 Sets
 ----
@@ -21,8 +31,8 @@ Sets
   "Components", ":math:`j`", "['H2O', 'S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac', 'S_h2', 'S_ch4', 'S_IC', 'S_IN', 'S_IP', 'S_I', 'X_ch', 'X_pr', 'X_li', 'X_su', 'X_aa', 'X_fa', 'X_c4', 'X_pro', 'X_ac', 'X_h2', 'X_I', 'X_PHA', 'X_PP', 'X_PAO', 'S_K', 'S_Mg', 'S_cat', 'S_an', 'S_co2']"
   "Phases", ":math:`p`", "['Liq', 'Vap']"
 
-Components
-----------
+Base ADM1 Components
+--------------------
 .. csv-table::
   :header: "Description", "Symbol", "Variable"
 
@@ -37,8 +47,9 @@ Components
   "Methane gas, S_ch4", ":math:`S_{ch4}`", "S_ch4"
   "Inorganic carbon, S_IC", ":math:`S_{IC}`", "S_IC"
   "Inorganic nitrogen, S_IN", ":math:`S_{IN}`", "S_IN"
-  "Inorganic phosphorus, S_IP", ":math:`S_{IP}`", "S_IP"
+  :green:`Inorganic phosphorus, S_IP`, ":math:`S_{IP}`", "S_IP"
   "Soluble inerts, S_I", ":math:`S_I`", "S_I"
+  :red:`Composites, X_c`, ":math:`X_c`", "X_c"
   "Carbohydrates, X_ch", ":math:`X_{ch}`", "X_ch"
   "Proteins, X_pr", ":math:`X_{pr}`", "X_pr"
   "Lipids, X_li", ":math:`X_{li}`", "X_li"
@@ -50,16 +61,39 @@ Components
   "Acetate degraders, X_ac", ":math:`X_{ac}`", "X_ac"
   "Hydrogen degraders, X_h2", ":math:`X_{h2}`", "X_h2"
   "Particulate inerts, X_I", ":math:`X_I`", "X_I"
+  :green:`Polyhydroxyalkanoates, X_PHA`, ":math:`X_{PHA}`", "X_PHA"
+  :green:`Polyphosphates, X_PP`, ":math:`X_{PP}`", "X_PP"
+  :green:`Phosphorus accumulating organisms, X_{PAO}", ":math:`X_PAO`", "X_PAO"
+  :green:`Potassium, S_K", ":math:`S_K`", "S_K"
+  :green:`Magnesium, S_Mg`, ":math:`S_{Mg}`", "S_Mg"
+  "Total cation equivalents concentration, S_cat", ":math:`S_{cat}`", "S_cat"
+  "Total anion equivalents concentration, S_an", ":math:`S_{an}`", "S_an"
+  "Carbon dioxide, S_co2", ":math:`S_{co2}`", "S_co2"
+
+**NOTE: S_h2 and S_ch4 have vapor phase and liquid phase, S_co2 only has vapor phase, and the other components only have liquid phase**
+
+Deleted Components
+------------------
+.. csv-table::
+  :header: "Description", "Symbol", "Variable"
+
+  "Composites, X_c", ":math:`X_c`", "X_c"
+
+**NOTE: This component is not present in the implementation of the Modified ADM1 model.**
+
+Additional Components
+---------------------
+.. csv-table::
+  :header: "Description", "Symbol", "Variable"
+
+  "Inorganic phosphorus, S_IP", ":math:`S_{IP}`", "S_IP"
   "Polyhydroxyalkanoates, X_PHA", ":math:`X_{PHA}`", "X_PHA"
   "Polyphosphates, X_PP", ":math:`X_{PP}`", "X_PP"
   "Phosphorus accumulating organisms, X_{PAO}", ":math:`X_PAO`", "X_PAO"
   "Potassium, S_K", ":math:`S_K`", "S_K"
   "Magnesium, S_Mg", ":math:`S_{Mg}`", "S_Mg"
-  "Total cation equivalents concentration, S_cat", ":math:`S_{cat}`", "S_cat"
-  "Total anion equivalents concentration, S_an", ":math:`S_{an}`", "S_an"
-  "Carbon dioxide carbon, S_co2", ":math:`S_{co2}`", "S_co2"
 
-**NOTE: S_h2 and S_ch4 have vapor phase and liquid phase, S_co2 only has vapor phase, and the other components only have liquid phase**
+**NOTE: These components have been added into the implementation of the Modified ADM1 model.**
 
 State variables
 ---------------

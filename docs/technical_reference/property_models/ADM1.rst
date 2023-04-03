@@ -47,7 +47,7 @@ Components
   "Particulate inerts, X_I", ":math:`X_I`", "X_I"
   "Total cation equivalents concentration, S_cat", ":math:`S_{cat}`", "S_cat"
   "Total anion equivalents concentration, S_an", ":math:`S_{an}`", "S_an"
-  "Carbon dioxide carbon, S_co2", ":math:`S_{co2}`", "S_co2"
+  "Carbon dioxide, S_co2", ":math:`S_{co2}`", "S_co2"
 
 **NOTE: S_h2 and S_ch4 have vapor phase and liquid phase, S_co2 only has vapor phase, and the other components only have liquid phase**
 
