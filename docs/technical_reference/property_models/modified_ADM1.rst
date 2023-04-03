@@ -16,7 +16,8 @@ This package is an extension of the base Anaerobic Digestion Model no.1 (ADM1) a
 `Batstone, D. J. et al. (2002) <https://iwaponline.com/wst/article-abstract/45/10/65/6034>`_ and `Rosen and Jeppsson (2006) <https://www.iea.lth.se/WWTmodels_download/TR_ADM1.pdf>`_.
 
 Throughout this documentation, text in :red:`red` have been removed in the Modified ADM1 model, text in :green:`green` have been added, and text in :blue:`blue` have been modified from its base ADM1 implementation.
-The following modifications have been made to the base ADM1 model as provided in: `Flores-Alsina, X. et al. (2016) <https://www.sciencedirect.com/science/article/pii/S0043135416301397>`_
+
+The following modifications have been made to the base ADM1 model as provided in `Flores-Alsina, X. et al. (2016) <https://www.sciencedirect.com/science/article/pii/S0043135416301397>`_:
    * tracks inorganic phosphorus (S_IP), polyhydroxyalkanoates (X_PHA), polyphosphates (X_PP), phosphorus accumulating organisms (X_PAO), potassium (S_K), and magnesium (S_Mg)
    * removes the composite material variable (X_C) and the associated disintegration reaction
    * adds 7 additional reactions
