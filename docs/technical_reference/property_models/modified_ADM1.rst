@@ -67,7 +67,7 @@ Components
   "Particulate inerts, X_I", ":math:`X_I`", "X_I"
   ":green:`Polyhydroxyalkanoates, X_PHA`", ":math:`X_{PHA}`", "X_PHA"
   ":green:`Polyphosphates, X_PP`", ":math:`X_{PP}`", "X_PP"
-  ":green:`Phosphorus accumulating organisms, X_{PAO}`", ":math:`X_PAO`", "X_PAO"
+  ":green:`Phosphorus accumulating organisms, X_PAO`", ":math:`X_{PAO}`", "X_PAO"
   ":green:`Potassium, S_K`", ":math:`S_K`", "S_K"
   ":green:`Magnesium, S_Mg`", ":math:`S_{Mg}`", "S_Mg"
   "Total cation equivalents concentration, S_cat", ":math:`S_{cat}`", "S_cat"
