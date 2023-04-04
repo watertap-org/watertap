@@ -365,21 +365,27 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         # Wilson and Geankoplis, Ind. Eng. Chem. Fundam., 5, 9 (1966)
 
         self.Sh_A = Param(
-            initialize=1.09,
+            initialize=2.4,
             units=pyunits.dimensionless,
             doc="Sherwood equation A parameter",
         )
 
         self.Sh_exp_A = Param(
-            initialize=0.33,
+            initialize=0.66,
             units=pyunits.dimensionless,
             doc="Sherwood equation exponent A",
         )
 
         self.Sh_exp_B = Param(
-            initialize=0.66,
+            initialize=0.34,
             units=pyunits.dimensionless,
             doc="Sherwood equation exponent B",
+        )
+
+        self.Sh_exp_C = Param(
+            initialize=0.33,
+            units=pyunits.dimensionless,
+            doc="Sherwood equation exponent C",
         )
 
         # Bed expansion is calculated as a fraction of the bed_depth
@@ -522,13 +528,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Resin bulk density",
         )
 
-        self.resin_particle_dens = Var(
-            initialize=1.4,
-            bounds=(0.5, None),
-            units=pyunits.kg / pyunits.L,
-            doc="Resin particle density",
-        )
-
         if self.config.isotherm == IsothermType.langmuir:
 
             self.langmuir = Var(
@@ -537,6 +536,19 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 bounds=(0, None),
                 units=pyunits.dimensionless,
                 doc="Langmuir isotherm coefficient",
+            )
+
+            self.num_transfer_units = Var(
+                initialize=1e6,
+                bounds=(0, None),
+                units=pyunits.dimensionless,
+                doc="Number of transfer units",
+            )
+
+            self.dimensionless_time = Var(
+                initialize=1,
+                units=pyunits.dimensionless,
+                doc="Dimensionless time",
             )
 
             if self.config.diffusion_control == DiffusionControlType.combination:
@@ -599,8 +611,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 self.target_ion_set,
                 initialize=1.5,
                 bounds=(0, None),
-                units=pyunits.dimensionless,
-                doc="Freundlich isotherm base",
+                units=pyunits.dimensionless,  # dynamic with freundlich_exp, ((length ** 3) * (mass ** -1)) ** freund_ninv,
+                doc="Freundlich isotherm base, provided in [m**3/kg]",
             )
 
             if self.config.diffusion_control == DiffusionControlType.combination:
@@ -615,16 +627,16 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
                 self.solid_mass_transfer_coeff = Var(
                     self.target_ion_set,
-                    initialize=1e-10,
+                    initialize=1e-6,
                     bounds=(0, None),
-                    units=pyunits.m / pyunits.s,
-                    doc="Diffusivity of ion through resin bead",  # Perry's
+                    units=pyunits.kg / (pyunits.s * pyunits.m**2),
+                    doc="Solid mass-transfer coefficient",
                 )
 
                 self.theta_tau = Var(
                     self.target_ion_set,
                     initialize=0.5,
-                    bounds=(None, None),
+                    bounds=(0, None),
                     units=pyunits.dimensionless,
                     doc="",
                 )
@@ -632,7 +644,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 self.c_norm_tau = Var(
                     self.target_ion_set,
                     initialize=0.5,
-                    bounds=(None, None),
+                    bounds=(0, None),
                     units=pyunits.dimensionless,
                     doc="",
                 )
@@ -640,7 +652,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 self.c_norm_interface = Var(
                     self.target_ion_set,
                     initialize=0.5,
-                    bounds=(None, None),
+                    bounds=(1e-5, None),
                     units=pyunits.dimensionless,
                     doc="",
                 )
@@ -648,7 +660,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 self.zeta = Var(
                     self.target_ion_set,
                     initialize=0.5,
-                    bounds=(None, None),
+                    bounds=(0, None),
                     units=pyunits.dimensionless,
                     doc="Zeta parameter (mechanical parameter)",
                 )
@@ -657,14 +669,26 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     self.target_ion_set,
                     initialize=0.5,
                     bounds=(None, None),
+                    units=pyunits.m**3 / pyunits.kg,
+                    doc="",
+                )
+
+                # self.eta = Var(
+                #     self.target_ion_set,
+                #     initialize=0.5,
+                #     bounds=(None, None),
+                #     units=pyunits.dimensionless,
+                #     doc="",
+                # )
+
+                self.eta_coeff_A = Param(
+                    initialize=0.808,
                     units=pyunits.dimensionless,
                     doc="",
                 )
 
-                self.eta = Var(
-                    self.target_ion_set,
-                    initialize=0.5,
-                    bounds=(None, None),
+                self.eta_coeff_B = Param(
+                    initialize=0.192,
                     units=pyunits.dimensionless,
                     doc="",
                 )
@@ -685,7 +709,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     doc="",
                 )
 
-                self.omega_2 = Var(
+                self.omega_3 = Var(
                     self.target_ion_set,
                     initialize=0.5,
                     bounds=(None, None),
@@ -693,13 +717,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     doc="",
                 )
 
-                self.IA = Var(
-                    self.target_ion_set,
-                    initialize=0.5,
-                    bounds=(None, None),
-                    units=pyunits.dimensionless,
-                    doc="",
-                )
+                # self.IA = Var(
+                #     self.target_ion_set,
+                #     initialize=0.5,
+                #     bounds=(None, None),
+                #     units=pyunits.dimensionless,
+                #     doc="",
+                # )
 
                 self.IA_regr_coeff1 = Param(
                     initialize=11.686,
@@ -731,13 +755,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     doc="IA regression intercept",
                 )
 
-                self.IB = Var(
-                    self.target_ion_set,
-                    initialize=0.5,
-                    bounds=(None, None),
-                    units=pyunits.dimensionless,
-                    doc="",
-                )
+                # self.IB = Var(
+                #     self.target_ion_set,
+                #     initialize=0.5,
+                #     bounds=(None, None),
+                #     units=pyunits.dimensionless,
+                #     doc="",
+                # )
 
                 self.IB_regr_coeff1 = Param(
                     initialize=12.546,
@@ -796,7 +820,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         self.bed_porosity = Var(
             initialize=0.5,
-            bounds=(0.45, 0.65),
+            bounds=(0.35, 0.75),
             units=pyunits.dimensionless,
             doc="Bed porosity",
         )
@@ -853,19 +877,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Contact time",
         )
 
-        self.num_transfer_units = Var(
-            initialize=1e6,
-            bounds=(0, None),
-            units=pyunits.dimensionless,
-            doc="Number of transfer units",
-        )
-
-        self.dimensionless_time = Var(
-            initialize=1,
-            units=pyunits.dimensionless,
-            doc="Dimensionless time",
-        )
-
         self.mass_in = Var(
             self.target_ion_set,
             initialize=1e6,
@@ -905,12 +916,12 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Interstitial velocity",
         )
 
-        self.holdup = Var(
-            initialize=100,
-            bounds=(90, 250),  # Inamuddin/Luqman
-            units=pyunits.dimensionless,
-            doc="Holdup percent",
-        )
+        # self.holdup = Var(
+        #     initialize=100,
+        #     bounds=(90, 250),  # Inamuddin/Luqman
+        #     units=pyunits.dimensionless,
+        #     doc="Holdup percent",
+        # )
 
         self.service_flow_rate = Var(
             initialize=10,
@@ -952,7 +963,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         self.Pe_bed = Var(
             initialize=1000,
             bounds=(
-                90,
+                None,
                 None,
             ),  # Inamuddin/Luqman - Pe_bed > ~100 considered to be plug flow
             units=pyunits.dimensionless,
@@ -975,6 +986,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             bounds=(0, None),  # Perry's
             doc="Regenerant dose required for regeneration per volume of resin [kg regenerant/m3 resin]",
         )
+
+        @self.Expression(doc="Column holdup")
+        def holdup(b):
+            vel_bed_dimensionless = pyunits.convert(
+                pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s)
+                * (pyunits.s / pyunits.cm),
+                to_units=pyunits.dimensionless,
+            )
+            return b.holdup_A + b.holdup_B * vel_bed_dimensionless**b.holdup_exp
 
         @self.Expression(doc="Bed expansion fraction from backwashing")
         def bed_expansion_frac(b):
@@ -1038,9 +1058,22 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def col_vol_tot(b):
             return b.number_columns * b.col_vol_per
 
-        @self.Expression(doc="Left hand side of constant pattern sol'n")
-        def lh(b):
-            return b.num_transfer_units * (b.dimensionless_time - 1)
+        if self.config.isotherm == IsothermType.langmuir:
+
+            @self.Expression(doc="Left hand side of constant pattern sol'n")
+            def lh(b):
+                return b.num_transfer_units * (b.dimensionless_time - 1)
+
+        if (
+            self.config.isotherm == IsothermType.freundlich
+            and self.config.diffusion_control == DiffusionControlType.combination
+        ):
+
+            @self.Expression(
+                self.target_ion_set, doc="Left hand side of constant pattern sol'n"
+            )
+            def lh(b, j):
+                return b.theta_tau[j] - b.c_norm_tau[j]
 
         @self.Expression(self.target_ion_set, doc="Rate coefficient")
         def rate_coeff(b, j):
@@ -1055,13 +1088,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 pyunits.convert(b.resin_bulk_dens, to_units=pyunits.kg / pyunits.m**3)
                 * b.rate_coeff[j]
             )
-
-        @self.Expression(
-            self.target_ion_set,
-            doc="Separation factor calc",
-        )
-        def separation_factor(b, j):
-            return 1 / b.langmuir[j]
 
         @self.Expression(
             doc="Bed volumes at breakthrough",
@@ -1147,6 +1173,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         if self.config.isotherm == IsothermType.langmuir:
 
+            @self.Expression(
+                self.target_ion_set,
+                doc="Separation factor calc",
+            )
+            def separation_factor(b, j):
+                return 1 / b.langmuir[j]
+
             @self.Constraint(
                 self.target_ion_set,
                 doc="Langmuir isotherm",
@@ -1155,16 +1188,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 return (1 / b.langmuir[j]) * (
                     b.c_norm[j] * (1 - b.resin_eq_capacity / b.resin_max_capacity)
                 ) == (b.resin_eq_capacity / b.resin_max_capacity * (1 - b.c_norm[j]))
-
-            @self.Constraint(doc="Partition ratio")
-            def eq_partition_ratio(b):
-                prop_in = b.process_flow.properties_in[0]
-                return b.partition_ratio == (
-                    b.resin_eq_capacity * b.resin_bulk_dens
-                ) / pyunits.convert(
-                    prop_in.conc_equiv_phase_comp["Liq", target_ion],
-                    to_units=pyunits.mol / pyunits.L,
-                )
 
             @self.Constraint(doc="Dimensionless time")
             def eq_dimensionless_time(b):
@@ -1253,9 +1276,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 def eq_phi_1(b, j):
                     return (
                         b.phi_1[j]
-                        == 1 / (1 - b.langmuir[j]) * log(b.c_norm_int[j])
-                        - b.langmuir[j] / (1 - b.langmuir[j]) * log(1 - b.c_norm_int[j])
-                        - log(b.langmuir[j] + (1 - b.langmuir[j]) * b.c_norm_int[j])
+                        == 1 / (1 - b.langmuir[j]) * log(b.c_norm_interface[j])
+                        - b.langmuir[j]
+                        / (1 - b.langmuir[j])
+                        * log(1 - b.c_norm_interface[j])
+                        - log(
+                            b.langmuir[j] + (1 - b.langmuir[j]) * b.c_norm_interface[j]
+                        )
                         - b.langmuir[j] / (1 - b.langmuir[j]) * log(b.langmuir[j])
                         + 1
                     )
@@ -1264,8 +1291,10 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 def eq_phi_2(b, j):
                     return (
                         b.phi_2[j]
-                        == b.langmuir[j] / (1 - b.langmuir[j]) * log(b.c_norm_int[j])
-                        - 1 / (1 - b.langmuir[j]) * log(1 - b.c_norm_int[j])
+                        == b.langmuir[j]
+                        / (1 - b.langmuir[j])
+                        * log(b.c_norm_interface[j])
+                        - 1 / (1 - b.langmuir[j]) * log(1 - b.c_norm_interface[j])
                         - 1
                     )
 
@@ -1276,15 +1305,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 # if self.config.diffusion_control == DiffusionControlType.combination:
 
                 @self.Constraint(self.target_ion_set, doc="C norm interface")
-                def eq_c_norm_int(b, j):
+                def eq_c_norm_interface(b, j):
                     a = b.xi[j] * (1 - b.langmuir[j])
                     bb = (b.xi[j] * b.langmuir[j] + b.eta[j]) - (b.xi[j] + b.eta[j]) * (
                         1 - b.langmuir[j] * b.c_norm[j]
                     )
                     c = -1 * (b.langmuir[j] * (b.xi[j] + b.eta[j]) * b.c_norm[j])
-                    return b.c_norm_int[j] == (-bb + (bb**2 - 4 * a * c) ** 0.5) / (
-                        2 * a
-                    )
+                    return b.c_norm_interface[j] == (
+                        -bb + (bb**2 - 4 * a * c) ** 0.5
+                    ) / (2 * a)
 
                 @self.Constraint(self.target_ion_set, doc="Solution")
                 def eq_constant_pattern_soln(b, j):
@@ -1297,22 +1326,32 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 @self.Constraint(self.target_ion_set, doc="C norm")
                 def eq_c_norm(b, j):
                     return b.c_norm[j] == (
-                        (b.xi[j] * b.langmuir[j] + b.eta[j]) * b.c_norm_int[j]
-                        + b.xi[j] * (1 - b.langmuir[j]) * b.c_norm_int[j] ** 2
+                        (b.xi[j] * b.langmuir[j] + b.eta[j]) * b.c_norm_interface[j]
+                        + b.xi[j] * (1 - b.langmuir[j]) * b.c_norm_interface[j] ** 2
                     ) / (
                         (b.xi[j] + b.eta[j])
-                        * (b.langmuir[j] + (1 - b.langmuir[j]) * b.c_norm_int[j])
+                        * (b.langmuir[j] + (1 - b.langmuir[j]) * b.c_norm_interface[j])
                     )
 
         if self.config.isotherm == IsothermType.freundlich:
 
             @self.Constraint(self.target_ion_set, doc="Freundlich isotherm")
             def eq_freundlich(b, j):
-                b.resin_eq_capacity / b.resin_max_capacity == b.c_norm[
-                    j
-                ] ** b.freundlich_exp[j]
+                prop_in = b.process_flow.properties_in[0]
+                return (
+                    b.resin_eq_capacity
+                    == b.freundlich_base[j]
+                    * prop_in.conc_equiv_phase_comp["Liq", j] ** b.freundlich_exp[j]
+                )
+                # return b.resin_eq_capacity / b.resin_max_capacity == b.c_norm[
+                #     j
+                # ] ** b.freundlich_exp[j]
 
             if self.config.diffusion_control == DiffusionControlType.combination:
+
+                @self.Expression(self.target_ion_set, doc="Eta")
+                def eta(b, j):
+                    return b.eta_coeff_A + b.eta_coeff_B * b.freundlich_exp[j]
 
                 @self.Constraint(self.target_ion_set, doc="Theta tau")
                 def eq_theta_tau(b, j):
@@ -1324,62 +1363,98 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 @self.Constraint(self.target_ion_set, doc="C norm tau")
                 def eq_c_norm_tau(b, j):
                     return b.c_norm_tau[j] == (
-                        b.solid_mass_transfer_coeff[j]
-                        * b.resin_surf_per_vol
-                        * b.gamma[j]
-                        * b.bed_depth
-                    ) / ((1 + 1 / b.zeta[j]) * b.vel_bed)
+                        (
+                            b.solid_mass_transfer_coeff[j]
+                            * b.resin_surf_per_vol
+                            * b.gamma[j]
+                        )
+                        / (1 + 1 / b.zeta[j])
+                    ) * (b.bed_depth / b.vel_bed)
+
+                @self.Constraint(
+                    self.target_ion_set, doc="Relative concentration - interface"
+                )
+                def eq_c_norm_interface(b, j):
+                    return b.c_norm[j] == (
+                        b.zeta[j] * b.c_norm_interface[j]
+                        + b.eta[j] * b.c_norm_interface[j] ** b.freundlich_exp[j]
+                    ) / (b.zeta[j] + b.eta[j])
+
+                # @self.Constraint(self.target_ion_set, doc="C norm")
+                # def eq_c_norm(b, j):
+                #     return b.c_norm[j] == (
+                #         b.zeta[j] * b.c_norm_interface[j]
+                #         + b.eta[j] * b.c_norm_interface[j] ** b.freundlich_exp[j]
+                #     ) / (b.zeta[j] + b.eta[j])
 
                 @self.Constraint(
                     self.target_ion_set, doc="Solid mass transfer coefficient"
                 )
                 def eq_solid_mass_transfer_coeff(b, j):
                     r = b.resin_diam / 2
-                    return b.solid_mass_transfer_coeff[j] == (
-                        15 * b.diff_resin_comp[j] * b.resin_bulk_dens
-                    ) / (r**2 * b.resin_surf_per_vol)
+                    return b.solid_mass_transfer_coeff[j] == pyunits.convert(
+                        (15 * b.diff_resin_comp[j] * b.resin_bulk_dens)
+                        / (r**2 * b.resin_surf_per_vol),
+                        to_units=pyunits.kg / (pyunits.m**2 * pyunits.s),
+                    )
 
                 @self.Constraint(self.target_ion_set, doc="Gamma")
                 def eq_gamma(b, j):
                     prop_in = b.process_flow.properties_in[0]
                     return (
                         b.gamma[j]
-                        == b.resin_max_capacity
-                        / prop_in.conc_equiv_phase_comp["Liq", j]
+                        == b.resin_eq_capacity / prop_in.conc_mol_phase_comp["Liq", j]
                     )
 
                 @self.Constraint(self.target_ion_set, doc="Zeta")
                 def eq_zeta(b, j):
-                    return b.zeta[j] == (
-                        b.fluid_mass_transfer_coeff[j] * b.resin_surf_per_vol
-                    ) / (
-                        b.solid_mass_transfer_coeff[j]
-                        * b.resin_surf_per_vol
-                        * b.gamma[j]
+                    return b.zeta[j] == (b.fluid_mass_transfer_coeff[j]) / (
+                        b.solid_mass_transfer_coeff[j] * b.gamma[j]
+                    )
+
+                @self.Expression(self.target_ion_set, doc="IA")
+                def IA(b, j):
+                    return (
+                        b.IA_regr_coeff1 * b.freundlich_exp[j] ** 4
+                        + b.IA_regr_coeff2 * b.freundlich_exp[j] ** 3
+                        + b.IA_regr_coeff3 * b.freundlich_exp[j] ** 2
+                        + b.IA_regr_coeff4 * b.freundlich_exp[j]
+                        + b.IA_regr_int
+                    )
+
+                @self.Expression(self.target_ion_set, doc="I_B")
+                def IB(b, j):
+                    return (
+                        b.IB_regr_coeff1 * b.freundlich_exp[j] ** 4
+                        + b.IB_regr_coeff2 * b.freundlich_exp[j] ** 3
+                        + b.IB_regr_coeff3 * b.freundlich_exp[j] ** 2
+                        + b.IB_regr_coeff4 * b.freundlich_exp[j]
+                        + b.IB_regr_int
                     )
 
                 @self.Constraint(self.target_ion_set, doc="Omega 1")
                 def eq_omega_1(b, j):
-                    return (
+                    return b.omega_1[j] == (
                         (
                             b.freundlich_exp[j]
                             / (b.freundlich_exp[j] - 1)
-                            * log(b.c_norm_int[j] ** (b.freundlich_exp[j] - 1) - 1)
+                            * log(
+                                b.c_norm_interface[j] ** (b.freundlich_exp[j] - 1) - 1
+                            )
                         )
                         + 1
-                        + b.I_A[j]
+                        + b.IA[j]
                         * (
-                            b.eta[j]
-                            / (b.zeta[j] + b.eta[j])
+                            (b.eta[j] / (b.zeta[j] + b.eta[j]))
                             * (b.freundlich_exp[j] ** 2 / (b.freundlich_exp[j] - 1))
                         )
                     )
 
                 @self.Constraint(self.target_ion_set, doc="Omega 2")
                 def eq_omega_2(b, j):
-                    return 1 / (b.freundlich_exp[j] - 1) * log(
-                        1 - b.c_norm_int[j] ** (1 - b.freundlich_exp[j])
-                    ) + b.I_B[j] * (
+                    return b.omega_2[j] == 1 / (b.freundlich_exp[j] - 1) * log(
+                        1 - b.c_norm_interface[j] ** (1 - b.freundlich_exp[j])
+                    ) + b.IB[j] * (
                         b.zeta[j]
                         / (b.zeta[j] + b.eta[j])
                         * 1
@@ -1388,46 +1463,150 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
                 @self.Constraint(self.target_ion_set, doc="Omega 3")
                 def eq_omega_3(b, j):
-                    return (
+                    return b.omega_3[j] == (
                         b.freundlich_exp[j]
                         - 1
                         + b.freundlich_exp[j]
                         / (b.freundlich_exp[j] - 1)
-                        * (b.I_A[j] + b.I_B[j])
+                        * (b.IA[j] + b.IB[j])
                     )
 
-                @self.Constraint(self.target_ion_set, doc="I_A")
-                def eq_IA(b, j):
-                    return (
-                        b.IA[j]
-                        == b.IA_regr_coeff1 * b.freundlich_exp[j] ** 4
-                        + b.IA_regr_coeff2 * b.freundlich_exp[j] ** 3
-                        + b.IA_regr_coeff3 * b.freundlich_exp[j] ** 2
-                        + b.IA_regr_coeff4 * b.freundlich_exp[j]
-                        + b.IA_regr_int
+                # @self.Expression(self.target_ion_set, doc="IA")
+                # def IA(b, j):
+                #     return (
+                #         b.IA_regr_coeff1 * b.freundlich_exp[j] ** 4
+                #         + b.IA_regr_coeff2 * b.freundlich_exp[j] ** 3
+                #         + b.IA_regr_coeff3 * b.freundlich_exp[j] ** 2
+                #         + b.IA_regr_coeff4 * b.freundlich_exp[j]
+                #         + b.IA_regr_int
+                #     )
+
+                # @self.Expression(self.target_ion_set, doc="I_B")
+                # def IB(b, j):
+                #     return (
+                #         b.IB_regr_coeff1 * b.freundlich_exp[j] ** 4
+                #         + b.IB_regr_coeff2 * b.freundlich_exp[j] ** 3
+                #         + b.IB_regr_coeff3 * b.freundlich_exp[j] ** 2
+                #         + b.IB_regr_coeff4 * b.freundlich_exp[j]
+                #         + b.IB_regr_int
+                #     )
+
+                # @self.Expression(self.target_ion_set, doc="Omega 1")
+                # def omega_1(b, j):
+                #     return (
+                #         (
+                #             b.freundlich_exp[j]
+                #             / (b.freundlich_exp[j] - 1)
+                #             * log(
+                #                 b.c_norm_interface[j] ** (b.freundlich_exp[j] - 1) - 1
+                #             )
+                #         )
+                #         + 1
+                #         + b.IA[j]
+                #         * (
+                #             (b.eta[j]
+                #             / (b.zeta[j] + b.eta[j]))
+                #             * (b.freundlich_exp[j] ** 2 / (b.freundlich_exp[j] - 1))
+                #         )
+                #     )
+
+                # @self.Expression(self.target_ion_set, doc="Omega 1")
+                # def omega_1(b, j):
+                #     Fr = b.freundlich_exp[j]
+                #     xi = b.c_norm_interface[j]
+                #     eta = b.eta[j]
+                #     zeta = b.zeta[j]
+                #     IA = b.IA[j]
+                #     return Fr / (Fr - 1) * log(xi ** (Fr - 1) -1) + 1 + eta / (zeta + eta) * (Fr**2 / (Fr - 1)) * IA
+
+                # @self.Expression(self.target_ion_set, doc="Omega 2")
+                # def omega_2(b, j):
+                #     Fr = b.freundlich_exp[j]
+                #     xi = b.c_norm_interface[j]
+                #     eta = b.eta[j]
+                #     zeta = b.zeta[j]
+                #     IB = b.IB[j]
+                #     return 1 / (Fr - 1) * log(1 - xi ** (1- Fr)) + zeta / (zeta + eta) *(1 / (Fr - 1)) * IB
+
+                # @self.Expression(self.target_ion_set, doc="Omega 3")
+                # def omega_3(b, j):
+                #     Fr = b.freundlich_exp[j]
+                #     xi = b.c_norm_interface[j]
+                #     eta = b.eta[j]
+                #     zeta = b.zeta[j]
+                #     IA = b.IA[j]
+                #     IB = b.IB[j]
+                #     return Fr - 1 + Fr /(Fr - 1) * (IA + IB)
+                # @self.Expression(self.target_ion_set, doc="Omega 2")
+                # def omega_2(b, j):
+                #     return 1 / (b.freundlich_exp[j] - 1) * log(
+                #         1 - b.c_norm_interface[j] ** (1 - b.freundlich_exp[j])
+                #     ) + b.IB[j] * (
+                #         b.zeta[j]
+                #         / (b.zeta[j] + b.eta[j])
+                #         * 1
+                #         / (b.freundlich_exp[j] - 1)
+                #     )
+
+                # @self.Expression(self.target_ion_set, doc="Omega 3")
+                # def omega_3(b, j):
+                #     return (
+                #         b.freundlich_exp[j]
+                #         - 1
+                #         + b.freundlich_exp[j]
+                #         / (b.freundlich_exp[j] - 1)
+                #         * (b.IA[j] + b.IB[j])
+                #     )
+
+                # @self.Constraint(self.target_ion_set, doc="IA")
+                # def eq_IA(b, j):
+                #     return (
+                #         b.IA[j]
+                #         == b.IA_regr_coeff1 * b.freundlich_exp[j] ** 4
+                #         + b.IA_regr_coeff2 * b.freundlich_exp[j] ** 3
+                #         + b.IA_regr_coeff3 * b.freundlich_exp[j] ** 2
+                #         + b.IA_regr_coeff4 * b.freundlich_exp[j]
+                #         + b.IA_regr_int
+                #     )
+
+                # @self.Constraint(self.target_ion_set, doc="I_B")
+                # def eq_IB(b, j):
+                #     return (
+                #         b.IB[j]
+                #         == b.IB_regr_coeff1 * b.freundlich_exp[j] ** 4
+                #         + b.IB_regr_coeff2 * b.freundlich_exp[j] ** 3
+                #         + b.IB_regr_coeff3 * b.freundlich_exp[j] ** 2
+                #         + b.IB_regr_coeff4 * b.freundlich_exp[j]
+                #         + b.IB_regr_int
+                #     )
+
+                # @self.Constraint(self.target_ion_set, doc="Eta")
+                # def eq_eta(b, j):
+                #     return (
+                #         b.eta[j] == b.eta_coeff_A + b.eta_coeff_B * b.freundlich_exp[j]
+                #     )
+
+                @self.Constraint(
+                    self.target_ion_set,
+                    doc="Constant pattern solution - Freundlich with combination diffusion controlling",
+                )
+                def eq_constant_pattern_soln(b, j):
+                    return b.theta_tau[j] - b.c_norm_tau[j] == (
+                        b.omega_1[j] * (1 / (1 + b.zeta[j]))
+                    ) + (b.omega_2[j] / b.eta[j]) * (b.zeta[j] / (1 + b.zeta[j])) + (
+                        (b.omega_3[j] / (1 + b.zeta[j]))
+                        * (b.zeta[j] / (b.zeta[j] + b.eta[j]))
                     )
 
-                @self.Constraint(self.target_ion_set, doc="I_B")
-                def eq_IB(b, j):
-                    return (
-                        b.IB[j]
-                        == b.IB_regr_coeff1 * b.freundlich_exp[j] ** 4
-                        + b.IB_regr_coeff2 * b.freundlich_exp[j] ** 3
-                        + b.IB_regr_coeff3 * b.freundlich_exp[j] ** 2
-                        + b.IB_regr_coeff4 * b.freundlich_exp[j]
-                        + b.IB_regr_int
-                    )
-
-                @self.Constraint(self.target_ion_set, doc="C norm")
-                def eq_c_norm(b, j):
-                    return b.c_norm[j] == (
-                        b.xi[j] * b.c_norm_int[j]
-                        + b.eta[j] * b.c_norm_int[j] ** b.freundlich_exp[j]
-                    ) / (b.xi[j] + b.eta[j])
-
-                @self.Constraint(self.target_ion_set, doc="Eta")
-                def eq_eta(b, j):
-                    return b.eta[j] == 0.808 + 0.192 * b.freundlich_exp[j]
+        @self.Constraint(doc="Partition ratio")
+        def eq_partition_ratio(b):
+            prop_in = b.process_flow.properties_in[0]
+            return b.partition_ratio == (
+                b.resin_eq_capacity * b.resin_bulk_dens
+            ) / pyunits.convert(
+                prop_in.conc_equiv_phase_comp["Liq", target_ion],
+                to_units=pyunits.mol / pyunits.L,
+            )
 
         @self.Constraint(
             self.target_ion_set,
@@ -1493,7 +1672,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 == b.Sh_A
                 * b.bed_porosity**b.Sh_exp_A
                 * b.Re**b.Sh_exp_B
-                * b.Sc[j] ** b.Sh_exp_B
+                * b.Sc[j] ** b.Sh_exp_C
             )
 
         @self.Constraint(doc="Bed Peclet number")
@@ -1514,17 +1693,17 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def eq_vel_inter(b):
             return b.vel_inter == b.vel_bed / b.bed_porosity
 
-        @self.Constraint(doc="Column holdup")
-        def eq_holdup(b):
-            vel_bed_dimensionless = pyunits.convert(
-                pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s)
-                * (pyunits.s / pyunits.cm),
-                to_units=pyunits.dimensionless,
-            )
-            return (
-                b.holdup
-                == b.holdup_A + b.holdup_B * vel_bed_dimensionless**b.holdup_exp
-            )
+        # @self.Constraint(doc="Column holdup")
+        # def eq_holdup(b):
+        #     vel_bed_dimensionless = pyunits.convert(
+        #         pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s)
+        #         * (pyunits.s / pyunits.cm),
+        #         to_units=pyunits.dimensionless,
+        #     )
+        #     return (
+        #         b.holdup
+        #         == b.holdup_A + b.holdup_B * vel_bed_dimensionless**b.holdup_exp
+        #     )
 
         @self.Constraint(doc="Resin surface area per vol")
         def eq_resin_surf_per_vol(b):
@@ -1704,6 +1883,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         super().calculate_scaling_factors()
 
         target_ion = self.config.target_ion
+        isotherm = self.config.isotherm
+        diff_type = self.config.diffusion_control
 
         if iscale.get_scaling_factor(self.resin_max_capacity) is None:
             iscale.set_scaling_factor(self.resin_max_capacity, 1)
@@ -1714,11 +1895,12 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.resin_unused_capacity) is None:
             iscale.set_scaling_factor(self.resin_unused_capacity, 1)
 
-        if iscale.get_scaling_factor(self.langmuir[target_ion]) is None:
-            iscale.set_scaling_factor(self.langmuir[target_ion], 10)
+        if isotherm == IsothermType.langmuir:
+            if iscale.get_scaling_factor(self.langmuir[target_ion]) is None:
+                iscale.set_scaling_factor(self.langmuir[target_ion], 10)
 
-        if iscale.get_scaling_factor(self.num_transfer_units) is None:
-            iscale.set_scaling_factor(self.num_transfer_units, 1e-3)
+            if iscale.get_scaling_factor(self.num_transfer_units) is None:
+                iscale.set_scaling_factor(self.num_transfer_units, 1e-3)
 
         if iscale.get_scaling_factor(self.partition_ratio) is None:
             iscale.set_scaling_factor(self.partition_ratio, 1e-3)
@@ -1755,8 +1937,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.resin_bulk_dens, 10)
 
-        iscale.set_scaling_factor(self.resin_particle_dens, 1)
-
         iscale.set_scaling_factor(self.resin_surf_per_vol, 1e-3)
 
         iscale.set_scaling_factor(self.bed_vol_tot, 0.1)
@@ -1788,15 +1968,23 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         iscale.set_scaling_factor(self.regen_dose, 1e-2)
 
         # transforming constraints
+        if isotherm == IsothermType.langmuir:
+            for ind, c in self.eq_num_transfer_units.items():
+                if iscale.get_scaling_factor(c) is None:
+                    sf = iscale.get_scaling_factor(self.num_transfer_units)
+                    iscale.constraint_scaling_transform(c, sf)
 
-        for ind, c in self.eq_num_transfer_units.items():
-            if iscale.get_scaling_factor(c) is None:
-                sf = iscale.get_scaling_factor(self.num_transfer_units)
-                iscale.constraint_scaling_transform(c, sf)
+            for ind, c in self.eq_constant_pattern_soln.items():
+                if iscale.get_scaling_factor(c) is None:
+                    sf = 1e-7
+                    iscale.constraint_scaling_transform(c, sf)
 
-        for ind, c in self.eq_constant_pattern_soln.items():
-            if iscale.get_scaling_factor(c) is None:
-                sf = 1e-7
+            for ind, c in self.eq_partition_ratio.items():
+                sf = iscale.get_scaling_factor(
+                    self.process_flow.properties_in[0].conc_equiv_phase_comp[
+                        "Liq", self.config.target_ion
+                    ]
+                )
                 iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_mass_transfer_solute.items():
@@ -1809,14 +1997,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         for ind, c in self.eq_fluid_mass_transfer_coeff.items():
             sf = iscale.get_scaling_factor(self.fluid_mass_transfer_coeff[ind])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for ind, c in self.eq_partition_ratio.items():
-            sf = iscale.get_scaling_factor(
-                self.process_flow.properties_in[0].conc_equiv_phase_comp[
-                    "Liq", self.config.target_ion
-                ]
-            )
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_mass_removed.items():
@@ -1842,7 +2022,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         var_dict["Usable Resin Capacity [eq/L]"] = self.resin_eq_capacity
         var_dict["Resin Particle Diameter"] = self.resin_diam
         var_dict["Resin Bulk Density"] = self.resin_bulk_dens
-        var_dict["Resin Particle Density"] = self.resin_particle_dens
         var_dict["Bed Volume"] = self.bed_vol
         var_dict["Bed Depth"] = self.bed_depth
         var_dict["Bed Porosity"] = self.bed_porosity
