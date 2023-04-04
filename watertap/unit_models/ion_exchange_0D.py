@@ -848,14 +848,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     doc="",
                 )
 
-                # self.IA = Var(
-                #     self.target_ion_set,
-                #     initialize=0.5,
-                #     bounds=(None, None),
-                #     units=pyunits.dimensionless,
-                #     doc="",
-                # )
-
                 self.IA_regr_coeff1 = Param(
                     initialize=11.686,
                     units=pyunits.dimensionless,
@@ -885,14 +877,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     units=pyunits.dimensionless,
                     doc="IA regression intercept",
                 )
-
-                # self.IB = Var(
-                #     self.target_ion_set,
-                #     initialize=0.5,
-                #     bounds=(None, None),
-                #     units=pyunits.dimensionless,
-                #     doc="",
-                # )
 
                 self.IB_regr_coeff1 = Param(
                     initialize=12.546,
@@ -1398,7 +1382,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
                 @self.Constraint(
                     self.target_ion_set,
-                    doc="Constant pattern solution - fluid film diffuion controlling",
+                    doc="Constant pattern solution for fluid-film diffuion controlling",
                 )
                 def eq_constant_pattern_soln(
                     b, j
@@ -1609,121 +1593,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                         * (b.IA[j] + b.IB[j])
                     )
 
-                # @self.Expression(self.target_ion_set, doc="IA")
-                # def IA(b, j):
-                #     return (
-                #         b.IA_regr_coeff1 * b.freundlich_exp[j] ** 4
-                #         + b.IA_regr_coeff2 * b.freundlich_exp[j] ** 3
-                #         + b.IA_regr_coeff3 * b.freundlich_exp[j] ** 2
-                #         + b.IA_regr_coeff4 * b.freundlich_exp[j]
-                #         + b.IA_regr_int
-                #     )
-
-                # @self.Expression(self.target_ion_set, doc="I_B")
-                # def IB(b, j):
-                #     return (
-                #         b.IB_regr_coeff1 * b.freundlich_exp[j] ** 4
-                #         + b.IB_regr_coeff2 * b.freundlich_exp[j] ** 3
-                #         + b.IB_regr_coeff3 * b.freundlich_exp[j] ** 2
-                #         + b.IB_regr_coeff4 * b.freundlich_exp[j]
-                #         + b.IB_regr_int
-                #     )
-
-                # @self.Expression(self.target_ion_set, doc="Omega 1")
-                # def omega_1(b, j):
-                #     return (
-                #         (
-                #             b.freundlich_exp[j]
-                #             / (b.freundlich_exp[j] - 1)
-                #             * log(
-                #                 b.c_norm_interface[j] ** (b.freundlich_exp[j] - 1) - 1
-                #             )
-                #         )
-                #         + 1
-                #         + b.IA[j]
-                #         * (
-                #             (b.eta[j]
-                #             / (b.zeta[j] + b.eta[j]))
-                #             * (b.freundlich_exp[j] ** 2 / (b.freundlich_exp[j] - 1))
-                #         )
-                #     )
-
-                # @self.Expression(self.target_ion_set, doc="Omega 1")
-                # def omega_1(b, j):
-                #     Fr = b.freundlich_exp[j]
-                #     xi = b.c_norm_interface[j]
-                #     eta = b.eta[j]
-                #     zeta = b.zeta[j]
-                #     IA = b.IA[j]
-                #     return Fr / (Fr - 1) * log(xi ** (Fr - 1) -1) + 1 + eta / (zeta + eta) * (Fr**2 / (Fr - 1)) * IA
-
-                # @self.Expression(self.target_ion_set, doc="Omega 2")
-                # def omega_2(b, j):
-                #     Fr = b.freundlich_exp[j]
-                #     xi = b.c_norm_interface[j]
-                #     eta = b.eta[j]
-                #     zeta = b.zeta[j]
-                #     IB = b.IB[j]
-                #     return 1 / (Fr - 1) * log(1 - xi ** (1- Fr)) + zeta / (zeta + eta) *(1 / (Fr - 1)) * IB
-
-                # @self.Expression(self.target_ion_set, doc="Omega 3")
-                # def omega_3(b, j):
-                #     Fr = b.freundlich_exp[j]
-                #     xi = b.c_norm_interface[j]
-                #     eta = b.eta[j]
-                #     zeta = b.zeta[j]
-                #     IA = b.IA[j]
-                #     IB = b.IB[j]
-                #     return Fr - 1 + Fr /(Fr - 1) * (IA + IB)
-                # @self.Expression(self.target_ion_set, doc="Omega 2")
-                # def omega_2(b, j):
-                #     return 1 / (b.freundlich_exp[j] - 1) * log(
-                #         1 - b.c_norm_interface[j] ** (1 - b.freundlich_exp[j])
-                #     ) + b.IB[j] * (
-                #         b.zeta[j]
-                #         / (b.zeta[j] + b.eta[j])
-                #         * 1
-                #         / (b.freundlich_exp[j] - 1)
-                #     )
-
-                # @self.Expression(self.target_ion_set, doc="Omega 3")
-                # def omega_3(b, j):
-                #     return (
-                #         b.freundlich_exp[j]
-                #         - 1
-                #         + b.freundlich_exp[j]
-                #         / (b.freundlich_exp[j] - 1)
-                #         * (b.IA[j] + b.IB[j])
-                #     )
-
-                # @self.Constraint(self.target_ion_set, doc="IA")
-                # def eq_IA(b, j):
-                #     return (
-                #         b.IA[j]
-                #         == b.IA_regr_coeff1 * b.freundlich_exp[j] ** 4
-                #         + b.IA_regr_coeff2 * b.freundlich_exp[j] ** 3
-                #         + b.IA_regr_coeff3 * b.freundlich_exp[j] ** 2
-                #         + b.IA_regr_coeff4 * b.freundlich_exp[j]
-                #         + b.IA_regr_int
-                #     )
-
-                # @self.Constraint(self.target_ion_set, doc="I_B")
-                # def eq_IB(b, j):
-                #     return (
-                #         b.IB[j]
-                #         == b.IB_regr_coeff1 * b.freundlich_exp[j] ** 4
-                #         + b.IB_regr_coeff2 * b.freundlich_exp[j] ** 3
-                #         + b.IB_regr_coeff3 * b.freundlich_exp[j] ** 2
-                #         + b.IB_regr_coeff4 * b.freundlich_exp[j]
-                #         + b.IB_regr_int
-                #     )
-
-                # @self.Constraint(self.target_ion_set, doc="Eta")
-                # def eq_eta(b, j):
-                #     return (
-                #         b.eta[j] == b.eta_coeff_A + b.eta_coeff_B * b.freundlich_exp[j]
-                #     )
-
                 @self.Constraint(
                     self.target_ion_set,
                     doc="Constant pattern solution - Freundlich with combination diffusion controlling",
@@ -1870,14 +1739,14 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 )
                 res = opt.solve(self, tee=slc.tee)
 
-        init_log.info("Initialization Step 3 {}.".format(idaeslog.condition(res)))
+        init_log.info("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
         # Release Inlet state
         self.process_flow.properties_in.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
-        # if not check_optimal_termination(res):
-        #     raise InitializationError(f"Unit model {self.name} failed to initialize")
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -1977,8 +1846,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.regen_dose) is None:
             iscale.set_scaling_factor(self.regen_dose, 1e-2)
 
-        ## unique scaling for isotherm type
-
+        # unique scaling for isotherm type
         if isotherm == IsothermType.langmuir:
             if iscale.get_scaling_factor(self.langmuir[target_ion]) is None:
                 iscale.set_scaling_factor(self.langmuir[target_ion], 10)
@@ -1986,8 +1854,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             if iscale.get_scaling_factor(self.num_transfer_units) is None:
                 iscale.set_scaling_factor(self.num_transfer_units, 1e-3)
 
-        ## unique scaling for diffusion control type
-
+        # unique scaling for diffusion control type
         if diff_type == DiffusionControlType.solid:
             if iscale.get_scaling_factor(self.diff_resin_comp[target_ion]) is None:
                 iscale.set_scaling_factor(self.diff_resin_comp[target_ion], 1e11)
