@@ -29,7 +29,6 @@ from watertap.examples.flowsheets.full_treatment_train.util import (
 import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_single_stage as single_stage
 from watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_single_stage import (
     build,
-    build_components,
     scale,
     initialize,
     report,
