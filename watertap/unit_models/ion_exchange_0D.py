@@ -312,6 +312,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         self.add_outlet_port(name="outlet", block=self.process_flow)
         self.add_outlet_port(name="regen", block=self.regeneration_stream)
 
+        # ==========PARAMETERS==========
+
         self.underdrain_h = Param(
             initialize=0.5, units=pyunits.m, doc="Underdrain height"  # Perry's
         )
@@ -490,6 +492,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="Number of redundant columns for ion exchange process",
         )
+        # ==========VARIABLES==========
+        # COMMON TO ALL CONFIGURATIONS
 
         # ====== Resin variables ====== #
 
@@ -528,6 +532,187 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Resin bulk density",
         )
 
+        self.resin_surf_per_vol = Var(
+            initialize=3333.33,
+            bounds=(0, 1e5),
+            units=pyunits.m**-1,
+            doc="Resin surface area per volume",
+        )
+
+        self.regen_dose = Var(
+            initialize=300,
+            units=pyunits.kg / pyunits.m**3,
+            bounds=(0, None),
+            doc="Regenerant dose required for regeneration per volume of resin [kg regenerant/m3 resin]",
+        )
+
+        self.c_norm = Var(
+            self.target_ion_set,
+            initialize=0.5,
+            bounds=(0, 1),
+            units=pyunits.dimensionless,
+            doc="Dimensionless (relative) concentration [Ct/C0] of target ion",
+        )
+
+        self.col_height_to_diam_ratio = Var(
+            initialize=1,
+            bounds=(1, 100),
+            units=pyunits.dimensionless,
+            doc="Min ratio of bed depth to diameter",
+        )
+        self.bed_vol_tot = Var(
+            initialize=2,
+            units=pyunits.m**3,
+            doc="Total bed volume",
+        )
+
+        self.bed_depth = Var(
+            initialize=1, bounds=(0, 3.0), units=pyunits.m, doc="Bed depth"  # EPA-WBS
+        )
+
+        self.bed_porosity = Var(
+            initialize=0.5,
+            bounds=(0.35, 0.75),
+            units=pyunits.dimensionless,
+            doc="Bed porosity",
+        )
+
+        self.col_height = Var(
+            initialize=2,
+            bounds=(0.0, 4.5),  # EPA-WBS
+            units=pyunits.m,
+            doc="Column height",
+        )
+
+        self.col_diam = Var(
+            initialize=0.5,
+            bounds=(0.0, 4.5),  # EPA-WBS
+            units=pyunits.m,
+            doc="Column diameter",
+        )
+
+        self.number_columns = Var(
+            initialize=2,
+            bounds=(1, None),
+            units=pyunits.dimensionless,
+            doc="Number of operational columns for ion exchange process",
+        )
+
+        self.partition_ratio = Var(
+            initialize=100,
+            bounds=(0, None),
+            units=pyunits.dimensionless,
+            doc="Partition ratio",
+        )
+
+        self.fluid_mass_transfer_coeff = Var(
+            self.target_ion_set,
+            initialize=1e-3,
+            bounds=(0, None),
+            units=pyunits.m / pyunits.s,
+            doc="Fluid mass transfer coefficient",
+        )
+
+        self.t_breakthru = Var(
+            initialize=1e5,  # DOW, ~7 weeks max breakthru time
+            bounds=(0, None),
+            units=pyunits.s,
+            doc="Breakthrough time",
+        )
+
+        self.t_contact = Var(
+            initialize=520,
+            bounds=(120, None),
+            units=pyunits.s,
+            doc="Contact time",
+        )
+
+        self.mass_in = Var(
+            self.target_ion_set,
+            initialize=1e6,
+            bounds=(0, None),
+            units=pyunits.mol,
+            doc="Influent mass of ion",
+        )
+
+        self.mass_removed = Var(
+            self.target_ion_set,
+            initialize=1e6,
+            bounds=(0, None),
+            units=pyunits.mol,
+            doc="Sorbed mass of ion",
+        )
+
+        self.mass_out = Var(
+            self.target_ion_set,
+            initialize=1,
+            bounds=(0, None),
+            units=pyunits.mol,
+            doc="Effluent mass of ion",
+        )
+
+        # ====== Hydrodynamic variables ====== #
+
+        self.vel_bed = Var(
+            initialize=0.0086,
+            bounds=(0, 0.01),  # MWH, Perry's
+            units=pyunits.m / pyunits.s,
+            doc="Velocity through resin bed",
+        )
+
+        self.vel_inter = Var(
+            initialize=0.01,
+            units=pyunits.m / pyunits.s,
+            doc="Interstitial velocity",
+        )
+
+        self.service_flow_rate = Var(
+            initialize=10,
+            bounds=(1, 40),
+            units=pyunits.hr**-1,
+            doc="Service flow rate [BV/hr]",
+        )
+
+        # ====== Dimensionless variables ====== #
+
+        self.Re = Var(
+            initialize=4.3,
+            bounds=(0.001, 60),  # Perry's - bounds relevant to Sh regression
+            units=pyunits.dimensionless,
+            doc="Reynolds number",
+        )
+
+        self.Sc = Var(
+            ion_set,
+            initialize=700,
+            units=pyunits.dimensionless,
+            doc="Schmidt number",
+        )
+
+        self.Sh = Var(
+            self.target_ion_set,
+            initialize=30,
+            units=pyunits.dimensionless,
+            doc="Sherwood number",
+        )
+
+        self.Pe_p = Var(
+            initialize=0.1,
+            # bounds=(0.01, 0.8),
+            units=pyunits.dimensionless,
+            doc="Peclet particle number",
+        )
+
+        self.Pe_bed = Var(
+            initialize=1000,
+            bounds=(
+                None,
+                None,
+            ),  # Inamuddin/Luqman - Pe_bed > ~100 considered to be plug flow
+            units=pyunits.dimensionless,
+            doc="Peclet bed number",
+        )
+
         if self.config.isotherm == IsothermType.langmuir:
 
             self.langmuir = Var(
@@ -550,24 +735,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 units=pyunits.dimensionless,
                 doc="Dimensionless time",
             )
-
-            if self.config.diffusion_control == DiffusionControlType.combination:
-
-                self.phi_1 = Var(
-                    self.target_ion_set,
-                    initialize=0.5,
-                    bounds=(None, None),
-                    units=pyunits.dimensionless,
-                    doc="",
-                )
-
-                self.phi_2 = Var(
-                    self.target_ion_set,
-                    initialize=0.5,
-                    bounds=(None, None),
-                    units=pyunits.dimensionless,
-                    doc="",
-                )
 
             if self.config.diffusion_control == DiffusionControlType.solid:
 
@@ -597,7 +764,33 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     doc="Diffusivity of ion through resin bead",  # Perry's
                 )
 
+            if self.config.diffusion_control == DiffusionControlType.combination:
+
+                self.phi_1 = Var(
+                    self.target_ion_set,
+                    initialize=0.5,
+                    bounds=(None, None),
+                    units=pyunits.dimensionless,
+                    doc="",
+                )
+
+                self.phi_2 = Var(
+                    self.target_ion_set,
+                    initialize=0.5,
+                    bounds=(None, None),
+                    units=pyunits.dimensionless,
+                    doc="",
+                )
+
+                self.eta_coeff = Param(
+                    initialize=0.192,
+                    units=pyunits.dimensionless,
+                    doc="Driving force correction factor A coefficient",
+                )
+
         if self.config.isotherm == IsothermType.freundlich:
+
+            ## VARIABLES FOR ALL FREUNDLICH ISOTHERM BASED MODEL CONFIGURATIONS
 
             self.freundlich_exp = Var(
                 self.target_ion_set,
@@ -617,69 +810,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
             if self.config.diffusion_control == DiffusionControlType.combination:
 
-                self.diff_resin_comp = Var(
-                    self.target_ion_set,
-                    initialize=1e-10,  # default value is for Na+ in 8% crosslinked polystyrene-divinylbenzene IX resin (Dowex 50) @ 25% (approximate) -- Perry's Table 16-8
-                    bounds=(0, None),
-                    units=pyunits.m**2 / pyunits.s,
-                    doc="Diffusivity of ion through resin bead",  # Perry's
-                )
-
-                self.solid_mass_transfer_coeff = Var(
-                    self.target_ion_set,
-                    initialize=1e-6,
-                    bounds=(0, None),
-                    units=pyunits.kg / (pyunits.s * pyunits.m**2),
-                    doc="Solid mass-transfer coefficient",
-                )
-
-                self.theta_tau = Var(
-                    self.target_ion_set,
-                    initialize=0.5,
-                    bounds=(0, None),
-                    units=pyunits.dimensionless,
-                    doc="",
-                )
-
-                self.c_norm_tau = Var(
-                    self.target_ion_set,
-                    initialize=0.5,
-                    bounds=(0, None),
-                    units=pyunits.dimensionless,
-                    doc="",
-                )
-
-                self.c_norm_interface = Var(
-                    self.target_ion_set,
-                    initialize=0.5,
-                    bounds=(1e-5, None),
-                    units=pyunits.dimensionless,
-                    doc="",
-                )
-
-                self.zeta = Var(
-                    self.target_ion_set,
-                    initialize=0.5,
-                    bounds=(0, None),
-                    units=pyunits.dimensionless,
-                    doc="Zeta parameter (mechanical parameter)",
-                )
-
-                self.gamma = Var(
-                    self.target_ion_set,
-                    initialize=0.5,
-                    bounds=(None, None),
-                    units=pyunits.m**3 / pyunits.kg,
-                    doc="",
-                )
-
-                # self.eta = Var(
-                #     self.target_ion_set,
-                #     initialize=0.5,
-                #     bounds=(None, None),
-                #     units=pyunits.dimensionless,
-                #     doc="",
-                # )
+                # PARAMETERS AND VARIABLES UNIQUE TO FREUNDLICH, COMBINATION DIFFUSION CONTROL TYPE
 
                 self.eta_coeff_A = Param(
                     initialize=0.808,
@@ -793,202 +924,70 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     doc="IB regression intercept",
                 )
 
-        self.resin_surf_per_vol = Var(
-            initialize=3333.33,
-            bounds=(0, 1e5),
-            units=pyunits.m**-1,
-            doc="Resin surface area per volume",
-        )
+        if self.config.diffusion_control == DiffusionControlType.combination:
 
-        # ====== Bed/Column variables ====== #
+            # VARIABLES FOR COMBINATION DIFFUSION CONTROL MECHANISMS
+            # FOR BOTH LANGMUIR AND FREUNDLICH ISOTHERMS
 
-        self.col_height_to_diam_ratio = Var(
-            initialize=1,
-            bounds=(1, 100),
-            units=pyunits.dimensionless,
-            doc="Min ratio of bed depth to diameter",
-        )
-        self.bed_vol_tot = Var(
-            initialize=2,
-            units=pyunits.m**3,
-            doc="Total bed volume",
-        )
+            self.diff_resin_comp = Var(
+                self.target_ion_set,
+                initialize=1e-10,  # default value is for Na+ in 8% crosslinked polystyrene-divinylbenzene IX resin (Dowex 50) @ 25% (approximate) -- Perry's Table 16-8
+                bounds=(0, None),
+                units=pyunits.m**2 / pyunits.s,
+                doc="Diffusivity of ion through resin bead",
+            )
 
-        self.bed_depth = Var(
-            initialize=1, bounds=(0, 3.0), units=pyunits.m, doc="Bed depth"  # EPA-WBS
-        )
+            self.solid_mass_transfer_coeff = Var(
+                self.target_ion_set,
+                initialize=1e-6,
+                bounds=(0, None),
+                units=pyunits.kg / (pyunits.s * pyunits.m**2),
+                doc="Solid mass-transfer coefficient",
+            )
 
-        self.bed_porosity = Var(
-            initialize=0.5,
-            bounds=(0.35, 0.75),
-            units=pyunits.dimensionless,
-            doc="Bed porosity",
-        )
+            self.theta_tau = Var(
+                self.target_ion_set,
+                initialize=0.5,
+                bounds=(0, None),
+                units=pyunits.dimensionless,
+                doc="",
+            )
 
-        self.col_height = Var(
-            initialize=2,
-            bounds=(0.0, 4.5),  # EPA-WBS
-            units=pyunits.m,
-            doc="Column height",
-        )
+            self.c_norm_tau = Var(
+                self.target_ion_set,
+                initialize=0.5,
+                bounds=(0, None),
+                units=pyunits.dimensionless,
+                doc="",
+            )
 
-        self.col_diam = Var(
-            initialize=0.5,
-            bounds=(0.0, 4.5),  # EPA-WBS
-            units=pyunits.m,
-            doc="Column diameter",
-        )
+            self.c_norm_interface = Var(
+                self.target_ion_set,
+                initialize=0.5,
+                bounds=(1e-5, None),
+                units=pyunits.dimensionless,
+                doc="",
+            )
 
-        self.number_columns = Var(
-            initialize=2,
-            bounds=(1, None),
-            units=pyunits.dimensionless,
-            doc="Number of operational columns for ion exchange process",
-        )
+            self.zeta = Var(
+                self.target_ion_set,
+                initialize=0.5,
+                bounds=(0, None),
+                units=pyunits.dimensionless,
+                doc="Zeta parameter (mechanical parameter)",
+            )
 
-        # ====== Kinetic variables ====== #
-
-        self.partition_ratio = Var(
-            initialize=100,
-            bounds=(0, None),
-            units=pyunits.dimensionless,
-            doc="Partition ratio",
-        )
-
-        self.fluid_mass_transfer_coeff = Var(
-            self.target_ion_set,
-            initialize=1e-3,
-            bounds=(0, None),
-            units=pyunits.m / pyunits.s,
-            doc="Fluid mass transfer coefficient",
-        )
-
-        self.t_breakthru = Var(
-            initialize=1e5,  # DOW, ~7 weeks max breakthru time
-            bounds=(0, None),
-            units=pyunits.s,
-            doc="Breakthrough time",
-        )
-
-        self.t_contact = Var(
-            initialize=520,
-            bounds=(120, None),
-            units=pyunits.s,
-            doc="Contact time",
-        )
-
-        self.mass_in = Var(
-            self.target_ion_set,
-            initialize=1e6,
-            bounds=(0, None),
-            units=pyunits.mol,
-            doc="Influent mass of ion",
-        )
-
-        self.mass_removed = Var(
-            self.target_ion_set,
-            initialize=1e6,
-            bounds=(0, None),
-            units=pyunits.mol,
-            doc="Sorbed mass of ion",
-        )
-
-        self.mass_out = Var(
-            self.target_ion_set,
-            initialize=1,
-            bounds=(0, None),
-            units=pyunits.mol,
-            doc="Effluent mass of ion",
-        )
-
-        # ====== Hydrodynamic variables ====== #
-
-        self.vel_bed = Var(
-            initialize=0.0086,
-            bounds=(0, 0.01),  # MWH, Perry's
-            units=pyunits.m / pyunits.s,
-            doc="Velocity through resin bed",
-        )
-
-        self.vel_inter = Var(
-            initialize=0.01,
-            units=pyunits.m / pyunits.s,
-            doc="Interstitial velocity",
-        )
-
-        # self.holdup = Var(
-        #     initialize=100,
-        #     bounds=(90, 250),  # Inamuddin/Luqman
-        #     units=pyunits.dimensionless,
-        #     doc="Holdup percent",
-        # )
-
-        self.service_flow_rate = Var(
-            initialize=10,
-            bounds=(1, 40),
-            units=pyunits.hr**-1,
-            doc="Service flow rate [BV/hr]",
-        )
-
-        # ====== Dimensionless variables ====== #
-
-        self.Re = Var(
-            initialize=4.3,
-            bounds=(0.001, 60),  # Perry's - bounds relevant to Sh regression
-            units=pyunits.dimensionless,
-            doc="Reynolds number",
-        )
-
-        self.Sc = Var(
-            ion_set,
-            initialize=700,
-            units=pyunits.dimensionless,
-            doc="Schmidt number",
-        )
-
-        self.Sh = Var(
-            self.target_ion_set,
-            initialize=30,
-            units=pyunits.dimensionless,
-            doc="Sherwood number",
-        )
-
-        self.Pe_p = Var(
-            initialize=0.1,
-            # bounds=(0.01, 0.8),
-            units=pyunits.dimensionless,
-            doc="Peclet particle number",
-        )
-
-        self.Pe_bed = Var(
-            initialize=1000,
-            bounds=(
-                None,
-                None,
-            ),  # Inamuddin/Luqman - Pe_bed > ~100 considered to be plug flow
-            units=pyunits.dimensionless,
-            doc="Peclet bed number",
-        )
-
-        self.c_norm = Var(
-            self.target_ion_set,
-            initialize=0.5,
-            bounds=(0, 1),
-            units=pyunits.dimensionless,
-            doc="Dimensionless concentration",
-        )
-
-        # ====== Regeneration ====== #
-
-        self.regen_dose = Var(
-            initialize=300,
-            units=pyunits.kg / pyunits.m**3,
-            bounds=(0, None),  # Perry's
-            doc="Regenerant dose required for regeneration per volume of resin [kg regenerant/m3 resin]",
-        )
+            self.gamma = Var(
+                self.target_ion_set,
+                initialize=0.5,
+                bounds=(None, None),
+                units=pyunits.m**3 / pyunits.kg,
+                doc="",
+            )
+        # ==========EXPRESSIONS==========
 
         @self.Expression(doc="Column holdup")
-        def holdup(b):
+        def holdup(b):  # Eq. 3.332, Inglezakis + Poulopoulos
             vel_bed_dimensionless = pyunits.convert(
                 pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s)
                 * (pyunits.s / pyunits.cm),
@@ -1012,6 +1011,14 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def bed_vol(b):
             return b.bed_vol_tot / b.number_columns
 
+        @self.Expression(doc="Backwashing flow rate")
+        def bw_flow(b):
+            return (
+                pyunits.convert(b.bw_rate, to_units=pyunits.m / pyunits.s)
+                * (b.bed_vol / b.bed_depth)
+                * b.number_columns
+            )
+
         @self.Expression(doc="Rinse flow rate")
         def rinse_flow(b):
             return b.vel_bed * (b.bed_vol / b.bed_depth) * b.number_columns
@@ -1027,14 +1034,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Expression(doc="Cycle time")
         def t_cycle(b):
             return b.t_breakthru + b.t_waste
-
-        @self.Expression(doc="Backwashing flow rate")
-        def bw_flow(b):
-            return (
-                pyunits.convert(b.bw_rate, to_units=pyunits.m / pyunits.s)
-                * (b.bed_vol / b.bed_depth)
-                * b.number_columns
-            )
 
         @self.Expression(self.target_ion_set, doc="Mass out calculation from CV")
         def mass_out_check(b, j):
@@ -1057,23 +1056,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Expression(doc="Total column volume required")
         def col_vol_tot(b):
             return b.number_columns * b.col_vol_per
-
-        if self.config.isotherm == IsothermType.langmuir:
-
-            @self.Expression(doc="Left hand side of constant pattern sol'n")
-            def lh(b):
-                return b.num_transfer_units * (b.dimensionless_time - 1)
-
-        if (
-            self.config.isotherm == IsothermType.freundlich
-            and self.config.diffusion_control == DiffusionControlType.combination
-        ):
-
-            @self.Expression(
-                self.target_ion_set, doc="Left hand side of constant pattern sol'n"
-            )
-            def lh(b, j):
-                return b.theta_tau[j] - b.c_norm_tau[j]
 
         @self.Expression(self.target_ion_set, doc="Rate coefficient")
         def rate_coeff(b, j):
@@ -1169,9 +1151,11 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 to_units=pyunits.kilowatts,
             )
 
-        # =========== EQUILIBRIUM ===========
-
         if self.config.isotherm == IsothermType.langmuir:
+
+            @self.Expression(doc="Left hand side of constant pattern sol'n")
+            def lh(b):
+                return b.num_transfer_units * (b.dimensionless_time - 1)
 
             @self.Expression(
                 self.target_ion_set,
@@ -1180,17 +1164,208 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             def separation_factor(b, j):
                 return 1 / b.langmuir[j]
 
+        if (
+            self.config.isotherm == IsothermType.freundlich
+            and self.config.diffusion_control == DiffusionControlType.combination
+        ):
+
+            @self.Expression(
+                self.target_ion_set, doc="Left hand side of constant pattern sol'n"
+            )
+            def lh(b, j):
+                return b.theta_tau[j] - b.c_norm_tau[j]
+
+        # ==========CONSTRAINTS==========
+        # COMMON TO ALL CONFIGURATIONS
+
+        @self.Constraint(doc="Partition ratio")
+        def eq_partition_ratio(b):
+            prop_in = b.process_flow.properties_in[0]
+            return b.partition_ratio == (
+                b.resin_eq_capacity * b.resin_bulk_dens
+            ) / pyunits.convert(
+                prop_in.conc_equiv_phase_comp["Liq", target_ion],
+                to_units=pyunits.mol / pyunits.L,
+            )
+
+        @self.Constraint(
+            self.target_ion_set,
+            doc="Mass transfer term for solutes",
+        )
+        def eq_mass_transfer_solute(b, j):
+            prop_in = b.process_flow.properties_in[0]
+            return (1 - b.mass_out[j] / b.mass_in[j]) * prop_in.get_material_flow_terms(
+                "Liq", j
+            ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
+
+        for j in inerts:
+            self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
+            self.regeneration_stream[0].get_material_flow_terms("Liq", j).fix(0)
+
+        @self.Constraint(
+            self.target_ion_set, doc="Mass transfer for regeneration stream"
+        )
+        def eq_mass_transfer_target(b, j):
+            regen = b.regeneration_stream[0]
+            return (
+                regen.get_material_flow_terms("Liq", j)
+                == -b.process_flow.mass_transfer_term[0, "Liq", j]
+            )
+
+        @self.Constraint(
+            doc="Isothermal assumption for absorbed contaminant",
+        )
+        def eq_isothermal_regeneration_stream(b):
+            return (
+                b.process_flow.properties_in[0].temperature
+                == b.regeneration_stream[0].temperature
+            )
+
+        @self.Constraint(
+            doc="Isobaric assumption for absorbed contaminant",
+        )
+        def eq_isobaric_regeneration_stream(b):
+            return (
+                b.process_flow.properties_in[0].pressure
+                == b.regeneration_stream[0].pressure
+            )
+
+        # =========== DIMENSIONLESS ===========
+
+        @self.Constraint(doc="Reynolds number")
+        def eq_Re(b):  # Eq. 3.358, Inglezakis + Poulopoulos
+            prop_in = b.process_flow.properties_in[0]
+            return b.Re == (b.vel_bed * b.resin_diam) / prop_in.visc_k_phase["Liq"]
+
+        @self.Constraint(self.target_ion_set, doc="Schmidt number")
+        def eq_Sc(b, j):  # Eq. 3.359, Inglezakis + Poulopoulos
+            prop_in = b.process_flow.properties_in[0]
+            return (
+                b.Sc[j]
+                == prop_in.visc_k_phase["Liq"] / prop_in.diffus_phase_comp["Liq", j]
+            )
+
+        @self.Constraint(self.target_ion_set, doc="Sherwood number")
+        def eq_Sh(b, j):  # Eq. 3.346, Inglezakis + Poulopoulos
+            return (
+                b.Sh[j]
+                == b.Sh_A
+                * b.bed_porosity**b.Sh_exp_A
+                * b.Re**b.Sh_exp_B
+                * b.Sc[j] ** b.Sh_exp_C
+            )
+
+        @self.Constraint(doc="Bed Peclet number")
+        def eq_Pe_bed(b):
+            return b.Pe_bed == b.Pe_p * (b.bed_depth / b.resin_diam)
+
+        @self.Constraint(doc="Particle Peclet number")
+        def eq_Pe_p(b):  # Eq. 3.313, Inglezakis + Poulopoulos, for downflow
+            return b.Pe_p == b.Pe_p_A * b.Re**b.Pe_p_exp
+
+        # =========== RESIN & COLUMN ===========
+
+        @self.Constraint(doc="Resin capacity mass balance")
+        def eq_resin_cap_balance(b):
+            return b.resin_max_capacity == b.resin_unused_capacity + b.resin_eq_capacity
+
+        @self.Constraint(doc="Interstitial velocity")
+        def eq_vel_inter(b):
+            return b.vel_inter == b.vel_bed / b.bed_porosity
+
+        @self.Constraint(doc="Resin surface area per vol")
+        def eq_resin_surf_per_vol(b):
+            return b.resin_surf_per_vol == (6 * (1 - b.bed_porosity)) / b.resin_diam
+
+        @self.Constraint(doc="Contact time")
+        def eq_t_contact(b):
+            return b.t_contact == b.bed_depth / b.vel_inter
+
+        @self.Constraint(doc="Service flow rate")
+        def eq_service_flow_rate(b):
+            prop_in = b.process_flow.properties_in[0]
+            return (
+                b.service_flow_rate
+                == pyunits.convert(
+                    prop_in.flow_vol_phase["Liq"],
+                    to_units=pyunits.m**3 / pyunits.hr,
+                )
+                / b.bed_vol_tot
+            )
+
+        @self.Constraint(doc="Flow through bed constraint")
+        def eq_bed_flow(b):
+            prop_in = b.process_flow.properties_in[0]
+            return (b.bed_depth) / b.vel_bed == (
+                (b.bed_vol_tot) / (prop_in.flow_vol_phase["Liq"])
+            )
+
+        @self.Constraint(doc="Column height")
+        def eq_col_height(b):
+            return (
+                b.col_height
+                == b.bed_depth + b.distributor_h + b.underdrain_h + b.bed_expansion_h
+            )
+
+        @self.Constraint(doc="Column volume calculated from bed volume")
+        def eq_col_vol_per(b):
+            return (
+                b.bed_depth * Constants.pi * (b.col_diam / 2) ** 2
+                == b.bed_vol_tot / b.number_columns
+            )
+
+        @self.Constraint(doc="Column height to diameter ratio")
+        def eq_col_height_to_diam_ratio(b):
+            return b.col_height_to_diam_ratio == b.col_height / b.col_diam
+
+        # =========== KINETICS ===========
+
+        @self.Constraint(self.target_ion_set, doc="Fluid mass transfer coefficient")
+        def eq_fluid_mass_transfer_coeff(b, j):
+            prop_in = b.process_flow.properties_in[0]
+            return (
+                b.fluid_mass_transfer_coeff[j]
+                == (prop_in.diffus_phase_comp["Liq", j] * b.Sh[j]) / b.resin_diam
+            )
+
+        # =========== MASS BALANCE ===========
+
+        @self.Constraint(self.target_ion_set, doc="Mass in")
+        def eq_mass_in(b, j):
+            prop_in = b.process_flow.properties_in[0]
+            return (
+                b.mass_in[j] == prop_in.flow_equiv_phase_comp["Liq", j] * b.t_breakthru
+            )
+
+        @self.Constraint(self.target_ion_set, doc="Removed total mass of ion")
+        def eq_mass_removed(b, j):
+            return b.mass_removed[j] == pyunits.convert(
+                b.resin_eq_capacity * b.resin_bulk_dens * b.bed_vol_tot,
+                to_units=pyunits.mol,
+            )
+
+        @self.Constraint(self.target_ion_set, doc="Mass out")
+        def eq_mass_out(b, j):
+            prop_out = b.process_flow.properties_out[0]
+            return b.mass_out[j] == b.mass_in[j] - b.mass_removed[j]
+
+        if self.config.isotherm == IsothermType.langmuir:
+
+            ## CONSTRAINTS FOR ALL LANGMUIR CONFIGURATIONS
+
             @self.Constraint(
                 self.target_ion_set,
                 doc="Langmuir isotherm",
             )
-            def eq_langmuir(b, j):
+            def eq_langmuir(b, j):  # Eq. 4.12, Inglezakis + Poulopoulos
                 return (1 / b.langmuir[j]) * (
                     b.c_norm[j] * (1 - b.resin_eq_capacity / b.resin_max_capacity)
                 ) == (b.resin_eq_capacity / b.resin_max_capacity * (1 - b.c_norm[j]))
 
             @self.Constraint(doc="Dimensionless time")
-            def eq_dimensionless_time(b):
+            def eq_dimensionless_time(
+                b,
+            ):  # Eqs. 16-120, 16-129, Perry's; Eq. 4.136, Inglezakis + Poulopoulos
                 return (
                     b.dimensionless_time
                     == (
@@ -1202,13 +1377,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
             if self.config.diffusion_control == DiffusionControlType.liquid:
 
+                # CONSTRAINTS FOR LANGMUIR FLUID-FILM DIFFUSION CONTROLLING CONFIGURATIONS
+
                 @self.Constraint(
                     self.target_ion_set,
                     doc="Number of mass-transfer units for fluid-film controlling diffusion",
                 )
                 def eq_num_transfer_units(
                     b, j
-                ):  # External mass transfer, Perry's Table 16-13
+                ):  # External mass transfer, Perry's Table 16-13; Eq. 4.137, Inglezakis + Poulopoulos
                     return (
                         b.num_transfer_units
                         == (
@@ -1221,7 +1398,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
                 @self.Constraint(
                     self.target_ion_set,
-                    doc="Constant pattern sol'n - fluid film diffuion controlling",
+                    doc="Constant pattern solution - fluid film diffuion controlling",
                 )
                 def eq_constant_pattern_soln(
                     b, j
@@ -1235,10 +1412,12 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
             if self.config.diffusion_control == DiffusionControlType.solid:
 
+                # CONSTRAINTS FOR LANGMUIR SOLID DIFFUSION CONTROLLING CONFIGURATIONS
+
                 @self.Expression(
                     self.target_ion_set, doc="Driving force correction factor equation"
                 )
-                def phi_solid(b, j):
+                def phi_solid(b, j):  # Eq. 4.142, Inglezakis + Poulopoulos
                     return b.phi_solid_coeff_A / (
                         1 - b.phi_solid_coeff_B * b.langmuir[j] ** b.phi_solid_coeff_C
                     )
@@ -1249,7 +1428,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 )
                 def eq_num_transfer_units(
                     b, j
-                ):  # External mass transfer, Perry's Table 16-13
+                ):  # External mass transfer, Perry's Table 16-13; Eq. 4.139, Inglezakis + Poulopoulos
                     r = b.resin_diam / 2
                     return b.num_transfer_units == (
                         15 * b.diff_resin_comp[j] * b.partition_ratio * b.bed_depth
@@ -1257,11 +1436,11 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
                 @self.Constraint(
                     self.target_ion_set,
-                    doc="Constant pattern sol'n - solid diffusion controlling",
+                    doc="Constant pattern solution - solid diffusion controlling",
                 )
                 def eq_constant_pattern_soln(
                     b, j
-                ):  # Solid diffusion control, _____ ADD REFERENCE _____, Inglezakis + Poulopoulos
+                ):  # Eq. 4.141, Inglezakis + Poulopoulos
                     return b.num_transfer_units * (b.dimensionless_time - 1) == (
                         1 / b.phi_solid[j]
                     ) * (
@@ -1272,68 +1451,75 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
             if self.config.diffusion_control == DiffusionControlType.combination:
 
+                # CONSTRAINTS FOR LANGMUIR COMBINED DIFFUSION CONTROLLING CONFIGURATIONS
+
+                @self.Expression(self.target_ion_set, doc="Eta")
+                def eq_eta(b, j):  # Eq. 4.164, Inglezakis + Poulopoulos
+                    return 1 - b.eta_coeff * (1 - b.langmuir[j]) ** 3
+
                 @self.Constraint(self.target_ion_set, doc="Phi 1")
-                def eq_phi_1(b, j):
-                    return (
-                        b.phi_1[j]
-                        == 1 / (1 - b.langmuir[j]) * log(b.c_norm_interface[j])
-                        - b.langmuir[j]
+                def eq_phi_1(b, j):  # Eq. 4.162, Inglezakis + Poulopoulos
+                    term1 = 1 / (1 - b.langmuir[j]) * log(b.c_norm_interface[j])
+                    term2 = (
+                        b.langmuir[j]
                         / (1 - b.langmuir[j])
                         * log(1 - b.c_norm_interface[j])
-                        - log(
-                            b.langmuir[j] + (1 - b.langmuir[j]) * b.c_norm_interface[j]
-                        )
-                        - b.langmuir[j] / (1 - b.langmuir[j]) * log(b.langmuir[j])
-                        + 1
                     )
+                    term3 = log(
+                        b.langmuir[j] + (1 - b.langmuir[j]) * b.c_norm_interface[j]
+                    )
+                    term4 = b.langmuir[j] / (1 - b.langmuir[j]) * log(b.langmuir[j])
+                    return b.phi_1[j] == term1 - term2 - term3 - term4 + 1
 
                 @self.Constraint(self.target_ion_set, doc="Phi 2")
-                def eq_phi_2(b, j):
-                    return (
-                        b.phi_2[j]
-                        == b.langmuir[j]
-                        / (1 - b.langmuir[j])
-                        * log(b.c_norm_interface[j])
-                        - 1 / (1 - b.langmuir[j]) * log(1 - b.c_norm_interface[j])
-                        - 1
+                def eq_phi_2(b, j):  # Eq. 4.163, Inglezakis + Poulopoulos
+                    term1 = (
+                        b.langmuir[j] / (1 - b.langmuir[j]) * log(b.c_norm_interface[j])
                     )
+                    term2 = 1 / (1 - b.langmuir[j]) * log(1 - b.c_norm_interface[j])
+                    return b.phi_2[j] == term1 - term2 - 1
 
-                @self.Constraint(self.target_ion_set, doc="Eta")
-                def eq_eta(b, j):
-                    return b.eta[j] == 1 - 0.192 * (1 - b.langmuir[j]) ** 3
-
-                # if self.config.diffusion_control == DiffusionControlType.combination:
-
-                @self.Constraint(self.target_ion_set, doc="C norm interface")
-                def eq_c_norm_interface(b, j):
-                    a = b.xi[j] * (1 - b.langmuir[j])
-                    bb = (b.xi[j] * b.langmuir[j] + b.eta[j]) - (b.xi[j] + b.eta[j]) * (
-                        1 - b.langmuir[j] * b.c_norm[j]
-                    )
-                    c = -1 * (b.langmuir[j] * (b.xi[j] + b.eta[j]) * b.c_norm[j])
+                @self.Constraint(
+                    self.target_ion_set, doc="Relative concentration at interface"
+                )
+                def eq_c_norm_interface(b, j):  # Eq. 4.180, Inglezakis + Poulopoulos
+                    a = b.zeta[j] * (1 - b.langmuir[j])
+                    bb = (b.zeta[j] * b.langmuir[j] + b.eta[j]) - (
+                        b.zeta[j] + b.eta[j]
+                    ) * (1 - b.langmuir[j] * b.c_norm[j])
+                    c = -1 * (b.langmuir[j] * (b.zeta[j] + b.eta[j]) * b.c_norm[j])
                     return b.c_norm_interface[j] == (
                         -bb + (bb**2 - 4 * a * c) ** 0.5
                     ) / (2 * a)
 
-                @self.Constraint(self.target_ion_set, doc="Solution")
-                def eq_constant_pattern_soln(b, j):
+                @self.Constraint(
+                    self.target_ion_set,
+                    doc="Constant pattern solution - combined diffusion controlling mechanisms",
+                )  #
+                def eq_constant_pattern_soln(
+                    b, j
+                ):  # Eq. 4.161, Inglezakis + Poulopoulos
                     return b.theta_tau[j] - b.c_norm_tau[j] == 1 / (
-                        1 + b.xi[j]
+                        1 + b.zeta[j]
                     ) * b.phi_1[j] + (
-                        b.xi[j] / (1 + b.xi[j]) * (1 / b.eta[j]) * b.phi_2[j]
+                        b.zeta[j] / (1 + b.zeta[j]) * (1 / b.eta[j]) * b.phi_2[j]
                     )
 
-                @self.Constraint(self.target_ion_set, doc="C norm")
-                def eq_c_norm(b, j):
+                @self.Constraint(
+                    self.target_ion_set, doc="Relative concentration equation"
+                )
+                def eq_c_norm(b, j):  # Eq. 4.178, Inglezakis + Poulopoulos
                     return b.c_norm[j] == (
-                        (b.xi[j] * b.langmuir[j] + b.eta[j]) * b.c_norm_interface[j]
-                        + b.xi[j] * (1 - b.langmuir[j]) * b.c_norm_interface[j] ** 2
+                        (b.zeta[j] * b.langmuir[j] + b.eta[j]) * b.c_norm_interface[j]
+                        + b.zeta[j] * (1 - b.langmuir[j]) * b.c_norm_interface[j] ** 2
                     ) / (
-                        (b.xi[j] + b.eta[j])
+                        (b.zeta[j] + b.eta[j])
                         * (b.langmuir[j] + (1 - b.langmuir[j]) * b.c_norm_interface[j])
                     )
 
         if self.config.isotherm == IsothermType.freundlich:
+
+            # CONSTRAINTS FOR ALL FREUNDLICH CONFIGURATIONS
 
             @self.Constraint(self.target_ion_set, doc="Freundlich isotherm")
             def eq_freundlich(b, j):
@@ -1349,71 +1535,23 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
             if self.config.diffusion_control == DiffusionControlType.combination:
 
+                # CONSTRAINTS FOR FREUNDLICH COMBINED DIFFUSION CONTROLLING CONFIGURATIONS
+
                 @self.Expression(self.target_ion_set, doc="Eta")
-                def eta(b, j):
+                def eta(b, j):  # Eq. 4.169, Inglezakis + Poulopoulos
                     return b.eta_coeff_A + b.eta_coeff_B * b.freundlich_exp[j]
-
-                @self.Constraint(self.target_ion_set, doc="Theta tau")
-                def eq_theta_tau(b, j):
-                    return b.theta_tau[j] == (
-                        (b.solid_mass_transfer_coeff[j] * b.resin_surf_per_vol)
-                        / (b.resin_bulk_dens * (1 + 1 / b.zeta[j]))
-                    ) * (b.t_breakthru - ((b.bed_porosity * b.bed_depth) / b.vel_bed))
-
-                @self.Constraint(self.target_ion_set, doc="C norm tau")
-                def eq_c_norm_tau(b, j):
-                    return b.c_norm_tau[j] == (
-                        (
-                            b.solid_mass_transfer_coeff[j]
-                            * b.resin_surf_per_vol
-                            * b.gamma[j]
-                        )
-                        / (1 + 1 / b.zeta[j])
-                    ) * (b.bed_depth / b.vel_bed)
 
                 @self.Constraint(
                     self.target_ion_set, doc="Relative concentration - interface"
                 )
-                def eq_c_norm_interface(b, j):
+                def eq_c_norm_interface(b, j):  # Eq. 4.179, Inglezakis + Poulopoulos
                     return b.c_norm[j] == (
                         b.zeta[j] * b.c_norm_interface[j]
                         + b.eta[j] * b.c_norm_interface[j] ** b.freundlich_exp[j]
                     ) / (b.zeta[j] + b.eta[j])
 
-                # @self.Constraint(self.target_ion_set, doc="C norm")
-                # def eq_c_norm(b, j):
-                #     return b.c_norm[j] == (
-                #         b.zeta[j] * b.c_norm_interface[j]
-                #         + b.eta[j] * b.c_norm_interface[j] ** b.freundlich_exp[j]
-                #     ) / (b.zeta[j] + b.eta[j])
-
-                @self.Constraint(
-                    self.target_ion_set, doc="Solid mass transfer coefficient"
-                )
-                def eq_solid_mass_transfer_coeff(b, j):
-                    r = b.resin_diam / 2
-                    return b.solid_mass_transfer_coeff[j] == pyunits.convert(
-                        (15 * b.diff_resin_comp[j] * b.resin_bulk_dens)
-                        / (r**2 * b.resin_surf_per_vol),
-                        to_units=pyunits.kg / (pyunits.m**2 * pyunits.s),
-                    )
-
-                @self.Constraint(self.target_ion_set, doc="Gamma")
-                def eq_gamma(b, j):
-                    prop_in = b.process_flow.properties_in[0]
-                    return (
-                        b.gamma[j]
-                        == b.resin_eq_capacity / prop_in.conc_mol_phase_comp["Liq", j]
-                    )
-
-                @self.Constraint(self.target_ion_set, doc="Zeta")
-                def eq_zeta(b, j):
-                    return b.zeta[j] == (b.fluid_mass_transfer_coeff[j]) / (
-                        b.solid_mass_transfer_coeff[j] * b.gamma[j]
-                    )
-
                 @self.Expression(self.target_ion_set, doc="IA")
-                def IA(b, j):
+                def IA(b, j):  # Eq. 4.170, Inglezakis + Poulopoulos
                     return (
                         b.IA_regr_coeff1 * b.freundlich_exp[j] ** 4
                         + b.IA_regr_coeff2 * b.freundlich_exp[j] ** 3
@@ -1423,7 +1561,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     )
 
                 @self.Expression(self.target_ion_set, doc="I_B")
-                def IB(b, j):
+                def IB(b, j):  # Eq. 4.171, Inglezakis + Poulopoulos
                     return (
                         b.IB_regr_coeff1 * b.freundlich_exp[j] ** 4
                         + b.IB_regr_coeff2 * b.freundlich_exp[j] ** 3
@@ -1433,7 +1571,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     )
 
                 @self.Constraint(self.target_ion_set, doc="Omega 1")
-                def eq_omega_1(b, j):
+                def eq_omega_1(b, j):  # Eq. 4.166, Inglezakis + Poulopoulos
                     return b.omega_1[j] == (
                         (
                             b.freundlich_exp[j]
@@ -1451,7 +1589,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     )
 
                 @self.Constraint(self.target_ion_set, doc="Omega 2")
-                def eq_omega_2(b, j):
+                def eq_omega_2(b, j):  # Eq. 4.167, Inglezakis + Poulopoulos
                     return b.omega_2[j] == 1 / (b.freundlich_exp[j] - 1) * log(
                         1 - b.c_norm_interface[j] ** (1 - b.freundlich_exp[j])
                     ) + b.IB[j] * (
@@ -1462,7 +1600,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     )
 
                 @self.Constraint(self.target_ion_set, doc="Omega 3")
-                def eq_omega_3(b, j):
+                def eq_omega_3(b, j):  # Eq. 4.168, Inglezakis + Poulopoulos
                     return b.omega_3[j] == (
                         b.freundlich_exp[j]
                         - 1
@@ -1590,7 +1728,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     self.target_ion_set,
                     doc="Constant pattern solution - Freundlich with combination diffusion controlling",
                 )
-                def eq_constant_pattern_soln(b, j):
+                def eq_constant_pattern_soln(
+                    b, j
+                ):  # Eq. 4.165, Inglezakis + Poulopoulos
                     return b.theta_tau[j] - b.c_norm_tau[j] == (
                         b.omega_1[j] * (1 / (1 + b.zeta[j]))
                     ) + (b.omega_2[j] / b.eta[j]) * (b.zeta[j] / (1 + b.zeta[j])) + (
@@ -1598,188 +1738,48 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                         * (b.zeta[j] / (b.zeta[j] + b.eta[j]))
                     )
 
-        @self.Constraint(doc="Partition ratio")
-        def eq_partition_ratio(b):
-            prop_in = b.process_flow.properties_in[0]
-            return b.partition_ratio == (
-                b.resin_eq_capacity * b.resin_bulk_dens
-            ) / pyunits.convert(
-                prop_in.conc_equiv_phase_comp["Liq", target_ion],
-                to_units=pyunits.mol / pyunits.L,
-            )
+        if self.config.diffusion_control == DiffusionControlType.combination:
 
-        @self.Constraint(
-            self.target_ion_set,
-            doc="Mass transfer term for solutes",
-        )
-        def eq_mass_transfer_solute(b, j):
-            prop_in = b.process_flow.properties_in[0]
-            return (1 - b.mass_out[j] / b.mass_in[j]) * prop_in.get_material_flow_terms(
-                "Liq", j
-            ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
+            # CONSTRAINTS COMMON TO ALL COMBINATION DIFFUSION CONTROL CONFIGURATIONS
 
-        for j in inerts:
-            self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
-            self.regeneration_stream[0].get_material_flow_terms("Liq", j).fix(0)
+            @self.Constraint(self.target_ion_set, doc="Theta tau")
+            def eq_theta_tau(b, j):  # Eq. 4.172, Inglezakis + Poulopoulos
+                return b.theta_tau[j] == (
+                    (b.solid_mass_transfer_coeff[j] * b.resin_surf_per_vol)
+                    / (b.resin_bulk_dens * (1 + 1 / b.zeta[j]))
+                ) * (b.t_breakthru - ((b.bed_porosity * b.bed_depth) / b.vel_bed))
 
-        @self.Constraint(
-            self.target_ion_set, doc="Mass transfer for regeneration stream"
-        )
-        def eq_mass_transfer_target(b, j):
-            regen = b.regeneration_stream[0]
-            return (
-                regen.get_material_flow_terms("Liq", j)
-                == -b.process_flow.mass_transfer_term[0, "Liq", j]
-            )
+            @self.Constraint(self.target_ion_set, doc="C norm tau")
+            def eq_c_norm_tau(b, j):  # Eq. 4.173, Inglezakis + Poulopoulos
+                return b.c_norm_tau[j] == (
+                    (b.solid_mass_transfer_coeff[j] * b.resin_surf_per_vol * b.gamma[j])
+                    / (1 + 1 / b.zeta[j])
+                ) * (b.bed_depth / b.vel_bed)
 
-        @self.Constraint(
-            doc="Isothermal assumption for absorbed contaminant",
-        )
-        def eq_isothermal_regeneration_stream(b):
-            return (
-                b.process_flow.properties_in[0].temperature
-                == b.regeneration_stream[0].temperature
-            )
-
-        @self.Constraint(
-            doc="Isobaric assumption for absorbed contaminant",
-        )
-        def eq_isobaric_regeneration_stream(b):
-            return (
-                b.process_flow.properties_in[0].pressure
-                == b.regeneration_stream[0].pressure
-            )
-
-        # =========== DIMENSIONLESS ===========
-
-        @self.Constraint(doc="Reynolds number")
-        def eq_Re(b):
-            prop_in = b.process_flow.properties_in[0]
-            return b.Re == (b.vel_bed * b.resin_diam) / prop_in.visc_k_phase["Liq"]
-
-        @self.Constraint(self.target_ion_set, doc="Schmidt number")
-        def eq_Sc(b, j):
-            prop_in = b.process_flow.properties_in[0]
-            return (
-                b.Sc[j]
-                == prop_in.visc_k_phase["Liq"] / prop_in.diffus_phase_comp["Liq", j]
-            )
-
-        @self.Constraint(self.target_ion_set, doc="Sherwood number")
-        def eq_Sh(b, j):
-            return (
-                b.Sh[j]
-                == b.Sh_A
-                * b.bed_porosity**b.Sh_exp_A
-                * b.Re**b.Sh_exp_B
-                * b.Sc[j] ** b.Sh_exp_C
-            )
-
-        @self.Constraint(doc="Bed Peclet number")
-        def eq_Pe_bed(b):
-            return b.Pe_bed == b.Pe_p * (b.bed_depth / b.resin_diam)
-
-        @self.Constraint(doc="Particle Peclet number")
-        def eq_Pe_p(b):
-            return b.Pe_p == b.Pe_p_A * b.Re**b.Pe_p_exp
-
-        # =========== RESIN & COLUMN ===========
-
-        @self.Constraint(doc="Resin capacity mass balance")
-        def eq_resin_cap_balance(b):
-            return b.resin_max_capacity == b.resin_unused_capacity + b.resin_eq_capacity
-
-        @self.Constraint(doc="Interstitial velocity")
-        def eq_vel_inter(b):
-            return b.vel_inter == b.vel_bed / b.bed_porosity
-
-        # @self.Constraint(doc="Column holdup")
-        # def eq_holdup(b):
-        #     vel_bed_dimensionless = pyunits.convert(
-        #         pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s)
-        #         * (pyunits.s / pyunits.cm),
-        #         to_units=pyunits.dimensionless,
-        #     )
-        #     return (
-        #         b.holdup
-        #         == b.holdup_A + b.holdup_B * vel_bed_dimensionless**b.holdup_exp
-        #     )
-
-        @self.Constraint(doc="Resin surface area per vol")
-        def eq_resin_surf_per_vol(b):
-            return b.resin_surf_per_vol == (6 * (1 - b.bed_porosity)) / b.resin_diam
-
-        @self.Constraint(doc="Contact time")
-        def eq_t_contact(b):
-            return b.t_contact == b.bed_depth / b.vel_inter
-
-        @self.Constraint(doc="Service flow rate")
-        def eq_service_flow_rate(b):
-            prop_in = b.process_flow.properties_in[0]
-            return (
-                b.service_flow_rate
-                == pyunits.convert(
-                    prop_in.flow_vol_phase["Liq"],
-                    to_units=pyunits.m**3 / pyunits.hr,
+            @self.Constraint(self.target_ion_set, doc="Solid mass transfer coefficient")
+            def eq_solid_mass_transfer_coeff(
+                b, j
+            ):  # Eq. 4.174, Inglezakis + Poulopoulos
+                r = b.resin_diam / 2
+                return b.solid_mass_transfer_coeff[j] == pyunits.convert(
+                    (15 * b.diff_resin_comp[j] * b.resin_bulk_dens)
+                    / (r**2 * b.resin_surf_per_vol),
+                    to_units=pyunits.kg / (pyunits.m**2 * pyunits.s),
                 )
-                / b.bed_vol_tot
-            )
 
-        @self.Constraint(doc="Flow through bed constraint")
-        def eq_bed_flow(b):
-            prop_in = b.process_flow.properties_in[0]
-            return (b.bed_depth) / b.vel_bed == (
-                (b.bed_vol_tot) / (prop_in.flow_vol_phase["Liq"])
-            )
+            @self.Constraint(self.target_ion_set, doc="Gamma")
+            def eq_gamma(b, j):  # Eq. 4.175, Inglezakis + Poulopoulos
+                prop_in = b.process_flow.properties_in[0]
+                return (
+                    b.gamma[j]
+                    == b.resin_eq_capacity / prop_in.conc_mol_phase_comp["Liq", j]
+                )
 
-        @self.Constraint(doc="Column height")
-        def eq_col_height(b):
-            return (
-                b.col_height
-                == b.bed_depth + b.distributor_h + b.underdrain_h + b.bed_expansion_h
-            )
-
-        @self.Constraint(doc="Column volume calculated from bed volume")
-        def eq_col_vol_per(b):
-            return (
-                b.bed_depth * Constants.pi * (b.col_diam / 2) ** 2
-                == b.bed_vol_tot / b.number_columns
-            )
-
-        @self.Constraint(doc="Column height to diameter ratio")
-        def eq_col_height_to_diam_ratio(b):
-            return b.col_height_to_diam_ratio == b.col_height / b.col_diam
-
-        # =========== KINETICS ===========
-
-        @self.Constraint(self.target_ion_set, doc="Fluid mass transfer coefficient")
-        def eq_fluid_mass_transfer_coeff(b, j):
-            prop_in = b.process_flow.properties_in[0]
-            return (
-                b.fluid_mass_transfer_coeff[j]
-                == (prop_in.diffus_phase_comp["Liq", j] * b.Sh[j]) / b.resin_diam
-            )
-
-        # =========== MASS BALANCE ===========
-
-        @self.Constraint(self.target_ion_set, doc="Mass in")
-        def eq_mass_in(b, j):
-            prop_in = b.process_flow.properties_in[0]
-            return (
-                b.mass_in[j] == prop_in.flow_equiv_phase_comp["Liq", j] * b.t_breakthru
-            )
-
-        @self.Constraint(self.target_ion_set, doc="Mass out")
-        def eq_mass_out(b, j):
-            prop_out = b.process_flow.properties_out[0]
-            return b.mass_out[j] == b.mass_in[j] - b.mass_removed[j]
-
-        @self.Constraint(self.target_ion_set, doc="Removed total mass of ion")
-        def eq_mass_removed(b, j):
-            return b.mass_removed[j] == pyunits.convert(
-                b.resin_eq_capacity * b.resin_bulk_dens * b.bed_vol_tot,
-                to_units=pyunits.mol,
-            )
+            @self.Constraint(self.target_ion_set, doc="Zeta")
+            def eq_zeta(b, j):  # Eq. 4.176, Inglezakis + Poulopoulos
+                return b.zeta[j] == (b.fluid_mass_transfer_coeff[j]) / (
+                    b.solid_mass_transfer_coeff[j] * b.gamma[j]
+                )
 
     def initialize_build(
         self,
