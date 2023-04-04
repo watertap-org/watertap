@@ -117,15 +117,11 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             "S_bu": 0.0250,
             "S_pro": 0.0267867187876688,
             "S_ac": 0.0312221602404522,
-            "S_ch4": 0.0156255859594734,
             "S_I": 0.03,  # varies
             "X_c": 0.02786,  # varies
             "X_ch": 0.0312511719189469,
             "X_pr": 0.03,  # varies
             "X_li": 0.0219835830050523,
-            "X_su": 0.0312511719189469,
-            "X_aa": 0.0313,
-            "X_pro": 0.0313,
             "X_ac": 0.0313,
             "X_I": 0.03,  # varies
         }
@@ -1109,6 +1105,15 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R19", "Liq", "X_h2"): -1,
             ("R19", "Liq", "X_I"): 0,
         }
+
+        s_ic_rxns = ["R5", "R6", "R10", "R11", "R12"]
+
+        for R in s_ic_rxns:
+            self.rate_reaction_stoichiometry[R, "Liq", "S_IC"] = -sum(
+                self.Ci[S] * self.rate_reaction_stoichiometry[R, "Liq", S] * mw_c
+                for S in Ci_dict.keys()
+                if S != "S_IC"
+            )
 
         for R in self.rate_reaction_idx:
             self.rate_reaction_stoichiometry[R, "Liq", "S_cat"] = 0
