@@ -1882,6 +1882,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
+        # TODO: modify as needed for different model configuration
         target_ion = self.config.target_ion
         isotherm = self.config.isotherm
         diff_type = self.config.diffusion_control
@@ -1894,13 +1895,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.resin_unused_capacity) is None:
             iscale.set_scaling_factor(self.resin_unused_capacity, 1)
-
-        if isotherm == IsothermType.langmuir:
-            if iscale.get_scaling_factor(self.langmuir[target_ion]) is None:
-                iscale.set_scaling_factor(self.langmuir[target_ion], 10)
-
-            if iscale.get_scaling_factor(self.num_transfer_units) is None:
-                iscale.set_scaling_factor(self.num_transfer_units, 1e-3)
 
         if iscale.get_scaling_factor(self.partition_ratio) is None:
             iscale.set_scaling_factor(self.partition_ratio, 1e-3)
@@ -1916,10 +1910,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.t_breakthru) is None:
             iscale.set_scaling_factor(self.t_breakthru, 1e-5)
-
-        if self.config.diffusion_control == DiffusionControlType.solid:
-            if iscale.get_scaling_factor(self.diff_resin_comp[target_ion]) is None:
-                iscale.set_scaling_factor(self.diff_resin_comp[target_ion], 1e11)
 
         if iscale.get_scaling_factor(self.Re) is None:
             iscale.set_scaling_factor(self.Re, 1)
@@ -1987,6 +1977,21 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.regen_dose) is None:
             iscale.set_scaling_factor(self.regen_dose, 1e-2)
 
+        ## unique scaling for isotherm type
+
+        if isotherm == IsothermType.langmuir:
+            if iscale.get_scaling_factor(self.langmuir[target_ion]) is None:
+                iscale.set_scaling_factor(self.langmuir[target_ion], 10)
+
+            if iscale.get_scaling_factor(self.num_transfer_units) is None:
+                iscale.set_scaling_factor(self.num_transfer_units, 1e-3)
+
+        ## unique scaling for diffusion control type
+
+        if diff_type == DiffusionControlType.solid:
+            if iscale.get_scaling_factor(self.diff_resin_comp[target_ion]) is None:
+                iscale.set_scaling_factor(self.diff_resin_comp[target_ion], 1e11)
+
         # transforming constraints
         if isotherm == IsothermType.langmuir:
             for ind, c in self.eq_num_transfer_units.items():
@@ -2035,34 +2040,30 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
     def _get_performance_contents(self, time_point=0):
 
-        # TODO
+        # TODO: add relevant Params, Expressions, differences for CONFIGs
         var_dict = {}
         var_dict["Breakthrough Time"] = self.t_breakthru
         var_dict["Total Resin Capacity [eq/L]"] = self.resin_max_capacity
         var_dict["Usable Resin Capacity [eq/L]"] = self.resin_eq_capacity
         var_dict["Resin Particle Diameter"] = self.resin_diam
         var_dict["Resin Bulk Density"] = self.resin_bulk_dens
-        var_dict["Bed Volume"] = self.bed_vol
+        var_dict["Bed Volume Total"] = self.bed_vol_tot
         var_dict["Bed Depth"] = self.bed_depth
         var_dict["Bed Porosity"] = self.bed_porosity
         var_dict["Number Transfer Units"] = self.num_transfer_units
         var_dict["Dimensionless Time"] = self.dimensionless_time
-        var_dict["LH of Constant Pattern Sol'n."] = self.lh
         var_dict["Partition Ratio"] = self.partition_ratio
         var_dict["Bed Velocity"] = self.vel_bed
-        var_dict["Holdup"] = self.holdup
         var_dict["Reynolds Number"] = self.Re
         var_dict["Peclet Number (bed)"] = self.Pe_bed
         var_dict["Peclet Number (particle)"] = self.Pe_p
         for i in self.config.property_package.ion_set:
             ion = i.replace("_", "")
-            keq = f"Langmuir Coeff. for {ion}"
-            req = f"Resin Separation Factor for {ion}"
+            la = f"Langmuir Coeff. for {ion}"
             kf = f"Fluid Mass Transfer Coeff. for {ion}"
-            kd = f"Rate Coeff. for {ion}"
             sc = f"Schmidt Number for {ion}"
             sh = f"Sherwood Number for {ion}"
-            var_dict[keq] = self.langmuir[i]
+            var_dict[la] = self.langmuir[i]
             var_dict[kf] = self.fluid_mass_transfer_coeff[i]
             var_dict[sc] = self.Sc[i]
             var_dict[sh] = self.Sh[i]
