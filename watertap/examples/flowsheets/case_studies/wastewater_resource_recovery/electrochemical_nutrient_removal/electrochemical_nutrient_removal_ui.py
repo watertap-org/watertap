@@ -561,7 +561,7 @@ def build_flowsheet():
 
     results = solve(m)
     assert_optimal_termination(results)
-    return m.fs
+    return m
 
 
 def solve_flowsheet(flowsheet=None):

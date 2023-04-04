@@ -182,6 +182,7 @@ class ModelExport(BaseModel):
 class FlowsheetExport(BaseModel):
     """A flowsheet and its contained exported model objects."""
 
+    m: object = Field(default=None, exclude=True)
     obj: object = Field(default=None, exclude=True)
     name: str = ""
     description: str = ""
@@ -474,7 +475,8 @@ class FlowsheetInterface:
                         f"Flowsheet `{Actions.build}` action failed. "
                         f"See logs for details."
                     )
-                self.fs_exp.obj = action_result
+                self.fs_exp.m = action_result
+                self.fs_exp.obj = action_result.fs
                 # [re-]create exports (new model object)
                 if Actions.export not in self._actions:
                     raise KeyError(
