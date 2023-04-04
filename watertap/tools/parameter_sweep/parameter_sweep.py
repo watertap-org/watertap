@@ -473,6 +473,11 @@ class _ParameterSweepBase(ABC):
                 results = optimize_function(model, **optimize_kwargs)
             pyo.assert_optimal_termination(results)
 
+        except TypeError:
+            # this happens if the optimize_kwargs are misspecified,
+            # which is an error we want to raise
+            raise
+
         except:
             # run_successful remains false. We try to reinitialize and solve again
             if reinitialize_function is not None:
@@ -484,6 +489,11 @@ class _ParameterSweepBase(ABC):
                     with capture_output():
                         results = optimize_function(model, **optimize_kwargs)
                     pyo.assert_optimal_termination(results)
+
+                except TypeError:
+                    # this happens if the reinitialize_kwargs are misspecified,
+                    # which is an error we want to raise
+                    raise
 
                 except:
                     pass  # run_successful is still False
