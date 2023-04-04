@@ -24,7 +24,7 @@ from watertap.core import (
     MassTransferCoefficient,
     PressureChangeType,
 )
-from watertap.core.membrane_channel0d import CONFIG_Template
+from watertap.core.membrane_channel_base import CONFIG_Template
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_base import (
     OsmoticallyAssistedReverseOsmosisBaseData,
     _add_has_full_reporting,
