@@ -1273,7 +1273,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def eq_vel_inter(b):
             return b.vel_inter == b.vel_bed / b.bed_porosity
 
-        @self.Constraint(doc="Resin surface area per vol")
+        @self.Constraint(doc="Resin bead surface area per volume")
         def eq_resin_surf_per_vol(b):
             return b.resin_surf_per_vol == (6 * (1 - b.bed_porosity)) / b.resin_diam
 
@@ -1307,8 +1307,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 == b.bed_depth + b.distributor_h + b.underdrain_h + b.bed_expansion_h
             )
 
-        @self.Constraint(doc="Column volume calculated from bed volume")
-        def eq_col_vol_per(b):
+        @self.Constraint(doc="Bed design")
+        def eq_bed_design(b):
             return (
                 b.bed_depth * Constants.pi * (b.col_diam / 2) ** 2
                 == b.bed_vol_tot / b.number_columns
@@ -1454,7 +1454,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 # CONSTRAINTS FOR LANGMUIR COMBINED DIFFUSION CONTROLLING CONFIGURATIONS
 
                 @self.Expression(self.target_ion_set, doc="Eta")
-                def eq_eta(b, j):  # Eq. 4.164, Inglezakis + Poulopoulos
+                def eta(b, j):  # Eq. 4.164, Inglezakis + Poulopoulos
                     return 1 - b.eta_coeff * (1 - b.langmuir[j]) ** 3
 
                 @self.Constraint(self.target_ion_set, doc="Phi 1")
@@ -1921,51 +1921,71 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             if iscale.get_scaling_factor(self.diff_resin_comp[target_ion]) is None:
                 iscale.set_scaling_factor(self.diff_resin_comp[target_ion], 1e11)
 
-        iscale.set_scaling_factor(self.Re, 1)
+        if iscale.get_scaling_factor(self.Re) is None:
+            iscale.set_scaling_factor(self.Re, 1)
 
-        iscale.set_scaling_factor(self.Sc, 1e-2)
+        if iscale.get_scaling_factor(self.Sc) is None:
+            iscale.set_scaling_factor(self.Sc, 1e-2)
 
-        iscale.set_scaling_factor(self.Sh, 0.1)
+        if iscale.get_scaling_factor(self.Sh) is None:
+            iscale.set_scaling_factor(self.Sh, 0.1)
 
-        iscale.set_scaling_factor(self.Pe_p, 1e2)
+        if iscale.get_scaling_factor(self.Pe_p) is None:
+            iscale.set_scaling_factor(self.Pe_p, 1e2)
 
-        iscale.set_scaling_factor(self.Pe_bed, 1e-3)
+        if iscale.get_scaling_factor(self.Pe_bed) is None:
+            iscale.set_scaling_factor(self.Pe_bed, 1e-3)
 
-        iscale.set_scaling_factor(self.number_columns, 1)
+        if iscale.get_scaling_factor(self.number_columns) is None:
+            iscale.set_scaling_factor(self.number_columns, 1)
 
-        iscale.set_scaling_factor(self.resin_diam, 1e4)
+        if iscale.get_scaling_factor(self.resin_diam) is None:
+            iscale.set_scaling_factor(self.resin_diam, 1e4)
 
-        iscale.set_scaling_factor(self.resin_bulk_dens, 10)
+        if iscale.get_scaling_factor(self.resin_bulk_dens) is None:
+            iscale.set_scaling_factor(self.resin_bulk_dens, 10)
 
-        iscale.set_scaling_factor(self.resin_surf_per_vol, 1e-3)
+        if iscale.get_scaling_factor(self.resin_surf_per_vol) is None:
+            iscale.set_scaling_factor(self.resin_surf_per_vol, 1e-3)
 
-        iscale.set_scaling_factor(self.bed_vol_tot, 0.1)
+        if iscale.get_scaling_factor(self.bed_vol_tot) is None:
+            iscale.set_scaling_factor(self.bed_vol_tot, 0.1)
 
-        iscale.set_scaling_factor(self.bed_depth, 1)
+        if iscale.get_scaling_factor(self.bed_depth) is None:
+            iscale.set_scaling_factor(self.bed_depth, 1)
 
-        iscale.set_scaling_factor(self.col_height_to_diam_ratio, 0.1)
+        if iscale.get_scaling_factor(self.col_height_to_diam_ratio) is None:
+            iscale.set_scaling_factor(self.col_height_to_diam_ratio, 0.1)
 
-        iscale.set_scaling_factor(self.bed_porosity, 10)
+        if iscale.get_scaling_factor(self.bed_porosity) is None:
+            iscale.set_scaling_factor(self.bed_porosity, 10)
 
-        iscale.set_scaling_factor(self.col_height, 1)
+        if iscale.get_scaling_factor(self.col_height) is None:
+            iscale.set_scaling_factor(self.col_height, 1)
 
-        iscale.set_scaling_factor(self.col_diam, 1)
+        if iscale.get_scaling_factor(self.col_diam) is None:
+            iscale.set_scaling_factor(self.col_diam, 1)
 
-        iscale.set_scaling_factor(self.holdup, 1e-2)
+        if iscale.get_scaling_factor(self.service_flow_rate) is None:
+            iscale.set_scaling_factor(self.service_flow_rate, 0.1)
 
-        iscale.set_scaling_factor(self.service_flow_rate, 0.1)
+        if iscale.get_scaling_factor(self.c_norm) is None:
+            iscale.set_scaling_factor(self.c_norm, 10)
 
-        iscale.set_scaling_factor(self.c_norm, 10)
+        if iscale.get_scaling_factor(self.fluid_mass_transfer_coeff) is None:
+            iscale.set_scaling_factor(self.fluid_mass_transfer_coeff, 1e5)
 
-        iscale.set_scaling_factor(self.fluid_mass_transfer_coeff, 1e5)
+        if iscale.get_scaling_factor(self.t_contact) is None:
+            iscale.set_scaling_factor(self.t_contact, 1e-2)
 
-        iscale.set_scaling_factor(self.t_contact, 1e-2)
+        if iscale.get_scaling_factor(self.vel_bed) is None:
+            iscale.set_scaling_factor(self.vel_bed, 1e3)
 
-        iscale.set_scaling_factor(self.vel_bed, 1e3)
+        if iscale.get_scaling_factor(self.vel_inter) is None:
+            iscale.set_scaling_factor(self.vel_inter, 1e3)
 
-        iscale.set_scaling_factor(self.vel_inter, 1e3)
-
-        iscale.set_scaling_factor(self.regen_dose, 1e-2)
+        if iscale.get_scaling_factor(self.regen_dose) is None:
+            iscale.set_scaling_factor(self.regen_dose, 1e-2)
 
         # transforming constraints
         if isotherm == IsothermType.langmuir:
