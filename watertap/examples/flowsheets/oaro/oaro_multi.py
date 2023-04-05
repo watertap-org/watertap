@@ -60,7 +60,7 @@ from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 
-# from watertap.core.util.infeasible import *
+from watertap.core.util.model_diagnostics.infeasible import *
 
 
 class ERDtype(StrEnum):
@@ -87,19 +87,21 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     m = build(number_of_stages=number_of_stages, erd_type=erd_type)
     set_operating_conditions(m)
     initialize_system(m, number_of_stages, system_recovery, solver=solver)
-    solve(m, solver=solver)
-    print("\n***---Simulation results---***")
-    display_system(m)
-    display_design(m)
-    if erd_type == ERDtype.pump_as_turbine:
-        display_state(m)
-    else:
-        pass
+    # solve(m, solver=solver)
+    # print("\n***---Simulation results---***")
+    # display_system(m)
+    # display_design(m)
+    # if erd_type == ERDtype.pump_as_turbine:
+    #     display_state(m)
+    # else:
+    #     pass
     # print_close_to_bounds(m)
     # print_infeasible_constraints(m)
 
     optimize_set_up(m, water_recovery=system_recovery)
     solve(m, solver=solver)
+    print_close_to_bounds(m)
+    print_infeasible_constraints(m)
 
     print("\n***---Optimization results---***")
     display_system(m)
@@ -887,10 +889,28 @@ def optimize_set_up(
         stage.area.setlb(1)
         stage.area.setub(20000)
 
+        stage.feed_side.velocity[0, 0].unfix()
+        stage.feed_side.velocity[0, 0].setlb(0.1)
+        stage.feed_side.velocity[0, 0].setub(1)
+
+        # stage.permeate_side.cp_modulus[0.0, 0.0, "NaCl"].setlb(0.01)
+        stage.permeate_side.friction_factor_darcy[0.0, 1.0].setub(None)
+
+        # stage.A_comp.unfix()
+        # stage.A_comp.setlb(2.78e-12)
+        # stage.A_comp.setub(4.2e-11)
+
     # RO
     m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(1)
     m.fs.RO.area.setub(20000)
+
+    m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"].setlb(0)
+    m.fs.RO.feed_side.friction_factor_darcy[0.0, 1.0].setub(None)
+
+    # m.fs.RO.A_comp.unfix()
+    # m.fs.RO.A_comp.setlb(2.78e-12)
+    # m.fs.RO.A_comp.setub(4.2e-11)
 
     # additional specifications
     m.fs.product_salinity = Param(
@@ -1074,4 +1094,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(2, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
+    m = main(3, system_recovery=0.55, erd_type=ERDtype.pump_as_turbine)

@@ -90,7 +90,7 @@ def run_case(number_of_stages, nx, output_filename=None):
     )
 
     sweep_params["Volumetric Recovery Rate"] = LinearSample(
-        m.fs.water_recovery, 0.3, 0.6, nx
+        m.fs.water_recovery, 0.3, 0.9, nx
     )
 
     # Outputs  -------------------------------------------------------------------------------
@@ -361,5 +361,5 @@ def run_case(number_of_stages, nx, output_filename=None):
 
 if __name__ == "__main__":
     for n in range(1, 5):
-        global_results, sweep_params, m = run_case(number_of_stages=n, nx=19)
+        global_results, sweep_params, m = run_case(number_of_stages=n, nx=17)
         print(global_results)
