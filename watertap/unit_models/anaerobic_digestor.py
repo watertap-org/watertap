@@ -546,10 +546,9 @@ see reaction package for documentation.}""",
 
         def outlet_P_rule(self, t):
             return self.vapor_phase[t].pressure == (
-                self.vapor_phase[t].p_w_sat
-                + sum(
+                sum(
                     self.vapor_phase[t].pressure_sat[j]
-                    for j in self.config.vapor_property_package.solute_set
+                    for j in self.config.vapor_property_package.component_list
                 )
             )
 

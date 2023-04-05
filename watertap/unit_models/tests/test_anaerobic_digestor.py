@@ -197,7 +197,7 @@ class TestAdm(object):
         assert hasattr(adm.fs.unit, "volume_vapor")
         assert hasattr(adm.fs.unit, "heat_duty")
 
-        assert number_variables(adm) == 261
+        assert number_variables(adm) == 265
         assert number_total_constraints(adm) == 149
         assert number_unused_variables(adm) == 0
 
