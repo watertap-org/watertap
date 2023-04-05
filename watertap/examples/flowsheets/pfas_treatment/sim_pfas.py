@@ -24,7 +24,7 @@ import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     variables_near_bounds_generator,
-    total_constraints_set,
+    activated_constraints_set,
 )
 from idaes.core.util.scaling import (
     badly_scaled_var_generator,
@@ -86,13 +86,23 @@ pyo.SolverFactory.register("ipopt")(pyo.SolverFactory.get_class("ipopt-watertap"
 def main():
 
     global source_name
+    global min_st_surrogate
+    global throughput_surrogate
+
+    # establish new surrogates
+    min_st_surrogate = PysmoSurrogate.load_from_file(
+        "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_spline.json",
+    )
+    throughput_surrogate = PysmoSurrogate.load_from_file(
+        "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_linear.json",
+    )
 
     data_regression = {}
     data_filtered = {}
     param_results = {}
 
     for source_name in source_name_list:
-        """
+
         print(f"--------------------------\t{source_name}\t--------------------------")
         # data set
         data_set = data[["data_iter", f"{source_name}_X", f"{source_name}_Y"]]
@@ -131,6 +141,8 @@ def main():
             theta_names,
             SSE,
             tee=False,
+            diagnostic_mode=True,
+            solver_options={"bound_push": 1e-8},
         )
 
         pest.objective_at_theta(
@@ -147,10 +159,10 @@ def main():
             print(k, "=", v)
 
         param_results[f"{source_name}"] = theta
-        """
+
         print("--------------------------\tmodel rebuild\t--------------------------")
         # rebuild model across CP to view regression results
-        theta = [guess_freund_k, guess_freund_ninv, guess_ds]
+        # theta = [guess_freund_k, guess_freund_ninv, guess_ds]
         df_iter = solve_regression(theta)
 
         data_regression[f"{source_name}"] = df_iter
@@ -213,8 +225,6 @@ def model_build():
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.gac.inlet)
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
-    m.fs.gac.b4 = 1
-
     # adsorption isotherm
     m.fs.gac.freund_k.fix(guess_freund_k)
     m.fs.gac.freund_ninv.fix(guess_freund_ninv)
@@ -239,6 +249,200 @@ def model_build():
     m.fs.gac.shape_correction_factor.fix()
     m.fs.gac.conc_ratio_start_breakthrough = 0.001
 
+    return m
+
+
+def parmest_regression(data):
+
+    print(f'running regression case {int(data["data_iter"])}')
+    m = model_build()
+    # scaling
+    model_scale(m)
+    # initialization
+    model_init(m, outlvl=idaeslog.ERROR)
+    # switch to surrogate
+    switch_to_surrogate(m)
+    # re-fix to conc_ratio spec from data
+    m.fs.gac.conc_ratio_replace.fix(float(data[f"{source_name}_Y"]))
+
+    return m
+
+
+def solve_regression(theta):
+
+    # build model
+    m = model_build()
+    # scaling
+    model_scale(m)
+    # initialization
+    model_init(m, outlvl=idaeslog.ERROR)
+    # switch to surrogate input
+    switch_to_surrogate(m)
+
+    # refix differing parameters
+    m.fs.gac.freund_k.fix(theta[0])
+    m.fs.gac.freund_ninv.fix(theta[1])
+    m.fs.gac.ds.fix(theta[2])
+
+    # check profile against pilot data
+    conc_ratio_input = np.linspace(0.01, 0.95, 50)
+    conc_ratio_list = []
+    bed_volumes_treated_list = []
+
+    for conc_ratio in conc_ratio_input:
+
+        print("running conc_ratio", conc_ratio)
+
+        # fix to conc_ratio_case
+        m.fs.gac.conc_ratio_replace.fix(conc_ratio)
+
+        # resolve initialized model
+        model_solve(m, solver_log=False)
+
+        # record variables of interest
+        conc_ratio_list.append(m.fs.gac.conc_ratio_replace.value)
+        bed_volumes_treated_list.append(m.fs.gac.bed_volumes_treated.value)
+
+    df_iter = {
+        "conc_ratio": conc_ratio_list,
+        "bed_volumes_treated": bed_volumes_treated_list,
+    }
+
+    return df_iter
+
+
+def plot_regression(data_regression, data_filtered):
+
+    color_code = [
+        "#ffc000",
+        "#ed7d31",
+    ]
+    """
+        "#c00000",
+        "#00b050",
+        "#7030a0",
+        "#0070c0",
+        "#bdd7ee",
+        "#000000",
+        "#a5a5a5",
+        "#f8cbad",
+    ]"""
+
+    # fig1
+    fig1, axs = plt.subplots(
+        nrows=1,  # 5,
+        ncols=2,
+        sharex=True,
+        sharey=True,
+    )
+
+    i = 0
+    for ax in axs.flat:
+
+        ax.plot(
+            data[f"{source_name_list[i]}_X"],
+            data[f"{source_name_list[i]}_Y"],
+            "o",
+            mec=color_code[i],
+            mfc="None",
+            label="raw data",
+        )
+        ax.plot(
+            data_filtered[source_name_list[i]][f"{source_name_list[i]}_X"],
+            data_filtered[source_name_list[i]][f"{source_name_list[i]}_Y"],
+            "o",
+            mec=color_code[i],
+            mfc=color_code[i],
+            label=f"filtered data",
+        )
+        ax.plot(
+            data_regression[source_name_list[i]]["bed_volumes_treated"],
+            data_regression[source_name_list[i]]["conc_ratio"],
+            color_code[i],
+            label="regression results",
+        )
+        ax.legend(
+            title=f"{source_name_list[i]}",
+            fontsize="x-small",
+            loc="lower right",
+        )
+
+        if i == 8:
+            ax.set_xlabel("bed volumes treated")
+            ax.set_ylabel("concentration ratio")
+
+        i = i + 1
+
+    fig1.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0, hspace=0)
+
+    plt.show()
+
+    # fig2
+    plt.figure(2)
+    for j in range(2):  # 10):
+
+        plt.plot(
+            data_regression[source_name_list[j]]["bed_volumes_treated"],
+            data_regression[source_name_list[j]]["conc_ratio"],
+            color_code[j],
+            label=f"{source_name_list[j]}",
+        )
+        plt.plot(
+            data[f"{source_name_list[j]}_X"],
+            data[f"{source_name_list[j]}_Y"],
+            "o",
+            mec=color_code[j],
+            mfc="None",
+        )
+        plt.plot(
+            data_filtered[source_name_list[j]][f"{source_name_list[j]}_X"],
+            data_filtered[source_name_list[j]][f"{source_name_list[j]}_Y"],
+            "o",
+            mec=color_code[j],
+            mfc=color_code[j],
+        )
+
+    plt.xlabel("bed volumes treated")
+    plt.ylabel("concentration ratio")
+    plt.legend(
+        fontsize="x-small",
+        loc="lower right",
+    )
+
+    plt.show()
+
+
+def model_scale(model):
+
+    set_scaling_factor(model.fs.gac.bed_length, 1e2)
+    set_scaling_factor(model.fs.gac.bed_diameter, 1e3)
+    set_scaling_factor(model.fs.gac.bed_area, 1e5)
+    set_scaling_factor(model.fs.gac.bed_volume, 1e6)
+    set_scaling_factor(model.fs.gac.bed_mass_gac, 1e3)
+    set_scaling_factor(model.fs.gac.mass_adsorbed, 1e9)
+    set_scaling_factor(model.fs.gac.gac_usage_rate, 1e10)
+
+    iscale.calculate_scaling_factors(model)
+
+
+def model_init(model, outlvl):
+
+    model.fs.gac.bed_length = 1e-2
+    model.fs.gac.bed_diameter = 1e-3
+    model.fs.gac.bed_area = 1e-5
+    model.fs.gac.bed_volume = 1e-6
+    model.fs.gac.bed_mass_gac = 1e-3
+    model.fs.gac.mass_adsorbed = 1e-9
+    model.fs.gac.gac_usage_rate = 1e-10
+
+    optarg = solver.options
+    model.fs.feed.initialize(optarg=optarg, outlvl=outlvl)
+    propagate_state(model.fs.s01)
+    model.fs.gac.initialize(optarg=optarg, outlvl=outlvl)
+
+
+def switch_to_surrogate(m):
+
     # deactivate old equations
     m.fs.gac.eq_min_number_st_cps.deactivate()
     m.fs.gac.eq_throughput.deactivate()
@@ -248,14 +452,6 @@ def model_build():
     m.fs.gac.eq_ele_throughput[3].deactivate()
     m.fs.gac.eq_ele_throughput[4].deactivate()
     m.fs.gac.eq_ele_throughput[5].deactivate()
-
-    # establish new surrogates
-    min_st_surrogate = PysmoSurrogate.load_from_file(
-        "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_spline.json",
-    )
-    throughput_surrogate = PysmoSurrogate.load_from_file(
-        "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_linear.json",
-    )
 
     m.fs.min_st_surrogate = SurrogateBlock(concrete=True)
     m.fs.min_st_surrogate.build_model(
@@ -320,208 +516,6 @@ def model_build():
         output_vars=[m.fs.gac.ele_throughput[5]],
     )
 
-    return m
-
-
-def parmest_regression(data):
-
-    print(f'running regression case {int(data["data_iter"])}')
-    m = model_build()
-
-    # scaling
-    model_scale(m)
-
-    # initialization
-    model_init(m, outlvl=idaeslog.ERROR)
-
-    # re-fix to conc_ratio spec from data
-    m.fs.gac.conc_ratio_replace.fix(float(data[f"{source_name}_Y"]))
-
-    return m
-
-
-def solve_regression(theta):
-
-    # build model
-    m = model_build()
-    # scaling
-    model_scale(m)
-    # initialization
-    model_init(m, outlvl=idaeslog.ERROR)
-
-    # refix differing parameters
-    m.fs.gac.freund_k.fix(theta[0])
-    m.fs.gac.freund_ninv.fix(theta[1])
-    m.fs.gac.ds.fix(theta[2])
-
-    # initialization
-    model_init(m, outlvl=idaeslog.ERROR)
-
-    # check profile against pilot data
-    conc_ratio_input = np.linspace(0.01, 0.95, 40)
-    conc_ratio_list = []
-    bed_volumes_treated_list = []
-
-    for conc_ratio in conc_ratio_input:
-
-        print("running conc_ratio", conc_ratio)
-
-        # fix to conc_ratio_case
-        m.fs.gac.conc_ratio_replace.fix(conc_ratio)
-
-        # resolve initialized model
-        model_solve(m, solver_log=False)
-
-        # record variables of interest
-        conc_ratio_list.append(m.fs.gac.conc_ratio_replace.value)
-        bed_volumes_treated_list.append(m.fs.gac.bed_volumes_treated.value)
-
-    df_iter = {
-        "conc_ratio": conc_ratio_list,
-        "bed_volumes_treated": bed_volumes_treated_list,
-    }
-
-    m.fs.display()
-    assert False
-
-    return df_iter
-
-
-def plot_regression(data_regression, data_filtered):
-
-    color_code = [
-        "#ffc000",
-        "#ed7d31",
-        "#c00000",
-        "#00b050",
-        "#7030a0",
-        "#0070c0",
-        "#bdd7ee",
-        "#000000",
-        "#a5a5a5",
-        "#f8cbad",
-    ]
-
-    # fig1
-    fig1, axs = plt.subplots(
-        nrows=5,
-        ncols=2,
-        sharex=True,
-        sharey=True,
-    )
-
-    i = 0
-    for ax in axs.flat:
-
-        ax.plot(
-            data[f"{source_name_list[i]}_X"],
-            data[f"{source_name_list[i]}_Y"],
-            "o",
-            mec=color_code[i],
-            mfc="None",
-            label="raw data",
-        )
-        ax.plot(
-            data_filtered[source_name_list[i]][f"{source_name_list[i]}_X"],
-            data_filtered[source_name_list[i]][f"{source_name_list[i]}_Y"],
-            "o",
-            mec=color_code[i],
-            mfc=color_code[i],
-            label=f"filtered data",
-        )
-        ax.plot(
-            data_regression[source_name_list[i]]["bed_volumes_treated"],
-            data_regression[source_name_list[i]]["conc_ratio"],
-            color_code[i],
-            label="regression results",
-        )
-        ax.legend(
-            title=f"{source_name_list[i]}",
-            fontsize="x-small",
-            loc="lower right",
-        )
-
-        if i == 8:
-            ax.set_xlabel("bed volumes treated")
-            ax.set_ylabel("concentration ratio")
-
-        i = i + 1
-
-    fig1.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0, hspace=0)
-
-    plt.show()
-
-    # fig2
-    plt.figure(2)
-    for j in range(10):
-
-        plt.plot(
-            data_regression[source_name_list[j]]["bed_volumes_treated"],
-            data_regression[source_name_list[j]]["conc_ratio"],
-            color_code[j],
-            label=f"{source_name_list[j]}",
-        )
-        plt.plot(
-            data[f"{source_name_list[j]}_X"],
-            data[f"{source_name_list[j]}_Y"],
-            "o",
-            mec=color_code[j],
-            mfc="None",
-        )
-        plt.plot(
-            data_filtered[source_name_list[j]][f"{source_name_list[j]}_X"],
-            data_filtered[source_name_list[j]][f"{source_name_list[j]}_Y"],
-            "o",
-            mec=color_code[j],
-            mfc=color_code[j],
-        )
-
-    plt.xlabel("bed volumes treated")
-    plt.ylabel("concentration ratio")
-    plt.legend(
-        fontsize="x-small",
-        loc="lower right",
-    )
-
-    plt.show()
-
-
-def model_scale(model):
-
-    # variable scaling
-    set_scaling_factor(model.fs.gac.equil_conc, 1e6)
-    set_scaling_factor(model.fs.gac.ds, 1e15)
-    set_scaling_factor(model.fs.gac.dg, 1e-6)
-    set_scaling_factor(model.fs.gac.bed_diameter, 1e3)
-    set_scaling_factor(model.fs.gac.bed_length, 1e2)
-    set_scaling_factor(model.fs.gac.bed_area, 1e5)
-    set_scaling_factor(model.fs.gac.bed_volume, 1e6)
-    set_scaling_factor(model.fs.gac.bed_mass_gac, 1e4)
-    set_scaling_factor(model.fs.gac.mass_adsorbed, 1e9)
-    set_scaling_factor(model.fs.gac.gac_usage_rate, 1e11)
-    iscale.calculate_scaling_factors(model)
-
-    # constraint scaling as needed
-    iscale.constraint_scaling_transform(model.fs.gac.eq_bed_area[0], 1e1)
-
-
-def model_init(model, outlvl):
-
-    model.fs.gac.equil_conc = 1e-6
-    model.fs.gac.dg = 1e6
-    model.fs.gac.bed_diameter = 1e-3
-    model.fs.gac.bed_length = 1e-2
-    model.fs.gac.bed_area = 3e-5
-    model.fs.gac.bed_volume = 1e-6
-    model.fs.gac.bed_mass_gac = 1e-4
-    model.fs.gac.mass_adsorbed = 1e-9
-    model.fs.gac.gac_usage_rate = 1e-11
-
-    optarg = solver.options
-    model.fs.feed.initialize(optarg=optarg, outlvl=outlvl)
-    propagate_state(model.fs.s01)
-    model.fs.gac.initialize(optarg=optarg, outlvl=outlvl)
-
 
 def model_solve(model, solver_log=True):
 
@@ -550,8 +544,8 @@ def model_solve(model, solver_log=True):
         for x in variables_near_bounds_list:
             print(f"{x.name}\t{x.value}")
         print("----------------\ttotal_constraints_set_list\t----------------")
-        total_constraints_set_list = total_constraints_set(model)
-        for x in total_constraints_set_list:
+        activated_constraints_set_list = activated_constraints_set(model)
+        for x in activated_constraints_set_list:
             residual = abs(pyo.value(x.body) - pyo.value(x.lb))
             if residual > 1e-8:
                 print(f"{x}\t{residual}")

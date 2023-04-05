@@ -39,7 +39,11 @@ def min_st_regression(rerun=False):
 
     min_st_ninv = list(np.linspace(0.1, 0.9, 9))
     min_st_ninv.insert(0, 0.05)
-    min_st_bi = list(np.linspace(0.5, 10, 20)) + list(np.linspace(10, 100, 19))
+    min_st_bi = (
+        list(np.linspace(0.5, 10, 20))
+        + list(np.linspace(15, 100, 18))
+        + list(np.linspace(150, 500, 8))
+    )
 
     ninv_list, bi_list, min_st_list = [], [], []
 
@@ -94,7 +98,7 @@ def min_st_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5], [1, 100]
+        xmin, xmax = [0, 0.5], [1, 500]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -121,7 +125,7 @@ def min_st_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5], [1, 100]
+        xmin, xmax = [0, 0.5], [1, 500]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -148,7 +152,7 @@ def min_st_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5], [1, 100]
+        xmin, xmax = [0, 0.5], [1, 500]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -175,7 +179,7 @@ def min_st_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5], [1, 100]
+        xmin, xmax = [0, 0.5], [1, 500]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -202,7 +206,7 @@ def min_st_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5], [1, 100]
+        xmin, xmax = [0, 0.5], [1, 500]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -229,7 +233,7 @@ def min_st_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5], [1, 100]
+        xmin, xmax = [0, 0.5], [1, 500]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -256,7 +260,7 @@ def min_st_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5], [1, 100]
+        xmin, xmax = [0, 0.5], [1, 500]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -460,7 +464,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
+        xmin, xmax = [0, 0.5, 0.001], [1, 500, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -487,7 +491,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
+        xmin, xmax = [0, 0.5, 0.001], [1, 500, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -514,7 +518,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
+        xmin, xmax = [0, 0.5, 0.001], [1, 500, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -541,7 +545,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
+        xmin, xmax = [0, 0.5, 0.001], [1, 500, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -568,7 +572,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
+        xmin, xmax = [0, 0.5, 0.001], [1, 500, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -595,7 +599,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
+        xmin, xmax = [0, 0.5, 0.001], [1, 500, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
@@ -622,7 +626,7 @@ def throughput_regression(rerun=False):
 
         input_labels = trainer._input_labels
         output_labels = trainer._output_labels
-        xmin, xmax = [0, 0.5, 0.001], [1, 100, 0.999]
+        xmin, xmax = [0, 0.5, 0.001], [1, 500, 0.999]
         input_bounds = {
             input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))
         }
