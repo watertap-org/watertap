@@ -41,7 +41,9 @@ from idaes.core.util.scaling import (
 )
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import UnitModelCostingBlock
-
+from idaes.models.properties.modular_properties.base.generic_reaction import (
+    GenericReactionParameterBlock,
+)
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
     DiffusivityCalculation,
@@ -66,58 +68,106 @@ class TestElectrolyzer:
                 "NA+",
                 "CL-",
                 "CL2-v",
-                "H2",
+                "H2-v",
                 "OH-",
             ],
             mw_data={
                 "H2O": 0.018015,
                 "NA+": 0.022989,
-                "CL-": 0.3545,
+                "CL-": 0.03545,
                 "CL2-v": 0.0709,
-                "H2": 2.016,
+                "H2-v": 2.016,
                 "OH-": 0.017007,
             },
-            charge={
-                "NA+": 1,
-                "CL-": -1,
-                "OH-": -1,
-            },
+            charge={"NA+": 1, "CL-": -1, "OH-": -1},
         )
+
+        units_meta = m.fs.properties.get_metadata().get_derived_units
+        reaction_config = {
+            "base_units": {
+                "time": units_meta("time"),
+                "length": units_meta("length"),
+                "mass": units_meta("mass"),
+                "amount": units_meta("amount"),
+                "temperature": units_meta("temperature"),
+            }
+        }
+        m.fs.anode_reaction = GenericReactionParameterBlock(
+            property_package=m.fs.properties,
+            **reaction_config,
+        )
+
         m.fs.unit = Electrolyzer(
             property_package=m.fs.properties,
         )
 
+        # fix property parameters
+        m.fs.properties.dens_mass_const = 1200
+
         # feed specifications
-        anode_blk = m.fs.unit.anode
-        cathode_blk = m.fs.unit.cathode
-        anode_blk.properties_in[0].pressure.fix(101325)
-        anode_blk.properties_in[0].temperature.fix(273.15 + 25)
-        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix()
-        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "H+"].fix()
-        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "OH-"].fix()
-        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "NA+"].fix()
-        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "CL-"].fix()
-        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "CL2"].fix()
-        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "H2"].fix()
-        cathode_blk.properties_in[0].pressure.fix(101325)
-        cathode_blk.properties_in[0].temperature.fix(273.15 + 25)
-        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix()
-        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "H+"].fix()
-        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "OH-"].fix()
-        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "NA+"].fix()
-        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "CL-"].fix()
-        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "CL2"].fix()
-        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "H2"].fix()
+        anolyte_blk = m.fs.unit.anolyte
+        catholyte_blk = m.fs.unit.catholyte
+        anolyte_blk.properties_in[0].pressure.fix(101325)
+        anolyte_blk.properties_in[0].temperature.fix(273.15 + 90)
+        anolyte_blk.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix(5.551)
+        anolyte_blk.properties_in[0].flow_mol_phase_comp["Liq", "NA+"].fix(0.3422)
+        anolyte_blk.properties_in[0].flow_mol_phase_comp["Liq", "CL-"].fix(0.3422)
+        anolyte_blk.properties_in[0].flow_mol_phase_comp["Liq", "CL2-v"].fix(0)
+        anolyte_blk.properties_in[0].flow_mol_phase_comp["Liq", "H2-v"].fix(0)
+        anolyte_blk.properties_in[0].flow_mol_phase_comp["Liq", "OH-"].fix(0)
+        catholyte_blk.properties_in[0].pressure.fix(101325)
+        catholyte_blk.properties_in[0].temperature.fix(273.15 + 90)
+        catholyte_blk.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix(5.551)
+        catholyte_blk.properties_in[0].flow_mol_phase_comp["Liq", "NA+"].fix(1.288)
+        catholyte_blk.properties_in[0].flow_mol_phase_comp["Liq", "CL-"].fix(0)
+        catholyte_blk.properties_in[0].flow_mol_phase_comp["Liq", "CL2-v"].fix(0)
+        catholyte_blk.properties_in[0].flow_mol_phase_comp["Liq", "H2-v"].fix(0)
+        catholyte_blk.properties_in[0].flow_mol_phase_comp["Liq", "OH-"].fix(1.288)
+
+        # touch properties
+        anolyte_blk.properties_in[0].flow_vol_phase
+        anolyte_blk.properties_in[0].conc_mass_phase_comp
+        catholyte_blk.properties_in[0].flow_vol_phase
+        catholyte_blk.properties_in[0].conc_mass_phase_comp
 
         # fix variables
+        m.fs.unit.current.fix(30000)
+        m.fs.unit.current_density.fix(5000)
+        m.fs.unit.voltage.fix(2.2)
+
+        # reactions
+        m.fs.unit.anode_stoich["Liq", "CL-"].fix(-1)
+        m.fs.unit.anode_stoich["Liq", "CL2-v"].fix(1 / 2)
+        m.fs.unit.cathode_stoich["Liq", "H2O"].fix(-1)
+        m.fs.unit.cathode_stoich["Liq", "H2-v"].fix(1 / 2)
+        m.fs.unit.cathode_stoich["Liq", "OH-"].fix(1)
 
         return m
 
     @pytest.mark.unit
-    def test_dof(self, chlor_alkali_elec):
+    def test_general(self, chlor_alkali_elec):
 
         m = chlor_alkali_elec
+        m.fs.reaction_properties.display()
+        assert False
 
-        m.display()
-
+        assert assert_units_consistent(m) is None
         assert degrees_of_freedom(m) == 0
+
+        prop = m.fs.properties
+        prop.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "H2O"))
+        prop.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "NA+"))
+        prop.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "CL-"))
+        prop.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "CL2-v"))
+        prop.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "H2-v"))
+        prop.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "OH-"))
+
+        calculate_scaling_factors(m)
+        initialization_tester(m)
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+        m.fs.unit.display()
+        # m.fs.unit.report()

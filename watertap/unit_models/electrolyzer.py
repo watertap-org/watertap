@@ -37,7 +37,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-
+import idaes.core.util.constants
 from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 __author__ = "Hunter Barber"
@@ -187,23 +187,25 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         self._validate_config()
 
         # build control volume
-        self.anode = ControlVolume0DBlock(
+        self.anolyte = ControlVolume0DBlock(
             dynamic=False,
             has_holdup=False,
             property_package=self.config.property_package,
             property_package_args=self.config.property_package_args,
         )
-        self.cathode = ControlVolume0DBlock(
+        self.catholyte = ControlVolume0DBlock(
             dynamic=False,
             has_holdup=False,
             property_package=self.config.property_package,
             property_package_args=self.config.property_package_args,
         )
-        for control_volume in [self.anode, self.cathode]:
+        for control_volume in [self.anolyte, self.catholyte]:
             control_volume.add_state_blocks(has_phase_equilibrium=False)
+            control_volume.add_reaction_blocks(has_equilibrium=False)
             control_volume.add_material_balances(
                 balance_type=self.config.material_balance_type,
                 has_mass_transfer=True,
+                # has_rate_reactions=True,
             )
             control_volume.add_energy_balances(
                 balance_type=self.config.energy_balance_type,
@@ -217,27 +219,125 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
                 )
 
         # Add ports
-        self.add_inlet_port(name="anode_inlet", block=self.anode)
-        self.add_outlet_port(name="anode_outlet", block=self.anode)
-        self.add_inlet_port(name="cathode_inlet", block=self.cathode)
-        self.add_outlet_port(name="cathode_outlet", block=self.cathode)
+        self.add_inlet_port(name="anolyte_inlet", block=self.anolyte)
+        self.add_outlet_port(name="anolyte_outlet", block=self.anolyte)
+        self.add_inlet_port(name="catholyte_inlet", block=self.catholyte)
+        self.add_outlet_port(name="catholyte_outlet", block=self.catholyte)
+
+        # ---------------------------------------------------------------------
+        # electrolyzer variables
+
+        self.electron_flow = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("amount") * units_meta("time") ** -1,
+            doc="electrons passed between anode and cathode contributing to reactions",
+        )
+        self.current = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("current"),
+            doc="total current supplied",
+        )
+        self.current_density = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("current") * units_meta("length") ** -2,
+            doc="current density per membrane area",
+        )
+        self.membrane_area = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") ** 2,
+            doc="membrane area",
+        )
+        self.voltage = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass")
+            * units_meta("length") ** 2
+            * units_meta("time") ** -3
+            * units_meta("current"),
+            doc="applied voltage",
+        )
+        self.power = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("power"),
+            doc="power",
+        )
+        self.anode_stoich = Var(
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize=0,
+            bounds=(None, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="stoichiometry of the reaction at the anode",
+        )
+        self.cathode_stoich = Var(
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize=0,
+            bounds=(None, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="stoichiometry of the reaction at the anode",
+        )
+
+        # ---------------------------------------------------------------------
+        # performance
+
+        @self.Constraint(
+            doc="electrons passed between anode and cathode contributing to reactions"
+        )
+        def eq_electron_flow(b):
+            return b.electron_flow * Constants.faraday_constant == b.current
+
+        @self.Constraint(doc="current density")
+        def eq_current_density(b):
+            return b.current_density * b.membrane_area == b.current
+
+        @self.Constraint(doc="power")
+        def eq_power(b):
+            return b.power * b.current == b.voltage
+
+        # ---------------------------------------------------------------------
+        # performance
+
+        # fix stoichiometry to zero to be overwritten
+        for p in self.config.property_package.phase_list:
+            for j in self.config.property_package.component_list:
+                self.anode_stoich[p, j].fix(0)
+                self.cathode_stoich[p, j].fix(0)
 
         # ---------------------------------------------------------------------
         # mass balance
 
-        for j in self.config.property_package.component_list:
-            self.anode.mass_transfer_term[:, "Liq", j].fix(0)
+        for j in self.config.property_package.phase_list:
+            for j in self.config.property_package.component_list:
+                self.anolyte.mass_transfer_term[:, p, j].fix(0)
 
         @self.Constraint(
             self.flowsheet().config.time,
+            self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="mass transfer across the membrane",
         )
-        def eq_mass_transfer_port(b, t, j):
+        def eq_mass_transfer_membrane(b, t, p, j):
             return (
-                b.cathode.mass_transfer_term[t, "Liq", j]
-                == -b.anode.mass_transfer_term[t, "Liq", j]
+                b.catholyte.mass_transfer_term[t, p, j]
+                == -b.anolyte.mass_transfer_term[t, p, j]
             )
+
+        for j in self.config.property_package.component_list:
+            self.anolyte.rate_reaction_generation[:, "Liq", j].fix(0)
 
     # ---------------------------------------------------------------------
     # initialize method
@@ -272,7 +372,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # set state_args from inlet state
 
-        for control_volume in [self.anode, self.cathode]:
+        for control_volume in [self.anolyte, self.catholyte]:
             if state_args is None:
                 state_args = {}
                 state_dict = control_volume.properties_in[
@@ -287,16 +387,16 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
                     else:
                         state_args[k] = state_dict[k].value
 
-        # initialize anode control volume
-        flags_anode = self.anode.initialize(
+        # initialize anolyte control volume
+        flags_anolyte = self.anolyte.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args,
         )
 
-        # initialize cathode control volume
-        flags_cathode = self.cathode.initialize(
+        # initialize catholyte control volume
+        flags_catholyte = self.catholyte.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -314,14 +414,104 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # release inlet state
 
-        self.anode.release_state(flags_anode, outlvl + 1)
-        self.cathode.release_state(flags_cathode, outlvl + 1)
+        self.anolyte.release_state(flags_anolyte, outlvl + 1)
+        self.catholyte.release_state(flags_catholyte, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     # ---------------------------------------------------------------------
+    def _get_performance_contents(self, time_point=0):
+
+        var_dict = {}
+        anolyte_in = self.anolyte.properties_in[time_point]
+        anolyte_out = self.anolyte.properties_in[time_point]
+        catholyte_in = self.catholyte.properties_in[time_point]
+        catholyte_out = self.catholyte.properties_in[time_point]
+
+        # unit model variables
+        # var_dict["Freundlich isotherm k parameter"] = self.freund_k
+
+        # loop through desired state block properties indexed by [phase, comp]
+        phase_comp_prop_dict = {
+            "flow_mol_phase_comp": "molar flow rate",
+            "conc_mass_phase_comp": "mass concentration",
+        }
+        for prop_name, prop_str in phase_comp_prop_dict.items():
+            for j in self.config.property_package.component_list:
+                if anolyte_in.is_property_constructed(prop_name):
+                    var_dict[f"{prop_str} of {j} @ anolyte inlet"] = getattr(
+                        anolyte_in, prop_name
+                    )["Liq", j]
+                if anolyte_out.is_property_constructed(prop_name):
+                    var_dict[f"{prop_str} of {j} @ anolyte outlet"] = getattr(
+                        anolyte_out, prop_name
+                    )["Liq", j]
+                if catholyte_in.is_property_constructed(prop_name):
+                    var_dict[f"{prop_str} of {j} @ catholyte inlet"] = getattr(
+                        catholyte_in, prop_name
+                    )["Liq", j]
+                if catholyte_out.is_property_constructed(prop_name):
+                    var_dict[f"{prop_str} of {j} @ catholyte outlet"] = getattr(
+                        catholyte_out, prop_name
+                    )["Liq", j]
+
+        # loop through desired state block properties indexed by [phase]
+        phase_prop_dict = {
+            "flow_vol_phase": "volumetric flow rate",
+        }
+        for prop_name, prop_str in phase_prop_dict.items():
+            if anolyte_in.is_property_constructed(prop_name):
+                var_dict[f"{prop_str} @ anolyte inlet"] = getattr(
+                    anolyte_in, prop_name
+                )["Liq"]
+            if anolyte_out.is_property_constructed(prop_name):
+                var_dict[f"{prop_str} @ anolyte outlet"] = getattr(
+                    anolyte_out, prop_name
+                )["Liq"]
+            if catholyte_in.is_property_constructed(prop_name):
+                var_dict[f"{prop_str} @ catholyte inlet"] = getattr(
+                    catholyte_in, prop_name
+                )["Liq"]
+            if catholyte_out.is_property_constructed(prop_name):
+                var_dict[f"{prop_str} @ catholyte outlet"] = getattr(
+                    catholyte_out, prop_name
+                )["Liq"]
+
+        return {"vars": var_dict}
+
+    # ---------------------------------------------------------------------
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Anolyte Inlet": self.anolyte_inlet,
+                "Anolyte Outlet": self.anolyte_outlet,
+                "Catholyte Inlet": self.catholyte_inlet,
+                "Catholyte Outlet": self.catholyte_outlet,
+            },
+            time_point=time_point,
+        )
+
+    # ---------------------------------------------------------------------
     def calculate_scaling_factors(self):
 
         super().calculate_scaling_factors()
+
+        if iscale.get_scaling_factor(self.electron_flow) is None:
+            iscale.set_scaling_factor(self.electron_flow, 1)
+
+        if iscale.get_scaling_factor(self.current) is None:
+            iscale.set_scaling_factor(self.current, 1)
+
+        if iscale.get_scaling_factor(self.current_density) is None:
+            iscale.set_scaling_factor(self.current_density, 1)
+
+        if iscale.get_scaling_factor(self.membrane_area) is None:
+            iscale.set_scaling_factor(self.membrane_area, 1)
+
+        if iscale.get_scaling_factor(self.voltage) is None:
+            iscale.set_scaling_factor(self.voltage, 1)
+
+        if iscale.get_scaling_factor(self.power) is None:
+            iscale.set_scaling_factor(self.power, 1)
