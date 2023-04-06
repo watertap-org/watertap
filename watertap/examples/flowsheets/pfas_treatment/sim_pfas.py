@@ -141,7 +141,7 @@ def main():
             theta_names,
             SSE,
             tee=False,
-            diagnostic_mode=True,
+            diagnostic_mode=False,
             solver_options={"bound_push": 1e-8},
         )
 
@@ -316,8 +316,6 @@ def plot_regression(data_regression, data_filtered):
     color_code = [
         "#ffc000",
         "#ed7d31",
-    ]
-    """
         "#c00000",
         "#00b050",
         "#7030a0",
@@ -326,11 +324,11 @@ def plot_regression(data_regression, data_filtered):
         "#000000",
         "#a5a5a5",
         "#f8cbad",
-    ]"""
+    ]
 
     # fig1
     fig1, axs = plt.subplots(
-        nrows=1,  # 5,
+        nrows=5,
         ncols=2,
         sharex=True,
         sharey=True,
@@ -379,7 +377,7 @@ def plot_regression(data_regression, data_filtered):
 
     # fig2
     plt.figure(2)
-    for j in range(2):  # 10):
+    for j in range(10):
 
         plt.plot(
             data_regression[source_name_list[j]]["bed_volumes_treated"],
@@ -445,13 +443,13 @@ def switch_to_surrogate(m):
 
     # deactivate old equations
     m.fs.gac.eq_min_number_st_cps.deactivate()
-    m.fs.gac.eq_throughput.deactivate()
-    m.fs.gac.eq_ele_throughput[1].deactivate()
-    m.fs.gac.eq_ele_throughput[1].deactivate()
-    m.fs.gac.eq_ele_throughput[2].deactivate()
-    m.fs.gac.eq_ele_throughput[3].deactivate()
-    m.fs.gac.eq_ele_throughput[4].deactivate()
-    m.fs.gac.eq_ele_throughput[5].deactivate()
+    # m.fs.gac.eq_throughput.deactivate()
+    # m.fs.gac.eq_ele_throughput[1].deactivate()
+    # m.fs.gac.eq_ele_throughput[1].deactivate()
+    # m.fs.gac.eq_ele_throughput[2].deactivate()
+    # m.fs.gac.eq_ele_throughput[3].deactivate()
+    # m.fs.gac.eq_ele_throughput[4].deactivate()
+    # m.fs.gac.eq_ele_throughput[5].deactivate()
 
     m.fs.min_st_surrogate = SurrogateBlock(concrete=True)
     m.fs.min_st_surrogate.build_model(
@@ -459,62 +457,62 @@ def switch_to_surrogate(m):
         input_vars=[m.fs.gac.freund_ninv, m.fs.gac.N_Bi],
         output_vars=[m.fs.gac.min_N_St],
     )
-    m.fs.throughput_surrogate = SurrogateBlock(concrete=True)
-    m.fs.throughput_surrogate.build_model(
-        throughput_surrogate,
-        input_vars=[m.fs.gac.freund_ninv, m.fs.gac.N_Bi, m.fs.gac.conc_ratio_replace],
-        output_vars=[m.fs.gac.throughput],
-    )
-    m.fs.ele_throughput_surrogate_1 = SurrogateBlock(concrete=True)
-    m.fs.ele_throughput_surrogate_1.build_model(
-        throughput_surrogate,
-        input_vars=[
-            m.fs.gac.freund_ninv,
-            m.fs.gac.N_Bi,
-            m.fs.gac.ele_conc_ratio_replace[1],
-        ],
-        output_vars=[m.fs.gac.ele_throughput[1]],
-    )
-    m.fs.ele_throughput_surrogate_2 = SurrogateBlock(concrete=True)
-    m.fs.ele_throughput_surrogate_2.build_model(
-        throughput_surrogate,
-        input_vars=[
-            m.fs.gac.freund_ninv,
-            m.fs.gac.N_Bi,
-            m.fs.gac.ele_conc_ratio_replace[2],
-        ],
-        output_vars=[m.fs.gac.ele_throughput[2]],
-    )
-    m.fs.ele_throughput_surrogate_3 = SurrogateBlock(concrete=True)
-    m.fs.ele_throughput_surrogate_3.build_model(
-        throughput_surrogate,
-        input_vars=[
-            m.fs.gac.freund_ninv,
-            m.fs.gac.N_Bi,
-            m.fs.gac.ele_conc_ratio_replace[3],
-        ],
-        output_vars=[m.fs.gac.ele_throughput[3]],
-    )
-    m.fs.ele_throughput_surrogate_4 = SurrogateBlock(concrete=True)
-    m.fs.ele_throughput_surrogate_4.build_model(
-        throughput_surrogate,
-        input_vars=[
-            m.fs.gac.freund_ninv,
-            m.fs.gac.N_Bi,
-            m.fs.gac.ele_conc_ratio_replace[4],
-        ],
-        output_vars=[m.fs.gac.ele_throughput[4]],
-    )
-    m.fs.ele_throughput_surrogate_5 = SurrogateBlock(concrete=True)
-    m.fs.ele_throughput_surrogate_5.build_model(
-        throughput_surrogate,
-        input_vars=[
-            m.fs.gac.freund_ninv,
-            m.fs.gac.N_Bi,
-            m.fs.gac.ele_conc_ratio_replace[5],
-        ],
-        output_vars=[m.fs.gac.ele_throughput[5]],
-    )
+    # m.fs.throughput_surrogate = SurrogateBlock(concrete=True)
+    # m.fs.throughput_surrogate.build_model(
+    #     throughput_surrogate,
+    #     input_vars=[m.fs.gac.freund_ninv, m.fs.gac.N_Bi, m.fs.gac.conc_ratio_replace],
+    #     output_vars=[m.fs.gac.throughput],
+    # )
+    # m.fs.ele_throughput_surrogate_1 = SurrogateBlock(concrete=True)
+    # m.fs.ele_throughput_surrogate_1.build_model(
+    #     throughput_surrogate,
+    #     input_vars=[
+    #         m.fs.gac.freund_ninv,
+    #         m.fs.gac.N_Bi,
+    #         m.fs.gac.ele_conc_ratio_replace[1],
+    #     ],
+    #     output_vars=[m.fs.gac.ele_throughput[1]],
+    # )
+    # m.fs.ele_throughput_surrogate_2 = SurrogateBlock(concrete=True)
+    # m.fs.ele_throughput_surrogate_2.build_model(
+    #     throughput_surrogate,
+    #     input_vars=[
+    #         m.fs.gac.freund_ninv,
+    #         m.fs.gac.N_Bi,
+    #         m.fs.gac.ele_conc_ratio_replace[2],
+    #     ],
+    #     output_vars=[m.fs.gac.ele_throughput[2]],
+    # )
+    # m.fs.ele_throughput_surrogate_3 = SurrogateBlock(concrete=True)
+    # m.fs.ele_throughput_surrogate_3.build_model(
+    #     throughput_surrogate,
+    #     input_vars=[
+    #         m.fs.gac.freund_ninv,
+    #         m.fs.gac.N_Bi,
+    #         m.fs.gac.ele_conc_ratio_replace[3],
+    #     ],
+    #     output_vars=[m.fs.gac.ele_throughput[3]],
+    # )
+    # m.fs.ele_throughput_surrogate_4 = SurrogateBlock(concrete=True)
+    # m.fs.ele_throughput_surrogate_4.build_model(
+    #     throughput_surrogate,
+    #     input_vars=[
+    #         m.fs.gac.freund_ninv,
+    #         m.fs.gac.N_Bi,
+    #         m.fs.gac.ele_conc_ratio_replace[4],
+    #     ],
+    #     output_vars=[m.fs.gac.ele_throughput[4]],
+    # )
+    # m.fs.ele_throughput_surrogate_5 = SurrogateBlock(concrete=True)
+    # m.fs.ele_throughput_surrogate_5.build_model(
+    #     throughput_surrogate,
+    #     input_vars=[
+    #         m.fs.gac.freund_ninv,
+    #         m.fs.gac.N_Bi,
+    #         m.fs.gac.ele_conc_ratio_replace[5],
+    #     ],
+    #     output_vars=[m.fs.gac.ele_throughput[5]],
+    # )
 
 
 def model_solve(model, solver_log=True):
