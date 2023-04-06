@@ -35,8 +35,8 @@ from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom, fixed_variables_set
 from idaes.core.util.initialization import (
     solve_indexed_blocks,
-    propagate_state,
-    # propagate_state as _pro_state,
+    # propagate_state,
+    propagate_state as _pro_state,
 )
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.core import UnitModelCostingBlock
@@ -73,10 +73,10 @@ def erd_type_not_found(erd_type):
     )
 
 
-# def propagate_state(arc):
-#     _pro_state(arc)
-#     print(arc.destination.name)
-#     arc.destination.display()
+def propagate_state(arc):
+    _pro_state(arc)
+    print(arc.destination.name)
+    arc.destination.display()
 
 
 def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
@@ -87,6 +87,7 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     m = build(number_of_stages=number_of_stages, erd_type=erd_type)
     set_operating_conditions(m)
     initialize_system(m, number_of_stages, system_recovery, solver=solver)
+
     # solve(m, solver=solver)
     # print("\n***---Simulation results---***")
     # display_system(m)
@@ -562,7 +563,7 @@ def set_operating_conditions(
     #     feed_flow_mass * feed_mass_frac_H2O
     # )
 
-    Cin = 70
+    Cin = 125
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"] = Cin
     m.fs.feed.properties.calculate_state(
         var_args={
@@ -576,12 +577,12 @@ def set_operating_conditions(
 
     # primary pumps
     for idx, pump in m.fs.PrimaryPumps.items():
-        pump.control_volume.properties_out[0].pressure = 65e5 / float(idx)
+        pump.control_volume.properties_out[0].pressure = 10e5 + 65e5 / float(idx)
         pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
     for idx, pump in m.fs.RecyclePumps.items():
-        pump.control_volume.properties_out[0].pressure = 5e5 / float(idx)
+        pump.control_volume.properties_out[0].pressure = 1e5 + 8e5 / float(idx)
         pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
@@ -814,13 +815,14 @@ def initialize_system(
     # permeate side outlet pressure and unfix the RO pump
     # (which allows for control over the flow mass composition
     # into the OARO permeate_side).
-    for stage in m.fs.NonFinalStages:
-        m.fs.OAROUnits[stage].permeate_side.properties_out[0].pressure.fix(101325)
-        m.fs.PrimaryPumps[stage + 1].control_volume.properties_out[0].pressure.unfix()
 
-    if water_recovery is not None:
-        m.fs.water_recovery.fix(water_recovery)
-        m.fs.PrimaryPumps[1].control_volume.properties_out[0].pressure.unfix()
+    # for stage in m.fs.NonFinalStages:
+    #     m.fs.OAROUnits[stage].permeate_side.properties_out[0].pressure.fix(101325)
+    #     m.fs.PrimaryPumps[stage + 1].control_volume.properties_out[0].pressure.unfix()
+    #
+    # if water_recovery is not None:
+    #     m.fs.water_recovery.fix(water_recovery)
+    #     m.fs.PrimaryPumps[1].control_volume.properties_out[0].pressure.unfix()
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
@@ -838,7 +840,7 @@ def optimize_set_up(
     for idx, pump in m.fs.PrimaryPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
         pump.deltaP.setlb(0)
-        if idx < m.fs.Stages.last():
+        if idx > m.fs.Stages.first():
             pump.max_oaro_pressure_con = Constraint(
                 expr=(
                     m.fs.oaro_min_pressure,
@@ -883,7 +885,13 @@ def optimize_set_up(
         )
         pump.deltaP.setlb(0)
 
-    # # OARO Units
+    # ERD Units
+    for erd in m.fs.EnergyRecoveryDevices.values():
+        erd.control_volume.properties_out[0].pressure.unfix()
+        erd.control_volume.properties_out[0].pressure.setlb(101325)
+        erd.deltaP.setub(0)
+
+    # OARO Units
     for stage in m.fs.OAROUnits.values():
         stage.area.unfix()
         stage.area.setlb(1)
@@ -892,6 +900,8 @@ def optimize_set_up(
         stage.feed_side.velocity[0, 0].unfix()
         stage.feed_side.velocity[0, 0].setlb(0.1)
         stage.feed_side.velocity[0, 0].setub(1)
+
+        stage.permeate_side.properties_out[0].pressure.setlb(101325)
 
         # stage.permeate_side.cp_modulus[0.0, 0.0, "NaCl"].setlb(0.01)
         stage.permeate_side.friction_factor_darcy[0.0, 1.0].setub(None)
@@ -1094,4 +1104,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(3, system_recovery=0.55, erd_type=ERDtype.pump_as_turbine)
+    m = main(3, system_recovery=0.2, erd_type=ERDtype.pump_as_turbine)
