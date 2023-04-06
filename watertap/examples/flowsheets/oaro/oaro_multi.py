@@ -1104,4 +1104,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(3, system_recovery=0.2, erd_type=ERDtype.pump_as_turbine)
+    m = main(3, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
