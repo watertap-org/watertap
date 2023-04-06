@@ -32,14 +32,13 @@ from idaes.models.unit_models import (
     Mixer,
     Separator,
     Product,
-    Feed,
     Translator,
     MomentumMixingType,
 )
 from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.pressure_exchanger import PressureExchanger
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
+from watertap.unit_models.pressure_changer import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
 import watertap.property_models.seawater_prop_pack as prop_SW

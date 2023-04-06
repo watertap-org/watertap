@@ -22,9 +22,9 @@ Additional Variables
    :header: "Description", "Variable Name", "Units"
 
    "Electricity consumption of unit", "electricity", ":math:`kW`"
-   "Electricity intensity with respect to struvite byproduct flowrate of unit", "energy_electric_flow_mass", ":math:`kWh/kg`"
-   "Dosage of magnesium chloride per struvite", "magnesium_chloride_dosage", ":math:`dimensionless`"
-   "Magnesium chloride flowrate", "MgCl2_flowrate", ":math:`kg/hr`"
+   "Electricity intensity with respect to phosphorus removal", "energy_electric_flow_mass", ":math:`kWh/kg`"
+   "Dosage of magnesium chloride per treated phosphorus", "magnesium_chloride_dosage", ":math:`dimensionless`"
+   "Magnesium chloride flowrate", "MgCl2_flowrate", ":math:`kg/h`"
 
 Additional Constraints
 ----------------------
@@ -32,8 +32,8 @@ Additional Constraints
 .. csv-table::
    :header: "Description", "Constraint Name"
 
-   "Constraint for electricity consumption based on struvite flowrate.", "electricity_consumption"
-   "Constraint for magnesium chloride demand based on struvite flowrate.", "MgCl2_demand"
+   "Constraint for electricity consumption based on phosphorus removal", "electricity_consumption"
+   "Constraint for magnesium chloride demand based on phosphorus removal.", "MgCl2_demand"
 
 .. index::
    pair: watertap.unit_models.zero_order.electrochemical_nutrient_removal_zo;electrochemical_nutrient_removal_zo

@@ -247,7 +247,6 @@ class WaterParameterData(PhysicalParameterBlock):
             units=enth_mass_units * t_inv_units**3,
             doc="Specific enthalpy parameter C4",
         )
-
         # specific heat parameters from eq (9) in Sharqawy et al. (2010)
         cp_units = pyunits.J / (pyunits.kg * pyunits.K)
         self.cp_phase_param_A1 = Var(
@@ -256,48 +255,24 @@ class WaterParameterData(PhysicalParameterBlock):
             units=cp_units,
             doc="Specific heat of seawater parameter A1",
         )
-        # self.cp_phase_param_A2 = Var(
-        #     within=Reals, initialize=-9.76e-2, units=cp_units * s_inv_units,
-        #     doc='Specific heat of seawater parameter A2')
-        # self.cp_phase_param_A3 = Var(
-        #     within=Reals, initialize=4.04e-4, units=cp_units * s_inv_units**2,
-        #     doc='Specific heat of seawater parameter A3')
         self.cp_phase_param_B1 = Var(
             within=Reals,
             initialize=-6.913e-3,
             units=cp_units * t_inv_units,
             doc="Specific heat of seawater parameter B1",
         )
-        # self.cp_phase_param_B2 = Var(
-        #     within=Reals, initialize=7.351e-4, units=cp_units * s_inv_units * t_inv_units,
-        #     doc='Specific heat of seawater parameter B2')
-        # self.cp_phase_param_B3 = Var(
-        #     within=Reals, initialize=-3.15e-6, units=cp_units * s_inv_units**2 * t_inv_units,
-        #     doc='Specific heat of seawater parameter B3')
         self.cp_phase_param_C1 = Var(
             within=Reals,
             initialize=9.6e-6,
             units=cp_units * t_inv_units**2,
             doc="Specific heat of seawater parameter C1",
         )
-        # self.cp_phase_param_C2 = Var(
-        #     within=Reals, initialize=-1.927e-6, units=cp_units * s_inv_units * t_inv_units**2,
-        #     doc='Specific heat of seawater parameter C2')
-        # self.cp_phase_param_C3 = Var(
-        #     within=Reals, initialize=8.23e-9, units=cp_units * s_inv_units**2 * t_inv_units**2,
-        #     doc='Specific heat of seawater parameter C3')
         self.cp_phase_param_D1 = Var(
             within=Reals,
             initialize=2.5e-9,
             units=cp_units * t_inv_units**3,
             doc="Specific heat of seawater parameter D1",
         )
-        # self.cp_phase_param_D2 = Var(
-        #     within=Reals, initialize=1.666e-9, units=cp_units * s_inv_units * t_inv_units**3,
-        #     doc='Specific heat of seawater parameter D2')
-        # self.cp_phase_param_D3 = Var(
-        #     within=Reals, initialize=-7.125e-12, units=cp_units * s_inv_units**2 * t_inv_units**3,
-        #     doc='Specific heat of seawater parameter D3')
 
         # Specific heat parameters for Cp vapor from NIST Webbook
         # Chase, M.W., Jr., NIST-JANAF Themochemical Tables, Fourth Edition, J. Phys. Chem. Ref. Data, Monograph 9, 1998, 1-1951
@@ -373,7 +348,6 @@ class WaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("pressure", 1e-5)
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("dens_mass_phase", 1, index="Vap")
-        # self.set_default_scaling('dens_mass_solvent', 1e-3)
         self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
         self.set_default_scaling("enth_mass_phase", 1e-6, index="Vap")
         self.set_default_scaling("pressure_sat", 1e-5)
@@ -835,9 +809,8 @@ class WaterStateBlockData(StateBlockData):
             doc="Saturation vapor pressure",
         )
 
-        def rule_pressure_sat(
-            b,
-        ):  # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
+        # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
+        def rule_pressure_sat(b):
             t = b.temperature
             psatw = (
                 exp(
@@ -864,7 +837,8 @@ class WaterStateBlockData(StateBlockData):
             doc="Enthalpy flow",
         )
 
-        def rule_enth_flow_phase(b, p):  # enthalpy flow [J/s]
+        # enthalpy flow [J/s]
+        def rule_enth_flow_phase(b, p):
             return (
                 b.enth_flow_phase[p]
                 == b.flow_mass_phase_comp[p, "H2O"] * b.enth_mass_phase[p]
@@ -905,7 +879,8 @@ class WaterStateBlockData(StateBlockData):
                     b.cp_mass_phase[phase]
                     == (A + B * t + C * t**2 + D * t**3) * 1000
                 )
-            else:  # phase == 'Vap'
+            # phase == 'Vap'
+            else:
                 t = b.temperature / 1000
                 return (
                     b.cp_mass_phase[phase]
@@ -928,9 +903,8 @@ class WaterStateBlockData(StateBlockData):
             doc="Latent heat of vaporization",
         )
 
-        def rule_dh_vap_mass(
-            b,
-        ):  # latent heat of seawater from eq. 37 and eq. 55 in Sharqawy et al. (2010)
+        # latent heat of seawater from eq. 37 and eq. 55 in Sharqawy et al. (2010)
+        def rule_dh_vap_mass(b):
             t = b.temperature - 273.15 * pyunits.K
             return (
                 b.dh_vap_mass

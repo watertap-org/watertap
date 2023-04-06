@@ -9,17 +9,13 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
-import sys
-
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
-
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1690.amo_1690 as amo_1690
 
 
 def set_up_sensitivity(m):
     outputs = {}
-    optimize_kwargs = {"check_termination": False}
+    optimize_kwargs = {"fail_flag": False}
     opt_function = amo_1690.solve
 
     # create outputs
@@ -61,20 +57,8 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, save_path=None
         interpolate_nan_outputs=interpolate_nan_outputs,
     )
 
-    print(global_results)
-
     return global_results, sweep_params, m
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 1:
-        print(
-            "Usage: Specify the conditions in the run_analysis function and then run 'python multi_sweep.py' "
-            "Case number (case_num) is an integer, number_of_samples (nx) is an integer, interpolate_nan_outputs is a"
-            "boolean and results_path is the file path where the results will be created and displayed."
-        )
-        print(
-            f"Results will be written to {os.path.dirname(os.path.abspath(__file__))}"
-        )
-    else:
-        results, sweep_params, m = run_analysis(*sys.argv[1:])
+    results, sweep_params, m = run_analysis()
