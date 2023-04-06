@@ -46,12 +46,10 @@ _log = idaeslog.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------
-
-
 @declare_process_block_class("Electrolyzer")
 class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
     """
-    Faradaic conversion Electrolyzer model
+    Faradaic conversion electrolyzer model
     """
 
     CONFIG = ConfigBlock()
@@ -189,27 +187,141 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         self._validate_config()
 
         # build control volume
-        self.elec = ControlVolume0DBlock(
+        self.anode = ControlVolume0DBlock(
             dynamic=False,
             has_holdup=False,
             property_package=self.config.property_package,
             property_package_args=self.config.property_package_args,
         )
-        self.process_flow.add_state_blocks(has_phase_equilibrium=False)
-        self.process_flow.add_material_balances(
-            balance_type=self.config.material_balance_type, has_mass_transfer=True
+        self.cathode = ControlVolume0DBlock(
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
-        self.process_flow.add_energy_balances(
-            balance_type=self.config.energy_balance_type,
-            has_enthalpy_transfer=False,
-        )
-        if self.config.is_isothermal:
-            self.process_flow.add_isothermal_assumption()
-        self.process_flow.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type,
-            has_pressure_change=False,
-        )
+        for control_volume in [self.anode, self.cathode]:
+            control_volume.add_state_blocks(has_phase_equilibrium=False)
+            control_volume.add_material_balances(
+                balance_type=self.config.material_balance_type,
+                has_mass_transfer=True,
+            )
+            control_volume.add_energy_balances(
+                balance_type=self.config.energy_balance_type,
+                has_enthalpy_transfer=False,
+            )
+            if self.config.is_isothermal:
+                control_volume.add_isothermal_assumption()
+                control_volume.add_momentum_balances(
+                    balance_type=self.config.momentum_balance_type,
+                    has_pressure_change=False,
+                )
 
         # Add ports
-        self.add_inlet_port(name="inlet", block=self.elec)
-        self.add_outlet_port(name="outlet", block=self.elec)
+        self.add_inlet_port(name="anode_inlet", block=self.anode)
+        self.add_outlet_port(name="anode_outlet", block=self.anode)
+        self.add_inlet_port(name="cathode_inlet", block=self.cathode)
+        self.add_outlet_port(name="cathode_outlet", block=self.cathode)
+
+        # ---------------------------------------------------------------------
+        # mass balance
+
+        for j in self.config.property_package.component_list:
+            self.anode.mass_transfer_term[:, "Liq", j].fix(0)
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.component_list,
+            doc="mass transfer across the membrane",
+        )
+        def eq_mass_transfer_port(b, t, j):
+            return (
+                b.cathode.mass_transfer_term[t, "Liq", j]
+                == -b.anode.mass_transfer_term[t, "Liq", j]
+            )
+
+    # ---------------------------------------------------------------------
+    # initialize method
+
+    def initialize_build(
+        self,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+    ):
+        """
+        General wrapper for initialization routines
+
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default=None)
+            solver : str indicating which solver to use during
+                     initialization (default = None)
+
+        Returns: None
+        """
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+        # set solver options
+        opt = get_solver(solver, optarg)
+
+        # ---------------------------------------------------------------------
+        # set state_args from inlet state
+
+        for control_volume in [self.anode, self.cathode]:
+            if state_args is None:
+                state_args = {}
+                state_dict = control_volume.properties_in[
+                    self.flowsheet().config.time.first()
+                ].define_port_members()
+
+                for k in state_dict.keys():
+                    if state_dict[k].is_indexed():
+                        state_args[k] = {}
+                        for m in state_dict[k].keys():
+                            state_args[k][m] = state_dict[k][m].value
+                    else:
+                        state_args[k] = state_dict[k].value
+
+        # initialize anode control volume
+        flags_anode = self.anode.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+        )
+
+        # initialize cathode control volume
+        flags_cathode = self.cathode.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+        )
+
+        init_log.info_high("Initialization Step 1 Complete.")
+        # --------------------------------------------------------------------
+        # solve unit
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+
+        init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
+        # ---------------------------------------------------------------------
+        # release inlet state
+
+        self.anode.release_state(flags_anode, outlvl + 1)
+        self.cathode.release_state(flags_cathode, outlvl + 1)
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
+
+    # ---------------------------------------------------------------------
+    def calculate_scaling_factors(self):
+
+        super().calculate_scaling_factors()

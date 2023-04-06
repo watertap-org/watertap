@@ -46,9 +46,7 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
     DiffusivityCalculation,
 )
-from watertap.unit_models.electrolyzer import (
-    Electrolyzer,
-)
+from watertap.unit_models.electrolyzer import Electrolyzer
 from watertap.costing import WaterTAPCosting
 
 __author__ = "Hunter Barber"
@@ -90,6 +88,26 @@ class TestElectrolyzer:
         )
 
         # feed specifications
+        anode_blk = m.fs.unit.anode
+        cathode_blk = m.fs.unit.cathode
+        anode_blk.properties_in[0].pressure.fix(101325)
+        anode_blk.properties_in[0].temperature.fix(273.15 + 25)
+        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix()
+        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "H+"].fix()
+        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "OH-"].fix()
+        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "NA+"].fix()
+        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "CL-"].fix()
+        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "CL2"].fix()
+        anode_blk.properties_in[0].flow_mol_phase_comp["Liq", "H2"].fix()
+        cathode_blk.properties_in[0].pressure.fix(101325)
+        cathode_blk.properties_in[0].temperature.fix(273.15 + 25)
+        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix()
+        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "H+"].fix()
+        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "OH-"].fix()
+        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "NA+"].fix()
+        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "CL-"].fix()
+        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "CL2"].fix()
+        cathode_blk.properties_in[0].flow_mol_phase_comp["Liq", "H2"].fix()
 
         # fix variables
 
