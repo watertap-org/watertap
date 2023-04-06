@@ -66,7 +66,7 @@ class ADM1_vaporParameterData(PhysicalParameterBlock):
         # All soluble components on kg COD/m^3 basis
         self.S_h2 = Solute(doc="Hydrogen gas")
         self.S_ch4 = Solute(doc="Methane gas")
-        self.S_co2 = Solute(doc="Carbon dioxide carbon")
+        self.S_co2 = Solute(doc="Carbon dioxide")
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(
