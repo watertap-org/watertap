@@ -191,16 +191,30 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         # Check configs for errors
         self._validate_config()
 
-        self.custom_reaction_generation = Var(
+        # self.config.material_balance_type is componentTotal
+        self.custom_reaction_generation_anode = Var(
             self.flowsheet().time,
             self.config.property_package.component_list,
+            initialize=0.1,
+            bounds=(None, None),
             domain=Reals,
+            units=units_meta("amount") * units_meta("time") ** -1,
         )
 
-        # self.config.material_balance_type is componentTotal
-        def custom_method(t, j):
-            return self.custom_reaction_generation[t, j] * pyunits.mol / pyunits.s
-            # self.electron_flow * self.anode_stoich[p, j]
+        def custom_method_anode(t, j):
+            return self.custom_reaction_generation_anode[t, j]
+
+        self.custom_reaction_generation_cathode = Var(
+            self.flowsheet().time,
+            self.config.property_package.component_list,
+            initialize=0.1,
+            bounds=(None, None),
+            domain=Reals,
+            units=units_meta("amount") * units_meta("time") ** -1,
+        )
+
+        def custom_method_cathode(t, j):
+            return self.custom_reaction_generation_cathode[t, j]
 
         # build control volume
         self.anolyte = ControlVolume0DBlock(
@@ -217,11 +231,6 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         )
         for control_volume in [self.anolyte, self.catholyte]:
             control_volume.add_state_blocks(has_phase_equilibrium=False)
-            control_volume.add_material_balances(
-                balance_type=self.config.material_balance_type,
-                has_mass_transfer=True,
-                custom_molar_term=custom_method,
-            )
             control_volume.add_energy_balances(
                 balance_type=self.config.energy_balance_type,
                 has_enthalpy_transfer=False,
@@ -232,6 +241,16 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
                     balance_type=self.config.momentum_balance_type,
                     has_pressure_change=False,
                 )
+        self.anolyte.add_material_balances(
+            balance_type=self.config.material_balance_type,
+            has_mass_transfer=True,
+            custom_molar_term=custom_method_anode,
+        )
+        self.catholyte.add_material_balances(
+            balance_type=self.config.material_balance_type,
+            has_mass_transfer=True,
+            custom_molar_term=custom_method_cathode,
+        )
 
         # Add ports
         self.add_inlet_port(name="anolyte_inlet", block=self.anolyte)
@@ -309,28 +328,28 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # performance
 
-        # @self.Constraint(
-        #     doc="electrons passed between anode and cathode contributing to reactions"
-        # )
-        # def eq_electron_flow(b):
-        #     return b.electron_flow * Constants.faraday_constant == b.current
-        #
-        # @self.Constraint(doc="current density")
-        # def eq_current_density(b):
-        #     return b.current_density * b.membrane_area == b.current
-        #
-        # @self.Constraint(doc="power")
-        # def eq_power(b):
-        #     return b.power * b.current == b.voltage
-        #
-        # # ---------------------------------------------------------------------
-        # # reactions
-        #
-        # # fix stoichiometry to zero to be overwritten
-        # for p in self.config.property_package.phase_list:
-        #     for j in self.config.property_package.component_list:
-        #         self.anode_stoich[p, j].fix(0)
-        #         self.cathode_stoich[p, j].fix(0)
+        @self.Constraint(
+            doc="electrons passed between anode and cathode contributing to reactions"
+        )
+        def eq_electron_flow(b):
+            return b.electron_flow * Constants.faraday_constant == b.current
+
+        @self.Constraint(doc="current density")
+        def eq_current_density(b):
+            return b.current_density * b.membrane_area == b.current
+
+        @self.Constraint(doc="power")
+        def eq_power(b):
+            return b.power * b.current == b.voltage
+
+        # ---------------------------------------------------------------------
+        # reactions
+
+        # fix stoichiometry to zero to be overwritten
+        for p in self.config.property_package.phase_list:
+            for j in self.config.property_package.component_list:
+                self.anode_stoich[p, j].fix(0)
+                self.cathode_stoich[p, j].fix(0)
 
         # ---------------------------------------------------------------------
         # mass balance
@@ -349,6 +368,30 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             return (
                 b.catholyte.mass_transfer_term[t, p, j]
                 == -b.anolyte.mass_transfer_term[t, p, j]
+            )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            doc="",
+        )
+        def eq_custom_reaction_generation_anode(b, t, p, j):
+            return (
+                b.custom_reaction_generation_anode[t, j]
+                == b.electron_flow * b.anode_stoich[p, j]
+            )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            doc="",
+        )
+        def eq_custom_reaction_generation_cathode(b, t, p, j):
+            return (
+                b.custom_reaction_generation_cathode[t, j]
+                == b.electron_flow * b.cathode_stoich[p, j]
             )
 
     # ---------------------------------------------------------------------

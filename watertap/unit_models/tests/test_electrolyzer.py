@@ -134,8 +134,6 @@ class TestElectrolyzer:
 
         m = chlor_alkali_elec
 
-        m.fs.unit.pprint()
-
         assert assert_units_consistent(m) is None
         assert degrees_of_freedom(m) == 0
 
@@ -151,7 +149,8 @@ class TestElectrolyzer:
         initialization_tester(m)
         results = solver.solve(m)
 
+        m.fs.unit.display()
+        m.fs.unit.report()
+
         # Check for optimal solution
         assert check_optimal_termination(results)
-
-        m.fs.unit.display()
