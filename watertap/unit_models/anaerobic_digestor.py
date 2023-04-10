@@ -546,10 +546,9 @@ see reaction package for documentation.}""",
 
         def outlet_P_rule(self, t):
             return self.vapor_phase[t].pressure == (
-                self.vapor_phase[t].p_w_sat
-                + sum(
-                    self.vapor_phase[t].p_sat[j]
-                    for j in self.config.vapor_property_package.solute_set
+                sum(
+                    self.vapor_phase[t].pressure_sat[j]
+                    for j in self.config.vapor_property_package.component_list
                 )
             )
 
@@ -600,7 +599,7 @@ see reaction package for documentation.}""",
                         self.KH_h2[t],
                         to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
                     )
-                    * self.vapor_phase[t].p_sat["S_h2"]
+                    * self.vapor_phase[t].pressure_sat["S_h2"]
                 )
                 * self.volume_liquid[t]
             )
@@ -623,7 +622,7 @@ see reaction package for documentation.}""",
                         self.KH_ch4[t],
                         to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
                     )
-                    * self.vapor_phase[t].p_sat["S_ch4"]
+                    * self.vapor_phase[t].pressure_sat["S_ch4"]
                 )
                 * self.volume_liquid[t]
             )
@@ -643,7 +642,7 @@ see reaction package for documentation.}""",
                         self.KH_co2[t],
                         to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
                     )
-                    * self.vapor_phase[t].p_sat["S_co2"]
+                    * self.vapor_phase[t].pressure_sat["S_co2"]
                 )
                 * self.volume_liquid[t]
             ) * (1 * pyunits.kg / pyunits.kmole)
