@@ -69,7 +69,6 @@ class TestOAROwithTurbine:
         # assert isinstance(fs.disposal, Product)
 
         # additional variables
-        assert isinstance(fs.volumetric_recovery, Var)
         assert isinstance(fs.water_recovery, Var)
 
     @pytest.mark.component
@@ -85,7 +84,7 @@ class TestOAROwithTurbine:
     @pytest.mark.component
     def test_initialize_system(self, system_frame):
         m = system_frame
-        initialize_system(m, solver=solver)
+        initialize_system(m, number_of_stages=2, solver=solver)
         assert degrees_of_freedom(m) == 0
 
     @pytest.mark.component
@@ -93,10 +92,10 @@ class TestOAROwithTurbine:
         m = system_frame
         solve(m, solver=solver)
         fs = m.fs
-        assert pytest.approx(4.40700e-5, rel=1e-5) == value(
+        assert pytest.approx(2.54546e-4, rel=1e-5) == value(
             fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]
         )
-        assert pytest.approx(0.111000, rel=1e-5) == value(fs.water_recovery)
+        assert pytest.approx(0.262719, rel=1e-5) == value(fs.water_recovery)
 
     @pytest.mark.component
     def test_config_error(self, system_frame):
@@ -105,4 +104,4 @@ class TestOAROwithTurbine:
 
     @pytest.mark.component
     def test_main(self):
-        main(number_of_stages=2)
+        main(number_of_stages=2, system_recovery=0.5)

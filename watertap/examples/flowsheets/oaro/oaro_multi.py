@@ -86,7 +86,7 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     # build, set, and initialize
     m = build(number_of_stages=number_of_stages, erd_type=erd_type)
     set_operating_conditions(m)
-    initialize_system(m, number_of_stages, system_recovery, solver=solver)
+    initialize_system(m, number_of_stages, solver=solver)
 
     # solve(m, solver=solver)
     # print("\n***---Simulation results---***")
@@ -563,7 +563,7 @@ def set_operating_conditions(
     #     feed_flow_mass * feed_mass_frac_H2O
     # )
 
-    Cin = 125
+    Cin = 70
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"] = Cin
     m.fs.feed.properties.calculate_state(
         var_args={
@@ -749,9 +749,7 @@ def initialize_loop(m, solver):
         m.fs.OAROUnits[stage - 1].initialize()
 
 
-def initialize_system(
-    m, number_of_stages=None, water_recovery=None, solver=None, verbose=True
-):
+def initialize_system(m, number_of_stages=None, solver=None, verbose=True):
     if solver is None:
         solver = get_solver()
 
@@ -765,7 +763,7 @@ def initialize_system(
     m.fs.PrimaryPumps[first_stage].initialize()
 
     # ---initialize first OARO unit---
-    if number_of_stages > 1:
+    if number_of_stages > int(1):
         propagate_state(m.fs.pump_to_OARO[first_stage])
         recycle_pump_initializer(
             m.fs.RecyclePumps[first_stage + 1],
@@ -794,7 +792,7 @@ def initialize_system(
     # print(f"fixed variables set after RO: {fixed_variables_set(m.fs.RO)}")
     # print(f"DOF after RO: {degrees_of_freedom(m)}")
 
-    if number_of_stages > 1:
+    if number_of_stages > int(1):
         propagate_state(m.fs.ro_to_ERD)
         m.fs.EnergyRecoveryDevices[last_stage].initialize()
 
