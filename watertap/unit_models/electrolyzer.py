@@ -14,6 +14,7 @@
 from pyomo.environ import (
     Var,
     Param,
+    Reference,
     Suffix,
     NonNegativeReals,
     units as pyunits,
@@ -32,7 +33,10 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.constants import Constants
-from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.config import (
+    is_physical_parameter_block,
+    is_reaction_parameter_block,
+)
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
@@ -201,11 +205,9 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         )
         for control_volume in [self.anolyte, self.catholyte]:
             control_volume.add_state_blocks(has_phase_equilibrium=False)
-            control_volume.add_reaction_blocks(has_equilibrium=False)
             control_volume.add_material_balances(
                 balance_type=self.config.material_balance_type,
                 has_mass_transfer=True,
-                # has_rate_reactions=True,
             )
             control_volume.add_energy_balances(
                 balance_type=self.config.energy_balance_type,
@@ -294,50 +296,47 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # performance
 
-        @self.Constraint(
-            doc="electrons passed between anode and cathode contributing to reactions"
-        )
-        def eq_electron_flow(b):
-            return b.electron_flow * Constants.faraday_constant == b.current
-
-        @self.Constraint(doc="current density")
-        def eq_current_density(b):
-            return b.current_density * b.membrane_area == b.current
-
-        @self.Constraint(doc="power")
-        def eq_power(b):
-            return b.power * b.current == b.voltage
-
-        # ---------------------------------------------------------------------
-        # performance
-
-        # fix stoichiometry to zero to be overwritten
-        for p in self.config.property_package.phase_list:
-            for j in self.config.property_package.component_list:
-                self.anode_stoich[p, j].fix(0)
-                self.cathode_stoich[p, j].fix(0)
-
-        # ---------------------------------------------------------------------
-        # mass balance
-
-        for j in self.config.property_package.phase_list:
-            for j in self.config.property_package.component_list:
-                self.anolyte.mass_transfer_term[:, p, j].fix(0)
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="mass transfer across the membrane",
-        )
-        def eq_mass_transfer_membrane(b, t, p, j):
-            return (
-                b.catholyte.mass_transfer_term[t, p, j]
-                == -b.anolyte.mass_transfer_term[t, p, j]
-            )
-
-        for j in self.config.property_package.component_list:
-            self.anolyte.rate_reaction_generation[:, "Liq", j].fix(0)
+        # @self.Constraint(
+        #     doc="electrons passed between anode and cathode contributing to reactions"
+        # )
+        # def eq_electron_flow(b):
+        #     return b.electron_flow * Constants.faraday_constant == b.current
+        #
+        # @self.Constraint(doc="current density")
+        # def eq_current_density(b):
+        #     return b.current_density * b.membrane_area == b.current
+        #
+        # @self.Constraint(doc="power")
+        # def eq_power(b):
+        #     return b.power * b.current == b.voltage
+        #
+        # # ---------------------------------------------------------------------
+        # # reactions
+        #
+        # # fix stoichiometry to zero to be overwritten
+        # for p in self.config.property_package.phase_list:
+        #     for j in self.config.property_package.component_list:
+        #         self.anode_stoich[p, j].fix(0)
+        #         self.cathode_stoich[p, j].fix(0)
+        #
+        # # ---------------------------------------------------------------------
+        # # mass balance
+        #
+        # for p in self.config.property_package.phase_list:
+        #     for j in self.config.property_package.component_list:
+        #         self.anolyte.mass_transfer_term[:, p, j].fix(0)
+        #
+        # @self.Constraint(
+        #     self.flowsheet().config.time,
+        #     self.config.property_package.phase_list,
+        #     self.config.property_package.component_list,
+        #     doc="mass transfer across the membrane",
+        # )
+        # def eq_mass_transfer_membrane(b, t, p, j):
+        #     return (
+        #         b.catholyte.mass_transfer_term[t, p, j]
+        #         == -b.anolyte.mass_transfer_term[t, p, j]
+        #     )
 
     # ---------------------------------------------------------------------
     # initialize method
