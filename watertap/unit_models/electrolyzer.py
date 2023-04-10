@@ -17,6 +17,7 @@ from pyomo.environ import (
     Reference,
     Suffix,
     NonNegativeReals,
+    Reals,
     units as pyunits,
     check_optimal_termination,
 )
@@ -190,6 +191,17 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         # Check configs for errors
         self._validate_config()
 
+        self.custom_reaction_generation = Var(
+            self.flowsheet().time,
+            self.config.property_package.component_list,
+            domain=Reals,
+        )
+
+        # self.config.material_balance_type is componentTotal
+        def custom_method(t, j):
+            return self.custom_reaction_generation[t, j] * pyunits.mol / pyunits.s
+            # self.electron_flow * self.anode_stoich[p, j]
+
         # build control volume
         self.anolyte = ControlVolume0DBlock(
             dynamic=False,
@@ -208,6 +220,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             control_volume.add_material_balances(
                 balance_type=self.config.material_balance_type,
                 has_mass_transfer=True,
+                custom_molar_term=custom_method,
             )
             control_volume.add_energy_balances(
                 balance_type=self.config.energy_balance_type,
@@ -318,25 +331,25 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         #     for j in self.config.property_package.component_list:
         #         self.anode_stoich[p, j].fix(0)
         #         self.cathode_stoich[p, j].fix(0)
-        #
-        # # ---------------------------------------------------------------------
-        # # mass balance
-        #
-        # for p in self.config.property_package.phase_list:
-        #     for j in self.config.property_package.component_list:
-        #         self.anolyte.mass_transfer_term[:, p, j].fix(0)
-        #
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     self.config.property_package.phase_list,
-        #     self.config.property_package.component_list,
-        #     doc="mass transfer across the membrane",
-        # )
-        # def eq_mass_transfer_membrane(b, t, p, j):
-        #     return (
-        #         b.catholyte.mass_transfer_term[t, p, j]
-        #         == -b.anolyte.mass_transfer_term[t, p, j]
-        #     )
+
+        # ---------------------------------------------------------------------
+        # mass balance
+
+        for p in self.config.property_package.phase_list:
+            for j in self.config.property_package.component_list:
+                self.anolyte.mass_transfer_term[:, p, j].fix(0)
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            doc="mass transfer across the membrane",
+        )
+        def eq_mass_transfer_membrane(b, t, p, j):
+            return (
+                b.catholyte.mass_transfer_term[t, p, j]
+                == -b.anolyte.mass_transfer_term[t, p, j]
+            )
 
     # ---------------------------------------------------------------------
     # initialize method
