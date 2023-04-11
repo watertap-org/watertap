@@ -103,6 +103,10 @@ class ASM2dParameterData(PhysicalParameterBlock):
         self.X_S = Solute(doc="Slowly biodegradable substrates. [kg COD/m^3]")
         self.X_TSS = Solute(doc="Total suspended solids, TSS. [kg TSS/m^3]")
 
+        # Other chemical precipitation species
+        self.S_K = Solute(doc="Potassium")
+        self.S_Mg = Solute(doc="Magnesium")
+
         # Heat capacity of water
         self.cp_mass = pyo.Param(
             mutable=False,

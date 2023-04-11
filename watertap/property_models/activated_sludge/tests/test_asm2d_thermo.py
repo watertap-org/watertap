@@ -52,7 +52,7 @@ class TestParamBlock(object):
         for i in model.params.phase_list:
             assert i == "Liq"
 
-        assert len(model.params.component_list) == 20
+        assert len(model.params.component_list) == 22
         for i in model.params.component_list:
             assert i in [
                 "H2O",
@@ -75,6 +75,8 @@ class TestParamBlock(object):
                 "X_PP",
                 "X_S",
                 "X_TSS",
+                "S_K",
+                "S_Mg",
             ]
 
         assert isinstance(model.params.cp_mass, Param)
@@ -116,7 +118,7 @@ class TestStateBlock(object):
 
         assert isinstance(model.props[1].conc_mass_comp, Var)
         # H2O should not appear in conc_mass_comp
-        assert len(model.props[1].conc_mass_comp) == 18
+        assert len(model.props[1].conc_mass_comp) == 20
         for i in model.props[1].conc_mass_comp:
             assert i in [
                 "S_A",
@@ -137,6 +139,8 @@ class TestStateBlock(object):
                 "X_PP",
                 "X_S",
                 "X_TSS",
+                "S_K",
+                "S_Mg",
             ]
             assert value(model.props[1].conc_mass_comp[i]) == 0.1
 

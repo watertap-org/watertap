@@ -241,7 +241,7 @@ class TestParamBlock(object):
             ("R21", "Liq", "X_MeP"): -4.87,
         }
 
-        assert len(model.rparams.rate_reaction_stoichiometry) == 20 * 21
+        assert len(model.rparams.rate_reaction_stoichiometry) == 22 * 21
         for i, v in model.rparams.rate_reaction_stoichiometry.items():
             assert i[0] in [
                 "R1",
@@ -288,6 +288,8 @@ class TestParamBlock(object):
                 "X_PP",
                 "X_S",
                 "X_TSS",
+                "S_K",
+                "S_Mg",
             ]
 
             if i in stoic:
@@ -374,8 +376,10 @@ class TestAerobic:
         m.fs.R1.inlet.conc_mass_comp[0, "X_AUT"].fix(EPS * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
-        # No data on TSS from EXPOsan at this point
+        # No data on TSS, K and Mg from EXPOsan at this point
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
 
         # Alkalinity was givien in mg/L based on C
         m.fs.R1.inlet.alkalinity[0].fix(61 / 12 * units.mmol / units.liter)
@@ -513,6 +517,9 @@ class TestAnoxic:
         # No data on TSS from EXPOsan at this point
         # However, TSS is needed for this reaction
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(100 * units.mg / units.liter)
+
+        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
 
         # Alkalinity was given in mg/L based on C
         m.fs.R1.inlet.alkalinity[0].fix(61 / 12 * units.mmol / units.liter)
@@ -663,6 +670,9 @@ class TestAerobic15C:
 
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
 
+        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
+
         # Alkalinity was given in mg/L based on C
         m.fs.R1.inlet.alkalinity[0].fix(4.6663 * units.mmol / units.liter)
 
@@ -809,6 +819,9 @@ class TestAnoxicPHA:
         m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
 
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
+
+        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
 
         # Alkalinity was given in mg/L based on C
         m.fs.R1.inlet.alkalinity[0].fix(5.980 * units.mmol / units.liter)
