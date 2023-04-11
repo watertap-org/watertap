@@ -237,8 +237,8 @@ def build_flowsheet():
     m.fs.CL1.split_fraction[0, "effluent", "X_TSS"].fix(0.00187)
 
     # TODO: values for S_K and S_Mg are unknown, need updates
-    m.fs.CL1.split_fraction[0, "effluent", "S_K"].fix(0.00187)
-    m.fs.CL1.split_fraction[0, "effluent", "S_Mg"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "S_K"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_Mg"].fix(0.48956)
 
     # Sludge purge separator
     m.fs.SP6.split_fraction[:, "recycle"].fix(0.65)
