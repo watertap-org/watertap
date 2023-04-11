@@ -76,7 +76,7 @@ class TestElectrolyzer:
                 "NA+": 0.022989,
                 "CL-": 0.03545,
                 "CL2-v": 0.0709,
-                "H2-v": 2.016,
+                "H2-v": 0.002016,
                 "OH-": 0.017007,
             },
             charge={"NA+": 1, "CL-": -1, "OH-": -1},
@@ -112,8 +112,16 @@ class TestElectrolyzer:
         # touch properties
         anolyte_blk.properties_in[0].flow_vol_phase
         anolyte_blk.properties_in[0].conc_mass_phase_comp
+        anolyte_blk.properties_in[0].conc_mol_phase_comp
         catholyte_blk.properties_in[0].flow_vol_phase
         catholyte_blk.properties_in[0].conc_mass_phase_comp
+        catholyte_blk.properties_in[0].conc_mol_phase_comp
+        anolyte_blk.properties_out[0].flow_vol_phase
+        anolyte_blk.properties_out[0].conc_mass_phase_comp
+        anolyte_blk.properties_out[0].conc_mol_phase_comp
+        catholyte_blk.properties_out[0].flow_vol_phase
+        catholyte_blk.properties_out[0].conc_mass_phase_comp
+        catholyte_blk.properties_out[0].conc_mol_phase_comp
 
         # fix variables
         m.fs.unit.current.fix(30000)
@@ -122,9 +130,9 @@ class TestElectrolyzer:
 
         # reactions
         m.fs.unit.anode_stoich["Liq", "CL-"].fix(-1)
-        m.fs.unit.anode_stoich["Liq", "CL2-v"].fix(1 / 2)
+        m.fs.unit.anode_stoich["Liq", "CL2-v"].fix(0.5)
         m.fs.unit.cathode_stoich["Liq", "H2O"].fix(-1)
-        m.fs.unit.cathode_stoich["Liq", "H2-v"].fix(1 / 2)
+        m.fs.unit.cathode_stoich["Liq", "H2-v"].fix(0.5)
         m.fs.unit.cathode_stoich["Liq", "OH-"].fix(1)
 
         return m
@@ -151,6 +159,25 @@ class TestElectrolyzer:
 
         m.fs.unit.display()
         m.fs.unit.report()
+
+        m.fs.unit.anolyte.properties_in[0].assert_electroneutrality(
+            tee=True,
+            solve=False,
+        )
+        m.fs.unit.anolyte.properties_out[0].assert_electroneutrality(
+            tee=True,
+            solve=False,
+            defined_state=False,
+        )
+        m.fs.unit.catholyte.properties_in[0].assert_electroneutrality(
+            tee=True,
+            solve=False,
+        )
+        m.fs.unit.catholyte.properties_out[0].assert_electroneutrality(
+            tee=True,
+            solve=False,
+            defined_state=False,
+        )
 
         # Check for optimal solution
         assert check_optimal_termination(results)

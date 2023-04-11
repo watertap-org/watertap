@@ -13,6 +13,7 @@
 
 from pyomo.environ import (
     Var,
+    Constraint,
     Param,
     Reference,
     Suffix,
@@ -354,9 +355,18 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # mass balance
 
-        for p in self.config.property_package.phase_list:
-            for j in self.config.property_package.component_list:
-                self.anolyte.mass_transfer_term[:, p, j].fix(0)
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            doc="",
+        )
+        def eq_membrane_permeation(b, t, p, j):
+            if (p, j) == ("Liq", "NA+"):
+                return b.anolyte.mass_transfer_term[t, p, j] == -b.electron_flow
+            else:
+                b.anolyte.mass_transfer_term[t, p, j].fix(0)
+                return Constraint.Feasible
 
         @self.Constraint(
             self.flowsheet().config.time,
