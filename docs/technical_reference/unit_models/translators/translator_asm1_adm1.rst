@@ -45,7 +45,7 @@ Sets
    "Time", ":math:`t`", "[0]"
    "Inlet/outlet", ":math:`x`", "['in', 'out']"
    "Phases", ":math:`p`", "['Liq']"
-   "Inlet Components", ":math:`j`", "['H2O', 'S_I', 'S_S', 'X_I', 'X_S', 'X_BH', 'X_BA', 'X_P', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'X_ND]"
+   "Inlet Components", ":math:`j`", "['H2O', 'S_I', 'S_S', 'X_I', 'X_S', 'X_BH', 'X_BA', 'X_P', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'X_ND', 'S_ALK']"
    "Ion", ":math:`j`", "['S_cat', 'S_an'] \  :sup:`*`"
    "Outlet Components", ":math:`j`", "['H2O', 'S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac', 'S_h2', 'S_ch4', 'S_IC', 'S_IN', 'S_I', 'X_c', 'X_ch', 'X_pr', 'X_li', 'X_su', 'X_aa', 'X_fa', 'X_c4', 'X_pro', 'X_ac', 'X_h2', 'X_I', 'S_cat', 'S_an', 'S_co2']"
 
@@ -74,19 +74,19 @@ Equations and Relationships
    "Pressure balance", ":math:`P_{out} = P_{in}`"
    "Temperature balance", ":math:`T_{out} = T_{in}`"
    "Volumetric flow equality", ":math:`F_{out} = F_{in}`"
-   "Total Kjeldahl nitrogen", ":math:`TKN = S_{nh} + S_{nd} + X_{nd} + i_{xb}(X_{bh} + X_{ba}) + i_{xe}(X_{I} + X_{P})`"
+   "Total Kjeldahl nitrogen", ":math:`TKN = S_{NH} + S_{ND} + X_{ND} + i_{xb}(X_{BH} + X_{BA}) + i_{xe}(X_{I} + X_{P})`"
 
 COD Equations
 -------------
 The total incoming COD is reduced in a step-wise manner until the COD demand has been satisfied. The reduction is based on a
-hierarchy of ASM1 state variables such that Ss is reduced by the COD demand first. If there is insufficient
-Ss present, then Ss is reduced to zero and the remaining demand is subtracted from Xs. If necessary, Xbh and Xba may also need to be reduced.
+hierarchy of ASM1 state variables such that :math:`S_s` is reduced by the COD demand first. If there is insufficient
+Ss present, then :math:`S_s` is reduced to zero and the remaining demand is subtracted from :math:`X_s`. If necessary, :math:`X_BH` and :math:`X_BA` may also need to be reduced.
 
 .. csv-table::
    :header: "Description", "Equation"
 
    "COD demand", ":math:`COD_{demand} = S_{o} + 2.86S_{NO}`"
-   "Readily biodegradable substrate remaining (step 1)", ":math:`S_{S, inter} = S_{S} - COD_{demand, 1}`"
+   "Readily biodegradable substrate remaining (step 1)", ":math:`S_{S, inter} = S_{S} - COD_{demand}`"
    "Slowly biodegradable substrate remaining (step 2)", ":math:`X_{S, inter} = X_{S} - COD_{demand, 2}`"
    "Active heterotrophic biomass remaining (step 3)", ":math:`X_{BH, inter} = X_{BH} - COD_{demand, 3}`"
    "Active autotrophic biomass remaining (step 4)", ":math:`X_{BA, inter} = X_{BA} - COD_{demand, 4}`"
@@ -97,7 +97,7 @@ Ss present, then Ss is reduced to zero and the remaining demand is subtracted fr
 S_nd and S_s Mapping Equations
 ------------------------------
 
-.. figure:: mapping_step_a.jpg
+.. figure:: ../../../_static/unit_models/translators/mapping_step_a.jpg
     :width: 800
     :align: center
 
@@ -106,18 +106,18 @@ S_nd and S_s Mapping Equations
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Required soluble COD", ":math:`COD_{s, req} = \frac{S_{ND}}{N_{aa}/14}`"
-   "Amino acids mapping (if :math:`S_{S,inter} > COD_{s, req}`)", ":math:`S_{aa} = COD_{s, req}`"
-   "Amino acids mapping (if :math:`S_{S,inter} >/ COD_{s, req}`)", ":math:`S_{aa} = S_{S, inter}`"
-   "Monosaccharides mapping step A (if :math:`S_{S,inter} > COD_{s, req}`)", ":math:`S_{su, A} = S_{S, inter} - COD_{s, req}`"
-   "Monosaccharides mapping step A (if :math:`S_{S,inter} >/ COD_{s, req}`)", ":math:`S_{su, A} = 0`"
+   "Required soluble COD", ":math:`ReqCOD_{s} = \frac{S_{ND}}{N_{aa}/14}`"
+   "Amino acids mapping (if :math:`S_{S,inter} > ReqCOD_{s}`)", ":math:`S_{aa} = ReqCOD_{s}`"
+   "Amino acids mapping (if :math:`S_{S,inter} ≤ ReqCOD_{s}`)", ":math:`S_{aa} = S_{S, inter}`"
+   "Monosaccharides mapping step A (if :math:`S_{S,inter} > ReqCOD_{s}`)", ":math:`S_{su, A} = S_{S, inter} - ReqCOD_{s}`"
+   "Monosaccharides mapping step A (if :math:`S_{S,inter} ≤ ReqCOD_{s}`)", ":math:`S_{su, A} = 0`"
    "COD remaining from step A", ":math:`COD_{remain, A} = COD_{t} - S_{S,inter}`"
    "Organic nitrogen pool remaining from step A", ":math:`OrgN_{remain, A} = TKN - (S_{aa} * N_{aa} * 14) - S_{NH}`"
 
 Soluble Inert COD Mapping Equations
 -----------------------------------
 
-.. figure:: mapping_step_b.jpg
+.. figure:: ../../../_static/unit_models/translators/mapping_step_b.jpg
     :width: 800
     :align: center
 
@@ -128,17 +128,17 @@ Soluble Inert COD Mapping Equations
 
    "Required soluble inert organic nitrogen", ":math:`OrgN_{s, req} = S_{I} * N_{I} * 14`"
    "Soluble inert mapping step B (if :math:`OrgN_{remain, A} > OrgN_{s, req}`)", ":math:`S_{I, ADM1} = S_{I}`"
-   "Soluble inert mapping step B (if :math:`OrgN_{remain, A} >/ OrgN_{s, req}`)", ":math:`S_{I, ADM1} = \frac{OrgN_{remain, A}}{N_{I}/14}`"
+   "Soluble inert mapping step B (if :math:`OrgN_{remain, A} ≤ OrgN_{s, req}`)", ":math:`S_{I, ADM1} = \frac{OrgN_{remain, A}}{N_{I}/14}`"
    "Monosaccharides mapping step B (if :math:`OrgN_{remain, A} > OrgN_{s, req}`)", ":math:`S_{su} = S_{su, A}`"
-   "Monosaccharides mapping step B (if :math:`OrgN_{remain, A} >/ OrgN_{s, req}`)", ":math:`S_{su} = S_{su, A} + S_{I} - S_{I_ADM1}`"
+   "Monosaccharides mapping step B (if :math:`OrgN_{remain, A} ≤ OrgN_{s, req}`)", ":math:`S_{su} = S_{su, A} + S_{I} - S_{I, ADM1}`"
    "COD remaining from step B", ":math:`COD_{remain, B} = COD_{remain, A} - S_{I}`"
-   "Organic nitrogen pool remaining from step B", ":math:`OrgN_{remain, B} = OrgN_{remain, A} - (S_{I_ADM1} * N_{I} * 14)`"
+   "Organic nitrogen pool remaining from step B", ":math:`OrgN_{remain, B} = OrgN_{remain, A} - (S_{I, ADM1} * N_{I} * 14)`"
 
 
 Particulate Inert COD Mapping Equations
 ---------------------------------------
 
-.. figure:: mapping_step_c.jpg
+.. figure:: ../../../_static/unit_models/translators/mapping_step_c.jpg
     :width: 800
     :align: center
 
@@ -148,15 +148,15 @@ Particulate Inert COD Mapping Equations
    :header: "Description", "Equation"
 
    "Required particulate inert material", ":math:`OrgN_{x, req} = f_{xi} * (X_{P} + X_{I}) * N_{I} * 14`"
-   "Particulate inert mapping step B (if :math:`OrgN_{remain, B} > OrgN_{x, req}`)", ":math:`X_{I, ADM1} = f_{xi} * (X_{P} + X{I})`"
-   "Particulate inert mapping step B (if :math:`OrgN_{remain, B} >/ OrgN_{x, req}`)", ":math:`X_{I, ADM1} = \frac{OrgN_{remain, B}}{N_{I}/14}`"
+   "Particulate inert mapping step B (if :math:`OrgN_{remain, B} > OrgN_{x, req}`)", ":math:`X_{I, ADM1} = f_{xi} * (X_{P} + X_{I})`"
+   "Particulate inert mapping step B (if :math:`OrgN_{remain, B} ≤ OrgN_{x, req}`)", ":math:`X_{I, ADM1} = \frac{OrgN_{remain, B}}{N_{I}/14}`"
    "COD remaining from step C", ":math:`COD_{remain, C} = COD_{remain, B} - X_{I, ADM1}`"
    "Organic nitrogen pool remaining from step C", ":math:`OrgN_{remain, C} = OrgN_{remain, B} - (X_{I_ADM1} * N_{I} * 14)`"
 
 Final COD and TKN Mapping Equations
 -----------------------------------
 
-.. figure:: mapping_step_final.jpg
+.. figure:: ../../../_static/unit_models/translators/mapping_step_final.jpg
     :width: 800
     :align: center
 
@@ -167,13 +167,13 @@ Final COD and TKN Mapping Equations
 
    "Required soluble COD", ":math:`COD_{Xc, req} = \frac{OrgN_{remain, C}}{N_{xc}/14}`"
    "Composites mapping (if :math:`COD_{remain, C} > COD_{Xc, req}`)", ":math:`X_{C} = COD_{Xc, req}`"
-   "Composites mapping (if :math:`COD_{remain, C} >/ COD_{Xc, req}`)", ":math:`X_{C} = COD_{remain, C}`"
+   "Composites mapping (if :math:`COD_{remain, C} ≤ COD_{Xc, req}`)", ":math:`X_{C} = COD_{remain, C}`"
    "Carbohydrates mapping (if :math:`COD_{remain, C} > COD_{Xc, req}`)", ":math:`X_{ch} = \frac{f_{ch, xc} * (COD_{remain, C} - X_{C})}{f_{ch, xc} - f_{li, xc}}`"
-   "Carbohydrates mapping (if :math:`COD_{remain, C} >/ COD_{Xc, req}`)", ":math:`X_{ch} = 0`"
+   "Carbohydrates mapping (if :math:`COD_{remain, C} ≤ COD_{Xc, req}`)", ":math:`X_{ch} = 0`"
    "Lipids mapping (if :math:`COD_{remain, C} > COD_{Xc, req}`)", ":math:`X_{li} = \frac{f_{li, xc} * (COD_{remain, C} - X_{C})}{f_{ch, xc} - f_{li, xc}}`"
-   "Lipdis mapping (if :math:`COD_{remain, C} >/ COD_{Xc, req}`)", ":math:`X_{li} = 0`"
-   "Inorganic nitrogen mapping (if :math:`COD_{remain, C} > COD_{Xc, req}`)", ":math:`S_{IN} = S_{nh, in}`"
-   "Inorganic nitrogen mapping (if :math:`COD_{remain, C} >/ COD_{Xc, req}`)", ":math:`S_{IN} = S_{nh, in} + (OrgN_{remain, C} - X_{C} * N_{xc} * 14)`"
+   "Lipdis mapping (if :math:`COD_{remain, C} ≤ COD_{Xc, req}`)", ":math:`X_{li} = 0`"
+   "Inorganic nitrogen mapping (if :math:`COD_{remain, C} > COD_{Xc, req}`)", ":math:`S_{IN} = S_{NH, in}`"
+   "Inorganic nitrogen mapping (if :math:`COD_{remain, C} ≤ COD_{Xc, req}`)", ":math:`S_{IN} = S_{NH, in} + (OrgN_{remain, C} - X_{C} * N_{xc} * 14)`"
    "Anions balance", ":math:`S_{an} = \frac{S_{IN}}{14}`"
    "Cations balance", ":math:`S_{cat} = \frac{S_{IC}}{12}`"
 
