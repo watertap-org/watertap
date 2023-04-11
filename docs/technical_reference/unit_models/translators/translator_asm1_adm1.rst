@@ -97,7 +97,7 @@ Ss present, then Ss is reduced to zero and the remaining demand is subtracted fr
 S_nd and S_s Mapping Equations
 ------------------------------
 
-.. figure:: ../../_static/unit_models/translators/mapping_step_a.jpg
+.. figure:: mapping_step_a.jpg
     :width: 800
     :align: center
 
@@ -117,7 +117,7 @@ S_nd and S_s Mapping Equations
 Soluble Inert COD Mapping Equations
 -----------------------------------
 
-.. figure:: ../../_static/unit_models/translators/mapping_step_b.jpg
+.. figure:: mapping_step_b.jpg
     :width: 800
     :align: center
 
@@ -138,7 +138,7 @@ Soluble Inert COD Mapping Equations
 Particulate Inert COD Mapping Equations
 ---------------------------------------
 
-.. figure:: ../../_static/unit_models/translators/mapping_step_c.jpg
+.. figure:: mapping_step_c.jpg
     :width: 800
     :align: center
 
@@ -156,7 +156,7 @@ Particulate Inert COD Mapping Equations
 Final COD and TKN Mapping Equations
 -----------------------------------
 
-.. figure:: ../../_static/unit_models/translators/mapping_step_final.jpg
+.. figure:: mapping_step_final.jpg
     :width: 800
     :align: center
 
