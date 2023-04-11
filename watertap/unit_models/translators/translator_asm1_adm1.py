@@ -365,9 +365,7 @@ see reaction package for documentation.}""",
                 * mw_n
             )
 
-        @self.Expression(
-            self.flowsheet().time, doc="Inert organic nitrogen mapping step B"
-        )
+        @self.Expression(self.flowsheet().time, doc="Soluble inert mapping step B")
         def si_mapping_B(blk, t):
             return Expr_if(
                 blk.ORGN_remain_a[t] > blk.ReqOrgNS[t],
@@ -375,7 +373,7 @@ see reaction package for documentation.}""",
                 blk.ORGN_remain_a[t] / blk.config.reaction_package.N_I / mw_n,
             )
 
-        @self.Expression(self.flowsheet().time, doc="Monosacharides mapping step B")
+        @self.Expression(self.flowsheet().time, doc="Monosaccharides mapping step B")
         def ssu_mapping_B(blk, t):
             return Expr_if(
                 blk.ORGN_remain_a[t] > blk.ReqOrgNS[t],
@@ -432,7 +430,10 @@ see reaction package for documentation.}""",
                 * mw_n
             )
 
-        @self.Expression(self.flowsheet().time, doc="Monosacharides mapping step B")
+        @self.Expression(
+            self.flowsheet().time,
+            doc="Inert particulate organic material mapping step C",
+        )
         def xi_mapping(blk, t):
             return Expr_if(
                 blk.ORGN_remain_b[t] > blk.ReqOrgNx[t],
