@@ -268,7 +268,7 @@ def build_flowsheet():
     m.fs.CL1.split_fraction[0, "effluent", "X_S"].fix(0.02221)
     m.fs.CL1.split_fraction[0, "effluent", "X_TSS"].fix(0.02194)
 
-    # TODO: values for S_K and S_Mg are unknown, need updates
+    # TODO: need to revisit these values
     m.fs.CL1.split_fraction[0, "effluent", "S_K"].fix(0.022)
     m.fs.CL1.split_fraction[0, "effluent", "S_Mg"].fix(0.022)
 
