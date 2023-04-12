@@ -190,6 +190,7 @@ class FlowsheetExport(BaseModel):
     version: int = 2
     requires_idaes_solver: bool = False
     dof: int = 0
+    sweep_results: Union[None, dict] = {}
 
     # set name dynamically from object
     @validator("name", always=True)
