@@ -426,7 +426,7 @@ class TestReactionBlock(object):
     def test_initialize(self, model):
         assert model.rxns.initialize() is None
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def check_units(self, model):
         assert_units_consistent(model)
 
@@ -490,15 +490,15 @@ class TestReactor:
 
         return m
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_dof(self, model):
         assert degrees_of_freedom(model) == 0
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_unit_consistency(self, model):
         assert_units_consistent(model) == 0
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_scaling_factors(self, model):
 
         m = model

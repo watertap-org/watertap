@@ -251,7 +251,7 @@ class TestStateBlock(object):
                 "Pressure",
             ]
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, model):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
@@ -269,6 +269,6 @@ class TestStateBlock(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def check_units(self, model):
         assert_units_consistent(model)

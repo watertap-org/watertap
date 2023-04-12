@@ -19,9 +19,9 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 from idaes.core.util.scaling import calculate_scaling_factors
 from watertap.property_models import seawater_prop_pack
+from watertap.property_models import seawater_ion_prop_pack
 from watertap.examples.flowsheets.full_treatment_train.model_components import (
     seawater_salt_prop_pack,
-    seawater_ion_prop_pack,
 )
 from watertap.examples.flowsheets.full_treatment_train.model_components.eNRTL import (
     entrl_config_FpcTP,
