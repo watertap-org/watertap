@@ -15,7 +15,8 @@ from pyomo.environ import (
     Block,
     Var,
     Constraint,
-    Expression
+    Expression,
+    value
 )
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
@@ -24,11 +25,13 @@ from idaes.models.unit_models import Feed, Product, Mixer, Separator
 from idaes.models.unit_models.heat_exchanger import HeatExchanger
 from idaes.models.unit_models.translator import Translator
 from pyomo.util.check_units import assert_units_consistent
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 from watertap.examples.flowsheets.mvc.mvc_single_stage import (
     build,
     set_operating_conditions,
     add_Q_ext,
+    initialize_system,
     solve,
     set_up_optimization,
     display_metrics,
@@ -132,3 +135,130 @@ class TestMVC:
 
         # units
         assert_units_consistent(m.fs)
+
+        @pytest.mark.component
+        def test_set_operating_conditions(self, mvc_single_stage):
+            m = mvc_single_stage
+            set_operating_conditions(m)
+
+            # check fixed variables
+            # feed
+            assert m.fs.feed.properties[0].mass_frac_phase_comp['Liq','TDS'].isfixed()
+            assert value(m.fs.feed.properties[0].mass_frac_phase_comp['Liq','TDS']) == 0.1
+            assert m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'H2O'].isfixed()
+            assert (m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'H2O']) == 40
+            assert m.fs.feed.temperature[0].isfixed()
+            assert value(m.fs.feed.temperature[0]) == 298.15
+            assert m.fs.feed.pressure[0].isfixed()
+            assert value(m.fs.feed.pressure[0]) == 101325
+
+            # recovery
+            assert m.fs.recovery.isfixed()
+            assert value(m.fs.recovery) == 0.5
+
+            # pumps
+            assert m.fs.pump_feed.efficiency.isfixed()
+            assert value(m.fs.pump_feed.efficiency) == 0.8
+            assert m.fs.pump_feed.control_volume.deltaP[0].isfixed()
+            assert value(m.fs.pump_feed.control_volume.deltaP[0]) == 7e3
+
+            assert m.fs.pump_distillate.efficiency.isfixed()
+            assert value(m.fs.pump_distillate.efficiency) == 0.8
+            assert m.fs.pump_distillate.control_volume.deltaP[0].isfixed()
+            assert value(m.fs.pump_distillate.control_volume.deltaP[0]) == 7e3
+
+            assert m.fs.pump_brine.efficiency.isfixed()
+            assert value(m.fs.pump_brine.efficiency) == 0.8
+            assert m.fs.pump_brine.control_volume.deltaP[0].isfixed()
+            assert value(m.fs.pump_brine.control_volume.deltaP[0]) == 7e3
+
+            # heat exchangers
+            assert m.fs.hx_distillate.overall_heat_transfer_coefficient.isfixed()
+            assert value(m.fs.hx_distillate.overall_heat_transfer_coefficient) == 2e3
+            assert m.fs.hx_distillate.area.isfixed()
+            assert value(m.fs.hx_distillate.area) == 125
+            assert m.fs.hx_distillate.cold.deltaP[0].fixed()
+            assert value(m.fs.hx_distillate.cold.deltaP[0]) == 7e3
+            assert m.fs.hx_distillate.hot.deltaP[0].fixed()
+            assert value(m.fs.hx_distillate.hot.deltaP[0]) == 7e3
+
+            assert m.fs.hx_brine.overall_heat_transfer_coefficient.isfixed()
+            assert value(m.fs.hx_brine.overall_heat_transfer_coefficient) == 2e3
+            assert m.fs.hx_brine.area.isfixed()
+            assert value(m.fs.hx_brine.area) == 115
+            assert m.fs.hx_brine.cold.deltaP[0].fixed()
+            assert value(m.fs.hx_brine.cold.deltaP[0]) == 7e3
+            assert m.fs.hx_brine.hot.deltaP[0].fixed()
+            assert value(m.fs.hx_brine.hot.deltaP[0]) == 7e3
+
+            # evaporator
+            assert m.fs.evaporator.outlet_brine.temperature[0].isfixed()
+            assert value(m.fs.evaporator.outlet_brine.temperature[0]) == 343.15
+            assert m.fs.evaporator.U.isfixed()
+            assert value(m.fs.evaporator.U) == 3e3
+
+            # compressor
+            assert m.fs.compressor.pressure_ratio.isfixed()
+            assert value(m.fs.compressor.pressure_ratio) == 1.6
+            assert m.fs.compressor.efficiency.isfixed()
+            assert value(m.fs.compressor.efficiency) == 0.8
+
+            # 0 TDS in distillate
+            assert m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp['Liq', 'TDS'].fixed()
+            assert value(m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp['Liq', 'TDS']) == 1e-5
+
+            # Costing
+            assert m.fs.costing.factor_total_investment.isfixed()
+            assert value(m.fs.costing.factor_total_investment) == 2
+            assert m.fs.costing.heat_exchanger.material_factor_cost.isfixed()
+            assert value(m.fs.costing.heat_exchanger.material_factor_cost) == 5
+            assert m.fs.costing.evaporator.material_factor_cost.isfixed()
+            assert value(m.fs.costing.evaporator.material_factor_cost) == 5
+            assert m.fs.costing.compressor.unit_cost.isfixed()
+            assert value(m.fs.costing.compressor.unit_cost) == 7364
+
+            # Temperature upper bounds
+            assert m.fs.evaporator.properties_vapor[0].temperature.ub.isfixed()
+            assert value(m.fs.evaporator.properties_vapor[0].temperature.ub) == 343.15
+            assert m.fs.compressor.control_volume.properties_out[0].temperature.ub.isfixed()
+            assert value(m.fs.compressor.control_volume.properties_out[0].temperature.ub) == 450
+
+            # check degrees of freedom
+            assert degrees_of_freedom(m) == 1
+
+        @pytest.mark.component
+        def test_initialize_system(self, mvc_single_stage):
+            m = mvc_single_stage
+            set_operating_conditions(m)
+            initialize_system(m)
+
+            # mass flows in evaporator
+            assert value(m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp['Vap', 'H2O']) == pytest.approx(22.222, rel=1e-3)
+            assert value(m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp['Liq', 'H2O']) == pytest.approx(1e-5, rel=1e-3)
+            assert value(m.fs.evaporator.properties_brine[0].flow_mass_phase_comp['Liq', 'H2O']) == pytest.approx(17.777, rel=1e-3)
+            assert value(m.fs.evaporator.properties_brine[0].flow_mass_phase_comp['Liq', 'TDS']) == pytest.approx(4.444, rel=1e-3)
+
+            # evaporator pressure
+            assert value(m.fs.evaporator.properties_vapor[0].pressure) == pytest.approx(26.231e3, rel=1e-3)
+
+            # compressor pressure outlet
+            assert value(m.fs.compressor.control_volume.properties_out[0].pressure)/value(m.fs.compressor.control_volume.properties_in[0].pressure) == pytest.approx(1.6, rel = 1e-3)
+
+            # external Q
+            assert value(m.fs.Q_ext[0]) == pytest.approx(0, 1e-3)
+
+        # @pytest.mark.component
+        # def test_simulation(self, mvc_single_stage):
+        #     m = mvc_single_stage
+        #     set_operating_conditions(m)
+        #     initialize_system(m)
+        #
+
+        # @pytest.mark.component
+        # def test_display_system(self, mvc_single_stage):
+        #
+        # @pytest.mark.component
+        # def test_display_design(self, mvc_single_stage):
+        #
+        # @pytest.mark.component
+        # def test_optimization(self, mvc_single_stage):
