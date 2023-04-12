@@ -24,15 +24,16 @@ def main():
     rerun = False
     plot = True
 
-    min_st_regression(rerun=rerun, plot=plot)
+    min_st_surrogate(rerun=rerun, plot=plot)
     throughput_regression(rerun=rerun, plot=plot)
 
 
-def min_st_regression(rerun=False, plot=True):
+def min_st_surrogate(rerun=False, plot=True):
+    """
+    minimum stanton number surrogate
+    """
 
-    # ---------------------------------------------------------------------
-    # minimum stanton number equation parameter lookup
-
+    # create list for range of input data
     min_st_ninv = list(np.linspace(0.1, 0.9, 9))
     min_st_ninv.insert(0, 0.05)
     min_st_bi = (
@@ -41,14 +42,15 @@ def min_st_regression(rerun=False, plot=True):
         + list(np.linspace(150, 500, 8))
     )
 
-    ninv_list, bi_list, min_st_list = [], [], []
-
+    # import lookup table from csv
     min_st_param_df = pd.read_csv(
-        "watertap/examples/flowsheets/pfas_treatment/min_st_parameters.csv",
+        "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/gac_cphsdm_empirical_data/min_st_parameters.csv",
         index_col=["1/n", "Bi_min", "Bi_max", "% within constant pattern"],
     )
     ninv_param_list = min_st_param_df.index.get_level_values(0).values
 
+    # table lookup for input data to generate output data
+    ninv_list, bi_list, min_st_list = [], [], []
     for ninv in min_st_ninv:
         for bi in min_st_bi:
 
@@ -72,6 +74,7 @@ def min_st_regression(rerun=False, plot=True):
             min_st = a0_lookup * bi + a1_lookup
             min_st_list.append(min_st)
 
+    # write inputs and output to dataframe for surrogate training
     min_st_df = pd.DataFrame(
         {
             "ninv": ninv_list,
@@ -103,9 +106,8 @@ def min_st_regression(rerun=False, plot=True):
             pysmo_surr_expr, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         min_st_pysmo_surr_kriging.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_kriging.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models//min_st_kriging.json",
             overwrite=True,
         )
 
@@ -130,9 +132,8 @@ def min_st_regression(rerun=False, plot=True):
             rbf_train, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         min_st_pysmo_surr_linear.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_linear.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_pysmo_surr_linear.json",
             overwrite=True,
         )
 
@@ -157,9 +158,8 @@ def min_st_regression(rerun=False, plot=True):
             rbf_train, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         min_st_pysmo_surr_cubic.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_cubic.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_pysmo_surr_cubic.json",
             overwrite=True,
         )
 
@@ -184,9 +184,8 @@ def min_st_regression(rerun=False, plot=True):
             rbf_train, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         min_st_pysmo_surr_spline.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_spline.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_pysmo_surr_spline.json",
             overwrite=True,
         )
 
@@ -211,9 +210,8 @@ def min_st_regression(rerun=False, plot=True):
             rbf_train, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         min_st_pysmo_surr_gaussian.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_gaussian.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_pysmo_surr_gaussian.json",
             overwrite=True,
         )
 
@@ -238,9 +236,8 @@ def min_st_regression(rerun=False, plot=True):
             rbf_train, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         min_st_pysmo_surr_mq.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_mq.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_pysmo_surr_mq.json",
             overwrite=True,
         )
 
@@ -265,9 +262,8 @@ def min_st_regression(rerun=False, plot=True):
             rbf_train, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         min_st_pysmo_surr_imq.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_imq.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_pysmo_surr_imq.json",
             overwrite=True,
         )
 
@@ -276,25 +272,25 @@ def min_st_regression(rerun=False, plot=True):
         # ---------------------------------------------------------------------
 
         min_st_pysmo_surr_kriging = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_kriging.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_kriging.json",
         )
         min_st_pysmo_surr_linear = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_linear.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_pysmo_surr_linear.json",
         )
         min_st_pysmo_surr_cubic = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_cubic.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_pysmo_surr_cubic.json",
         )
         min_st_pysmo_surr_spline = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_spline.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_pysmo_surr_spline.json",
         )
         min_st_pysmo_surr_gaussian = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_gaussian.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_pysmo_surr_gaussian.json",
         )
         min_st_pysmo_surr_mq = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_mq.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_pysmo_surr_mq.json",
         )
         min_st_pysmo_surr_imq = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_imq.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_pysmo_surr_imq.json",
         )
 
         # ---------------------------------------------------------------------
@@ -327,7 +323,7 @@ def min_st_regression(rerun=False, plot=True):
             res_names.append(err)
 
         # Plot metrics
-        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12), color=color)
+        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12))
 
         df = pd.DataFrame(
             {
@@ -340,7 +336,7 @@ def min_st_regression(rerun=False, plot=True):
                 "IMQ-RBF": res_names[4].loc["R2"],
             }
         )
-        df.plot.bar(rot=0, ax=axes[0, 0])
+        df.plot.bar(rot=0, ax=axes[0, 0], color=color)
         axes[0, 0].set_title("R2")
         axes[0, 0].set_ylabel("R2")
 
@@ -355,7 +351,7 @@ def min_st_regression(rerun=False, plot=True):
                 "IMQ-RBF": res_names[4].loc["RMSE"],
             }
         )
-        df.plot.bar(rot=0, ax=axes[0, 1], logy=True)
+        df.plot.bar(rot=0, ax=axes[0, 1], color=color, logy=True)
         axes[0, 1].set_title("RMSE")
         axes[0, 1].set_ylabel("Log(RMSE)")
 
@@ -370,7 +366,7 @@ def min_st_regression(rerun=False, plot=True):
                 "IMQ-RBF": res_names[4].loc["MAE"],
             }
         )
-        df.plot.bar(rot=0, ax=axes[1, 0], logy=True)
+        df.plot.bar(rot=0, ax=axes[1, 0], color=color, logy=True)
         axes[1, 0].set_title("MAE")
         axes[1, 0].set_ylabel("Log(MAE)")
 
@@ -385,32 +381,39 @@ def min_st_regression(rerun=False, plot=True):
                 "IMQ-RBF": res_names[4].loc["maxAE"],
             }
         )
-        df.plot.bar(rot=0, ax=axes[1, 1], logy=True)
+        df.plot.bar(rot=0, ax=axes[1, 1], color=color, logy=True)
         axes[1, 1].set_ylabel("Log(maxAE)")
         axes[1, 1].set_title("maxAE")
 
+        plt.savefig(
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_surrogate_results.png",
+            dpi=1000,
+        )
+
 
 def throughput_regression(rerun=False, plot=True):
+    """
+    throughput surrogate
+    """
 
-    # ---------------------------------------------------------------------
-    # throughput equation parameter lookup
-
-    throughput_df = pd.read_csv(
-        "watertap/examples/flowsheets/pfas_treatment/throughput_parameters.csv",
-    )
-    throughput_ninv_bi = throughput_df.loc[:, ["1/n", "Bi"]]
+    # create list for range of continuous variable not defined in lookup table
     throughput_conc_ratio = list(np.linspace(0.05, 0.95, 19))
     throughput_conc_ratio.insert(0, 0.01)
     throughput_conc_ratio.insert(-1, 0.99)
 
-    ninv_list, bi_list, conc_ratio_list, throughput_list = [], [], [], []
-
+    # import data from csv
+    throughput_df = pd.read_csv(
+        "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/gac_cphsdm_empirical_data/throughput_parameters.csv",
+    )
+    throughput_ninv_bi = throughput_df.loc[:, ["1/n", "Bi"]]
     throughput_param_df = pd.read_csv(
-        "watertap/examples/flowsheets/pfas_treatment/throughput_parameters.csv",
+        "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/gac_cphsdm_empirical_data/throughput_parameters.csv",
         index_col=["1/n", "Bi"],
     )
     ninv_param_list = throughput_param_df.index.get_level_values(0).values
 
+    # table lookup for input data to generate output data
+    ninv_list, bi_list, conc_ratio_list, throughput_list = [], [], [], []
     for ind, row in throughput_ninv_bi.iterrows():
         ninv = row["1/n"]
         bi = row["Bi"]
@@ -448,6 +451,7 @@ def throughput_regression(rerun=False, plot=True):
             )
             throughput_list.append(throughput)
 
+    # write inputs and output to dataframe for surrogate training
     throughput_df = pd.DataFrame(
         {
             "ninv": ninv_list,
@@ -480,9 +484,8 @@ def throughput_regression(rerun=False, plot=True):
             pysmo_surr_expr, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         throughput_pysmo_surr_kriging.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_kriging.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_kriging.json",
             overwrite=True,
         )
 
@@ -507,9 +510,8 @@ def throughput_regression(rerun=False, plot=True):
             rbf_train, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         throughput_pysmo_surr_linear.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_linear.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_pysmo_surr_linear.json",
             overwrite=True,
         )
 
@@ -534,9 +536,8 @@ def throughput_regression(rerun=False, plot=True):
             rbf_train, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         throughput_pysmo_surr_cubic.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_cubic.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_pysmo_surr_cubic.json",
             overwrite=True,
         )
 
@@ -561,9 +562,8 @@ def throughput_regression(rerun=False, plot=True):
             rbf_train, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         throughput_pysmo_surr_spline.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_spline.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_pysmo_surr_spline.json",
             overwrite=True,
         )
 
@@ -588,9 +588,8 @@ def throughput_regression(rerun=False, plot=True):
             rbf_train, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         throughput_pysmo_surr_gaussian.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_gaussian.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_pysmo_surr_gaussian.json",
             overwrite=True,
         )
 
@@ -615,9 +614,8 @@ def throughput_regression(rerun=False, plot=True):
             rbf_train, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         throughput_pysmo_surr_mq.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_mq.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_pysmo_surr_mq.json",
             overwrite=True,
         )
 
@@ -642,9 +640,8 @@ def throughput_regression(rerun=False, plot=True):
             rbf_train, input_labels, output_labels, input_bounds
         )
 
-        # To save a model
         throughput_pysmo_surr_imq.save_to_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_imq.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_pysmo_surr_imq.json",
             overwrite=True,
         )
 
@@ -653,25 +650,25 @@ def throughput_regression(rerun=False, plot=True):
         # ---------------------------------------------------------------------
 
         throughput_pysmo_surr_kriging = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_kriging.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_kriging.json",
         )
         throughput_pysmo_surr_linear = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_linear.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_pysmo_surr_linear.json",
         )
         throughput_pysmo_surr_cubic = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_cubic.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_pysmo_surr_cubic.json",
         )
         throughput_pysmo_surr_spline = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_spline.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_pysmo_surr_spline.json",
         )
         throughput_pysmo_surr_gaussian = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_gaussian.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_pysmo_surr_gaussian.json",
         )
         throughput_pysmo_surr_mq = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_mq.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_pysmo_surr_mq.json",
         )
         throughput_pysmo_surr_imq = surrogate.PysmoSurrogate.load_from_file(
-            "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_imq.json",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_pysmo_surr_imq.json",
         )
 
         # ---------------------------------------------------------------------
@@ -704,7 +701,7 @@ def throughput_regression(rerun=False, plot=True):
             res_names.append(err)
 
         # Plot metrics
-        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12), color=color)
+        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12))
 
         df = pd.DataFrame(
             {
@@ -717,7 +714,7 @@ def throughput_regression(rerun=False, plot=True):
                 "IMQ-RBF": res_names[4].loc["R2"],
             }
         )
-        df.plot.bar(rot=0, ax=axes[0, 0])
+        df.plot.bar(rot=0, ax=axes[0, 0], color=color)
         axes[0, 0].set_title("R2")
         axes[0, 0].set_ylabel("R2")
 
@@ -732,7 +729,7 @@ def throughput_regression(rerun=False, plot=True):
                 "IMQ-RBF": res_names[4].loc["RMSE"],
             }
         )
-        df.plot.bar(rot=0, ax=axes[0, 1], logy=True)
+        df.plot.bar(rot=0, ax=axes[0, 1], color=color, logy=True)
         axes[0, 1].set_title("RMSE")
         axes[0, 1].set_ylabel("Log(RMSE)")
 
@@ -747,7 +744,7 @@ def throughput_regression(rerun=False, plot=True):
                 "IMQ-RBF": res_names[4].loc["MAE"],
             }
         )
-        df.plot.bar(rot=0, ax=axes[1, 0], logy=True)
+        df.plot.bar(rot=0, ax=axes[1, 0], color=color, logy=True)
         axes[1, 0].set_title("MAE")
         axes[1, 0].set_ylabel("Log(MAE)")
 
@@ -762,12 +759,12 @@ def throughput_regression(rerun=False, plot=True):
                 "IMQ-RBF": res_names[4].loc["maxAE"],
             }
         )
-        df.plot.bar(rot=0, ax=axes[1, 1], logy=True)
+        df.plot.bar(rot=0, ax=axes[1, 1], color=color, logy=True)
         axes[1, 1].set_ylabel("Log(maxAE)")
         axes[1, 1].set_title("maxAE")
 
         plt.savefig(
-            "throughput_surrogate_results.png",
+            "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_surrogate_results.png",
             dpi=1000,
         )
 
