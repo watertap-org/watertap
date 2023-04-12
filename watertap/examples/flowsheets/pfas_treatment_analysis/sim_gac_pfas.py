@@ -45,7 +45,9 @@ pyo.SolverFactory.register("ipopt")(pyo.SolverFactory.get_class("ipopt-watertap"
 
 def main():
 
-    global data, source_name, source_name_list, species_name, guess_freund_k, guess_freund_ninv, guess_ds, min_st_surrogate, throughput_surrogate
+    global data, source_name, source_name_list, species_name
+    global guess_freund_k, guess_freund_ninv, guess_ds
+    global min_st_surrogate, throughput_surrogate
 
     # obtain experimental RSSCT data from csv
     source_name_list = [
