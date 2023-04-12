@@ -10,100 +10,86 @@
 # "https://github.com/watertap-org/watertap/"
 ###############################################################################
 
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 import pyomo.environ as pyo
+import pyomo.contrib.parmest.parmest as parmest
+import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
+import idaes.core.util.model_statistics as istat
+import os as os
+
+from math import floor
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.network import Arc
-
-import idaes.core.util.scaling as iscale
-from idaes.core.util.initialization import propagate_state
-from idaes.core import (
-    FlowsheetBlock,
-)
+from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-import idaes.logger as idaeslog
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    variables_near_bounds_generator,
-    activated_constraints_set,
-)
-from idaes.core.util.scaling import (
-    badly_scaled_var_generator,
-    get_scaling_factor,
-    set_scaling_factor,
-)
+from idaes.core.util.initialization import propagate_state
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.surrogate.pysmo_surrogate import PysmoSurrogate
-
+from idaes.models.unit_models import Feed
+from watertap.unit_models.gac import GAC
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
     DiffusivityCalculation,
 )
-from idaes.models.unit_models import Feed
-from watertap.unit_models.gac import (
-    GAC,
-    FilmTransferCoefficientType,
-    SurfaceDiffusionCoefficientType,
-)
-
-
-import numpy as np
-import pandas as pd
-import pyomo.contrib.parmest.parmest as parmest
-import matplotlib.pyplot as plt
 
 __author__ = "Hunter Barber"
 
-# obtain experimental RSSCT data from csv
-source_name_list = [
-    "OCWD",
-    "Serrano Water District",
-    "Anaheim",
-    "Fullerton F-3A/1",
-    "Fullerton F-5/1",
-    "Santa Ana",
-    "Tustin",
-    "Orange",
-    "Garden Grove",
-    "IRWD",
-]
-# source_name = "Santa Ana"  # "OCWD" "Orange" "Serrano Water District"
-data = pd.read_csv("watertap/examples/flowsheets/pfas_treatment/F400_PFOA.csv")
-
-# initial guess for regressed variables
-guess_freund_k = 10
-guess_freund_ninv = 0.8
-guess_ds = 1e-15
-
-# set up solver
 solver = get_solver()
-
 log = idaeslog.getSolveLogger("solver.demo")
 log.setLevel(idaeslog.DEBUG)
-
 pyo.SolverFactory.register("ipopt")(pyo.SolverFactory.get_class("ipopt-watertap"))
 
 
 def main():
 
-    global source_name
-    global min_st_surrogate
-    global throughput_surrogate
+    global data, source_name, source_name_list, species_name, guess_freund_k, guess_freund_ninv, guess_ds, min_st_surrogate, throughput_surrogate
 
-    # establish new surrogates
+    # obtain experimental RSSCT data from csv
+    source_name_list = [
+        "OCWD",
+        "Serrano Water District",
+        "Anaheim",
+        "Fullerton F-3A/1",
+        "Fullerton F-5/1",
+        "Santa Ana",
+        "Tustin",
+        "Orange",
+        "Garden Grove",
+        "IRWD",
+    ]
+    species_name = "PFOA"
+    data = pd.read_csv(
+        "watertap/examples/flowsheets/pfas_treatment_analysis/gac_adsorption_data/F400_PFOA.csv"
+    )
+
+    # load surrogate objects
     min_st_surrogate = PysmoSurrogate.load_from_file(
-        "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_spline.json",
+        "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/min_st_pysmo_surr_spline.json",
     )
     throughput_surrogate = PysmoSurrogate.load_from_file(
-        "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_linear.json",
+        "watertap/examples/flowsheets/pfas_treatment_analysis/gac_surrogate/trained_surrogate_models/throughput_pysmo_surr_linear.json",
     )
 
-    data_regression = {}
-    data_filtered = {}
-    param_results = {}
+    # initial guess for regressed variables
+    guess_freund_k = 10
+    guess_freund_ninv = 0.8
+    guess_ds = 1e-15
 
+    terminal_len = os.get_terminal_size().columns
+    dict_resolve_results, data_filtered, df_param_results = {}, {}, {}
     for source_name in source_name_list:
 
-        print(f"--------------------------\t{source_name}\t--------------------------")
+        middle_str = f"species: {species_name} / source: {source_name}"
+        middle_len = len(middle_str) + 2
+        end_len = floor((terminal_len - middle_len) / 2)
+        end_str = "=" * end_len
+        print(end_str, middle_str, end_str)
+        # ---------------------------------------------------------------------
+        # model regression
+
         # data set
         data_set = data[["data_iter", f"{source_name}_X", f"{source_name}_Y"]]
         data_filtered[f"{source_name}"] = data_filter(data_set)
@@ -131,9 +117,11 @@ def main():
             ) ** 2
             return expr * expr_sf
 
-        print(
-            "--------------------------\tmodel regression\t--------------------------"
-        )
+        middle_str = f"model regression"
+        middle_len = len(middle_str) + 2
+        end_len = floor((terminal_len - middle_len) / 2)
+        end_str = "-" * end_len
+        print(end_str, middle_str, end_str)
         # Create an instance of the parmest estimator
         pest = parmest.Estimator(
             parmest_regression,
@@ -158,18 +146,36 @@ def main():
         for k, v in theta.items():
             print(k, "=", v)
 
-        param_results[f"{source_name}"] = theta
+        df_param_results[f"{source_name}"] = {
+            "freund_k": theta[0],
+            "freund_ninv": theta[1],
+            "ds": theta[2],
+        }
 
-        print("--------------------------\tmodel rebuild\t--------------------------")
+        middle_str = f"model resolve"
+        middle_len = len(middle_str) + 2
+        end_len = floor((terminal_len - middle_len) / 2)
+        end_str = "-" * end_len
+        print(end_str, middle_str, end_str)
         # rebuild model across CP to view regression results
         # theta = [guess_freund_k, guess_freund_ninv, guess_ds]
-        df_iter = solve_regression(theta)
+        dict_iter = solve_regression(theta)
 
-        data_regression[f"{source_name}"] = df_iter
+        dict_resolve_results[f"{source_name}"] = dict_iter
 
-    print("--------------------------\tshow plot\t--------------------------")
-    plot_regression(data_regression, data_filtered)
-    print(param_results)
+    # save regression data
+    df_regression_results = pd.DataFrame.from_dict(df_param_results)
+    df_regression_results.to_csv(
+        "watertap/examples/flowsheets/pfas_treatment_analysis/regression_results.csv"
+    )
+
+    middle_str = f"plotting regression to figure"
+    middle_len = len(middle_str) + 2
+    end_len = floor((terminal_len - middle_len) / 2)
+    end_str = "=" * end_len
+    print(end_str, middle_str, end_str)
+    plot_regression(dict_resolve_results, data_filtered)
+    print(df_param_results)
 
 
 def model_build():
@@ -262,7 +268,7 @@ def parmest_regression(data):
     # initialization
     model_init(m, outlvl=idaeslog.ERROR)
     # switch to surrogate
-    switch_to_surrogate(m)
+    activate_surrogate(m)
     # re-fix to conc_ratio spec from data
     m.fs.gac.conc_ratio_replace.fix(float(data[f"{source_name}_Y"]))
 
@@ -279,7 +285,7 @@ def solve_regression(theta):
     # initialization
     model_init(m, outlvl=idaeslog.ERROR)
     # switch to surrogate input
-    switch_to_surrogate(m)
+    activate_surrogate(m)
 
     # refix differing parameters
     m.fs.gac.freund_k.fix(theta[0])
@@ -305,15 +311,15 @@ def solve_regression(theta):
         conc_ratio_list.append(m.fs.gac.conc_ratio_replace.value)
         bed_volumes_treated_list.append(m.fs.gac.bed_volumes_treated.value)
 
-    df_iter = {
+    dict_iter = {
         "conc_ratio": conc_ratio_list,
         "bed_volumes_treated": bed_volumes_treated_list,
     }
 
-    return df_iter
+    return dict_iter
 
 
-def plot_regression(data_regression, data_filtered):
+def plot_regression(dict_resolve_results, data_filtered):
 
     color_code = [
         "#ffc000",
@@ -356,8 +362,8 @@ def plot_regression(data_regression, data_filtered):
             label=f"filtered data",
         )
         ax.plot(
-            data_regression[source_name_list[i]]["bed_volumes_treated"],
-            data_regression[source_name_list[i]]["conc_ratio"],
+            dict_resolve_results[source_name_list[i]]["bed_volumes_treated"],
+            dict_resolve_results[source_name_list[i]]["conc_ratio"],
             color_code[i],
             label="regression results",
         )
@@ -382,8 +388,8 @@ def plot_regression(data_regression, data_filtered):
     for j in range(10):
 
         plt.plot(
-            data_regression[source_name_list[j]]["bed_volumes_treated"],
-            data_regression[source_name_list[j]]["conc_ratio"],
+            dict_resolve_results[source_name_list[j]]["bed_volumes_treated"],
+            dict_resolve_results[source_name_list[j]]["conc_ratio"],
             color_code[j],
             label=f"{source_name_list[j]}",
         )
@@ -414,13 +420,13 @@ def plot_regression(data_regression, data_filtered):
 
 def model_scale(model):
 
-    set_scaling_factor(model.fs.gac.bed_length, 1e2)
-    set_scaling_factor(model.fs.gac.bed_diameter, 1e3)
-    set_scaling_factor(model.fs.gac.bed_area, 1e5)
-    set_scaling_factor(model.fs.gac.bed_volume, 1e6)
-    set_scaling_factor(model.fs.gac.bed_mass_gac, 1e3)
-    set_scaling_factor(model.fs.gac.mass_adsorbed, 1e9)
-    set_scaling_factor(model.fs.gac.gac_usage_rate, 1e10)
+    iscale.set_scaling_factor(model.fs.gac.bed_length, 1e2)
+    iscale.set_scaling_factor(model.fs.gac.bed_diameter, 1e3)
+    iscale.set_scaling_factor(model.fs.gac.bed_area, 1e5)
+    iscale.set_scaling_factor(model.fs.gac.bed_volume, 1e6)
+    iscale.set_scaling_factor(model.fs.gac.bed_mass_gac, 1e3)
+    iscale.set_scaling_factor(model.fs.gac.mass_adsorbed, 1e9)
+    iscale.set_scaling_factor(model.fs.gac.gac_usage_rate, 1e10)
 
     iscale.calculate_scaling_factors(model)
 
@@ -462,7 +468,7 @@ def deactivate_ss_calculations(m):
     m.fs.gac.conc_ratio_avg.fix(0.1)
 
 
-def switch_to_surrogate(m):
+def activate_surrogate(m):
 
     # deactivate empirical equations equations
     m.fs.gac.eq_min_number_st_cps.deactivate()
@@ -481,63 +487,13 @@ def switch_to_surrogate(m):
         input_vars=[m.fs.gac.freund_ninv, m.fs.gac.N_Bi, m.fs.gac.conc_ratio_replace],
         output_vars=[m.fs.gac.throughput],
     )
-    # m.fs.ele_throughput_surrogate_1 = SurrogateBlock(concrete=True)
-    # m.fs.ele_throughput_surrogate_1.build_model(
-    #     throughput_surrogate,
-    #     input_vars=[
-    #         m.fs.gac.freund_ninv,
-    #         m.fs.gac.N_Bi,
-    #         m.fs.gac.ele_conc_ratio_replace[1],
-    #     ],
-    #     output_vars=[m.fs.gac.ele_throughput[1]],
-    # )
-    # m.fs.ele_throughput_surrogate_2 = SurrogateBlock(concrete=True)
-    # m.fs.ele_throughput_surrogate_2.build_model(
-    #     throughput_surrogate,
-    #     input_vars=[
-    #         m.fs.gac.freund_ninv,
-    #         m.fs.gac.N_Bi,
-    #         m.fs.gac.ele_conc_ratio_replace[2],
-    #     ],
-    #     output_vars=[m.fs.gac.ele_throughput[2]],
-    # )
-    # m.fs.ele_throughput_surrogate_3 = SurrogateBlock(concrete=True)
-    # m.fs.ele_throughput_surrogate_3.build_model(
-    #     throughput_surrogate,
-    #     input_vars=[
-    #         m.fs.gac.freund_ninv,
-    #         m.fs.gac.N_Bi,
-    #         m.fs.gac.ele_conc_ratio_replace[3],
-    #     ],
-    #     output_vars=[m.fs.gac.ele_throughput[3]],
-    # )
-    # m.fs.ele_throughput_surrogate_4 = SurrogateBlock(concrete=True)
-    # m.fs.ele_throughput_surrogate_4.build_model(
-    #     throughput_surrogate,
-    #     input_vars=[
-    #         m.fs.gac.freund_ninv,
-    #         m.fs.gac.N_Bi,
-    #         m.fs.gac.ele_conc_ratio_replace[4],
-    #     ],
-    #     output_vars=[m.fs.gac.ele_throughput[4]],
-    # )
-    # m.fs.ele_throughput_surrogate_5 = SurrogateBlock(concrete=True)
-    # m.fs.ele_throughput_surrogate_5.build_model(
-    #     throughput_surrogate,
-    #     input_vars=[
-    #         m.fs.gac.freund_ninv,
-    #         m.fs.gac.N_Bi,
-    #         m.fs.gac.ele_conc_ratio_replace[5],
-    #     ],
-    #     output_vars=[m.fs.gac.ele_throughput[5]],
-    # )
 
 
 def model_solve(model, solver_log=True):
 
     # check model
     assert_units_consistent(model)  # check that units are consistent
-    assert degrees_of_freedom(model) == 0
+    assert istat.degrees_of_freedom(model) == 0
 
     # solve simulation
     if solver_log:
@@ -550,18 +506,19 @@ def model_solve(model, solver_log=True):
         term_cond = results.solver.termination_condition
         print("termination condition:", term_cond)
 
+    # log problems of non-optimal solve
     if not term_cond == "optimal":
-        badly_scaled_var_list = badly_scaled_var_generator(model)
-        print("----------------\tbadly_scaled_var_list\t----------------")
+        badly_scaled_var_list = iscale.badly_scaled_var_generator(model)
+        print("------------------      badly_scaled_var_list       ------------------")
         for x in badly_scaled_var_list:
-            print(f"{x[0].name}\t{x[0].value}\tsf: {get_scaling_factor(x[0])}")
-        print("----------------\tvariables_near_bounds_list\t----------------")
-        variables_near_bounds_list = variables_near_bounds_generator(model)
+            print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+        print("------------------    variables_near_bounds_list    ------------------")
+        variables_near_bounds_list = istat.variables_near_bounds_generator(model)
         for x in variables_near_bounds_list:
             print(f"{x.name}\t{x.value}")
-        print("----------------\ttotal_constraints_set_list\t----------------")
-        activated_constraints_set_list = activated_constraints_set(model)
-        for x in activated_constraints_set_list:
+        print("------------------    total_constraints_set_list    ------------------")
+        istat.activated_constraints_set_list = istat.activated_constraints_set(model)
+        for x in istat.activated_constraints_set_list:
             residual = abs(pyo.value(x.body) - pyo.value(x.lb))
             if residual > 1e-8:
                 print(f"{x}\t{residual}")
