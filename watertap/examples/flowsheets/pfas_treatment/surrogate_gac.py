@@ -13,12 +13,6 @@
 import numpy as np
 import pandas as pd
 import idaes.core.surrogate.pysmo_surrogate as surrogate
-from idaes.core.surrogate.pysmo import radial_basis_function
-from idaes.core.surrogate.plotting.sm_plotter import (
-    surrogate_scatter2D,
-    surrogate_parity,
-    surrogate_residual,
-)
 from idaes.core.surrogate.metrics import compute_fit_metrics
 import matplotlib.pyplot as plt
 
@@ -28,11 +22,13 @@ __author__ = "Hunter Barber"
 def main():
 
     rerun = False
-    min_st_regression(rerun=rerun)
-    throughput_regression(rerun=rerun)
+    plot = True
+
+    min_st_regression(rerun=rerun, plot=plot)
+    throughput_regression(rerun=rerun, plot=plot)
 
 
-def min_st_regression(rerun=False):
+def min_st_regression(rerun=False, plot=True):
 
     # ---------------------------------------------------------------------
     # minimum stanton number equation parameter lookup
@@ -108,7 +104,7 @@ def min_st_regression(rerun=False):
         )
 
         # To save a model
-        model = min_st_pysmo_surr_kriging.save_to_file(
+        min_st_pysmo_surr_kriging.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/min_st_kriging.json",
             overwrite=True,
         )
@@ -135,7 +131,7 @@ def min_st_regression(rerun=False):
         )
 
         # To save a model
-        model = min_st_pysmo_surr_linear.save_to_file(
+        min_st_pysmo_surr_linear.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_linear.json",
             overwrite=True,
         )
@@ -162,7 +158,7 @@ def min_st_regression(rerun=False):
         )
 
         # To save a model
-        model = min_st_pysmo_surr_cubic.save_to_file(
+        min_st_pysmo_surr_cubic.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_cubic.json",
             overwrite=True,
         )
@@ -189,7 +185,7 @@ def min_st_regression(rerun=False):
         )
 
         # To save a model
-        model = min_st_pysmo_surr_spline.save_to_file(
+        min_st_pysmo_surr_spline.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_spline.json",
             overwrite=True,
         )
@@ -216,7 +212,7 @@ def min_st_regression(rerun=False):
         )
 
         # To save a model
-        model = min_st_pysmo_surr_gaussian.save_to_file(
+        min_st_pysmo_surr_gaussian.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_gaussian.json",
             overwrite=True,
         )
@@ -243,7 +239,7 @@ def min_st_regression(rerun=False):
         )
 
         # To save a model
-        model = min_st_pysmo_surr_mq.save_to_file(
+        min_st_pysmo_surr_mq.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_mq.json",
             overwrite=True,
         )
@@ -270,7 +266,7 @@ def min_st_regression(rerun=False):
         )
 
         # To save a model
-        model = min_st_pysmo_surr_imq.save_to_file(
+        min_st_pysmo_surr_imq.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/min_st_pysmo_surr_imq.json",
             overwrite=True,
         )
@@ -303,6 +299,8 @@ def min_st_regression(rerun=False):
 
         # ---------------------------------------------------------------------
 
+    if plot:
+
         surrogate_models = [
             min_st_pysmo_surr_kriging,
             min_st_pysmo_surr_linear,
@@ -312,6 +310,15 @@ def min_st_regression(rerun=False):
             min_st_pysmo_surr_mq,
             min_st_pysmo_surr_imq,
         ]
+        color = [
+            "#3E26A8",
+            "#475BF9",
+            "#2797EB",
+            "#12BEB9",
+            "#81CC59",
+            "#FCBB3E",
+            "#F9FB15",
+        ]
         res_names = []
         for m in range(0, len(surrogate_models)):
             err = compute_fit_metrics(surrogate_models[m], min_st_df)
@@ -320,7 +327,7 @@ def min_st_regression(rerun=False):
             res_names.append(err)
 
         # Plot metrics
-        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12))
+        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12), color=color)
 
         df = pd.DataFrame(
             {
@@ -383,7 +390,7 @@ def min_st_regression(rerun=False):
         axes[1, 1].set_title("maxAE")
 
 
-def throughput_regression(rerun=False):
+def throughput_regression(rerun=False, plot=True):
 
     # ---------------------------------------------------------------------
     # throughput equation parameter lookup
@@ -474,7 +481,7 @@ def throughput_regression(rerun=False):
         )
 
         # To save a model
-        model = throughput_pysmo_surr_kriging.save_to_file(
+        throughput_pysmo_surr_kriging.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/throughput_kriging.json",
             overwrite=True,
         )
@@ -501,7 +508,7 @@ def throughput_regression(rerun=False):
         )
 
         # To save a model
-        model = throughput_pysmo_surr_linear.save_to_file(
+        throughput_pysmo_surr_linear.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_linear.json",
             overwrite=True,
         )
@@ -528,7 +535,7 @@ def throughput_regression(rerun=False):
         )
 
         # To save a model
-        model = throughput_pysmo_surr_cubic.save_to_file(
+        throughput_pysmo_surr_cubic.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_cubic.json",
             overwrite=True,
         )
@@ -555,7 +562,7 @@ def throughput_regression(rerun=False):
         )
 
         # To save a model
-        model = throughput_pysmo_surr_spline.save_to_file(
+        throughput_pysmo_surr_spline.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_spline.json",
             overwrite=True,
         )
@@ -582,7 +589,7 @@ def throughput_regression(rerun=False):
         )
 
         # To save a model
-        model = throughput_pysmo_surr_gaussian.save_to_file(
+        throughput_pysmo_surr_gaussian.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_gaussian.json",
             overwrite=True,
         )
@@ -609,7 +616,7 @@ def throughput_regression(rerun=False):
         )
 
         # To save a model
-        model = throughput_pysmo_surr_mq.save_to_file(
+        throughput_pysmo_surr_mq.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_mq.json",
             overwrite=True,
         )
@@ -636,7 +643,7 @@ def throughput_regression(rerun=False):
         )
 
         # To save a model
-        model = throughput_pysmo_surr_imq.save_to_file(
+        throughput_pysmo_surr_imq.save_to_file(
             "watertap/examples/flowsheets/pfas_treatment/throughput_pysmo_surr_imq.json",
             overwrite=True,
         )
@@ -669,6 +676,8 @@ def throughput_regression(rerun=False):
 
         # ---------------------------------------------------------------------
 
+    if plot:
+
         surrogate_models = [
             throughput_pysmo_surr_kriging,
             throughput_pysmo_surr_linear,
@@ -678,6 +687,15 @@ def throughput_regression(rerun=False):
             throughput_pysmo_surr_mq,
             throughput_pysmo_surr_imq,
         ]
+        color = [
+            "#3E26A8",
+            "#475BF9",
+            "#2797EB",
+            "#12BEB9",
+            "#81CC59",
+            "#FCBB3E",
+            "#F9FB15",
+        ]
         res_names = []
         for m in range(0, len(surrogate_models)):
             err = compute_fit_metrics(surrogate_models[m], throughput_df)
@@ -686,7 +704,7 @@ def throughput_regression(rerun=False):
             res_names.append(err)
 
         # Plot metrics
-        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12))
+        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 12), color=color)
 
         df = pd.DataFrame(
             {
@@ -748,7 +766,10 @@ def throughput_regression(rerun=False):
         axes[1, 1].set_ylabel("Log(maxAE)")
         axes[1, 1].set_title("maxAE")
 
-        plt.show()
+        plt.savefig(
+            "throughput_surrogate_results.png",
+            dpi=1000,
+        )
 
         """
         show = True
