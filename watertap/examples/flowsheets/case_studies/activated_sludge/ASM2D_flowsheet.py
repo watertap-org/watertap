@@ -217,8 +217,6 @@ def build_flowsheet():
     )
     m.fs.FeedWater.conc_mass_comp[0, "X_MeP"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_TSS"].fix(180 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_K"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_Mg"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.alkalinity.fix(7 * pyo.units.mol / pyo.units.m**3)
 
     # Reactor sizing
@@ -267,10 +265,6 @@ def build_flowsheet():
     m.fs.CL1.split_fraction[0, "effluent", "X_PP"].fix(0.02144)
     m.fs.CL1.split_fraction[0, "effluent", "X_S"].fix(0.02221)
     m.fs.CL1.split_fraction[0, "effluent", "X_TSS"].fix(0.02194)
-
-    # TODO: need to revisit these values
-    m.fs.CL1.split_fraction[0, "effluent", "S_K"].fix(0.022)
-    m.fs.CL1.split_fraction[0, "effluent", "S_Mg"].fix(0.022)
 
     # Sludge purge separator
     m.fs.SP2.split_fraction[:, "recycle"].fix(0.97955)
@@ -366,7 +360,6 @@ def build_flowsheet():
     #     print(o[0].name)
 
     # Initial guesses for flow into first reactor
-    # TODO: tear guesses for S_K and S_Mg are unknown, need to be updated
     tear_guesses = {
         "flow_vol": {0: 1.07},
         "conc_mass_comp": {
@@ -388,8 +381,6 @@ def build_flowsheet():
             (0, "X_MeOH"): 1e-9,
             (0, "X_MeP"): 1e-9,
             (0, "X_TSS"): 2.2,
-            (0, "S_K"): 1e-9,
-            (0, "S_Mg"): 1e-9,
         },
         "alkalinity": {0: 7e-3},
         "temperature": {0: 298.15},

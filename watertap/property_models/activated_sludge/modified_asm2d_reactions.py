@@ -459,6 +459,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R1", "Liq", "X_PP"): 0,
             ("R1", "Liq", "X_S"): -1,
             ("R1", "Liq", "X_TSS"): -self.i_TSSXS,
+            ("R1", "Liq", "S_K"): 0,
+            ("R1", "Liq", "S_Mg"): 0,
             # R2: Anoxic hydrolysis
             ("R2", "Liq", "H2O"): 0,
             ("R2", "Liq", "S_A"): 0,
@@ -489,6 +491,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R2", "Liq", "X_PP"): 0,
             ("R2", "Liq", "X_S"): -1,
             ("R2", "Liq", "X_TSS"): -self.i_TSSXS,
+            ("R2", "Liq", "S_K"): 0,
+            ("R2", "Liq", "S_Mg"): 0,
             # R3: Anaerobic hydrolysis
             ("R3", "Liq", "H2O"): 0,
             ("R3", "Liq", "S_A"): 0,
@@ -519,6 +523,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R3", "Liq", "X_PP"): 0,
             ("R3", "Liq", "X_S"): -1,
             ("R3", "Liq", "X_TSS"): -self.i_TSSXS,
+            ("R3", "Liq", "S_K"): 0,
+            ("R3", "Liq", "S_Mg"): 0,
             # R4: Aerobic growth on S_F
             ("R4", "Liq", "H2O"): 0,
             ("R4", "Liq", "S_A"): 0,
@@ -543,6 +549,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R4", "Liq", "X_PP"): 0,
             ("R4", "Liq", "X_S"): 0,
             ("R4", "Liq", "X_TSS"): self.i_TSSBM,
+            ("R4", "Liq", "S_K"): 0,
+            ("R4", "Liq", "S_Mg"): 0,
             # R5: Aerobic growth on S_A
             ("R5", "Liq", "H2O"): 0,
             ("R5", "Liq", "S_A"): -1 / self.Y_H,
@@ -566,6 +574,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R5", "Liq", "X_PP"): 0,
             ("R5", "Liq", "X_S"): 0,
             ("R5", "Liq", "X_TSS"): self.i_TSSBM,
+            ("R5", "Liq", "S_K"): 0,
+            ("R5", "Liq", "S_Mg"): 0,
             # R6: Anoxic growth on S_F
             ("R6", "Liq", "H2O"): 0,
             ("R6", "Liq", "S_A"): 0,
@@ -593,6 +603,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R6", "Liq", "X_PP"): 0,
             ("R6", "Liq", "X_S"): 0,
             ("R6", "Liq", "X_TSS"): self.i_TSSBM,
+            ("R6", "Liq", "S_K"): 0,
+            ("R6", "Liq", "S_Mg"): 0,
             # R7: Anoxic growth on S_A, denitrification
             ("R7", "Liq", "H2O"): 0,
             ("R7", "Liq", "S_A"): -1 / self.Y_H,
@@ -618,6 +630,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R7", "Liq", "X_PP"): 0,
             ("R7", "Liq", "X_S"): 0,
             ("R7", "Liq", "X_TSS"): self.i_TSSBM,
+            ("R7", "Liq", "S_K"): 0,
+            ("R7", "Liq", "S_Mg"): 0,
             # R8: Fermentation
             ("R8", "Liq", "H2O"): 0,
             ("R8", "Liq", "S_A"): 1,
@@ -641,6 +655,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R8", "Liq", "X_PP"): 0,
             ("R8", "Liq", "X_S"): 0,
             ("R8", "Liq", "X_TSS"): 0,
+            ("R8", "Liq", "S_K"): 0,
+            ("R8", "Liq", "S_Mg"): 0,
             # R9: Lysis
             ("R9", "Liq", "H2O"): 0,
             ("R9", "Liq", "S_A"): 0,
@@ -676,6 +692,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R9", "Liq", "X_TSS"): -(
                 self.i_TSSBM - self.f_XI * self.i_TSSXI - (1 - self.f_XI) * self.i_TSSXS
             ),
+            ("R9", "Liq", "S_K"): 0,
+            ("R9", "Liq", "S_Mg"): 0,
             # R10: Storage of X_PHA
             ("R10", "Liq", "H2O"): 0,
             ("R10", "Liq", "S_A"): -1,
@@ -698,6 +716,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R10", "Liq", "X_PP"): -self.Y_PO4,
             ("R10", "Liq", "X_S"): 0,
             ("R10", "Liq", "X_TSS"): 0.6 - self.Y_PO4 * 3.23,
+            ("R10", "Liq", "S_K"): 0,
+            ("R10", "Liq", "S_Mg"): 0,
             # R11: Aerobic storage of X_PP
             ("R11", "Liq", "H2O"): 0,
             ("R11", "Liq", "S_A"): 0,
@@ -719,6 +739,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R11", "Liq", "X_PP"): 1,
             ("R11", "Liq", "X_S"): 0,
             ("R11", "Liq", "X_TSS"): -(0.6 * self.Y_PHA - 3.23),
+            ("R11", "Liq", "S_K"): 0,
+            ("R11", "Liq", "S_Mg"): 0,
             # R12: Anoxic storage of X_PP
             ("R12", "Liq", "H2O"): 0,
             ("R12", "Liq", "S_A"): 0,
@@ -745,6 +767,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R12", "Liq", "X_PP"): 1,
             ("R12", "Liq", "X_S"): 0,
             ("R12", "Liq", "X_TSS"): -(0.6 * self.Y_PHA - 3.23),
+            ("R12", "Liq", "S_K"): 0,
+            ("R12", "Liq", "S_Mg"): 0,
             # R13: Aerobic growth of X_PAO
             ("R13", "Liq", "H2O"): 0,
             ("R13", "Liq", "S_A"): 0,
@@ -767,6 +791,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R13", "Liq", "X_PP"): 0,
             ("R13", "Liq", "X_S"): 0,
             ("R13", "Liq", "X_TSS"): (self.i_TSSBM - 0.6 / self.Y_H),
+            ("R13", "Liq", "S_K"): 0,
+            ("R13", "Liq", "S_Mg"): 0,
             # R14: Anoxic growth of X_PAO
             ("R14", "Liq", "H2O"): 0,
             ("R14", "Liq", "S_A"): 0,
@@ -798,6 +824,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R14", "Liq", "X_PP"): 0,
             ("R14", "Liq", "X_S"): 0,
             ("R14", "Liq", "X_TSS"): self.i_TSSBM - 0.6 / self.Y_H,
+            ("R14", "Liq", "S_K"): 0,
+            ("R14", "Liq", "S_Mg"): 0,
             # R15: Lysis of X_PAO
             ("R15", "Liq", "H2O"): 0,
             ("R15", "Liq", "S_A"): 0,
@@ -833,6 +861,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R15", "Liq", "X_TSS"): -self.i_TSSBM
             + self.f_XI * self.i_TSSXI
             + (1 - self.f_XI) * self.i_TSSXS,
+            ("R15", "Liq", "S_K"): 0,
+            ("R15", "Liq", "S_Mg"): 0,
             # R16: Lysis of X_PP
             ("R16", "Liq", "H2O"): 0,
             ("R16", "Liq", "S_A"): 0,
@@ -854,6 +884,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R16", "Liq", "X_PP"): -1,
             ("R16", "Liq", "X_S"): 0,
             ("R16", "Liq", "X_TSS"): -3.23,
+            ("R16", "Liq", "S_K"): 0,
+            ("R16", "Liq", "S_Mg"): 0,
             # R17: Lysis of X_PAH
             ("R17", "Liq", "H2O"): 0,
             ("R17", "Liq", "S_A"): 1,
@@ -876,6 +908,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R17", "Liq", "X_PP"): 0,
             ("R17", "Liq", "X_S"): 0,
             ("R17", "Liq", "X_TSS"): -0.6,
+            ("R17", "Liq", "S_K"): 0,
+            ("R17", "Liq", "S_Mg"): 0,
             # R18: Aerobic growth of X_AUT
             ("R18", "Liq", "H2O"): 0,
             ("R18", "Liq", "S_A"): 0,
@@ -900,6 +934,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R18", "Liq", "X_PP"): 0,
             ("R18", "Liq", "X_S"): 0,
             ("R18", "Liq", "X_TSS"): self.i_TSSBM,
+            ("R18", "Liq", "S_K"): 0,
+            ("R18", "Liq", "S_Mg"): 0,
             # R19: Lysis of X_AUT
             ("R19", "Liq", "H2O"): 0,
             ("R19", "Liq", "S_A"): 0,
@@ -934,6 +970,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R19", "Liq", "X_TSS"): self.f_XI * self.i_TSSXI
             + (1 - self.f_XI) * self.i_TSSXS
             - self.i_TSSBM,
+            ("R19", "Liq", "S_K"): 0,
+            ("R19", "Liq", "S_Mg"): 0,
             # R20: Precipitation
             ("R20", "Liq", "H2O"): 0,
             ("R20", "Liq", "S_A"): 0,
@@ -955,6 +993,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R20", "Liq", "X_PP"): 0,
             ("R20", "Liq", "X_S"): 0,
             ("R20", "Liq", "X_TSS"): 1.42,
+            ("R20", "Liq", "S_K"): 0,
+            ("R20", "Liq", "S_Mg"): 0,
             # R21: Re-dissolution
             ("R21", "Liq", "H2O"): 0,
             ("R21", "Liq", "S_A"): 0,
@@ -976,6 +1016,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R21", "Liq", "X_PP"): 0,
             ("R21", "Liq", "X_S"): 0,
             ("R21", "Liq", "X_TSS"): -1.42,
+            ("R21", "Liq", "S_K"): 0,
+            ("R21", "Liq", "S_Mg"): 0,
         }
         # Fix all the variables we just created
         for v in self.component_objects(pyo.Var, descend_into=False):

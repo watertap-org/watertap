@@ -10,8 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for ASM1d thermo property package.
-Authors: Andrew Lee
+Tests for ASM2d thermo property package.
+Authors: Chenyu Wang
 """
 
 import pytest
@@ -19,7 +19,7 @@ from pyomo.environ import ConcreteModel, Param, units, value, Var
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 
-from watertap.property_models.activated_sludge.asm2d_properties import (
+from watertap.property_models.activated_sludge.modified_asm2d_properties import (
     ASM2dParameterBlock,
     ASM2dStateBlock,
 )
@@ -52,7 +52,7 @@ class TestParamBlock(object):
         for i in model.params.phase_list:
             assert i == "Liq"
 
-        assert len(model.params.component_list) == 20
+        assert len(model.params.component_list) == 22
         for i in model.params.component_list:
             assert i in [
                 "H2O",
@@ -75,6 +75,8 @@ class TestParamBlock(object):
                 "X_PP",
                 "X_S",
                 "X_TSS",
+                "S_K",
+                "S_Mg",
             ]
 
         assert isinstance(model.params.cp_mass, Param)
@@ -116,7 +118,7 @@ class TestStateBlock(object):
 
         assert isinstance(model.props[1].conc_mass_comp, Var)
         # H2O should not appear in conc_mass_comp
-        assert len(model.props[1].conc_mass_comp) == 18
+        assert len(model.props[1].conc_mass_comp) == 20
         for i in model.props[1].conc_mass_comp:
             assert i in [
                 "S_A",
@@ -137,6 +139,8 @@ class TestStateBlock(object):
                 "X_PP",
                 "X_S",
                 "X_TSS",
+                "S_K",
+                "S_Mg",
             ]
             assert value(model.props[1].conc_mass_comp[i]) == 0.1
 
