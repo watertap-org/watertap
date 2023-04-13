@@ -39,6 +39,7 @@ from pyomo.environ import (
     units as pyunits,
     check_optimal_termination,
     exp,
+    Suffix,
 )
 
 
@@ -64,6 +65,7 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Alejandro Garciadiego, Andrew Lee"
 
@@ -285,6 +287,8 @@ see reaction package for documentation.}""",
         """
         # Call UnitModel.build to setup dynamics
         super(ADData, self).build()
+
+        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         # Check phase lists match assumptions
         if self.config.vapor_property_package.phase_list != ["Vap"]:
@@ -542,10 +546,9 @@ see reaction package for documentation.}""",
 
         def outlet_P_rule(self, t):
             return self.vapor_phase[t].pressure == (
-                self.vapor_phase[t].p_w_sat
-                + sum(
-                    self.vapor_phase[t].p_sat[j]
-                    for j in self.config.vapor_property_package.solute_set
+                sum(
+                    self.vapor_phase[t].pressure_sat[j]
+                    for j in self.config.vapor_property_package.component_list
                 )
             )
 
@@ -596,7 +599,7 @@ see reaction package for documentation.}""",
                         self.KH_h2[t],
                         to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
                     )
-                    * self.vapor_phase[t].p_sat["S_h2"]
+                    * self.vapor_phase[t].pressure_sat["S_h2"]
                 )
                 * self.volume_liquid[t]
             )
@@ -619,7 +622,7 @@ see reaction package for documentation.}""",
                         self.KH_ch4[t],
                         to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
                     )
-                    * self.vapor_phase[t].p_sat["S_ch4"]
+                    * self.vapor_phase[t].pressure_sat["S_ch4"]
                 )
                 * self.volume_liquid[t]
             )
@@ -639,7 +642,7 @@ see reaction package for documentation.}""",
                         self.KH_co2[t],
                         to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
                     )
-                    * self.vapor_phase[t].p_sat["S_co2"]
+                    * self.vapor_phase[t].pressure_sat["S_co2"]
                 )
                 * self.volume_liquid[t]
             ) * (1 * pyunits.kg / pyunits.kmole)
@@ -755,7 +758,18 @@ see reaction package for documentation.}""",
         iscale.set_scaling_factor(self.KH_ch4, 1e3)
         iscale.set_scaling_factor(self.KH_h2, 1e4)
 
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Liquid Inlet": self.inlet,
+                "Liquid Outlet": self.liquid_outlet,
+                "Vapor Outlet": self.vapor_outlet,
+            },
+            time_point=time_point,
+        )
+
     def _get_performance_contents(self, time_point=0):
+        # TODO: add aggregated quantities/key metrics
         var_dict = {"Volume": self.volume_AD[time_point]}
         if hasattr(self, "heat_duty"):
             var_dict["Heat Duty"] = self.heat_duty[time_point]
@@ -771,6 +785,16 @@ see reaction package for documentation.}""",
             self.vapor_phase.component_list
             & self.liquid_phase.properties_out.component_list
         )
+
+        # TODO: improve this later; for now, this resolved some scaling issues for modified adm1 test file
+        if "S_IP" in self.config.liquid_property_package.component_list:
+            iscale.set_scaling_factor(self.liquid_phase.heat, 1e-6)
+            iscale.set_scaling_factor(
+                self.liquid_phase.properties_out[0].conc_mass_comp["S_IP"], 1e-5
+            )
+            iscale.set_scaling_factor(
+                self.liquid_phase.properties_out[0].conc_mass_comp["S_IN"], 1e-5
+            )
 
         for t, v in self.flow_vol_vap.items():
             iscale.constraint_scaling_transform(
@@ -948,10 +972,14 @@ see reaction package for documentation.}""",
         init_log.info_high("Initialization Step 2 Complete.")
 
         # ---------------------------------------------------------------------
-        # Solve unit model
+        # # Solve unit model
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solverobj.solve(self)
-
+            results = solverobj.solve(self, tee=slc.tee)
+            if not check_optimal_termination(results):
+                init_log.warning(
+                    f"Trouble solving unit model {self.name}, trying one more time"
+                )
+                results = solverobj.solve(self, tee=slc.tee)
         init_log.info_high(
             "Initialization Step 3 {}.".format(idaeslog.condition(results))
         )
