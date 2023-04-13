@@ -12,44 +12,15 @@
 
 import pytest
 import pyomo.environ as pyo
-from pyomo.environ import (
-    ConcreteModel,
-    check_optimal_termination,
-    value,
-)
-from pyomo.network import Port
-from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import (
-    FlowsheetBlock,
-    EnergyBalanceType,
-    MaterialBalanceType,
-    MomentumBalanceType,
-)
+from pyomo.util.check_units import assert_units_consistent
+from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    number_variables,
-    number_total_constraints,
-    number_unused_variables,
-)
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util.scaling import (
-    calculate_scaling_factors,
-    unscaled_variables_generator,
-    badly_scaled_var_generator,
-)
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock,
-    DiffusivityCalculation,
-)
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.unit_models.electrolyzer import Electrolyzer
-from watertap.costing import WaterTAPCosting
-from idaes.core.util.model_statistics import (
-    total_blocks_set,
-    report_statistics,
-)
-from watertap.property_models.anode_reaction import AnodeReactionParameterBlock
 
 __author__ = "Hunter Barber"
 
@@ -60,7 +31,7 @@ class TestElectrolyzer:
     @pytest.fixture(scope="class")
     def chlor_alkali_elec(self):
 
-        m = ConcreteModel()
+        m = pyo.ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = MCASParameterBlock(
@@ -180,4 +151,4 @@ class TestElectrolyzer:
         )
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert pyo.check_optimal_termination(results)
