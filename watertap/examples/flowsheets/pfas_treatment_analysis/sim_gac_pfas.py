@@ -84,13 +84,13 @@ def main():
     dict_resolve_results, data_filtered, df_param_results = {}, {}, {}
     for source_name in source_name_list:
 
+        # ---------------------------------------------------------------------
+        # model regression
         middle_str = f"species: {species_name} / source: {source_name}"
         middle_len = len(middle_str) + 2
         end_len = floor((terminal_len - middle_len) / 2)
         end_str = "=" * end_len
         print(end_str, middle_str, end_str)
-        # ---------------------------------------------------------------------
-        # model regression
 
         # data set
         data_set = data[["data_iter", f"{source_name}_X", f"{source_name}_Y"]]
@@ -140,7 +140,7 @@ def main():
             initialize_parmest_model=True,
         )
 
-        # Parameter estimation
+        # parameter estimation
         obj, theta = pest.theta_est()
 
         print("The SSE at the optimal solution is %0.6f" % (obj / expr_sf))
@@ -148,28 +148,35 @@ def main():
         for k, v in theta.items():
             print(k, "=", v)
 
+        # store results
         df_param_results[f"{source_name}"] = {
             "freund_k": theta[0],
             "freund_ninv": theta[1],
             "ds": theta[2],
         }
 
+        # ---------------------------------------------------------------------
+        # model resolve
         middle_str = f"model resolve"
         middle_len = len(middle_str) + 2
         end_len = floor((terminal_len - middle_len) / 2)
         end_str = "-" * end_len
         print(end_str, middle_str, end_str)
-        # rebuild model across CP to view regression results
-        # theta = [guess_freund_k, guess_freund_ninv, guess_ds]
-        dict_iter = solve_regression(theta)
 
+        # rebuild model across CP to view regression results
+        dict_iter = solve_regression(theta)
         dict_resolve_results[f"{source_name}"] = dict_iter
 
+    # ---------------------------------------------------------------------
     # save regression data
+
     df_regression_results = pd.DataFrame.from_dict(df_param_results)
     df_regression_results.to_csv(
         "watertap/examples/flowsheets/pfas_treatment_analysis/regression_results.csv"
     )
+
+    # ---------------------------------------------------------------------
+    # plot results
 
     middle_str = f"plotting regression to figure"
     middle_len = len(middle_str) + 2
