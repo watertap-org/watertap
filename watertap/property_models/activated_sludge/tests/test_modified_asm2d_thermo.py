@@ -20,8 +20,8 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 
 from watertap.property_models.activated_sludge.modified_asm2d_properties import (
-    ASM2dParameterBlock,
-    ASM2dStateBlock,
+    ModifiedASM2dParameterBlock,
+    ModifiedASM2dStateBlock,
 )
 from idaes.core.util.model_statistics import (
     fixed_variables_set,
@@ -40,13 +40,13 @@ class TestParamBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = ASM2dParameterBlock()
+        model.params = ModifiedASM2dParameterBlock()
 
         return model
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.params.state_block_class is ASM2dStateBlock
+        assert model.params.state_block_class is ModifiedASM2dStateBlock
 
         assert len(model.params.phase_list) == 1
         for i in model.params.phase_list:
@@ -96,7 +96,7 @@ class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = ASM2dParameterBlock()
+        model.params = ModifiedASM2dParameterBlock()
 
         model.props = model.params.build_state_block([1])
 

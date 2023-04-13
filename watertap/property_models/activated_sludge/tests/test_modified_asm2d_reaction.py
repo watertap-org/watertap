@@ -42,11 +42,11 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from watertap.property_models.activated_sludge.modified_asm2d_properties import (
-    ASM2dParameterBlock,
+    ModifiedASM2dParameterBlock,
 )
 from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
-    ASM2dReactionParameterBlock,
-    ASM2dReactionBlock,
+    ModifiedASM2dReactionParameterBlock,
+    ModifiedASM2dReactionBlock,
 )
 import idaes.core.util.scaling as iscale
 
@@ -59,14 +59,16 @@ class TestParamBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.pparams = ASM2dParameterBlock()
-        model.rparams = ASM2dReactionParameterBlock(property_package=model.pparams)
+        model.pparams = ModifiedASM2dParameterBlock()
+        model.rparams = ModifiedASM2dReactionParameterBlock(
+            property_package=model.pparams
+        )
 
         return model
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.rparams.reaction_block_class is ASM2dReactionBlock
+        assert model.rparams.reaction_block_class is ModifiedASM2dReactionBlock
 
         assert len(model.rparams.rate_reaction_idx) == 21
         for i in model.rparams.rate_reaction_idx:
@@ -302,8 +304,10 @@ class TestReactionBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.pparams = ASM2dParameterBlock()
-        model.rparams = ASM2dReactionParameterBlock(property_package=model.pparams)
+        model.pparams = ModifiedASM2dParameterBlock()
+        model.rparams = ModifiedASM2dReactionParameterBlock(
+            property_package=model.pparams
+        )
 
         model.props = model.pparams.build_state_block([1])
 
@@ -342,8 +346,10 @@ class TestAerobic:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ASM2dParameterBlock()
-        m.fs.rxn_props = ASM2dReactionParameterBlock(property_package=m.fs.props)
+        m.fs.props = ModifiedASM2dParameterBlock()
+        m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
+            property_package=m.fs.props
+        )
 
         m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
 
@@ -483,8 +489,10 @@ class TestAnoxic:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ASM2dParameterBlock()
-        m.fs.rxn_props = ASM2dReactionParameterBlock(property_package=m.fs.props)
+        m.fs.props = ModifiedASM2dParameterBlock()
+        m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
+            property_package=m.fs.props
+        )
 
         m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
 
@@ -623,8 +631,10 @@ class TestAerobic15C:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ASM2dParameterBlock()
-        m.fs.rxn_props = ASM2dReactionParameterBlock(property_package=m.fs.props)
+        m.fs.props = ModifiedASM2dParameterBlock()
+        m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
+            property_package=m.fs.props
+        )
 
         m.fs.rxn_props.K_H.fix(2.5 * 1 / units.day)
         m.fs.rxn_props.mu_H.fix(4.5 * 1 / units.day)
@@ -773,8 +783,10 @@ class TestAnoxicPHA:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ASM2dParameterBlock()
-        m.fs.rxn_props = ASM2dReactionParameterBlock(property_package=m.fs.props)
+        m.fs.props = ModifiedASM2dParameterBlock()
+        m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
+            property_package=m.fs.props
+        )
 
         m.fs.rxn_props.K_H.fix(2.5 * 1 / units.day)
         m.fs.rxn_props.mu_H.fix(4.5 * 1 / units.day)
