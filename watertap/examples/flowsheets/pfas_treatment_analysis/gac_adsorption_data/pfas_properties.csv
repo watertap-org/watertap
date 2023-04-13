@@ -1,0 +1,9 @@
+﻿Species,Name,Chain Length Classification,Structure Classification 1,Structure Classification 2,RDKit SMILES,Formula,C,H,F,O(=C),O(-H),O(=S),S,Na,Molar Volume (LeBas) [m3/mol],MW [kg/mol]
+PFOA,Perfluorooctanoic acid,Long,PFAAs,PFCAs,O=C(O)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F,C8HF15O2,8,1,15,1,1,0,0,0,0.000272,0.41407
+PFOS,Perfluorooctanesulfonic acid,Long,PFAAs,PFSAs,O=S(=O)(O)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F,C8HF17O3S,8,1,17,0,1,2,1,0,0.0003242,0.50013
+PFBS,Perfluorobutanesulfonic acid,Short,PFAAs,PFSAs,O=S(=O)(O)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F,C4HF9O3S,4,1,9,0,1,2,1,0,0.0001954,0.3001
+PFHxA,Perfluorohexanoic acid,Short,PFAAs,PFCAs,O=C(O)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F,C6HF11O2,6,1,11,1,1,0,0,0,0.0002076,0.31405
+PFHxS,Perfluorohexane sulfonic acid,Short,PFAAs,PFSAs,O=S(=O)(O)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F,C6F13NaO3S,6,0,13,0,1,2,1,1,0.00027976,0.40012
+PFHpA,Perfluoroheptanoic acid,Long,PFAAs,PFCAs,O=C(O)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F,C7F13O2,7,0,13,1,1,0,0,0,0.0002361,0.31405
+PFNA,Perfluorononanoic acid,Long,PFAAs,PFCAs,O=C(O)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F,C9F17O2,9,0,17,1,1,0,0,0,0.0003005,0.46408
+PFDA,Perfluorodecanoic acid,Long,PFAAs,PFCAs,O=C(O)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F,C10HF19O2,10,1,19,1,1,0,0,0,0.0003364,0.51408

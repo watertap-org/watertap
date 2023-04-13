@@ -48,6 +48,14 @@ def main():
     global data, source_name, source_name_list, species_name
     global guess_freund_k, guess_freund_ninv, guess_ds
     global min_st_surrogate, throughput_surrogate
+    global molecular_weight, molar_volume, exp_conc
+
+    pfas_property_data = pd.read_csv(
+        "watertap/examples/flowsheets/pfas_treatment_analysis/gac_adsorption_data/pfas_properties.csv"
+    )
+    water_quality_data = pd.read_csv(
+        "watertap/examples/flowsheets/pfas_treatment_analysis/gac_adsorption_data/water_quality.csv"
+    )
 
     # obtain experimental RSSCT data from csv
     source_name_list = [
@@ -80,17 +88,34 @@ def main():
     guess_freund_ninv = 0.8
     guess_ds = 1e-15
 
-    terminal_len = os.get_terminal_size().columns
+    # loop through species
+    property_row = pfas_property_data.loc[pfas_property_data["Species"] == species_name]
+    molecular_weight = property_row.loc[property_row.index.values[0]]["MW [kg/mol]"]
+    molar_volume = property_row.loc[property_row.index.values[0]][
+        "Molar Volume (LeBas) [m3/mol]"
+    ]
+
     dict_resolve_results, data_filtered, df_param_results = {}, {}, {}
     for source_name in source_name_list:
 
         # ---------------------------------------------------------------------
         # model regression
+        terminal_len = (
+            os.get_terminal_size().columns
+        )  # update terminal length periodically
+        if not terminal_len > 50:
+            terminal_len = 50
         middle_str = f"species: {species_name} / source: {source_name}"
         middle_len = len(middle_str) + 2
         end_len = floor((terminal_len - middle_len) / 2)
         end_str = "=" * end_len
         print(end_str, middle_str, end_str)
+
+        # get experimental concentration of source
+        quality_row = water_quality_data.loc[
+            water_quality_data["Parameter"] == f"{species_name} (postfilter)"
+        ]
+        exp_conc = quality_row.loc[quality_row.index.values[0]][source_name]
 
         # data set
         data_set = data[["data_iter", f"{source_name}_X", f"{source_name}_Y"]]
@@ -192,13 +217,11 @@ def model_build():
     # build models
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    # PFOA (C8HF15O2) molar volume by LeBas method
-    mv_pfas = ((8 * 14.8) + (1 * 3.7) + (15 * 8.7) + (7.4 * 1 + 12 * 1)) * 1e-6
     m.fs.properties = MCASParameterBlock(
-        solute_list=["PFOA"],
-        mw_data={"H2O": 0.018, "PFOA": 0.41407},
+        solute_list=[species_name],
+        mw_data={"H2O": 0.018, species_name: molecular_weight},
         diffus_calculation=DiffusivityCalculation.HaydukLaudie,
-        molar_volume_data={("Liq", "PFOA"): mv_pfas},
+        molar_volume_data={("Liq", species_name): molar_volume},
     )
     m.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
     m.fs.properties.dens_mass_const = 1000
@@ -215,7 +238,7 @@ def model_build():
         "flow_mol_phase_comp", 1e3, index=("Liq", "H2O")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e15, index=("Liq", "PFOA")
+        "flow_mol_phase_comp", 1e15, index=("Liq", species_name)
     )
     m.fs.feed.properties[0].conc_mass_phase_comp
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
@@ -230,8 +253,8 @@ def model_build():
             ("flow_vol_phase", "Liq"): 8.5e-8,  # 5.1 mL/min (OCWD, 2021)
             (
                 "conc_mass_phase_comp",
-                ("Liq", "PFOA"),
-            ): 6.59e-9,  # 6.59 ng/L (OCWD, 2021)
+                ("Liq", species_name),
+            ): exp_conc,  # (OCWD, 2021)
         },
         hold_state=True,  # fixes the calculated component mass flow rates
     )
@@ -466,7 +489,7 @@ def deactivate_ss_calculations(m):
     m.fs.gac.eq_ele_conc_ratio_term[:].deactivate()
     m.fs.gac.eq_conc_ratio_avg.deactivate()
 
-    # fix variables used in state equations
+    # fix variables used in steady state equations
     m.fs.gac.ele_throughput[:].fix()
     m.fs.gac.ele_min_operational_time[:].fix()
     m.fs.gac.ele_conc_ratio_replace[:].fix()
