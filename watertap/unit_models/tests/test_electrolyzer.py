@@ -99,7 +99,7 @@ class TestElectrolyzer:
         catholyte_blk.properties_out[0].conc_mol_phase_comp
 
         # fix variables
-        m.fs.unit.current.fix(30000)
+        m.fs.unit.current.fix(300 * 30000)
         m.fs.unit.current_density.fix(5000)
         m.fs.unit.voltage.fix(2.2)
 
@@ -131,7 +131,6 @@ class TestElectrolyzer:
         calculate_scaling_factors(m)
         initialization_tester(m)
         results = solver.solve(m)
-
         m.fs.unit.display()
         m.fs.unit.report()
 
@@ -164,8 +163,8 @@ class TestElectrolyzer:
 
         m.fs.costing = WaterTAPCosting()
         m.fs.costing.base_currency = pyo.units.USD_2020
-
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.costing.cost_process()
 
         assert assert_units_consistent(m) is None
         assert degrees_of_freedom(m) == 0
@@ -173,6 +172,6 @@ class TestElectrolyzer:
         calculate_scaling_factors(m)
         m.fs.unit.costing.initialize()
         results = solver.solve(m)
-        m.fs.unit.costing.display
+        m.fs.costing.display()
         # Check for optimal solution
         assert pyo.check_optimal_termination(results)

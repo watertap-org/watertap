@@ -297,7 +297,6 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             units=units_meta("length") ** 2,
             doc="anode area",
         )
-        self.anode_area.fix(50)
         self.cathode_area = Var(
             initialize=1,
             bounds=(0, None),
@@ -305,7 +304,6 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             units=units_meta("length") ** 2,
             doc="cathode area",
         )
-        self.cathode_area.fix(50)
         self.voltage = Var(
             initialize=1,
             bounds=(0, None),
@@ -351,9 +349,19 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         def eq_electron_flow(b):
             return b.electron_flow * Constants.faraday_constant == b.current
 
-        @self.Constraint(doc="current density")
-        def eq_current_density(b):
+        @self.Constraint(doc="membrane area")
+        def eq_membrane_area(b):
             return b.current_density * b.membrane_area == b.current
+
+        # assumed
+        @self.Constraint(doc="current density")
+        def eq_anode_area(b):
+            return b.current_density * b.anode_area == b.current
+
+        # assumed
+        @self.Constraint(doc="current density")
+        def eq_cathode_area(b):
+            return b.current_density * b.cathode_area == b.current
 
         @self.Constraint(doc="power")
         def eq_power(b):
@@ -583,7 +591,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.electron_flow, 1)
 
         if iscale.get_scaling_factor(self.current) is None:
-            iscale.set_scaling_factor(self.current, 1)
+            iscale.set_scaling_factor(self.current, 1e-5)
 
         if iscale.get_scaling_factor(self.current_density) is None:
             iscale.set_scaling_factor(self.current_density, 1)
