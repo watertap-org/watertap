@@ -37,12 +37,14 @@ from watertap.unit_models import (
     EnergyRecoveryDevice,
     Electrodialysis0D,
     Electrodialysis1D,
+    Electrolyzer,
     IonExchange0D,
     GAC,
 )
 
 from .units.crystallizer import cost_crystallizer
 from .units.electrodialysis import cost_electrodialysis
+from .units.electrolyzer import cost_electrolyzer
 from .units.energy_recovery_device import cost_energy_recovery_device
 from .units.gac import cost_gac
 from .units.ion_exchange import cost_ion_exchange
@@ -95,6 +97,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         Ultraviolet0D: cost_uv_aop,
         Electrodialysis0D: cost_electrodialysis,
         Electrodialysis1D: cost_electrodialysis,
+        Electrolyzer: cost_electrolyzer,
         IonExchange0D: cost_ion_exchange,
         GAC: cost_gac,
     }

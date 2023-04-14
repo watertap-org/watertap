@@ -290,6 +290,22 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             units=units_meta("length") ** 2,
             doc="membrane area",
         )
+        self.anode_area = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") ** 2,
+            doc="anode area",
+        )
+        self.anode_area.fix(50)
+        self.cathode_area = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") ** 2,
+            doc="cathode area",
+        )
+        self.cathode_area.fix(50)
         self.voltage = Var(
             initialize=1,
             bounds=(0, None),
@@ -574,6 +590,12 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.membrane_area) is None:
             iscale.set_scaling_factor(self.membrane_area, 1)
+
+        if iscale.get_scaling_factor(self.anode_area) is None:
+            iscale.set_scaling_factor(self.anode_area, 1)
+
+        if iscale.get_scaling_factor(self.cathode_area) is None:
+            iscale.set_scaling_factor(self.cathode_area, 1)
 
         if iscale.get_scaling_factor(self.voltage) is None:
             iscale.set_scaling_factor(self.voltage, 1)

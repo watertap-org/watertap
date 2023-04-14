@@ -14,13 +14,17 @@ import pytest
 import pyomo.environ as pyo
 
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core import FlowsheetBlock
+from idaes.core import (
+    FlowsheetBlock,
+    UnitModelCostingBlock,
+)
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.util.testing import initialization_tester
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.unit_models.electrolyzer import Electrolyzer
+from watertap.costing import WaterTAPCosting
 
 __author__ = "Hunter Barber"
 
@@ -150,5 +154,25 @@ class TestElectrolyzer:
             defined_state=False,
         )
 
+        # Check for optimal solution
+        assert pyo.check_optimal_termination(results)
+
+    @pytest.mark.unit
+    def test_costing(self, chlor_alkali_elec):
+
+        m = chlor_alkali_elec
+
+        m.fs.costing = WaterTAPCosting()
+        m.fs.costing.base_currency = pyo.units.USD_2020
+
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+        assert assert_units_consistent(m) is None
+        assert degrees_of_freedom(m) == 0
+
+        calculate_scaling_factors(m)
+        m.fs.unit.costing.initialize()
+        results = solver.solve(m)
+        m.fs.unit.costing.display
         # Check for optimal solution
         assert pyo.check_optimal_termination(results)
