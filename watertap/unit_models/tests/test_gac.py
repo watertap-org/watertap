@@ -184,7 +184,7 @@ class TestGACSimplified:
 
         # Approx data pulled from graph in Hand, 1984 at ~30 days
         # 30 days adjusted to actual solution to account for web plot data extraction error within reason
-        # pyo.values calculated by hand and match those reported in Hand, 1984
+        # values calculated by hand and match those reported in Hand, 1984
         assert pytest.approx(0.0005178, rel=1e-3) == pyo.value(ms.fs.unit.equil_conc)
         assert pytest.approx(19780, rel=1e-3) == pyo.value(ms.fs.unit.dg)
         assert pytest.approx(6.113, rel=1e-3) == pyo.value(ms.fs.unit.N_Bi)
@@ -353,7 +353,7 @@ class TestGACRobust:
     def test_robust_solution(self, gac_frame_robust):
         mr = gac_frame_robust
 
-        # pyo.values calculated by hand and match those reported in Crittenden, 2012
+        # values calculated by hand and match those reported in Crittenden, 2012
         assert pytest.approx(0.02097, rel=1e-3) == pyo.value(mr.fs.unit.equil_conc)
         assert pytest.approx(42890, rel=1e-3) == pyo.value(mr.fs.unit.dg)
         assert pytest.approx(45.79, rel=1e-3) == pyo.value(mr.fs.unit.N_Bi)
