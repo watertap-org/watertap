@@ -13,14 +13,27 @@
 import pytest
 import pyomo.environ as pyo
 
+from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (
     FlowsheetBlock,
+    EnergyBalanceType,
+    MaterialBalanceType,
+    MomentumBalanceType,
     UnitModelCostingBlock,
 )
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.scaling import calculate_scaling_factors
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
+from idaes.core.util.scaling import (
+    calculate_scaling_factors,
+    unscaled_variables_generator,
+    badly_scaled_var_generator,
+)
 from idaes.core.util.testing import initialization_tester
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.unit_models.electrolyzer import Electrolyzer
@@ -98,12 +111,66 @@ class TestElectrolyzer:
         catholyte_blk.properties_out[0].conc_mass_phase_comp
         catholyte_blk.properties_out[0].conc_mol_phase_comp
 
+        return m
+
+    @pytest.mark.unit
+    def test_config(self, chlor_alkali_elec):
+
+        m = chlor_alkali_elec
+        u_config = m.fs.unit.config
+
+        # check unit config arguments
+        assert len(u_config) == 8
+        assert not u_config.dynamic
+        assert not u_config.has_holdup
+        assert u_config.material_balance_type == MaterialBalanceType.useDefault
+        assert u_config.energy_balance_type == EnergyBalanceType.none
+        assert u_config.momentum_balance_type == MomentumBalanceType.pressureTotal
+
+        # check properties
+        assert u_config.property_package is m.fs.properties
+        assert len(u_config.property_package.solute_set) == 5
+        assert len(u_config.property_package.solvent_set) == 1
+
+    @pytest.mark.unit
+    def test_build(self, chlor_alkali_elec):
+
+        m = chlor_alkali_elec
+
+        # test units
+        assert assert_units_consistent(m) is None
+
+        # test ports
+        port_lst = [
+            "anolyte_inlet",
+            "anolyte_outlet",
+            "catholyte_inlet",
+            "catholyte_outlet",
+        ]
+        for port_str in port_lst:
+            port = getattr(m.fs.unit, port_str)
+            assert len(port.vars) == 3
+            assert isinstance(port, Port)
+
+        # test statistics
+        assert number_variables(m) == 199
+        assert number_total_constraints(m) == 146
+        assert number_unused_variables(m) == 15
+
+    @pytest.mark.unit
+    def test_dof(self, chlor_alkali_elec):
+
+        m = chlor_alkali_elec
+
+        # test initial degrees of freedom
+        assert degrees_of_freedom(m) == 5
+
         # fix variables
         m.fs.unit.current.fix(30000)
         m.fs.unit.current_density.fix(5000)
-        m.fs.unit.efficiency_current.fix(1)
+        m.fs.unit.efficiency_current.fix(0.9)
         m.fs.unit.voltage_min.fix(2.2)
-        m.fs.unit.efficiency_voltage.fix(1)
+        m.fs.unit.efficiency_voltage.fix(0.8)
 
         # reactions
         m.fs.unit.anode_stoich["Liq", "CL-"].fix(-1)
@@ -112,16 +179,15 @@ class TestElectrolyzer:
         m.fs.unit.cathode_stoich["Liq", "H2-v"].fix(0.5)
         m.fs.unit.cathode_stoich["Liq", "OH-"].fix(1)
 
-        return m
+        # test degrees of freedom satisfied
+        assert degrees_of_freedom(m) == 0
 
     @pytest.mark.unit
-    def test_general(self, chlor_alkali_elec):
+    def test_init(self, chlor_alkali_elec):
 
         m = chlor_alkali_elec
 
-        assert assert_units_consistent(m) is None
-        assert degrees_of_freedom(m) == 0
-
+        # set default scaling factors
         prop = m.fs.properties
         prop.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "H2O"))
         prop.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "NA+"))
@@ -131,11 +197,56 @@ class TestElectrolyzer:
         prop.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "OH-"))
 
         calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors
+        assert len(list(unscaled_variables_generator(m))) == 0
+
+        # test initialization
         initialization_tester(m)
-        results = model_solve(m)
-        m.fs.unit.display()
+
+        # check variable scaling
+        assert len(list(badly_scaled_var_generator(m, zero=1e-6))) == 0
+
+    @pytest.mark.component
+    def test_solve(self, chlor_alkali_elec):
+
+        m = chlor_alkali_elec
+        results = solver.solve(m)
+
+        # check for optimal solution
+        assert pyo.check_optimal_termination(results)
+
+        # re-check variable scaling post solve
+        assert len(list(badly_scaled_var_generator(m, zero=1e-6))) == 0
+
+    @pytest.mark.component
+    def test_solution(self, chlor_alkali_elec):
+
+        m = chlor_alkali_elec
+
+        # test report
         m.fs.unit.report()
 
+        # check solution values
+        assert pytest.approx(6.000, rel=1e-3) == pyo.value(m.fs.unit.anode_area)
+        assert pytest.approx(2.750, rel=1e-3) == pyo.value(m.fs.unit.voltage_applied)
+        assert pytest.approx(6.000, rel=1e-3) == pyo.value(m.fs.unit.cathode_area)
+        assert pytest.approx(0.2798, rel=1e-3) == pyo.value(m.fs.unit.electron_flow)
+        assert pytest.approx(6.000, rel=1e-3) == pyo.value(m.fs.unit.membrane_area)
+        assert pytest.approx(82500, rel=1e-3) == pyo.value(m.fs.unit.power)
+
+        # check flow at outlet
+        assert pytest.approx(0.1399, rel=1e-3) == pyo.value(
+            m.fs.unit.anolyte.properties_out[0].flow_mol_phase_comp["Liq", "CL2-v"]
+        )
+        assert pytest.approx(1.568, rel=1e-3) == pyo.value(
+            m.fs.unit.catholyte.properties_out[0].flow_mol_phase_comp["Liq", "NA+"]
+        )
+        assert pytest.approx(1.568, rel=1e-3) == pyo.value(
+            m.fs.unit.catholyte.properties_out[0].flow_mol_phase_comp["Liq", "OH-"]
+        )
+
+        # check charge balance
         m.fs.unit.anolyte.properties_in[0].assert_electroneutrality(
             tee=True,
             tol=1e-5,
@@ -159,70 +270,41 @@ class TestElectrolyzer:
             defined_state=False,
         )
 
-        # Check for optimal solution
-        assert pyo.check_optimal_termination(results)
-
     @pytest.mark.unit
-    def test_costing(self, chlor_alkali_elec):
+    def test_costing_build(self, chlor_alkali_elec):
 
         m = chlor_alkali_elec
 
+        # build costing model block
         m.fs.costing = WaterTAPCosting()
         m.fs.costing.base_currency = pyo.units.USD_2020
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
 
+        # check general config after building costing block
         assert assert_units_consistent(m) is None
         assert degrees_of_freedom(m) == 0
 
+    @pytest.mark.unit
+    def test_costing_results(self, chlor_alkali_elec):
+
+        m = chlor_alkali_elec
+
+        # scale, initialize, and solve with costing
         calculate_scaling_factors(m)
         m.fs.unit.costing.initialize()
-        results = model_solve(m)
-        m.fs.costing.display()
-        # Check for optimal solution
+        results = solver.solve(m)
+
+        # check for optimal solution
         assert pyo.check_optimal_termination(results)
 
-
-def model_solve(model, solver_log=False):
-
-    import idaes.logger as idaeslog
-    import idaes.core.util.scaling as iscale
-    import idaes.core.util.model_statistics as istat
-
-    solver = get_solver()
-    log = idaeslog.getSolveLogger("solver.demo")
-    log.setLevel(idaeslog.DEBUG)
-
-    # check model
-    assert_units_consistent(model)  # check that units are consistent
-    assert istat.degrees_of_freedom(model) == 0
-
-    # solve simulation
-    if solver_log:
-        with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
-            results = solver.solve(model, tee=slc.tee)
-            term_cond = results.solver.termination_condition
-            print("termination condition:", term_cond)
-    else:
-        results = solver.solve(model, tee=False)
-        term_cond = results.solver.termination_condition
-        print("termination condition:", term_cond)
-
-    # log problems of non-optimal solve
-    if not term_cond == "optimal":
-        badly_scaled_var_list = iscale.badly_scaled_var_generator(model)
-        print("------------------      badly_scaled_var_list       ------------------")
-        for x in badly_scaled_var_list:
-            print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-        print("------------------    variables_near_bounds_list    ------------------")
-        variables_near_bounds_list = istat.variables_near_bounds_generator(model)
-        for x in variables_near_bounds_list:
-            print(f"{x.name}\t{x.value}")
-        print("------------------    total_constraints_set_list    ------------------")
-        istat.activated_constraints_set_list = istat.activated_constraints_set(model)
-        for x in istat.activated_constraints_set_list:
-            residual = abs(pyo.value(x.body) - pyo.value(x.lb))
-            if residual > 1e-8:
-                print(f"{x}\t{residual}")
-
-    return results
+        # check solution values
+        assert pytest.approx(10810, rel=1e-3) == pyo.value(
+            m.fs.unit.costing.capital_cost
+        )
+        assert pytest.approx(82.50, rel=1e-3) == pyo.value(
+            m.fs.costing.aggregate_flow_electricity
+        )
+        assert pytest.approx(50040, rel=1e-3) == pyo.value(
+            m.fs.costing.aggregate_flow_costs["electricity"]
+        )

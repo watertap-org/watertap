@@ -647,6 +647,8 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
 
         super().calculate_scaling_factors()
 
+        # TODO: add dynamic scaling factors as a function of solute flow
+
         if iscale.get_scaling_factor(self.electron_flow) is None:
             iscale.set_scaling_factor(self.electron_flow, 1)
 
@@ -691,3 +693,26 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
 
                 if iscale.get_scaling_factor(self.cathode_stoich[p, j]) is None:
                     iscale.set_scaling_factor(self.cathode_stoich[p, j], 1)
+
+        for t in self.flowsheet().time:
+            for j in self.config.property_package.component_list:
+
+                if (
+                    iscale.get_scaling_factor(
+                        self.custom_reaction_generation_cathode[t, j]
+                    )
+                    is None
+                ):
+                    iscale.set_scaling_factor(
+                        self.custom_reaction_generation_cathode[t, j], 1
+                    )
+
+                if (
+                    iscale.get_scaling_factor(
+                        self.custom_reaction_generation_anode[t, j]
+                    )
+                    is None
+                ):
+                    iscale.set_scaling_factor(
+                        self.custom_reaction_generation_anode[t, j], 1
+                    )
