@@ -99,9 +99,11 @@ class TestElectrolyzer:
         catholyte_blk.properties_out[0].conc_mol_phase_comp
 
         # fix variables
-        m.fs.unit.current.fix(300 * 30000)
+        m.fs.unit.current.fix(30000)
         m.fs.unit.current_density.fix(5000)
-        m.fs.unit.voltage.fix(2.2)
+        m.fs.unit.efficiency_current.fix(1)
+        m.fs.unit.voltage_min.fix(2.2)
+        m.fs.unit.efficiency_voltage.fix(1)
 
         # reactions
         m.fs.unit.anode_stoich["Liq", "CL-"].fix(-1)
@@ -130,25 +132,29 @@ class TestElectrolyzer:
 
         calculate_scaling_factors(m)
         initialization_tester(m)
-        results = solver.solve(m)
+        results = model_solve(m)
         m.fs.unit.display()
         m.fs.unit.report()
 
         m.fs.unit.anolyte.properties_in[0].assert_electroneutrality(
             tee=True,
+            tol=1e-5,
             solve=False,
         )
         m.fs.unit.anolyte.properties_out[0].assert_electroneutrality(
             tee=True,
+            tol=1e-5,
             solve=False,
             defined_state=False,
         )
         m.fs.unit.catholyte.properties_in[0].assert_electroneutrality(
             tee=True,
+            tol=1e-5,
             solve=False,
         )
         m.fs.unit.catholyte.properties_out[0].assert_electroneutrality(
             tee=True,
+            tol=1e-5,
             solve=False,
             defined_state=False,
         )
@@ -171,7 +177,52 @@ class TestElectrolyzer:
 
         calculate_scaling_factors(m)
         m.fs.unit.costing.initialize()
-        results = solver.solve(m)
+        results = model_solve(m)
         m.fs.costing.display()
         # Check for optimal solution
         assert pyo.check_optimal_termination(results)
+
+
+def model_solve(model, solver_log=False):
+
+    import idaes.logger as idaeslog
+    import idaes.core.util.scaling as iscale
+    import idaes.core.util.model_statistics as istat
+
+    solver = get_solver()
+    log = idaeslog.getSolveLogger("solver.demo")
+    log.setLevel(idaeslog.DEBUG)
+
+    # check model
+    assert_units_consistent(model)  # check that units are consistent
+    assert istat.degrees_of_freedom(model) == 0
+
+    # solve simulation
+    if solver_log:
+        with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
+            results = solver.solve(model, tee=slc.tee)
+            term_cond = results.solver.termination_condition
+            print("termination condition:", term_cond)
+    else:
+        results = solver.solve(model, tee=False)
+        term_cond = results.solver.termination_condition
+        print("termination condition:", term_cond)
+
+    # log problems of non-optimal solve
+    if not term_cond == "optimal":
+        badly_scaled_var_list = iscale.badly_scaled_var_generator(model)
+        print("------------------      badly_scaled_var_list       ------------------")
+        for x in badly_scaled_var_list:
+            print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+        print("------------------    variables_near_bounds_list    ------------------")
+        variables_near_bounds_list = istat.variables_near_bounds_generator(model)
+        for x in variables_near_bounds_list:
+            print(f"{x.name}\t{x.value}")
+        print("------------------    total_constraints_set_list    ------------------")
+        istat.activated_constraints_set_list = istat.activated_constraints_set(model)
+        for x in istat.activated_constraints_set_list:
+            residual = abs(pyo.value(x.body) - pyo.value(x.lb))
+            if residual > 1e-8:
+                print(f"{x}\t{residual}")
+
+    return results
