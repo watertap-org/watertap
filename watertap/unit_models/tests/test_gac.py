@@ -105,6 +105,7 @@ class TestGACSimplified:
         assert u_config.material_balance_type == MaterialBalanceType.useDefault
         assert u_config.energy_balance_type == EnergyBalanceType.none
         assert u_config.momentum_balance_type == MomentumBalanceType.pressureTotal
+        assert u_config.finite_elements_ss_approximation == 5
         assert (
             u_config.film_transfer_coefficient_type == FilmTransferCoefficientType.fixed
         )
@@ -112,7 +113,6 @@ class TestGACSimplified:
             u_config.surface_diffusion_coefficient_type
             == SurfaceDiffusionCoefficientType.fixed
         )
-        assert u_config.finite_elements_ss_approximation == 5
 
         # check properties
         assert u_config.property_package is ms.fs.properties
@@ -181,28 +181,21 @@ class TestGACSimplified:
     @pytest.mark.component
     def test_simplified_solution(self, gac_frame_simplified):
         ms = gac_frame_simplified
+        gac = ms.fs.unit
 
         # Approx data pulled from graph in Hand, 1984 at ~30 days
         # 30 days adjusted to actual solution to account for web plot data extraction error within reason
         # values calculated by hand and match those reported in Hand, 1984
-        assert pytest.approx(0.0005178, rel=1e-3) == pyo.value(ms.fs.unit.equil_conc)
-        assert pytest.approx(19780, rel=1e-3) == pyo.value(ms.fs.unit.dg)
-        assert pytest.approx(6.113, rel=1e-3) == pyo.value(ms.fs.unit.N_Bi)
-        assert pytest.approx(35.68, rel=1e-3) == pyo.value(ms.fs.unit.min_N_St)
-        assert pytest.approx(0.9882, rel=1e-3) == pyo.value(ms.fs.unit.throughput)
-        assert pytest.approx(468.4, rel=1e-3) == pyo.value(
-            ms.fs.unit.min_residence_time
-        )
-        assert pytest.approx(134.7, rel=1e-3) == pyo.value(ms.fs.unit.residence_time)
-        assert pytest.approx(9153000, rel=1e-3) == pyo.value(
-            ms.fs.unit.min_operational_time
-        )
-        assert pytest.approx(2554000, rel=1e-3) == pyo.value(
-            ms.fs.unit.operational_time
-        )
-        assert pytest.approx(8514, rel=1e-3) == pyo.value(
-            ms.fs.unit.bed_volumes_treated
-        )
+        assert pytest.approx(0.0005178, rel=1e-3) == pyo.value(gac.equil_conc)
+        assert pytest.approx(19780, rel=1e-3) == pyo.value(gac.dg)
+        assert pytest.approx(6.113, rel=1e-3) == pyo.value(gac.N_Bi)
+        assert pytest.approx(35.68, rel=1e-3) == pyo.value(gac.min_N_St)
+        assert pytest.approx(0.9882, rel=1e-3) == pyo.value(gac.throughput)
+        assert pytest.approx(468.4, rel=1e-3) == pyo.value(gac.min_residence_time)
+        assert pytest.approx(134.7, rel=1e-3) == pyo.value(gac.residence_time)
+        assert pytest.approx(9153000, rel=1e-3) == pyo.value(gac.min_operational_time)
+        assert pytest.approx(2554000, rel=1e-3) == pyo.value(gac.operational_time)
+        assert pytest.approx(8514, rel=1e-3) == pyo.value(gac.bed_volumes_treated)
 
 
 # -----------------------------------------------------------------------------
@@ -273,6 +266,7 @@ class TestGACRobust:
         assert u_config.material_balance_type == MaterialBalanceType.useDefault
         assert u_config.energy_balance_type == EnergyBalanceType.none
         assert u_config.momentum_balance_type == MomentumBalanceType.pressureTotal
+        assert u_config.finite_elements_ss_approximation == 9
         assert (
             u_config.film_transfer_coefficient_type == FilmTransferCoefficientType.fixed
         )
@@ -280,7 +274,6 @@ class TestGACRobust:
             u_config.surface_diffusion_coefficient_type
             == SurfaceDiffusionCoefficientType.fixed
         )
-        assert u_config.finite_elements_ss_approximation == 9
 
         # check properties
         assert u_config.property_package is mr.fs.properties
@@ -352,36 +345,29 @@ class TestGACRobust:
     @pytest.mark.component
     def test_robust_solution(self, gac_frame_robust):
         mr = gac_frame_robust
+        gac = mr.fs.unit
 
         # values calculated by hand and match those reported in Crittenden, 2012
-        assert pytest.approx(0.02097, rel=1e-3) == pyo.value(mr.fs.unit.equil_conc)
-        assert pytest.approx(42890, rel=1e-3) == pyo.value(mr.fs.unit.dg)
-        assert pytest.approx(45.79, rel=1e-3) == pyo.value(mr.fs.unit.N_Bi)
-        assert pytest.approx(36.64, rel=1e-3) == pyo.value(mr.fs.unit.min_N_St)
-        assert pytest.approx(1.139, rel=1e-3) == pyo.value(mr.fs.unit.throughput)
-        assert pytest.approx(395.9, rel=1e-3) == pyo.value(
-            mr.fs.unit.min_residence_time
-        )
-        assert pytest.approx(264.0, rel=1e-3) == pyo.value(mr.fs.unit.residence_time)
-        assert pytest.approx(19340000, rel=1e-3) == pyo.value(
-            mr.fs.unit.min_operational_time
-        )
-        assert pytest.approx(13690000, rel=1e-3) == pyo.value(
-            mr.fs.unit.operational_time
-        )
-        assert pytest.approx(22810, rel=1e-3) == pyo.value(
-            mr.fs.unit.bed_volumes_treated
-        )
-        assert pytest.approx(0.003157, rel=1e-3) == pyo.value(mr.fs.unit.velocity_int)
-        assert pytest.approx(0.8333, rel=1e-3) == pyo.value(mr.fs.unit.bed_length)
-        assert pytest.approx(10.68, rel=1e-3) == pyo.value(mr.fs.unit.bed_area)
-        assert pytest.approx(8.900, rel=1e-3) == pyo.value(mr.fs.unit.bed_volume)
-        assert pytest.approx(3.688, rel=1e-3) == pyo.value(mr.fs.unit.bed_diameter)
-        assert pytest.approx(4004, rel=1e-3) == pyo.value(mr.fs.unit.bed_mass_gac)
+        assert pytest.approx(0.02097, rel=1e-3) == pyo.value(gac.equil_conc)
+        assert pytest.approx(42890, rel=1e-3) == pyo.value(gac.dg)
+        assert pytest.approx(45.79, rel=1e-3) == pyo.value(gac.N_Bi)
+        assert pytest.approx(36.64, rel=1e-3) == pyo.value(gac.min_N_St)
+        assert pytest.approx(1.139, rel=1e-3) == pyo.value(gac.throughput)
+        assert pytest.approx(395.9, rel=1e-3) == pyo.value(gac.min_residence_time)
+        assert pytest.approx(264.0, rel=1e-3) == pyo.value(gac.residence_time)
+        assert pytest.approx(19340000, rel=1e-3) == pyo.value(gac.min_operational_time)
+        assert pytest.approx(13690000, rel=1e-3) == pyo.value(gac.operational_time)
+        assert pytest.approx(22810, rel=1e-3) == pyo.value(gac.bed_volumes_treated)
+        assert pytest.approx(0.003157, rel=1e-3) == pyo.value(gac.velocity_int)
+        assert pytest.approx(0.8333, rel=1e-3) == pyo.value(gac.bed_length)
+        assert pytest.approx(10.68, rel=1e-3) == pyo.value(gac.bed_area)
+        assert pytest.approx(8.900, rel=1e-3) == pyo.value(gac.bed_volume)
+        assert pytest.approx(3.688, rel=1e-3) == pyo.value(gac.bed_diameter)
+        assert pytest.approx(4004, rel=1e-3) == pyo.value(gac.bed_mass_gac)
+        assert pytest.approx(0.2287, rel=1e-3) == pyo.value(gac.conc_ratio_avg)
         assert pytest.approx(6462000, rel=1e-3) == pyo.value(
-            mr.fs.unit.ele_operational_time[1]
+            gac.ele_operational_time[1]
         )
-        assert pytest.approx(0.2287, rel=1e-3) == pyo.value(mr.fs.unit.conc_ratio_avg)
 
     @pytest.mark.component
     def test_robust_reporting(self, gac_frame_robust):
@@ -409,36 +395,19 @@ class TestGACRobust:
         # Check for optimal solution
         assert pyo.check_optimal_termination(results)
 
+        cost = mr.fs.unit.costing
         # Check for known cost solution of default twin alternating contactors
         assert pyo.value(mr.fs.costing.gac.num_contactors_op) == 1
         assert pyo.value(mr.fs.costing.gac.num_contactors_redundant) == 1
-        assert pytest.approx(56900, rel=1e-3) == pyo.value(
-            mr.fs.unit.costing.contactor_cost
-        )
-        assert pytest.approx(4.359, rel=1e-3) == pyo.value(
-            mr.fs.unit.costing.adsorbent_unit_cost
-        )
-        assert pytest.approx(17450, rel=1e-3) == pyo.value(
-            mr.fs.unit.costing.adsorbent_cost
-        )
-        assert pytest.approx(81690, rel=1e-3) == pyo.value(
-            mr.fs.unit.costing.other_process_cost
-        )
-        assert pytest.approx(156000, rel=1e-3) == pyo.value(
-            mr.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(12680, rel=1e-3) == pyo.value(
-            mr.fs.unit.costing.gac_makeup_cost
-        )
-        assert pytest.approx(27660, rel=1e-3) == pyo.value(
-            mr.fs.unit.costing.gac_regen_cost
-        )
-        assert pytest.approx(0.01631, rel=1e-3) == pyo.value(
-            mr.fs.unit.costing.energy_consumption
-        )
-        assert pytest.approx(40370, rel=1e-3) == pyo.value(
-            mr.fs.unit.costing.fixed_operating_cost
-        )
+        assert pytest.approx(56900, rel=1e-3) == pyo.value(cost.contactor_cost)
+        assert pytest.approx(4.359, rel=1e-3) == pyo.value(cost.adsorbent_unit_cost)
+        assert pytest.approx(17450, rel=1e-3) == pyo.value(cost.adsorbent_cost)
+        assert pytest.approx(81690, rel=1e-3) == pyo.value(cost.other_process_cost)
+        assert pytest.approx(156000, rel=1e-3) == pyo.value(cost.capital_cost)
+        assert pytest.approx(12680, rel=1e-3) == pyo.value(cost.gac_makeup_cost)
+        assert pytest.approx(27660, rel=1e-3) == pyo.value(cost.gac_regen_cost)
+        assert pytest.approx(0.01631, rel=1e-3) == pyo.value(cost.energy_consumption)
+        assert pytest.approx(40370, rel=1e-3) == pyo.value(cost.fixed_operating_cost)
 
     @pytest.mark.component
     def test_robust_costing_gravity(self, gac_frame_robust):
@@ -457,36 +426,19 @@ class TestGACRobust:
         # Check for optimal solution
         assert pyo.check_optimal_termination(results)
 
+        cost = mr_grav.fs.unit.costing
         # Check for known cost solution of default twin alternating contactors
         assert pyo.value(mr_grav.fs.costing.gac.num_contactors_op) == 1
         assert pyo.value(mr_grav.fs.costing.gac.num_contactors_redundant) == 1
-        assert pytest.approx(163200, rel=1e-3) == pyo.value(
-            mr_grav.fs.unit.costing.contactor_cost
-        )
-        assert pytest.approx(4.359, rel=1e-3) == pyo.value(
-            mr_grav.fs.unit.costing.adsorbent_unit_cost
-        )
-        assert pytest.approx(17450, rel=1e-3) == pyo.value(
-            mr_grav.fs.unit.costing.adsorbent_cost
-        )
-        assert pytest.approx(159500, rel=1e-3) == pyo.value(
-            mr_grav.fs.unit.costing.other_process_cost
-        )
-        assert pytest.approx(340200, rel=1e-3) == pyo.value(
-            mr_grav.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(12680, rel=1e-3) == pyo.value(
-            mr_grav.fs.unit.costing.gac_makeup_cost
-        )
-        assert pytest.approx(27660, rel=1e-3) == pyo.value(
-            mr_grav.fs.unit.costing.gac_regen_cost
-        )
-        assert pytest.approx(2.476, rel=1e-3) == pyo.value(
-            mr_grav.fs.unit.costing.energy_consumption
-        )
-        assert pytest.approx(40370, rel=1e-3) == pyo.value(
-            mr_grav.fs.unit.costing.fixed_operating_cost
-        )
+        assert pytest.approx(163200, rel=1e-3) == pyo.value(cost.contactor_cost)
+        assert pytest.approx(4.359, rel=1e-3) == pyo.value(cost.adsorbent_unit_cost)
+        assert pytest.approx(17450, rel=1e-3) == pyo.value(cost.adsorbent_cost)
+        assert pytest.approx(159500, rel=1e-3) == pyo.value(cost.other_process_cost)
+        assert pytest.approx(340200, rel=1e-3) == pyo.value(cost.capital_cost)
+        assert pytest.approx(12680, rel=1e-3) == pyo.value(cost.gac_makeup_cost)
+        assert pytest.approx(27660, rel=1e-3) == pyo.value(cost.gac_regen_cost)
+        assert pytest.approx(2.476, rel=1e-3) == pyo.value(cost.energy_consumption)
+        assert pytest.approx(40370, rel=1e-3) == pyo.value(cost.fixed_operating_cost)
 
     @pytest.mark.component
     def test_robust_costing_modular_contactors(self, gac_frame_robust):
@@ -505,30 +457,22 @@ class TestGACRobust:
 
         results = solver.solve(mr)
 
+        cost = mr.fs.unit.costing
         # Check for known cost solution when changing volume scale of vessels in parallel
         assert pyo.value(mr.fs.costing.gac.num_contactors_op) == 4
         assert pyo.value(mr.fs.costing.gac.num_contactors_redundant) == 2
-        assert pytest.approx(89040, rel=1e-3) == pyo.value(
-            mr.fs.unit.costing.contactor_cost
-        )
-        assert pytest.approx(69690, rel=1e-3) == pyo.value(
-            mr.fs.unit.costing.other_process_cost
-        )
-        assert pytest.approx(176200, rel=1e-3) == pyo.value(
-            mr.fs.unit.costing.capital_cost
-        )
+        assert pytest.approx(89040, rel=1e-3) == pyo.value(cost.contactor_cost)
+        assert pytest.approx(69690, rel=1e-3) == pyo.value(cost.other_process_cost)
+        assert pytest.approx(176200, rel=1e-3) == pyo.value(cost.capital_cost)
 
     @pytest.mark.component
     def test_robust_costing_max_gac_ref(self, gac_frame_robust):
         mr = gac_frame_robust
 
         # scale flow up 10x
-        mr.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix(
-            10 * 824.0736620370348
-        )
-        mr.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "TCE"].fix(
-            10 * 5.644342973110135e-05
-        )
+        unit_feed = mr.fs.unit.process_flow.properties_in[0]
+        unit_feed.flow_mol_phase_comp["Liq", "H2O"].fix(10 * 824.0736620370348)
+        unit_feed.flow_mol_phase_comp["Liq", "TCE"].fix(10 * 5.644342973110135e-05)
 
         mr.fs.costing = WaterTAPCosting()
         mr.fs.costing.base_currency = pyo.units.USD_2020
@@ -537,10 +481,12 @@ class TestGACRobust:
             flowsheet_costing_block=mr.fs.costing
         )
         mr.fs.costing.cost_process()
-        # not necessarily an optimum solution because poor scaling but just checking the conditional
+        # not necessarily an optimum solution because poor scaling
+        # but just checking the conditional
         results = solver.solve(mr)
 
-        # Check for bed_mass_gac_cost_ref to be overwritten if bed_mass_gac is greater than bed_mass_gac_cost_max_ref
+        # Check for bed_mass_gac_cost_ref to be overwritten
+        # if bed_mass_gac is greater than bed_mass_gac_cost_max_ref
         assert pyo.value(mr.fs.unit.bed_mass_gac) > pyo.value(
             mr.fs.costing.gac.bed_mass_max_ref
         )
