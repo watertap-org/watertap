@@ -16,7 +16,8 @@ from pyomo.environ import (
     Var,
     Constraint,
     Expression,
-    value
+    value,
+    Objective
 )
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
@@ -25,13 +26,15 @@ from idaes.models.unit_models import Feed, Product, Mixer, Separator
 from idaes.models.unit_models.heat_exchanger import HeatExchanger
 from idaes.models.unit_models.translator import Translator
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom, number_total_objectives
 
 from watertap.examples.flowsheets.mvc.mvc_single_stage import (
     build,
     set_operating_conditions,
     add_Q_ext,
     initialize_system,
+    scale_costs,
+    fix_outlet_pressures,
     solve,
     set_up_optimization,
     display_metrics,
@@ -224,12 +227,12 @@ class TestMVC:
             assert value(m.fs.compressor.control_volume.properties_out[0].temperature.ub) == 450
 
             # check degrees of freedom
-            assert degrees_of_freedom(m) == 1
+            assert degrees_of_freedom(m) == 0
 
         @pytest.mark.component
         def test_initialize_system(self, mvc_single_stage):
             m = mvc_single_stage
-            set_operating_conditions(m)
+
             initialize_system(m)
 
             # mass flows in evaporator
@@ -247,18 +250,88 @@ class TestMVC:
             # external Q
             assert value(m.fs.Q_ext[0]) == pytest.approx(0, 1e-3)
 
-        # @pytest.mark.component
-        # def test_simulation(self, mvc_single_stage):
-        #     m = mvc_single_stage
-        #     set_operating_conditions(m)
-        #     initialize_system(m)
-        #
+        @pytest.mark.component
+        def test_simulation_Q_ext(self, mvc_single_stage):
+            m = mvc_single_stage
 
-        # @pytest.mark.component
-        # def test_display_system(self, mvc_single_stage):
-        #
-        # @pytest.mark.component
-        # def test_display_design(self, mvc_single_stage):
-        #
-        # @pytest.mark.component
-        # def test_optimization(self, mvc_single_stage):
+            scale_costs(m)
+            fix_outlet_pressures(m)
+
+            assert degrees_of_freedom(m) == 1
+
+            m.fs.objective = Objective(expr=m.fs.Q_ext[0])
+            solver = get_solver()
+            results = solve(m, solver=solver)
+
+            # Check system metrics
+            assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(22.02, rel-1e-2)
+            assert value(m.fs.costing.LCOW) == pytest.approx(23.47, rel=1e-2)
+
+            # Check mass balance
+            assert pytest.approx(value(m.fs.feed.outlet.flow_mass_phase_comp[0,'Liq','H2O']), rel=1e-3) == value(m.fs.distillate.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) + value(m.fs.brine.inlet.flow_mass_phase_comp[0,'Liq','H2O'])
+            assert pytest.approx(value(m.fs.feed.outlet.flow_mass_phase_comp[0,'Liq','TDS']), rel=1e-3) == value(m.fs.distillate.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']) + value(m.fs.brine.inlet.flow_mass_phase_comp[0,'Liq','TDS'])
+
+
+        @pytest.mark.component
+        def test_display_system(self, mvc_single_stage, capsys):
+            m = mvc_single_stage
+            display_metrics(m)
+            captured = capsys.readouterr()
+
+            assert ( captured.out
+                     == """System metrics
+Feed flow rate:                           44.44 kg/s
+Feed salinity:                            100.00 g/kg
+Brine salinity:                           200.00 g/kg
+Product flow rate:                        22.22 kg/s
+Recovery:                                 50.00 %
+Specific energy consumption:              22.02 kWh/m3
+Levelized cost of water:                  23.47 $/m3
+External Q:                               172718.21 W
+""")
+
+        @pytest.mark.component
+        def test_display_design(self, mvc_single_stage):
+            m = mvc_single_stage
+            display_design(m)
+            capture = capsys.readouterr()
+
+            assert (captured.out
+                    == """State variables
+Preheated feed temperature:               331.92 K
+Evaporator (brine, vapor) temperature:    343.15 K
+Evaporator (brine, vapor) pressure:       26.23 kPa
+Compressed vapor temperature:             393.20 K
+Compressed vapor pressure:                41.97 kPa
+Condensed vapor temperature:              343.15 K
+
+Design variables
+Brine heat exchanger area:                115.00 m2
+Distillate heat exchanger area:           125.00 m2
+Compressor pressure ratio:                1.60
+Evaporator area:                          10000.00 m2
+Evaporator LMTD:                          1.79 K
+""")
+
+        @pytest.mark.component
+        def test_optimization(self, mvc_single_stage):
+            m = mvc_single_stage
+            m.fs.Q_ext[0].fix(0)  # no longer want external heating in evaporator
+            del m.fs.objective
+            set_up_optimization(m)
+            assert number_total_objectives(m) == 1
+            assert degrees_of_freedom(m) == 4
+            results = solve(m, solver=solver, tee=False)
+
+            # Check decision variables
+            assert value(m.fs.evaporator.properties_brine[0].temperature == pytest.approx(348.15, rel=1e-2))
+            assert value(m.fs.evaporator.properties_brine[0].pressure == pytest.approx(32.45, rel=1e-2))
+            assert value(m.fs.hx_brine.area) == pytest.approx(173.99, rel=1e-2)
+            assert value(m.fs.hx_distillate.area) == pytest.approx(206.31, rel=1e-2)
+            assert value(m.fs.compressor.pressure_ratio) == pytest.approx(1.61, rel=1e-2)
+            assert value(m.fs.evaporator.area) == pytest.approx(777.37, rel=1e-2)
+            assert value(m.fs.evaporator.lmtd) == pytest.approx(22.59, rel=1e-2)
+
+            # Check system metrics
+            assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(22.36, rel=1e-2)
+            assert value(m.fs.costing.LCOW) == pytest.approx(4.52, rel=1e-2)
