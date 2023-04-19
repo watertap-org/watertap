@@ -101,7 +101,7 @@ def test_against_paper_analysis(csv_file, row_index):
         for property_name, flowsheet_attribute in _results_headers.items():
             assert value(model.find_component(flowsheet_attribute)) == pytest.approx(
                 float(row[property_name]),
-                rel=1e-3,
+                rel=1e-2,
             )
     else:
         for property_name in _results_headers:

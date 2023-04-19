@@ -17,12 +17,12 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_
     multi_sweep,
 )
 
-sweep_list = []
-for case_num in [1]:
-    sweep_list.append(case_num)
+pytest_parameterize_list = []
+for case_num in [1, 2]:
+    pytest_parameterize_list.append(case_num)
 
 
-@pytest.mark.parametrize("case_num", sweep_list)
+@pytest.mark.parametrize("case_num", pytest_parameterize_list)
 @pytest.mark.integration
 def test_multi_sweep(case_num, tmp_path):
     cwd = os.getcwd()
