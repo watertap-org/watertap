@@ -59,7 +59,9 @@ class TestParamBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.pparams = ModifiedASM2dParameterBlock()
+        model.pparams = ModifiedASM2dParameterBlock(
+            additional_solute_list=["S_K", "S_Mg"]
+        )
         model.rparams = ModifiedASM2dReactionParameterBlock(
             property_package=model.pparams
         )
@@ -304,7 +306,9 @@ class TestReactionBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.pparams = ModifiedASM2dParameterBlock()
+        model.pparams = ModifiedASM2dParameterBlock(
+            additional_solute_list=["S_K", "S_Mg"]
+        )
         model.rparams = ModifiedASM2dReactionParameterBlock(
             property_package=model.pparams
         )
@@ -346,7 +350,7 @@ class TestAerobic:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ModifiedASM2dParameterBlock()
+        m.fs.props = ModifiedASM2dParameterBlock(additional_solute_list=["S_K", "S_Mg"])
         m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
             property_package=m.fs.props
         )
@@ -489,7 +493,7 @@ class TestAnoxic:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ModifiedASM2dParameterBlock()
+        m.fs.props = ModifiedASM2dParameterBlock(additional_solute_list=["S_K", "S_Mg"])
         m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
             property_package=m.fs.props
         )
@@ -631,7 +635,7 @@ class TestAerobic15C:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ModifiedASM2dParameterBlock()
+        m.fs.props = ModifiedASM2dParameterBlock(additional_solute_list=["S_K", "S_Mg"])
         m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
             property_package=m.fs.props
         )
@@ -783,7 +787,7 @@ class TestAnoxicPHA:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ModifiedASM2dParameterBlock()
+        m.fs.props = ModifiedASM2dParameterBlock(additional_solute_list=["S_K", "S_Mg"])
         m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
             property_package=m.fs.props
         )

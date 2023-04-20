@@ -27,12 +27,15 @@ from idaes.core import (
     Solute,
     Solvent,
 )
+from pyomo.common.config import ConfigValue, In
 import idaes.logger as idaeslog
 from watertap.property_models.activated_sludge.asm2d_properties import (
     ASM2dParameterData,
     _ASM2dStateBlock,
     ASM2dStateBlockData,
 )
+
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
 # Some more information about this module
 __author__ = "Chenyu Wang"
@@ -44,11 +47,31 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("ModifiedASM2dParameterBlock")
 class ModifiedASM2dParameterData(ASM2dParameterData):
+    CONFIG = ASM2dParameterData.CONFIG()
+
+    CONFIG.declare(
+        "additional_solute_list",
+        ConfigValue(
+            domain=list,
+            description="List of additional solute species names apart from conventional ASM2D",
+        ),
+    )
+
     def build(self):
         super().build()
         self._state_block_class = ModifiedASM2dStateBlock
-        self.S_K = Solute(doc="Potassium")
-        self.S_Mg = Solute(doc="Magnesium")
+        # Group components into different sets
+        for j in self.config.additional_solute_list:
+            if j == "H2O":
+                raise ConfigurationError(
+                    "'H2O'is reserved as the default solvent and cannot be a solute."
+                )
+            # Add valid members of solute_list into IDAES's Solute() class.
+            # This triggers the addition of j into component_list and solute_set.
+            self.add_component(j, Solute())
+
+        # self.S_K = Solute(doc="Potassium")
+        # self.S_Mg = Solute(doc="Magnesium")
 
 
 class _ModifiedASM2dStateBlock(_ASM2dStateBlock):

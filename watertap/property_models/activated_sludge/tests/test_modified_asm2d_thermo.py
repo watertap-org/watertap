@@ -40,7 +40,9 @@ class TestParamBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = ModifiedASM2dParameterBlock()
+        model.params = ModifiedASM2dParameterBlock(
+            additional_solute_list=["S_K", "S_Mg"]
+        )
 
         return model
 
@@ -96,7 +98,9 @@ class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = ModifiedASM2dParameterBlock()
+        model.params = ModifiedASM2dParameterBlock(
+            additional_solute_list=["S_K", "S_Mg"]
+        )
 
         model.props = model.params.build_state_block([1])
 

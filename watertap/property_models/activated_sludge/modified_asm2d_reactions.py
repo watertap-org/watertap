@@ -59,55 +59,36 @@ class ModifiedASM2dReactionParameterData(ASM2dReactionParameterData):
 
         self._reaction_block_class = ModifiedASM2dReactionBlock
 
-        rate_reaction_stoichiometry_K_Mg = {
-            ("R1", "Liq", "S_K"): 0,
-            ("R1", "Liq", "S_Mg"): 0,
-            ("R2", "Liq", "S_K"): 0,
-            ("R2", "Liq", "S_Mg"): 0,
-            ("R3", "Liq", "S_K"): 0,
-            ("R3", "Liq", "S_Mg"): 0,
-            ("R4", "Liq", "S_K"): 0,
-            ("R4", "Liq", "S_Mg"): 0,
-            ("R5", "Liq", "S_K"): 0,
-            ("R5", "Liq", "S_Mg"): 0,
-            ("R6", "Liq", "S_K"): 0,
-            ("R6", "Liq", "S_Mg"): 0,
-            ("R7", "Liq", "S_K"): 0,
-            ("R7", "Liq", "S_Mg"): 0,
-            ("R8", "Liq", "S_K"): 0,
-            ("R8", "Liq", "S_Mg"): 0,
-            ("R9", "Liq", "S_K"): 0,
-            ("R9", "Liq", "S_Mg"): 0,
-            ("R10", "Liq", "S_K"): 0,
-            ("R10", "Liq", "S_Mg"): 0,
-            ("R11", "Liq", "S_K"): 0,
-            ("R11", "Liq", "S_Mg"): 0,
-            ("R12", "Liq", "S_K"): 0,
-            ("R12", "Liq", "S_Mg"): 0,
-            ("R13", "Liq", "S_K"): 0,
-            ("R13", "Liq", "S_Mg"): 0,
-            ("R14", "Liq", "S_K"): 0,
-            ("R14", "Liq", "S_Mg"): 0,
-            ("R15", "Liq", "S_K"): 0,
-            ("R15", "Liq", "S_Mg"): 0,
-            ("R16", "Liq", "S_K"): 0,
-            ("R16", "Liq", "S_Mg"): 0,
-            ("R17", "Liq", "S_K"): 0,
-            ("R17", "Liq", "S_Mg"): 0,
-            ("R18", "Liq", "S_K"): 0,
-            ("R18", "Liq", "S_Mg"): 0,
-            ("R19", "Liq", "S_K"): 0,
-            ("R19", "Liq", "S_Mg"): 0,
-            ("R20", "Liq", "S_K"): 0,
-            ("R20", "Liq", "S_Mg"): 0,
-            ("R21", "Liq", "S_K"): 0,
-            ("R21", "Liq", "S_Mg"): 0,
-        }
-        new_rate_reaction_stoichiometry = {
-            **self.rate_reaction_stoichiometry,
-            **rate_reaction_stoichiometry_K_Mg,
-        }
-        self.rate_reaction_stoichiometry = new_rate_reaction_stoichiometry
+        for j in self.config.property_package.config.additional_solute_list:
+
+            rate_reaction_stoichiometry_additional = {
+                ("R1", "Liq", j): 0,
+                ("R2", "Liq", j): 0,
+                ("R3", "Liq", j): 0,
+                ("R4", "Liq", j): 0,
+                ("R5", "Liq", j): 0,
+                ("R6", "Liq", j): 0,
+                ("R7", "Liq", j): 0,
+                ("R8", "Liq", j): 0,
+                ("R9", "Liq", j): 0,
+                ("R10", "Liq", j): 0,
+                ("R11", "Liq", j): 0,
+                ("R12", "Liq", j): 0,
+                ("R13", "Liq", j): 0,
+                ("R14", "Liq", j): 0,
+                ("R15", "Liq", j): 0,
+                ("R16", "Liq", j): 0,
+                ("R17", "Liq", j): 0,
+                ("R18", "Liq", j): 0,
+                ("R19", "Liq", j): 0,
+                ("R20", "Liq", j): 0,
+                ("R21", "Liq", j): 0,
+            }
+            new_rate_reaction_stoichiometry = {
+                **self.rate_reaction_stoichiometry,
+                **rate_reaction_stoichiometry_additional,
+            }
+            self.rate_reaction_stoichiometry = new_rate_reaction_stoichiometry
 
 
 class _ModifiedASM2dReactionBlock(_ASM2dReactionBlock):
