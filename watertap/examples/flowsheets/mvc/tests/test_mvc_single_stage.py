@@ -17,7 +17,7 @@ from pyomo.environ import (
     Constraint,
     Expression,
     value,
-    Objective
+    Objective,
 )
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
@@ -38,7 +38,7 @@ from watertap.examples.flowsheets.mvc.mvc_single_stage import (
     solve,
     set_up_optimization,
     display_metrics,
-    display_design
+    display_design,
 )
 
 import watertap.property_models.seawater_prop_pack as props_seawater
@@ -48,6 +48,7 @@ from watertap.unit_models.mvc.components import Evaporator, Compressor, Condense
 
 
 solver = get_solver()
+
 
 class TestMVC:
     @pytest.fixture(scope="class")
@@ -93,7 +94,7 @@ class TestMVC:
         assert isinstance(m.fs.recovery, Var)
         assert isinstance(m.fs.recovery_equation, Constraint)
         assert isinstance(m.fs.split_ratio_recovery_equality, Constraint)
-        assert isinstance(m.fs.Q_ext,Var)
+        assert isinstance(m.fs.Q_ext, Var)
         assert isinstance(m.fs.costing.annual_water_production, Expression)
         assert isinstance(m.fs.costing.specific_energy_consumption, Expression)
 
@@ -117,9 +118,15 @@ class TestMVC:
         arc_dict = {
             m.fs.s01: (m.fs.feed.outlet, m.fs.pump_feed.inlet),
             m.fs.s02: (m.fs.pump_feed.outlet, m.fs.separator_feed.inlet),
-            m.fs.s03: (m.fs.separator_feed.hx_distillate_cold, m.fs.hx_distillate.cold_inlet),
+            m.fs.s03: (
+                m.fs.separator_feed.hx_distillate_cold,
+                m.fs.hx_distillate.cold_inlet,
+            ),
             m.fs.s04: (m.fs.separator_feed.hx_brine_cold, m.fs.hx_brine.cold_inlet),
-            m.fs.s05: (m.fs.hx_distillate.cold_outlet, m.fs.mixer_feed.hx_distillate_cold),
+            m.fs.s05: (
+                m.fs.hx_distillate.cold_outlet,
+                m.fs.mixer_feed.hx_distillate_cold,
+            ),
             m.fs.s06: (m.fs.hx_brine.cold_outlet, m.fs.mixer_feed.hx_brine_cold),
             m.fs.s07: (m.fs.mixer_feed.outlet, m.fs.evaporator.inlet_feed),
             m.fs.s08: (m.fs.evaporator.outlet_vapor, m.fs.compressor.inlet),
@@ -130,7 +137,7 @@ class TestMVC:
             m.fs.s13: (m.fs.condenser.outlet, m.fs.tb_distillate.inlet),
             m.fs.s14: (m.fs.tb_distillate.outlet, m.fs.pump_distillate.inlet),
             m.fs.s15: (m.fs.pump_distillate.outlet, m.fs.hx_distillate.hot_inlet),
-            m.fs.s16: (m.fs.hx_distillate.hot_outlet, m.fs.distillate.inlet)
+            m.fs.s16: (m.fs.hx_distillate.hot_outlet, m.fs.distillate.inlet),
         }
         for arc, port_tpl in arc_dict.items():
             assert arc.source is port_tpl[0]
@@ -146,10 +153,12 @@ class TestMVC:
 
             # check fixed variables
             # feed
-            assert m.fs.feed.properties[0].mass_frac_phase_comp['Liq','TDS'].isfixed()
-            assert value(m.fs.feed.properties[0].mass_frac_phase_comp['Liq','TDS']) == 0.1
-            assert m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'H2O'].isfixed()
-            assert (m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'H2O']) == 40
+            assert m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"].isfixed()
+            assert (
+                value(m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]) == 0.1
+            )
+            assert m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "H2O"].isfixed()
+            assert (m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "H2O"]) == 40
             assert m.fs.feed.temperature[0].isfixed()
             assert value(m.fs.feed.temperature[0]) == 298.15
             assert m.fs.feed.pressure[0].isfixed()
@@ -207,8 +216,19 @@ class TestMVC:
             assert value(m.fs.compressor.efficiency) == 0.8
 
             # 0 TDS in distillate
-            assert m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp['Liq', 'TDS'].fixed()
-            assert value(m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp['Liq', 'TDS']) == 1e-5
+            assert (
+                m.fs.tb_distillate.properties_out[0]
+                .flow_mass_phase_comp["Liq", "TDS"]
+                .fixed()
+            )
+            assert (
+                value(
+                    m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp[
+                        "Liq", "TDS"
+                    ]
+                )
+                == 1e-5
+            )
 
             # Costing
             assert m.fs.costing.factor_total_investment.isfixed()
@@ -223,8 +243,13 @@ class TestMVC:
             # Temperature upper bounds
             assert m.fs.evaporator.properties_vapor[0].temperature.ub.isfixed()
             assert value(m.fs.evaporator.properties_vapor[0].temperature.ub) == 343.15
-            assert m.fs.compressor.control_volume.properties_out[0].temperature.ub.isfixed()
-            assert value(m.fs.compressor.control_volume.properties_out[0].temperature.ub) == 450
+            assert m.fs.compressor.control_volume.properties_out[
+                0
+            ].temperature.ub.isfixed()
+            assert (
+                value(m.fs.compressor.control_volume.properties_out[0].temperature.ub)
+                == 450
+            )
 
             # check degrees of freedom
             assert degrees_of_freedom(m) == 0
@@ -236,16 +261,32 @@ class TestMVC:
             initialize_system(m)
 
             # mass flows in evaporator
-            assert value(m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp['Vap', 'H2O']) == pytest.approx(22.222, rel=1e-3)
-            assert value(m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp['Liq', 'H2O']) == pytest.approx(1e-5, rel=1e-3)
-            assert value(m.fs.evaporator.properties_brine[0].flow_mass_phase_comp['Liq', 'H2O']) == pytest.approx(17.777, rel=1e-3)
-            assert value(m.fs.evaporator.properties_brine[0].flow_mass_phase_comp['Liq', 'TDS']) == pytest.approx(4.444, rel=1e-3)
+            assert value(
+                m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"]
+            ) == pytest.approx(22.222, rel=1e-3)
+            assert value(
+                m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Liq", "H2O"]
+            ) == pytest.approx(1e-5, rel=1e-3)
+            assert value(
+                m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "H2O"]
+            ) == pytest.approx(17.777, rel=1e-3)
+            assert value(
+                m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "TDS"]
+            ) == pytest.approx(4.444, rel=1e-3)
 
             # evaporator pressure
-            assert value(m.fs.evaporator.properties_vapor[0].pressure) == pytest.approx(26.231e3, rel=1e-3)
+            assert value(m.fs.evaporator.properties_vapor[0].pressure) == pytest.approx(
+                26.231e3, rel=1e-3
+            )
 
             # compressor pressure outlet
-            assert value(m.fs.compressor.control_volume.properties_out[0].pressure)/value(m.fs.compressor.control_volume.properties_in[0].pressure) == pytest.approx(1.6, rel = 1e-3)
+            assert value(
+                m.fs.compressor.control_volume.properties_out[0].pressure
+            ) / value(
+                m.fs.compressor.control_volume.properties_in[0].pressure
+            ) == pytest.approx(
+                1.6, rel=1e-3
+            )
 
             # external Q
             assert value(m.fs.Q_ext[0]) == pytest.approx(0, 1e-3)
@@ -264,13 +305,26 @@ class TestMVC:
             results = solve(m, solver=solver)
 
             # Check system metrics
-            assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(22.02, rel-1e-2)
+            assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
+                22.02, rel - 1e-2
+            )
             assert value(m.fs.costing.LCOW) == pytest.approx(23.47, rel=1e-2)
 
             # Check mass balance
-            assert pytest.approx(value(m.fs.feed.outlet.flow_mass_phase_comp[0,'Liq','H2O']), rel=1e-3) == value(m.fs.distillate.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) + value(m.fs.brine.inlet.flow_mass_phase_comp[0,'Liq','H2O'])
-            assert pytest.approx(value(m.fs.feed.outlet.flow_mass_phase_comp[0,'Liq','TDS']), rel=1e-3) == value(m.fs.distillate.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']) + value(m.fs.brine.inlet.flow_mass_phase_comp[0,'Liq','TDS'])
-
+            assert pytest.approx(
+                value(m.fs.feed.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]), rel=1e-3
+            ) == value(
+                m.fs.distillate.inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            ) + value(
+                m.fs.brine.inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            )
+            assert pytest.approx(
+                value(m.fs.feed.outlet.flow_mass_phase_comp[0, "Liq", "TDS"]), rel=1e-3
+            ) == value(
+                m.fs.distillate.inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            ) + value(
+                m.fs.brine.inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            )
 
         @pytest.mark.component
         def test_display_system(self, mvc_single_stage, capsys):
@@ -278,8 +332,9 @@ class TestMVC:
             display_metrics(m)
             captured = capsys.readouterr()
 
-            assert ( captured.out
-                     == """System metrics
+            assert (
+                captured.out
+                == """System metrics
 Feed flow rate:                           44.44 kg/s
 Feed salinity:                            100.00 g/kg
 Brine salinity:                           200.00 g/kg
@@ -288,7 +343,8 @@ Recovery:                                 50.00 %
 Specific energy consumption:              22.02 kWh/m3
 Levelized cost of water:                  23.47 $/m3
 External Q:                               172718.21 W
-""")
+"""
+            )
 
         @pytest.mark.component
         def test_display_design(self, mvc_single_stage):
@@ -296,8 +352,9 @@ External Q:                               172718.21 W
             display_design(m)
             capture = capsys.readouterr()
 
-            assert (captured.out
-                    == """State variables
+            assert (
+                captured.out
+                == """State variables
 Preheated feed temperature:               331.92 K
 Evaporator (brine, vapor) temperature:    343.15 K
 Evaporator (brine, vapor) pressure:       26.23 kPa
@@ -311,7 +368,8 @@ Distillate heat exchanger area:           125.00 m2
 Compressor pressure ratio:                1.60
 Evaporator area:                          10000.00 m2
 Evaporator LMTD:                          1.79 K
-""")
+"""
+            )
 
         @pytest.mark.component
         def test_optimization(self, mvc_single_stage):
@@ -324,14 +382,24 @@ Evaporator LMTD:                          1.79 K
             results = solve(m, solver=solver, tee=False)
 
             # Check decision variables
-            assert value(m.fs.evaporator.properties_brine[0].temperature == pytest.approx(348.15, rel=1e-2))
-            assert value(m.fs.evaporator.properties_brine[0].pressure == pytest.approx(32.45, rel=1e-2))
+            assert value(
+                m.fs.evaporator.properties_brine[0].temperature
+                == pytest.approx(348.15, rel=1e-2)
+            )
+            assert value(
+                m.fs.evaporator.properties_brine[0].pressure
+                == pytest.approx(32.45, rel=1e-2)
+            )
             assert value(m.fs.hx_brine.area) == pytest.approx(173.99, rel=1e-2)
             assert value(m.fs.hx_distillate.area) == pytest.approx(206.31, rel=1e-2)
-            assert value(m.fs.compressor.pressure_ratio) == pytest.approx(1.61, rel=1e-2)
+            assert value(m.fs.compressor.pressure_ratio) == pytest.approx(
+                1.61, rel=1e-2
+            )
             assert value(m.fs.evaporator.area) == pytest.approx(777.37, rel=1e-2)
             assert value(m.fs.evaporator.lmtd) == pytest.approx(22.59, rel=1e-2)
 
             # Check system metrics
-            assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(22.36, rel=1e-2)
+            assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
+                22.36, rel=1e-2
+            )
             assert value(m.fs.costing.LCOW) == pytest.approx(4.52, rel=1e-2)

@@ -39,12 +39,13 @@ def cost_compressor(blk, cost_electricity_flow=True):
         == pyo.units.convert(
             blk.costing_package.compressor.unit_cost
             * blk.unit_model.control_volume.properties_in[0].flow_mass_phase_comp[
-             'Vap', 'H2O']  # Add a convert to kg/s
+                "Vap", "H2O"
+            ]  # Add a convert to kg/s
             / (pyo.units.kg / pyo.units.s)
             * blk.unit_model.pressure_ratio
             * (blk.unit_model.efficiency / (1 - blk.unit_model.efficiency))
             ** blk.costing_package.compressor.exponent,
-            to_units=blk.costing_package.base_currency
+            to_units=blk.costing_package.base_currency,
         )
     )
     if cost_electricity_flow:

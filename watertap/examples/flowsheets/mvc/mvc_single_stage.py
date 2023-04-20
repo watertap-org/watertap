@@ -18,7 +18,7 @@ from pyomo.environ import (
     Var,
     TransformationFactory,
     units as pyunits,
-    check_optimal_termination
+    check_optimal_termination,
 )
 from pyomo.network import Arc
 
@@ -58,26 +58,30 @@ def main():
     set_operating_conditions(m)
     add_Q_ext(m, time_point=m.fs.config.time)
     initialize_system(m)
-    scale_costs(m)  # rescale costs after initialization because scaling depends on flow rates
+    scale_costs(
+        m
+    )  # rescale costs after initialization because scaling depends on flow rates
     fix_outlet_pressures(m)  # outlet pressure are initially unfixed for initialization
 
     # set up for minimizing Q_ext in first solve
-    print('DOF after initialization: ', degrees_of_freedom(m)) # should be 1 because Q_ext is unfixed
+    print(
+        "DOF after initialization: ", degrees_of_freedom(m)
+    )  # should be 1 because Q_ext is unfixed
     m.fs.objective = Objective(expr=m.fs.Q_ext[0])
 
-    print('\n***---First solve - simulation results---***')
+    print("\n***---First solve - simulation results---***")
     solver = get_solver()
     results = solve(m, solver=solver, tee=False)
-    print('Termination condition: ', results.solver.termination_condition)
+    print("Termination condition: ", results.solver.termination_condition)
     display_metrics(m)
     display_design(m)
 
-    print('\n***---Second solve - optimization results---***')
+    print("\n***---Second solve - optimization results---***")
     m.fs.Q_ext[0].fix(0)  # no longer want external heating in evaporator
     del m.fs.objective
     set_up_optimization(m)
     results = solve(m, solver=solver, tee=False)
-    print('Termination condition: ', results.solver.termination_condition)
+    print("Termination condition: ", results.solver.termination_condition)
     display_metrics(m)
     display_design(m)
 
@@ -99,7 +103,7 @@ def build():
     m.fs.separator_feed = Separator(
         property_package=m.fs.properties_feed,
         outlet_list=["hx_distillate_cold", "hx_brine_cold"],
-        split_basis=SplittingType.totalFlow
+        split_basis=SplittingType.totalFlow,
     )
 
     m.fs.hx_distillate = HeatExchanger(
@@ -108,7 +112,7 @@ def build():
         hot={"property_package": m.fs.properties_feed},
         cold={"property_package": m.fs.properties_feed},
         delta_temperature_callback=delta_temperature_chen_callback,
-        flow_pattern=HeatExchangerFlowPattern.countercurrent
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
     )
     # Set lower bound of approach temperatures
     m.fs.hx_distillate.delta_temperature_in.setlb(0)
@@ -122,7 +126,7 @@ def build():
         hot={"property_package": m.fs.properties_feed},
         cold={"property_package": m.fs.properties_feed},
         delta_temperature_callback=delta_temperature_chen_callback,
-        flow_pattern=HeatExchangerFlowPattern.countercurrent
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
     )
     # Set lower bound of approach temperatures
     m.fs.hx_brine.delta_temperature_in.setlb(0)
@@ -133,9 +137,9 @@ def build():
     m.fs.mixer_feed = Mixer(
         property_package=m.fs.properties_feed,
         momentum_mixing_type=MomentumMixingType.equality,
-        inlet_list=["hx_distillate_cold", "hx_brine_cold"]
+        inlet_list=["hx_distillate_cold", "hx_brine_cold"],
     )
-    m.fs.mixer_feed.pressure_equality_constraints[0,2].deactivate()
+    m.fs.mixer_feed.pressure_equality_constraints[0, 2].deactivate()
 
     m.fs.evaporator = Evaporator(
         property_package_feed=m.fs.properties_feed,
@@ -148,30 +152,24 @@ def build():
 
     m.fs.tb_distillate = Translator(
         inlet_property_package=m.fs.properties_vapor,
-        outlet_property_package=m.fs.properties_feed
+        outlet_property_package=m.fs.properties_feed,
     )
 
     # Translator block to convert distillate exiting condenser from water to seawater prop pack
     @m.fs.tb_distillate.Constraint()
     def eq_flow_mass_comp(blk):
         return (
-            blk.properties_in[0].flow_mass_phase_comp['Liq','H2O']
-            == blk.properties_out[0].flow_mass_phase_comp["Liq", 'H2O']
+            blk.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
+            == blk.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
         )
 
     @m.fs.tb_distillate.Constraint()
     def eq_temperature(blk):
-        return (
-                blk.properties_in[0].temperature
-                == blk.properties_out[0].temperature
-        )
+        return blk.properties_in[0].temperature == blk.properties_out[0].temperature
 
     @m.fs.tb_distillate.Constraint()
     def eq_pressure(blk):
-        return (
-                blk.properties_in[0].pressure
-                == blk.properties_out[0].pressure
-        )
+        return blk.properties_in[0].pressure == blk.properties_out[0].pressure
 
     m.fs.pump_brine = Pump(property_package=m.fs.properties_feed)
 
@@ -211,7 +209,9 @@ def build():
     m.fs.s11 = Arc(source=m.fs.pump_brine.outlet, destination=m.fs.hx_brine.hot_inlet)
     m.fs.s12 = Arc(source=m.fs.hx_brine.hot_outlet, destination=m.fs.brine.inlet)
     m.fs.s13 = Arc(source=m.fs.condenser.outlet, destination=m.fs.tb_distillate.inlet)
-    m.fs.s14 = Arc(source=m.fs.tb_distillate.outlet, destination=m.fs.pump_distillate.inlet)
+    m.fs.s14 = Arc(
+        source=m.fs.tb_distillate.outlet, destination=m.fs.pump_distillate.inlet
+    )
     m.fs.s15 = Arc(
         source=m.fs.pump_distillate.outlet, destination=m.fs.hx_distillate.hot_inlet
     )
@@ -227,14 +227,21 @@ def build():
     add_costing(m)
 
     # Add recovery ratio
-    m.fs.recovery = Var(m.fs.config.time,initialize=0.5,bounds=(0,1))
-    m.fs.recovery_equation = Constraint(expr= m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"] ==
-                                              m.fs.recovery[0]*(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"] +
-                                              m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]))
+    m.fs.recovery = Var(m.fs.config.time, initialize=0.5, bounds=(0, 1))
+    m.fs.recovery_equation = Constraint(
+        expr=m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"]
+        == m.fs.recovery[0]
+        * (
+            m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+            + m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
+        )
+    )
 
     # Make split ratio equal to recovery
-    m.fs.split_ratio_recovery_equality = Constraint(expr=m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"] ==
-                                                    m.fs.recovery[0])
+    m.fs.split_ratio_recovery_equality = Constraint(
+        expr=m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"]
+        == m.fs.recovery[0]
+    )
 
     # Scaling
     # properties
@@ -295,17 +302,20 @@ def build():
     return m
 
 
-def add_Q_ext(m,time_point=None):
+def add_Q_ext(m, time_point=None):
     # Allows additional heat to be added to evaporator so that an initial feasible solution can be found as a starting
     # guess for optimization in case physically infeasible simulation is proposed
 
     if time_point is None:
         time_point = m.fs.config.time
-    m.fs.Q_ext = Var(time_point, initialize=0, units=pyunits.J/pyunits.s)
+    m.fs.Q_ext = Var(time_point, initialize=0, units=pyunits.J / pyunits.s)
     m.fs.Q_ext[0].setlb(0)
     m.fs.evaporator.eq_energy_balance.deactivate()
-    m.fs.evaporator.eq_energy_balance_with_additional_Q = Constraint(expr=
-        m.fs.evaporator.heat_transfer + m.fs.Q_ext[0] + m.fs.evaporator.properties_feed[0].enth_flow == m.fs.evaporator.properties_brine[0].enth_flow
+    m.fs.evaporator.eq_energy_balance_with_additional_Q = Constraint(
+        expr=m.fs.evaporator.heat_transfer
+        + m.fs.Q_ext[0]
+        + m.fs.evaporator.properties_feed[0].enth_flow
+        == m.fs.evaporator.properties_brine[0].enth_flow
         + m.fs.evaporator.properties_vapor[0].enth_flow_phase["Vap"]
     )
     iscale.set_scaling_factor(m.fs.Q_ext, 1e-6)
@@ -314,13 +324,25 @@ def add_Q_ext(m,time_point=None):
 def add_costing(m):
     m.fs.costing = WaterTAPCosting()
     m.fs.pump_feed.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.pump_distillate.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.pump_brine.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.hx_distillate.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.pump_distillate.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing
+    )
+    m.fs.pump_brine.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing
+    )
+    m.fs.hx_distillate.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing
+    )
     m.fs.hx_brine.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.mixer_feed.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.evaporator.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.compressor.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.mixer_feed.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing
+    )
+    m.fs.evaporator.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing
+    )
+    m.fs.compressor.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing
+    )
 
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(m.fs.distillate.properties[0].flow_vol)
@@ -349,7 +371,7 @@ def set_operating_conditions(m):
     m.fs.costing.base_currency = pyo.units.USD_2020
 
     # Feed inlet
-    m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].fix(0.1)
+    m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"].fix(0.1)
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(40)
     # m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].fix(4)
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)
@@ -377,10 +399,10 @@ def set_operating_conditions(m):
     m.fs.hx_brine.hot.deltaP[0].fix(7e3)
 
     # Evaporator
-    m.fs.evaporator.inlet_feed.temperature[0] = 50+273.15  # provide guess
-    m.fs.evaporator.outlet_brine.temperature[0].fix(70+273.15)
+    m.fs.evaporator.inlet_feed.temperature[0] = 50 + 273.15  # provide guess
+    m.fs.evaporator.outlet_brine.temperature[0].fix(70 + 273.15)
     m.fs.evaporator.U.fix(3e3)  # W/K-m^2
-    m.fs.evaporator.area.setub(1e4) # m^2
+    m.fs.evaporator.area.setub(1e4)  # m^2
 
     # Compressor
     m.fs.compressor.pressure_ratio.fix(1.6)
@@ -395,17 +417,17 @@ def set_operating_conditions(m):
     m.fs.pump_distillate.control_volume.deltaP[0].fix(4e4)
 
     # Fix 0 TDS
-    m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp['Liq','TDS'].fix(1e-5)
+    m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp["Liq", "TDS"].fix(1e-5)
 
     # Costing
     m.fs.costing.factor_total_investment.fix(2)
-    m.fs.costing.electricity_cost = 0.1 # 0.15
+    m.fs.costing.electricity_cost = 0.1  # 0.15
     m.fs.costing.heat_exchanger.material_factor_cost.fix(5)
     m.fs.costing.evaporator.material_factor_cost.fix(5)
-    m.fs.costing.compressor.unit_cost.fix(1*7364)
+    m.fs.costing.compressor.unit_cost.fix(1 * 7364)
 
     # Temperature bounds
-    m.fs.evaporator.properties_vapor[0].temperature.setub(75+273.15)
+    m.fs.evaporator.properties_vapor[0].temperature.setub(75 + 273.15)
     m.fs.compressor.control_volume.properties_out[0].temperature.setub(450)
 
     # check degrees of freedom
@@ -418,18 +440,34 @@ def initialize_system(m, solver=None):
     optarg = solver.options
 
     # Touch feed mass fraction property
-    m.fs.feed.properties[0].mass_frac_phase_comp['Liq','TDS']
+    m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]
     solver.solve(m.fs.feed)
 
     # Propagate vapor flow rate based on given recovery
-    m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"] = m.fs.recovery[0] * (m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"] + m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"])
-    m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp['Liq','H2O'] = 0
+    m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp[
+        "Vap", "H2O"
+    ] = m.fs.recovery[0] * (
+        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+        + m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
+    )
+    m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Liq", "H2O"] = 0
 
     # Propagate brine salinity and flow rate
-    m.fs.evaporator.properties_brine[0].mass_frac_phase_comp['Liq','TDS'] = m.fs.feed.properties[0].mass_frac_phase_comp['Liq','TDS']/(1-m.fs.recovery[0])
-    m.fs.evaporator.properties_brine[0].mass_frac_phase_comp['Liq','H2O'] = 1-m.fs.evaporator.properties_brine[0].mass_frac_phase_comp['Liq','TDS'].value
-    m.fs.evaporator.properties_brine[0].flow_mass_phase_comp['Liq','TDS'] = m.fs.feed.properties[0].flow_mass_phase_comp['Liq','TDS']
-    m.fs.evaporator.properties_brine[0].flow_mass_phase_comp['Liq','H2O'] = m.fs.feed.properties[0].flow_mass_phase_comp['Liq','H2O'] - m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp['Vap','H2O']
+    m.fs.evaporator.properties_brine[0].mass_frac_phase_comp[
+        "Liq", "TDS"
+    ] = m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"] / (
+        1 - m.fs.recovery[0]
+    )
+    m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "H2O"] = (
+        1 - m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"].value
+    )
+    m.fs.evaporator.properties_brine[0].flow_mass_phase_comp[
+        "Liq", "TDS"
+    ] = m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
+    m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "H2O"] = (
+        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+        - m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"]
+    )
 
     # initialize feed pump
     propagate_state(m.fs.s01)
@@ -439,7 +477,9 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s02)
     # Touch property for initialization
     m.fs.separator_feed.mixed_state[0].mass_frac_phase_comp["Liq", "TDS"]
-    m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"].fix(m.fs.recovery[0].value)
+    m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"].fix(
+        m.fs.recovery[0].value
+    )
     m.fs.separator_feed.mixed_state.initialize(optarg=optarg)
     # Touch properties for initialization
     m.fs.separator_feed.hx_brine_cold_state[0].mass_frac_phase_comp["Liq", "TDS"]
@@ -471,13 +511,15 @@ def initialize_system(m, solver=None):
         0
     ].value
     m.fs.hx_brine.cold_outlet.pressure[0] = m.fs.evaporator.inlet_feed.pressure[0].value
-    m.fs.hx_brine.hot_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'] = (
-        m.fs.evaporator.properties_brine[0].flow_mass_phase_comp['Liq','H2O']
-    )
-    m.fs.hx_brine.hot_inlet.flow_mass_phase_comp[0, 'Liq', 'TDS'] = (
-        m.fs.evaporator.properties_brine[0].flow_mass_phase_comp['Liq','TDS']
-    )
-    m.fs.hx_brine.hot_inlet.temperature[0] = m.fs.evaporator.outlet_brine.temperature[0].value
+    m.fs.hx_brine.hot_inlet.flow_mass_phase_comp[
+        0, "Liq", "H2O"
+    ] = m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "H2O"]
+    m.fs.hx_brine.hot_inlet.flow_mass_phase_comp[
+        0, "Liq", "TDS"
+    ] = m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "TDS"]
+    m.fs.hx_brine.hot_inlet.temperature[0] = m.fs.evaporator.outlet_brine.temperature[
+        0
+    ].value
     m.fs.hx_brine.hot_inlet.pressure[0] = 101325
     m.fs.hx_brine.initialize_build()
 
@@ -485,7 +527,7 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s05)
     propagate_state(m.fs.s06)
     m.fs.mixer_feed.initialize_build()
-    m.fs.mixer_feed.pressure_equality_constraints[0,2].deactivate()
+    m.fs.mixer_feed.pressure_equality_constraints[0, 2].deactivate()
 
     # initialize evaporator
     propagate_state(m.fs.s07)
@@ -512,8 +554,12 @@ def initialize_system(m, solver=None):
     # initialize distillate pump
     propagate_state(m.fs.s13)  # to translator block
     propagate_state(m.fs.s14)  # from translator block to pump
-    m.fs.pump_distillate.control_volume.properties_in[0].temperature = m.fs.condenser.control_volume.properties_out[0].temperature.value
-    m.fs.pump_distillate.control_volume.properties_in[0].pressure = m.fs.condenser.control_volume.properties_out[0].pressure.value
+    m.fs.pump_distillate.control_volume.properties_in[
+        0
+    ].temperature = m.fs.condenser.control_volume.properties_out[0].temperature.value
+    m.fs.pump_distillate.control_volume.properties_in[
+        0
+    ].pressure = m.fs.condenser.control_volume.properties_out[0].pressure.value
     m.fs.pump_distillate.initialize_build(optarg=optarg)
 
     # propagate brine state
@@ -522,7 +568,8 @@ def initialize_system(m, solver=None):
 
     m.fs.costing.initialize()
 
-    print('Initialization done')
+    print("Initialization done")
+
 
 def fix_outlet_pressures(m):
     # The distillate outlet pressure remains unfixed so that there is not an implicit upper bound on the compressed vapor pressure
@@ -537,9 +584,11 @@ def fix_outlet_pressures(m):
 
     return
 
+
 def calculate_cost_sf(cost):
-    sf = 10**-(math.log10(abs(cost.value)))
+    sf = 10 ** -(math.log10(abs(cost.value)))
     iscale.set_scaling_factor(cost, sf)
+
 
 def scale_costs(m):
     calculate_cost_sf(m.fs.hx_distillate.costing.capital_cost)
@@ -548,14 +597,15 @@ def scale_costs(m):
     calculate_cost_sf(m.fs.evaporator.costing.capital_cost)
     calculate_cost_sf(m.fs.compressor.costing.capital_cost)
     calculate_cost_sf(m.fs.costing.aggregate_capital_cost)
-    calculate_cost_sf(m.fs.costing.aggregate_flow_costs['electricity'])
+    calculate_cost_sf(m.fs.costing.aggregate_flow_costs["electricity"])
     calculate_cost_sf(m.fs.costing.total_capital_cost)
     calculate_cost_sf(m.fs.costing.maintenance_labor_chemical_operating_cost)
     calculate_cost_sf(m.fs.costing.total_operating_cost)
 
     iscale.calculate_scaling_factors(m)
 
-    print('Scaled costs')
+    print("Scaled costs")
+
 
 def solve(model, solver=None, tee=False, raise_on_failure=False):
     # ---solving---
@@ -606,36 +656,89 @@ def set_up_optimization(m):
 
 def display_metrics(m):
     print("\nSystem metrics")
-    print("Feed flow rate:                           %.2f kg/s" %
-          (m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'H2O'].value +
-          m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'TDS'].value))
-    print("Feed salinity:                            %.2f g/kg" %
-          (m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].value * 1e3))
-    print("Brine salinity:                           %.2f g/kg" %
-          (m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"].value * 1e3))
-    print("Product flow rate:                        %.2f kg/s" %
-          m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].value)
-    print("Recovery:                                 %.2f %%" % (m.fs.recovery[0].value*100))
-    print("Specific energy consumption:              %.2f kWh/m3" % value(m.fs.costing.specific_energy_consumption))
-    print("Levelized cost of water:                  %.2f $/m3" % m.fs.costing.LCOW.value)
-    print("External Q:                               %.2f W" % m.fs.Q_ext[0].value)  # should be 0 for optimization
+    print(
+        "Feed flow rate:                           %.2f kg/s"
+        % (
+            m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].value
+            + m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].value
+        )
+    )
+    print(
+        "Feed salinity:                            %.2f g/kg"
+        % (m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"].value * 1e3)
+    )
+    print(
+        "Brine salinity:                           %.2f g/kg"
+        % (
+            m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"].value
+            * 1e3
+        )
+    )
+    print(
+        "Product flow rate:                        %.2f kg/s"
+        % m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].value
+    )
+    print(
+        "Recovery:                                 %.2f %%"
+        % (m.fs.recovery[0].value * 100)
+    )
+    print(
+        "Specific energy consumption:              %.2f kWh/m3"
+        % value(m.fs.costing.specific_energy_consumption)
+    )
+    print(
+        "Levelized cost of water:                  %.2f $/m3" % m.fs.costing.LCOW.value
+    )
+    print(
+        "External Q:                               %.2f W" % m.fs.Q_ext[0].value
+    )  # should be 0 for optimization
 
 
 def display_design(m):
     print("\nState variables")
-    print("Preheated feed temperature:               %.2f K" % m.fs.evaporator.properties_feed[0].temperature.value)
-    print("Evaporator (brine, vapor) temperature:    %.2f K" % m.fs.evaporator.properties_brine[0].temperature.value)
-    print("Evaporator (brine, vapor) pressure:       %.2f kPa" % (m.fs.evaporator.properties_vapor[0].pressure.value*1e-3))
-    print("Compressed vapor temperature:             %.2f K" % m.fs.compressor.control_volume.properties_out[0].temperature.value)
-    print("Compressed vapor pressure:                %.2f kPa" % (m.fs.compressor.control_volume.properties_out[0].pressure.value*1e-3))
-    print("Condensed vapor temperature:              %.2f K" % m.fs.condenser.control_volume.properties_out[0].temperature.value)
+    print(
+        "Preheated feed temperature:               %.2f K"
+        % m.fs.evaporator.properties_feed[0].temperature.value
+    )
+    print(
+        "Evaporator (brine, vapor) temperature:    %.2f K"
+        % m.fs.evaporator.properties_brine[0].temperature.value
+    )
+    print(
+        "Evaporator (brine, vapor) pressure:       %.2f kPa"
+        % (m.fs.evaporator.properties_vapor[0].pressure.value * 1e-3)
+    )
+    print(
+        "Compressed vapor temperature:             %.2f K"
+        % m.fs.compressor.control_volume.properties_out[0].temperature.value
+    )
+    print(
+        "Compressed vapor pressure:                %.2f kPa"
+        % (m.fs.compressor.control_volume.properties_out[0].pressure.value * 1e-3)
+    )
+    print(
+        "Condensed vapor temperature:              %.2f K"
+        % m.fs.condenser.control_volume.properties_out[0].temperature.value
+    )
 
     print("\nDesign variables")
-    print("Brine heat exchanger area:                %.2f m2" % m.fs.hx_brine.area.value)
-    print("Distillate heat exchanger area:           %.2f m2" % m.fs.hx_distillate.area.value)
-    print("Compressor pressure ratio:                %.2f" % m.fs.compressor.pressure_ratio.value)
-    print("Evaporator area:                          %.2f m2" % m.fs.evaporator.area.value)
-    print('Evaporator LMTD:                          %.2f K' % m.fs.evaporator.lmtd.value)
+    print(
+        "Brine heat exchanger area:                %.2f m2" % m.fs.hx_brine.area.value
+    )
+    print(
+        "Distillate heat exchanger area:           %.2f m2"
+        % m.fs.hx_distillate.area.value
+    )
+    print(
+        "Compressor pressure ratio:                %.2f"
+        % m.fs.compressor.pressure_ratio.value
+    )
+    print(
+        "Evaporator area:                          %.2f m2" % m.fs.evaporator.area.value
+    )
+    print(
+        "Evaporator LMTD:                          %.2f K" % m.fs.evaporator.lmtd.value
+    )
 
 
 if __name__ == "__main__":

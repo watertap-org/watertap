@@ -40,8 +40,10 @@ def cost_heat_exchanger(blk):
         == pyo.units.convert(
             blk.costing_package.heat_exchanger.unit_cost
             * blk.costing_package.heat_exchanger.material_factor_cost
-            * (pyo.units.convert(blk.unit_model.area, to_units=(pyo.units.m ** 2))
-               / pyo.units.m ** 2),
-            to_units=blk.costing_package.base_currency
+            * (
+                pyo.units.convert(blk.unit_model.area, to_units=(pyo.units.m**2))
+                / pyo.units.m**2
+            ),
+            to_units=blk.costing_package.base_currency,
         )
     )

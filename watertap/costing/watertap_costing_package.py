@@ -40,10 +40,7 @@ from watertap.unit_models import (
     IonExchange0D,
     GAC,
 )
-from watertap.unit_models.mvc.components import (
-    Evaporator,
-    Compressor
-)
+from watertap.unit_models.mvc.components import Evaporator, Compressor
 
 from .units.crystallizer import cost_crystallizer
 from .units.electrodialysis import cost_electrodialysis
@@ -106,7 +103,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         GAC: cost_gac,
         Evaporator: cost_evaporator,
         Compressor: cost_compressor,
-        HeatExchanger: cost_heat_exchanger
+        HeatExchanger: cost_heat_exchanger,
     }
 
     def build(self):
