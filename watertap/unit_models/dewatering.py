@@ -33,7 +33,7 @@ from pyomo.environ import (
     value,
     units as pyunits,
     check_optimal_termination,
-    Set,    
+    Set,
 )
 
 from idaes.core.util.exceptions import (
@@ -75,6 +75,7 @@ class DewateringUnit(SeparatorData):
     """
     Dewatering unit block for BSM2
     """
+
     def build(self):
         """
         Begin building model.
@@ -89,7 +90,6 @@ class DewateringUnit(SeparatorData):
         self.config.outlet_list = ["underflow", "overflow"]
 
         self.config.split_basis == SplittingType.componentFlow
-        
 
         self.p_dewat = Param(
             initialize=0.28,
@@ -107,19 +107,18 @@ class DewateringUnit(SeparatorData):
 
         @self.Expression(self.flowsheet().time, doc="Suspended solid concentration")
         def TSS(blk, t):
-            return ( 0.75 * (
+            return 0.75 * (
                 blk.inlet.conc_mass_comp[0, "X_I"]
                 + blk.inlet.conc_mass_comp[0, "X_P"]
                 + blk.inlet.conc_mass_comp[0, "X_BH"]
                 + blk.inlet.conc_mass_comp[0, "X_BA"]
                 + blk.inlet.conc_mass_comp[0, "X_S"]
-                )
             )
-        
+
         @self.Expression(self.flowsheet().time, doc="Dewatering factor")
         def f_dewat(blk, t):
-            return blk.p_dewat * (10/ (blk.TSS[t]))    
-        
+            return blk.p_dewat * (10 / (blk.TSS[t]))
+
         @self.Expression(self.flowsheet().time, doc="Remove factor")
         def f_q_du(blk, t):
             return blk.TSS_rem / 100 / blk.f_dewat[t]
@@ -132,20 +131,13 @@ class DewateringUnit(SeparatorData):
                 "S_NO",
                 "S_NH",
                 "S_ND",
-                "H2O", 
+                "H2O",
                 "S_ALK",
             ]
         )
 
         self.particulate_components = Set(
-            initialize=[
-                "X_I",
-                "X_S",
-                "X_P",
-                "X_BH",
-                "X_BA",
-                "X_ND"
-            ]
+            initialize=["X_I", "X_S", "X_P", "X_BH", "X_BA", "X_ND"]
         )
 
         @self.Constraint(
@@ -154,22 +146,17 @@ class DewateringUnit(SeparatorData):
             doc="particulate fraction",
         )
         def overflow_particulate_fraction(blk, t, i):
-            return (
-                blk.split_fraction[t, 'overflow', i]
-                == 1 - blk.TSS_rem
-            )
+            return blk.split_fraction[t, "overflow", i] == 1 - blk.TSS_rem
 
         self.display()
+
         @self.Constraint(
             self.flowsheet().time,
             self.non_particulate_components,
             doc="soluble fraction",
         )
         def non_particulate_components(blk, t, i):
-            return (
-                blk.split_fraction[t, 'overflow', i]
-                == 1-blk.f_q_du[t]
-            )
+            return blk.split_fraction[t, "overflow", i] == 1 - blk.f_q_du[t]
 
         # self.display()
         # @self.Constraint(
@@ -293,8 +280,9 @@ class DewateringUnit(SeparatorData):
                                         blk.split_fraction[t, o, j]
                                         for (p, j) in mblock.phase_component_set
                                     )
-                                    / len(mblock.phase_component_set))
-                            
+                                    / len(mblock.phase_component_set)
+                                )
+
             # Call initialization routine for outlet StateBlock
             o_block.initialize(
                 outlvl=outlvl,
@@ -450,12 +438,3 @@ class DewateringUnit(SeparatorData):
                             stream_attributes["Units"][k + " " + kname] = quant.u
 
             return DataFrame.from_dict(stream_attributes, orient="columns")
-
-
-    
-
-
-
-
-
-
