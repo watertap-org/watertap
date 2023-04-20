@@ -17,15 +17,10 @@
 from enum import Enum
 from pandas import DataFrame
 
-# Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-
 # Import IDAES cores
-from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.core import declare_process_block_class
 from idaes.models.unit_models.separator import SeparatorData
-from idaes.core.util.config import (
-    is_reaction_parameter_block,
-)
+
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
@@ -34,19 +29,14 @@ import idaes.logger as idaeslog
 from pyomo.environ import (
     Constraint,
     Param,
-    PositiveReals,
-    Var,
     Block,
-    sqrt,
+    value,
     units as pyunits,
     check_optimal_termination,
     Set,    
-    value,
-    Expr_if,
 )
 
 from idaes.core.util.exceptions import (
-    BurntToast,
     ConfigurationError,
     PropertyNotSupportedError,
     InitializationError,
@@ -324,11 +314,11 @@ class DewateringUnit(SeparatorData):
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(blk, tee=slc.tee)
 
-            # if not check_optimal_termination(res):
-            #     raise InitializationError(
-            #         f"{blk.name} failed to initialize successfully. Please "
-            #         f"check the output logs for more information."
-            #     )
+            if not check_optimal_termination(res):
+                raise InitializationError(
+                    f"{blk.name} failed to initialize successfully. Please "
+                    f"check the output logs for more information."
+                )
 
             init_log.info(
                 "Initialization Step 2 Complete: {}".format(idaeslog.condition(res))

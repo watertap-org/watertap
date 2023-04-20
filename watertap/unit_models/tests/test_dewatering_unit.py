@@ -23,7 +23,6 @@ from pyomo.environ import (
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
-    EnergyBalanceType,
     MomentumBalanceType,
 )
 
@@ -40,10 +39,6 @@ from idaes.core.util.model_statistics import (
     number_total_constraints,
     number_unused_variables,
     large_residuals_set
-)
-
-from idaes.core.util.scaling import (
-    unscaled_variables_generator,
 )
 
 from idaes.core.util.testing import initialization_tester
