@@ -18,12 +18,17 @@ from enum import Enum
 from pandas import DataFrame
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class
+from idaes.core import (
+    declare_process_block_class,
+    MaterialBalanceType,
+)
 from idaes.models.unit_models.separator import SeparatorData
+
 
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
+import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from pyomo.environ import (
@@ -345,9 +350,8 @@ class DewateringUnit(SeparatorData):
     def calculate_scaling_factors(self):
         mb_type = self.config.material_balance_type
         mixed_state = self.get_mixed_state_block()
-        if mb_type == MaterialBalanceType.useDefault:
-            t_ref = self.flowsheet().time.first()
-            mb_type = mixed_state[t_ref].default_material_balance_type()
+        t_ref = self.flowsheet().time.first()
+        mb_type = mixed_state[t_ref].default_material_balance_type()
         super().calculate_scaling_factors()
 
         if hasattr(self, "temperature_equality_eqn"):
@@ -365,31 +369,13 @@ class DewateringUnit(SeparatorData):
                 iscale.constraint_scaling_transform(c, s)
 
         if hasattr(self, "material_splitting_eqn"):
-            if mb_type == MaterialBalanceType.componentPhase:
-                for (t, _, p, j), c in self.material_splitting_eqn.items():
-                    flow_term = mixed_state[t].get_material_flow_terms(p, j)
-                    s = iscale.get_scaling_factor(flow_term, default=1)
-                    iscale.constraint_scaling_transform(c, s)
-            elif mb_type == MaterialBalanceType.componentTotal:
+            if mb_type == MaterialBalanceType.componentTotal:
                 for (t, _, j), c in self.material_splitting_eqn.items():
-                    for i, p in enumerate(mixed_state.phase_list):
-                        ft = mixed_state[t].get_material_flow_terms(p, j)
-                        if i == 0:
-                            s = iscale.get_scaling_factor(ft, default=1)
-                        else:
-                            _s = iscale.get_scaling_factor(ft, default=1)
-                            s = _s if _s < s else s
-                    iscale.constraint_scaling_transform(c, s)
-            elif mb_type == MaterialBalanceType.total:
-                pc_set = mixed_state.phase_component_set
-                for (t, _), c in self.material_splitting_eqn.items():
-                    for i, (p, j) in enumerate(pc_set):
-                        ft = mixed_state[t].get_material_flow_terms(p, j)
-                        if i == 0:
-                            s = iscale.get_scaling_factor(ft, default=1)
-                        else:
-                            _s = iscale.get_scaling_factor(ft, default=1)
-                            s = _s if _s < s else s
+                    if i == 0:
+                        s = iscale.get_scaling_factor(ft, default=1)
+                    else:
+                        _s = iscale.get_scaling_factor(ft, default=1)
+                        s = _s if _s < s else s
                     iscale.constraint_scaling_transform(c, s)
 
     def _get_performance_contents(self, time_point=0):

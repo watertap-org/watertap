@@ -24,6 +24,7 @@ from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
     MomentumBalanceType,
+    PhysicalParameterBlock,
 )
 
 from idaes.models.unit_models.separator import SplittingType
@@ -40,8 +41,10 @@ from idaes.core.util.model_statistics import (
     number_unused_variables,
     large_residuals_set,
 )
-
-from idaes.core.util.testing import initialization_tester
+import idaes.core.util.scaling as iscale
+from idaes.core.util.testing import (
+    initialization_tester,
+)
 
 from watertap.unit_models.dewatering import Dewatering_Unit
 from watertap.property_models.activated_sludge.asm1_properties import (
@@ -160,6 +163,8 @@ class TestAdm(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, adm):
+
+        iscale.calculate_scaling_factors(adm)
         initialization_tester(adm)
 
     @pytest.mark.solver
@@ -202,16 +207,16 @@ class TestAdm(object):
         )
         assert value(adm.fs.unit.overflow.conc_mass_comp[0, "S_O"]) <= 1e-6
         assert value(adm.fs.unit.overflow.conc_mass_comp[0, "S_NO"]) <= 1e-6
-        assert pytest.approx(1.44278, rel=1e-3) == value(
+        assert pytest.approx(1.4427, rel=1e-3) == value(
             adm.fs.unit.overflow.conc_mass_comp[0, "S_NH"]
         )
-        assert pytest.approx(0.0005439, rel=1e-3) == value(
+        assert pytest.approx(0.000543, rel=1e-3) == value(
             adm.fs.unit.overflow.conc_mass_comp[0, "S_ND"]
         )
-        assert pytest.approx(0.002132, rel=1e-3) == value(
+        assert pytest.approx(0.00213, rel=1e-3) == value(
             adm.fs.unit.overflow.conc_mass_comp[0, "X_ND"]
         )
-        assert pytest.approx(0.097845, rel=1e-3) == value(
+        assert pytest.approx(0.09784, rel=1e-3) == value(
             adm.fs.unit.overflow.alkalinity[0]
         )
 
