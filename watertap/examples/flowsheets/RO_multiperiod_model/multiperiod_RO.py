@@ -51,19 +51,10 @@ def create_base_model(m = None, solver = None):
     if solver is None:
         solver = get_solver()
     
-
-    # m.ro_mp = swro.build(erd_type=swro.ERDtype.pump_as_turbine)
-    # set_operating_conditions(m.ro_mp, water_recovery=0.5, over_pressure=0.3, solver=solver)
-
-    # #                      ,variable_efficiency=VariableEfficiency.flow)
-    # # swro.set_operating_conditions(m.ro_mp)
-    # # swro.initialize_system(m.ro_mp, skipRO=False)
     m.ro_mp = swro.main(
         erd_type=swro.ERDtype.pump_as_turbine,
         variable_efficiency=VariableEfficiency.none,
     )
-
-    
     return m
 
 
@@ -161,19 +152,6 @@ def create_multiperiod_swro_model(n_time_points=4):
 
     multiperiod_swro.build_multi_period_model()
     return multiperiod_swro
-
-
-    # multiperiod_usc = MultiPeriodModel(
-    #     n_time_points=n_time_points,
-    #     process_model_func=create_usc_model,
-    #     initialization_func=usc_custom_init,
-    #     unfix_dof_func=usc_unfix_dof,
-    #     linking_variable_func=get_usc_link_variable_pairs,
-    #     flowsheet_options={"pmin": pmin,
-    #                        "pmax": pmax},
-    #     use_stochastic_build=True,
-    #     outlvl=idaeslog.INFO,
-    #     )
 
 if __name__ == "__main__":
     m = create_multiperiod_swro_model()
