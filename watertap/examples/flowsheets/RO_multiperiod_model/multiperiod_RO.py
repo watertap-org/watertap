@@ -90,22 +90,22 @@ def create_swro_mp_block():
 
     return m
 
-def unfix_dof(blk):
+def unfix_dof(b):
     """
     Unfixes the degrees of freedom in the model
     """
 
     # fix the RO membrane area and utilization factor
-    blk.fs.RO.area.fix()
-    blk.fs.costing.utilization_factor.fix(1)
+    b.fs.RO.area.fix()
+    b.fs.costing.utilization_factor.fix(1)
 
     # unfix feed flow rate and fix concentration instead
-    blk.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
-    blk.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
-    blk.fs.feed.properties[0.0].mass_frac_phase_comp["Liq", "NaCl"].fix(
+    b.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
+    b.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
+    b.fs.feed.properties[0.0].mass_frac_phase_comp["Liq", "NaCl"].fix(
         0.035
     )
-    blk.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"].setub(
+    b.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"].setub(
             0.0005
         )
 
