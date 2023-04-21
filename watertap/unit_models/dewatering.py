@@ -163,30 +163,8 @@ class DewateringUnit(SeparatorData):
         def non_particulate_components(blk, t, i):
             return blk.split_fraction[t, "overflow", i] == 1 - blk.f_q_du[t]
 
-        # self.display()
-        # @self.Constraint(
-        #     self.flowsheet().time,
-        #     doc="underflow flow",
-        # )
-        # def underflow_flow(blk, t):
-        #     return (
-        #         blk.split_fraction[t, 'underflow', "H2O"]
-        #         == 1-blk.f_q_du[t]
-        #     )
-
-        # self.display()
-        # @self.Constraint(
-        #     self.flowsheet().time,
-        #     doc="underflow flow",
-        # )
-        # def underflow_alkalinity(blk, t):
-        #     return (
-        #         blk.split_fraction[t, 'underflow', "S_ALK"]
-        #         == 1-blk.f_q_du[t]
-        #     )
-
     def initialize_build(
-        blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None, hold_state=False
+        self, outlvl=idaeslog.NOTSET, optarg=None, solver=None, hold_state=False
     ):
         """
         Initialization routine for separator
@@ -210,17 +188,17 @@ class DewateringUnit(SeparatorData):
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         # Create solver
         opt = get_solver(solver, optarg)
 
         # Initialize mixed state block
-        if blk.config.mixed_state_block is not None:
-            mblock = blk.config.mixed_state_block
+        if self.config.mixed_state_block is not None:
+            mblock = self.config.mixed_state_block
         else:
-            mblock = blk.mixed_state
+            mblock = self.mixed_state
         flags = mblock.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -230,7 +208,7 @@ class DewateringUnit(SeparatorData):
 
         # Solve for split fractions only
         component_status = {}
-        for c in blk.component_objects((Block, Constraint)):
+        for c in self.component_objects((Block, Constraint)):
             for i in c:
                 if not c[i].local_name == "sum_split_frac":
                     # Record current status of components to restore later
@@ -239,7 +217,7 @@ class DewateringUnit(SeparatorData):
 
         if degrees_of_freedom(blk) != 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(blk, tee=slc.tee)
+                res = opt.solve(self, tee=slc.tee)
                 init_log.info(
                     "Initialization Step 1 Complete: {}".format(idaeslog.condition(res))
                 )
@@ -248,12 +226,12 @@ class DewateringUnit(SeparatorData):
             if s:
                 c.activate()
 
-        if blk.config.ideal_separation:
+        if self.config.ideal_separation:
             # If using ideal splitting, initialization should be complete
             return flags
 
         # Initialize outlet StateBlocks
-        outlet_list = blk.create_outlet_list()
+        outlet_list = self.create_outlet_list()
 
         # Premises for initializing outlet states:
         # 1. Intensive states remain unchanged - this is either a valid premise
@@ -263,11 +241,11 @@ class DewateringUnit(SeparatorData):
         # average of split fractions for outlet otherwise
         for o in outlet_list:
             # Get corresponding outlet StateBlock
-            o_block = getattr(blk, o + "_state")
+            o_block = getattr(self, o + "_state")
 
             # Create dict to store fixed status of state variables
             o_flags = {}
-            for t in blk.flowsheet().time:
+            for t in self.flowsheet().time:
 
                 # Calculate values for state variables
                 s_vars = o_block[t].define_state_vars()
@@ -299,19 +277,19 @@ class DewateringUnit(SeparatorData):
             )
 
             # Revert fixed status of variables to what they were before
-            for t in blk.flowsheet().time:
+            for t in self.flowsheet().time:
                 s_vars = o_block[t].define_state_vars()
                 for v in s_vars:
                     for k in s_vars[v]:
                         s_vars[v][k].fixed = o_flags[t, v, k]
 
-        if blk.config.mixed_state_block is None:
+        if self.config.mixed_state_block is None:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(blk, tee=slc.tee)
+                res = opt.solve(self, tee=slc.tee)
 
             if not check_optimal_termination(res):
                 raise InitializationError(
-                    f"{blk.name} failed to initialize successfully. Please "
+                    f"{self.name} failed to initialize successfully. Please "
                     f"check the output logs for more information."
                 )
 
@@ -324,9 +302,9 @@ class DewateringUnit(SeparatorData):
         if hold_state is True:
             return flags
         else:
-            blk.release_state(flags, outlvl=outlvl)
+            self.release_state(flags, outlvl=outlvl)
 
-    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
+    def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialization.
 
@@ -340,10 +318,10 @@ class DewateringUnit(SeparatorData):
         Returns:
             None
         """
-        if blk.config.mixed_state_block is None:
-            mblock = blk.mixed_state
+        if self.config.mixed_state_block is None:
+            mblock = self.mixed_state
         else:
-            mblock = blk.config.mixed_state_block
+            mblock = self.config.mixed_state_block
 
         mblock.release_state(flags, outlvl=outlvl)
 
