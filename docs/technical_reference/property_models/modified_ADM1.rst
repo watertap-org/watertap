@@ -299,13 +299,13 @@ The rules for inhibition related to secondary substrate (:math:`I_{IN,lim}`), hy
 
        I_{IN,lim} = \frac{1}{1 + \frac{K_{S_{IN}}}{C_{S_{IN}}/14}}
 
-       I_{h2, fa}= \frac{1}{1 + \frac{C_{S_{h2}}{K_{I,h2,fa}}}
+       I_{h2, fa}= \frac{1}{1 + \frac{C_{S_{h2}}}{K_{I,h2,fa}}}
 
-       I_{h2, c4}= \frac{1}{1 + \frac{C_{S_{h2}}{K_{I,h2,c4}}}
+       I_{h2, c4}= \frac{1}{1 + \frac{C_{S_{h2}}}{K_{I,h2,c4}}}
 
-       I_{h2, pro}= \frac{1}{1 + \frac{C_{S_{h2}}{K_{I,h2,pro}}}
+       I_{h2, pro}= \frac{1}{1 + \frac{C_{S_{h2}}}{K_{I,h2,pro}}}
 
-       I_{nh3}= \frac{1}{1 + \frac{M_{nh3}{K_{I,nh3}}}
+       I_{nh3}= \frac{1}{1 + \frac{M_{nh3}}{K_{I,nh3}}}
 
 :lime:`The rules for hydrogen sulfide inhibition factors are shown below; however, since` :math:`Z_{h2s}` :lime:`is assumed to be 0, all of these inhibition factors are negligible`
 

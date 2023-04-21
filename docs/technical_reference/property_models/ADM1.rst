@@ -196,7 +196,7 @@ Acid-Base Equilibrium Constraints
    "Mass concentration of acetate, ac-", ":math:`C_{ac} = \frac{K_{a,ac} * C_{ac,ref}}{K_{a,ac} + S_{H}}`"
    "Molar concentration of bicarbonate, HCO3", ":math:`M_{hco3} = \frac{K_{a,co2} * \frac{C_{S_{IC},ref}}{12}}{K_{a,co2} + S_{H}}`"
    "Molar concentration of ammonia, NH3", ":math:`M_{nh3} = \frac{K_{a,IN} * \frac{C_{S_{IN},ref}}{14}}{K_{a,IN} + S_{H}}`"
-   "Molar concentration of carbon dioxide, CO2", ":math:`M_{co2} = \frac{C_{S_{IC},ref}}{12}} - M_{hco3}`"
+   "Molar concentration of carbon dioxide, CO2", ":math:`M_{co2} = \frac{K_{a,co2} * \frac{C_{S_{IC},ref}}{12}}{K_{a,co2} + S_{H}}`"
    "Molar concentration of ammonium, NH4+", ":math:`M_{nh4} = \frac{C_{S_{IN},ref}}{14} - M_{nh3}`"
    "Molar concentration of hydrogen, H+", ":math:`0 = M_{c} + M_{nh4} + S_{H} - M_{hco3} - C_{ac} - C_{pro} - C_{bu} - C_{va} - S_{OH} - M_{a}`"
    "Molar concentration of hydroxide, OH-", ":math:`S_{OH} = \frac{KW}{S_{H}}`"
@@ -230,13 +230,13 @@ The rules for inhibition related to secondary substrate (:math:`I_{IN,lim}`), hy
 
        I_{IN,lim} = \frac{1}{1 + \frac{K_{S_{IN}}}{C_{S_{IN}}/14}}
 
-       I_{h2, fa}= \frac{1}{1 + \frac{C_{S_{h2}}{K_{I,h2,fa}}}
+       I_{h2, fa}= \frac{1}{1 + \frac{C_{S_{h2}}}{K_{I,h2,fa}}}
 
-       I_{h2, c4}= \frac{1}{1 + \frac{C_{S_{h2}}{K_{I,h2,c4}}}
+       I_{h2, c4}= \frac{1}{1 + \frac{C_{S_{h2}}}{K_{I,h2,c4}}}
 
-       I_{h2, pro}= \frac{1}{1 + \frac{C_{S_{h2}}{K_{I,h2,pro}}}
+       I_{h2, pro}= \frac{1}{1 + \frac{C_{S_{h2}}}{K_{I,h2,pro}}}
 
-       I_{nh3}= \frac{1}{1 + \frac{M_{nh3}{K_{I,nh3}}}
+       I_{nh3}= \frac{1}{1 + \frac{M_{nh3}}{K_{I,nh3}}}
 
 
 Classes
