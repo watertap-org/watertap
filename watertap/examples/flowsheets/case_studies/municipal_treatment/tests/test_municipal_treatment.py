@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 from pyomo.environ import value, assert_optimal_termination
@@ -64,7 +63,7 @@ def test_municipal_treatment():
         m.fs.recharge_pump.properties[0].flow_mass_comp["tss"]
     ) == pytest.approx(1.656e-6, rel=1e-3)
 
-    assert value(m.fs.costing.LCOW) == pytest.approx(5.1682e-7, rel=1e-3)  # in M$/m**3
+    assert value(m.fs.costing.LCOW) == pytest.approx(4.9602e-7, rel=1e-3)  # in M$/m**3
     assert value(m.fs.costing.electricity_intensity) == pytest.approx(
         4.4812e-1, rel=1e-3
     )

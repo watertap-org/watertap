@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order chemical addition model
 """
@@ -39,8 +38,8 @@ def test_no_subtype():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     with pytest.raises(
         ConfigurationError,
@@ -48,9 +47,7 @@ def test_no_subtype():
         "operations require the process_subtype configuration "
         "argument to be set",
     ):
-        m.fs.unit = ChemicalAdditionZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = ChemicalAdditionZO(property_package=m.fs.params, database=m.db)
 
 
 class TestChemAddZOAmmonia:
@@ -59,17 +56,11 @@ class TestChemAddZOAmmonia:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
         m.fs.unit = ChemicalAdditionZO(
-            default={
-                "property_package": m.fs.params,
-                "database": m.db,
-                "process_subtype": "default",
-            }
+            property_package=m.fs.params, database=m.db, process_subtype="default"
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
@@ -154,10 +145,8 @@ class TestPumpZOsubtype:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
         return m
 
@@ -165,11 +154,7 @@ class TestPumpZOsubtype:
     @pytest.mark.component
     def test_load_parameters(self, model, subtype):
         model.fs.unit = ChemicalAdditionZO(
-            default={
-                "property_package": model.fs.params,
-                "database": db,
-                "process_subtype": subtype,
-            }
+            property_package=model.fs.params, database=db, process_subtype=subtype
         )
 
         model.fs.unit.config.process_subtype = subtype
@@ -197,18 +182,14 @@ def test_costing(subtype):
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 
     m.fs.unit1 = ChemicalAdditionZO(
-        default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": subtype,
-        }
+        property_package=m.fs.params, database=m.db, process_subtype=subtype
     )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
@@ -218,9 +199,7 @@ def test_costing(subtype):
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.chemical_addition, Block)
     assert isinstance(m.fs.costing.chemical_addition.capital_a_parameter, Var)

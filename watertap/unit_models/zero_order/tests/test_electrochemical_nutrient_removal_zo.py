@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order electrochemical nutrient recovery model
 """
@@ -24,7 +23,6 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
-    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -48,19 +46,17 @@ class TestElectroNPZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["nitrogen", "phosphorus", "struvite", "foo"]}
+            solute_list=["nitrogen", "phosphorus", "calcium", "foo"]
         )
 
-        m.fs.unit = ElectroNPZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = ElectroNPZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "nitrogen"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "phosphorus"].fix(1)
-        m.fs.unit.inlet.flow_mass_comp[0, "struvite"].fix(1)
+        m.fs.unit.inlet.flow_mass_comp[0, "calcium"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(1)
 
         return m
@@ -141,29 +137,29 @@ class TestElectroNPZO:
             model.fs.unit.properties_in[0].conc_mass_comp["phosphorus"]
         )
         assert pytest.approx(0.99602, rel=1e-5) == value(
-            model.fs.unit.properties_in[0].conc_mass_comp["struvite"]
+            model.fs.unit.properties_in[0].conc_mass_comp["calcium"]
         )
 
         assert pytest.approx(0.99636, rel=1e-2) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(0.17062, rel=1e-5) == value(
+        assert pytest.approx(0.69828, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nitrogen"]
         )
-        assert pytest.approx(0.17062, rel=1e-5) == value(
+        assert pytest.approx(0.0199507, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["phosphorus"]
         )
 
-        assert pytest.approx(0.00183, rel=1e-2) == value(
+        assert pytest.approx(0.00153, rel=1e-2) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(5.4645e-08, rel=1e-5) == value(
+        assert pytest.approx(196.078, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrogen"]
         )
-        assert pytest.approx(5.4645e-08, rel=1e-5) == value(
+        assert pytest.approx(640.523, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphorus"]
         )
-        assert pytest.approx(1350.54, abs=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(3.168, abs=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -173,16 +169,11 @@ class TestElectroNPZO:
             assert 1e-6 >= abs(
                 value(
                     model.fs.unit.inlet.flow_mass_comp[0, j]
-                    + sum(
-                        model.fs.unit.generation_rxn_comp[0, r, j]
-                        for r in model.fs.unit.reaction_set
-                    )
                     - model.fs.unit.treated.flow_mass_comp[0, j]
                     - model.fs.unit.byproduct.flow_mass_comp[0, j]
                 )
             )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_report(self, model):
 
@@ -193,10 +184,10 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["nitrogen", "phosphorus", "struvite", "foo"]}
+        solute_list=["nitrogen", "phosphorus", "calcium", "foo"]
     )
 
     source_file = os.path.join(
@@ -212,21 +203,19 @@ def test_costing():
         "case_1617.yaml",
     )
 
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    m.fs.unit = ElectroNPZO(default={"property_package": m.fs.params, "database": m.db})
+    m.fs.unit = ElectroNPZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
     m.fs.unit.inlet.flow_mass_comp[0, "nitrogen"].fix(1)
     m.fs.unit.inlet.flow_mass_comp[0, "phosphorus"].fix(1)
-    m.fs.unit.inlet.flow_mass_comp[0, "struvite"].fix(1)
+    m.fs.unit.inlet.flow_mass_comp[0, "calcium"].fix(1)
     m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(1)
     m.fs.unit.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.electrochemical_nutrient_removal, Block)
     assert isinstance(m.fs.costing.electrochemical_nutrient_removal.HRT, Var)

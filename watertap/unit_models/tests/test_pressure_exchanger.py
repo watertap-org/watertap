@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 from pyomo.environ import (
     ConcreteModel,
@@ -29,21 +28,16 @@ from idaes.core import (
 )
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 import watertap.property_models.seawater_prop_pack as props
-import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as property_seawater_ions
-from watertap.property_models.seawater_ion_generic import configuration
+import watertap.property_models.seawater_ion_prop_pack as property_seawater_ions
 
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
     number_total_constraints,
-    fixed_variables_set,
-    activated_constraints_set,
     number_unused_variables,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util.initialization import solve_indexed_blocks
-from idaes.core.util.exceptions import BalanceTypeNotSupportedError
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
@@ -62,17 +56,17 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config_no_mass_transfer():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.SeawaterParameterBlock()
-    m.fs.unit = PressureExchanger(default={"property_package": m.fs.properties})
+    m.fs.unit = PressureExchanger(property_package=m.fs.properties)
 
     # check unit config arguments
-    assert len(m.fs.unit.config) == 8
+    assert len(m.fs.unit.config) == 9
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
-    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.useDefault
+    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
     assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
     assert m.fs.unit.config.property_package is m.fs.properties
 
@@ -83,10 +77,10 @@ def test_config_no_mass_transfer():
 @pytest.mark.unit
 def test_config_mass_transfer():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.SeawaterParameterBlock()
     m.fs.unit = PressureExchanger(
-        default={"property_package": m.fs.properties, "has_mass_transfer": True}
+        property_package=m.fs.properties, has_mass_transfer=True
     )
     # check mass_transfer is added
     assert m.fs.unit.config.has_mass_transfer
@@ -95,13 +89,10 @@ def test_config_mass_transfer():
 @pytest.mark.unit
 def test_build(has_mass_transfer=False, extra_variables=0, extra_constraint=0):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.SeawaterParameterBlock()
     m.fs.unit = PressureExchanger(
-        default={
-            "property_package": m.fs.properties,
-            "has_mass_transfer": has_mass_transfer,
-        }
+        property_package=m.fs.properties, has_mass_transfer=has_mass_transfer
     )
 
     # test ports and state variables
@@ -154,7 +145,6 @@ def test_build(has_mass_transfer=False, extra_variables=0, extra_constraint=0):
     cv_var_lst = ["deltaP"]
     if has_mass_transfer:
         cv_var_lst.append("mass_transfer_term")
-    cv_con_lst = ["eq_isothermal_temperature"]
     cv_exp_lst = ["work"]
 
     for cv_str in cv_list:
@@ -163,9 +153,6 @@ def test_build(has_mass_transfer=False, extra_variables=0, extra_constraint=0):
         for cv_var_str in cv_var_lst:
             cv_var = getattr(cv, cv_var_str)
             assert isinstance(cv_var, Var)
-        for cv_con_str in cv_con_lst:
-            cv_con = getattr(cv, cv_con_str)
-            assert isinstance(cv_con, Constraint)
         for cv_exp_str in cv_exp_lst:
             cv_exp = getattr(cv, cv_exp_str)
             assert isinstance(cv_exp, Expression)
@@ -206,10 +193,10 @@ class TestPressureExchanger:
     @pytest.fixture(scope="class")
     def unit_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = props.SeawaterParameterBlock()
         m.fs.unit = PressureExchanger(
-            default={"property_package": m.fs.properties, "has_mass_transfer": True}
+            property_package=m.fs.properties, has_mass_transfer=True
         )
 
         # Specify inlet conditions
@@ -371,10 +358,10 @@ class TestPressureExchanger_with_ion_prop_pack:
     @pytest.fixture(scope="class")
     def unit_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = property_seawater_ions.PropParameterBlock()
         m.fs.unit = PressureExchanger(
-            default={"property_package": m.fs.properties, "has_mass_transfer": True}
+            property_package=m.fs.properties, has_mass_transfer=True
         )
 
         # Specify inlet conditions

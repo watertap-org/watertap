@@ -1,0 +1,131 @@
+default:
+  biogas_tss_ratio:
+    value: 0.4
+    units: m^3/kg
+  energy_electric_flow_vol_inlet:
+    value: 0.2  # Electricity usage data is unavailable; this value is arbitrary
+    units: kWh/m^3
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 1
+    units: dimensionless
+  removal_frac_mass_comp:
+    tss:
+      value: 1
+      units: dimensionless
+    cod:
+      value: 1
+      units: dimensionless
+    tkn:
+      value: 1
+      units: dimensionless
+    ammonium_as_nitrogen:
+      value: 0
+      units: dimensionless
+    acetic_acid:
+      value: 0
+      units: dimensionless
+  # Notes on reactions: The data from the AMO 1690 team tells us that the
+  # minimum target ratio for g ammonia produced / g TSS in influent is 0.13.
+  # However, the conversion of TSS, COD, and TKN is unknown. So, we have assumed
+  # 50% conversion for TSS, COD, and TKN (an arbitrary choice), and used
+  # 2 * 0.13 = 0.26 for the stoichiometric conversion ratio of NH4.
+  reactions:
+    tss_reaction:
+      key_reactant: tss
+      conversion: 0.5
+      stoichiometry:
+        tss:
+          conversion_ratio: -1
+        ammonium_as_nitrogen:
+          conversion_ratio: 0.26
+        acetic_acid:
+          conversion_ratio: 0.1
+    cod_reaction:
+      key_reactant: cod
+      conversion: 0.5
+      stoichiometry:
+        cod:
+          conversion_ratio: -1
+    tkn_reaction:
+      key_reactant: tkn
+      conversion: 0.5
+      stoichiometry:
+        tkn:
+          conversion_ratio: -1
+  # Capital cost information for the AD is unavailable from the AMO 1690 team,
+  # so the following costing data has been copied from the
+  # anaerobic_digestion_oxidation model.
+  capital_cost:
+    basis: flow_vol
+    cost_factor: TIC
+    reference_state:
+      value: 911.054
+      units: m^3/hr
+    capital_a_parameter:
+      value: 19.3552312e6
+      units: USD_2012
+    capital_b_parameter:
+      value: 0.6
+      units: dimensionless
+GLSD_anaerobic_digester:  # AMO 1669 subtype
+  energy_electric_flow_vol_inlet:
+    value: 0.2  # Electricity usage data is unavailable; this value is arbitrary
+    units: kWh/m^3
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 1
+    units: dimensionless
+  removal_frac_mass_comp:
+    tss:
+      value: 0
+      units: dimensionless
+    methane:
+      value: 1
+      units: dimensionless
+    carbon_dioxide:
+      value: 1
+      units: dimensionless
+    nitrogen:
+      value: 1
+      units: dimensionless
+    oxygen:
+      value: 1
+      units: dimensionless
+  reactions:
+    tss_reaction:
+      key_reactant: tss
+      conversion: 0.6
+      stoichiometry:
+        tss:
+          conversion_ratio: -1
+        methane:
+          conversion_ratio: 0.6542
+        carbon_dioxide:
+          conversion_ratio: 0.3230
+        nitrogen:
+          conversion_ratio: 0.0173
+        oxygen:
+          conversion_ratio: 0.0053
+  # Capital cost information for the AD is unavailable from the AMO 1669 team,
+  # so the following costing data has been copied from the
+  # anaerobic_digestion_oxidation model.
+  capital_cost:
+    basis: flow_vol
+    cost_factor: TIC
+    reference_state:
+      value: 911.054
+      units: m^3/hr
+    capital_a_parameter:
+      value: 19.3552312e6
+      units: USD_2012
+    capital_b_parameter:
+      value: 0.6
+      units: dimensionless
+  HRT:
+    value: 662
+    units: hr

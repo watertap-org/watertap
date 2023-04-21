@@ -1,3 +1,14 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -20,13 +31,13 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "WaterTAP"
-copyright = "2021, NAWI"
+copyright = "2020-2023, NAWI"
 author = "NAWI"
 
 # The full version, including alpha/beta/rc tags
-release = "0.6.0dev"
+release = "0.9.dev0"
 # The short X.Y version
-version = "0.6.0dev"
+version = "0.9.dev0"
 # -- General configuration ---------------------------------------------------
 
 
@@ -45,7 +56,6 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.doctest",
-    "myst_parser",
     "nbsphinx",  # Jupyter notebooks as docs
 ]
 
@@ -85,26 +95,6 @@ html_logo = "_static/NAWI_logo.png"
 # pixels large.
 #
 html_favicon = "_static/favicon.ico"
-
-## for MyST (Markdown)
-
-myst_enable_extensions = [
-    "dollarmath",
-    "amsmath",
-    "deflist",
-    "html_admonition",
-    "html_image",
-    "colon_fence",
-    "smartquotes",
-    "replacements",
-    "linkify",
-    "substitution",
-    "tasklist",
-]
-myst_heading_anchors = 2
-myst_footnote_transition = True
-myst_dmath_double_inline = True
-panels_add_bootstrap_css = False
 
 
 def run_apidoc(*args):

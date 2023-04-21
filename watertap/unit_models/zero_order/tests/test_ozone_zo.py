@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order Ozonation model
 """
@@ -47,22 +46,20 @@ class TestOzoneZO_with_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "cryptosporidium",
-                    "toc",
-                    "giardia_lamblia",
-                    "eeq",
-                    "total_coliforms_fecal_ecoli",
-                    "viruses_enteric",
-                    "tss",
-                ]
-            }
+            solute_list=[
+                "cryptosporidium",
+                "toc",
+                "giardia_lamblia",
+                "eeq",
+                "total_coliforms_fecal_ecoli",
+                "viruses_enteric",
+                "tss",
+            ]
         )
 
-        m.fs.unit = OzoneZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = OzoneZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(100)
         m.fs.unit.inlet.flow_mass_comp[0, "cryptosporidium"].fix(1)
@@ -80,17 +77,15 @@ class TestOzoneZO_with_default_removal:
         model = ConcreteModel()
         model.db = Database()
 
-        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs = FlowsheetBlock(dynamic=False)
         model.fs.params = WaterParameterBlock(
-            default={"solute_list": ["cryptosporidium", "giardia_lamblia", "eeq"]}
+            solute_list=["cryptosporidium", "giardia_lamblia", "eeq"]
         )
         with pytest.raises(
             ConfigurationError,
             match="toc must be in solute list for Ozonation " "or Ozone/AOP",
         ):
-            model.fs.unit = OzoneZO(
-                default={"property_package": model.fs.params, "database": model.db}
-            )
+            model.fs.unit = OzoneZO(property_package=model.fs.params, database=model.db)
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -195,21 +190,19 @@ class TestOzoneZO_w_o_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "cryptosporidium",
-                    "toc",
-                    "giardia_lamblia",
-                    "eeq",
-                    "total_coliforms_fecal_ecoli",
-                    "viruses_enteric",
-                ]
-            }
+            solute_list=[
+                "cryptosporidium",
+                "toc",
+                "giardia_lamblia",
+                "eeq",
+                "total_coliforms_fecal_ecoli",
+                "viruses_enteric",
+            ]
         )
 
-        m.fs.unit = OzoneZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = OzoneZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(100)
         m.fs.unit.inlet.flow_mass_comp[0, "cryptosporidium"].fix(1)
@@ -321,13 +314,13 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = OzoneZO(default={"property_package": m.fs.params, "database": m.db})
+    m.fs.unit1 = OzoneZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -336,9 +329,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.ozonation, Block)
     assert isinstance(m.fs.costing.ozonation.ozone_capital_a_parameter, Var)

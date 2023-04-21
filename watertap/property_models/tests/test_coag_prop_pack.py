@@ -1,15 +1,14 @@
-###############################################################################
-# ProteusLib Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
-# "https://github.com/nawi-hub/proteuslib/"
-#
-###############################################################################
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 import pytest
 from watertap.property_models.coagulation_prop_pack import (
     CoagulationParameterBlock,
@@ -22,11 +21,6 @@ from pyomo.environ import (
     value,
     Set,
     Param,
-    Var,
-    units as pyunits,
-    Suffix,
-    Constraint,
-    SolverFactory,
     SolverStatus,
     TerminationCondition,
 )
@@ -39,7 +33,6 @@ from idaes.core import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
-from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.solvers import get_solver
 
 __author__ = "Austin Ladshaw"
@@ -52,7 +45,7 @@ class TestCoagulationPropPack:
     @pytest.fixture(scope="class")
     def coag_obj(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs = FlowsheetBlock(dynamic=False)
         model.fs.properties = CoagulationParameterBlock()
 
         return model
@@ -90,25 +83,25 @@ class TestCoagulationPropPack:
         model = coag_obj
 
         # Create the state block and pull in the default metadata
-        model.fs.stream = model.fs.properties.build_state_block([0], default={})
+        model.fs.stream = model.fs.properties.build_state_block([0])
         metadata = model.fs.properties.get_metadata().properties
 
         # check that properties are not built if not demanded
-        for v_name in metadata:
-            if metadata[v_name]["method"] is not None:
-                if model.fs.stream[0].is_property_constructed(v_name):
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if model.fs.stream[0].is_property_constructed(v.name):
                     raise PropertyAttributeError(
                         "Property {v_name} is an on-demand property, but was found "
-                        "on the stateblock without being demanded".format(v_name=v_name)
+                        "on the stateblock without being demanded".format(v_name=v.name)
                     )
 
         # check that properties are built if demanded
-        for v_name in metadata:
-            if metadata[v_name]["method"] is not None:
-                if not hasattr(model.fs.stream[0], v_name):
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if not hasattr(model.fs.stream[0], v.name):
                     raise PropertyAttributeError(
                         "Property {v_name} is an on-demand property, but was not built "
-                        "when demanded".format(v_name=v_name)
+                        "when demanded".format(v_name=v.name)
                     )
 
         # check the other stateblock functions
@@ -284,7 +277,7 @@ class TestCoagulationPropPackFailures:
     @pytest.fixture(scope="class")
     def coag_obj_fail(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs = FlowsheetBlock(dynamic=False)
         model.fs.properties = CoagulationParameterBlock()
 
         return model
@@ -293,7 +286,7 @@ class TestCoagulationPropPackFailures:
     def test_default_scaling(self, coag_obj_fail):
         model = coag_obj_fail
 
-        model.fs.stream = model.fs.properties.build_state_block([0], default={})
+        model.fs.stream = model.fs.properties.build_state_block([0])
 
         # call scaling without setting defaults
         iscale.calculate_scaling_factors(model.fs)

@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order nanofiltration model
 """
@@ -46,14 +45,10 @@ class TestNFZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
-        m.fs.unit = NanofiltrationZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = NanofiltrationZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -166,14 +161,10 @@ class TestNFZO_w_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss", "foo"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss", "foo"])
 
-        m.fs.unit = NanofiltrationZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = NanofiltrationZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -301,15 +292,13 @@ class TestNFZO_non_default_subtype:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["tds", "dye"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tds", "dye"])
 
         m.fs.unit = NanofiltrationZO(
-            default={
-                "property_package": m.fs.params,
-                "database": m.db,
-                "process_subtype": "rHGO_dye_rejection",
-            }
+            property_package=m.fs.params,
+            database=m.db,
+            process_subtype="rHGO_dye_rejection",
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(0.9475)
@@ -435,15 +424,13 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = NanofiltrationZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit1 = NanofiltrationZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -452,9 +439,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.nanofiltration, Block)
     assert isinstance(m.fs.costing.nanofiltration.capital_a_parameter, Var)
@@ -474,18 +459,16 @@ def test_costing_non_default_subtype():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["tds", "dye"]})
+    m.fs.params = WaterParameterBlock(solute_list=["tds", "dye"])
 
     m.fs.costing = ZeroOrderCosting()
 
     m.fs.unit = NanofiltrationZO(
-        default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": "rHGO_dye_rejection",
-        }
+        property_package=m.fs.params,
+        database=m.db,
+        process_subtype="rHGO_dye_rejection",
     )
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
@@ -495,9 +478,7 @@ def test_costing_non_default_subtype():
     m.fs.unit.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.unit.costing.capital_cost, Var)
     assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)

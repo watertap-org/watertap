@@ -1,19 +1,15 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
-import os
-import sys
+#################################################################################
 from watertap.tools.parameter_sweep import (
-    _init_mpi,
     LinearSample,
     parameter_sweep,
 )
@@ -22,7 +18,7 @@ import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.bi
 
 def set_up_sensitivity(m):
     outputs = {}
-    optimize_kwargs = {"check_termination": False}
+    optimize_kwargs = {"fail_flag": False}
     opt_function = biomembrane_filtration.solve
 
     # create outputs
@@ -75,4 +71,4 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, save_outputs=N
 
 
 if __name__ == "__main__":
-    results, sweep_params, m = run_analysis(*sys.argv[1:])
+    results, sweep_params, m = run_analysis()

@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 from pyomo.environ import (
@@ -31,7 +30,8 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from watertap.property_models.seawater_ion_generic import configuration
-import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as props
+import watertap.property_models.seawater_ion_prop_pack as props
+
 from watertap.core.util.initialization import assert_no_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 
@@ -58,16 +58,16 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.PropParameterBlock()
-    m.fs.unit = NanofiltrationZO(default={"property_package": m.fs.properties})
+    m.fs.unit = NanofiltrationZO(property_package=m.fs.properties)
 
-    assert len(m.fs.unit.config) == 8
+    assert len(m.fs.unit.config) == 9
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
-    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.useDefault
+    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
     assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.has_pressure_change
     assert m.fs.unit.config.property_package is m.fs.properties
@@ -76,10 +76,10 @@ def test_config():
 @pytest.mark.unit
 def test_option_has_pressure_change():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.PropParameterBlock()
     m.fs.unit = NanofiltrationZO(
-        default={"property_package": m.fs.properties, "has_pressure_change": True}
+        property_package=m.fs.properties, has_pressure_change=True
     )
 
     assert isinstance(m.fs.unit.feed_side.deltaP, Var)
@@ -90,11 +90,11 @@ class TestNanofiltration:
     @pytest.fixture(scope="class")
     def unit_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.PropParameterBlock()
 
-        m.fs.unit = NanofiltrationZO(default={"property_package": m.fs.properties})
+        m.fs.unit = NanofiltrationZO(property_package=m.fs.properties)
 
         # fully specify system
         feed_flow_mass = 1
@@ -267,10 +267,10 @@ class TestNanofiltration:
     @pytest.mark.component
     def test_NF_with_generic_property_model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = GenericParameterBlock(default=configuration)
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = GenericParameterBlock(**configuration)
         m.fs.unit = NanofiltrationZO(
-            default={"property_package": m.fs.properties, "has_pressure_change": False}
+            property_package=m.fs.properties, has_pressure_change=False
         )
 
         # fully specify system

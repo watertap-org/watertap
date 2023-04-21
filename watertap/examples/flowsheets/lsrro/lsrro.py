@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import itertools
 
@@ -34,6 +33,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.solvers import get_solver
+from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.misc import StrEnum
 from idaes.models.unit_models import Feed, Product, Mixer
@@ -52,9 +52,10 @@ from watertap.core.util.initialization import (
     assert_no_degrees_of_freedom,
     assert_degrees_of_freedom,
 )
-from watertap.costing.watertap_costing_package import (
+from watertap.costing import (
     WaterTAPCosting,
     make_capital_cost_var,
+    register_costing_parameter_block,
 )
 import watertap.property_models.NaCl_prop_pack as props
 
@@ -80,6 +81,7 @@ def run_lsrro_case(
     number_of_stages,
     water_recovery=None,
     Cin=None,
+    Qin=None,
     Cbrine=None,
     A_case=ACase.fixed,
     B_case=BCase.optimize,
@@ -92,6 +94,7 @@ def run_lsrro_case(
     AB_gamma_factor=None,
     B_max=None,
     number_of_RO_finite_elements=10,
+    set_default_bounds_on_module_dimensions=True,
 ):
     m = build(
         number_of_stages,
@@ -101,7 +104,7 @@ def run_lsrro_case(
         number_of_RO_finite_elements,
         B_max,
     )
-    set_operating_conditions(m, Cin)
+    set_operating_conditions(m, Cin, Qin)
 
     initialize(m)
     solve(m)
@@ -112,6 +115,7 @@ def run_lsrro_case(
 
     optimize_set_up(
         m,
+        set_default_bounds_on_module_dimensions,
         water_recovery,
         Cbrine,
         A_case,
@@ -144,21 +148,9 @@ def build(
     # ---building model---
     m = ConcreteModel()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
-
-    # explicitly set the costing parameters used
-    m.fs.costing.utilization_factor.fix(0.9)
-    m.fs.costing.factor_total_investment.fix(2)
-    m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
-    m.fs.costing.factor_capital_annualization.fix(0.1)
-    m.fs.costing.electricity_base_cost.set_value(0.07)
-    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
-    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
-    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
-    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
-    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
 
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
     m.fs.Stages = RangeSet(m.fs.NumberOfStages)
@@ -171,40 +163,32 @@ def build(
     m.fs.FirstStage = m.fs.Stages.first()
     m.fs.LastStage = m.fs.Stages.last()
 
-    m.fs.feed = Feed(default={"property_package": m.fs.properties})
-    m.fs.product = Product(default={"property_package": m.fs.properties})
-    m.fs.disposal = Product(default={"property_package": m.fs.properties})
+    m.fs.feed = Feed(property_package=m.fs.properties)
+    m.fs.product = Product(property_package=m.fs.properties)
+    m.fs.disposal = Product(property_package=m.fs.properties)
 
     # Add the mixers
     m.fs.Mixers = Mixer(
         m.fs.NonFinalStages,
-        default={
-            "property_package": m.fs.properties,
-            "momentum_mixing_type": MomentumMixingType.equality,  # booster pump will match pressure
-            "inlet_list": ["upstream", "downstream"],
-        },
+        property_package=m.fs.properties,
+        momentum_mixing_type=MomentumMixingType.equality,
+        inlet_list=["upstream", "downstream"],
     )
 
     # Add the pumps
-    m.fs.PrimaryPumps = Pump(m.fs.Stages, default={"property_package": m.fs.properties})
+    m.fs.PrimaryPumps = Pump(m.fs.Stages, property_package=m.fs.properties)
     for pump in m.fs.PrimaryPumps.values():
         pump.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method": cost_high_pressure_pump_lsrro,
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_high_pressure_pump_lsrro,
         )
 
     # Add the equalizer pumps
-    m.fs.BoosterPumps = Pump(
-        m.fs.LSRRO_Stages, default={"property_package": m.fs.properties}
-    )
+    m.fs.BoosterPumps = Pump(m.fs.LSRRO_Stages, property_package=m.fs.properties)
     for pump in m.fs.BoosterPumps.values():
         pump.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method": cost_high_pressure_pump_lsrro,
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_high_pressure_pump_lsrro,
         )
 
     m.fs.total_pump_work = Expression(
@@ -231,33 +215,27 @@ def build(
 
     m.fs.ROUnits = ReverseOsmosis1D(
         m.fs.Stages,
-        default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": has_calculated_ro_pressure_drop,
-            "pressure_change_type": pressure_change_type,
-            "mass_transfer_coefficient": kf_type,
-            "concentration_polarization_type": cp_type,
-            "transformation_scheme": "BACKWARD",
-            "transformation_method": "dae.finite_difference",
-            "finite_elements": number_of_RO_finite_elements,
-            "has_full_reporting": True,
-        },
+        property_package=m.fs.properties,
+        has_pressure_change=has_calculated_ro_pressure_drop,
+        pressure_change_type=pressure_change_type,
+        mass_transfer_coefficient=kf_type,
+        concentration_polarization_type=cp_type,
+        transformation_scheme="BACKWARD",
+        transformation_method="dae.finite_difference",
+        finite_elements=number_of_RO_finite_elements,
+        has_full_reporting=True,
     )
 
     for idx, ro_stage in m.fs.ROUnits.items():
         if idx == m.fs.FirstStage:
             ro_stage.costing = UnitModelCostingBlock(
-                default={
-                    "flowsheet_costing_block": m.fs.costing,
-                    "costing_method_arguments": {"ro_type": "standard"},
-                }
+                flowsheet_costing_block=m.fs.costing,
+                costing_method_arguments={"ro_type": "standard"},
             )
         else:
             ro_stage.costing = UnitModelCostingBlock(
-                default={
-                    "flowsheet_costing_block": m.fs.costing,
-                    "costing_method_arguments": {"ro_type": "high_pressure"},
-                }
+                flowsheet_costing_block=m.fs.costing,
+                costing_method_arguments={"ro_type": "high_pressure"},
             )
 
     # Add EnergyRecoveryDevices
@@ -267,19 +245,14 @@ def build(
         else [m.fs.LastStage]
     )
     m.fs.EnergyRecoveryDevices = EnergyRecoveryDevice(
-        m.fs.EnergyRecoveryDeviceSet,
-        default={
-            "property_package": m.fs.properties,
-        },
+        m.fs.EnergyRecoveryDeviceSet, property_package=m.fs.properties
     )
     for erd in m.fs.EnergyRecoveryDevices.values():
         erd.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {
-                    "energy_recovery_device_type": "pressure_exchanger"
-                },
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={
+                "energy_recovery_device_type": "pressure_exchanger"
+            },
         )
 
     m.fs.recovered_pump_work = Expression(
@@ -315,6 +288,19 @@ def build(
     )
 
     # costing and summary quantities
+
+    # explicitly set the costing parameters used
+    m.fs.costing.utilization_factor.fix(0.9)
+    m.fs.costing.factor_total_investment.fix(2)
+    m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
+    m.fs.costing.factor_capital_annualization.fix(0.1)
+    m.fs.costing.electricity_cost.set_value(0.07)
+    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
+    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
+    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
+    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
+    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
+
     m.fs.costing.cost_process()
 
     product_flow_vol_total = m.fs.product.properties[0].flow_vol
@@ -440,7 +426,7 @@ def build(
 
     m.fs.costing.indirect_capex_lcow = Expression(
         expr=m.fs.costing.factor_capital_annualization
-        * (m.fs.costing.total_investment_cost - m.fs.costing.total_capital_cost)
+        * (m.fs.costing.total_capital_cost - m.fs.costing.aggregate_capital_cost)
         / m.fs.costing.annual_water_production
     )
 
@@ -563,6 +549,18 @@ def build(
     return m
 
 
+def build_high_pressure_pump_cost_param_block(blk):
+    blk.cost = Var(
+        initialize=53 / 1e5 * 3600,
+        doc="High pressure pump cost",
+        units=pyunits.USD_2018 / pyunits.watt,
+    )
+
+
+@register_costing_parameter_block(
+    build_rule=build_high_pressure_pump_cost_param_block,
+    parameter_block_name="high_pressure_pump",
+)
 def cost_high_pressure_pump_lsrro(blk, cost_electricity_flow=True):
     t0 = blk.flowsheet().time.first()
     make_capital_cost_var(blk)
@@ -582,8 +580,10 @@ def cost_high_pressure_pump_lsrro(blk, cost_electricity_flow=True):
         )
 
 
-def set_operating_conditions(m, Cin=None):
+def set_operating_conditions(m, Cin=None, Qin=None):
     # ---specifications---
+    if Qin is None:
+        Qin = 1e-3
     # parameters
     pump_efi = 0.75  # pump efficiency [-]
     erd_efi = 0.8  # energy recovery device efficiency [-]
@@ -591,14 +591,15 @@ def set_operating_conditions(m, Cin=None):
     mem_B = 3.5e-8  # membrane salt permeability coefficient [m/s]
     height = 1e-3  # channel height in membrane stage [m]
     spacer_porosity = 0.85  # spacer porosity in membrane stage [-]
-    width = 5  # effective membrane width [m]
-    area = 100  # membrane area [m^2]
+    width = 5 * Qin / 1e-3  # effective membrane width [m]
+    area = 100 * Qin / 1e-3  # membrane area [m^2]
     pressure_atm = 101325  # atmospheric pressure [Pa]
 
     # feed
     # feed_flow_mass = 1*pyunits.kg/pyunits.s
     if Cin is None:
         Cin = 70
+
     feed_temperature = 273.15 + 20
 
     # initialize feed
@@ -610,7 +611,7 @@ def set_operating_conditions(m, Cin=None):
             ("conc_mass_phase_comp", ("Liq", "NaCl")): value(
                 m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
             ),  # feed mass concentration
-            ("flow_vol_phase", "Liq"): 1e-3,
+            ("flow_vol_phase", "Liq"): Qin,
         },  # volumetric feed flowrate [-]
         hold_state=True,  # fixes the calculated component mass flow rates
     )
@@ -642,8 +643,8 @@ def set_operating_conditions(m, Cin=None):
         if (
             stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ) or stage.config.pressure_change_type == PressureChangeType.calculated:
-            stage.channel_height.fix(height)
-            stage.spacer_porosity.fix(spacer_porosity)
+            stage.feed_side.channel_height.fix(height)
+            stage.feed_side.spacer_porosity.fix(spacer_porosity)
 
     # energy recovery devices
     for erd in m.fs.EnergyRecoveryDevices.values():
@@ -731,7 +732,10 @@ def do_forward_initialization_pass(m, optarg, guess_mixers):
                 m.fs.Mixers[stage].initialize(optarg=optarg)
             propagate_state(m.fs.mixer_to_stage[stage])
 
-        m.fs.ROUnits[stage].initialize(optarg=optarg)
+        try:
+            m.fs.ROUnits[stage].initialize(optarg=optarg)
+        except InitializationError:
+            pass
 
         if stage == first_stage:
             propagate_state(m.fs.primary_RO_to_product)
@@ -762,7 +766,10 @@ def do_backward_initialization_pass(m, optarg):
     for stage in reversed(m.fs.NonFinalStages):
         m.fs.Mixers[stage].initialize(optarg=optarg)
         propagate_state(m.fs.mixer_to_stage[stage])
-        m.fs.ROUnits[stage].initialize(optarg=optarg)
+        try:
+            m.fs.ROUnits[stage].initialize(optarg=optarg)
+        except InitializationError:
+            pass
         if stage == first_stage:
             if value(m.fs.NumberOfStages) > 1:
                 propagate_state(m.fs.primary_ERD_to_pump)
@@ -777,7 +784,7 @@ def do_backward_initialization_pass(m, optarg):
             propagate_state(m.fs.booster_pump_to_mixer[stage])
 
 
-def initialize(m, verbose=False, solver=None):
+def initialize(m, verbose=True, solver=None):
 
     # ---initializing---
     # set up solvers
@@ -800,7 +807,10 @@ def initialize(m, verbose=False, solver=None):
     # run SD tool
     def func_initialize(unit):
         outlvl = idaeslogger.INFO if verbose else idaeslogger.CRITICAL
-        unit.initialize(optarg=solver.options, outlvl=outlvl)
+        try:
+            unit.initialize(optarg=solver.options, outlvl=outlvl)
+        except InitializationError:
+            pass
 
     seq.run(m, func_initialize)
 
@@ -827,6 +837,7 @@ def solve(model, solver=None, tee=False, raise_on_failure=False):
 
 def optimize_set_up(
     m,
+    set_default_bounds_on_module_dimensions,
     water_recovery=None,
     Cbrine=None,
     A_case=ACase.fixed,
@@ -938,6 +949,8 @@ def optimize_set_up(
         or AB_tradeoff == ABTradeoff.inequality_constraint
     ):
         m.fs.AB_tradeoff_coeff = Param(initialize=0.01333, mutable=True)
+        if AB_gamma_factor is None:
+            AB_gamma_factor = 1
         m.fs.AB_tradeoff_coeff.set_value(
             AB_gamma_factor * value(m.fs.AB_tradeoff_coeff)
         )
@@ -946,15 +959,23 @@ def optimize_set_up(
     for idx, stage in m.fs.ROUnits.items():
         stage.area.unfix()
         stage.width.unfix()
-        stage.area.setlb(1)
-        stage.area.setub(20000)
-        stage.width.setlb(0.1)
-        stage.width.setub(1000)
+        if set_default_bounds_on_module_dimensions:
+            # bounds originally set for Cost Optimization of LSRRO paper
+            stage.area.setlb(1)
+            stage.area.setub(20000)
+            stage.width.setlb(0.1)
+            stage.width.setub(1000)
+        else:
+            stage.area.setlb(1)
+            stage.area.setub(None)
+            stage.width.setlb(1)
+            stage.width.setub(None)
+            stage.length.setlb(1)
 
         if (
             stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ) or (stage.config.pressure_change_type == PressureChangeType.calculated):
-            stage.N_Re[0, 0].unfix()
+            stage.feed_side.N_Re[0, 0].unfix()
 
         if idx > m.fs.Stages.first():
             stage.B_comp.unfix()
@@ -1190,7 +1211,7 @@ def display_system(m):
     )
     print(
         f"Indirect Capital Cost ($/m3): "
-        f"{value(m.fs.costing.factor_capital_annualization*(m.fs.costing.total_investment_cost - m.fs.costing.total_capital_cost) / m.fs.costing.annual_water_production)}"
+        f"{value(m.fs.costing.factor_capital_annualization*(m.fs.costing.total_capital_cost - m.fs.costing.aggregate_capital_cost) / m.fs.costing.annual_water_production)}"
     )
     electricity_cost = value(
         m.fs.costing.aggregate_flow_costs["electricity"]
@@ -1205,3 +1226,25 @@ def display_system(m):
 def display_RO_reports(m):
     for stage in m.fs.ROUnits.values():
         stage.report()
+
+
+if __name__ == "__main__":
+    m, results = run_lsrro_case(
+        number_of_stages=3,
+        water_recovery=0.50,
+        Cin=70,  # inlet NaCl conc kg/m3,
+        Qin=1e-3,  # inlet feed flowrate m3/s
+        Cbrine=None,  # brine conc kg/m3
+        A_case=ACase.optimize,
+        B_case=BCase.optimize,
+        AB_tradeoff=ABTradeoff.equality_constraint,
+        # A_value=4.2e-12, #membrane water permeability coeff m/s-Pa
+        has_NaCl_solubility_limit=True,
+        has_calculated_concentration_polarization=True,
+        has_calculated_ro_pressure_drop=True,
+        permeate_quality_limit=500e-6,
+        AB_gamma_factor=1,
+        B_max=3.5e-6,
+        number_of_RO_finite_elements=10,
+        set_default_bounds_on_module_dimensions=True,
+    )

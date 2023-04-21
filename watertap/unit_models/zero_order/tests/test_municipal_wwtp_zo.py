@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order municipal wastewater treatment plant model
 """
@@ -23,7 +22,6 @@ from pyomo.environ import (
     Constraint,
     value,
     Var,
-    assert_optimal_termination,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -47,12 +45,10 @@ class TestMunicipalWWTPZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["foo"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["foo"])
 
-        m.fs.unit = MunicipalWWTPZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = MunicipalWWTPZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(1)
@@ -112,7 +108,9 @@ class TestMunicipalWWTPZO:
                 value(model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5
             ) == value(model.fs.unit.outlet.flow_mass_comp[t, j])
 
-        assert pytest.approx(7e-10, rel=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(8.4491446e-11, rel=1e-5) == value(
+            model.fs.unit.electricity[0]
+        )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -124,15 +122,13 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = MunicipalWWTPZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit1 = MunicipalWWTPZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -141,9 +137,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.municipal_wwtp, Block)
     assert isinstance(m.fs.costing.municipal_wwtp.capital_a_parameter, Var)

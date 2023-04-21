@@ -1,19 +1,19 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order SISO unit model
 """
 import pytest
+from types import MethodType
 
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -55,11 +55,11 @@ class TestSISO:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
 
-        m.fs.unit = DerivedSISO(default={"property_package": m.fs.water_props})
+        m.fs.unit = DerivedSISO(property_package=m.fs.water_props)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "A"].fix(10)
@@ -78,9 +78,11 @@ class TestSISO:
         assert model.fs.unit._tech_type is None
         assert model.fs.unit._has_recovery_removal is True
         assert model.fs.unit._fixed_perf_vars == []
-        assert model.fs.unit._initialize is initialize_siso
-        assert model.fs.unit._scaling is calculate_scaling_factors_siso
-        assert model.fs.unit._get_Q is _get_Q_siso
+        assert model.fs.unit._initialize == MethodType(initialize_siso, model.fs.unit)
+        assert model.fs.unit._scaling == MethodType(
+            calculate_scaling_factors_siso, model.fs.unit
+        )
+        assert model.fs.unit._get_Q == MethodType(_get_Q_siso, model.fs.unit)
         assert model.fs.unit._stream_table_dict == {
             "Inlet": model.fs.unit.inlet,
             "Treated": model.fs.unit.treated,

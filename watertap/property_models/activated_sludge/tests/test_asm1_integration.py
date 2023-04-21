@@ -1,14 +1,13 @@
 #################################################################################
-# The Institute for the Design of Advanced Energy Systems Integrated Platform
-# Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
 Tests for ASM1 property and reaction packages.
@@ -44,43 +43,16 @@ from watertap.property_models.activated_sludge.asm1_reactions import (
 def test_ASM1_reactor():
     m = pyo.ConcreteModel()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props = ASM1ParameterBlock()
-    m.fs.rxn_props = ASM1ReactionParameterBlock(
-        default={"property_package": m.fs.props}
-    )
+    m.fs.rxn_props = ASM1ReactionParameterBlock(property_package=m.fs.props)
 
-    m.fs.R1 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
-    m.fs.R2 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
-    m.fs.R3 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
-    m.fs.R4 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
-    m.fs.R5 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
+    m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R2 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R3 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R4 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R5 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
 
     # Link units
     m.fs.stream1 = Arc(source=m.fs.R1.outlet, destination=m.fs.R2.inlet)

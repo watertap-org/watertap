@@ -1,32 +1,25 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 from pyomo.environ import (
     ConcreteModel,
-    Constraint,
     TerminationCondition,
     SolverStatus,
     value,
     Var,
 )
 from pyomo.network import Port
-from idaes.core import (
-    FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-)
+from idaes.core import FlowsheetBlock
 from pyomo.util.check_units import assert_units_consistent
 from watertap.unit_models.crystallizer import Crystallization
 import watertap.property_models.cryst_prop_pack as props
@@ -42,13 +35,11 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
-    unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
 from idaes.core import UnitModelCostingBlock
 
-from watertap.costing import WaterTAPCosting
-from watertap.costing.watertap_costing_package import CrystallizerCostType
+from watertap.costing import WaterTAPCosting, CrystallizerCostType
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -59,15 +50,11 @@ class TestCrystallization:
     @pytest.fixture(scope="class")
     def Crystallizer_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
-        m.fs.unit = Crystallization(
-            default={
-                "property_package": m.fs.properties,
-            }
-        )
+        m.fs.unit = Crystallization(property_package=m.fs.properties)
 
         # fully specify system
         feed_flow_mass = 1
@@ -107,15 +94,11 @@ class TestCrystallization:
     @pytest.fixture(scope="class")
     def Crystallizer_frame_2(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
-        m.fs.unit = Crystallization(
-            default={
-                "property_package": m.fs.properties,
-            }
-        )
+        m.fs.unit = Crystallization(property_package=m.fs.properties)
 
         # fully specify system
         feed_flow_mass = 1
@@ -345,12 +328,8 @@ class TestCrystallization:
         m = Crystallizer_frame
         m.fs.costing = WaterTAPCosting()
         m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {
-                    "cost_type": CrystallizerCostType.mass_basis
-                },
-            },
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"cost_type": CrystallizerCostType.mass_basis},
         )
         m.fs.costing.cost_process()
 
@@ -471,7 +450,9 @@ class TestCrystallization:
         # Residence time
         assert pytest.approx(1.0228, rel=1e-3) == value(b.t_res)
         # Mass-basis costing
-        assert pytest.approx(300000, rel=1e-3) == value(m.fs.costing.total_capital_cost)
+        assert pytest.approx(300000, rel=1e-3) == value(
+            m.fs.costing.aggregate_capital_cost
+        )
 
     @pytest.mark.component
     def test_solution2_capcosting_by_mass(self, Crystallizer_frame):
@@ -499,7 +480,9 @@ class TestCrystallization:
         # Minimum active volume
         assert pytest.approx(0.959, rel=1e-3) == value(b.volume_suspension)
         # Mass-basis costing
-        assert pytest.approx(300000, rel=1e-3) == value(m.fs.costing.total_capital_cost)
+        assert pytest.approx(300000, rel=1e-3) == value(
+            m.fs.costing.aggregate_capital_cost
+        )
 
     @pytest.mark.component
     def test_solution2_capcosting_by_volume(self, Crystallizer_frame_2):
@@ -531,12 +514,8 @@ class TestCrystallization:
 
         m.fs.costing = WaterTAPCosting()
         m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {
-                    "cost_type": CrystallizerCostType.volume_basis
-                },
-            },
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"cost_type": CrystallizerCostType.volume_basis},
         )
         m.fs.costing.cost_process()
         assert_units_consistent(m)
@@ -559,7 +538,9 @@ class TestCrystallization:
         # Minimum active volume
         assert pytest.approx(0.959, rel=1e-3) == value(b.volume_suspension)
         # Volume-basis costing
-        assert pytest.approx(199000, rel=1e-3) == value(m.fs.costing.total_capital_cost)
+        assert pytest.approx(199000, rel=1e-3) == value(
+            m.fs.costing.aggregate_capital_cost
+        )
 
     @pytest.mark.component
     def test_solution2_operatingcost(self, Crystallizer_frame_2):

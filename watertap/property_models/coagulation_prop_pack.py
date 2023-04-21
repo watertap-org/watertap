@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Initial property package for water treatment via a Coagulation-Flocculation process
 """
@@ -24,7 +23,6 @@ from pyomo.environ import (
     Suffix,
     value,
     exp,
-    assert_optimal_termination,
     check_optimal_termination,
 )
 
@@ -41,7 +39,7 @@ from idaes.core import (
     EnergyBalanceType,
 )
 from idaes.core.base.components import Component
-from idaes.core.base.phases import LiquidPhase, SolidPhase, PhaseType
+from idaes.core.base.phases import LiquidPhase
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
@@ -59,6 +57,7 @@ from idaes.core.util.exceptions import (
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
+from watertap.core.util.scaling import transform_property_constraints
 
 __author__ = "Austin Ladshaw"
 
@@ -203,6 +202,11 @@ class CoagulationParameterData(PhysicalParameterBlock):
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
                 "enth_flow": {"method": "_enth_flow"},
             }
         )
@@ -307,21 +311,22 @@ class _CoagulationStateBlock(StateBlock):
             # Initialize properties
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = solve_indexed_blocks(opt, [self], tee=slc.tee)
-                if not check_optimal_termination(results):
-                    raise InitializationError(
-                        "The property package failed to solve during initialization"
-                    )
             init_log.info_high(
                 "Property initialization: {}.".format(idaeslog.condition(results))
             )
 
-        # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
                 self.release_state(flags)
+
+        if (not skip_solve) and (not check_optimal_termination(results)):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please "
+                f"check the output logs for more information."
+            )
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
@@ -551,9 +556,9 @@ class CoagulationStateBlockData(StateBlockData):
         def rule_dens_mass_phase(b, p):
             return b.dens_mass_phase[p] == (
                 b.params.ref_dens_liq
-                + b.params.dens_slope * b.mass_frac_phase_comp["Liq", "TDS"]
-                + b.params.dens_slope * b.mass_frac_phase_comp["Liq", "TSS"]
-                + b.params.dens_slope * b.mass_frac_phase_comp["Liq", "Sludge"]
+                + b.params.dens_slope * b.mass_frac_phase_comp[p, "TDS"]
+                + b.params.dens_slope * b.mass_frac_phase_comp[p, "TSS"]
+                + b.params.dens_slope * b.mass_frac_phase_comp[p, "Sludge"]
             ) * (
                 b.params.dens_param_A * b.temperature**2
                 + b.params.dens_param_B * b.temperature
@@ -580,10 +585,10 @@ class CoagulationStateBlockData(StateBlockData):
             return (
                 b.flow_vol_phase[p]
                 == (
-                    b.flow_mass_phase_comp["Liq", "H2O"]
-                    + b.flow_mass_phase_comp["Liq", "TDS"]
-                    + b.flow_mass_phase_comp["Liq", "TSS"]
-                    + b.flow_mass_phase_comp["Liq", "Sludge"]
+                    b.flow_mass_phase_comp[p, "H2O"]
+                    + b.flow_mass_phase_comp[p, "TDS"]
+                    + b.flow_mass_phase_comp[p, "TSS"]
+                    + b.flow_mass_phase_comp[p, "Sludge"]
                 )
                 / b.dens_mass_phase[p]
             )
@@ -665,7 +670,7 @@ class CoagulationStateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def define_state_vars(self):
@@ -743,17 +748,11 @@ class CoagulationStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.dens_mass_phase) is None:
                 iscale.set_scaling_factor(self.dens_mass_phase, 1e-3)
 
-            # transforming constraints
-            sf = iscale.get_scaling_factor(self.dens_mass_phase)
-            iscale.constraint_scaling_transform(self.eq_dens_mass_phase["Liq"], sf)
-
         if self.is_property_constructed("flow_vol_phase"):
             sf = iscale.get_scaling_factor(
                 self.flow_mass_phase_comp["Liq", "H2O"]
             ) / iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
             iscale.set_scaling_factor(self.flow_vol_phase["Liq"], sf)
-            # transforming constraints
-            iscale.constraint_scaling_transform(self.eq_flow_vol_phase["Liq"], sf)
 
         if self.is_property_constructed("conc_mass_phase_comp"):
             # Apply variable scaling
@@ -782,10 +781,6 @@ class CoagulationStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.visc_d_phase) is None:
                 iscale.set_scaling_factor(self.visc_d_phase, 1e3)
 
-            # transforming constraints
-            sf = iscale.get_scaling_factor(self.visc_d_phase)
-            iscale.constraint_scaling_transform(self.eq_visc_d_phase["Liq"], sf)
-
         if self.is_property_constructed("enth_flow"):
             if iscale.get_scaling_factor(self.enth_flow) is None:
                 sf = (
@@ -794,6 +789,9 @@ class CoagulationStateBlockData(StateBlockData):
                     * 1e-1
                 )
                 iscale.set_scaling_factor(self.enth_flow, sf)
+
+        # transforming constraints
+        transform_property_constraints(self)
 
     # ------------------------------------------------------------------
     # # TODO: Create functions for easier user access to setup intial values

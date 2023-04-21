@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order evaporation pond model
 """
@@ -27,7 +26,6 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
@@ -47,23 +45,12 @@ class TestEvaporationPondZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "tds",
-                    "magnesium",
-                    "calcium",
-                    "nitrate",
-                    "sulfate",
-                    "tss",
-                ]
-            }
+            solute_list=["tds", "magnesium", "calcium", "nitrate", "sulfate", "tss"]
         )
 
-        m.fs.unit = EvaporationPondZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = EvaporationPondZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(123)
@@ -281,16 +268,12 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.params = WaterParameterBlock(
-        default={
-            "solute_list": ["tds", "magnesium", "calcium", "nitrate", "sulfate", "tss"]
-        }
+        solute_list=["tds", "magnesium", "calcium", "nitrate", "sulfate", "tss"]
     )
     m.fs.costing = ZeroOrderCosting()
-    m.fs.unit = EvaporationPondZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit = EvaporationPondZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
     m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(123)
@@ -301,9 +284,7 @@ def test_costing():
     m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(12)
     m.fs.unit.load_parameters_from_database(use_default_removal=True)
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.evaporation_pond, Block)
     assert isinstance(m.fs.costing.evaporation_pond.cost_per_acre_a_parameter, Var)

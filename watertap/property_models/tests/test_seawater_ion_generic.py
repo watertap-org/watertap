@@ -1,15 +1,14 @@
-###############################################################################
-# ProteusLib Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
-# "https://github.com/nawi-hub/proteuslib/"
-#
-###############################################################################
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 
 import pytest
 from pyomo.environ import ConcreteModel, assert_optimal_termination, value
@@ -31,11 +30,9 @@ solver = get_solver()
 def test_property_seawater_ions():
     m = ConcreteModel()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = GenericParameterBlock(default=configuration)
-    m.fs.stream = m.fs.properties.build_state_block(
-        [0], default={"defined_state": True}
-    )
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = GenericParameterBlock(**configuration)
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
 
     # specify
     m.fs.stream[0].flow_mol_phase_comp["Liq", "Na_+"].fix(0.008845)

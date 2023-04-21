@@ -25,7 +25,7 @@ Additional Variables
    "CT value for ozone contactor", "concentration_time", ":math:`mg*min/l`"
    "Ozone mass transfer efficiency", "mass_transfer_efficiency", ":math:`dimensionless`"
    "Specific energy consumption for ozone generation", "specific_energy_coeff", ":math:`kWh/lb`"
-   "Mass flow rate of ozone", "ozone_flow_mass", ":math:`lb/hr`"
+   "Mass flow rate of ozone", "ozone_flow_mass", ":math:`lb/h`"
    "Ozone consumption", "ozone_consumption", ":math:`mg/l`"
    "Ozone generation power demand", "electricity", ":math:`kW`"
    "Oxidant dosage", "oxidant_dose", ":math:`mg/l`"

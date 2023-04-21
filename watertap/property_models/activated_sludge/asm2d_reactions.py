@@ -1,14 +1,13 @@
 #################################################################################
-# The Institute for the Design of Advanced Energy Systems Integrated Platform
-# Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
 ASM2d reaction package.
@@ -237,7 +236,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
 
         # Kinetic Parameters
         self.K_H = pyo.Var(
-            initialize=3,
+            initialize=3.0,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Hydrolysis rate constant",
@@ -274,13 +273,13 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
         )
 
         self.mu_H = pyo.Var(
-            initialize=6,
+            initialize=6.0,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Maximum growth rate on substrate, [kg X_S/kg X_H/day]",
         )
         self.q_fe = pyo.Var(
-            initialize=3,
+            initialize=3.0,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Maximum rate for fermentation, [kg S_F/kg X_H/day]",
@@ -329,19 +328,19 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
         )
 
         self.q_PHA = pyo.Var(
-            initialize=3,
+            initialize=3.0,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Rate constant for storage of X_PHA (base Xpp), [kg PHA/kg PAO/day]",
         )
         self.q_PP = pyo.Var(
-            initialize=1.5,
+            initialize=1.50,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Rate constant for storage of X_PP, [kg PP/kg PAO/day]",
         )
         self.mu_PAO = pyo.Var(
-            initialize=1,
+            initialize=1.0,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Maximum growth rate of PAO",
@@ -396,7 +395,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
         )
 
         self.mu_AUT = pyo.Var(
-            initialize=1,
+            initialize=1.0,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Maximum growth rate of X_AUT",
@@ -1006,7 +1005,7 @@ class _ASM2dReactionBlock(ReactionBlockBase):
     whole, rather than individual elements of indexed Reaction Blocks.
     """
 
-    def initialize(blk, outlvl=idaeslog.NOTSET, **kwargs):
+    def initialize(self, outlvl=idaeslog.NOTSET, **kwargs):
         """
         Initialization routine for reaction package.
 
@@ -1016,7 +1015,7 @@ class _ASM2dReactionBlock(ReactionBlockBase):
         Returns:
             None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
         init_log.info("Initialization Complete.")
 
 
@@ -1467,15 +1466,9 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R18":
-                    # R18: Aerobic growth of X_AUT
+                    # R18: Lysis of X_AUT
                     return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.mu_AUT * b.conc_mass_comp_ref["X_AUT"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
-                elif r == "R19":
-                    # R19: Lysis of X_AUT
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.b_AUT
+                        b.params.mu_AUT
                         * (
                             b.conc_mass_comp_ref["S_O2"]
                             / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
@@ -1488,7 +1481,17 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_PO4"]
                             / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
                         )
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        )
                         * b.conc_mass_comp_ref["X_AUT"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
+                elif r == "R19":
+                    # R19: Aerobic growth of X_AUT
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_AUT * b.conc_mass_comp_ref["X_AUT"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R20":
@@ -1525,7 +1528,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.rate_expression)
             raise
 
-    def get_reaction_rate_basis(b):
+    def get_reaction_rate_basis(self):
         return MaterialFlowBasis.mass
 
     def calculate_scaling_factors(self):

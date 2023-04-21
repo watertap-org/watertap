@@ -1,30 +1,58 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 """
 Tests for fsapi module
 """
 import logging
-
 import pytest
 
 from pyomo.environ import units as pyunits
-from pyomo.environ import Var
+from pyomo.environ import Var, value
+from pyomo.environ import SolverStatus, TerminationCondition
 
 from watertap.examples.flowsheets.case_studies.seawater_RO_desalination import (
     seawater_RO_desalination as RO,
 )
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab import (
+    metab_ui as MU,
+)
+
 from watertap.ui import fsapi
 
 
 _log = logging.getLogger("idaes.watertap.ui.fsapi")
 _log.setLevel(logging.DEBUG)
 
+ERD_TYPE = "pressure_exchanger"
 
-def build_ro(erd_type=None):
-    model = RO.build_flowsheet(erd_type=erd_type)
+# Fake status=OK solver result
+
+
+class SOLVE_RESULT_OK:
+    class SOLVE_STATUS:
+        status = SolverStatus.ok
+        termination_condition = TerminationCondition.optimal
+
+    solver = SOLVE_STATUS
+
+
+def build_ro(**kwargs):
+    model = RO.build_flowsheet(erd_type=ERD_TYPE)
     return model.fs
 
 
 def solve_ro(flowsheet=None):
     assert flowsheet
+    return {"solved": True}
 
 
 class InputCategory:
@@ -65,14 +93,14 @@ def export_to_ui(flowsheet=None, exports=None):
     )
 
 
-def flowsheet_interface(exports=True):
+def flowsheet_interface(exports=True, solve_func=solve_ro):
     kwargs = {}
     if exports:
         kwargs["do_export"] = export_to_ui
     return fsapi.FlowsheetInterface(
         # leave out name and description to test auto-fill
         do_build=build_ro,
-        do_solve=solve_ro,
+        do_solve=solve_func,
         **kwargs,
     )
 
@@ -108,8 +136,17 @@ def test_build():
     assert len(data["model_objects"]) == 1
 
 
+@pytest.mark.parametrize(
+    "add_variant",
+    [
+        "obj_kwarg",
+        "model_export_arg",
+        "model_export_data_kwarg",
+        "model_export_dict_data_kwarg",
+    ],
+)
 @pytest.mark.unit
-def test_actions():
+def test_actions(add_variant: str):
     fsi = flowsheet_interface()
     built = False
     garbage = {"trash": True}
@@ -126,15 +163,26 @@ def test_actions():
     def fake_solve(flowsheet=None):
         # flowsheet passed in here should be what fake_build() returns
         assert flowsheet == garbage
+        return SOLVE_RESULT_OK
 
     def fake_export(flowsheet=None, exports=None):
-        with pytest.raises(AttributeError):
+        with pytest.raises(Exception):
             exports.add(obj=garbage)
-        exports.add(obj=v1)  # form 1
-        exports.add(v1)  # form 2
-        exports.add(data=v1)  # form 3
-        ve1 = fsapi.ModelExport(obj=v1)
-        exports.add(data=ve1.dict())  # form 4
+
+        # NOTE we use exclusive variants here
+        # to avoid triggering the error when adding an object with the same obj_key
+        # which happens when multiple ModelExport are created from the same pyomo object
+        if add_variant == "obj_kwarg":
+            exports.add(obj=v1)  # form 1
+        elif add_variant == "model_export_kwarg":
+            ve1 = fsapi.ModelExport(obj=v1)
+            exports.add(ve1)  # form 2
+        elif add_variant == "model_export_data_kwarg":
+            ve1 = fsapi.ModelExport(obj=v1)
+            exports.add(data=ve1)  # form 3
+        elif add_variant == "model_export_dict_data_kwarg":
+            ve1 = fsapi.ModelExport(obj=v1)
+            exports.add(data=ve1.dict())  # form 4
         with pytest.raises(ValueError):
             exports.add(v1, v1)
 
@@ -181,20 +229,6 @@ def test_load():
 
 
 @pytest.mark.unit
-def test_find_smoke():
-    fsapi.FlowsheetInterface.find("watertap")
-
-
-@pytest.mark.component
-def test_find():
-    result = fsapi.FlowsheetInterface.find("examples.ui")
-    assert len(result) == 1  # expect only 1 module (1 was bad)
-    interface = list(result.values())[0]  # get the module function
-    interface.build()  # make sure the module exported properly
-    interface.solve()
-
-
-@pytest.mark.unit
 def test_require_methods():
     fsi = flowsheet_interface()
     methods = ("do_export", "do_build", "do_solve")
@@ -211,3 +245,77 @@ def test_require_methods():
         badkw[meth] = 1
         with pytest.raises(TypeError):
             _ = fsapi.FlowsheetInterface(fsi, **badkw)
+
+
+@pytest.mark.component
+def test_export_values():
+    # get an interface
+    fsi = flowsheet_interface()
+    fsi.build()
+    d1 = fsi.dict()
+
+    # change one value
+    key = list(fsi.fs_exp.model_objects.keys())[0]
+    orig_value = value(fsi.fs_exp.model_objects[key].obj)
+    new_value = orig_value + 1
+    print(f"@@ orig_value = {orig_value}, new value = {new_value}")
+    fsi.fs_exp.model_objects[key].obj.value = new_value
+
+    # re-export
+    fsi.export_values()
+    d2 = fsi.dict()
+
+    print("== original")
+    print(d1)
+    print("== modified")
+    print(d2)
+
+    # check that change happened
+    assert d1 != d2
+
+
+@pytest.mark.component
+def test_export_values_build():
+    # get an interface
+    fsi = flowsheet_interface()
+    d1 = fsi.dict()
+    fsi.build()
+    # after build, new values should be exported to fsi.fs_exp
+    d2 = fsi.dict()
+    assert d1 != d2
+
+
+@pytest.mark.unit
+def test_empty_solve():
+    # try a fake solve
+    fsi = flowsheet_interface()
+    fsi.build()
+    with pytest.raises(RuntimeError) as excinfo:
+        fsi.solve()
+    print(f"* RuntimeError: {excinfo.value}")
+
+
+@pytest.mark.unit
+def test_nonoptimal_termination():
+    fsi = MU.export_to_ui()
+    fsi.build()
+
+    # pick a crazy value
+    key = list(fsi.fs_exp.model_objects.keys())[0]
+    orig_value = value(fsi.fs_exp.model_objects[key].obj)
+    new_value = orig_value + 1e9
+    fsi.fs_exp.model_objects[key].obj.value = new_value
+    print(f"* orig_value = {orig_value}, new value = {new_value}")
+
+    # try to solve (for real)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        fsi.solve()
+    print(f"* RuntimeError: {excinfo.value}")
+
+
+def test_has_version():
+    fsi = flowsheet_interface()
+    d = fsi.dict()
+    assert "version" in d
+    assert d["version"] > 0

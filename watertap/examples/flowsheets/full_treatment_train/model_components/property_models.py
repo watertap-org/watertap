@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """Seawater feed specifications for supported property packages"""
 
@@ -20,9 +19,9 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 from idaes.core.util.scaling import calculate_scaling_factors
 from watertap.property_models import seawater_prop_pack
+from watertap.property_models import seawater_ion_prop_pack
 from watertap.examples.flowsheets.full_treatment_train.model_components import (
     seawater_salt_prop_pack,
-    seawater_ion_prop_pack,
 )
 from watertap.examples.flowsheets.full_treatment_train.model_components.eNRTL import (
     entrl_config_FpcTP,
@@ -87,9 +86,7 @@ def build_prop(m, base="TDS"):
         )
 
     elif base == "eNRTL":
-        m.fs.prop_eNRTL = GenericParameterBlock(
-            default=entrl_config_FpcTP.configuration
-        )
+        m.fs.prop_eNRTL = GenericParameterBlock(**entrl_config_FpcTP.configuration)
 
         # default scaling in config file
 
@@ -167,14 +164,14 @@ def specify_feed(sb, base="TDS"):
 def solve_specify_feed(base):
     # build state block
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     build_prop(m, base=base)
     if base == "TDS":
-        m.fs.stream = m.fs.prop_TDS.build_state_block([0], default={})
+        m.fs.stream = m.fs.prop_TDS.build_state_block([0])
     elif base == "ion":
-        m.fs.stream = m.fs.prop_ion.build_state_block([0], default={})
+        m.fs.stream = m.fs.prop_ion.build_state_block([0])
     elif base == "salt":
-        m.fs.stream = m.fs.prop_salt.build_state_block([0], default={})
+        m.fs.stream = m.fs.prop_salt.build_state_block([0])
     specify_feed(m.fs.stream[0], base=base)
 
     m.fs.stream[

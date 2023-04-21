@@ -1,3 +1,14 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 """
 Simple flowsheet interface API
 """
@@ -5,19 +16,25 @@ Simple flowsheet interface API
 __author__ = "Dan Gunter"
 
 # stdlib
+import logging
 from collections import namedtuple
 from enum import Enum
-from glob import glob
-import importlib
-from pathlib import Path
-import re
-from typing import Callable, Optional, Dict, Union, TypeVar
-from uuid import uuid4
+from typing import Any, Callable, Optional, Dict, Union, TypeVar
+from types import ModuleType
+
+try:
+    from importlib import metadata
+except ImportError:
+    import importlib_metadata as metadata
 
 # third-party
 import idaes.logger as idaeslog
+from idaes.core.util.model_statistics import degrees_of_freedom
 from pydantic import BaseModel, validator, Field
 import pyomo.environ as pyo
+from pyomo.core.expr.numeric_expr import ExpressionBase
+from pyomo.core.base.expression import Expression, _ExpressionData
+from pyomo.core.base.param import ScalarParam
 
 #: Forward-reference to a FlowsheetInterface type, used in
 #: :meth:`FlowsheetInterface.find`
@@ -27,10 +44,35 @@ FSI = TypeVar("FSI", bound="FlowsheetInterface")
 _log = idaeslog.getLogger(__name__)
 
 
+class UnsupportedObjType(TypeError):
+    def __init__(
+        self,
+        obj: Any,
+        supported: Optional = None,
+    ):
+        msg = f"Object '{obj}' of type '{type(obj)}' is not supported."
+        if supported is not None:
+            msg += f"\nSupported: {supported}"
+        super().__init__(msg)
+        self.obj = obj
+        self.supported = supported
+
+
 class ModelExport(BaseModel):
     """A variable, expression, or parameter."""
 
-    obj: object = Field(default=None, exclude=True)
+    _SupportedObjType = Union[
+        pyo.Var,
+        pyo.Expression,
+        pyo.Param,
+    ]
+    "Used for type hints and as a shorthand in error messages (i.e. not for runtime checks)"
+
+    # TODO: if Optional[_SupportedObjType] is used for the `obj` type hint,
+    # pydantic will run the runtime instance check which is not what we want
+    # (as we want/need to use the pyomo is_xxx_type() methods instead)
+    # so we're using Optional[object] unless we find a way to tell pydantic to skip this check
+    obj: Optional[object] = Field(default=None, exclude=True)
     name: str = ""
     value: float = 0.0
     ui_units: object = Field(default=None, exclude=True)
@@ -39,22 +81,67 @@ class ModelExport(BaseModel):
     description: str = ""
     is_input: bool = True
     is_output: bool = True
-    is_readonly: bool = False
+    is_readonly: bool = None
     input_category: Optional[str]
     output_category: Optional[str]
+    obj_key: str = None
+    fixed: bool = True
+    lb: Union[None, float] = 0.0
+    ub: Union[None, float] = 0.0
+    has_bounds: bool = True
 
     class Config:
         arbitrary_types_allowed = True
 
+    @validator("obj", always=True, pre=True)
+    @classmethod
+    def ensure_obj_is_supported(cls, v):
+        if v is not None:
+            cls._ensure_supported_type(v)
+        return v
+
+    @classmethod
+    def _ensure_supported_type(cls, obj: object):
+        is_valid = (
+            obj.is_variable_type()
+            or obj.is_expression_type()
+            or obj.is_parameter_type()
+            # TODO: add support for numbers with pyo.numvalue.is_numeric_data()
+        )
+        if is_valid:
+            return True
+        raise UnsupportedObjType(obj, supported=cls._SupportedObjType)
+
+    @classmethod
+    def _get_supported_obj(
+        cls, values: dict, field_name: str = "obj", allow_none: bool = False
+    ):
+        obj = values.get(field_name, None)
+        if not allow_none and obj is None:
+            raise TypeError(f"'{field_name}' is None but allow_none is False")
+        cls._ensure_supported_type(obj)
+        return obj
+
+    # NOTE: IMPORTANT: all validators used to set a dynamic default value
+    # should have the `always=True` option, or the validator won't be called
+    # when the value for that field is not passed
+    # (which is precisely when we need the default value)
+    # additionally, `pre=True` should be given if the field can at any point
+    # have a value that doesn't match its type annotation
+    # (e.g. `None` for a strict (non-`Optional` `bool` field)
+
     # Get value from object
     @validator("value", always=True)
+    @classmethod
     def validate_value(cls, v, values):
         if values.get("obj", None) is None:
             return v
-        return values["obj"].value
+        obj = cls._get_supported_obj(values, allow_none=False)
+        return pyo.value(obj)
 
     # Derive display_units from ui_units
     @validator("display_units", always=True)
+    @classmethod
     def validate_units(cls, v, values):
         if not v:
             u = values.get("ui_units", pyo.units.dimensionless)
@@ -62,13 +149,33 @@ class ModelExport(BaseModel):
         return v
 
     # set name dynamically from object
-    @validator("name")
+    @validator("name", always=True)
+    @classmethod
     def validate_name(cls, v, values):
         if not v:
+            obj = cls._get_supported_obj(values, allow_none=False)
             try:
-                v = values["obj"].name
+                v = obj.name
             except AttributeError:
                 pass
+        return v
+
+    @validator("is_readonly", always=True, pre=True)
+    @classmethod
+    def set_readonly_default(cls, v, values):
+        if v is None:
+            v = True
+            obj = cls._get_supported_obj(values, allow_none=False)
+            if obj.is_variable_type() or (obj.is_parameter_type() and obj.mutable):
+                v = False
+        return v
+
+    @validator("obj_key", always=True, pre=True)
+    @classmethod
+    def set_obj_key_default(cls, v, values):
+        if v is None:
+            obj = cls._get_supported_obj(values, allow_none=False)
+            v = str(obj)
         return v
 
 
@@ -79,9 +186,13 @@ class FlowsheetExport(BaseModel):
     name: str = ""
     description: str = ""
     model_objects: Dict[str, ModelExport] = {}
+    version: int = 2
+    requires_idaes_solver: bool = False
+    dof: int = 0
 
     # set name dynamically from object
     @validator("name", always=True)
+    @classmethod
     def validate_name(cls, v, values):
         if not v:
             try:
@@ -93,6 +204,7 @@ class FlowsheetExport(BaseModel):
         return v
 
     @validator("description", always=True)
+    @classmethod
     def validate_description(cls, v, values):
         if not v:
             try:
@@ -101,22 +213,60 @@ class FlowsheetExport(BaseModel):
                 v = f"{values['name']} flowsheet"
         return v
 
-    def add(self, *args, data=None, **kwargs) -> object:
-        """Add a new variable (or other model object)."""
+    def add(self, *args, data: Union[dict, ModelExport] = None, **kwargs) -> object:
+        """Add a new variable (or other model object).
+
+        There are a few different ways of invoking this function. Users will
+        typically use this form::
+
+            add(obj=<pyomo object>, name="My value name", ..etc..)
+
+        If these same name/value pairs are already in a dictionary, this form is more
+        convenient::
+
+            add(data=my_dict_of_name_value_pairs)
+
+        If you have an existing ModelExport object, you can add it more directly with::
+
+            add(my_object)
+            # -- OR --
+            add(data=my_object)
+
+        Args:
+            *args: If present, should be a single non-named argument, which is a
+                 ModelExport object. Create by adding it.
+            data: If present, create from this argument. If it's a dict, create from
+                 its values just as from the kwargs. Otherwise it should be a
+                 ModelExport object, and create by adding it.
+            kwargs: Name/value pairs to create a ModelExport object.
+
+        Raises:
+            KeyError: If the name of the Pyomo object is the same as an existing one,
+                i.e. refuse to overwrite.
+        """
         if len(args) > 1:
             raise ValueError(f"At most one non-keyword arg allowed. Got: {args}")
-        id_ = uuid4().hex
         if len(args) == 1:
-            obj = args[0]
+            model_export = args[0]
         elif data is None:
-            obj = ModelExport.parse_obj(kwargs)
+            _log.debug(f"Create ModelExport from args: {kwargs}")
+            model_export = ModelExport.parse_obj(kwargs)
         else:
             if isinstance(data, dict):
-                obj = ModelExport.parse_obj(data)
+                model_export = ModelExport.parse_obj(data)
             else:
-                obj = data
-        self.model_objects[id_] = obj
-        return obj
+                model_export = data
+        key = model_export.obj_key
+        if key in self.model_objects:
+            raise KeyError(
+                f"Adding ModelExport object failed: duplicate key '{key}' (model_export={model_export})"
+            )
+        if _log.isEnabledFor(logging.DEBUG):  # skip except in debug mode
+            _log.debug(
+                f"Adding ModelExport object with key={key}: {model_export.dict()}"
+            )
+        self.model_objects[key] = model_export
+        return model_export
 
 
 class Actions(str, Enum):
@@ -209,8 +359,15 @@ class FlowsheetInterface:
 
         Returns:
             None
+
+        Raises:
+            RuntimeError: If the build fails
         """
-        return self.run_action(Actions.build, **kwargs)
+        try:
+            self.run_action(Actions.build, **kwargs)
+        except Exception as err:
+            raise RuntimeError(f"Building flowsheet: {err}") from err
+        return
 
     def solve(self, **kwargs):
         """Solve flowsheet.
@@ -219,9 +376,16 @@ class FlowsheetInterface:
             **kwargs: User-defined values
 
         Returns:
-            Return value of the underlying function
+            Return value of the underlying solve function
+
+        Raises:
+            RuntimeError: if the solver did not terminate in an optimal solution
         """
-        return self.run_action(Actions.solve, **kwargs)
+        try:
+            result = self.run_action(Actions.solve, **kwargs)
+        except Exception as err:
+            raise RuntimeError(f"Solving flowsheet: {err}") from err
+        return result
 
     def dict(self) -> Dict:
         """Serialize.
@@ -238,6 +402,7 @@ class FlowsheetInterface:
         Args:
             data: The input flowsheet (probably deserialized from JSON)
         """
+        u = pyo.units
         fs = FlowsheetExport.parse_obj(data)  # new instance from data
         # Set the value for each input variable
         missing = []
@@ -250,9 +415,42 @@ class FlowsheetInterface:
                 missing.append((key, src.name))
                 continue
             # set value in this flowsheet
+            ui_units = dst.ui_units
             if dst.is_input and not dst.is_readonly:
-                dst.obj.value = dst.value = src.value
+                # create a Var so Pyomo can do the unit conversion for us
+                tmp = pyo.Var(initialize=src.value, units=ui_units)
+                tmp.construct()
+                # Convert units when setting value in the model
+                dst.obj.value = u.convert(tmp, to_units=u.get_units(dst.obj))
+                # Don't convert units when setting the exported value
+                dst.value = src.value
 
+                dst.obj.fixed = src.fixed
+                dst.fixed = src.fixed
+
+                # update bounds
+                if src.lb is None or src.lb == "":
+                    dst.obj.lb = None
+                    dst.lb = None
+                else:
+                    tmp = pyo.Var(initialize=src.lb, units=ui_units)
+                    tmp.construct()
+                    dst.obj.lb = pyo.value(
+                        u.convert(tmp, to_units=u.get_units(dst.obj))
+                    )
+                    dst.lb = src.lb
+                if src.ub is None or src.ub == "":
+                    dst.obj.ub = None
+                    dst.ub = None
+                else:
+                    tmp = pyo.Var(initialize=src.ub, units=ui_units)
+                    tmp.construct()
+                    dst.obj.ub = pyo.value(
+                        u.convert(tmp, to_units=u.get_units(dst.obj))
+                    )
+                    dst.ub = src.ub
+        # update degrees of freedom (dof)
+        self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         if missing:
             raise self.MissingObjectError(missing)
 
@@ -270,7 +468,13 @@ class FlowsheetInterface:
         def action_wrapper(**kwargs):
             if action_name == Actions.build:
                 # set new model object from return value of build action
-                self.fs_exp.obj = action_func(**kwargs)
+                action_result = action_func(**kwargs)
+                if action_result is None:
+                    raise RuntimeError(
+                        f"Flowsheet `{Actions.build}` action failed. "
+                        f"See logs for details."
+                    )
+                self.fs_exp.obj = action_result
                 # [re-]create exports (new model object)
                 if Actions.export not in self._actions:
                     raise KeyError(
@@ -279,7 +483,9 @@ class FlowsheetInterface:
                         "constructor or call `add_action(Actions.export, <function>)` "
                         "on FlowsheetInterface instance."
                     )
-                # run_action will refuse to call the export action directly
+                # clear model_objects dict, since duplicates not allowed
+                self.fs_exp.model_objects.clear()
+                # use get_action() since run_action() will refuse to call it directly
                 self.get_action(Actions.export)(exports=self.fs_exp)
                 result = None
             elif self.fs_exp.obj is None:
@@ -289,6 +495,16 @@ class FlowsheetInterface:
                 )
             else:
                 result = action_func(flowsheet=self.fs_exp.obj, **kwargs)
+                # Issue 755: Report optimization errors
+                if action_name == Actions.solve:
+                    _log.debug(f"Solve result: {result}")
+                    if result is None:
+                        raise RuntimeError("Solver did not return a result")
+                    if not pyo.check_optimal_termination(result):
+                        raise RuntimeError(f"Solve failed: {result}")
+            # Sync model with exported values
+            if action_name in (Actions.build, Actions.solve):
+                self.export_values()
             return result
 
         self._actions[action_name] = action_wrapper
@@ -308,6 +524,7 @@ class FlowsheetInterface:
         return self._actions[name]
 
     def run_action(self, name, **kwargs):
+        """Run the named action."""
         func = self.get_action(name)
         if name.startswith("_"):
             raise ValueError(
@@ -316,64 +533,133 @@ class FlowsheetInterface:
             )
         return func(**kwargs)
 
+    def export_values(self):
+        """Copy current values in underlying Pyomo model into exported model.
+
+        Side-effects:
+            Attribute ``fs_exp`` is modified.
+        """
+        _log.info("Exporting values from flowsheet model to UI")
+        u = pyo.units
+        for key, mo in self.fs_exp.model_objects.items():
+            mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
+            if not isinstance(
+                mo.obj,
+                (
+                    Expression,
+                    ExpressionBase,
+                    _ExpressionData,
+                    ScalarParam,
+                    type(None),
+                ),
+            ):
+                if mo.obj.ub is None:
+                    mo.ub = mo.obj.ub
+                else:
+                    tmp = pyo.Var(initialize=mo.obj.ub, units=u.get_units(mo.obj))
+                    tmp.construct()
+                    mo.ub = pyo.value(u.convert(tmp, to_units=mo.ui_units))
+                if mo.obj.lb is None:
+                    mo.lb = mo.obj.lb
+                else:
+                    tmp = pyo.Var(initialize=mo.obj.lb, units=u.get_units(mo.obj))
+                    tmp.construct()
+                    mo.lb = pyo.value(u.convert(tmp, to_units=mo.ui_units))
+            else:
+                mo.has_bounds = False
+
     @classmethod
-    def find(cls, package: str) -> Dict[str, FSI]:
-        """Find all modules with a flowsheet interface in a given package.
-        Having a flowhseet interface means simply that there is a function
-        whose name matches the contents of :attr:`FlowsheetInterface.UI_HOOK`.
-        This function should build and return a :class:`FlowsheetInterface` object.
+    def from_installed_packages(
+        cls, group_name: str = "watertap.flowsheets"
+    ) -> Dict[str, "FlowsheetInterface"]:
+        """Get all flowsheet interfaces defined as entry points within the Python packages installed in the environment.
+
+        This uses the :func:`importlib.metadata.entry_points` function to fetch the
+        list of flowsheets declared as part of a Python package distribution's `entry points <https://docs.python.org/3/library/importlib.metadata.html#entry-points>`_
+        under the group ``group_name``.
+
+        To set up a flowsheet interface for discovery, locate your Python package distribution's file (normally
+        :file:`setup.py`, :file:`pyproject.toml`, or equivalent) and add an entry in the ``entry_points`` section.
+
+        For example, to add a flowsheet defined in :file:`watertap/examples/flowsheets/my_flowsheet.py`
+        so that it can be discovered with the name ``my_flowsheet`` wherever the ``watertap`` package is installed,
+        the following should be added to WaterTAP's :file:`setup.py`::
+
+           setup(
+               name="watertap",
+               # other setup() sections
+               entry_points={
+                   "watertap.flowsheets": [
+                        # other flowsheet entry points
+                        "my_flowsheet = watertap.examples.flowsheets.my_flowsheet",
+                   ]
+               }
+           )
 
         Args:
-            package: Dotted package name, e.g. "watertap" or "my.package"
+            group_name: The entry_points group from which the flowsheet interface modules will be populated.
 
         Returns:
-            Dict mapping module names to FlowsheetInterface objects
-
-        Raises:
-            ImportError: if package cannot be imported
-            IOError: If package directory cannot be found
+            Mapping with keys the module names and values FlowsheetInterface objects
         """
-        pkg = importlib.import_module(package)
-
-        # Get a directory for the package, dealing with some failure modes
-
+        eps = metadata.entry_points()
         try:
-            pkg_path = Path(pkg.__file__).parent
-        except TypeError:  # missing __init__.py perhaps
-            raise IOError(
-                f"Cannot find package '{package}' directory, possibly "
-                f"missing an '__init__.py' file"
-            )
-        if not pkg_path.is_dir():
-            raise IOError(
-                f"Cannot load from package '{package}': "
-                f"path '{pkg_path}' not a directory"
-            )
+            # this happens for Python 3.7 (via importlib_metadata) and Python 3.10+
+            entry_points = list(eps.select(group=group_name))
+        except AttributeError:
+            # this will happen on Python 3.8 and 3.9, where entry_points() has dict-like group selection
+            entry_points = list(eps[group_name])
 
-        # Find modules and import
+        if not entry_points:
+            _log.error(f"No interfaces found for entry points group: {group_name}")
+            return {}
 
-        skip_expr = re.compile(r"_test|test_|__")
-        result = {}
-
-        for python_file in pkg_path.glob("**/*.py"):
-            _log.debug(f"FlowsheetInterface.find: importing file '{python_file}'")
-            if skip_expr.search(str(python_file)):
-                continue
-            relative_path = python_file.relative_to(pkg_path)
-            dotted_name = relative_path.as_posix()[:-3].replace("/", ".")
-            module_name = package + "." + dotted_name
+        interfaces = {}
+        _log.debug(f"Loading {len(entry_points)} entry points")
+        for ep in entry_points:
+            _log.debug(f"ep = {ep}")
+            module_name = ep.value
             try:
-                module = importlib.import_module(module_name)
-            except Exception as err:  # assume the import could do bad things
-                _log.warning(f"Import of file '{python_file}' failed: {err}")
+                module = ep.load()
+            except ImportError as err:
+                _log.error(f"Cannot import module '{module_name}': {err}")
                 continue
-            func = getattr(module, cls.UI_HOOK, None)
-            if func:
-                try:
-                    result[module_name] = func()
-                except Exception as err:  # If the function blows up
-                    _log.error(
-                        f"Could not get FlowsheetInterface for module "
-                        f"'{python_file}': {err}"
-                    )
-        return result
+            interface = cls.from_module(module)
+            if interface:
+                interfaces[module_name] = interface
+
+        return interfaces
+
+    @classmethod
+    def from_module(
+        cls, module: Union[str, ModuleType]
+    ) -> Optional["FlowsheetInterface"]:
+        """Get a a flowsheet interface for module.
+
+        Args:
+            module: The module
+
+        Returns:
+            A flowsheet interface or None if it failed
+        """
+        if not isinstance(module, ModuleType):
+            module = importlib.import_module(module)
+
+        # Get function that creates the FlowsheetInterface
+        func = getattr(module, cls.UI_HOOK, None)
+        if func is None:
+            _log.warning(
+                f"Interface for module '{module}' is missing UI hook function: "
+                f"{cls.UI_HOOK}()"
+            )
+            return None
+        # Call the function that creates the FlowsheetInterface
+        try:
+            interface = func()
+        except Exception as err:
+            _log.error(
+                f"Cannot get FlowsheetInterface object for module '{module}': {err}"
+            )
+            return None
+        # Return created FlowsheetInterface
+        return interface

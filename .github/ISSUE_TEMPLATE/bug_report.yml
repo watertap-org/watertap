@@ -1,0 +1,49 @@
+name: Bug Report 🐞
+description: File a bug/issue
+labels: bug
+
+body:
+
+- type: markdown
+  attributes:
+    value: |
+      Thanks for taking the time to fill out this bug/issue report. Please check to see if a similar issue already exists before submitting.
+
+- type: textarea
+  attributes:
+    label: Description
+    description: A concise description of the issue.
+
+- type: textarea
+  attributes:
+    label: Expected Behavior
+    description: Describe what you expected to happen.
+
+- type: textarea
+  attributes:
+    label: Steps to Reproduce
+    description: Steps to reproduce the behavior.
+    placeholder: |
+      1. In this environment...
+      2. With this config...
+      3. Run '...'
+      4. See error...
+
+- type: textarea
+  attributes:
+    label: Environment
+    description: |
+      Provide information about your operating system and software. For example:
+        - OS: Ubuntu 20.04
+        - Python: v3.8
+        - WaterTAP: v0.6
+    value: |
+        - OS:
+        - Python:
+        - WaterTAP:
+
+- type: textarea
+  attributes:
+    label: Anything Else?
+    description: |
+      Links? References? Anything that will give us more context about the issue you are encountering. Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.

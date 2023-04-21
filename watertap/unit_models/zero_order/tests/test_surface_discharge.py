@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order surface discharge model
 """
@@ -20,7 +19,6 @@ from pyomo.environ import (
     ConcreteModel,
     Constraint,
     Param,
-    Block,
     value,
     Var,
     assert_optimal_termination,
@@ -47,14 +45,12 @@ class TestSurfaceDischargeZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["toc", "nitrate", "sulfate", "bar"]}
+            solute_list=["toc", "nitrate", "sulfate", "bar"]
         )
 
-        m.fs.unit = SurfaceDischargeZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = SurfaceDischargeZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
         m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(1)
@@ -143,17 +139,13 @@ class TestSurfaceDischargeZOsubtype:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["toc", "nitrate", "sulfate", "bar"]}
+            solute_list=["toc", "nitrate", "sulfate", "bar"]
         )
 
         m.fs.unit = SurfaceDischargeZO(
-            default={
-                "property_package": m.fs.params,
-                "database": m.db,
-                "process_subtype": "emwd",
-            }
+            property_package=m.fs.params, database=m.db, process_subtype="emwd"
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
@@ -248,17 +240,11 @@ def test_costing(subtype):
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["toc", "nitrate", "sulfate", "bar"]}
-    )
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(solute_list=["toc", "nitrate", "sulfate", "bar"])
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit = SurfaceDischargeZO(
-        default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": subtype,
-        }
+        property_package=m.fs.params, database=m.db, process_subtype=subtype
     )
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
@@ -270,9 +256,7 @@ def test_costing(subtype):
     m.fs.unit.load_parameters_from_database()
 
     assert degrees_of_freedom(m.fs.unit) == 0
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)

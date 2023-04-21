@@ -1,16 +1,16 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import os
+import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
     Set,
@@ -18,7 +18,6 @@ from pyomo.environ import (
     value,
     TransformationFactory,
     units as pyunits,
-    assert_optimal_termination,
 )
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
@@ -29,7 +28,7 @@ from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
 
-from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
@@ -38,6 +37,9 @@ from watertap.unit_models.zero_order import (
     MetabZO,
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 def main():
@@ -49,21 +51,15 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m)
-    assert_optimal_termination(results)
-    # display_results(m.fs)
+    results = solve(m, checkpoint="solve flowsheet after initializing system")
 
     add_costing(m)
     assert_degrees_of_freedom(m, 0)
     m.fs.costing.initialize()
 
     # adjust_default_parameters(m)
-    # m.fs.costing.hydrogen_product_cost.fix(0)
-    # m.fs.costing.methane_product_cost.fix(0)
-    # m.fs.costing.display()
 
-    results = solve(m)
-    assert_optimal_termination(results)
+    results = solve(m, checkpoint="solve flowsheet after costing")
 
     display_metrics_results(m)
     display_additional_results(m)
@@ -76,30 +72,20 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={"solute_list": ["cod", "hydrogen", "methane"]}
-    )
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.prop = prop_ZO.WaterParameterBlock(solute_list=["cod", "hydrogen", "methane"])
 
     # unit models
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
     m.fs.metab_hydrogen = MetabZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "hydrogen",
-        },
+        property_package=m.fs.prop, database=m.db, process_subtype="hydrogen"
     )
     m.fs.metab_methane = MetabZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "methane",
-        },
+        property_package=m.fs.prop, database=m.db, process_subtype="methane"
     )
-    m.fs.product_hydrogen = Product(default={"property_package": m.fs.prop})
-    m.fs.product_methane = Product(default={"property_package": m.fs.prop})
-    m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
+    m.fs.product_hydrogen = Product(property_package=m.fs.prop)
+    m.fs.product_methane = Product(property_package=m.fs.prop)
+    m.fs.product_H2O = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.metab_hydrogen.inlet)
@@ -133,7 +119,7 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "cod"].fix(conc_mass_cod)
     m.fs.feed.properties[0].flow_mass_comp["hydrogen"].fix(1e-8)
     m.fs.feed.properties[0].flow_mass_comp["methane"].fix(1e-8)
-    solve(m.fs.feed)
+    solve(m.fs.feed, checkpoint="solve feed block")
 
     # metab_hydrogen
     m.fs.metab_hydrogen.load_parameters_from_database(use_default_removal=True)
@@ -149,12 +135,11 @@ def initialize_system(m):
     seq.run(m, lambda u: u.initialize())
 
 
-def solve(blk, solver=None, tee=False, check_termination=True):
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    if check_termination:
-        assert_optimal_termination(results)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
 
@@ -169,9 +154,9 @@ def add_costing(m):
         os.path.dirname(os.path.abspath(__file__)),
         "metab_global_costing.yaml",
     )
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
     # typing aid
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
     m.fs.metab_hydrogen.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.metab_methane.costing = UnitModelCostingBlock(**costing_kwargs)
 
@@ -568,10 +553,9 @@ def display_metrics_results(m):
     DCC_normalized = value(
         pyunits.convert(
             (
-                m.fs.metab_hydrogen.costing.capital_cost
-                + m.fs.metab_methane.costing.capital_cost
+                m.fs.metab_hydrogen.costing.direct_capital_cost
+                + m.fs.metab_methane.costing.direct_capital_cost
             )
-            / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
             to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         )

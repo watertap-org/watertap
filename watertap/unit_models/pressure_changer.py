@@ -1,28 +1,27 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.environ import Var, units as pyunits, Expr_if, value, Expression
-
 from enum import Enum, auto
 
 # Import IDAES cores
 from idaes.models.unit_models.pressure_changer import PumpData
 from idaes.core import declare_process_block_class
-from idaes.core.util.constants import Constants
 import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
+
+from watertap.core import InitializationMixin
 
 _log = idaeslog.getLogger(__name__)
 
@@ -34,7 +33,7 @@ class VariableEfficiency(Enum):
 
 
 @declare_process_block_class("Pump")
-class PumpIsothermalData(PumpData):
+class PumpIsothermalData(InitializationMixin, PumpData):
     """
     Standard Isothermal Pump Unit Model Class
     """

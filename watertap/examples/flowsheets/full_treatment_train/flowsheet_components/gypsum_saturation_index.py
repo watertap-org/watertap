@@ -1,34 +1,28 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """eNRTL property blocks to calculate and constrain gypsum saturation index"""
 
-from pyomo.environ import Block, Var, Expression, Constraint, value, units as pyunits
-from pyomo.environ import units as pyunits
+from pyomo.environ import Block, Var, Expression, Constraint, units as pyunits
 
 
 def build(m, section="desalination", pretrt_type="NF", **kwargs):
     if section == "desalination":
         m.fs.desal_saturation = Block()
-        m.fs.desal_saturation.properties = m.fs.prop_eNRTL.build_state_block(
-            [0], default={}
-        )
+        m.fs.desal_saturation.properties = m.fs.prop_eNRTL.build_state_block([0])
         sb_eNRTL = m.fs.desal_saturation.properties[0]
     elif section == "pretreatment":
         m.fs.pretrt_saturation = Block()
-        m.fs.pretrt_saturation.properties = m.fs.prop_eNRTL.build_state_block(
-            [0], default={}
-        )
+        m.fs.pretrt_saturation.properties = m.fs.prop_eNRTL.build_state_block([0])
         sb_eNRTL = m.fs.pretrt_saturation.properties[0]
     else:
         raise ValueError(

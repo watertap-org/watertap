@@ -1,23 +1,18 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
-import os
+#################################################################################
 
 from pyomo.environ import (
     units as pyunits,
-    check_optimal_termination,
-    value,
     Expression,
-    Param,
 )
 
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
@@ -40,7 +35,10 @@ def _lsrro_presweep(
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix()
     m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
     lsrro.optimize_set_up(
-        m, A_value=A_value, permeate_quality_limit=permeate_quality_limit
+        m,
+        set_default_bounds_on_module_dimensions=True,
+        A_value=A_value,
+        permeate_quality_limit=permeate_quality_limit,
     )
 
     return m
@@ -115,7 +113,7 @@ def run_case(number_of_stages, nx, output_filename=None):
 
     outputs["Total Membrane Area"] = m.fs.total_membrane_area
     outputs["Total Capex LCOW"] = (
-        m.fs.costing.total_investment_cost
+        m.fs.costing.total_capital_cost
         * m.fs.costing.factor_capital_annualization
         / m.fs.costing.annual_water_production
     )
@@ -269,25 +267,25 @@ def run_case(number_of_stages, nx, output_filename=None):
     )
     outputs.update(
         {
-            f"Inlet Reynolds Number-Stage {idx}": stage.N_Re[0, 0]
+            f"Inlet Reynolds Number-Stage {idx}": stage.feed_side.N_Re[0, 0]
             for idx, stage in m.fs.ROUnits.items()
         }
     )
     outputs.update(
         {
-            f"Outlet Reynolds Number-Stage {idx}": stage.N_Re[0, 1]
+            f"Outlet Reynolds Number-Stage {idx}": stage.feed_side.N_Re[0, 1]
             for idx, stage in m.fs.ROUnits.items()
         }
     )
     outputs.update(
         {
-            f"Inlet Crossflow Velocity-Stage {idx}": stage.velocity[0, 0]
+            f"Inlet Crossflow Velocity-Stage {idx}": stage.feed_side.velocity[0, 0]
             for idx, stage in m.fs.ROUnits.items()
         }
     )
     outputs.update(
         {
-            f"Outlet Crossflow Velocity-Stage {idx}": stage.velocity[0, 1]
+            f"Outlet Crossflow Velocity-Stage {idx}": stage.feed_side.velocity[0, 1]
             for idx, stage in m.fs.ROUnits.items()
         }
     )

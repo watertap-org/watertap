@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 mutable parameters for optimization:
     m.fs.system_recovery_target
@@ -172,7 +171,7 @@ def set_optimization_components(m, system_recovery, **kwargs):
     m.fs.RO.area.setlb(10)
     m.fs.RO.area.setub(300)
 
-    m.fs.RO.N_Re[0, 0].unfix()
+    m.fs.RO.feed_side.N_Re[0, 0].unfix()
 
     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
     m.fs.RO.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
@@ -211,7 +210,7 @@ def optimize(m, check_termination=True):
 
 def solve_flowsheet(**desal_kwargs):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     build(m, **desal_kwargs)
     TransformationFactory("network.expand_arcs").apply_to(m)
 

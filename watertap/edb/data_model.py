@@ -1,14 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-###############################################################################
+#################################################################################
 """
 Data model for electrolyte database.
 
@@ -72,9 +72,6 @@ Class diagram::
              └────────────────────────────────────┘
 """
 __author__ = "Dan Gunter"
-
-# stdlib
-import collections
 
 from contextlib import contextmanager
 import copy
@@ -217,6 +214,11 @@ class ConfigGenerator:
                 params[param_key] = (item["v"], built_units)
                 if debugging:
                     _log.debug(f"done: transform single parameter key={param_key}")
+        # we use pop() so that `parameter_data_extra` doesn't end up in the final dict
+        # since it's not an allowed config field
+        extra = comp.pop("parameter_data_extra", {})
+        for param_key, update_for_param in extra.items():
+            params[param_key].update(update_for_param)
 
     @staticmethod
     def _iterate_dict_or_list(value):
@@ -732,7 +734,7 @@ class DataWrapper:
             BadConfiguration: If the configuration can't be transformed into the EDB form due
                               to missing/invalid fields.
         """
-        pass  # subclasses need to define this, using helper functions in this class
+        # subclasses need to define this, using helper functions in this class
 
     @classmethod
     def _method_to_str(

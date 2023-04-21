@@ -1,21 +1,20 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
     Set,
     Var,
+    check_optimal_termination,
     Param,
     Suffix,
     NonNegativeReals,
@@ -36,16 +35,19 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+
+from watertap.core import InitializationMixin
 
 
 _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("NanoFiltration0D")
-class NanoFiltrationData(UnitModelBlockData):
+class NanoFiltrationData(InitializationMixin, UnitModelBlockData):
     """
     Standard NF Unit Model Class:
     - zero dimensional model
@@ -299,12 +301,10 @@ class NanoFiltrationData(UnitModelBlockData):
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.feed_side.add_state_blocks(has_phase_equilibrium=False)
@@ -330,7 +330,7 @@ class NanoFiltrationData(UnitModelBlockData):
         self.properties_permeate = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of permeate",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         # Add Ports
@@ -532,7 +532,11 @@ class NanoFiltrationData(UnitModelBlockData):
             )
 
     def initialize_build(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        self,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -549,14 +553,14 @@ class NanoFiltrationData(UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize holdup block
-        flags = blk.feed_side.initialize(
+        flags = self.feed_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -568,8 +572,8 @@ class NanoFiltrationData(UnitModelBlockData):
         # Set state_args from inlet state
         if state_args is None:
             state_args = {}
-            state_dict = blk.feed_side.properties_in[
-                blk.flowsheet().config.time.first()
+            state_dict = self.feed_side.properties_in[
+                self.flowsheet().config.time.first()
             ].define_port_members()
 
             for k in state_dict.keys():
@@ -580,7 +584,7 @@ class NanoFiltrationData(UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        blk.properties_permeate.initialize(
+        self.properties_permeate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -591,13 +595,16 @@ class NanoFiltrationData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.feed_side.release_state(flags, outlvl + 1)
+        self.feed_side.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     def _get_performance_contents(self, time_point=0):
         # TODO: make a unit specific stream table
@@ -606,6 +613,16 @@ class NanoFiltrationData(UnitModelBlockData):
             var_dict["Pressure Change"] = self.deltaP[time_point]
 
         return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Feed Inlet": self.inlet,
+                "Feed Outlet": self.retentate,
+                "Permeate Outlet": self.permeate,
+            },
+            time_point=time_point,
+        )
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

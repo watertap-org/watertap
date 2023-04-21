@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """
     This test is of the core IDAES components that allow for the declaration
@@ -294,24 +293,22 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     print("including water = " + str(True))
     print()
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=case1_thermo_config)
+    model.fs = FlowsheetBlock(dynamic=False)
+    model.fs.thermo_params = GenericParameterBlock(**case1_thermo_config)
 
     model.fs.rxn_params = GenericReactionParameterBlock(
-        default={"property_package": model.fs.thermo_params, **rxn_config}
+        property_package=model.fs.thermo_params, **rxn_config
     )
 
     model.fs.unit = EquilibriumReactor(
-        default={
-            "property_package": model.fs.thermo_params,
-            "reaction_package": model.fs.rxn_params,
-            "has_rate_reactions": False,
-            "has_equilibrium_reactions": True,
-            "has_heat_transfer": False,
-            "has_heat_of_reaction": False,
-            "has_pressure_change": False,
-            "energy_balance_type": EnergyBalanceType.none,
-        }
+        property_package=model.fs.thermo_params,
+        reaction_package=model.fs.rxn_params,
+        has_rate_reactions=False,
+        has_equilibrium_reactions=True,
+        has_heat_transfer=False,
+        has_heat_of_reaction=False,
+        has_pressure_change=False,
+        energy_balance_type=EnergyBalanceType.none,
     )
 
     total_flow_mol = 10
@@ -428,7 +425,7 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None, state="FpcTP"):
     print("including water = " + str(True))
     print()
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs = FlowsheetBlock(dynamic=False)
 
     if state == "FpcTP":
         case1_thermo_config["state_definition"] = FpcTP
@@ -439,23 +436,21 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None, state="FpcTP"):
         print("Error! Undefined state...")
         assert False
 
-    model.fs.thermo_params = GenericParameterBlock(default=case1_thermo_config)
+    model.fs.thermo_params = GenericParameterBlock(**case1_thermo_config)
 
     model.fs.rxn_params = GenericReactionParameterBlock(
-        default={"property_package": model.fs.thermo_params, **rxn_config}
+        property_package=model.fs.thermo_params, **rxn_config
     )
 
     model.fs.unit = EquilibriumReactor(
-        default={
-            "property_package": model.fs.thermo_params,
-            "reaction_package": model.fs.rxn_params,
-            "has_rate_reactions": False,
-            "has_equilibrium_reactions": True,
-            "has_heat_transfer": False,
-            "has_heat_of_reaction": False,
-            "has_pressure_change": False,
-            "energy_balance_type": EnergyBalanceType.none,
-        }
+        property_package=model.fs.thermo_params,
+        reaction_package=model.fs.rxn_params,
+        has_rate_reactions=False,
+        has_equilibrium_reactions=True,
+        has_heat_transfer=False,
+        has_heat_of_reaction=False,
+        has_pressure_change=False,
+        energy_balance_type=EnergyBalanceType.none,
     )
 
     total_flow_mol = 10

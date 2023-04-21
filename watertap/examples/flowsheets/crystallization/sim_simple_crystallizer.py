@@ -1,33 +1,23 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 from pyomo.environ import (
     ConcreteModel,
-    SolverFactory,
     TerminationCondition,
-    value,
-    Constraint,
-    Var,
-    Objective,
-    Expression,
 )
-from pyomo.environ import units as pyunits
-from pyomo.util.check_units import (
-    assert_units_consistent,
-    assert_units_equivalent,
-    check_units_equivalent,
-)
-import pyomo.util.infeasible as infeas
-from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    number_variables,
-    number_total_constraints,
-    number_activated_constraints,
-    number_unfixed_variables_in_activated_equalities,
-    number_activated_equalities,
-    number_unused_variables,
-)
+from pyomo.util.check_units import assert_units_consistent
 
-import idaes.core.util.model_statistics as stats
-from idaes.core.util.constants import Constants
+from idaes.core import FlowsheetBlock
+from idaes.core.util.model_statistics import degrees_of_freedom
+
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
@@ -35,14 +25,10 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.property_models import cryst_prop_pack as props
 from watertap.unit_models.crystallizer import Crystallization
-from watertap.costing import WaterTAPCosting
-from watertap.costing.watertap_costing_package import CrystallizerCostType
+from watertap.costing import WaterTAPCosting, CrystallizerCostType
 
 from io import StringIO
 from pyomo.util.infeasible import (
-    log_active_constraints,
-    log_close_to_bounds,
-    log_infeasible_bounds,
     log_infeasible_constraints,
 )
 from pyomo.common.log import LoggingIntercept
@@ -53,12 +39,12 @@ if __name__ == "__main__":
 
     # create model, flowsheet
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     # attach property package
     m.fs.properties = props.NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
     # build the unit model
-    m.fs.crystallizer = Crystallization(default={"property_package": m.fs.properties})
+    m.fs.crystallizer = Crystallization(property_package=m.fs.properties)
 
     # now specify the model
     print("DOF before specifying:", degrees_of_freedom(m.fs))
@@ -103,10 +89,8 @@ if __name__ == "__main__":
     )
     iscale.calculate_scaling_factors(m.fs)
     m.fs.crystallizer.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method_arguments": {"cost_type": CrystallizerCostType.mass_basis},
-        },
+        flowsheet_costing_block=m.fs.costing,
+        costing_method_arguments={"cost_type": CrystallizerCostType.mass_basis},
     )
     m.fs.costing.cost_process()
 

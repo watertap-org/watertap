@@ -1,7 +1,16 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 import contextlib
 from dataclasses import dataclass, field, asdict
-from functools import singledispatch
-import json
 import logging
 import os
 from pathlib import Path
@@ -106,7 +115,7 @@ def mock_edb(monkeypatch) -> EDBClientFactory:
     # to be able to access the EDB data for e.g. assertions
     client_factory = EDBClientFactory(mongomock.MongoClient())
 
-    with MonkeyPatch.context() as mp:
+    with monkeypatch.context() as mp:
         mp.setattr("watertap.edb.db_api.MongoClient", client_factory)
         yield client_factory
 

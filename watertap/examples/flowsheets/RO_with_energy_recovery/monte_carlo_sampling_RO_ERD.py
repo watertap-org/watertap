@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from idaes.core.solvers import get_solver
 from watertap.tools.parameter_sweep import (
@@ -27,28 +26,36 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
     optimize,
 )
 
-from watertap.tools.parameter_sweep_input_parser import (
+from watertap.tools.parameter_sweep import (
     get_sweep_params_from_yaml,
     set_defaults_from_yaml,
 )
 
 
-def get_sweep_params(m, use_LHS=False):
+def get_sweep_params(m, num_samples, use_LHS=False):
     sweep_params = {}
 
     # Define the sampling type and ranges for three different variables
     if use_LHS:
-        sweep_params["A_comp"] = LatinHypercubeSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
-        sweep_params["B_comp"] = LatinHypercubeSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
+        sweep_params["A_comp"] = LatinHypercubeSample(
+            m.fs.RO.A_comp, 4.0e-12, 0.5e-12, num_samples
+        )
+        sweep_params["B_comp"] = LatinHypercubeSample(
+            m.fs.RO.B_comp, 3.5e-8, 0.5e-8, num_samples
+        )
         sweep_params["Spacer_porosity"] = LatinHypercubeSample(
-            m.fs.RO.spacer_porosity, 0.95, 0.99
+            m.fs.RO.feed_side.spacer_porosity, 0.95, 0.99, num_samples
         )
 
     else:
-        sweep_params["A_comp"] = NormalSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
-        sweep_params["B_comp"] = NormalSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
+        sweep_params["A_comp"] = NormalSample(
+            m.fs.RO.A_comp, 4.0e-12, 0.5e-12, num_samples
+        )
+        sweep_params["B_comp"] = NormalSample(
+            m.fs.RO.B_comp, 3.5e-8, 0.5e-8, num_samples
+        )
         sweep_params["Spacer_porosity"] = UniformSample(
-            m.fs.RO.spacer_porosity, 0.95, 0.99
+            m.fs.RO.feed_side.spacer_porosity, 0.95, 0.99, num_samples
         )
 
     return sweep_params
@@ -80,22 +87,22 @@ def run_parameter_sweep(
     if read_model_defauls_from_file:
         set_defaults_from_yaml(m, defaults_fname)
 
+    # Run the parameter sweep study using num_samples randomly drawn from the above range
+    num_samples = 10
+
     # Define the sampling type and ranges for three different variables
     if read_sweep_params_from_file:
         sweep_params = get_sweep_params_from_yaml(m, sweep_params_fname)
     else:
-        sweep_params = get_sweep_params(m, use_LHS=use_LHS)
+        sweep_params = get_sweep_params(m, num_samples, use_LHS=use_LHS)
 
     # Define the outputs to be saved
     outputs = {}
     outputs["EC"] = m.fs.costing.specific_energy_consumption
     outputs["LCOW"] = m.fs.costing.LCOW
 
-    # Run the parameter sweep study using num_samples randomly drawn from the above range
-    num_samples = 10
-
     # Run the parameter sweep
-    global_results = parameter_sweep(
+    global_results_arr, _ = parameter_sweep(
         m,
         sweep_params,
         outputs,
@@ -107,7 +114,7 @@ def run_parameter_sweep(
         seed=seed,
     )
 
-    return global_results
+    return global_results_arr
 
 
 if __name__ == "__main__":

@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """
     This test is of the core IDAES components that allow for the declaration
@@ -359,11 +358,11 @@ def run_case1(
     print()
 
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs = FlowsheetBlock(dynamic=False)
+    model.fs.thermo_params = GenericParameterBlock(**thermo_config)
 
     model.fs.rxn_params = GenericReactionParameterBlock(
-        default={"property_package": model.fs.thermo_params, **rxn_config}
+        property_package=model.fs.thermo_params, **rxn_config
     )
 
     args = {
@@ -378,7 +377,7 @@ def run_case1(
     if has_energy_balance == False:
         args["energy_balance_type"] = EnergyBalanceType.none
 
-    model.fs.unit = EquilibriumReactor(default=args)
+    model.fs.unit = EquilibriumReactor(**args)
 
     total_flow_mol = 10
 
@@ -886,11 +885,11 @@ def run_case2(
     print()
 
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs = FlowsheetBlock(dynamic=False)
+    model.fs.thermo_params = GenericParameterBlock(**thermo_config)
 
     model.fs.rxn_params = GenericReactionParameterBlock(
-        default={"property_package": model.fs.thermo_params, **rxn_config}
+        property_package=model.fs.thermo_params, **rxn_config
     )
 
     args = {
@@ -905,7 +904,7 @@ def run_case2(
     if has_energy_balance == False:
         args["energy_balance_type"] = EnergyBalanceType.none
 
-    model.fs.unit = EquilibriumReactor(default=args)
+    model.fs.unit = EquilibriumReactor(**args)
 
     total_flow_mol = 10
 
@@ -1497,11 +1496,11 @@ def run_case3(
     print()
 
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs = FlowsheetBlock(dynamic=False)
+    model.fs.thermo_params = GenericParameterBlock(**thermo_config)
 
     model.fs.rxn_params = GenericReactionParameterBlock(
-        default={"property_package": model.fs.thermo_params, **rxn_config}
+        property_package=model.fs.thermo_params, **rxn_config
     )
 
     args = {
@@ -1516,7 +1515,7 @@ def run_case3(
     if has_energy_balance == False:
         args["energy_balance_type"] = EnergyBalanceType.none
 
-    model.fs.unit = EquilibriumReactor(default=args)
+    model.fs.unit = EquilibriumReactor(**args)
 
     total_flow_mol = 10
 
@@ -2356,11 +2355,11 @@ def run_case4(
         del rxn_config["equilibrium_reactions"]["FePO4_Ksp"]
 
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs = FlowsheetBlock(dynamic=False)
+    model.fs.thermo_params = GenericParameterBlock(**thermo_config)
 
     model.fs.rxn_params = GenericReactionParameterBlock(
-        default={"property_package": model.fs.thermo_params, **rxn_config}
+        property_package=model.fs.thermo_params, **rxn_config
     )
 
     args = {
@@ -2375,7 +2374,7 @@ def run_case4(
     if has_energy_balance == False:
         args["energy_balance_type"] = EnergyBalanceType.none
 
-    model.fs.unit = EquilibriumReactor(default=args)
+    model.fs.unit = EquilibriumReactor(**args)
 
     total_flow_mol = 10
 

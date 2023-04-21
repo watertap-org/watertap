@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order UV model
 """
@@ -32,7 +31,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core import UnitModelCostingBlock
 
-from watertap.unit_models.zero_order import UVZO, UVAOPZO
+from watertap.unit_models.zero_order import UVZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.core.zero_order_costing import ZeroOrderCosting
@@ -46,20 +45,18 @@ class TestUVZO_with_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "viruses_enteric",
-                    "tss",
-                    "toc",
-                    "cryptosporidium",
-                    "total_coliforms_fecal_ecoli",
-                ]
-            }
+            solute_list=[
+                "viruses_enteric",
+                "tss",
+                "toc",
+                "cryptosporidium",
+                "total_coliforms_fecal_ecoli",
+            ]
         )
 
-        m.fs.unit = UVZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = UVZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
@@ -159,19 +156,17 @@ class TestUVZO_w_o_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "viruses_enteric",
-                    "toc",
-                    "cryptosporidium",
-                    "total_coliforms_fecal_ecoli",
-                ]
-            }
+            solute_list=[
+                "viruses_enteric",
+                "toc",
+                "cryptosporidium",
+                "total_coliforms_fecal_ecoli",
+            ]
         )
 
-        m.fs.unit = UVZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = UVZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
@@ -275,37 +270,37 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["viruses_enteric", "toc", "cryptosporidium"]}
+        solute_list=["viruses_enteric", "toc", "cryptosporidium"]
     )
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = UVZO(default={"property_package": m.fs.params, "database": m.db})
+    m.fs.unit = UVZO(property_package=m.fs.params, database=m.db)
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
-    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
-    m.fs.unit1.inlet.flow_mass_comp[0, "cryptosporidium"].fix(3)
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
+    m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit.inlet.flow_mass_comp[0, "cryptosporidium"].fix(3)
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
 
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.uv, Block)
-    assert isinstance(m.fs.costing.uv.uv_capital_a_parameter, Var)
-    assert isinstance(m.fs.costing.uv.uv_capital_b_parameter, Var)
-    assert isinstance(m.fs.costing.uv.uv_capital_c_parameter, Var)
-    assert isinstance(m.fs.costing.uv.uv_capital_d_parameter, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.costing.uv.reactor_cost, Var)
+    assert isinstance(m.fs.costing.uv.lamp_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert degrees_of_freedom(m.fs.unit) == 0
+    initialization_tester(m)
+    results = solver.solve(m)
+    check_optimal_termination(results)
+    assert pytest.approx(8.2313, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
 
-    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]

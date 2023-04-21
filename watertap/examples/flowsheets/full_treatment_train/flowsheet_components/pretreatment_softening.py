@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """Pretreatment flowsheet components"""
 
@@ -59,7 +58,7 @@ def build(m):
 
 
 def build_feed_block(m):
-    m.fs.feed = Feed(default={"property_package": m.fs.stoich_softening_thermo_params})
+    m.fs.feed = Feed(property_package=m.fs.stoich_softening_thermo_params)
 
     comp_list = ["Na", "Ca", "Mg", "SO4", "Cl"]
     feed_flow_mass = 1  # kg/s
@@ -111,10 +110,8 @@ def build_feed_block(m):
 def build_tb(m):
     # build translator block
     m.fs.tb_pretrt_to_desal = Translator(
-        default={
-            "inlet_property_package": m.fs.stoich_softening_thermo_params,
-            "outlet_property_package": m.fs.prop_TDS,
-        }
+        inlet_property_package=m.fs.stoich_softening_thermo_params,
+        outlet_property_package=m.fs.prop_TDS,
     )
     blk = m.fs.tb_pretrt_to_desal
 
@@ -218,7 +215,7 @@ def display(m):
 
 def solve():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     build(m)
     TransformationFactory("network.expand_arcs").apply_to(m)
 

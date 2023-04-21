@@ -1,18 +1,17 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from pyomo.environ import value, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
 from watertap.core.util.initialization import assert_degrees_of_freedom
@@ -22,8 +21,8 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.swin
     initialize_system,
     solve,
     add_costing,
-    display_results,
-    display_costing,
+    display_metrics_results,
+    display_additional_results,
 )
 
 solver = get_solver()
@@ -66,13 +65,13 @@ class Test_Swine_WWT_Flowsheet:
         assert_optimal_termination(results)
         # check costing
         lev_costs = {
-            "LCOW": 79.9767,
-            "LCOH2": 156.3806,
-            "LCON": 241.5425,
-            "LCOVFA": 28.0608,
-            "LCOP": 545.3874,
-            "LCOCOD": 10.1041,
-            "LCOT": 25.2441,
+            "LCOW": 105.5838,
+            "LCOH2": 205.8723,
+            "LCON": 318.6941,
+            "LCOVFA": 36.9335,
+            "LCOP": 707.4058,
+            "LCOCOD": 13.3432,
+            "LCOT": 33.3369,
         }
         for k, v in lev_costs.items():
             assert value(getattr(m.fs.costing.levelized_costs, k)) == pytest.approx(
@@ -82,5 +81,5 @@ class Test_Swine_WWT_Flowsheet:
     @pytest.mark.component
     def test_display(self, system_frame):
         m = system_frame
-        display_results(m)
-        display_costing(m)
+        display_metrics_results(m)
+        display_additional_results(m)

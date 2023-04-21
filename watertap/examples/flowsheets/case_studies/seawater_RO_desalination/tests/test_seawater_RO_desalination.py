@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 from pyomo.environ import value
@@ -98,7 +97,7 @@ def test_seawater_RO_desalination_pressure_exchanger():
         muni.outlet.flow_mass_comp[0.0, "tds"]
     )
 
-    assert value(m.LCOW) == pytest.approx(0.845200, rel=1e-5)
+    assert value(m.LCOW) == pytest.approx(0.841078, rel=1e-5)
 
 
 @pytest.mark.component
@@ -180,4 +179,4 @@ def test_seawater_RO_desalination_pump_as_turbine():
         muni.outlet.flow_mass_comp[0.0, "tds"]
     )
 
-    assert value(m.LCOW) == pytest.approx(1.115729, rel=1e-5)
+    assert value(m.LCOW) == pytest.approx(1.111589, rel=1e-5)

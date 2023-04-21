@@ -1,35 +1,33 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import os
+import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
-    Set,
     Expression,
     value,
     TransformationFactory,
     units as pyunits,
-    assert_optimal_termination,
 )
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
-from idaes.generic_models.unit_models import Product
+from idaes.core.solvers import get_solver
+from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
-from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
@@ -41,6 +39,9 @@ from watertap.unit_models.zero_order import (
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
 
+# Set up logger
+_log = idaeslog.getLogger(__name__)
+
 
 def main():
     m = build()
@@ -51,17 +52,15 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m)
-    assert_optimal_termination(results)
-    # display_reports(m)
+    results = solve(m, checkpoint="solve flowsheet after initializing system")
+    display_results(m)
 
     add_costing(m)
     initialize_costing(m)
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
-    results = solve(m)
-    assert_optimal_termination(results)
+    results = solve(m, checkpoint="solve flowsheet after costing")
 
     display_metrics_results(m)
     display_additional_results(m)
@@ -74,46 +73,31 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={
-            "solute_list": [
-                "organic_solid",
-                "organic_liquid",
-                "inorganic_solid",
-                "carbon_dioxide",
-            ]
-        }
+        solute_list=[
+            "organic_solid",
+            "organic_liquid",
+            "inorganic_solid",
+            "carbon_dioxide",
+        ]
     )
 
     # unit models
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
-    m.fs.ATHTL = ATHTLZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
+    m.fs.ATHTL = ATHTLZO(property_package=m.fs.prop, database=m.db)
     m.fs.salt_precipitation = SaltPrecipitationZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
+        property_package=m.fs.prop, database=m.db
     )
-    m.fs.HTG = HTGZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.HTG = HTGZO(property_package=m.fs.prop, database=m.db)
 
-    m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
+    m.fs.product_H2O = Product(property_package=m.fs.prop)
     # CO2 from ATHTL to sulfer conversion unit, final product should be solid sulfer, H2 and CO2
-    m.fs.product_CO2 = Product(default={"property_package": m.fs.prop})
+    m.fs.product_CO2 = Product(property_package=m.fs.prop)
     # sulfates, nitrates & phosphates (organics & inorganics) from salt precipitation unit
-    m.fs.product_salts = Product(default={"property_package": m.fs.prop})
+    m.fs.product_salts = Product(property_package=m.fs.prop)
     # CO2 from HTG for renewable natural gas product
-    m.fs.product_natural_gas = Product(default={"property_package": m.fs.prop})
+    m.fs.product_natural_gas = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.ATHTL.inlet)
@@ -147,7 +131,7 @@ def set_operating_conditions(m):
     m.fs.feed.flow_mass_comp[0, "organic_solid"].fix(flow_mass_organic_solid)
     m.fs.feed.conc_mass_comp[0, "organic_liquid"].fix(1e-5)
     m.fs.feed.conc_mass_comp[0, "carbon_dioxide"].fix(1e-5)
-    solve(m.fs.feed)
+    solve(m.fs.feed, checkpoint="solve feed block")
 
     # ATHTL
     m.fs.ATHTL.load_parameters_from_database(use_default_removal=True)
@@ -166,12 +150,11 @@ def initialize_system(m):
     seq.run(m, lambda u: u.initialize())
 
 
-def solve(blk, solver=None, tee=False, check_termination=True):
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    if check_termination:
-        assert_optimal_termination(results)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
 
@@ -186,9 +169,9 @@ def add_costing(m):
         os.path.dirname(os.path.abspath(__file__)),
         "supercritical_sludge_to_gas_global_costing.yaml",
     )
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
     # typing aid
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
     m.fs.ATHTL.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.salt_precipitation.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.HTG.costing = UnitModelCostingBlock(**costing_kwargs)
@@ -328,7 +311,7 @@ def display_costing(m):
         )
 
     print("\nUtility Costs\n")
-    for f in m.fs.costing.flow_types:
+    for f in m.fs.costing.used_flows:
         print(
             f,
             " :   ",
@@ -406,11 +389,10 @@ def display_metrics_results(m):
     DCC_normalized = value(
         pyunits.convert(
             (
-                m.fs.ATHTL.costing.capital_cost
-                + m.fs.salt_precipitation.costing.capital_cost
-                + m.fs.HTG.costing.capital_cost
+                m.fs.ATHTL.costing.direct_capital_cost
+                + m.fs.salt_precipitation.costing.direct_capital_cost
+                + m.fs.HTG.costing.direct_capital_cost
             )
-            / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
             to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         )

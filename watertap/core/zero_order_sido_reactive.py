@@ -1,20 +1,20 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 This module contains methods for constructing the material balances for
 zero-order single inlet-double outlet (SIDO) unit models with chemical
 reactions.
 """
+from types import MethodType
 
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
@@ -24,13 +24,12 @@ from idaes.core.util.exceptions import InitializationError
 from pyomo.environ import (
     check_optimal_termination,
     NonNegativeReals,
-    Param,
     Set,
     Var,
     units as pyunits,
 )
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Andrew Lee"
 
 # Set up logger
@@ -40,10 +39,10 @@ _log = idaeslog.getLogger(__name__)
 def build_sido_reactive(self):
     """
     Helper method for constructing material balances for zero-order type models
-    with one inlet and two outlets including chemcial reactions.
+    with one inlet and two outlets including chemical reactions.
 
     Three StateBlocks are added with corresponding Ports:
-        * properties_inlet
+        * properties_in
         * properties_treated
         * properties_byproduct
 
@@ -63,8 +62,8 @@ def build_sido_reactive(self):
     the inlet volumetric flow rate.
     """
     self._has_recovery_removal = True
-    self._initialize = initialize_sidor
-    self._scaling = calculate_scaling_factors_sidor
+    self._initialize = MethodType(initialize_sidor, self)
+    self._scaling = MethodType(calculate_scaling_factors_sidor, self)
 
     # Create state blocks for inlet and outlets
     tmp_dict = dict(**self.config.property_package_args)
@@ -72,21 +71,19 @@ def build_sido_reactive(self):
     tmp_dict["defined_state"] = True
 
     self.properties_in = self.config.property_package.build_state_block(
-        self.flowsheet().time, doc="Material properties at inlet", default=tmp_dict
+        self.flowsheet().time, doc="Material properties at inlet", **tmp_dict
     )
 
     tmp_dict_2 = dict(**tmp_dict)
     tmp_dict_2["defined_state"] = False
 
     self.properties_treated = self.config.property_package.build_state_block(
-        self.flowsheet().time,
-        doc="Material properties of treated water",
-        default=tmp_dict_2,
+        self.flowsheet().time, doc="Material properties of treated water", **tmp_dict_2
     )
     self.properties_byproduct = self.config.property_package.build_state_block(
         self.flowsheet().time,
         doc="Material properties of byproduct stream",
-        default=tmp_dict_2,
+        **tmp_dict_2,
     )
 
     # Create Ports
@@ -162,7 +159,7 @@ def build_sido_reactive(self):
     @self.Constraint(
         self.flowsheet().time,
         self.reaction_set,
-        doc="Calcuation of reaction extent from conversion",
+        doc="Calculation of reaction extent from conversion",
     )
     def reaction_extent_equation(b, t, r):
         # Get key reactant from database
@@ -329,7 +326,7 @@ def build_sido_reactive(self):
     self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_comp
     self._perf_var_dict["Reaction Extent"] = self.extent_of_reaction
 
-    self._get_Q = _get_Q_sidor
+    self._get_Q = MethodType(_get_Q_sidor, self)
 
 
 def initialize_sidor(

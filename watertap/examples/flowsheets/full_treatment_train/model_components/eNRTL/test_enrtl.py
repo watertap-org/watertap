@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 from pyomo.environ import ConcreteModel, value
 from idaes.core import FlowsheetBlock
@@ -34,12 +33,10 @@ from watertap.examples.flowsheets.full_treatment_train.util import (
 
 def simulate_enrtl_FTPx(state_var_args):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = GenericParameterBlock(default=entrl_config_FTPx.configuration)
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = GenericParameterBlock(**entrl_config_FTPx.configuration)
 
-    m.fs.state = m.fs.params.build_state_block(
-        m.fs.time, default={"defined_state": True}
-    )
+    m.fs.state = m.fs.params.build_state_block(m.fs.time, defined_state=True)
 
     for (v_name, ind), val in state_var_args.items():
         var = getattr(m.fs.state[0], v_name)
@@ -101,12 +98,10 @@ def test_enrtl_FTPx_1():
 
 def simulate_enrtl_FpcTP(state_var_args):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = GenericParameterBlock(default=entrl_config_FpcTP.configuration)
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = GenericParameterBlock(**entrl_config_FpcTP.configuration)
 
-    m.fs.state = m.fs.params.build_state_block(
-        m.fs.time, default={"defined_state": True}
-    )
+    m.fs.state = m.fs.params.build_state_block(m.fs.time, defined_state=True)
 
     for (v_name, ind), val in state_var_args.items():
         var = getattr(m.fs.state[0], v_name)

@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """0D reverse osmosis examples"""
 
@@ -48,11 +47,9 @@ def build_RO(m, base="TDS", level="simple", name_str="RO"):
             m.fs,
             name_str,
             ReverseOsmosis0D(
-                default={
-                    "property_package": prop,
-                    "mass_transfer_coefficient": MassTransferCoefficient.none,
-                    "concentration_polarization_type": ConcentrationPolarizationType.none,
-                }
+                property_package=prop,
+                mass_transfer_coefficient=MassTransferCoefficient.none,
+                concentration_polarization_type=ConcentrationPolarizationType.none,
             ),
         )
         blk = getattr(m.fs, name_str)
@@ -69,13 +66,11 @@ def build_RO(m, base="TDS", level="simple", name_str="RO"):
             m.fs,
             name_str,
             ReverseOsmosis0D(
-                default={
-                    "property_package": prop,
-                    "has_pressure_change": True,
-                    "pressure_change_type": PressureChangeType.calculated,
-                    "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-                    "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-                }
+                property_package=prop,
+                has_pressure_change=True,
+                pressure_change_type=PressureChangeType.calculated,
+                mass_transfer_coefficient=MassTransferCoefficient.calculated,
+                concentration_polarization_type=ConcentrationPolarizationType.calculated,
             ),
         )
         blk = getattr(m.fs, name_str)
@@ -85,9 +80,9 @@ def build_RO(m, base="TDS", level="simple", name_str="RO"):
         blk.A_comp.fix(4.2e-12)
         blk.B_comp.fix(3.5e-8)
         blk.permeate.pressure[0].fix(101325)
-        blk.channel_height.fix(1e-3)
-        blk.spacer_porosity.fix(0.97)
-        blk.N_Re[0, 0].fix(500)
+        blk.feed_side.channel_height.fix(1e-3)
+        blk.feed_side.spacer_porosity.fix(0.97)
+        blk.feed_side.N_Re[0, 0].fix(500)
 
     else:
         raise ValueError(
@@ -97,7 +92,7 @@ def build_RO(m, base="TDS", level="simple", name_str="RO"):
 
 def solve_RO(base="TDS", level="simple"):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     property_models.build_prop(m, base="TDS")
 
     build_RO(m, base=base, level=level)

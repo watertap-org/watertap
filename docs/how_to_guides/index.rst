@@ -5,6 +5,7 @@ How To Guides
    :maxdepth: 1
 
    how_to_run_models_in_a_py_script
+   how_to_run_zero_order_model
    how_to_use_a_property_model
    how_to_setup_simple_RO
    how_to_setup_RO_config_options
@@ -17,6 +18,7 @@ How To Guides
    how_to_scale_chemical_process_energy_balance
    how_to_use_parameter_sweep
    how_to_use_parameter_sweep_monte_carlo
+   how_to_install_electrolyte_database
    how_to_use_EDB
    how_to_use_ui_api
    how_to_contribute_development

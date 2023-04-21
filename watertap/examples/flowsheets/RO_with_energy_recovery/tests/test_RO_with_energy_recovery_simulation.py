@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 from pyomo.environ import (
     ConcreteModel,
@@ -27,7 +26,7 @@ from pyomo.environ import (
 from pyomo.network import Arc, Port
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom, number_total_objectives
 from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.models.unit_models.mixer import MomentumMixingType
@@ -128,7 +127,7 @@ class TestROwithPX:
             assert isinstance(getattr(c_blk, "capital_cost"), Var)
 
         var_str_list = [
-            "total_investment_cost",
+            "total_capital_cost",
             "maintenance_labor_chemical_operating_cost",
             "total_operating_cost",
         ]
@@ -194,16 +193,16 @@ class TestROwithPX:
         assert value(m.fs.RO.A_comp[0, "H2O"]) == 4.2e-12
         assert m.fs.RO.B_comp[0, "NaCl"].is_fixed()
         assert value(m.fs.RO.B_comp[0, "NaCl"]) == 3.5e-8
-        assert m.fs.RO.channel_height.is_fixed()
-        assert value(m.fs.RO.channel_height) == 1e-3
-        assert m.fs.RO.spacer_porosity.is_fixed()
-        assert value(m.fs.RO.spacer_porosity) == 0.97
+        assert m.fs.RO.feed_side.channel_height.is_fixed()
+        assert value(m.fs.RO.feed_side.channel_height) == 1e-3
+        assert m.fs.RO.feed_side.spacer_porosity.is_fixed()
+        assert value(m.fs.RO.feed_side.spacer_porosity) == 0.97
         assert m.fs.RO.permeate.pressure[0].is_fixed()
         assert value(m.fs.RO.permeate.pressure[0]) == 101325
         assert m.fs.RO.width.is_fixed()
         assert value(m.fs.RO.width) == 5
         assert not m.fs.RO.area.is_fixed()
-        assert value(m.fs.RO.area) == pytest.approx(99.081, rel=1e-3)
+        assert value(m.fs.RO.area) == pytest.approx(50, rel=1e-3)
 
         # check degrees of freedom
         assert degrees_of_freedom(m) == 0
@@ -344,6 +343,7 @@ PXR HP out: 0.528 kg/s, 67389 ppm, 1.0 bar
         m = system_frame
 
         optimize_set_up(m)
+        assert number_total_objectives(m) == 1
         optimize(m, solver=solver)
 
         # check decision variables
@@ -371,6 +371,7 @@ class TestROwithTurbine:
         m = system_frame
         fs = m.fs
         assert isinstance(fs.ERD, EnergyRecoveryDevice)
+
         # arcs
         arc_dict = {
             fs.s01: (fs.feed.outlet, fs.P1.inlet),
@@ -411,6 +412,8 @@ class TestROwithTurbine:
         m = system_frame
         optimize_set_up(m)
         solve(m, solver=solver)
+        assert degrees_of_freedom(m) == 1
+        assert number_total_objectives(m) == 1
 
     @pytest.mark.component
     def test_solution(self, system_frame):

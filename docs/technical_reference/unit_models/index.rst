@@ -17,4 +17,9 @@ Unit Models
    electrodialysis_1D
    uv_aop
    gac
+   osmotically_assisted_reverse_osmosis_0D
+   anaerobic_digestor
+   ion_exchange_0D
+   mvc
+   translators/index
    zero_order_unit_models/index

@@ -1,12 +1,16 @@
 Zero-Order Unit Models
 ======================
+The zero-order models rely on default model parameter values specified in YAML files, but these data are generally only meant to help initiate model usage for new users. Users should supply their own values, if possible, instead of relying on the default parameter values. The YAML database files for the zero-order models are located in :code:`watertap/data/techno_economic/`. The name of the YAML file should match the associated model name without the ZO letters and use snake case style. For example, the YAML file for the :code:`DualMediaFiltrationZO()` zero-order model is named :code:`dual_media_filtration.yaml`.
+
 .. toctree::
    :maxdepth: 1
 
    aeration_basin_zo
    air_flotation_zo
    anaerobic_digestion_oxidation_zo
+   anaerobic_digestion_reactive_zo
    anaerobic_mbr_mec_zo
+   autothermal_hydrothermal_liquefaction_zo
    backwash_solids_handling_zo
    bio_active_filtration_zo
    bioreactor_zo
@@ -15,9 +19,11 @@ Zero-Order Unit Models
    buffer_tank_zo
    CANDOP_zo
    cartridge_filtration_zo
+   centrifuge_zo
    chemical_addition_zo
    chlorination_zo
    clarifier_zo
+   cloth_media_filtration_zo
    co2_addition_zo
    coag_and_floc_zo
    cofermentation_zo
@@ -31,6 +37,7 @@ Zero-Order Unit Models
    dmbr_zo
    dual_media_filtration_zo
    electrochemical_nutrient_removal_zo
+   electrocoagulation_zo
    electrodialysis_reversal_zo
    energy_recovery_zo
    evaporation_pond_zo
@@ -40,15 +47,20 @@ Zero-Order Unit Models
    fixed_bed_zo
    gac_zo
    gas_sparged_membrane_zo
+   hrcs_zo
+   hydrothermal_gasification_zo
    injection_well_disposal_zo
    intrusion_mitigation_zo
    ion_exchange_zo
    iron_and_manganese_removal_zo
    landfill_zo
    mabr_zo
+   magprex_zo
    mbr_zo
    media_filtration_zo
+   membrane_evaporator_zo
    metab_zo
+   microbial_battery_zo
    microfiltration_zo
    microscreen_filtration_zo
    municipal_drinking_zo
@@ -56,6 +68,7 @@ Zero-Order Unit Models
    nanofiltration_zo
    ozone_aop_zo
    ozone_zo
+   peracetic_acid_disinfection_zo
    photothermal_membrane_zo
    primary_separator_zo
    pump_electricity_zo
@@ -68,6 +81,9 @@ Zero-Order Unit Models
    smp_zo
    static_mixer_zo
    storage_tank_zo
+   struvite_classifier_zo
+   suboxic_activated_sludge_process_zo
+   supercritical_salt_precipitation_zo
    surface_discharge_zo
    sw_onshore_intake_zo
    tramp_oil_tank_zo

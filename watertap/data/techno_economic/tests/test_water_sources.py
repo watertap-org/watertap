@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for loading water source definitions
 """
@@ -39,10 +38,10 @@ def test_default_source():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(default={"database": m.db})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(database=m.db)
 
-    m.fs.unit = FeedZO(default={"property_package": m.fs.params})
+    m.fs.unit = FeedZO(property_package=m.fs.params)
 
     for j in m.fs.params.solute_set:
         assert j in source_data[DEFAULT_SOURCE]["solutes"]
@@ -71,12 +70,10 @@ def test_all_sources(source):
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(
-        default={"database": m.db, "water_source": source}
-    )
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(database=m.db, water_source=source)
 
-    m.fs.unit = FeedZO(default={"property_package": m.fs.params})
+    m.fs.unit = FeedZO(property_package=m.fs.params)
 
     for j in m.fs.params.solute_set:
         assert j in source_data[source]["solutes"]

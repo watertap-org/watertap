@@ -1,24 +1,22 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 from pyomo.environ import (
-    Block,
     Var,
+    check_optimal_termination,
     Suffix,
     NonNegativeReals,
-    Reals,
     value,
     units as pyunits,
 )
@@ -26,7 +24,6 @@ from pyomo.environ import (
 # Import IDAES cores
 import idaes.logger as idaeslog
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
     MaterialBalanceType,
     EnergyBalanceType,
@@ -36,18 +33,18 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.initialization import revert_state_vars
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 
-from idaes.core.util.model_statistics import degrees_of_freedom
+from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("PressureExchanger")
-class PressureExchangerData(UnitModelBlockData):
+class PressureExchangerData(InitializationMixin, UnitModelBlockData):
     """
     Standard Pressure Exchanger Unit Model Class:
     - steady state only
@@ -95,13 +92,23 @@ class PressureExchangerData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
+        "is_isothermal",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="""Assume isothermal conditions for control volume(s); energy_balance_type must be EnergyBalanceType.none,
+    **default** - True.""",
+        ),
+    )
+
+    CONFIG.declare(
         "energy_balance_type",
         ConfigValue(
-            default=EnergyBalanceType.useDefault,
+            default=EnergyBalanceType.none,
             domain=In(EnergyBalanceType),
             description="Energy balance construction flag",
             doc="""Indicates what type of energy balance should be constructed,
-    **default** - EnergyBalanceType.useDefault.
+    **default** - EnergyBalanceType.none.
     **Valid values:** {
     **EnergyBalanceType.useDefault - refer to property package for default
     balance type
@@ -112,6 +119,7 @@ class PressureExchangerData(UnitModelBlockData):
     **EnergyBalanceType.energyPhase** - energy balances for each phase.}""",
         ),
     )
+
     CONFIG.declare(
         "momentum_balance_type",
         ConfigValue(
@@ -165,8 +173,20 @@ class PressureExchangerData(UnitModelBlockData):
         ),
     )
 
+    def _validate_config(self):
+        if (
+            self.config.is_isothermal
+            and self.config.energy_balance_type != EnergyBalanceType.none
+        ):
+            raise ConfigurationError(
+                "If the isothermal assumption is used then the energy balance type must be none"
+            )
+
     def build(self):
         super().build()
+
+        # Check configs for errors
+        self._validate_config()
 
         # Pressure exchanger supports only liquid phase
         if self.config.property_package.phase_list != ["Liq"]:
@@ -203,12 +223,10 @@ class PressureExchangerData(UnitModelBlockData):
 
         # Build control volume for high pressure side
         self.high_pressure_side = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.high_pressure_side.add_state_blocks(has_phase_equilibrium=False)
@@ -217,6 +235,14 @@ class PressureExchangerData(UnitModelBlockData):
             balance_type=self.config.material_balance_type,
             has_mass_transfer=self.config.has_mass_transfer,
         )
+
+        self.high_pressure_side.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.is_isothermal:
+            self.high_pressure_side.add_isothermal_assumption()
 
         self.high_pressure_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=True
@@ -231,12 +257,10 @@ class PressureExchangerData(UnitModelBlockData):
 
         # Build control volume for low pressure side
         self.low_pressure_side = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.low_pressure_side.add_state_blocks(has_phase_equilibrium=False)
@@ -246,6 +270,14 @@ class PressureExchangerData(UnitModelBlockData):
             has_mass_transfer=self.config.has_mass_transfer,
         )
 
+        self.low_pressure_side.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.is_isothermal:
+            self.low_pressure_side.add_isothermal_assumption()
+
         self.low_pressure_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=True
         )
@@ -254,7 +286,7 @@ class PressureExchangerData(UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Work transferred to low pressure side fluid",
         )
-        def work(b, t):
+        def work(b, t):  # pylint: disable=function-redefined
             return b.properties_in[t].flow_vol * b.deltaP[t]
 
         # Add Ports
@@ -287,18 +319,6 @@ class PressureExchangerData(UnitModelBlockData):
                 b.high_pressure_side.properties_out[t].pressure
                 == b.low_pressure_side.properties_in[t].pressure
             )
-
-        @self.low_pressure_side.Constraint(
-            self.flowsheet().config.time, doc="Isothermal constraint"
-        )
-        def eq_isothermal_temperature(b, t):
-            return b.properties_in[t].temperature == b.properties_out[t].temperature
-
-        @self.high_pressure_side.Constraint(
-            self.flowsheet().config.time, doc="Isothermal constraint"
-        )
-        def eq_isothermal_temperature(b, t):
-            return b.properties_in[t].temperature == b.properties_out[t].temperature
 
         if self.config.has_mass_transfer:
 
@@ -457,6 +477,9 @@ class PressureExchangerData(UnitModelBlockData):
         self.low_pressure_side.properties_in.release_state(flags_low_in)
         self.high_pressure_side.properties_in.release_state(flags_high_in)
 
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
+
         # reactivate volumetric flow constraint
         self.eq_equal_flow_vol.activate()
 
@@ -487,18 +510,6 @@ class PressureExchangerData(UnitModelBlockData):
             iscale.set_scaling_factor(self.high_pressure_side.work, sf)
 
         # transform constraints
-        for t, c in self.low_pressure_side.eq_isothermal_temperature.items():
-            sf = iscale.get_scaling_factor(
-                self.low_pressure_side.properties_in[t].temperature
-            )
-            iscale.constraint_scaling_transform(c, sf)
-
-        for t, c in self.high_pressure_side.eq_isothermal_temperature.items():
-            sf = iscale.get_scaling_factor(
-                self.high_pressure_side.properties_in[t].temperature
-            )
-            iscale.constraint_scaling_transform(c, sf)
-
         for t, c in self.eq_pressure_transfer.items():
             sf = iscale.get_scaling_factor(self.low_pressure_side.deltaP[t])
             iscale.constraint_scaling_transform(c, sf)

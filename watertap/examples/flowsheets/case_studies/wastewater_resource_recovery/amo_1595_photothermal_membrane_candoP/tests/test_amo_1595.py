@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 
@@ -121,9 +120,14 @@ class TestAmo1595Flowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.20943, rel=1e-3)
-        assert value(m.fs.costing.LCOW_bcp) == pytest.approx(0.119426, rel=1e-3)
-        assert value(m.fs.costing.LCOT) == pytest.approx(-0.792484, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.53053616, rel=1e-3)
+        assert value(m.fs.costing.LCOW_with_revenue) == pytest.approx(
+            0.440532469, rel=1e-3
+        )
+        assert value(m.fs.costing.LCOT) == pytest.approx(0.477462970, rel=1e-3)
+        assert value(m.fs.costing.LCOT_with_revenue) == pytest.approx(
+            0.396462967, rel=1e-3
+        )
 
     @pytest.mark.component
     def test_display(self, system_frame):

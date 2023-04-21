@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order dmbr model
 """
@@ -23,7 +22,6 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
-    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -47,20 +45,12 @@ class TestDMBRZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "bod",
-                    "tss",
-                    "ammonium_as_nitrogen",
-                    "nitrate",
-                    "nitrogen",
-                ]
-            }
+            solute_list=["bod", "tss", "ammonium_as_nitrogen", "nitrate", "nitrogen"]
         )
 
-        m.fs.unit = DMBRZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = DMBRZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "bod"].fix(5)
@@ -147,29 +137,29 @@ class TestDMBRZO:
             model.fs.unit.properties_in[0].conc_mass_comp["nitrogen"]
         )
 
-        assert pytest.approx(0.01675, rel=1e-2) == value(
+        assert pytest.approx(0.015, rel=1e-2) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(164.1791, rel=1e-5) == value(
+        assert pytest.approx(33.3333, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["bod"]
         )
-        assert pytest.approx(10.4478, rel=1e-5) == value(
+        assert pytest.approx(3.33333, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]
         )
-        assert pytest.approx(108.9552, rel=1e-5) == value(
+        assert pytest.approx(130, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nitrogen"]
         )
 
-        assert pytest.approx(5e-3, rel=1e-2) == value(
+        assert pytest.approx(4.5e-3, rel=1e-2) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(1.6e-7, rel=1e-5) == value(
+        assert pytest.approx(9.45475e-9, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]
         )
-        assert pytest.approx(1.6e-7, rel=1e-5) == value(
+        assert pytest.approx(9.45475e-9, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]
         )
-        assert pytest.approx(8e-10, abs=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(8.64, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -198,15 +188,15 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["bod", "tss", "ammonium_as_nitrogen", "nitrate"]}
+        solute_list=["bod", "tss", "ammonium_as_nitrogen", "nitrate"]
     )
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = DMBRZO(default={"property_package": m.fs.params, "database": m.db})
+    m.fs.unit1 = DMBRZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10)
     m.fs.unit1.inlet.flow_mass_comp[0, "bod"].fix(5)
@@ -216,9 +206,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.dmbr, Block)
     assert isinstance(m.fs.costing.dmbr.water_flux, Var)

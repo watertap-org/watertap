@@ -1,15 +1,14 @@
-###############################################################################
-# ProteusLib Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
-# "https://github.com/nawi-hub/proteuslib/"
-#
-###############################################################################
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 """
 Artificial seawater properties comprising Na+, Cl-, Ca_2+, SO4_2-, Mg_2+
 Equation of state: eNRTL
@@ -26,7 +25,6 @@ Vol. 276.
 from pyomo.environ import Param, units as pyunits
 
 from idaes.core import (
-    LiquidPhase,
     AqueousPhase,
     Solvent,
     Apparent,
@@ -37,7 +35,6 @@ from idaes.core import (
 from idaes.models.properties.modular_properties.eos.enrtl import ENRTL
 from idaes.models.properties.modular_properties.eos.enrtl_reference_states import (
     Symmetric,
-    Unsymmetric,
 )
 from idaes.models.properties.modular_properties.base.generic_property import StateIndex
 from idaes.models.properties.modular_properties.state_definitions import FpcTP
@@ -51,72 +48,72 @@ _log = idaeslog.getLogger(__name__)
 
 
 class VolMolH2O:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=18e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 
 class VolMolNaCl:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=58.44e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 
 class VolMolNa2SO4:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=142.04e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 
 class VolMolCaCl2:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=110.98e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 
 class VolMolCaSO4:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=136.14e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 
 class VolMolMgCl2:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=95.21e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 
 class VolMolMgSO4:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=120.37e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 

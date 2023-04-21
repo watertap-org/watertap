@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """
     Ideal NaOCl Chlorination posttreatment process
@@ -61,31 +60,19 @@ from pyomo.environ import (
     ConcreteModel,
     Var,
     Constraint,
-    SolverStatus,
-    TerminationCondition,
     TransformationFactory,
     value,
-    Suffix,
     Expression,
 )
 
 from pyomo.network import Arc
 
 from idaes.core.util import scaling as iscale
-from idaes.core.util.initialization import fix_state_vars, revert_state_vars
-
-# Import pyomo methods to check the system units
-from pyomo.util.check_units import assert_units_consistent
-
 
 from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
-    property_models,
-)
-from idaes.core.solvers import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
 from idaes.models.properties.modular_properties.base.generic_property import (
@@ -118,7 +105,6 @@ import idaes.logger as idaeslog
 from watertap.examples.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
     approximate_chemical_state_args,
     calculate_chemical_scaling_factors,
-    calculate_chemical_scaling_factors_for_energy_balances,
 )
 
 from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util import (
@@ -129,10 +115,6 @@ from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util i
     seq_decomp_initializer,
 )
 
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
-    desalination,
-)
-from idaes.core.util.initialization import propagate_state
 
 __author__ = "Austin Ladshaw"
 
@@ -153,6 +135,7 @@ ideal_naocl_thermo_config = {
                 "temperature_crit": (647, pyunits.K),
                 # Comes from Perry's Handbook:  p. 2-98
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -226,6 +209,7 @@ ideal_naocl_thermo_config = {
             "parameter_data": {
                 "mw": (1.00784, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -258,6 +242,7 @@ ideal_naocl_thermo_config = {
             "parameter_data": {
                 "mw": (22.989769, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.252, pyunits.kmol * pyunits.m**-3),
                     "2": (0.347, pyunits.dimensionless),
                     "3": (1595.8, pyunits.K),
@@ -287,6 +272,7 @@ ideal_naocl_thermo_config = {
             "parameter_data": {
                 "mw": (35.453, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (4.985, pyunits.kmol * pyunits.m**-3),
                     "2": (0.36, pyunits.dimensionless),
                     "3": (1464.06, pyunits.K),
@@ -319,6 +305,7 @@ ideal_naocl_thermo_config = {
             "parameter_data": {
                 "mw": (17.008, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -351,6 +338,7 @@ ideal_naocl_thermo_config = {
             "parameter_data": {
                 "mw": (52.46, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (4.985, pyunits.kmol * pyunits.m**-3),
                     "2": (0.36, pyunits.dimensionless),
                     "3": (1464.06, pyunits.K),
@@ -383,6 +371,7 @@ ideal_naocl_thermo_config = {
             "parameter_data": {
                 "mw": (51.46, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (4.985, pyunits.kmol * pyunits.m**-3),
                     "2": (0.36, pyunits.dimensionless),
                     "3": (1464.06, pyunits.K),
@@ -493,22 +482,18 @@ solver = get_solver(options={"tol": 1e-11})
 
 def build_ideal_naocl_prop(model):
     model.fs.ideal_naocl_thermo_params = GenericParameterBlock(
-        default=ideal_naocl_thermo_config
+        **ideal_naocl_thermo_config
     )
     model.fs.ideal_naocl_rxn_params = GenericReactionParameterBlock(
-        default={
-            "property_package": model.fs.ideal_naocl_thermo_params,
-            **ideal_naocl_reaction_config,
-        }
+        property_package=model.fs.ideal_naocl_thermo_params,
+        **ideal_naocl_reaction_config
     )
 
 
 def build_ideal_naocl_mixer_unit(model):
     model.fs.ideal_naocl_mixer_unit = Mixer(
-        default={
-            "property_package": model.fs.ideal_naocl_thermo_params,
-            "inlet_list": ["inlet_stream", "naocl_stream"],
-        }
+        property_package=model.fs.ideal_naocl_thermo_params,
+        inlet_list=["inlet_stream", "naocl_stream"],
     )
 
     # add new constraint for dosing rate (deactivate constraint for OCl_-)
@@ -539,15 +524,13 @@ def build_ideal_naocl_mixer_unit(model):
 
 def build_ideal_naocl_chlorination_unit(model):
     model.fs.ideal_naocl_chlorination_unit = EquilibriumReactor(
-        default={
-            "property_package": model.fs.ideal_naocl_thermo_params,
-            "reaction_package": model.fs.ideal_naocl_rxn_params,
-            "has_rate_reactions": False,
-            "has_equilibrium_reactions": True,
-            "has_heat_transfer": False,
-            "has_heat_of_reaction": False,
-            "has_pressure_change": False,
-        }
+        property_package=model.fs.ideal_naocl_thermo_params,
+        reaction_package=model.fs.ideal_naocl_rxn_params,
+        has_rate_reactions=False,
+        has_equilibrium_reactions=True,
+        has_heat_transfer=False,
+        has_heat_of_reaction=False,
+        has_pressure_change=False,
     )
 
     # new var includes an initial calculation (will be overwritten later)
@@ -833,10 +816,8 @@ def build_ideal_naocl_chlorination_block(model, expand_arcs=False):
 def build_translator_from_RO_to_chlorination_block(model):
     # Translator inlet from RO and outlet goes to chlorination
     model.fs.RO_to_Chlor = Translator(
-        default={
-            "inlet_property_package": model.fs.prop_TDS,
-            "outlet_property_package": model.fs.ideal_naocl_thermo_params,
-        }
+        inlet_property_package=model.fs.prop_TDS,
+        outlet_property_package=model.fs.ideal_naocl_thermo_params,
     )
 
     # Add constraints to define how the translator will function
@@ -895,7 +876,7 @@ def build_translator_from_RO_to_chlorination_block(model):
 
 def run_ideal_naocl_mixer_example(fixed_dosage=False):
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs = FlowsheetBlock(dynamic=False)
 
     # Add properties to model
     build_ideal_naocl_prop(model)
@@ -928,7 +909,7 @@ def run_ideal_naocl_mixer_example(fixed_dosage=False):
 
 def run_ideal_naocl_chlorination_example():
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs = FlowsheetBlock(dynamic=False)
 
     # add properties to model
     build_ideal_naocl_prop(model)
@@ -967,7 +948,7 @@ def run_ideal_naocl_chlorination_example():
 
 def run_chlorination_block_example(fix_free_chlorine=False):
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs = FlowsheetBlock(dynamic=False)
 
     # Build the partial flowsheet of a mixer and chlorination unit
     build_ideal_naocl_chlorination_block(model, expand_arcs=True)

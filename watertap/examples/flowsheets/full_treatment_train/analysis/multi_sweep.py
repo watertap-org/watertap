@@ -1,8 +1,21 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 import sys
 import os
 import time
 
-from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
+from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
+
+import watertap.tools.MPI as MPI
 
 
 def append_costing_outputs(m, outputs, units_to_cost):
@@ -242,7 +255,7 @@ def run_analysis(case_num, nx, RO_type, output_directory=None, interp_nan_output
         outputs["Ca Removal"] = m.fs.removal_Ca
         outputs["Mg Removal"] = m.fs.removal_Mg
         outputs["Annual Water Production"] = m.fs.costing.annual_water_production
-        outputs["capital_cost_total"] = m.fs.costing.total_capital_cost
+        outputs["capital_cost_total"] = m.fs.costing.aggregate_capital_cost
         outputs["operating_cost_total"] = m.fs.costing.total_operating_cost
 
         output_filename = base_path + f"output/fs_softening/results_{case_num}.csv"
@@ -292,9 +305,6 @@ def run_analysis(case_num, nx, RO_type, output_directory=None, interp_nan_output
 
 if __name__ == "__main__":
 
-    # Start MPI communicator
-    comm, rank, num_procs = _init_mpi()
-
     # Get the case number to run
     try:
         case_num = int(sys.argv[1])
@@ -321,7 +331,7 @@ if __name__ == "__main__":
     print(global_results)
     toc = time.time()
 
-    if rank == 0:
+    if MPI.COMM_WORLD.rank == 0:
         total_samples = 1
 
         for k, v in sweep_params.items():

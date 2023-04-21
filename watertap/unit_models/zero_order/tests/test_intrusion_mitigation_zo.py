@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order intrusion mitigation model
 """
@@ -46,14 +45,10 @@ class TestIntrusionMitigationZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["tss", "sulfate", "foo", "bar"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tss", "sulfate", "foo", "bar"])
 
-        m.fs.unit = IntrusionMitigationZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = IntrusionMitigationZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(123)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(4)
@@ -124,17 +119,11 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["tss", "sulfate", "foo", "bar"]}
-    )
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(solute_list=["tss", "sulfate", "foo", "bar"])
     m.fs.costing = ZeroOrderCosting()
-    m.fs.unit = IntrusionMitigationZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit = IntrusionMitigationZO(property_package=m.fs.params, database=m.db)
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(123)
     m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(4)
     m.fs.unit.inlet.flow_mass_comp[0, "sulfate"].fix(0.005)

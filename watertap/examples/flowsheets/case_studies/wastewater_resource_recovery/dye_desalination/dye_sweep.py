@@ -1,22 +1,15 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
-
-import sys
-import os
-import time
-
-from pyomo.environ import Constraint
-from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
+#################################################################################
+from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination as dye_desalination
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination_withRO as dye_desalination_withRO
 
@@ -25,16 +18,16 @@ def set_up_sensitivity(m, withRO):
     outputs = {}
 
     # LCOT is an output for both flowsheets
-    outputs["LCOT"] = m.LCOT
+    outputs["LCOT"] = m.fs.LCOT
 
     # choose the right flowsheet and if ro is enabled add lcow
     if withRO:
-        outputs["LCOW"] = m.LCOW
+        outputs["LCOW"] = m.fs.LCOW
         opt_function = dye_desalination_withRO.solve
     else:
         opt_function = dye_desalination.solve
 
-    optimize_kwargs = {"check_termination": False}
+    optimize_kwargs = {"fail_flag": False}
     return outputs, optimize_kwargs, opt_function
 
 
@@ -65,9 +58,9 @@ def run_analysis(
     sweep_params = {}
 
     if case_num == 1:
-        m.fs.zo_costing.dye_retentate_cost.unfix()
-        sweep_params["dye_retentate_cost"] = LinearSample(
-            m.fs.zo_costing.dye_retentate_cost, 0.1, 5, nx
+        m.fs.zo_costing.dye_mass_cost.unfix()
+        sweep_params["dye_mass_cost"] = LinearSample(
+            m.fs.zo_costing.dye_mass_cost, 0.1, 5, nx
         )
 
     elif case_num == 2:
@@ -161,7 +154,7 @@ def run_analysis(
     elif case_num == 12:
         desal = m.fs.desalination
         desal.RO.recovery_vol_phase[0, "Liq"].unfix()
-        desal.RO.velocity[0, 0].unfix()
+        desal.RO.feed_side.velocity[0, 0].unfix()
 
         desal.P2.control_volume.properties_out[0].pressure.unfix()
         desal.P2.control_volume.properties_out[0].pressure.setub(8300000)
@@ -192,4 +185,4 @@ def run_analysis(
 
 
 if __name__ == "__main__":
-    results, params, model = run_analysis(*sys.argv[1:])
+    results, sweep_params, m = run_analysis()

@@ -1,24 +1,22 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 import watertap.property_models.water_prop_pack as props
-from idaes.generic_models.properties.tests.test_harness import (
+from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )
 from watertap.property_models.tests.property_test_harness import (
     PropertyTestHarness,
     PropertyRegressionTest,
-    PropertyCalculateStateTest,
 )
 
 # -----------------------------------------------------------------------------
@@ -90,7 +88,7 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
             ("mole_frac_phase_comp", ("Liq", "H2O")): 1,
             ("mole_frac_phase_comp", ("Vap", "H2O")): 1e-8,
             ("enth_mass_phase", "Liq"): 2.094e5,
-            ("enth_mass_phase", "Vap"): 2.591e6,
+            ("enth_mass_phase", "Vap"): 2.592e6,
             ("dh_vap_mass", None): 2.382e6,
             ("cp_mass_phase", "Liq"): 4.181e3,
             ("cp_mass_phase", "Vap"): 1.871e3,

@@ -1,14 +1,13 @@
 #################################################################################
-# The Institute for the Design of Advanced Energy Systems Integrated Platform
-# Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
 Tests for CSTR unit model with injection.
@@ -55,18 +54,13 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
-    m.fs.reactions = ReactionParameterTestBlock(
-        default={"property_package": m.fs.properties}
-    )
+    m.fs.reactions = ReactionParameterTestBlock(property_package=m.fs.properties)
 
     m.fs.unit = CSTR_Injection(
-        default={
-            "property_package": m.fs.properties,
-            "reaction_package": m.fs.reactions,
-        }
+        property_package=m.fs.properties, reaction_package=m.fs.reactions
     )
 
     # Check unit config arguments
@@ -89,22 +83,20 @@ class TestSaponification(object):
     @pytest.fixture(scope="class")
     def sapon(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = SaponificationParameterBlock()
         m.fs.reactions = SaponificationReactionParameterBlock(
-            default={"property_package": m.fs.properties}
+            property_package=m.fs.properties
         )
 
         m.fs.unit = CSTR_Injection(
-            default={
-                "property_package": m.fs.properties,
-                "reaction_package": m.fs.reactions,
-                "has_equilibrium_reactions": False,
-                "has_heat_transfer": True,
-                "has_heat_of_reaction": True,
-                "has_pressure_change": True,
-            }
+            property_package=m.fs.properties,
+            reaction_package=m.fs.reactions,
+            has_equilibrium_reactions=False,
+            has_heat_transfer=True,
+            has_heat_of_reaction=True,
+            has_pressure_change=True,
         )
 
         m.fs.unit.inlet.flow_vol.fix(1.0e-03)
@@ -283,22 +275,3 @@ class TestSaponification(object):
                 "Pressure Change": sapon.fs.unit.deltaP[0],
             }
         }
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_costing(self, sapon):
-        sapon.fs.unit.get_costing()
-        assert isinstance(sapon.fs.unit.costing.purchase_cost, Var)
-        sapon.fs.unit.diameter.fix(2)
-        results = solver.solve(sapon)
-        # Check for optimal solution
-        assert check_optimal_termination(results)
-        assert pytest.approx(29790.11975, abs=1e3) == value(
-            sapon.fs.unit.costing.base_cost
-        )
-        assert pytest.approx(40012.2523, abs=1e3) == value(
-            sapon.fs.unit.costing.purchase_cost
-        )
-
-        assert_units_consistent(sapon.fs.unit.costing)

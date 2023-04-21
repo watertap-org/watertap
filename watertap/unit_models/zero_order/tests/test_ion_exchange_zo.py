@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order Ion exchange model
 """
@@ -47,12 +46,10 @@ class TestIonExchangeZO_w_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["tds", "foo"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tds", "foo"])
 
-        m.fs.unit = IonExchangeZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = IonExchangeZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(1)
@@ -123,13 +120,13 @@ class TestIonExchangeZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(10.00410, rel=1e-5) == value(
+        assert pytest.approx(10.005, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(9.99590e-3, rel=1e-5) == value(
+        assert pytest.approx(0.099950024, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["tds"]
         )
-        assert pytest.approx(0.39984, rel=1e-5) == value(
+        assert pytest.approx(0.3998, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(2899.6, rel=1e-5) == value(model.fs.unit.electricity[0])
@@ -163,17 +160,13 @@ class TestIonExchangeZO_clinoptilolite:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["ammonium_as_nitrogen", "foo"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["ammonium_as_nitrogen", "foo"])
 
         m.fs.unit = IonExchangeZO(
-            default={
-                "property_package": m.fs.params,
-                "database": m.db,
-                "process_subtype": "clinoptilolite",
-            }
+            property_package=m.fs.params,
+            database=m.db,
+            process_subtype="clinoptilolite",
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
@@ -286,12 +279,10 @@ class TestIXZOsubtype:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["tds"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tds"])
 
-        m.fs.unit = IonExchangeZO(
-            default={"property_package": m.fs.params, "database": db}
-        )
+        m.fs.unit = IonExchangeZO(property_package=m.fs.params, database=db)
 
         return m
 
@@ -316,20 +307,16 @@ def test_costing_wt3(subtype):
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["sulfur", "toc", "tds", "ammonium_as_nitrogen"]}
+        solute_list=["sulfur", "toc", "tds", "ammonium_as_nitrogen"]
     )
 
     m.fs.costing = ZeroOrderCosting()
 
     m.fs.unit1 = IonExchangeZO(
-        default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": subtype,
-        }
+        property_package=m.fs.params, database=m.db, process_subtype=subtype
     )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
@@ -341,9 +328,7 @@ def test_costing_wt3(subtype):
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.ion_exchange, Block)
     assert isinstance(m.fs.costing.ion_exchange.capital_a_parameter, Var)
@@ -373,18 +358,14 @@ def test_costing_clinoptilolite():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["ammonium_as_nitrogen"]})
+    m.fs.params = WaterParameterBlock(solute_list=["ammonium_as_nitrogen"])
 
     m.fs.costing = ZeroOrderCosting()
 
     m.fs.unit1 = IonExchangeZO(
-        default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": "clinoptilolite",
-        }
+        property_package=m.fs.params, database=m.db, process_subtype="clinoptilolite"
     )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
@@ -393,9 +374,7 @@ def test_costing_clinoptilolite():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.ion_exchange, Block)
     assert isinstance(m.fs.costing.ion_exchange.unit_capex, Var)
@@ -411,8 +390,8 @@ def test_costing_clinoptilolite():
 @pytest.mark.unit
 def test_clinoptilolite_no_ammonium_in_solute_list_error():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["foo"]})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(solute_list=["foo"])
 
     with pytest.raises(
         KeyError,
@@ -420,9 +399,5 @@ def test_clinoptilolite_no_ammonium_in_solute_list_error():
         "solute_list for this subtype.",
     ):
         m.fs.unit = IonExchangeZO(
-            default={
-                "property_package": m.fs.params,
-                "database": db,
-                "process_subtype": "clinoptilolite",
-            }
+            property_package=m.fs.params, database=db, process_subtype="clinoptilolite"
         )

@@ -1,15 +1,24 @@
-import sys
-import os
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 import time
-
 from pyomo.environ import Constraint
-from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
+from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
+import watertap.tools.MPI as MPI
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab as metab
 
 
 def set_up_sensitivity(m):
     outputs = {}
-    optimize_kwargs = {"check_termination": False}  # None
+    optimize_kwargs = {"fail_flag": False}  # None
     opt_function = metab.solve
 
     # tie parameters together
@@ -27,19 +36,16 @@ def set_up_sensitivity(m):
 
     # new baseline parameters
     m.fs.costing.metab.bead_cost["hydrogen"].fix(14.4)
-    # m.fs.costing.metab.hydraulic_retention_time['hydrogen'].fix()
-    # m.fs.costing.metab.hydraulic_retention_time['methane'].fix()
 
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
     outputs["LCOH"] = m.fs.costing.LCOH
     outputs["LCOM"] = m.fs.costing.LCOM
-    # outputs["Effluent Volumetric Flow Rate"] = m.fs.product_H2O.properties[0].flow_vol
 
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num, nx, interpolate_nan_outputs=True):
+def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
     m, _ = metab.main()
 
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
@@ -125,7 +131,6 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
         csv_results_file_name=output_filename,
         optimize_function=opt_function,
         optimize_kwargs=optimize_kwargs,
-        # debugging_data_dir=os.path.split(output_filename)[0] + '/local',
         interpolate_nan_outputs=interpolate_nan_outputs,
     )
 
@@ -139,15 +144,13 @@ def main(case_num=1, nx=11, interpolate_nan_outputs=True):
     nx = int(nx)
     interpolate_nan_outputs = bool(interpolate_nan_outputs)
 
-    # Start MPI communicator
-    comm, rank, num_procs = _init_mpi()
-
     tic = time.time()
     global_results, sweep_params = run_analysis(case_num, nx, interpolate_nan_outputs)
     print(global_results)
     toc = time.time()
 
-    if rank == 0:
+    if MPI.COMM_WORLD.rank == 0:
+
         total_samples = 1
 
         for k, v in sweep_params.items():
@@ -159,8 +162,9 @@ def main(case_num=1, nx=11, interpolate_nan_outputs=True):
             % (len(sweep_params), total_samples)
         )
         print("Elapsed time = %.1f s." % (toc - tic))
+
     return global_results, sweep_params
 
 
 if __name__ == "__main__":
-    global_results, sweep_params = main(*sys.argv[1:])
+    results, sweep_params = run_analysis()

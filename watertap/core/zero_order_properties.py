@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 This module contains the general purpose property package for zero-order
 unit models. Zero-order models do not track temperature and pressure, or any
@@ -26,7 +25,6 @@ from idaes.core import (
 )
 from idaes.core.base.components import Solvent, Solute
 from idaes.core.base.phases import LiquidPhase
-from idaes.core.util.misc import add_object_reference
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -127,7 +125,8 @@ class WaterParameterBlockData(PhysicalParameterBlock):
 
         # ---------------------------------------------------------------------
         # Set default scaling factors
-        self.default_scaling_factor = {("flow_vol"): 1e3, ("conc_mass_comp"): 1e2}
+        self.set_default_scaling("flow_vol", 1e3)
+        self.set_default_scaling("conc_mass_comp", 1e2)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -159,7 +158,7 @@ class _WaterStateBlock(StateBlock):
     """
 
     def initialize(
-        blk,
+        self,
         state_args=None,
         state_vars_fixed=False,
         hold_state=False,
@@ -213,17 +212,17 @@ class _WaterStateBlock(StateBlock):
         """
         # For now, there are no constraints in the property package, so only
         # fix state variables if required
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         init_log.info("Initialization Complete.")
 
         if hold_state is True:
-            flags = fix_state_vars(blk, state_args)
+            flags = fix_state_vars(self, state_args)
             return flags
         else:
             return
 
-    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
+    def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialization.
 
@@ -234,13 +233,13 @@ class _WaterStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         if flags is None:
             return
 
         # Unfix state variables
-        revert_state_vars(blk, flags)
+        revert_state_vars(self, flags)
         init_log.info("State Released.")
 
 
@@ -265,11 +264,11 @@ class WaterStateBlockData(StateBlockData):
     # -------------------------------------------------------------------------
     # Other properties
     def _conc_mass_comp(self):
-        def rule_cmc(blk, j):
+        def rule_cmc(self, j):
             return (
-                blk.flow_mass_comp[j]
+                self.flow_mass_comp[j]
                 / sum(self.flow_mass_comp[k] for k in self.component_list)
-                * blk.dens_mass
+                * self.dens_mass
             )
 
         self.conc_mass_comp = Expression(self.component_list, rule=rule_cmc)
@@ -296,16 +295,16 @@ class WaterStateBlockData(StateBlockData):
             doc="Dynamic viscosity of solution",
         )
 
-    def get_material_flow_terms(blk, p, j):
-        return blk.flow_mass_comp[j]
+    def get_material_flow_terms(self, p, j):
+        return self.flow_mass_comp[j]
 
-    def get_enthalpy_flow_terms(blk, p):
+    def get_enthalpy_flow_terms(self, p):
         raise NotImplementedError
 
-    def get_material_density_terms(blk, p, j):
-        return blk.conc_mass_comp[j]
+    def get_material_density_terms(self, p, j):
+        return self.conc_mass_comp[j]
 
-    def get_energy_density_terms(blk, p):
+    def get_energy_density_terms(self, p):
         raise NotImplementedError
 
     def default_material_balance_type(self):
@@ -314,24 +313,24 @@ class WaterStateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.none
 
-    def define_state_vars(blk):
-        return {"flow_mass_comp": blk.flow_mass_comp}
+    def define_state_vars(self):
+        return {"flow_mass_comp": self.flow_mass_comp}
 
-    def define_display_vars(blk):
+    def define_display_vars(self):
         return {
-            "Volumetric Flowrate": blk.flow_vol,
-            "Mass Concentration": blk.conc_mass_comp,
+            "Volumetric Flowrate": self.flow_vol,
+            "Mass Concentration": self.conc_mass_comp,
         }
 
-    def get_material_flow_basis(blk):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def calculate_scaling_factors(self):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
 
-        d_sf_Q = self.params.default_scaling_factor["flow_vol"]
-        d_sf_c = self.params.default_scaling_factor["conc_mass_comp"]
+        d_sf_Q = self.params.get_default_scaling("flow_vol")
+        d_sf_c = self.params.get_default_scaling("conc_mass_comp")
 
         for j, v in self.flow_mass_comp.items():
             if iscale.get_scaling_factor(v) is None:
@@ -345,8 +344,7 @@ class WaterStateBlockData(StateBlockData):
             for j, v in self.conc_mass_comp.items():
                 sf_c = iscale.get_scaling_factor(self.conc_mass_comp[j])
                 if sf_c is None:
-                    try:
-                        sf_c = self.params.default_scaling_factor[("conc_mass_comp", j)]
-                    except KeyError:
+                    sf_c = self.params.get_default_scaling("conc_mass_comp", j)
+                    if sf_c is None:
                         sf_c = d_sf_c
                     iscale.set_scaling_factor(self.conc_mass_comp[j], sf_c)

@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """Translator blocks for supported property packages"""
 
@@ -52,10 +51,7 @@ def build_tb(m, base_inlet="ion", base_outlet="TDS", name_str=None):
         m.fs,
         name_str,
         Translator(
-            default={
-                "inlet_property_package": prop_inlet,
-                "outlet_property_package": prop_outlet,
-            }
+            inlet_property_package=prop_inlet, outlet_property_package=prop_outlet
         ),
     )
     blk = getattr(m.fs, name_str)

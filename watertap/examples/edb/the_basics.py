@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
     This file demonstrates the basics of working with and using the electrolyte
     database (EDB).
@@ -185,8 +184,8 @@ def grab_base_reaction_config(db):
 # This function will produce an error if the thermo config is not correct
 def is_thermo_config_valid(thermo_config):
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs = FlowsheetBlock(dynamic=False)
+    model.fs.thermo_params = GenericParameterBlock(**thermo_config)
     return True
 
 
@@ -194,10 +193,10 @@ def is_thermo_config_valid(thermo_config):
 #   or if the pairing of the thermo and reaction config are invalid
 def is_thermo_reaction_pair_valid(thermo_config, reaction_config):
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs = FlowsheetBlock(dynamic=False)
+    model.fs.thermo_params = GenericParameterBlock(**thermo_config)
     model.fs.rxn_params = GenericReactionParameterBlock(
-        default={"property_package": model.fs.thermo_params, **reaction_config}
+        property_package=model.fs.thermo_params, **reaction_config
     )
     return True
 
@@ -260,22 +259,20 @@ def run_the_basics_dummy_rxn_with_mockdb(db):
     thermo_config = base_obj.idaes_config
     reaction_config = react_base.idaes_config
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs = FlowsheetBlock(dynamic=False)
+    model.fs.thermo_params = GenericParameterBlock(**thermo_config)
     model.fs.rxn_params = GenericReactionParameterBlock(
-        default={"property_package": model.fs.thermo_params, **reaction_config}
+        property_package=model.fs.thermo_params, **reaction_config
     )
 
     model.fs.unit = EquilibriumReactor(
-        default={
-            "property_package": model.fs.thermo_params,
-            "reaction_package": model.fs.rxn_params,
-            "has_rate_reactions": False,
-            "has_equilibrium_reactions": False,
-            "has_heat_transfer": False,
-            "has_heat_of_reaction": False,
-            "has_pressure_change": False,
-        }
+        property_package=model.fs.thermo_params,
+        reaction_package=model.fs.rxn_params,
+        has_rate_reactions=False,
+        has_equilibrium_reactions=False,
+        has_heat_transfer=False,
+        has_heat_of_reaction=False,
+        has_pressure_change=False,
     )
 
     # If all goes well, this function returns true

@@ -1,30 +1,30 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 import pyomo.environ as pyo
 import idaes.core.util.scaling as iscale
 
+from pyomo.opt import WriterFactory
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 from pyomo.common.errors import ApplicationError
 from idaes.core.util.scaling import (
     set_scaling_factor,
-    get_scaling_factor,
     constraints_with_scale_factor_generator,
-    unscaled_constraints_generator,
 )
 from idaes.core.solvers import get_solver
 from watertap.core.plugins.solvers import IpoptWaterTAP
+
+_default_nl_writer = WriterFactory.get_class("nl")
 
 
 class TestIpoptWaterTAP:
@@ -62,6 +62,11 @@ class TestIpoptWaterTAP:
     @pytest.fixture(scope="class")
     def s(self):
         return pyo.SolverFactory("ipopt-watertap")
+
+    @pytest.mark.unit
+    def test_nl_writer_held_harmless(self, m, s):
+        s.solve(m, tee=True)
+        assert _default_nl_writer == WriterFactory.get_class("nl")
 
     @pytest.mark.unit
     def test_pyomo_registration(self, s):

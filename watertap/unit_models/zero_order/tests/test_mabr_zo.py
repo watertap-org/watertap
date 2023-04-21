@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for zero-order mabr model
 """
@@ -22,7 +21,6 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
-    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -46,12 +44,12 @@ class TestMABRZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["bod", "tss", "ammonium_as_nitrogen", "nitrate"]}
+            solute_list=["bod", "tss", "ammonium_as_nitrogen", "nitrate"]
         )
 
-        m.fs.unit = MABRZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = MABRZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "bod"].fix(5)
@@ -134,13 +132,13 @@ class TestMABRZO:
             model.fs.unit.properties_in[0].conc_mass_comp["nitrate"]
         )
 
-        assert pytest.approx(0.023, rel=1e-2) == value(
+        assert pytest.approx(0.0202, rel=1e-2) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(217.3913, rel=1e-5) == value(
+        assert pytest.approx(108.9109, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["bod"]
         )
-        assert pytest.approx(104.3478, rel=1e-5) == value(
+        assert pytest.approx(118.8119, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]
         )
 
@@ -166,7 +164,6 @@ class TestMABRZO:
                 )
             )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_report(self, model):
         model.fs.unit.report()
@@ -177,8 +174,8 @@ def test_no_NH4_N_in_solute_list_error():
     m = ConcreteModel()
     m.db = Database()
     m.db._get_technology("mabr")
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["foo"]})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(solute_list=["foo"])
 
     with pytest.raises(
         ValueError,
@@ -186,22 +183,22 @@ def test_no_NH4_N_in_solute_list_error():
         "ammonium_to_nitrate is not in the component list used by the "
         "assigned property package.",
     ):
-        m.fs.unit = MABRZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = MABRZO(property_package=m.fs.params, database=m.db)
 
 
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["bod", "tss", "ammonium_as_nitrogen", "nitrate"]}
+        solute_list=["bod", "tss", "ammonium_as_nitrogen", "nitrate"]
     )
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = MABRZO(default={"property_package": m.fs.params, "database": m.db})
+    m.fs.unit1 = MABRZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10)
     m.fs.unit1.inlet.flow_mass_comp[0, "bod"].fix(5)
@@ -211,9 +208,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.mabr, Block)
     assert isinstance(m.fs.costing.mabr.reactor_cost, Var)

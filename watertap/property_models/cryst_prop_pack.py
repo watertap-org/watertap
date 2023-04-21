@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Initial crystallization property package for H2O-NaCl system
 """
@@ -29,7 +28,6 @@ from pyomo.environ import (
     Param,
     exp,
     log,
-    Suffix,
     value,
     check_optimal_termination,
 )
@@ -46,12 +44,11 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.components import Solute, Solvent
 from idaes.core.base.phases import (
     LiquidPhase,
     VaporPhase,
     SolidPhase,
-    Phase,
     PhaseType as PT,
 )
 from idaes.core.util.constants import Constants
@@ -60,7 +57,7 @@ from idaes.core.util.initialization import (
     revert_state_vars,
     solve_indexed_blocks,
 )
-from idaes.core.util.misc import add_object_reference, extract_data
+from idaes.core.util.misc import extract_data
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -116,17 +113,13 @@ class NaClParameterData(PhysicalParameterBlock):
         self._state_block_class = NaClStateBlock
 
         # Component
-        self.H2O = Solvent(
-            default={"valid_phase_types": [PT.liquidPhase, PT.vaporPhase]}
-        )
-        self.NaCl = Solute(
-            default={"valid_phase_types": [PT.liquidPhase, PT.solidPhase]}
-        )
+        self.H2O = Solvent(valid_phase_types=[PT.liquidPhase, PT.vaporPhase])
+        self.NaCl = Solute(valid_phase_types=[PT.liquidPhase, PT.solidPhase])
 
         # Phases
-        self.Liq = LiquidPhase(default={"component_list": ["H2O", "NaCl"]})
-        self.Vap = VaporPhase(default={"component_list": ["H2O"]})
-        self.Sol = SolidPhase(default={"component_list": ["NaCl"]})
+        self.Liq = LiquidPhase(component_list=["H2O", "NaCl"])
+        self.Vap = VaporPhase(component_list=["H2O"])
+        self.Sol = SolidPhase(component_list=["NaCl"])
 
         """
        References
@@ -845,27 +838,32 @@ class NaClParameterData(PhysicalParameterBlock):
                     "method": "_solubility_mass_frac_phase_comp"
                 },
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
-                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
-                "dens_mass_solute": {"method": "_dens_mass_solute"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
-                "dh_vap_mass_solvent": {"method": "_dh_vap_mass_solvent"},
-                "cp_mass_solvent": {"method": "_cp_mass_solvent"},
-                "cp_mass_solute": {"method": "_cp_mass_solute"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
                 "flow_vol": {"method": "_flow_vol"},
                 "pressure_sat": {"method": "_pressure_sat"},
-                "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
-                "enth_mass_solvent": {"method": "_enth_mass_solvent"},
-                "enth_mass_solute": {"method": "_enth_mass_solute"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
                 "dh_crystallization_mass_comp": {
                     "method": "_dh_crystallization_mass_comp"
                 },
-                "enth_flow": {"method": "_enth_flow"},
                 "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
+                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
+                "dens_mass_solute": {"method": "_dens_mass_solute"},
+                "dh_vap_mass_solvent": {"method": "_dh_vap_mass_solvent"},
+                "cp_mass_solvent": {"method": "_cp_mass_solvent"},
+                "cp_mass_solute": {"method": "_cp_mass_solute"},
+                "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
+                "enth_mass_solvent": {"method": "_enth_mass_solvent"},
+                "enth_mass_solute": {"method": "_enth_mass_solute"},
+                "enth_flow": {"method": "_enth_flow"},
             }
         )
 
@@ -963,19 +961,18 @@ class _NaClStateBlock(StateBlock):
                 "Property initialization: {}.".format(idaeslog.condition(results))
             )
 
-            if not check_optimal_termination(results):
-                raise InitializationError(
-                    f"{self.name} failed to initialize successfully. Please "
-                    f"check the output logs for more information."
-                )
-
-        # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
                 self.release_state(flags)
+
+        if (not skip_solve) and (not check_optimal_termination(results)):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please "
+                f"check the output logs for more information."
+            )
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
@@ -1866,7 +1863,7 @@ class NaClStateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def define_state_vars(self):

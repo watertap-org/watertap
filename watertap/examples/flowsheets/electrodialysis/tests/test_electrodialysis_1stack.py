@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
 from pyomo.environ import (
@@ -38,16 +37,18 @@ from idaes.models.unit_models import Feed, Product, Separator
 from pandas import DataFrame
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
-from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
+from watertap.unit_models.electrodialysis_1D import (
+    ElectricalOperationMode,
+    Electrodialysis1D,
+)
 from watertap.core.util.initialization import (
     assert_no_degrees_of_freedom,
     assert_degrees_of_freedom,
 )
-from watertap.costing.watertap_costing_package import (
-    WaterTAPCosting,
-    make_capital_cost_var,
-)
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+
+from watertap.costing import WaterTAPCosting
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
+
 import watertap.examples.flowsheets.electrodialysis.electrodialysis_1stack as edfs
 
 __author__ = "Xiangyu Bi"
@@ -66,7 +67,7 @@ class TestElectrodialysisVoltageConst:
         # Test basic build
         assert isinstance(m, ConcreteModel)
         assert isinstance(m.fs, FlowsheetBlock)
-        assert isinstance(m.fs.properties, DSPMDEParameterBlock)
+        assert isinstance(m.fs.properties, MCASParameterBlock)
         assert isinstance(m.fs.costing, Block)
         assert isinstance(m.fs.feed, Feed)
         assert isinstance(m.fs.separator, Separator)
@@ -90,7 +91,7 @@ class TestElectrodialysisVoltageConst:
         assert isinstance(m.fs.EDstack.costing.fixed_operating_cost, Var)
 
         var_str_list = [
-            "total_investment_cost",
+            "total_capital_cost",
             "maintenance_labor_chemical_operating_cost",
             "total_operating_cost",
         ]
@@ -115,10 +116,13 @@ class TestElectrodialysisVoltageConst:
 
         # Test the primary EDstack properties
         # test configrations
-        assert len(m.fs.EDstack.config) == 13
+        assert len(m.fs.EDstack.config) == 21
         assert not m.fs.EDstack.config.dynamic
         assert not m.fs.EDstack.config.has_holdup
-        assert m.fs.EDstack.config.operation_mode == "Constant_Voltage"
+        assert (
+            m.fs.EDstack.config.operation_mode
+            == ElectricalOperationMode.Constant_Voltage
+        )
         assert (
             m.fs.EDstack.config.material_balance_type == MaterialBalanceType.useDefault
         )
@@ -185,7 +189,7 @@ class TestElectrodialysisVoltageConst:
         edfs.optimize_system(m)
         isinstance(m.fs.objective, Objective)
         assert m.fs.objective.expr == m.fs.costing.LCOW
-        assert degrees_of_freedom(m) == 2
+        assert degrees_of_freedom(m) == 1
 
         assert value(m.fs.feed.properties[0].flow_vol_phase["Liq"]) == pytest.approx(
             8.7e-5, abs=1e-6
@@ -196,36 +200,16 @@ class TestElectrodialysisVoltageConst:
         assert value(
             m.fs.disposal.properties[0].flow_vol_phase["Liq"]
         ) == pytest.approx(4.5e-5, abs=1e-6)
-        assert value(
-            sum(
-                m.fs.feed.properties[0].conc_mass_phase_comp["Liq", j]
-                for j in m.fs.properties.ion_set
-            )
-        ) == pytest.approx(9.895, rel=1e-3)
-        assert value(
-            sum(
-                m.fs.product.properties[0].conc_mass_phase_comp["Liq", j]
-                for j in m.fs.properties.ion_set
-            )
-        ) == pytest.approx(1.000, rel=1e-3)
-        assert value(
-            sum(
-                m.fs.disposal.properties[0].conc_mass_phase_comp["Liq", j]
-                for j in m.fs.properties.ion_set
-            )
-        ) == pytest.approx(18.074, rel=1e-3)
+        assert value(m.fs.product_salinity) == pytest.approx(1.000, rel=1e-3)
+        assert value(m.fs.disposal_salinity) == pytest.approx(18.074, rel=1e-3)
 
         assert value(m.fs.EDstack.recovery_mass_H2O[0]) == pytest.approx(
             0.483, rel=1e-3
         )
-        assert value(
-            m.fs.EDstack.cell_width
-            * m.fs.EDstack.cell_length
-            * m.fs.EDstack.cell_pair_num
-        ) == pytest.approx(2.003, rel=1e-3)
+        assert value(m.fs.mem_area) == pytest.approx(2.0028, rel=1e-3)
         assert value(m.fs.EDstack.voltage_applied[0]) == pytest.approx(7.538, rel=1e-3)
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            1.435, abs=0.001
+            1.435, abs=0.002
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(0.25, abs=0.01)
 

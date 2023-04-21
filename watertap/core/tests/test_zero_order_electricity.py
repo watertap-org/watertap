@@ -1,20 +1,20 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for general zero-order property package
 """
 import pytest
 
+from types import MethodType
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
@@ -49,7 +49,7 @@ class DerivedZOData(ZeroOrderBaseData):
     def build(self):
         super().build()
 
-        self._get_Q = get_Q
+        self._get_Q = MethodType(get_Q, self)
 
 
 class TestConstantIntensity:
@@ -57,11 +57,11 @@ class TestConstantIntensity:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
 
-        m.fs.unit = DerivedZO(default={"property_package": m.fs.water_props})
+        m.fs.unit = DerivedZO(property_package=m.fs.water_props)
 
         constant_intensity(m.fs.unit)
 
@@ -86,9 +86,13 @@ class TestConstantIntensity:
         assert model.fs.unit._fixed_perf_vars == [
             model.fs.unit.energy_electric_flow_vol_inlet
         ]
-        assert model.fs.unit._initialize is None
-        assert model.fs.unit._scaling is None
-        assert model.fs.unit._get_Q is get_Q
+        assert model.fs.unit._initialize == MethodType(
+            ZeroOrderBaseData._initialize, model.fs.unit
+        )
+        assert model.fs.unit._scaling == MethodType(
+            ZeroOrderBaseData._scaling, model.fs.unit
+        )
+        assert model.fs.unit._get_Q == MethodType(get_Q, model.fs.unit)
         assert model.fs.unit._perf_var_dict == {
             "Electricity Demand": model.fs.unit.electricity,
             "Electricity Intensity": model.fs.unit.energy_electric_flow_vol_inlet,
@@ -123,11 +127,11 @@ class TestPumpElectricity:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
 
-        m.fs.unit = DerivedZO(default={"property_package": m.fs.water_props})
+        m.fs.unit = DerivedZO(property_package=m.fs.water_props)
 
         m.fs.unit.flow = Param(
             m.fs.time, initialize=1, units=pyunits.gallon / pyunits.minute
@@ -156,9 +160,13 @@ class TestPumpElectricity:
     def test_private_attributes(self, model):
         assert model.fs.unit._tech_type is None
         assert model.fs.unit._has_recovery_removal is False
-        assert model.fs.unit._initialize is None
-        assert model.fs.unit._scaling is None
-        assert model.fs.unit._get_Q is get_Q
+        assert model.fs.unit._initialize == MethodType(
+            ZeroOrderBaseData._initialize, model.fs.unit
+        )
+        assert model.fs.unit._scaling == MethodType(
+            ZeroOrderBaseData._scaling, model.fs.unit
+        )
+        assert model.fs.unit._get_Q == MethodType(get_Q, model.fs.unit)
         assert model.fs.unit._perf_var_dict == {
             "Electricity Demand": model.fs.unit.electricity
         }

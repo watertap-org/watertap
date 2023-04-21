@@ -1,14 +1,13 @@
 #################################################################################
-# The Institute for the Design of Advanced Energy Systems Integrated Platform
-# Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
 Example of activated sludge process model based on BSM1 study using ASM1 reactions.
@@ -63,111 +62,62 @@ from watertap.property_models.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
 
+from watertap.core.util.initialization import check_solve
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
+
 
 def build_flowsheet():
     m = pyo.ConcreteModel()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props = ASM1ParameterBlock()
-    m.fs.rxn_props = ASM1ReactionParameterBlock(
-        default={"property_package": m.fs.props}
-    )
+    m.fs.rxn_props = ASM1ReactionParameterBlock(property_package=m.fs.props)
     # Feed water stream
-    m.fs.FeedWater = Feed(
-        default={
-            "property_package": m.fs.props,
-        }
-    )
+    m.fs.FeedWater = Feed(property_package=m.fs.props)
     # Mixer for feed water and recycled sludge
-    m.fs.MX1 = Mixer(
-        default={
-            "property_package": m.fs.props,
-            "inlet_list": ["feed_water", "recycle"],
-        }
-    )
+    m.fs.MX1 = Mixer(property_package=m.fs.props, inlet_list=["feed_water", "recycle"])
     # First reactor (anoxic) - standard CSTR
-    m.fs.R1 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
+    m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     # Second reactor (anoxic) - standard CSTR
-    m.fs.R2 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
+    m.fs.R2 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     # Third reactor (aerobic) - CSTR with injection
     m.fs.R3 = CSTR_Injection(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
+        property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
     # Fourth reactor (aerobic) - CSTR with injection
     m.fs.R4 = CSTR_Injection(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
+        property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
     # Fifth reactor (aerobic) - CSTR with injection
     m.fs.R5 = CSTR_Injection(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
+        property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
     m.fs.SP5 = Separator(
-        default={
-            "property_package": m.fs.props,
-            "outlet_list": ["underflow", "overflow"],
-        }
+        property_package=m.fs.props, outlet_list=["underflow", "overflow"]
     )
     # Clarifier
     # TODO: Replace with more detailed model when available
     m.fs.CL1 = Separator(
-        default={
-            "property_package": m.fs.props,
-            "outlet_list": ["underflow", "effluent"],
-            "split_basis": SplittingType.componentFlow,
-        }
+        property_package=m.fs.props,
+        outlet_list=["underflow", "effluent"],
+        split_basis=SplittingType.componentFlow,
     )
     # Sludge purge splitter
     m.fs.SP6 = Separator(
-        default={
-            "property_package": m.fs.props,
-            "outlet_list": ["recycle", "waste"],
-            "split_basis": SplittingType.totalFlow,
-        }
+        property_package=m.fs.props,
+        outlet_list=["recycle", "waste"],
+        split_basis=SplittingType.totalFlow,
     )
     # Mixing sludge recycle and R5 underflow
-    m.fs.MX6 = Mixer(
-        default={
-            "property_package": m.fs.props,
-            "inlet_list": ["clarifier", "reactor"],
-        }
-    )
+    m.fs.MX6 = Mixer(property_package=m.fs.props, inlet_list=["clarifier", "reactor"])
     # Product Blocks
-    m.fs.Treated = Product(
-        default={
-            "property_package": m.fs.props,
-        }
-    )
-    m.fs.Sludge = Product(
-        default={
-            "property_package": m.fs.props,
-        }
-    )
+    m.fs.Treated = Product(property_package=m.fs.props)
+    m.fs.Sludge = Product(property_package=m.fs.props)
     # Recycle pressure changer - use a simple isothermal unit for now
-    m.fs.P1 = PressureChanger(
-        default={
-            "property_package": m.fs.props,
-        }
-    )
+    m.fs.P1 = PressureChanger(property_package=m.fs.props)
 
     # Link units
     m.fs.stream1 = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX1.feed_water)
@@ -346,8 +296,7 @@ def build_flowsheet():
     # Solve overall flowsheet to close recycle loop
     solver = get_solver(options={"bound_push": 1e-8})
     results = solver.solve(m)
-
-    pyo.assert_optimal_termination(results)
+    check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
 
     # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
     m.fs.R3.KLa.fix(10)
@@ -357,7 +306,12 @@ def build_flowsheet():
 
     # Resolve with controls in place
     results = solver.solve(m, tee=True)
-    pyo.assert_optimal_termination(results)
+    check_solve(
+        results,
+        checkpoint="re-solve with controls in place",
+        logger=_log,
+        fail_flag=True,
+    )
 
     return m, results
 

@@ -1,53 +1,47 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
-    Set,
     Var,
+    check_optimal_termination,
     Param,
-    Expression,
     Suffix,
     NonNegativeReals,
-    PositiveIntegers,
-    Reference,
     value,
     exp,
     log10,
     units as pyunits,
 )
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
-    MaterialBalanceType,
     EnergyBalanceType,
+    MaterialBalanceType,
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
-    MaterialFlowBasis,
 )
 from idaes.core.util.constants import Constants
 from idaes.core.solvers import get_solver
-from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+
+from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 __author__ = "Austin Ladshaw"
 
@@ -55,7 +49,7 @@ _log = idaeslog.getLogger(__name__)
 
 # Name of the unit model
 @declare_process_block_class("BoronRemoval")
-class BoronRemovalData(UnitModelBlockData):
+class BoronRemovalData(InitializationMixin, UnitModelBlockData):
     """
     0D Boron Removal model for after 1st Stage of RO
 
@@ -125,14 +119,24 @@ class BoronRemovalData(UnitModelBlockData):
         ),
     )
 
-    # NOTE: This option is temporarily disabled
-    '''
-    CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.useDefault,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed,
-    **default** - EnergyBalanceType.useDefault.
+    CONFIG.declare(
+        "is_isothermal",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="""Assume isothermal conditions for control volume(s); energy_balance_type must be EnergyBalanceType.none,
+    **default** - True.""",
+        ),
+    )
+
+    CONFIG.declare(
+        "energy_balance_type",
+        ConfigValue(
+            default=EnergyBalanceType.none,
+            domain=In(EnergyBalanceType),
+            description="Energy balance construction flag",
+            doc="""Indicates what type of energy balance should be constructed,
+    **default** - EnergyBalanceType.none.
     **Valid values:** {
     **EnergyBalanceType.useDefault - refer to property package for default
     balance type
@@ -140,8 +144,9 @@ class BoronRemovalData(UnitModelBlockData):
     **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
     **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
     **EnergyBalanceType.energyTotal** - single energy balance for material,
-    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    '''
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}""",
+        ),
+    )
 
     CONFIG.declare(
         "momentum_balance_type",
@@ -216,18 +221,7 @@ class BoronRemovalData(UnitModelBlockData):
         ),
     )
 
-    def build(self):
-        # build always starts by calling super().build()
-        # This triggers a lot of boilerplate in the background for you
-        super().build()
-
-        # this creates blank scaling factors, which are populated later
-        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
-        # Next, get the base units of measurement from the property definition
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-
-        # Check configs for errors
+    def _validate_config(self):
         common_msg = (
             "The 'chemical_mapping_data' dict MUST contain a dict of names that map \n"
             + "to each chemical name in the property package for boron and borate. \n"
@@ -283,6 +277,27 @@ class BoronRemovalData(UnitModelBlockData):
             raise ConfigurationError(
                 "\n Did not provide a tuple for 'mw_additive' \n" + common_msg
             )
+        if (
+            self.config.is_isothermal
+            and self.config.energy_balance_type != EnergyBalanceType.none
+        ):
+            raise ConfigurationError(
+                "If the isothermal assumption is used then the energy balance type must be none"
+            )
+
+    def build(self):
+        # build always starts by calling super().build()
+        # This triggers a lot of boilerplate in the background for you
+        super().build()
+
+        # this creates blank scaling factors, which are populated later
+        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
+
+        # Next, get the base units of measurement from the property definition
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+
+        # Check configs for errors
+        self._validate_config()
 
         # Assign name IDs locally for reference later when building constraints
         self.boron_name_id = self.config.chemical_mapping_data["boron_name"]
@@ -523,14 +538,12 @@ class BoronRemovalData(UnitModelBlockData):
 
         # Build control volume for feed side
         self.control_volume = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-                "reaction_package": None,
-                "reaction_package_args": None,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
+            reaction_package=None,
+            reaction_package_args=None,
         )
 
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)
@@ -542,12 +555,13 @@ class BoronRemovalData(UnitModelBlockData):
             has_equilibrium_reactions=False,
         )
 
-        # NOTE: This checks for if an energy_balance_type is defined
-        if hasattr(self.config, "energy_balance_type"):
-            self.control_volume.add_energy_balances(
-                balance_type=self.config.energy_balance_type,
-                has_enthalpy_transfer=False,
-            )
+        self.control_volume.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.is_isothermal:
+            self.control_volume.add_isothermal_assumption()
 
         self.control_volume.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=False
@@ -556,17 +570,6 @@ class BoronRemovalData(UnitModelBlockData):
         # Add ports
         self.add_inlet_port(name="inlet", block=self.control_volume)
         self.add_outlet_port(name="outlet", block=self.control_volume)
-
-        # -------- Add constraints ---------
-        # Adds isothermal constraint if no energy balance present
-        if not hasattr(self.config, "energy_balance_type"):
-
-            @self.Constraint(self.flowsheet().config.time, doc="Isothermal condition")
-            def eq_isothermal(self, t):
-                return (
-                    self.control_volume.properties_out[t].temperature
-                    == self.control_volume.properties_in[t].temperature
-                )
 
         # Constraints for volume and retention time
         @self.Constraint(
@@ -713,7 +716,11 @@ class BoronRemovalData(UnitModelBlockData):
 
     # initialize method
     def initialize_build(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        self,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -730,14 +737,14 @@ class BoronRemovalData(UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize holdup block
-        flags = blk.control_volume.initialize(
+        flags = self.control_volume.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -746,48 +753,51 @@ class BoronRemovalData(UnitModelBlockData):
         init_log.info_high("Initialization Step 1 Complete.")
 
         # Apply guess for unit model vars
-        for t in blk.flowsheet().config.time:
+        for t in self.flowsheet().config.time:
             # Naive guess (pH = 7)
-            blk.conc_mol_H[t].set_value(1e-4)
-            blk.conc_mol_OH[t].set_value(10**-14 * 1000 / blk.conc_mol_H[t].value)
+            self.conc_mol_H[t].set_value(1e-4)
+            self.conc_mol_OH[t].set_value(10**-14 * 1000 / self.conc_mol_H[t].value)
             TB = value(
-                blk.control_volume.properties_in[t].conc_mol_phase_comp[
-                    "Liq", blk.boron_name_id
+                self.control_volume.properties_in[t].conc_mol_phase_comp[
+                    "Liq", self.boron_name_id
                 ]
             ) + value(
-                blk.control_volume.properties_in[t].conc_mol_phase_comp[
-                    "Liq", blk.borate_name_id
+                self.control_volume.properties_in[t].conc_mol_phase_comp[
+                    "Liq", self.borate_name_id
                 ]
             )
-            Ratio = 10**-9.21 * 1000 / blk.conc_mol_H[t].value
-            blk.conc_mol_Boron[t].set_value(TB / (1 + Ratio))
-            blk.conc_mol_Borate[t].set_value(TB * Ratio / (1 + Ratio))
+            Ratio = 10**-9.21 * 1000 / self.conc_mol_H[t].value
+            self.conc_mol_Boron[t].set_value(TB / (1 + Ratio))
+            self.conc_mol_Borate[t].set_value(TB * Ratio / (1 + Ratio))
         # ---------------------------------------------------------------------
 
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.control_volume.release_state(flags, outlvl + 1)
+        self.control_volume.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
+
         # Rescale internal variables
-        for t in blk.flowsheet().config.time:
+        for t in self.flowsheet().config.time:
             iscale.set_scaling_factor(
-                blk.conc_mol_OH[t], max(100 / blk.conc_mol_OH[t].value, 100)
+                self.conc_mol_OH[t], max(100 / self.conc_mol_OH[t].value, 100)
             )
             iscale.set_scaling_factor(
-                blk.conc_mol_H[t], max(100 / blk.conc_mol_H[t].value, 100)
+                self.conc_mol_H[t], max(100 / self.conc_mol_H[t].value, 100)
             )
             iscale.set_scaling_factor(
-                blk.conc_mol_Boron[t], max(100 / blk.conc_mol_Boron[t].value, 100)
+                self.conc_mol_Boron[t], max(100 / self.conc_mol_Boron[t].value, 100)
             )
             iscale.set_scaling_factor(
-                blk.conc_mol_Borate[t], max(100 / blk.conc_mol_Borate[t].value, 100)
+                self.conc_mol_Borate[t], max(100 / self.conc_mol_Borate[t].value, 100)
             )
 
     def outlet_pH(self, time=0):
@@ -1077,11 +1087,6 @@ class BoronRemovalData(UnitModelBlockData):
             else:
                 sf = 10
             iscale.set_scaling_factor(self.conc_mol_OH, sf)
-
-        # Scale isothermal condition
-        sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].temperature)
-        for t in self.control_volume.properties_in:
-            iscale.constraint_scaling_transform(self.eq_isothermal[t], sf)
 
         # Scale reactor volume constraint
         sf = iscale.get_scaling_factor(self.reactor_volume)

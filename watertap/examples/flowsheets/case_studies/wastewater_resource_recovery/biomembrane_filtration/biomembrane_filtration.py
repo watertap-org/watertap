@@ -1,24 +1,22 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import os
+import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
-    Set,
     Expression,
     value,
     TransformationFactory,
     units as pyunits,
-    assert_optimal_termination,
 )
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
@@ -29,7 +27,7 @@ from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
 
-from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
@@ -41,6 +39,9 @@ from watertap.unit_models.zero_order import (
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
 
+# Set up logger
+_log = idaeslog.getLogger(__name__)
+
 
 def main():
     m = build()
@@ -51,17 +52,15 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m)
-    assert_optimal_termination(results)
-    # display_reports(m)
+    results = solve(m, checkpoint="solve flowsheet after initializing system")
+    display_reports(m)
 
     add_costing(m)
     initialize_costing(m)
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
-    results = solve(m)
-    assert_optimal_termination(results)
+    results = solve(m, checkpoint="solve flowsheet after costing")
 
     display_metrics_results(m)
     display_additional_results(m)
@@ -74,48 +73,24 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={
-            "solute_list": ["bod", "tss", "ammonium_as_nitrogen", "nitrate", "nitrogen"]
-        }
+        solute_list=["bod", "tss", "ammonium_as_nitrogen", "nitrate", "nitrogen"]
     )
 
     # unit models
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
-    m.fs.mabr = MABRZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
-    m.fs.dmbr = DMBRZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
-    m.fs.P1 = PumpElectricityZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
-    m.fs.P2 = PumpElectricityZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
+    m.fs.mabr = MABRZO(property_package=m.fs.prop, database=m.db)
+    m.fs.dmbr = DMBRZO(property_package=m.fs.prop, database=m.db)
+    m.fs.P1 = PumpElectricityZO(property_package=m.fs.prop, database=m.db)
 
-    m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
+    m.fs.product_H2O = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
     m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.mabr.inlet)
-    m.fs.s03 = Arc(source=m.fs.mabr.treated, destination=m.fs.P2.inlet)
-    m.fs.s04 = Arc(source=m.fs.P2.outlet, destination=m.fs.dmbr.inlet)
-    m.fs.s05 = Arc(source=m.fs.dmbr.treated, destination=m.fs.product_H2O.inlet)
+    m.fs.s03 = Arc(source=m.fs.mabr.treated, destination=m.fs.dmbr.inlet)
+    m.fs.s04 = Arc(source=m.fs.dmbr.treated, destination=m.fs.product_H2O.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scaling
@@ -141,14 +116,11 @@ def set_operating_conditions(m):
     )
     m.fs.feed.conc_mass_comp[0, "nitrate"].fix(conc_mass_nitrate)
     m.fs.feed.conc_mass_comp[0, "nitrogen"].fix(1e-5)
-    solve(m.fs.feed)
+    solve(m.fs.feed, checkpoint="solve feed block")
 
     # pump
     m.fs.P1.load_parameters_from_database(use_default_removal=True)
     m.fs.P1.lift_height.fix(1)
-
-    m.fs.P2.load_parameters_from_database(use_default_removal=True)
-    m.fs.P2.lift_height.fix(1)
 
     # mabr
     m.fs.mabr.load_parameters_from_database(use_default_removal=True)
@@ -164,17 +136,16 @@ def initialize_system(m):
     seq.run(m, lambda u: u.initialize())
 
 
-def solve(blk, solver=None, tee=False, check_termination=True):
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    if check_termination:
-        assert_optimal_termination(results)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
 
 def display_reports(m):
-    unit_list = ["feed", "P1", "mabr", "P2", "dmbr"]
+    unit_list = ["feed", "P1", "mabr", "dmbr"]
     for u in unit_list:
         m.fs.component(u).report()
 
@@ -184,13 +155,12 @@ def add_costing(m):
         os.path.dirname(os.path.abspath(__file__)),
         "biomembrane_filtration_global_costing.yaml",
     )
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
     # typing aid
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
     m.fs.mabr.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.dmbr.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.P1.costing = UnitModelCostingBlock(**costing_kwargs)
-    m.fs.P2.costing = UnitModelCostingBlock(**costing_kwargs)
 
     m.fs.costing.cost_process()
     m.fs.costing.add_electricity_intensity(m.fs.product_H2O.properties[0].flow_vol)
@@ -249,12 +219,10 @@ def display_metrics_results(m):
     DCC_normalized = value(
         pyunits.convert(
             (
-                m.fs.mabr.costing.capital_cost
-                + m.fs.dmbr.costing.capital_cost
-                + m.fs.P1.costing.capital_cost
-                + m.fs.P2.costing.capital_cost
+                m.fs.mabr.costing.direct_capital_cost
+                + m.fs.dmbr.costing.direct_capital_cost
+                + m.fs.P1.costing.direct_capital_cost
             )
-            / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
             to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         )
@@ -383,9 +351,7 @@ def display_additional_results(m):
     print(f"MABR capital costs: {mabr_capital_costs:.4f} $M")
     dmbr_capital_costs = value(m.fs.dmbr.costing.capital_cost) / 1e6
     print(f"DMBR capital costs: {dmbr_capital_costs:.4f} $M")
-    pump_capital_costs = (
-        value(m.fs.P1.costing.capital_cost + m.fs.P2.costing.capital_cost) / 1e6
-    )
+    pump_capital_costs = value(m.fs.P1.costing.capital_cost) / 1e6
     print(f"Pump capital costs: {pump_capital_costs:.4f} $M")
 
     print("----------Operating costs----------")

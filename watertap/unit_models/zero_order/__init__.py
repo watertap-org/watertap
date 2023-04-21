@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from .backwash_solids_handling_zo import BackwashSolidsHandlingZO
 from .bio_active_filtration_zo import BioActiveFiltrationZO
@@ -79,22 +78,31 @@ from .well_field_zo import WellFieldZO
 from .intrusion_mitigation_zo import IntrusionMitigationZO
 from .injection_well_disposal_zo import InjectionWellDisposalZO
 from .surface_discharge_zo import SurfaceDischargeZO
+from .electrocoagulation_zo import ElectrocoagulationZO
 
 
 # =========================================================================================
 # Units explicitly for Wastewater Resource Recovery effort
 
+from .anaerobic_digestion_reactive_zo import AnaerobicDigestionReactiveZO
 from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
 from .autothermal_hydrothermal_liquefaction_zo import ATHTLZO
 from .CANDOP_zo import CANDOPZO
-from .secondary_treatment_wwtp_zo import SecondaryTreatmentWWTPZO
+from .centrifuge_zo import CentrifugeZO
+from .cloth_media_filtration_zo import ClothMediaFiltrationZO
 from .cofermentation_zo import CofermentationZO
 from .constructed_wetlands_zo import ConstructedWetlandsZO
 from .gas_sparged_membrane_zo import GasSpargedMembraneZO
+from .hrcs_zo import HRCSZO
 from .hydrothermal_gasification_zo import HTGZO
+from .magprex_zo import MagprexZO
+from .membrane_evaporator_zo import MembraneEvaporatorZO
 from .metab_zo import MetabZO
 from .microbial_battery_zo import MicrobialBatteryZO
+from .peracetic_acid_disinfection_zo import PeraceticAcidDisinfectionZO
 from .photothermal_membrane_zo import PhotothermalMembraneZO
+from .secondary_treatment_wwtp_zo import SecondaryTreatmentWWTPZO
+from .struvite_classifier_zo import StruviteClassifierZO
 from .suboxic_activated_sludge_process_zo import SuboxicASMZO
 from .supercritical_salt_precipitation_zo import SaltPrecipitationZO
 from .vfa_recovery_zo import VFARecoveryZO

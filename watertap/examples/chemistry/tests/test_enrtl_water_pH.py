@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """
     This test is to establish that the core chemistry packages in IDAES solve
@@ -125,6 +124,7 @@ water_thermo_config = {
                 "temperature_crit": (647, pyunits.K),
                 # Comes from Perry's Handbook:  p. 2-98
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -198,6 +198,7 @@ water_thermo_config = {
             "parameter_data": {
                 "mw": (1.00784, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -230,6 +231,7 @@ water_thermo_config = {
             "parameter_data": {
                 "mw": (17.008, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -340,21 +342,19 @@ class TestENRTLwater:
     @pytest.fixture(scope="class")
     def water_model(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
-        model.fs.thermo_params = GenericParameterBlock(default=water_thermo_config)
+        model.fs = FlowsheetBlock(dynamic=False)
+        model.fs.thermo_params = GenericParameterBlock(**water_thermo_config)
         model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **reaction_config}
+            property_package=model.fs.thermo_params, **reaction_config
         )
         model.fs.unit = EquilibriumReactor(
-            default={
-                "property_package": model.fs.thermo_params,
-                "reaction_package": model.fs.rxn_params,
-                "has_rate_reactions": False,
-                "has_equilibrium_reactions": False,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "has_pressure_change": False,
-            }
+            property_package=model.fs.thermo_params,
+            reaction_package=model.fs.rxn_params,
+            has_rate_reactions=False,
+            has_equilibrium_reactions=False,
+            has_heat_transfer=False,
+            has_heat_of_reaction=False,
+            has_pressure_change=False,
         )
 
         # NOTE: ENRTL model cannot initialize if the inlet values are 0
@@ -521,6 +521,7 @@ carbonic_thermo_config = {
                 "temperature_crit": (647, pyunits.K),
                 # Comes from Perry's Handbook:  p. 2-98
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -594,6 +595,7 @@ carbonic_thermo_config = {
             "parameter_data": {
                 "mw": (1.00784, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -626,6 +628,7 @@ carbonic_thermo_config = {
             "parameter_data": {
                 "mw": (17.008, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -658,6 +661,7 @@ carbonic_thermo_config = {
             "parameter_data": {
                 "mw": (62.03, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
@@ -690,6 +694,7 @@ carbonic_thermo_config = {
             "parameter_data": {
                 "mw": (61.0168, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
@@ -722,6 +727,7 @@ carbonic_thermo_config = {
             "parameter_data": {
                 "mw": (60.01, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
@@ -754,6 +760,7 @@ carbonic_thermo_config = {
             "parameter_data": {
                 "mw": (22.989769, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.252, pyunits.kmol * pyunits.m**-3),
                     "2": (0.347, pyunits.dimensionless),
                     "3": (1595.8, pyunits.K),
@@ -900,21 +907,19 @@ class TestENRTLcarbonicAcid:
     @pytest.fixture(scope="class")
     def carbonic_acid_model(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
-        model.fs.thermo_params = GenericParameterBlock(default=carbonic_thermo_config)
+        model.fs = FlowsheetBlock(dynamic=False)
+        model.fs.thermo_params = GenericParameterBlock(**carbonic_thermo_config)
         model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **reaction_config}
+            property_package=model.fs.thermo_params, **reaction_config
         )
         model.fs.unit = EquilibriumReactor(
-            default={
-                "property_package": model.fs.thermo_params,
-                "reaction_package": model.fs.rxn_params,
-                "has_rate_reactions": False,
-                "has_equilibrium_reactions": False,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "has_pressure_change": False,
-            }
+            property_package=model.fs.thermo_params,
+            reaction_package=model.fs.rxn_params,
+            has_rate_reactions=False,
+            has_equilibrium_reactions=False,
+            has_heat_transfer=False,
+            has_heat_of_reaction=False,
+            has_pressure_change=False,
         )
 
         # NOTE: ENRTL model cannot initialize if the inlet values are 0
