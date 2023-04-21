@@ -253,9 +253,9 @@ Acid-Base Equilibrium Constraints
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Dissociation constant constraint", ":math:`KW = 1e-14^{\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T})}`"
-   "CO2 acid-base equilibrium constraint", ":math:`K_{a,co2} = 4.46684e-07^{\frac{7646}{R} * (\frac{1}{T_{ref}} - \frac{1}{T})}`"
-   "Nitrogen acid-base equilibrium constraint", ":math:`K_{a,IN} = 5.62341e-10^{\frac{51965}{R} * (\frac{1}{T_{ref}} - \frac{1}{T})}`"
+   "Dissociation constant constraint", ":math:`KW = 10^{-14} exp{(\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
+   "CO2 acid-base equilibrium constraint", ":math:`K_{a,co2} = 10^{-6.35} exp{(\frac{7646}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
+   "Nitrogen acid-base equilibrium constraint", ":math:`K_{a,IN} = 10^{-9.25} exp{(\frac{51965}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
    "Mass concentration of valerate, va-", ":math:`C_{va} = \frac{K_{a,va} * C_{va,ref}}{K_{a,va} + S_{H}}`"
    "Mass concentration of butyrate, bu-", ":math:`C_{bu} = \frac{K_{a,bu} * C_{bu,ref}}{K_{a,bu} + S_{H}}`"
    "Mass concentration of propionate, pro-", ":math:`C_{pro} = \frac{K_{a,pro} * C_{pro,ref}}{K_{a,pro} + S_{H}}`"
@@ -266,7 +266,7 @@ Acid-Base Equilibrium Constraints
    "Molar concentration of ammonium, NH4+", ":math:`M_{nh4} = \frac{C_{S_{IN},ref}}{14} - M_{nh3}`"
    ":lime:`Molar concentration of magnesium, Mg`", ":math:`M_{Mg} = \frac{C_{X_{PP},ref}}{300.41}`"
    ":lime:`Molar concentration of potassium, K`", ":math:`M_{K} = \frac{C_{X_{PP},ref}}{300.41}`"
-   ":blue:`Molar concentration of hydrogen, H+`", ":math:`0 = M_{c} + M_{nh4} + M_{Mg} + M_{K} + S_{H} - M_{hco3} - C_{ac} - C_{pro} - C_{bu} - C_{va} - S_{OH} - M_{a}`"
+   ":blue:`Molar concentration of hydrogen, H+`", ":math:`S_{H} = M_{hco3} + C_{ac} + C_{pro} + C_{bu} + C_{va} + S_{OH} + M_{a} - M_{c} - M_{nh4} - M_{Mg} - M_{K}`"
    "Molar concentration of hydroxide, OH-", ":math:`S_{OH} = \frac{KW}{S_{H}}`"
    "pH of solution", ":math:`pH = -log_{10}(S_{H})`"
 

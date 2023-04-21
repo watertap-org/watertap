@@ -187,9 +187,9 @@ Acid-Base Equilibrium Constraints
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Dissociation constant constraint", ":math:`KW = 10^{-14} exp{\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T})}`"
-   "CO2 acid-base equilibrium constraint", ":math:`K_{a,co2} = 10^{-6.35} exp{\frac{7646}{R} * (\frac{1}{T_{ref}} - \frac{1}{T})}`"
-   "Nitrogen acid-base equilibrium constraint", ":math:`K_{a,IN} = 10^{-9.25} exp{\frac{51965}{R} * (\frac{1}{T_{ref}} - \frac{1}{T})}`"
+   "Dissociation constant constraint", ":math:`KW = 10^{-14} exp{(\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
+   "CO2 acid-base equilibrium constraint", ":math:`K_{a,co2} = 10^{-6.35} exp{(\frac{7646}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
+   "Nitrogen acid-base equilibrium constraint", ":math:`K_{a,IN} = 10^{-9.25} exp{(\frac{51965}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
    "Mass concentration of valerate, va-", ":math:`C_{va} = \frac{K_{a,va} * C_{va,ref}}{K_{a,va} + S_{H}}`"
    "Mass concentration of butyrate, bu-", ":math:`C_{bu} = \frac{K_{a,bu} * C_{bu,ref}}{K_{a,bu} + S_{H}}`"
    "Mass concentration of propionate, pro-", ":math:`C_{pro} = \frac{K_{a,pro} * C_{pro,ref}}{K_{a,pro} + S_{H}}`"
@@ -198,7 +198,7 @@ Acid-Base Equilibrium Constraints
    "Molar concentration of ammonia, NH3", ":math:`M_{nh3} = \frac{K_{a,IN} * \frac{C_{S_{IN},ref}}{14}}{K_{a,IN} + S_{H}}`"
    "Molar concentration of carbon dioxide, CO2", ":math:`M_{co2} = \frac{K_{a,co2} * \frac{C_{S_{IC},ref}}{12}}{K_{a,co2} + S_{H}}`"
    "Molar concentration of ammonium, NH4+", ":math:`M_{nh4} = \frac{C_{S_{IN},ref}}{14} - M_{nh3}`"
-   "Molar concentration of hydrogen, H+", ":math:`0 = M_{c} + M_{nh4} + S_{H} - M_{hco3} - C_{ac} - C_{pro} - C_{bu} - C_{va} - S_{OH} - M_{a}`"
+   "Molar concentration of hydrogen, H+", ":math:`S_{H} = M_{hco3} + C_{ac} + C_{pro} + C_{bu} + C_{va} + S_{OH} + M_{a} - M_{c} - M_{nh4}`"
    "Molar concentration of hydroxide, OH-", ":math:`S_{OH} = \frac{KW}{S_{H}}`"
    "pH of solution", ":math:`pH = -log_{10}(S_{H})`"
 
