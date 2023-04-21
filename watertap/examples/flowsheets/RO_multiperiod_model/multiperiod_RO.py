@@ -51,10 +51,9 @@ def create_base_model(m = None, solver = None):
     if solver is None:
         solver = get_solver()
     
-    m.ro_mp = swro.main(
-        erd_type=swro.ERDtype.pump_as_turbine,
-        variable_efficiency=VariableEfficiency.none,
-    )
+    m = swro.build(erd_type=swro.ERDtype.pump_as_turbine, 
+                   variable_efficiency=VariableEfficiency.none,)
+
     return m
 
 
@@ -62,30 +61,30 @@ def create_swro_mp_block():
     print(">>> Creating model for each time period")
 
     m = create_base_model()
-    b1 = m.ro_mp
 
     ramp_time = 60  # seconds (1 min)
     ramping_rate = 0.7e5  # Pa/s
+    pressure_ramp = ramping_rate * ramp_time
 
     # Add coupling variables
-    b1.previous_pressure = Var(
+    m.previous_pressure = Var(
         domain=NonNegativeReals,
         units=pyunits.Pa,
         bounds=(10e5, 80e5),
         doc="Applied pressure at the previous time step",
     )
 
-    @b1.Constraint(doc="Pressure ramping down constraint")
+    @m.Constraint(doc="Pressure ramping down constraint")
     def constraint_ramp_down(b):
         return (
-            b.previous_pressure - 40e5
+            b.previous_pressure - pressure_ramp
             <= b.fs.P1.control_volume.properties_out[0].pressure
         )
 
-    @b1.Constraint(doc="Pressure ramping up constraint")
+    @m.Constraint(doc="Pressure ramping up constraint")
     def constraint_ramp_up(b):
         return (
-            b.previous_pressure + 40e5
+            b.previous_pressure + pressure_ramp
             >= b.fs.P1.control_volume.properties_out[0].pressure
         )
 
@@ -95,13 +94,9 @@ def unfix_dof(blk):
     """
     Unfixes the degrees of freedom in the model
     """
-    
-    # fix the RO membrane area
-    blk.fs.RO.area.fix()
 
-    # unfix the pump flow ratios and fix the bep flowrate as the nominal volumetric flowrate
-    blk.fs.P1.bep_flow.fix()
-    blk.fs.P1.flow_ratio[0].unfix()
+    # fix the RO membrane area and utilization factor
+    blk.fs.RO.area.fix()
     blk.fs.costing.utilization_factor.fix(1)
 
     # unfix feed flow rate and fix concentration instead
@@ -123,8 +118,8 @@ def get_swro_link_variable_pairs(b1, b2):
     """
     return [
         (
-            b1.ro_mp.fs.P1.control_volume.properties_out[0].pressure,
-            b2.ro_mp.previous_pressure,
+            b1.fs.P1.control_volume.properties_out[0].pressure,
+            b2.previous_pressure,
         )
     ]
 
