@@ -77,6 +77,7 @@ Components
   "Carbon dioxide, S_co2", ":math:`S_{co2}`", "S_co2"
 
 **NOTE: S_h2 and S_ch4 have vapor phase and liquid phase, S_co2 only has vapor phase, and the other components only have liquid phase. The amount of CO2 dissolved in the liquid phase is equivalent to S_IC - S_HCO3-.**
+
 State variables
 ---------------
 .. csv-table::
