@@ -40,6 +40,12 @@ from watertap.unit_models.reverse_osmosis_base import (
 
 __author__ = "Adam Atia"
 
+# Allow users to import the ConcentrationPolarizationType enum and the
+# MassTransferCoefficient enm from here instead of from watertap.core, this
+# also avoids an unused import warning from linters
+ConcentrationPolarizationType = ConcentrationPolarizationType
+MassTransferCoefficient = MassTransferCoefficient
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 

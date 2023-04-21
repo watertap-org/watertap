@@ -32,8 +32,11 @@ from watertap.unit_models.reverse_osmosis_base import (
     _add_has_full_reporting,
 )
 
-
 __author__ = "Tim Bartholomew, Adam Atia"
+
+# Allow users to import ConcentrationPolarizationType from here instead of
+# from watertap.core, this also avoids an unused import warning from linters
+ConcentrationPolarizationType = ConcentrationPolarizationType
 
 
 @declare_process_block_class("ReverseOsmosis0D")
@@ -72,7 +75,6 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
         add_object_reference(self, "deltaP", self.feed_side.deltaP)
 
     def _add_mass_transfer(self):
-
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # not in 1DRO
