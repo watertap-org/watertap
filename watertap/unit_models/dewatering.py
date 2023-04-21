@@ -185,6 +185,7 @@ class DewateringUnit(SeparatorData):
     ):
         """
         Initialization routine for separator
+
         Keyword Arguments:
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default=None, use
@@ -199,6 +200,7 @@ class DewateringUnit(SeparatorData):
                      during initialization, **False** - state variables are
                      unfixed after initialization by calling the release_state
                      method.
+
         Returns:
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
@@ -322,12 +324,14 @@ class DewateringUnit(SeparatorData):
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialization.
+
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
                     unfixed. This dict is returned by initialize if
                     hold_state = True.
             outlvl : sets output level of logging
+
         Returns:
             None
         """

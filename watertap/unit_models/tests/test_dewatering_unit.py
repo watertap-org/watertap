@@ -38,7 +38,7 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    large_residuals_set
+    large_residuals_set,
 )
 
 from idaes.core.util.testing import initialization_tester
@@ -91,10 +91,10 @@ class TestAdm(object):
         m.fs.props = ASM1ParameterBlock()
 
         m.fs.unit = Dewatering_Unit(
-        property_package=m.fs.props,
-        outlet_list=["underflow", "overflow"],
-        split_basis=SplittingType.componentFlow,
-    )
+            property_package=m.fs.props,
+            outlet_list=["underflow", "overflow"],
+            split_basis=SplittingType.componentFlow,
+        )
 
         m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
         m.fs.unit.inlet.temperature.fix(308.15 * units.K)
@@ -105,17 +105,15 @@ class TestAdm(object):
         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
             17216.2434 * units.mg / units.liter
         )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(
-            2611.4843 * units.mg / units.liter
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(
-            1e-6 * units.mg / units.liter
-        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
+            1442.7882 * units.mg / units.liter
+        )
         m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
         m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
@@ -197,19 +195,13 @@ class TestAdm(object):
         assert pytest.approx(0.0552, rel=1e-3) == value(
             adm.fs.unit.overflow.conc_mass_comp[0, "X_S"]
         )
-        assert value(
-            adm.fs.unit.overflow.conc_mass_comp[0, "X_BH"]) <= 1e-6
-        assert value(
-            adm.fs.unit.overflow.conc_mass_comp[0, "X_BA"]) <= 1e-6
-        
+        assert value(adm.fs.unit.overflow.conc_mass_comp[0, "X_BH"]) <= 1e-6
+        assert value(adm.fs.unit.overflow.conc_mass_comp[0, "X_BA"]) <= 1e-6
         assert pytest.approx(0.01323, rel=1e-3) == value(
             adm.fs.unit.overflow.conc_mass_comp[0, "X_P"]
         )
-        assert value(
-            adm.fs.unit.overflow.conc_mass_comp[0, "S_O"]) <= 1e-6
-        assert value(
-            adm.fs.unit.overflow.conc_mass_comp[0, "S_NO"]) <= 1e-6
-        
+        assert value(adm.fs.unit.overflow.conc_mass_comp[0, "S_O"]) <= 1e-6
+        assert value(adm.fs.unit.overflow.conc_mass_comp[0, "S_NO"]) <= 1e-6
         assert pytest.approx(1.44278, rel=1e-3) == value(
             adm.fs.unit.overflow.conc_mass_comp[0, "S_NH"]
         )
