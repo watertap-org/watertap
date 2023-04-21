@@ -188,7 +188,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     for stage in m.fs.OAROUnits.values():
         stage.costing = UnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing,
-            costing_method_arguments={"oaro_type": "standard"},
+            costing_method_arguments={"oaro_type": "high_pressure"},
         )
 
     # --- ERD blocks ---
