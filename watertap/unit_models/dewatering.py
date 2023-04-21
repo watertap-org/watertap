@@ -349,11 +349,12 @@ class DewateringUnit(SeparatorData):
         if hasattr(self, "material_splitting_eqn"):
             if mb_type == MaterialBalanceType.componentTotal:
                 for (t, _, j), c in self.material_splitting_eqn.items():
-                    if i == 0:
-                        s = iscale.get_scaling_factor(ft, default=1)
-                    else:
-                        _s = iscale.get_scaling_factor(ft, default=1)
-                        s = _s if _s < s else s
+                    for i, p in enumerate(mixed_state.phase_list):
+                        if i == 0:
+                            s = iscale.get_scaling_factor(ft, default=1)
+                        else:
+                            _s = iscale.get_scaling_factor(ft, default=1)
+                            s = _s if _s < s else s
                     iscale.constraint_scaling_transform(c, s)
 
     def _get_performance_contents(self, time_point=0):
