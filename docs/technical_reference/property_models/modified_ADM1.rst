@@ -86,10 +86,12 @@ State variables
    "Total volumetric flowrate", ":math:`Q`", "flow_vol", "None", ":math:`\text{m}^3\text{/s}`"
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
-   "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[p]", ":math:`\text{kg/}\text{m}^3`"
+   "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[j]", ":math:`\text{kg/}\text{m}^3`"
    "Anions in molar concentrations", ":math:`M_a`", "anions", "None", ":math:`\text{kmol/}\text{m}^3`"
    "Cations in molar concentrations", ":math:`M_c`", "cations", "None", ":math:`\text{kmol/}\text{m}^3`"
-   "Component pressure", ":math:`P_{j,sat}`", "pressure_sat", "[p]", ":math:`\text{Pa}`"
+   "Component pressure", ":math:`P_{j,sat}`", "pressure_sat", "[j]", ":math:`\text{Pa}`"
+   "Reference temperature", ":math:`T_{ref}`", "temperature_ref", "None", ":math:`\text{K}`"
+   "Reference component mass concentrations", ":math:`C_{j,ref}`", "conc_mass_comp_ref", "[j]", ":math:`\text{kg/}\text{m}^3`"
 
 Stoichiometric Parameters
 -------------------------
@@ -199,6 +201,8 @@ Kinetic Parameters
    ":lime:`Magnesium coefficient for polyphosphates, Mg_PP`", ":math:`Mg_{PP}`", "Mg_PP", 1/3, ":math:`\text{dimensionless}`"
    "Carbon dioxide acid-base equilibrium constant, K_a_co2", ":math:`K_{a,co2}`", "K_a_co2", 4.94e-7, ":math:`\text{kmol/}\text{m}^3`"
    "Inorganic nitrogen acid-base equilibrium constant, K_a_IN", ":math:`K_{a,IN}`", "K_a_IN", 1.11e-9, ":math:`\text{kmol/}\text{m}^3`"
+   "Molar concentration of hydrogen, S_H", ":math:`S_{H}`", "S_H", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
+   "Molar concentration of hydroxide, S_OH", ":math:`S_{OH}`", "S_OH", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
 
 Properties
 ----------
@@ -242,8 +246,31 @@ Process Rate Equations
    ":lime:`Lysis of X_PP`", ":math:`\rho_{24} = b_{PP} C_{X_{PP}}`"
    ":lime:`Lysis of X_PHA`", ":math:`\rho_{25} = b_{PHA} C_{X_{PHA}}`"
 
+Acid-Base Equilibrium Constraints
+---------------------------------
+:lime:`Lime` text indicates the equation has been added, and :blue:`blue` text indicates the equation has been modified from its base ADM1 implementation.
 
-The rules for pH inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH,aa}`), acetate-utilizing microorganisms (:math:`I_{pH,ac}`), hydrogen-utilizing microorganisms (:math:`I_{pH,h2}`) are:
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Dissociation constant constraint", ":math:`KW = 1e-14^{\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T})}`"
+   "CO2 acid-base equilibrium constraint", ":math:`K_{a,co2} = 4.46684e-07^{\frac{7646}{R} * (\frac{1}{T_{ref}} - \frac{1}{T})}`"
+   "Nitrogen acid-base equilibrium constraint", ":math:`K_{a,IN} = 5.62341e-10^{\frac{51965}{R} * (\frac{1}{T_{ref}} - \frac{1}{T})}`"
+   "Mass concentration of valerate, va-", ":math:`C_{va} = \frac{K_{a,va} * C_{va,ref}}{K_{a,va} + S_{H}}`"
+   "Mass concentration of butyrate, bu-", ":math:`C_{bu} = \frac{K_{a,bu} * C_{bu,ref}}{K_{a,bu} + S_{H}}`"
+   "Mass concentration of propionate, pro-", ":math:`C_{pro} = \frac{K_{a,pro} * C_{pro,ref}}{K_{a,pro} + S_{H}}`"
+   "Mass concentration of acetate, ac-", ":math:`C_{ac} = \frac{K_{a,ac} * C_{ac,ref}}{K_{a,ac} + S_{H}}`"
+   "Molar concentration of bicarbonate, HCO3", ":math:`M_{hco3} = \frac{K_{a,co2} * \frac{C_{S_{IC},ref}}{12}}{K_{a,co2} + S_{H}}`"
+   "Molar concentration of ammonia, NH3", ":math:`M_{nh3} = \frac{K_{a,IN} * \frac{C_{S_{IN},ref}}{14}}{K_{a,IN} + S_{H}}`"
+   "Molar concentration of carbon dioxide, CO2", ":math:`M_{co2} = \frac{K_{a,co2} * \frac{C_{S_{IC},ref}}{12}}{K_{a,co2} + S_{H}}`"
+   "Molar concentration of ammonium, NH4+", ":math:`M_{nh4} = \frac{C_{S_{IN},ref}}{14}} - M_{nh3}`"
+   ":lime:`Molar concentration of magnesium, Mg`", ":math:`M_{Mg} = \frac{C_{X_{PP},ref}}{300.41}}`"
+   ":lime:`Molar concentration of potassium, K`", ":math:`M_{K} = \frac{C_{X_{PP},ref}}{300.41}}`"
+   ":blue:`Molar concentration of hydrogen, H+`", ":math:`0 = M_{c} + M_{nh4} + M_{Mg} + M_{K} + S_{H} - M_{hco3} - C_{ac} - C_{pro} - C_{bu} - C_{va} - S_{OH} - M_{a}`"
+   "Molar concentration of hydroxide, OH-", ":math:`S_{OH} = \frac{KW}{S_{H}}`"
+   "pH of solution", ":math:`pH = -log_{10}(S_{H})`"
+
+The rules for inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH,aa}`), acetate-utilizing microorganisms (:math:`I_{pH,ac}`), hydrogen-utilizing microorganisms (:math:`I_{pH,h2}`) are:
 
     .. math::
 
@@ -259,13 +286,28 @@ The rules for pH inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH
          1 & \text{for } pH > pH_{UL,ac}
        \end{cases}
 
-       I_{pH,aa}=
+       I_{pH,h2}=
        \begin{cases}
          \exp{-3 (\frac{pH - pH_{UL,h2}}{pH_{UL,h2} - pH_{LL,h2}})^2} & \text{for } pH \le pH_{UL,h2}\\
          1 & \text{for } pH > pH_{UL,h2}
        \end{cases}
 
-The rules for hydrogen sulfide inhibition factors are shown below; however, since :math:`Z_{h2s}` is assumed to be 0, all of these inhibition factors are negligible
+
+The rules for inhibition related to secondary substrate (:math:`I_{IN,lim}`), hydrogen inhibition attributed to long chain fatty acids (:math:`I_{h2,fa}`), hydrogen inhibition attributed to valerate and butyrate uptake (:math:`I_{h2,c4}`), hydrogen inhibition attributed to propionate uptake (:math:`I_{h2,pro}`), ammonia inibition attributed to acetate uptake (:math:`I_{nh3}`),  are:
+
+    .. math::
+
+       I_{IN,lim} = \frac{1}{1 + \frac{K_{S_{IN}}}{\frac{C_{S_{IN}}}{14}}
+
+       I_{h2, fa}= \frac{1}{1 + \frac{C_{S_{h2}}{K_{I,h2,fa}}}
+
+       I_{h2, c4}= \frac{1}{1 + \frac{C_{S_{h2}}{K_{I,h2,c4}}}
+
+       I_{h2, pro}= \frac{1}{1 + \frac{C_{S_{h2}}{K_{I,h2,pro}}}
+
+       I_{nh3}= \frac{1}{1 + \frac{M_{nh3}{K_{I,nh3}}}
+
+:lime:`The rules for hydrogen sulfide inhibition factors are shown below; however, since` :math:`Z_{h2s}` :lime:`is assumed to be 0, all of these inhibition factors are negligible`
 
     .. math::
 

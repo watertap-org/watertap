@@ -42,8 +42,8 @@ State variables
    "Total volumetric flowrate", ":math:`Q`", "flow_vol", "None", ":math:`\text{m}^3\text{/s}`"
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
-   "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Alkalinity in molar concentration", ":math:`A`", "alkalinity", "[p]", ":math:`\text{kmol HCO}_{3}^{-}\text{/m}^{3}`"
+   "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[j]", ":math:`\text{kg/}\text{m}^3`"
+   "Alkalinity in molar concentration", ":math:`A`", "alkalinity", "None", ":math:`\text{kmol HCO}_{3}^{-}\text{/m}^{3}`"
 
 Stoichiometric Parameters
 -------------------------
