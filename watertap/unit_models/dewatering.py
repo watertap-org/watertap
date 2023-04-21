@@ -215,7 +215,7 @@ class DewateringUnit(SeparatorData):
                     component_status[c[i]] = c[i].active
                     c[i].deactivate()
 
-        if degrees_of_freedom(blk) != 0:
+        if degrees_of_freedom(self) != 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(self, tee=slc.tee)
                 init_log.info(
@@ -262,7 +262,7 @@ class DewateringUnit(SeparatorData):
                                 # Need average split fraction
                                 avg_split = value(
                                     sum(
-                                        blk.split_fraction[t, o, j]
+                                        self.split_fraction[t, o, j]
                                         for (p, j) in mblock.phase_component_set
                                     )
                                     / len(mblock.phase_component_set)
