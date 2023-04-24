@@ -216,7 +216,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
 
         # TODO: check if we track S_SO4, S_Na, S_Cl, S_Ca, X_Ca2(PO4)3, X_MgNH4PO4
 
-        # TODO: X_AUT, X_TSS, X_MeOH and X_MeP are not given in Flores-Alsina's paper, need to check how to address them
+        # TODO: X_TSS, X_MeOH and X_MeP are not given in Flores-Alsina's paper, need to check how to address them
         self.zero_flow_components = Set(
             initialize=[
                 "S_N2",
