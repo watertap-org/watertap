@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-ASM2d reaction package.
+Modified ASM2d reaction package for compatibility with modified ADM1.
 
 Important Note: ASM2d reactions depend on the presences of TSS in solution, however
 TSS does not take part in the rate expressions. Thus, it is possible to have cases
