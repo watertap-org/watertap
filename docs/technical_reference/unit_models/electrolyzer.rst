@@ -134,7 +134,7 @@ Equations
    :header: "Description", "Equation"
 
    "voltage efficiency as a function of minimum required by reaction", ":math:`V_{min} = V\eta_{voltage}`"
-   "electrons passed between anode and cathode contributing to reactions :math:`^*`", ":math:`\dot{n}_{e^-} = \frac{I\eta_{current}}{F}`"
+   "electrons passed between anode and cathode contributing to reactions*", ":math:`\dot{n}_{e^-} = \frac{I\eta_{current}}{F}`"
    "membrane area", ":math:`I = JA_{membrane}`"
    "anode area", ":math:`I = JA_{anode}`"
    "cathode area", ":math:`I = JA_{cathode}`"
@@ -192,7 +192,7 @@ Operating costs for the electrolyzer are the electricity requirements and membra
 
     .. math::
 
-        C_{op,tot} = C_{membrane replace} = f_{membrane replace}c_{membrane}A_{membrane}
+        C_{op,tot} = C_{membrane replace} = f_{memreplace}c_{membrane}A_{membrane}
 
 Code Documentation
 -------------------
