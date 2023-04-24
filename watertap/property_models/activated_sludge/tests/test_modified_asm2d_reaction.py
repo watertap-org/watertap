@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for ASM2d reaction package.
+Tests for modified ASM2d reaction package.
 Authors: Andrew Lee, Alejandro Garciadiego, Chenyu Wang
 
 References:
