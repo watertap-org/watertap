@@ -105,7 +105,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         super(TranslatorDataADM1ASM2D, self).build()
 
         mw_c = 12 * pyunits.kg / pyunits.kmol
-        mw_n = 14 * pyunits.kg / pyunits.kmol
 
         @self.Constraint(
             self.flowsheet().time,
@@ -152,7 +151,9 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 for i in blk.readily_biodegradable2
             )
 
-        self.unchanged_component = Set(initialize=["S_I", "X_I"])
+        self.unchanged_component = Set(
+            initialize=["S_I", "X_I", "X_PP", "X_PHA", "S_K", "S_Mg"]
+        )
 
         @self.Constraint(
             self.flowsheet().time,
@@ -175,27 +176,26 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 == blk.properties_in[t].conc_mass_comp["S_IN"]
             )
 
-        # TODO: ADM1 does not have S_IP
-        # @self.Constraint(
-        #     self.flowsheet().time,
-        #     doc="Equality S_PO4 equation",
-        # )
-        # def eq_SPO4_conc(blk, t):
-        #     return (
-        #         blk.properties_out[t].conc_mass_comp["S_IP"]
-        #         == blk.properties_in[t].conc_mass_comp["S_PO4"]
-        #     )
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Equality S_PO4 equation",
+        )
+        def eq_SPO4_conc(blk, t):
+            return (
+                blk.properties_out[t].conc_mass_comp["S_PO4"]
+                == blk.properties_in[t].conc_mass_comp["S_IP"]
+            )
 
-        # TODO: No S_IC in ASM2D
-        # @self.Constraint(
-        #     self.flowsheet().time,
-        #     doc="Equality S_IC equation",
-        # )
-        # def eq_SIC_conc(blk, t):
-        #     return (
-        #         blk.properties_out[t].conc_mass_comp["S_IC"]
-        #         == blk.properties_in[t].conc_mass_comp["S_IC"]
-        #     )
+        # TODO: No S_IC for current ASM2D, need to revisit it later
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Equality alkalinity equation",
+        )
+        def return_Salk(blk, t):
+            return (
+                blk.properties_out[t].alkalinity
+                == blk.properties_in[t].conc_mass_comp["S_IC"] / mw_c
+            )
 
         self.slowly_biodegradable = Set(
             initialize=[
@@ -214,55 +214,19 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 blk.properties_in[t].conc_mass_comp[i] for i in blk.slowly_biodegradable
             )
 
-        # TODO: ADM1 model does not has X_PP as poly-phosphates
-        # Assume both sides are 0 - Page 373
-        # @self.Constraint(
-        #     self.flowsheet().time,
-        #     doc="Equality X_PP equation",
-        # )
-        # def eq_XPP_conc(blk, t):
-        #     return (
-        #         blk.properties_out[t].conc_mass_comp["X_PP"]
-        #         == blk.properties_in[t].conc_mass_comp["X_PP"]
-        #     )
+        # TODO: check if we track S_SO4, S_Na, S_Cl, S_Ca, X_Ca2(PO4)3, X_MgNH4PO4
 
-        # TODO: ADM1 model does not has X_PHA
-        # @self.Constraint(
-        #     self.flowsheet().time,
-        #     doc="Equality X_PHA equation",
-        # )
-        # def eq_XPHA_conc(blk, t):
-        #     return (
-        #         blk.properties_out[t].conc_mass_comp["X_PHA"]
-        #         == blk.properties_in[t].conc_mass_comp["X_PHA"]
-        #     )
-
-        # TODO: check if we track S_SO4, S_Na, S_K, S_Cl, S_Ca, S_Mg, X_Ca2(PO4)3, X_MgNH4PO4
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Equality alkalinity equation",
-        )
-        def return_Salk(blk, t):
-            return (
-                blk.properties_out[t].alkalinity
-                == blk.properties_in[t].conc_mass_comp["S_IC"] / mw_c
-            )
-
-        # TODO: check S_ALK
+        # TODO: X_AUT, X_TSS, X_MeOH and X_MeP are not given in Flores-Alsina's paper, need to check how to address them
         self.zero_flow_components = Set(
             initialize=[
                 "S_N2",
                 "S_NO3",
                 "S_O2",
-                "S_PO4",
                 "X_AUT",
                 "X_H",
                 "X_MeOH",
                 "X_MeP",
                 "X_PAO",
-                "X_PHA",
-                "X_PP",
                 "X_TSS",
             ]
         )
@@ -288,6 +252,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
     ):
         """
         This method calls the initialization method of the state blocks.
+
         Keyword Arguments:
             state_args_in : a dict of arguments to be passed to the inlet
                 property package (to provide an initial state for
@@ -302,6 +267,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                      default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
+
         Returns:
             None
         """
@@ -327,8 +293,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
             state_args=state_args_out,
         )
 
-        self.properties_in.release_state(flags=flags, outlvl=outlvl)
-
         if degrees_of_freedom(self) != 0:
             raise Exception(
                 f"{self.name} degrees of freedom were not 0 at the beginning "
@@ -337,6 +301,8 @@ class TranslatorDataADM1ASM2D(TranslatorData):
 
         with idaeslog.solver_log(init_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
+
+        self.properties_in.release_state(flags=flags, outlvl=outlvl)
 
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 

@@ -51,16 +51,16 @@ from idaes.core.util.scaling import (
 from idaes.core.util.testing import initialization_tester
 
 from watertap.unit_models.translators.translator_adm1_asm2d import Translator_ADM1_ASM2D
-from watertap.property_models.anaerobic_digestion.adm1_properties import (
-    ADM1ParameterBlock,
+from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
+    ModifiedADM1ParameterBlock,
 )
 
-from watertap.property_models.activated_sludge.asm2d_properties import (
-    ASM2dParameterBlock,
+from watertap.property_models.activated_sludge.modified_asm2d_properties import (
+    ModifiedASM2dParameterBlock,
 )
 
-from watertap.property_models.anaerobic_digestion.adm1_reactions import (
-    ADM1ReactionParameterBlock,
+from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import (
+    ModifiedADM1ReactionParameterBlock,
 )
 
 
@@ -77,9 +77,13 @@ def test_config():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.props_ASM2D = ASM2dParameterBlock()
-    m.fs.props_ADM1 = ADM1ParameterBlock()
-    m.fs.ADM1_rxn_props = ADM1ReactionParameterBlock(property_package=m.fs.props_ADM1)
+    m.fs.props_ASM2D = ModifiedASM2dParameterBlock(
+        additional_solute_list=["S_K", "S_Mg"]
+    )
+    m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
+    m.fs.ADM1_rxn_props = ModifiedADM1ReactionParameterBlock(
+        property_package=m.fs.props_ADM1
+    )
 
     m.fs.unit = Translator_ADM1_ASM2D(
         inlet_property_package=m.fs.props_ADM1,
@@ -108,9 +112,11 @@ class TestAsm2dAdm1(object):
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props_ASM2D = ASM2dParameterBlock()
-        m.fs.props_ADM1 = ADM1ParameterBlock()
-        m.fs.ADM1_rxn_props = ADM1ReactionParameterBlock(
+        m.fs.props_ASM2D = ModifiedASM2dParameterBlock(
+            additional_solute_list=["S_K", "S_Mg"]
+        )
+        m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
+        m.fs.ADM1_rxn_props = ModifiedADM1ReactionParameterBlock(
             property_package=m.fs.props_ADM1
         )
 
@@ -126,38 +132,39 @@ class TestAsm2dAdm1(object):
         m.fs.unit.inlet.temperature.fix(308.15 * units.K)
         m.fs.unit.inlet.pressure.fix(1 * units.atm)
 
-        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(12.394 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(5.54 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(107.41 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(12.33 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(14.00 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(17.584 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(89.315 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(2.55e-4 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(55.49 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(
-            95.149 * units.mmol / units.liter * 12 * units.mg / units.mmol
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(
-            94.468 * units.mmol / units.liter * 14 * units.mg / units.mmol
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.87 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.034597)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.015037)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.025072)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.34628)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.60014)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IP"].fix(0.22677)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.026599)
 
-        m.fs.unit.inlet.conc_mass_comp[0, "X_c"].fix(107.92 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(20.517 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(84.22 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(43.629 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(312.22 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(931.67 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(338.39 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(335.77 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(101.12 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(677.24 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(284.84 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(7.3687)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(7.7308)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(10.3288)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(12.7727)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(0.0022493)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(1.04110)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(3.4655)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(0.02268)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(0.02893)
 
-        m.fs.unit.inlet.cations[0].fix(1e-8 * units.mmol / units.liter)
-        m.fs.unit.inlet.anions[0].fix(5.21 * units.mmol / units.liter)
+        m.fs.unit.inlet.cations[0].fix(0.04)
+        m.fs.unit.inlet.anions[0].fix(0.02)
 
         return m
 
@@ -182,8 +189,8 @@ class TestAsm2dAdm1(object):
         assert hasattr(asmadm.fs.unit.outlet, "pressure")
         assert hasattr(asmadm.fs.unit.outlet, "alkalinity")
 
-        assert number_variables(asmadm) == 135
-        assert number_total_constraints(asmadm) == 22
+        assert number_variables(asmadm) == 183
+        assert number_total_constraints(asmadm) == 24
 
         assert number_unused_variables(asmadm.fs.unit) == 12
 
@@ -219,16 +226,16 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(308.15, rel=1e-3) == value(
             asmadm.fs.unit.outlet.temperature[0]
         )
-        assert pytest.approx(0.1332, rel=1e-3) == value(
+        assert pytest.approx(0.025075, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_A"]
         )
-        assert pytest.approx(0.1253, rel=1e-3) == value(
+        assert pytest.approx(0.049635, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_F"]
         )
-        assert pytest.approx(0.1309, rel=1e-3) == value(
+        assert pytest.approx(0.026599, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_I"]
         )
-        assert pytest.approx(1.3226, rel=1e-3) == value(
+        assert pytest.approx(0.60014, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_NH4"]
         )
         assert pytest.approx(1e-6, rel=1e-3) == value(
@@ -240,7 +247,7 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(1e-6, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_O2"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(0.22677, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_PO4"]
         )
         assert pytest.approx(1e-6, rel=1e-3) == value(
@@ -249,7 +256,7 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(1e-6, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_H"]
         )
-        assert pytest.approx(17.216, rel=1e-3) == value(
+        assert pytest.approx(12.7727, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_I"]
         )
         assert pytest.approx(1e-6, rel=1e-3) == value(
@@ -261,19 +268,19 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(1e-6, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PAO"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(0.0022493, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PHA"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1.0411, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PP"]
         )
-        assert pytest.approx(0.1484, rel=1e-3) == value(
+        assert pytest.approx(25.4283, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_S"]
         )
         assert pytest.approx(1e-6, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_TSS"]
         )
-        assert pytest.approx(0.095149, rel=1e-3) == value(
+        assert pytest.approx(0.028857, rel=1e-3) == value(
             asmadm.fs.unit.outlet.alkalinity[0]
         )
 
