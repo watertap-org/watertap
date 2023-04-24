@@ -11,6 +11,7 @@ This is a simplified electrolyzer unit model used to approximate electrolysis pe
    * assumes isothermal conditions and performance is not temperature dependent
    * does not determine equilibrium of electrolysis products in solution
    * does not consider undesired reactions
+   * membrane, cathode, and anode areas are equal and a function of the current density, this does not consider the mass transfer limitations of volume to area ratios
 
 .. index::
    pair: watertap.unit_models.electrolyzer;electrolyzer
@@ -19,7 +20,7 @@ This is a simplified electrolyzer unit model used to approximate electrolysis pe
 
 Introduction
 ------------
-The basis for the electrolyzer model is considering the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. This model was primary motivated by the chlor-alkali membrane electrolysis process, a conventional electrolyzer unit for the production of chlorine gas and hydroxide (Bommaraju, 2015)(Kent, 2007). Given a membrane electrolyzer, the catholyte and anolyte are separated by an ion exchange membrane. This provides two distinct control volumes to perform model calculations. Faradaic conversion considers equating the supplied electrical current to the amount of electrons available for electrochemical reaction by Faraday's law. The fundamental calculation of Faradaic conversion is described in the equation, "electrons passed between anode and cathode contributing to reactions".
+The basis for the electrolyzer model is considering the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. This model was primary motivated by the chlor-alkali membrane electrolysis process, a conventional electrolyzer unit for the production of chlorine gas and hydroxide (Bommaraju, 2015) (Kent, 2007). The model has been demonstrated for the chlor-alkali configuration in the testing file (:mod:`watertap.unit_models.testing.test_electrolyzer`) and may be generalizable to other electrolysis processes, but had not been validated for generalized simulation. Given a membrane electrolyzer, the catholyte and anolyte are separated by an ion exchange membrane. This provides two distinct control volumes to perform model calculations. Faradaic conversion considers equating the supplied electrical current to the amount of electrons available for electrochemical reaction by Faraday's law. The fundamental calculation of Faradaic conversion is described in "electrons passed between anode and cathode contributing to reactions" found in the :ref:`Equations<_electrolyzer_equations>`.
 
 Degrees of Freedom
 ------------------
@@ -30,7 +31,7 @@ In the core calculations of the electrolyzer unit model, there are 4 degrees of 
    * current efficiency, :math:`\eta_{current}`
    * voltage efficiency, :math:`\eta_{voltage}`
 
-Additionally, the electrolysis reactions at the anode and cathode must be specified. By default, the following stoichiometric variables will be fixed to 0 when the electrolyzer model block is constructed. Therefore, only the nonzero stoichiometry must be specified. As an example for the chlor alkali process, the following reactions occur with sodium ions permeating from the anolyte to catholyte. The stoichiometry is normalized to 1 mole of electrons as intended in the model framework.
+Additionally, the electrolysis reactions at the anode and cathode must be specified. By default, the following stoichiometric variables will be fixed to 0 when the electrolyzer model block is constructed. Therefore, only the nonzero stoichiometry must be specified. As an example for the chlor-alkali process, the following reactions occur with sodium ions permeating from the anolyte to catholyte. The stoichiometry is normalized to 1 mole of electrons as intended in the model framework.
 
 Anode:
 
@@ -67,7 +68,7 @@ The following variables should then be fixed:
 
 Model Structure
 ------------------
-The electrolyzer model consists of 2 ControlVolume0DBlocks, one for the anolyte and another for the catholyte. Currently, the generation of species via electrolysis reactions is handled by the `custom_molar_term` within the ControlVolume0DBlock. Considering the reaction block and reaction package are omitted, no temperature dependence and rigorous energy balance are considered. Scaling of the variable should first be performed using `calculate_scaling_factors()`. For the case that the model is poorly scaled, the `current` variable should be rescaled. Estimated scaling factors are propagated for other unit model variables which are dependent on process scale. An example of the methodology is the following.
+The electrolyzer model consists of 2 ControlVolume0DBlocks, one for the anolyte and another for the catholyte. Currently, the generation of species via electrolysis reactions is handled by the ``custom_molar_term`` within the ControlVolume0DBlock. Considering the reaction block and reaction package are omitted, no temperature dependence and rigorous energy balance are considered. Scaling of the variable should first be performed using ``calculate_scaling_factors()``. For the case that the model is poorly scaled, the ``current`` variable should be rescaled. Estimated scaling factors are propagated for other unit model variables which are dependent on process scale. An example of the methodology is the following.
 
 .. code-block::
 
@@ -99,8 +100,8 @@ Variables
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "molar generation of species j by electrolysis at the anode", ":math:`\dot{n}_{j,anode}`", "custom_reaction_anode", "t, j", ":math:`\frac{mol}{s}`"
-   "molar generation of species j by electrolysis at the cathode", ":math:`\dot{n}_{j,cathode}`", "custom_reaction_cathode", "t, j", ":math:`\frac{mol}{s}`"
+   "molar generation of species j by electrolysis at the anode", ":math:`\dot{n}_{j,anode}`", "custom_reaction_anode", "[t, j]", ":math:`\frac{mol}{s}`"
+   "molar generation of species j by electrolysis at the cathode", ":math:`\dot{n}_{j,cathode}`", "custom_reaction_cathode", "[t, j]", ":math:`\frac{mol}{s}`"
    "moles of electrons contributing to electrolysis", ":math:`\dot{n}_{e^-}`", "electron_flow", "None", ":math:`\frac{mol}{s}`"
    "current", ":math:`I`", "current", "None", ":math:`A`"
    "current efficiency", ":math:`\eta_{current}`", "efficiency_current", "None", ":math:`\text{dimensionless}`"
@@ -129,7 +130,6 @@ The following variables are constructed on the unit model for the current build.
 
 Equations
 -----------
-
 .. csv-table::
    :header: "Description", "Equation"
 
@@ -139,7 +139,7 @@ Equations
    "anode area", ":math:`I = JA_{anode}`"
    "cathode area", ":math:`I = JA_{cathode}`"
    "power", ":math:`P = IV`"
-   "power efficiency", ":math:`P = \eta_{current}\eta_{voltage}`"
+   "power efficiency", ":math:`\eta_{power} = \eta_{current}\eta_{voltage}`"
    "ion permeation through the membrane", ":math:`\dot{n}_{j,membrane} = -\varepsilon_{j,membrane}\dot{n}_{e^-}`"
    "molar generation of species according the anode electrolysis reaction", ":math:`\dot{n}_{j,anode} = \varepsilon_{j,anode}\dot{n}_{e^-}`"
    "molar generation of species according the cathode electrolysis reaction", ":math:`\dot{n}_{j,cathode} = \varepsilon_{j,cathode}\dot{n}_{e^-}`"
@@ -155,7 +155,7 @@ The following parameters are constructed when applying the electrolyzer costing 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
 
-   "membrane replacement factor (fraction of membrane replaced/year)", ":math:`f_{membrane_replace}`", "factor_membrane_replacement", "0.33", ":math:`\text{dimensionless}`"
+   "membrane replacement factor (fraction of membrane replaced/year)", ":math:`f_{memreplace}`", "factor_membrane_replacement", "0.33", ":math:`\text{dimensionless}`"
    "membrane unit cost", ":math:`c_{membrane}`", "membrane_unit_cost", "25", ":math:`\frac{$}{m^2}`"
    "anode unit cost", ":math:`c_{anode}`", "anode_unit_cost", "300", ":math:`\frac{$}{m^2}`"
    "cathode unit cost", ":math:`c_{cathode}`", "cathode_unit_cost", "600", ":math:`\frac{$}{m^2}`"
@@ -169,7 +169,7 @@ The following variables are constructed when applying the electrolyzer costing m
    "membrane capital cost", ":math:`C_{membrane}`", "membrane_cost", ":math:`$`"
    "anode capital cost", ":math:`C_{anode}`", "anode_cost", ":math:`$`"
    "cathode capital cost", ":math:`C_{cathode}`", "cathode_cost", ":math:`$`"
-   "membrane replacement cost", ":math:`C_{membrane replace}`", "membrane_replacement_cost", ":math:`\frac{$}{yr}`"
+   "membrane replacement cost", ":math:`C_{memreplace}`", "membrane_replacement_cost", ":math:`\frac{$}{yr}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
@@ -181,12 +181,12 @@ Capital costs are contributing to the majority of material costs for the anode c
         & C_{membrane} = c_{membrane}A_{membrane} \\\\
         & C_{anode} = c_{anode}A_{anode} \\\\
         & C_{cathode} = c_{cathode}A_{cathode} \\\\
-        & C_{cap,total} = \frac{C_{membrane}+C_{anode}+C_{cathode}}{f_{membrane_replace}}
+        & C_{cap,total} = \frac{C_{membrane}+C_{anode}+C_{cathode}}{f_{memreplace}}
 
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Operating costs for the electrolyzer are the electricity requirements and membrane replacement costs. Electricity is costed using `cost_flow` applied to the `power` variable on the unit model.
+Operating costs for the electrolyzer are the electricity requirements and membrane replacement costs. Electricity is costed using ``cost_flow`` applied to the ``power`` variable on the unit model. Currently, replacement costs for the anode and cathode are not considered in the costing function.
 
     .. math::
 
