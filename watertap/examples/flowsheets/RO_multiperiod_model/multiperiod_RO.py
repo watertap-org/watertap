@@ -25,12 +25,11 @@ __author__ = "Akshay Rao, Adam Atia"
 
 from pyomo.environ import (
     NonNegativeReals,
-    ConcreteModel,
     Var,
     units as pyunits,
-    value,
     Param,
     Constraint,
+    Block,
 )
 
 from idaes.apps.grid_integration.multiperiod.multiperiod import MultiPeriodModel
@@ -40,34 +39,32 @@ import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recov
 from watertap.unit_models.pressure_changer import VariableEfficiency
 
 
-def create_base_model(m = None, solver = None):
-
-    print("\nCreating RO flowsheet and MP concrete model...")
-
-    # call main to create and initialize model with flow-type variable efficiency
+def create_base_model(m = None):
+    # TODO - replace call to main with a build function and defer initialization to a separate routine
     if m is None:
-        m = ConcreteModel()
-
-    if solver is None:
-        solver = get_solver()
-    
-    m = swro.build(erd_type=swro.ERDtype.pump_as_turbine, 
-                   variable_efficiency=VariableEfficiency.none,)
+        m = swro.main(erd_type=swro.ERDtype.pump_as_turbine, 
+                    variable_efficiency=VariableEfficiency.none,)
 
     return m
 
 
-def create_swro_mp_block():
-    print(">>> Creating model for each time period")
+def create_swro_mp_block(m=None):
 
-    m = create_base_model()
+    m = create_base_model(m)
 
-    ramp_time = 60  # seconds (1 min)
-    ramping_rate = 0.7e5  # Pa/s
-    pressure_ramp = ramping_rate * ramp_time
+    # Create a ramping block with dynamic operation parameters 
+    m.fs.ramping = Block()
+    m.fs.ramping.ramp_time = Param(initialize=60,
+                                   units= pyunits.s, 
+                                   mutable=True,
+                                   doc="Time associated with ramping up or down in system pressure")
+    m.fs.ramping.ramping_rate = Param(initialize=0.7e5,
+                                        units= pyunits.Pa/pyunits.s,
+                                        mutable=True,
+                                        doc="Slowest rate at which pressure can be ramped up or down")
 
     # Add coupling variables
-    m.previous_pressure = Var(
+    m.fs.previous_pressure = Var(
         domain=NonNegativeReals,
         units=pyunits.Pa,
         bounds=(10e5, 80e5),
@@ -77,17 +74,16 @@ def create_swro_mp_block():
     @m.Constraint(doc="Pressure ramping down constraint")
     def constraint_ramp_down(b):
         return (
-            b.previous_pressure - pressure_ramp
+            b.fs.previous_pressure - b.fs.ramping.ramping_rate * b.fs.ramping.ramp_time
             <= b.fs.P1.control_volume.properties_out[0].pressure
         )
 
     @m.Constraint(doc="Pressure ramping up constraint")
     def constraint_ramp_up(b):
         return (
-            b.previous_pressure + pressure_ramp
+            b.fs.previous_pressure + b.fs.ramping.ramping_rate * b.fs.ramping.ramp_time
             >= b.fs.P1.control_volume.properties_out[0].pressure
         )
-
     return m
 
 def unfix_dof(b):
@@ -110,7 +106,6 @@ def unfix_dof(b):
         )
 
 
-# The tank level and power output are linked between the contiguous time periods
 def get_swro_link_variable_pairs(b1, b2):
     """
     b1: current time block
@@ -119,7 +114,7 @@ def get_swro_link_variable_pairs(b1, b2):
     return [
         (
             b1.fs.P1.control_volume.properties_out[0].pressure,
-            b2.previous_pressure,
+            b2.fs.previous_pressure,
         )
     ]
 
@@ -129,7 +124,6 @@ def get_swro_periodic_variable_pairs(b1, b2):
     b1: final time block
     b2: first time block
     """
-    # return
     return []
 
 
@@ -142,7 +136,6 @@ def create_multiperiod_swro_model(n_time_points=4):
         process_model_func=create_swro_mp_block,
         unfix_dof_func = unfix_dof,
         linking_variable_func= get_swro_link_variable_pairs,
-        periodic_variable_func= get_swro_periodic_variable_pairs,
     )
 
     multiperiod_swro.build_multi_period_model()

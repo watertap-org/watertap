@@ -13,9 +13,7 @@
 from pyomo.environ import (
     ConcreteModel,
     value,
-    Constraint,
     Objective,
-    Param,
     TransformationFactory,
     assert_optimal_termination,
 )
@@ -23,7 +21,7 @@ from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom, number_activated_objectives
 from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.models.unit_models.mixer import MomentumMixingType
@@ -473,7 +471,8 @@ def initialize_pump_as_turbine(m, optarg):
 
 def optimize_set_up(m):
     # add objective
-    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
+    if number_activated_objectives(m) < 1:
+        m.fs.add_component("objective", Objective(expr=m.fs.costing.LCOW))
 
     # unfix decision variables and add bounds
     # pump 1 and pump 2
@@ -599,9 +598,6 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    # m = main(
-    #     erd_type=ERDtype.pressure_exchanger, variable_efficiency=VariableEfficiency.none
-    # )
     m = main(
-        erd_type=ERDtype.pump_as_turbine, variable_efficiency=VariableEfficiency.flow
+        erd_type=ERDtype.pump_as_turbine, variable_efficiency=VariableEfficiency.none
     )
