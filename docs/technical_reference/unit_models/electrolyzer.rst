@@ -1,10 +1,14 @@
 Electrolyzer
-===============================
-This is a simplified electrolyzer unit model used to simulate electrolysis performance. The development of this unit model is ongoing.
+============
+.. note::
+
+  The development of the electrolyzer model is ongoing.
+
+This is a simplified electrolyzer unit model used to approximate electrolysis performance.  With the current build, the model is simulated under the following assumptions:
    * simulation of this unit model is only supported with the Multi-Component Aqueous Solution (MCAS) property package
    * supports liquid phase only, vapor components are modeled in the liquid phase
    * supports steady-state only
-   * assumes isothermal conditions, and performance is not temperature dependent
+   * assumes isothermal conditions and performance is not temperature dependent
    * does not determine equilibrium of electrolysis products in solution
    * does not consider undesired reactions
 
@@ -15,7 +19,7 @@ This is a simplified electrolyzer unit model used to simulate electrolysis perfo
 
 Introduction
 ------------
-The basis for the electrolyzer model is considering the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. Faradaic conversion considers equating electrical current to the amount of electrons available for electrochemical reaction by Faraday's law.
+The basis for the electrolyzer model is considering the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. Faradaic conversion considers equating electrical current to the amount of electrons available for electrochemical reaction by Faraday's law (Kent, 2007).
 
 Degrees of Freedom
 ------------------
@@ -26,7 +30,7 @@ In the core calculations of the electrolyzer unit model, there are 4 degrees of 
    * current efficiency, :math:`\eta_{current}`
    * voltage efficiency, :math:`\eta_{voltage}`
 
-Additionally, the electrolysis reactions at the anode and cathode must be specified. By default, the following stoichiometric variables will fix to 0. Therefore, only the nonzero stoichiometry must be specified. As an example for the chlor alkali process:
+Additionally, the electrolysis reactions at the anode and cathode must be specified. By default, the following stoichiometric variables will be fixed to 0 when the electrolyzer model block is constructed. Therefore, only the nonzero stoichiometry must be specified. As an example for the chlor alkali process, the following reactions occur with sodium ions permeating from the anolyte to catholyte. The stoichiometry is normalized to 1 mole of electrons as intended in the model framework.
 
 Anode:
 
@@ -63,7 +67,7 @@ The following variables should then be fixed:
 
 Model Structure
 ------------------
-The electrolyzer model consists of 2 ControlVolume0DBlocks, one for the anolyte and another for the catholyte. Currently, the generation of species via electrolysis reactions is handled by the `custom_molar_term` within the ControlVolume0DBlock.
+The electrolyzer model consists of 2 ControlVolume0DBlocks, one for the anolyte and another for the catholyte. Currently, the generation of species via electrolysis reactions is handled by the `custom_molar_term` within the ControlVolume0DBlock. Considering the reaction block and reaction package are omitted, no temperature dependence and rigorous energy balance are considered.
 
 Sets
 ----
@@ -96,6 +100,8 @@ Variables
    "power", ":math:`P`", "power", "None", ":math:`W`"
    "power efficiency", ":math:`\eta_{power}`", "efficiency_power", "None", ":math:`W`"
 
+For non-fixed efficiencies, custom constraints for the current and voltage efficiencies may be constructed at the flowsheet level. These may allow for predicative performance as a function of temperature, concentration, overpotential, and other variables.
+
 The following variables are constructed on the unit model for the current build. However, these variables are specific to the electrolysis reactions targeted.
 
 .. csv-table::
@@ -121,7 +127,7 @@ Equations
    "cathode area", ":math:`I = JA_{cathode}`"
    "power", ":math:`P = IV`"
    "power efficiency", ":math:`P = \eta_{current}\eta_{voltage}`"
-   "ion permeation through the membrane", ":math:`\dot{n}_j,membrane = -\varepsilon_{j,membrane}\dot{n}_{e^-}`"
+   "ion permeation through the membrane", ":math:`\dot{n}_{j,membrane} = -\varepsilon_{j,membrane}\dot{n}_{e^-}`"
    "molar generation of species according the anode electrolysis reaction", ":math:`\dot{n}_{j,anode} = \varepsilon_{j,anode}\dot{n}_{e^-}`"
    "molar generation of species according the cathode electrolysis reaction", ":math:`\dot{n}_{j,cathode} = \varepsilon_{j,cathode}\dot{n}_{e^-}`"
 
@@ -150,12 +156,12 @@ The following variables are constructed when applying the electrolyzer costing m
    "membrane capital cost", ":math:`C_{membrane}`", "membrane_cost", ":math:`$`"
    "anode capital cost", ":math:`C_{anode}`", "anode_cost", ":math:`$`"
    "cathode capital cost", ":math:`C_{cathode}`", "cathode_cost", ":math:`$`"
-   "membrane replacement cost", ":math:`C_{membrane_replace}`", "membrane_replacement_cost", ":math:`frac{$}{yr}`"
+   "membrane replacement cost", ":math:`C_{membrane replace}`", "membrane_replacement_cost", ":math:`\frac{$}{yr}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Capital costs are contributing to the majority of material costs for the anode cathode and membrane. Each material cost is calculated individually then summed.
+Capital costs are contributing to the majority of material costs for the anode cathode and membrane. Each material cost is calculated individually then summed (O’Brien, 2005).
 
     .. math::
 
@@ -171,7 +177,7 @@ Operating costs for the electrolyzer are the electricity requirements and membra
 
     .. math::
 
-        & C_{op,tot} = C_{membrane_replace} = f_{membrane_replace}c_{membrane}A_{membrane}
+        C_{op,tot} = C_{membrane replace} = f_{membrane replace}c_{membrane}A_{membrane}
 
 Code Documentation
 -------------------
@@ -181,14 +187,7 @@ Code Documentation
 
 References
 -----------
-Hand, D. W., Crittenden, J. C., & Thacker, W. E. (1984). Simplified models for design of fixed-bed adsorption systems.
-Journal of Environmental Engineering, 110(2), 440-456.
+Kent, J. A. (Ed.). (2007). Kent and Riegel’s Handbook of Industrial Chemistry and Biotechnology. Springer US. https://doi.org/10.1007/978-0-387-27843-8
 
-Crittenden, J., Rhodes, R., Hand, D., Howe, K., & Tchobanoglous, G. (2012). MWHs Water Treatment. Principles and Design.
-John Wiley & Sons.
 
-Crittenden, J. C., Berrigan, J. K., Hand, D. W., & Lykins, B. (1987). Design of Rapid Fixed‐Bed Adsorption Tests for
-Nonconstant Diffusivities. Journal of Environmental Engineering, 113(2), 243–259.
-
-United States Environmental Protection Agency. (2021). Work Breakdown Structure-Based Cost Model for Granular Activated
-Carbon Drinking Water Treatment.
+O’Brien, T., Bommaraju, T. V., & Hine, F. (2005). Handbook of chlor-alkali technology. Springer.
