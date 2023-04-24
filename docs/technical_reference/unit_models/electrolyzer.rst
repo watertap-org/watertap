@@ -19,7 +19,7 @@ This is a simplified electrolyzer unit model used to approximate electrolysis pe
 
 Introduction
 ------------
-The basis for the electrolyzer model is considering the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. Faradaic conversion considers equating electrical current to the amount of electrons available for electrochemical reaction by Faraday's law (Kent, 2007).
+The basis for the electrolyzer model is considering the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. This model was primary motivated by the chlor-alkali membrane electrolysis process, a conventional electrolyzer unit for the production of chlorine gas and hydroxide (Bommaraju, 2015)(Kent, 2007). Given a membrane electrolyzer, the catholyte and anolyte are separated by an ion exchange membrane. This provides two distinct control volumes to perform model calculations. Faradaic conversion considers equating the supplied electrical current to the amount of electrons available for electrochemical reaction by Faraday's law. The fundamental calculation of Faradaic conversion is described in the equation, "electrons passed between anode and cathode contributing to reactions".
 
 Degrees of Freedom
 ------------------
@@ -200,6 +200,9 @@ Code Documentation
 
 References
 -----------
+Bommaraju, T. V., & O’Brien, T. F. (2015). Brine electrolysis. Electrochemistry Encyclopedia. https://knowledge.electrochem.org/encycl/art-b01-brine.htm
+
+
 Kent, J. A. (Ed.). (2007). Kent and Riegel’s Handbook of Industrial Chemistry and Biotechnology. Springer US. https://doi.org/10.1007/978-0-387-27843-8
 
 
