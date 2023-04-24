@@ -20,11 +20,11 @@ This is a simplified electrolyzer unit model used to approximate electrolysis pe
 
 Introduction
 ------------
-The basis for the electrolyzer model is considering the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. This model was primary motivated by the chlor-alkali membrane electrolysis process, a conventional electrolyzer unit for the production of chlorine gas and hydroxide (Bommaraju, 2015) (Kent, 2007). The model has been demonstrated for the chlor-alkali configuration in the electrolyzer testing file and may be generalizable to other electrolysis processes, but had not been validated for generalized simulation. Given a membrane electrolyzer, the catholyte and anolyte are separated by an ion exchange membrane. This provides two distinct control volumes to perform model calculations. Faradaic conversion considers equating the supplied electrical current to the amount of electrons available for electrochemical reaction by Faraday's law. The fundamental calculation of Faradaic conversion is described in "electrons passed between anode and cathode contributing to reactions" found in the :ref:`Equations <electrolyzer_equations>`.
+This model was primary motivated by the chlor-alkali membrane electrolysis process, a conventional electrolyzer unit for the production of chlorine gas and hydroxide (Bommaraju, 2015) (Kent, 2007). The model has been demonstrated for the chlor-alkali configuration in the electrolyzer testing file and may be generalizable to other electrolysis processes, but had not been validated for generalized simulation. Given a membrane electrolyzer, the catholyte and anolyte are separated by an ion exchange membrane. This provides two distinct control volumes to perform model calculations. The basis for determining electrolyzer performance is considering the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. Faradaic conversion considers equating the supplied electrical current to the amount of electrons available for electrochemical reaction by Faraday's law. The fundamental calculation of Faradaic conversion is described in "electrons passed between anode and cathode contributing to reactions" found in the :ref:`Equations <electrolyzer_equations>`.
 
 Degrees of Freedom
 ------------------
-In the core calculations of the electrolyzer unit model, there are 4 degrees of freedom in addition to the inlet state variables (i.e., temperature, pressure, component flowrates) that should be fixed for the model to be fully specified. In typical design cases the following 4 variables are typically fixed:
+In the fundamental calculations of the electrolyzer unit model, there are 4 degrees of freedom in addition to the inlet state variables (i.e., temperature, pressure, component flowrates) that should be fixed for the model to be fully specified. In typical design cases the following 4 variables are fixed:
 
    * current, :math:`I`
    * current density, :math:`J`
@@ -68,7 +68,7 @@ The following variables should then be fixed:
 
 Model Structure
 ------------------
-The electrolyzer model consists of 2 ControlVolume0DBlocks, one for the anolyte and another for the catholyte. Currently, the generation of species via electrolysis reactions is handled by the ``custom_molar_term`` within the ControlVolume0DBlock. Considering the reaction block and reaction package are omitted, no temperature dependence and rigorous energy balance are considered. Scaling of the variable should first be performed using ``calculate_scaling_factors()``. For the case that the model is poorly scaled, the ``current`` variable should be rescaled. Estimated scaling factors are propagated for other unit model variables which are dependent on process scale. An example of the methodology is the following.
+The electrolyzer model consists of 2 ControlVolume0DBlocks, one for the anolyte and another for the catholyte. Currently, the generation of species via electrolysis reactions is handled by the ``custom_molar_term`` within the ControlVolume0DBlock. Considering the reaction block and reaction package are omitted, no temperature dependence and rigorous energy balance are considered. Scaling of unit model variables should first be performed using ``calculate_scaling_factors()``. For the case that the model is poorly scaled, the ``current`` variable should be rescaled. Estimated scaling factors are propagated from the ``current`` scaling factor for other unit model variables which are dependent on process scale. An example of the methodology is the provided below.
 
 .. code-block::
 
@@ -105,14 +105,14 @@ Variables
    "moles of electrons contributing to electrolysis", ":math:`\dot{n}_{e^-}`", "electron_flow", "None", ":math:`\frac{mol}{s}`"
    "current", ":math:`I`", "current", "None", ":math:`A`"
    "current efficiency", ":math:`\eta_{current}`", "efficiency_current", "None", ":math:`\text{dimensionless}`"
-   "current density", ":math:`J`", "current_density", "None", ":math:`\frac{A}{m^3}`"
-   "membrane area", ":math:`A_{membrane}`", "membrane_area", "None", ":math:`m^3`"
-   "anode area", ":math:`A_{anode}`", "anode_area", "None", ":math:`m^3`"
-   "cathode area", ":math:`A_{cathode}`", "cathode_area", "None", ":math:`m^3`"
+   "current density", ":math:`J`", "current_density", "None", ":math:`\frac{A}{m^2}`"
+   "membrane area", ":math:`A_{membrane}`", "membrane_area", "None", ":math:`m^2`"
+   "anode area", ":math:`A_{anode}`", "anode_area", "None", ":math:`m^2`"
+   "cathode area", ":math:`A_{cathode}`", "cathode_area", "None", ":math:`m^2`"
    "applied voltage", ":math:`V`", "voltage_applied", "None", ":math:`V`"
-   "voltage efficiency", ":math:`\eta_{voltage}`", "efficiency_voltage", "None", ":math:`V`"
+   "voltage efficiency", ":math:`\eta_{voltage}`", "efficiency_voltage", "None", ":math:`\text{dimensionless}`"
    "power", ":math:`P`", "power", "None", ":math:`W`"
-   "power efficiency", ":math:`\eta_{power}`", "efficiency_power", "None", ":math:`W`"
+   "power efficiency", ":math:`\eta_{power}`", "efficiency_power", "None", ":math:`\text{dimensionless}`"
 
 For non-fixed efficiencies, custom constraints for the current and voltage efficiencies may be constructed at the flowsheet level. These may allow for predicative performance as a function of temperature, concentration, overpotential, and other variables.
 
@@ -122,9 +122,9 @@ The following variables are constructed on the unit model for the current build.
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "thermodynamic minimum voltage for electrolysis reactions to proceed", ":math:`V_{min}`", "voltage_min", "None", ":math:`V`"
-   "stoichiometry of the reaction at the anode normalized to 1 electron", ":math:`\varepsilon_{j,anode}`", "anode_stoich", "p, j", ":math:`\text{dimensionless}`"
-   "stoichiometry of the reaction at the cathode normalized to 1 electron", ":math:`\varepsilon_{j,cathode}`", "cathode_stoich", "p, j", ":math:`\text{dimensionless}`"
-   "stoichiometry of the mass transfer across the membrane w.r.t. the electrolysis reaction", ":math:`\varepsilon_{j,membrane}`", "membrane_stoich", "p, j", ":math:`\text{dimensionless}`"
+   "stoichiometry of the reaction at the anode normalized to 1 electron", ":math:`\varepsilon_{j,anode}`", "anode_stoich", "[p, j]", ":math:`\text{dimensionless}`"
+   "stoichiometry of the reaction at the cathode normalized to 1 electron", ":math:`\varepsilon_{j,cathode}`", "cathode_stoich", "[p, j]", ":math:`\text{dimensionless}`"
+   "stoichiometry of the mass transfer across the membrane w.r.t. the electrolysis reaction", ":math:`\varepsilon_{j,membrane}`", "membrane_stoich", "[p, j]", ":math:`\text{dimensionless}`"
 
 .. _electrolyzer_equations:
 
@@ -134,7 +134,7 @@ Equations
    :header: "Description", "Equation"
 
    "voltage efficiency as a function of minimum required by reaction", ":math:`V_{min} = V\eta_{voltage}`"
-   "electrons passed between anode and cathode contributing to reactions", ":math:`\dot{n}_{e^-} = \frac{I\eta_{current}}{F}`"
+   "electrons passed between anode and cathode contributing to reactions :math:`^*`", ":math:`\dot{n}_{e^-} = \frac{I\eta_{current}}{F}`"
    "membrane area", ":math:`I = JA_{membrane}`"
    "anode area", ":math:`I = JA_{anode}`"
    "cathode area", ":math:`I = JA_{cathode}`"
@@ -143,6 +143,8 @@ Equations
    "ion permeation through the membrane", ":math:`\dot{n}_{j,membrane} = -\varepsilon_{j,membrane}\dot{n}_{e^-}`"
    "molar generation of species according the anode electrolysis reaction", ":math:`\dot{n}_{j,anode} = \varepsilon_{j,anode}\dot{n}_{e^-}`"
    "molar generation of species according the cathode electrolysis reaction", ":math:`\dot{n}_{j,cathode} = \varepsilon_{j,cathode}\dot{n}_{e^-}`"
+
+| \* ``F`` is Faraday's constant from idaes.core.util.constants, 96,485 C/mol
 
 Costing Method
 ---------------
