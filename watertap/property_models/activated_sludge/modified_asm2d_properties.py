@@ -70,9 +70,6 @@ class ModifiedASM2dParameterData(ASM2dParameterData):
             # This triggers the addition of j into component_list and solute_set.
             self.add_component(j, Solute())
 
-        # self.S_K = Solute(doc="Potassium")
-        # self.S_Mg = Solute(doc="Magnesium")
-
 
 class _ModifiedASM2dStateBlock(_ASM2dStateBlock):
     pass
