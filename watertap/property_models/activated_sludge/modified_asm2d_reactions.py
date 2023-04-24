@@ -18,6 +18,9 @@ Reference:
 [1] Henze, M., Gujer, W., Mino, T., Matsuo, T., Wentzel, M.C., Marais, G.v.R.,
 Van Loosdrecht, M.C.M., "Activated Sludge Model No.2D, ASM2D", 1999,
 Wat. Sci. Tech. Vol. 39, No. 1, pp. 165-182
+[2] Flores-Alsina, X., Solon, K., Mbamba, C.K., Tait, S., Gernaey, K.V., Jeppsson, U. and Batstone, D.J.,
+"Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of
+anaerobic digestion processes", 2016, Water Research, 95, pp.370-382.
 """
 
 # Import Pyomo libraries

@@ -481,6 +481,12 @@ class TestAerobic:
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
             5.5762e-3, rel=1e-4
         )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
+            0, abs=1e-4
+        )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
             5.1754e-3, rel=1e-4
         )
@@ -622,6 +628,12 @@ class TestAnoxic:
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
             98.505e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
+            0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
             5.0916e-3, rel=1e-4
@@ -775,6 +787,12 @@ class TestAerobic15C:
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
             3.524, rel=1e-4
         )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
+            0, abs=1e-4
+        )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
             4.5433e-3, rel=1e-4
         )
@@ -926,6 +944,12 @@ class TestAnoxicPHA:
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
             3.500, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
+            0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
             6.188e-3, rel=1e-4
