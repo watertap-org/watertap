@@ -144,7 +144,7 @@ Equations
    "molar generation of species according the anode electrolysis reaction", ":math:`\dot{n}_{j,anode} = \varepsilon_{j,anode}\dot{n}_{e^-}`"
    "molar generation of species according the cathode electrolysis reaction", ":math:`\dot{n}_{j,cathode} = \varepsilon_{j,cathode}\dot{n}_{e^-}`"
 
-| \* ``F`` is Faraday's constant from idaes.core.util.constants, 96,485 C/mol
+| \* ``F`` is Faraday's constant from ``idaes.core.util.constants``, 96,485 C/mol
 
 Costing Method
 ---------------
