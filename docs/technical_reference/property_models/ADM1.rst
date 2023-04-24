@@ -182,8 +182,8 @@ Process Rate Equations
    "Decay of X_ac", ":math:`\rho_{18} = k_{dec, X_{ac}} C_{X_{ac}}`"
    "Decay of X_h2", ":math:`\rho_{19} = k_{dec, X_{h2}} C_{X_{h2}}`"
 
-Acid-Base Equilibrium Constraints
----------------------------------
+Additional Constraints
+----------------------
 .. csv-table::
    :header: "Description", "Equation"
 
@@ -196,9 +196,9 @@ Acid-Base Equilibrium Constraints
    "Mass concentration of acetate, ac-", ":math:`C_{ac} = \frac{K_{a,ac} * C_{ac,ref}}{K_{a,ac} + S_{H}}`"
    "Molar concentration of bicarbonate, HCO3", ":math:`M_{hco3} = \frac{K_{a,co2} * \frac{C_{S_{IC},ref}}{12}}{K_{a,co2} + S_{H}}`"
    "Molar concentration of ammonia, NH3", ":math:`M_{nh3} = \frac{K_{a,IN} * \frac{C_{S_{IN},ref}}{14}}{K_{a,IN} + S_{H}}`"
-   "Molar concentration of carbon dioxide, CO2", ":math:`M_{co2} = \frac{K_{a,co2} * \frac{C_{S_{IC},ref}}{12}}{K_{a,co2} + S_{H}}`"
+   "Molar concentration of carbon dioxide, CO2", ":math:`M_{co2} = \frac{C_{S_{IC},ref}}{12} - M_{hco3}`"
    "Molar concentration of ammonium, NH4+", ":math:`M_{nh4} = \frac{C_{S_{IN},ref}}{14} - M_{nh3}`"
-   "Molar concentration of hydrogen, H+", ":math:`S_{H} = M_{hco3} + C_{ac} + C_{pro} + C_{bu} + C_{va} + S_{OH} + M_{a} - M_{c} - M_{nh4}`"
+   "Molar concentration of hydrogen, H+", ":math:`S_{H} = M_{hco3} + \frac{C_{ac}}{64} + \frac{C_{pro}}{112} + \frac{C_{bu}}{160} + \frac{C_{va}}{208} + S_{OH} + M_{a} - M_{c} - M_{nh4}`"
    "Molar concentration of hydroxide, OH-", ":math:`S_{OH} = \frac{KW}{S_{H}}`"
    "pH of solution", ":math:`pH = -log_{10}(S_{H})`"
 
@@ -208,19 +208,19 @@ The rules for pH inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH
 
        I_{pH,aa}=
        \begin{cases}
-         \exp{-3 (\frac{pH - pH_{UL,aa}}{pH_{UL,aa} - pH_{LL,aa}})^2} & \text{for } pH \le pH_{UL,aa}\\
+         \exp{(-3 (\frac{pH - pH_{UL,aa}}{pH_{UL,aa} - pH_{LL,aa}})^2)} & \text{for } pH \le pH_{UL,aa}\\
          1 & \text{for } pH > pH_{UL,aa}
        \end{cases}
 
        I_{pH,ac}=
        \begin{cases}
-         \exp{-3 (\frac{pH - pH_{UL,ac}}{pH_{UL,ac} - pH_{LL,ac}})^2} & \text{for } pH \le pH_{UL,ac}\\
+         \exp{(-3 (\frac{pH - pH_{UL,ac}}{pH_{UL,ac} - pH_{LL,ac}})^2)} & \text{for } pH \le pH_{UL,ac}\\
          1 & \text{for } pH > pH_{UL,ac}
        \end{cases}
 
        I_{pH,h2}=
        \begin{cases}
-         \exp{-3 (\frac{pH - pH_{UL,h2}}{pH_{UL,h2} - pH_{LL,h2}})^2} & \text{for } pH \le pH_{UL,h2}\\
+         \exp{(-3 (\frac{pH - pH_{UL,h2}}{pH_{UL,h2} - pH_{LL,h2}})^2)} & \text{for } pH \le pH_{UL,h2}\\
          1 & \text{for } pH > pH_{UL,h2}
        \end{cases}
 

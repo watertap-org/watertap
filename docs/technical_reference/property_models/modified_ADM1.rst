@@ -246,8 +246,8 @@ Process Rate Equations
    ":lime:`Lysis of X_PP`", ":math:`\rho_{24} = b_{PP} C_{X_{PP}}`"
    ":lime:`Lysis of X_PHA`", ":math:`\rho_{25} = b_{PHA} C_{X_{PHA}}`"
 
-Acid-Base Equilibrium Constraints
----------------------------------
+Additional Constraints
+----------------------
 :lime:`Lime` text indicates the equation has been added, and :blue:`blue` text indicates the equation has been modified from its base ADM1 implementation.
 
 .. csv-table::
@@ -262,11 +262,11 @@ Acid-Base Equilibrium Constraints
    "Mass concentration of acetate, ac-", ":math:`C_{ac} = \frac{K_{a,ac} * C_{ac,ref}}{K_{a,ac} + S_{H}}`"
    "Molar concentration of bicarbonate, HCO3", ":math:`M_{hco3} = \frac{K_{a,co2} * \frac{C_{S_{IC},ref}}{12}}{K_{a,co2} + S_{H}}`"
    "Molar concentration of ammonia, NH3", ":math:`M_{nh3} = \frac{K_{a,IN} * \frac{C_{S_{IN},ref}}{14}}{K_{a,IN} + S_{H}}`"
-   "Molar concentration of carbon dioxide, CO2", ":math:`M_{co2} = \frac{K_{a,co2} * \frac{C_{S_{IC},ref}}{12}}{K_{a,co2} + S_{H}}`"
+   "Molar concentration of carbon dioxide, CO2", ":math:`M_{co2} = \frac{C_{S_{IC},ref}}{12} - M_{hco3}`"
    "Molar concentration of ammonium, NH4+", ":math:`M_{nh4} = \frac{C_{S_{IN},ref}}{14} - M_{nh3}`"
    ":lime:`Molar concentration of magnesium, Mg`", ":math:`M_{Mg} = \frac{C_{X_{PP},ref}}{300.41}`"
    ":lime:`Molar concentration of potassium, K`", ":math:`M_{K} = \frac{C_{X_{PP},ref}}{300.41}`"
-   ":blue:`Molar concentration of hydrogen, H+`", ":math:`S_{H} = M_{hco3} + C_{ac} + C_{pro} + C_{bu} + C_{va} + S_{OH} + M_{a} - M_{c} - M_{nh4} - M_{Mg} - M_{K}`"
+   ":blue:`Molar concentration of hydrogen, H+`", ":math:`S_{H} = M_{hco3} + \frac{C_{ac}}{64} + \frac{C_{pro}}{112} + \frac{C_{bu}}{160} + \frac{C_{va}}{208} + S_{OH} + M_{a} - M_{c} - M_{nh4} - M_{Mg} - M_{K}`"
    "Molar concentration of hydroxide, OH-", ":math:`S_{OH} = \frac{KW}{S_{H}}`"
    "pH of solution", ":math:`pH = -log_{10}(S_{H})`"
 
@@ -276,19 +276,19 @@ The rules for inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH,aa
 
        I_{pH,aa}=
        \begin{cases}
-         \exp{-3 (\frac{pH - pH_{UL,aa}}{pH_{UL,aa} - pH_{LL,aa}})^2} & \text{for } pH \le pH_{UL,aa}\\
+         \exp{(-3 (\frac{pH - pH_{UL,aa}}{pH_{UL,aa} - pH_{LL,aa}})^2)} & \text{for } pH \le pH_{UL,aa}\\
          1 & \text{for } pH > pH_{UL,aa}
        \end{cases}
 
        I_{pH,ac}=
        \begin{cases}
-         \exp{-3 (\frac{pH - pH_{UL,ac}}{pH_{UL,ac} - pH_{LL,ac}})^2} & \text{for } pH \le pH_{UL,ac}\\
+         \exp{(-3 (\frac{pH - pH_{UL,ac}}{pH_{UL,ac} - pH_{LL,ac}})^2)} & \text{for } pH \le pH_{UL,ac}\\
          1 & \text{for } pH > pH_{UL,ac}
        \end{cases}
 
        I_{pH,h2}=
        \begin{cases}
-         \exp{-3 (\frac{pH - pH_{UL,h2}}{pH_{UL,h2} - pH_{LL,h2}})^2} & \text{for } pH \le pH_{UL,h2}\\
+         \exp{(-3 (\frac{pH - pH_{UL,h2}}{pH_{UL,h2} - pH_{LL,h2}})^2)} & \text{for } pH \le pH_{UL,h2}\\
          1 & \text{for } pH > pH_{UL,h2}
        \end{cases}
 
@@ -307,7 +307,7 @@ The rules for inhibition related to secondary substrate (:math:`I_{IN,lim}`), hy
 
        I_{nh3}= \frac{1}{1 + \frac{M_{nh3}}{K_{I,nh3}}}
 
-:lime:`The rules for hydrogen sulfide inhibition factors are shown below; however, since` :math:`Z_{h2s}` :lime:`is assumed to be 0, all of these inhibition factors are negligible`
+:lime:`The rules for hydrogen sulfide inhibition factors are shown below; however, since` :math:`Z_{h2s}` :lime:`is assumed to be 0, all of these inhibition factors are negligible.`
 
     .. math::
 
