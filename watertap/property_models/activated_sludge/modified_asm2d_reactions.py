@@ -12,10 +12,6 @@
 """
 Modified ASM2d reaction package for compatibility with modified ADM1.
 
-Important Note: ASM2d reactions depend on the presences of TSS in solution, however
-TSS does not take part in the rate expressions. Thus, it is possible to have cases
-where there is insufficient TSS present in the system for the reactions to occur
-resulting in an infeasible solution.
 
 Reference:
 
