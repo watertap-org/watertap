@@ -15,6 +15,7 @@ Unit Models
    boron_removal
    electrodialysis_0D
    electrodialysis_1D
+   electrolyzer
    uv_aop
    gac
    osmotically_assisted_reverse_osmosis_0D

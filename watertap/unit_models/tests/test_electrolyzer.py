@@ -153,8 +153,8 @@ class TestElectrolyzer:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(m) == 199
-        assert number_total_constraints(m) == 146
+        assert number_variables(m) == 205
+        assert number_total_constraints(m) == 151
         assert number_unused_variables(m) == 15
 
     @pytest.mark.unit
@@ -169,15 +169,21 @@ class TestElectrolyzer:
         m.fs.unit.current.fix(30000)
         m.fs.unit.current_density.fix(5000)
         m.fs.unit.efficiency_current.fix(0.9)
-        m.fs.unit.voltage_min.fix(2.2)
         m.fs.unit.efficiency_voltage.fix(0.8)
 
+        # TODO: transfer the following variables/sets to reaction package
         # reactions
+        # from reaction thermodynamic potential
+        m.fs.unit.voltage_min.fix(2.2)
+        # Cl- --> 0.5 Cl2 + e-
         m.fs.unit.anode_stoich["Liq", "CL-"].fix(-1)
         m.fs.unit.anode_stoich["Liq", "CL2-v"].fix(0.5)
+        # H20 + e- --> 0.5 H2 + OH-
         m.fs.unit.cathode_stoich["Liq", "H2O"].fix(-1)
         m.fs.unit.cathode_stoich["Liq", "H2-v"].fix(0.5)
         m.fs.unit.cathode_stoich["Liq", "OH-"].fix(1)
+        # 1 Na+ from anolyte to catholyte per 1 e- in electrolysis reaction
+        m.fs.unit.membrane_stoich["Liq", "NA+"].fix(1)
 
         # test degrees of freedom satisfied
         assert degrees_of_freedom(m) == 0

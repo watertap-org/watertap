@@ -16,7 +16,6 @@ import idaes.logger as idaeslog
 
 from pyomo.environ import (
     Var,
-    Constraint,
     Suffix,
     NonNegativeReals,
     Reals,
@@ -49,8 +48,8 @@ _log = idaeslog.getLogger(__name__)
 class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
     """
     Faradaic conversion electrolyzer model
-    only supports membrane chlor-alkali electrolysis in current state
-    ongoing work
+    developed specifically for chlor alkali electrolysis using a membrane electrolyzer
+    this model development is ongoing
     """
 
     CONFIG = ConfigBlock()
@@ -188,7 +187,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         self._validate_config()
 
         # create methods for use in custom_molar_term of control volumes
-        self.custom_reaction_generation_anode = Var(
+        self.custom_reaction_anode = Var(
             self.flowsheet().time,
             self.config.property_package.component_list,
             initialize=1,
@@ -198,9 +197,9 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         )
 
         def custom_method_anode(t, j):
-            return self.custom_reaction_generation_anode[t, j]
+            return self.custom_reaction_anode[t, j]
 
-        self.custom_reaction_generation_cathode = Var(
+        self.custom_reaction_cathode = Var(
             self.flowsheet().time,
             self.config.property_package.component_list,
             initialize=1,
@@ -210,7 +209,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         )
 
         def custom_method_cathode(t, j):
-            return self.custom_reaction_generation_cathode[t, j]
+            return self.custom_reaction_cathode[t, j]
 
         # build control volume
         self.anolyte = ControlVolume0DBlock(
@@ -283,7 +282,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("current") * units_meta("length") ** -2,
-            doc="current density per membrane area",
+            doc="current density",
         )
         self.membrane_area = Var(
             initialize=10,
@@ -337,7 +336,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="power efficiency",
         )
-
+        # ---------------------------------------------------------------------
         # TODO: transfer the following variables/sets to reaction package
         self.voltage_min = Var(
             initialize=1,
@@ -356,7 +355,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             bounds=(None, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="stoichiometry of the reaction at the anode",
+            doc="stoichiometry of the reaction at the anode normalized to 1 electron",
         )
         self.cathode_stoich = Var(
             self.config.property_package.phase_list,
@@ -365,9 +364,17 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             bounds=(None, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="stoichiometry of the reaction at the cathode",
+            doc="stoichiometry of the reaction at the cathode normalized to 1 electron",
         )
-        membrane_transport_list = [("Liq", "NA+")]
+        self.membrane_stoich = Var(
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize=0,
+            bounds=(None, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="stoichiometry of the mass transfer across the membrane w.r.t. the electrolysis reaction",
+        )
 
         # ---------------------------------------------------------------------
         # performance
@@ -397,7 +404,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         def eq_membrane_area(b):
             return b.current_density * b.membrane_area == b.current
 
-        # TODO: find relationship between required surface area of electrode as a function of process (flowrate)
+        # TODO: find relationship between required surface area of electrode as a function of process (flowrate/volume)
         # assumed
         @self.Constraint(doc="anode area")
         def eq_anode_area(b):
@@ -424,6 +431,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             for j in self.config.property_package.component_list:
                 self.anode_stoich[p, j].fix(0)
                 self.cathode_stoich[p, j].fix(0)
+                self.membrane_stoich[p, j].fix(0)
 
         # ---------------------------------------------------------------------
         # mass balance
@@ -432,20 +440,19 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            doc="",
+            doc="ion permeation through the membrane",
         )
         def eq_membrane_permeation(b, t, p, j):
-            if (p, j) in membrane_transport_list:
-                return b.anolyte.mass_transfer_term[t, p, j] == -b.electron_flow
-            else:
-                b.anolyte.mass_transfer_term[t, p, j].fix(0)
-                return Constraint.Feasible
+            return (
+                b.anolyte.mass_transfer_term[t, p, j]
+                == -b.electron_flow * b.membrane_stoich[p, j]
+            )
 
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            doc="mass transfer across the membrane",
+            doc="equating membrane permeation between the two control volumes",
         )
         def eq_mass_transfer_membrane(b, t, p, j):
             return (
@@ -457,23 +464,22 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            doc="",
+            doc="molar generation of species according the anode electrolysis reaction",
         )
-        def eq_custom_reaction_generation_anode(b, t, p, j):
+        def eq_custom_reaction_anode(b, t, p, j):
             return (
-                b.custom_reaction_generation_anode[t, j]
-                == b.electron_flow * b.anode_stoich[p, j]
+                b.custom_reaction_anode[t, j] == b.electron_flow * b.anode_stoich[p, j]
             )
 
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            doc="",
+            doc="molar generation of species according the cathode electrolysis reaction",
         )
-        def eq_custom_reaction_generation_cathode(b, t, p, j):
+        def eq_custom_reaction_cathode(b, t, p, j):
             return (
-                b.custom_reaction_generation_cathode[t, j]
+                b.custom_reaction_cathode[t, j]
                 == b.electron_flow * b.cathode_stoich[p, j]
             )
 
@@ -647,28 +653,14 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
 
         super().calculate_scaling_factors()
 
-        # TODO: add dynamic scaling factors as a function of solute flow
-
-        if iscale.get_scaling_factor(self.electron_flow) is None:
-            iscale.set_scaling_factor(self.electron_flow, 1)
-
-        if iscale.get_scaling_factor(self.current) is None:
-            iscale.set_scaling_factor(self.current, 1e-5)
-
-        if iscale.get_scaling_factor(self.efficiency_current) is None:
-            iscale.set_scaling_factor(self.efficiency_current, 1)
+        # ---------------------------------------------------------------------
+        # fixed sf
 
         if iscale.get_scaling_factor(self.current_density) is None:
             iscale.set_scaling_factor(self.current_density, 1e-4)
 
-        if iscale.get_scaling_factor(self.membrane_area) is None:
-            iscale.set_scaling_factor(self.membrane_area, 1e-1)
-
-        if iscale.get_scaling_factor(self.anode_area) is None:
-            iscale.set_scaling_factor(self.anode_area, 1e-1)
-
-        if iscale.get_scaling_factor(self.cathode_area) is None:
-            iscale.set_scaling_factor(self.cathode_area, 1e-1)
+        if iscale.get_scaling_factor(self.efficiency_current) is None:
+            iscale.set_scaling_factor(self.efficiency_current, 1)
 
         if iscale.get_scaling_factor(self.voltage_applied) is None:
             iscale.set_scaling_factor(self.voltage_applied, 1)
@@ -678,9 +670,6 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.efficiency_voltage) is None:
             iscale.set_scaling_factor(self.efficiency_voltage, 1)
-
-        if iscale.get_scaling_factor(self.power) is None:
-            iscale.set_scaling_factor(self.power, 1e-5)
 
         if iscale.get_scaling_factor(self.efficiency_power) is None:
             iscale.set_scaling_factor(self.efficiency_power, 1)
@@ -698,21 +687,44 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             for j in self.config.property_package.component_list:
 
                 if (
-                    iscale.get_scaling_factor(
-                        self.custom_reaction_generation_cathode[t, j]
-                    )
+                    iscale.get_scaling_factor(self.custom_reaction_cathode[t, j])
                     is None
                 ):
-                    iscale.set_scaling_factor(
-                        self.custom_reaction_generation_cathode[t, j], 1
-                    )
+                    iscale.set_scaling_factor(self.custom_reaction_cathode[t, j], 1)
 
-                if (
-                    iscale.get_scaling_factor(
-                        self.custom_reaction_generation_anode[t, j]
-                    )
-                    is None
-                ):
-                    iscale.set_scaling_factor(
-                        self.custom_reaction_generation_anode[t, j], 1
-                    )
+                if iscale.get_scaling_factor(self.custom_reaction_anode[t, j]) is None:
+                    iscale.set_scaling_factor(self.custom_reaction_anode[t, j], 1)
+
+        # ---------------------------------------------------------------------
+        # calculated sf
+
+        # determine sf as a function of current, therefore a user should first scale current if model is poorly scaled
+        if iscale.get_scaling_factor(self.current) is None:
+            sf_current = 1e-5
+            iscale.set_scaling_factor(self.current, sf_current)
+        else:
+            sf_current = iscale.get_scaling_factor(self.current)
+
+        if iscale.get_scaling_factor(self.electron_flow) is None:
+            iscale.set_scaling_factor(self.electron_flow, sf_current * 1e5)
+
+        if iscale.get_scaling_factor(self.membrane_area) is None:
+            iscale.set_scaling_factor(
+                self.membrane_area,
+                sf_current * iscale.get_scaling_factor(self.current_density) ** -1,
+            )
+
+        if iscale.get_scaling_factor(self.anode_area) is None:
+            iscale.set_scaling_factor(
+                self.anode_area,
+                sf_current * iscale.get_scaling_factor(self.current_density) ** -1,
+            )
+
+        if iscale.get_scaling_factor(self.cathode_area) is None:
+            iscale.set_scaling_factor(
+                self.cathode_area,
+                sf_current * iscale.get_scaling_factor(self.current_density) ** -1,
+            )
+
+        if iscale.get_scaling_factor(self.power) is None:
+            iscale.set_scaling_factor(self.power, sf_current)
