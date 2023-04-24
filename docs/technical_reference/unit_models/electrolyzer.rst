@@ -67,7 +67,20 @@ The following variables should then be fixed:
 
 Model Structure
 ------------------
-The electrolyzer model consists of 2 ControlVolume0DBlocks, one for the anolyte and another for the catholyte. Currently, the generation of species via electrolysis reactions is handled by the `custom_molar_term` within the ControlVolume0DBlock. Considering the reaction block and reaction package are omitted, no temperature dependence and rigorous energy balance are considered.
+The electrolyzer model consists of 2 ControlVolume0DBlocks, one for the anolyte and another for the catholyte. Currently, the generation of species via electrolysis reactions is handled by the `custom_molar_term` within the ControlVolume0DBlock. Considering the reaction block and reaction package are omitted, no temperature dependence and rigorous energy balance are considered. Scaling of the variable should first be performed using `calculate_scaling_factors()`. For the case that the model is poorly scaled, the `current` variable should be rescaled. Estimated scaling factors are propagated for other unit model variables which are dependent on process scale. An example of the methodology is the following.
+
+.. code-block::
+
+   import idaes.core.util.scaling as iscale
+
+   # fix the current for given design
+   m.fs.electrolyzer.current.fix(2e8)
+
+   # adjust the current's scaling factor to the inverse of the variable's magnitude
+   iscale.set_scaling_factor(m.fs.electrolyzer.current, 1e-8)
+
+   # run calculate scaling factor utility on model that propagates estimated scaling factors for other variables
+   iscale.calculate_scaling_factors(m)
 
 Sets
 ----
