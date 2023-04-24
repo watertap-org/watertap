@@ -405,6 +405,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             return b.current_density * b.membrane_area == b.current
 
         # TODO: find relationship between required surface area of electrode as a function of process (flowrate/volume)
+        #  or allow for custom area term without universal current density term
         # assumed
         @self.Constraint(doc="anode area")
         def eq_anode_area(b):

@@ -15,49 +15,55 @@ This is a simplified electrolyzer unit model used to simulate electrolysis perfo
 
 Introduction
 ------------
-The basis for the electrolyzer model is a Fara
+The basis for the electrolyzer model is considering the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. Faradaic conversion considers equating electrical current to the amount of electrons available for electrochemical reaction by Faraday's law.
 
 Degrees of Freedom
 ------------------
-In the default configuration of the GAC unit model there are 17 degrees of freedom in addition to the inlet state variables
-(i.e., temperature, pressure, component flowrates) that should be fixed for the model to be fully specified.
-In association with using the Freundlich adsorption isotherm and empirical model, the following 9 variables are almost always fixed
-and may be derived from experimental data:
+In the core calculations of the electrolyzer unit model, there are 4 degrees of freedom in addition to the inlet state variables (i.e., temperature, pressure, component flowrates) that should be fixed for the model to be fully specified. In typical design cases the following 4 variables are typically fixed:
 
-   * Freundlich isotherm :math:`k` parameter
-   * Freundlich isotherm :math:`\frac{1}{n}` parameter
-   * Stanton number equation parameters :math:`a_0` and :math:`a_1` (Hand, 1984), (Crittenden, 1987)
-   * throughput ratio equation parameters :math:`b_0`, :math:`b_1`, :math:`b_2`, :math:`b_3` and :math:`b_4` (Hand, 1984)
+   * current, :math:`I`
+   * current density, :math:`J`
+   * current efficiency, :math:`\eta_{current}`
+   * voltage efficiency, :math:`\eta_{voltage}`
 
-Additionally, the following 9 variables are traditionally fixed:
+Additionally, the electrolysis reactions at the anode and cathode must be specified. By default, the following stoichiometric variables will fix to 0. Therefore, only the nonzero stoichiometry must be specified. As an example for the chlor alkali process:
 
-   * particle apparent density
-   * particle diameter
-   * empty bed contact time
-   * bed voidage *or* particle bulk density
-   * superficial velocity *or* bed length
-   * effluent to inlet concentration ratio at operational time *or* steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule *or* bed volumes treated
-   * surface diffusion coefficient
-   * liquid phase film transfer coefficient
+Anode:
 
-When setting the configuration options to calculate the surface diffusion coefficient and liquid phase film transfer coefficient,
-these respective variables are no longer specified and 4 newly introduced variables must be fixed. This excludes new variables
-or parameters that may be required to be specified within the property package when called by the GAC model. This is a net result of 19 degrees of freedom.
-Newly utilized variables that must be fixed include:
+    .. math::
 
-   * shape correction factor
-   * particle porosity
-   * tortuosity of the path that the adsorbate must take as compared to the radius
-   * surface-to-pore diffusion flux ratio
+        & Cl^- \to {\small\frac{1}{2}} Cl_2 + e^- \\\\
+
+Cathode:
+
+    .. math::
+
+        & H_2O + e^- \to {\small\frac{1}{2}} H_2 + OH^- \\\\
+
+The following variables should then be fixed:
+
+.. code-block::
+
+   # thermodynamic minimum voltage
+   m.fs.electrolyzer.voltage_min.fix(2.2)
+
+   # anode reactions
+   m.fs.electrolyzer.anode_stoich["Liq", "CL-"].fix(-1)
+   m.fs.electrolyzer.anode_stoich["Liq", "CL2-v"].fix(0.5)
+
+   # cathode reactions
+   m.fs.electrolyzer.cathode_stoich["Liq", "H2O"].fix(-1)
+   m.fs.electrolyzer.cathode_stoich["Liq", "H2-v"].fix(0.5)
+   m.fs.electrolyzer.cathode_stoich["Liq", "OH-"].fix(1)
+
+   # membrane permeation (anode to cathode) satisfies charge balance
+   m.fs.electrolyzer.membrane_stoich["Liq", "NA+"].fix(1)
+
+
 
 Model Structure
 ------------------
-The GAC model consists of 1 ControlVolume0DBlock (process_flow) for the process flow of the water treatment train.
-The process flow includes 2 StateBlocks (inlet and outlet) which are used for mass and momentum balances.
-It also includes 1 StateBlock (adsorbed) for the solute that is adsorbed into the GAC particles.
-The material removed in the adsorbed state block is simulated as liquid phase solute but should be interpreted as solute that has adsorbed
-into the solid phase GAC particles. The steady state mass removal and replacement rate of the GAC itself is provided as a unit model
-variable and excluded from flowsheet material balances. Therefore, GAC is never included as a component in property package specifications.
+The electrolyzer model consists of 2 ControlVolume0DBlocks, one for the anolyte and another for the catholyte. Currently, the generation of species via electrolysis reactions is handled by the `custom_molar_term` within the ControlVolume0DBlock.
 
 Sets
 ----
@@ -66,92 +72,41 @@ Sets
 
    "time", ":math:`t`", "[0]"
    "phases", ":math:`p`", "['Liq']"
-   "components", ":math:`j`", "['H2O', target_species, background solutes]*"
-   "species adsorbed", ":math:`\text{target_species}`", "[target_species]"
-   "inert species", ":math:`\text{inert_species}`", "['H2O', target_species, background solutes] - [target_species]"
-   "number of discretized operational time elements used for steady state approximation", ":math:`\text{ele_disc}`", "[0:elements_ss_approx]"
-   "number of discretized trapezoidal area terms for steady state approximation", ":math:`\text{ele_index}`", "[1:elements_ss_approx]"
+   "components", ":math:`j`", "['H2O', solutes]"
 
-| \* target_species is provided in the ``target_species`` argument of the unit model and corresponds to the single solute which is adsorbed.
-| \* ``inert_species`` are the difference in ``component_list - target_species``.
-
-.. _GAC_variables:
+.. _electrolyzer_variables:
 
 Variables
 ----------
-Supporting only a single solute, variables concerning the adsorption of a species are respective to the target species
-although not explicitly indexed. All other species are inert from a mass balance perspective, but effects of background
-species to the adsorption of the target species may be modeled by adjusting the Freundlich isotherm parameters and other
-variables in the model.
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Freundlich isotherm k parameter", ":math:`k`", "freund_k", "None", ":math:`\left(\text{m}^3\text{/kg}\right)^\left( \frac{1}{n} \right)`"
-   "Freundlich isotherm 1/n parameter", ":math:`\frac{1}{n}`", "freund_ninv", "None", ":math:`\text{dimensionless}`"
-   "surface diffusion coefficient", ":math:`D_s`", "ds", "None", ":math:`\text{m}^2\text{/s}`"
-   "liquid phase film transfer coefficient", ":math:`k_f`", "kf", "None", ":math:`\text{m/s}`"
-   "equilibrium concentration of adsorbed phase with liquid phase", ":math:`q_e`", "equil_conc", "None", ":math:`\left( \text{kg}_\text{adsorbate}\text{/kg}_\text{adsorbent} \right)`"
-   "solute distribution parameter", ":math:`D_g`", "dg", "None", ":math:`\text{dimensionless}`"
-   "Biot number", ":math:`Bi`", "N_Bi", "None", ":math:`\text{dimensionless}`"
-   "superficial velocity", ":math:`u_s`", "velocity_sup", "None", ":math:`\text{m/s}`"
-   "interstitial velocity", ":math:`u_i`", "velocity_int", "None", ":math:`\text{m/s}`"
-   "bed void fraction", ":math:`\epsilon`", "bed_voidage", "None", ":math:`\text{dimensionless}`"
-   "bed length", ":math:`L`", "bed_length", "None", ":math:`\text{m}`"
-   "bed diameter", ":math:`D`", "bed_diameter", "None", ":math:`\text{m}`"
-   "bed area", ":math:`A`", "bed_area", "None", ":math:`\text{m}^2`"
-   "bed volume", ":math:`V`", "bed_volume", "None", ":math:`\text{m}^3`"
-   "empty bed contact time", ":math:`EBCT`", "ebct", "None", ":math:`\text{s}`"
-   "fluid residence time in the bed", ":math:`\tau`", "residence_time", "None", ":math:`\text{s}`"
-   "mass of fresh gac in the bed", ":math:`M_{GAC}`", "bed_mass_gac", "None", ":math:`\text{kg}`"
-   "gac apparent density", ":math:`\rho_a`", "particle_dens_app", "None", ":math:`\text{kg/}\text{m}^3`"
-   "gac bulk density", ":math:`\rho_b`", "particle_dens_bulk", "None", ":math:`\text{kg/}\text{m}^3`"
-   "gac particle diameter", ":math:`d_p`", "particle_dia", "None", ":math:`\text{m}`"
-   "Stanton equation parameter 0", ":math:`a_0`", "a0", "None", ":math:`\text{dimensionless}`"
-   "Stanton equation parameter 1", ":math:`a_1`", "a1", "None", ":math:`\text{dimensionless}`"
-   "throughput equation parameter 0", ":math:`b_0`", "b0", "None", ":math:`\text{dimensionless}`"
-   "throughput equation parameter 1", ":math:`b_1`", "b1", "None", ":math:`\text{dimensionless}`"
-   "throughput equation parameter 2", ":math:`b_2`", "b2", "None", ":math:`\text{dimensionless}`"
-   "throughput equation parameter 3", ":math:`b_3`", "b3", "None", ":math:`\text{dimensionless}`"
-   "throughput equation parameter 4", ":math:`b_4`", "b4", "None", ":math:`\text{dimensionless}`"
-   "minimum Stanton number to achieve a constant pattern solution", ":math:`St_{min}`", "min_N_St", "None", ":math:`\text{dimensionless}`"
-   "minimum empty bed contact time to achieve a constant pattern solution", ":math:`EBCT_{min}`", "min_ebct", "None", ":math:`\text{s}`"
-   "specific throughput from empirical equation", ":math:`T`", "throughput", "None", ":math:`\text{dimensionless}`"
-   "minimum fluid residence time in the bed to achieve a constant pattern solution", ":math:`\tau_{min}`", "min_residence_time", "None", ":math:`\text{s}`"
-   "minimum operational time of the bed from fresh to achieve a constant pattern solution", ":math:`t_{min}`", "min_operational_time", "None", ":math:`\text{s}`"
-   "effluent to inlet concentration ratio at operational time", ":math:`\frac{C}{C_{0}}\bigg{|}_{z=L,/,t=t_{op}}`", "conc_ratio_replace", "None", ":math:`\text{dimensionless}`"
-   "operational time of the bed from fresh", ":math:`t_{op}`", "operational_time", "None", ":math:`\text{s}`"
-   "bed volumes treated at operational time", ":math:`BVT`", "bed_volumes_treated", "None", ":math:`\text{dimensionless}`"
-   "specific throughput from empirical equation by discrete element", ":math:`T_{ele}`", "ele_throughput", "None", ":math:`x`"
-   "minimum operational time of the bed from fresh to achieve a constant pattern solution by discrete element", ":math:`t_{min, ele}`", "ele_min_operational_time", "ele_index", ":math:`\text{s}`"
-   "effluent to inlet concentration ratio at operational time by discrete element", ":math:`\left(\frac{C}{C_{0}}\right)_{ele}\bigg{|}_{z=L,/,t=t_{op_ e}}`", "ele_conc_ratio_replace", "ele_index", ":math:`\text{dimensionless}`"
-   "operational time of the bed from fresh by discrete element", ":math:`t_{op, ele}`", "ele_operational_time", "ele_disc", ":math:`\text{s}`"
-   "trapezoid rule of elements for numerical integration of average concentration ratio", ":math:`term_{ele}`", "ele_conc_ratio_avg", "ele_disc", ":math:`\text{dimensionless}`"
-   "steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule", ":math:`\left(\frac{C}{C_{0}}\right)_{avg}`", "conc_ratio_avg", "None", ":math:`\text{dimensionless}`"
-   "total mass of adsorbed species at operational time", ":math:`M`", "mass_adsorbed", "None", ":math:`\text{kg}`"
-   "gac usage/replacement/regeneration rate", ":math:`\dot{m}_{GAC}`", "gac_usage_rate", "None", ":math:`\text{m/s}`"
+   "molar generation of species j by electrolysis at the anode", ":math:`\dot{n}_{j,anode}`", "custom_reaction_anode", "t, j", ":math:`\frac{mol}{s}`"
+   "molar generation of species j by electrolysis at the cathode", ":math:`\dot{n}_{j,cathode}`", "custom_reaction_cathode", "t, j", ":math:`\frac{mol}{s}`"
+   "moles of electrons contributing to electrolysis", ":math:`\dot{n}_{e^-}`", "electron_flow", "None", ":math:`\frac{mol}{s}`"
+   "current", ":math:`I`", "current", "None", ":math:`A`"
+   "current efficiency", ":math:`\eta_{current}`", "efficiency_current", "None", ":math:`\text{dimensionless}`"
+   "current density", ":math:`J`", "current_density", "None", ":math:`\frac{A}{m^3}`"
+   "membrane area", ":math:`A_{membrane}`", "membrane_area", "None", ":math:`m^3`"
+   "anode area", ":math:`A_{anode}`", "anode_area", "None", ":math:`m^3`"
+   "cathode area", ":math:`A_{cathode}`", "cathode_area", "None", ":math:`m^3`"
+   "applied voltage", ":math:`V`", "voltage_applied", "None", ":math:`V`"
+   "voltage efficiency", ":math:`\eta_{voltage}`", "efficiency_voltage", "None", ":math:`V`"
+   "power", ":math:`P`", "power", "None", ":math:`W`"
+   "power efficiency", ":math:`\eta_{power}`", "efficiency_power", "None", ":math:`W`"
 
-The following variables are only built when specific configuration options are selected.
-
-if ``film_transfer_coefficient_type`` is set to ``calculated``:
+The following variables are constructed on the unit model for the current build. However, these variables are specific to the electrolysis reactions targeted.
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Reynolds number", ":math:`Re`", "N_Re", "None", ":math:`\text{dimensionless}`"
-   "Schmidt number", ":math:`Sc`", "N_Sc", "None", ":math:`\text{dimensionless}`"
-   "shape correction factor", ":math:`SCF`", "shape_correction_factor", "None", ":math:`\text{dimensionless}`"
+   "thermodynamic minimum voltage for electrolysis reactions to proceed", ":math:`V_{min}`", "voltage_min", "None", ":math:`V`"
+   "stoichiometry of the reaction at the anode normalized to 1 electron", ":math:`\varepsilon_{j,anode}`", "anode_stoich", "p, j", ":math:`\text{dimensionless}`"
+   "stoichiometry of the reaction at the cathode normalized to 1 electron", ":math:`\varepsilon_{j,cathode}`", "cathode_stoich", "p, j", ":math:`\text{dimensionless}`"
+   "stoichiometry of the mass transfer across the membrane w.r.t. the electrolysis reaction", ":math:`\varepsilon_{j,membrane}`", "membrane_stoich", "p, j", ":math:`\text{dimensionless}`"
 
-if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "gac particle porosity", ":math:`\epsilon_p`", "particle_porosity", "None", ":math:`\text{dimensionless}`"
-   "tortuosity of the path that the adsorbate must take as compared to the radius", ":math:`\tau_p`", "tort", "None", ":math:`\text{dimensionless}`"
-   "surface-to-pore diffusion flux ratio", ":math:`S\!P\!D\!F\!R`", "spdfr", "None", ":math:`\text{dimensionless}`"
-
-.. _GAC_equations:
+.. _electrolyzer_equations:
 
 Equations
 -----------
@@ -159,49 +114,16 @@ Equations
 .. csv-table::
    :header: "Description", "Equation"
 
-   "equilibrium concentration", ":math:`q_e = kC_0^{1/n}`"
-   "solute distribution parameter", ":math:`D_g=\frac{\rho_aq_e\left( 1-\epsilon \right)}{\epsilon C_0}`"
-   "Biot number", ":math:`Bi=\frac{k_fd_p\left( 1-\epsilon \right)}{2D_sD_g\epsilon}`"
-   "bed void fraction based on gac particle densities", ":math:`\epsilon=1-\frac{\rho_b}{\rho_a}`"
-   "relating velocities based on bed voidage", ":math:`u_i=\frac{u_s}{\epsilon}`"
-   "bed length based on velocity and ebct", ":math:`L=(EBCT)u_s`"
-   "bed diameter and area relation", ":math:`A=\pi\left(\frac{D}{2}\right)^2`"
-   "bed area based on velocity and volumetric flow", ":math:`A=\frac{Q}{u_s}`"
-   "bed volume based on cylindrical dimensions", ":math:`V=AL`"
-   "fluid residence time in the bed", ":math:`\tau=(EBCT)\epsilon`"
-   "total mass of gac in the bed", ":math:`M_{GAC}=V\rho_b`"
-   "minimum Stanton number to achieve constant pattern solution", ":math:`St_{min}=a_0Bi+a_1`"
-   "minimum empty bed contact time to achieve constant pattern solution", ":math:`EBCT_{min}=\frac{St_{min}d_p}{2k_f\left( 1-\epsilon \right)}`"
-   "throughput based on empirical 5-parameter regression", ":math:`T=b_0+b_1\left( \frac{C}{C_0} \right)^{b_2}+\frac{b_3}{1.01-\left( \frac{C}{C_0} \right)^{b_4}}`"
-   "minimum fluid residence time in the bed to achieve a constant pattern solution", ":math:`\tau_{min}=EBCT_{min}\epsilon`"
-   "minimum operational time of the bed from fresh to achieve a constant pattern solution", ":math:`t_{min}=\tau_{min}\left( D_g+1 \right)T`"
-   "elapsed operational time between a fresh bed and the theoretical bed replacement", ":math:`t_{op}=t_{min}+\left( \tau-\tau_{min} \right)\left( D_g+1 \right)`"
-   "bed volumes treated", ":math:`BVT=\frac{t_{op}\epsilon}{\tau}`"
-   "throughput based on empirical 5-parameter regression by discretized element", ":math:`T_{ele}=b_0+b_1\left(\frac{C}{C_{0}}\right)_{ele}^{b_2}+\frac{b_3}{1.01-\left(\frac{C}{C_{0}}\right)_{ele}^{b_4}}`"
-   "minimum operational time of the bed from fresh to achieve a constant pattern solution by discretized element", ":math:`t_{min, ele}=\tau_{min}\left( D_g+1 \right)T`"
-   "creating evenly spaced discretized elements", ":math:`\frac{C}{C_{0}}\bigg{|}_{t=t_{op, ele}}=0.01+(ele-1)*\frac{\left(\frac{C}{C_{0}}\bigg{|}_{t=t_{op}}-0.01\right)}{num\text{_}ele}`"
-   "finite element discretization of concentration ratios over time", ":math:`term_{ele}=\left(\frac{t_{op, ele}-t_{op, (ele-1)}}{t_{op}}\right)\frac{\left(\frac{C}{C_{0}}\bigg{|}_{t=t_{op, ele}}+{C_{0}}\bigg{|}_{t=t_{op, (ele-1)}}\right)}{2}`"
-   "summation of finite elements for average concentration during operating time", ":math:`\left(\frac{C}{C_{0}}\right)_{avg}=\sum_{ele\text{_}index}term_{ele}`"
-   "mass adsorbed in the operational time", ":math:`M=\frac{\dot{m}_{j}}{t_{op}}`"
-   "steady state rate of new gac mass required", ":math:`\dot{m}_{GAC}=\frac{M_{GAC}}{t_{op}}`"
-
-if ``film_transfer_coefficient_type`` is set to ``calculated``:
-
-.. csv-table::
-   :header: "Description", "Equation"
-
-   "Reynolds number calculation*", ":math:`Re=\frac{\rho_ld_pu_i}{\mu_l}`"
-   "Schmidt number calculation*", ":math:`Sc=\frac{\mu_l}{\rho_sD_l}`"
-   "liquid phase film transfer rate from the Gnielinshi correlation*", ":math:`k_f=(SCF)\frac{\left[ 1+1.5\left( 1-\epsilon \right) \right]D_l}{d_p}\left( 2+0.644Re^{\frac{1}{2}}Sc^{\frac{1}{3}} \right)`"
-
-\*Subscript :math:`l` denotes bulk liquid phase properties, here those are supplied by the property package.
-
-if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
-
-.. csv-table::
-   :header: "Description", "Equation"
-
-   "surface diffusion parameter (Crittenden, 1987)", ":math:`D_s=\left( S\!P\!D\!F\!R \right)\left( \frac{\epsilon_pC_0D_l}{\rho_aq_e\tau_p} \right)`"
+   "voltage efficiency as a function of minimum required by reaction", ":math:`V_{min} = V\eta_{voltage}`"
+   "electrons passed between anode and cathode contributing to reactions", ":math:`\dot{n}_{e^-} = \frac{I\eta_{current}}{F}`"
+   "membrane area", ":math:`I = JA_{membrane}`"
+   "anode area", ":math:`I = JA_{anode}`"
+   "cathode area", ":math:`I = JA_{cathode}`"
+   "power", ":math:`P = IV`"
+   "power efficiency", ":math:`P = \eta_{current}\eta_{voltage}`"
+   "ion permeation through the membrane", ":math:`\dot{n}_j,membrane = -\varepsilon_{j,membrane}\dot{n}_{e^-}`"
+   "molar generation of species according the anode electrolysis reaction", ":math:`\dot{n}_{j,anode} = \varepsilon_{j,anode}\dot{n}_{e^-}`"
+   "molar generation of species according the cathode electrolysis reaction", ":math:`\dot{n}_{j,cathode} = \varepsilon_{j,cathode}\dot{n}_{e^-}`"
 
 Costing Method
 ---------------
@@ -209,112 +131,53 @@ Costing Method
 Costing Method Variables
 +++++++++++++++++++++++++
 
-The following parameters are constructed when applying the GAC costing method in the ``watertap_costing_package``:
+The following parameters are constructed when applying the electrolyzer costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
 
-   "Number of GAC contactors in operation in parallel", ":math:`N_{op}`", "num_contactors_op", "1", ":math:`\text{dimensionless}`"
-   "Number of off-line redundant GAC contactors in parallel", ":math:`N_{red}`", "num_contactors_redundant", "1", ":math:`\text{dimensionless}`"
-   "GAC steel pressure contactor polynomial cost coefficient 0 (U.S. EPA, 2021)", ":math:`x_{p0}`", "pres_contactor_cost_coeff_0", "10010.9", ":math:`$`"
-   "GAC steel pressure contactor polynomial cost coefficient 1 (U.S. EPA, 2021)", ":math:`x_{p1}`", "pres_contactor_cost_coeff_1", "2204.95", ":math:`$/m^3`"
-   "GAC steel pressure contactor polynomial cost coefficient 2 (U.S. EPA, 2021)", ":math:`x_{p2}`", "pres_contactor_cost_coeff_2", "-15.9378", ":math:`$/\left( m^3 \right)^2`"
-   "GAC steel pressure contactor polynomial cost coefficient 3 (U.S. EPA, 2021)", ":math:`x_{p3}`", "pres_contactor_cost_coeff_3", "0.110592", ":math:`$/\left( m^3 \right)^3`"
-   "GAC concrete gravity contactor polynomial cost coefficient 0", ":math:`x_{g0}`", "grav_contactor_cost_coeff_0", "75131.3", ":math:`$`"
-   "GAC concrete gravity contactor polynomial cost coefficient 1", ":math:`x_{g1}`", "grav_contactor_cost_coeff_1", "735.550", ":math:`$/m^3`"
-   "GAC concrete gravity contactor polynomial cost coefficient 2", ":math:`x_{g2}`", "grav_contactor_cost_coeff_2", "-1.01827", ":math:`$/\left( m^3 \right)^2`"
-   "GAC concrete gravity contactor polynomial cost coefficient 3", ":math:`x_{g3}`", "grav_contactor_cost_coeff_3", "0", ":math:`$/\left( m^3 \right)^3`"
-   "Reference maximum value of GAC mass needed for initial charge where economy of scale no longer discounts the unit price  (U.S. EPA, 2021)", ":math:`M_{GAC}^{ref}`", "bed_mass_gac_max_ref", "18143.7", ":math:`kg`"
-   "GAC adsorbent exponential cost pre-exponential coefficient (U.S. EPA, 2021)", ":math:`y_0`", "adsorbent_unit_cost_coeff", "4.58342", ":math:`$/kg`"
-   "GAC adsorbent exponential cost parameter coefficient (U.S. EPA, 2021)", ":math:`y_1`", "adsorbent_unit_cost_exp_coeff ", "-1.25311e-5", ":math:`kg^{-1}`"
-   "GAC pressure other cost power law coefficient", ":math:`z_{p0}`", "pres_other_cost_coeff", "16660.7", ":math:`$/\left( m^3 \right)^{z_1}`"
-   "GAC pressure other cost power law exponent", ":math:`z_{p1}`", "pres_other_cost_exp", "0.552207", ":math:`\text{dimensionless}`"
-   "GAC gravity other cost power law coefficient", ":math:`z_{g0}`", "grav_other_cost_coeff", "38846.9", ":math:`$/\left( m^3 \right)^{z_1}`"
-   "GAC gravity other cost power law exponent", ":math:`z_{g1}`", "grav_other_cost_exp", "0.490571", ":math:`\text{dimensionless}`"
-   "Fraction of spent GAC adsorbent that can be regenerated for reuse", ":math:`f_{regen}`", "regen_frac", "0.70", ":math:`\text{dimensionless}`"
-   "Unit cost to regenerate spent GAC adsorbent by an offsite regeneration facility", ":math:`C_{regen}`", "regen_unit_cost", "4.28352", ":math:`$/kg`"
-   "Unit cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{makeup}`", "makeup_unit_cost", "4.58223", ":math:`$/kg`"
-   "GAC steel pressure contactor polynomial energy consumption coefficient 0", ":math:`\alpha_{p0}`", "pres_energy_coeff_0", "8.09926e-4", ":math:`kW`"
-   "GAC steel pressure contactor polynomial energy consumption coefficient 1", ":math:`\alpha_{p1}`", "pres_energy_coeff_1", "8.70577e-4", ":math:`kW/m^3`"
-   "GAC steel pressure contactor polynomial energy consumption coefficient 2", ":math:`\alpha_{p2}`", "pres_energy_coeff_2", "0", ":math:`kW/\left( m^3 \right)^2`"
-   "GAC concrete gravity contactor polynomial energy consumption coefficient 0", ":math:`\alpha_{g0}`", "grav_energy_coeff_0", "0.123782", ":math:`kW`"
-   "GAC concrete gravity contactor polynomial energy consumption coefficient 1", ":math:`\alpha_{g1}`", "grav_energy_coeff_1", "0.132403", ":math:`kW/m^3`"
-   "GAC concrete gravity contactor polynomial energy consumption coefficient 2", ":math:`\alpha_{g2}`", "grav_energy_coeff_2", "-1.41512e-5", ":math:`kW/\left( m^3 \right)^2`"
+   "membrane replacement factor (fraction of membrane replaced/year)", ":math:`f_{membrane_replace}`", "factor_membrane_replacement", "0.33", ":math:`\text{dimensionless}`"
+   "membrane unit cost", ":math:`c_{membrane}`", "membrane_unit_cost", "25", ":math:`\frac{$}{m^2}`"
+   "anode unit cost", ":math:`c_{anode}`", "anode_unit_cost", "300", ":math:`\frac{$}{m^2}`"
+   "cathode unit cost", ":math:`c_{cathode}`", "cathode_unit_cost", "600", ":math:`\frac{$}{m^2}`"
+   "membrane, anode, and cathode fraction of total capital", ":math:`f_{material}`", "fraction_material_cost", "0.65", ":math:`\text{dimensionless}`"
 
-Variables with the (U.S. EPA, 2021) citation are directly taken from previously determined expressions. Other variables
-are regressed from higher detailed costing methods in (U.S. EPA, 2021).
-
-Costing GAC contactors is defaulted to purchasing 1 operational and 1 redundant contactor for alternating operation. For large systems this may be a poor
-assumption considering vessel sizing and achieving pseudo-steady state.  The number of contactors input by the user should justify reasonable
-(commercially available) dimensions of identical modular contactors in parallel. When costing several operational vessels, the area reported
-in the unit model should be interpreted as the sum of the areas across all operating GAC contactors. The costing
-parameters may be selected from either steel pressure-fed vessels or concrete gravity-fed basins by the
-``contactor_type`` argument. Note this only affects costing calculations. Volume dimensions calculations
-within the model remain assuming a cylindrical bed.
-
-The following variables are constructed when applying the GAC costing method in the ``watertap_costing_package``:
+The following variables are constructed when applying the electrolyzer costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Units"
 
-   "Unit contactor(s) capital cost", ":math:`C_{cap,bed}`", "contactor_cost", ":math:`$`"
-   "GAC adsorbent cost per unit mass", ":math:`C_{carbon}`", "adsorbent_unit_cost", ":math:`$/kg`"
-   "Unit adsorbent capital cost", ":math:`C_{cap,carbon}`", "adsorbent_cost", ":math:`$`"
-   "Unit other process capital cost", ":math:`C_{cap,other}`", "other_process_cost", ":math:`$`"
-   "Cost to regenerate spent GAC adsorbent by an offsite regeneration facility", ":math:`C_{op,regen}`", "gac_regen_cost", ":math:`$/year`"
-   "Cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{op,makeup}`", "gac_makeup_cost", ":math:`$/year`"
-   "Approximate GAC system energy consumption*", ":math:`P`", "energy_consumption", ":math:`kW`"
-
-\*Energy consumption is the sum of energy required to operate booster, backwash, and residual pumps.
+   "membrane capital cost", ":math:`C_{membrane}`", "membrane_cost", ":math:`$`"
+   "anode capital cost", ":math:`C_{anode}`", "anode_cost", ":math:`$`"
+   "cathode capital cost", ":math:`C_{cathode}`", "cathode_cost", ":math:`$`"
+   "membrane replacement cost", ":math:`C_{membrane_replace}`", "membrane_replacement_cost", ":math:`frac{$}{yr}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Capital costs are determined by the summation of three costing terms. Each term is is calculated by a one parameter
-(different for each term) function considering economy of scale.
+Capital costs are contributing to the majority of material costs for the anode cathode and membrane. Each material cost is calculated individually then summed.
 
     .. math::
 
-        C_{cap,tot} = C_{cap,bed}+C_{cap,carbon}+C_{cap,other}
-
-Contactor and GAC adsorbent capital costs are estimated using functions and parameters reported in US EPA, 2021. Contactors
-are assumed to be carbon steel pressure vessels with plastic internals and are determined as a polynomial function of
-individual contactor volume. The unit cost per kilogram of GAC adsorbent needed is calculated using an exponential
-function. A maximum reference mass is imposed in the costing method to define a best available price where above
-this required charge, the price would no longer be discounted. Other process costs (vessels, pipes, instrumentation,
-and controls) included in the US EPA, 2021 model are aggregated into a separate term. The parameters for the power law
-function with respect to the total system contactor volume were regressed using results from the US EPA, 2021 model.
-
-    .. math::
-
-        & C_{cap,bed} = \left( N_{op}+N_{red} \right)\left( x_0+x_1\left( \frac{V}{N_{op}} \right)+x_2\left( \frac{V}{N_{op}} \right)^2+x_3\left( \frac{V}{N_{op}} \right)^3 \right) \\\\
-        & C_{carbon} = y_0e^{y_1M_{GAC}^{ref}} \\\\
-        & C_{cap,carbon} = C_{carbon}M_{GAC} \\\\
-        & C_{cap,other} = z_0\left( \left( N_{op}+N_{red} \right)\frac{V}{N_{op}} \right)^{z_1}
-
-Note that given the the ability to alter the parameters in these correlations, GAC adsorbent unit costs (:math:`C_{carbon}`)
-may be fixed to a value (:math:`y_0`) by setting :math:`y_1=0`.
+        & C_{membrane} = c_{membrane}A_{membrane} \\\\
+        & C_{anode} = c_{anode}A_{anode} \\\\
+        & C_{cathode} = c_{cathode}A_{cathode} \\\\
+        & C_{cap,total} = \frac{C_{membrane}+C_{anode}+C_{cathode}}{f_{membrane_replace}}
 
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Operating costs are calculated as the cost to replace spent GAC adsorbent in the contactor beds. Energy is costed as a
-flow term by the WaterTAP costing method. Since the replacement adsorbent purchases are expected to be purchased in bulk
-at smaller quantities than the initial charge, the cost of fresh GAC adsorbent for makeup has an independent cost per
-unit mass variable, expected to be higher than the initial charge unit cost.
+Operating costs for the electrolyzer are the electricity requirements and membrane replacement costs. Electricity is costed using `cost_flow` applied to the `power` variable on the unit model.
 
     .. math::
 
-        & C_{op,tot} = C_{op,regen}+C_{op,makeup} \\\\
-        & C_{op,regen} = f_{regen}C_{regen}\dot{m}_{GAC} \\\\
-        & C_{op,makeup} = \left( 1-f_{regen} \right)C_{makeup}\dot{m}_{GAC} \\\\
-        & P = \alpha_0+\alpha_1V+\alpha_2V^2
+        & C_{op,tot} = C_{membrane_replace} = f_{membrane_replace}c_{membrane}A_{membrane}
 
 Code Documentation
 -------------------
 
-* :mod:`watertap.unit_models.gac`
-* :mod:`watertap.costing.units.gac`
+* :mod:`watertap.unit_models.electrolyzer`
+* :mod:`watertap.costing.units.electrolyzer`
 
 References
 -----------
