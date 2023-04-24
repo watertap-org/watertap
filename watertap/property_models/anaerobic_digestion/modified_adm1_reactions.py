@@ -1901,7 +1901,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
 
         self.Dissociation = pyo.Constraint(
             rule=Dissociation_rule,
-            doc="Dissociation constant constraint",
+            doc="Water dissociation constant constraint",
         )
 
         def CO2_acid_base_equilibrium_rule(self, t):

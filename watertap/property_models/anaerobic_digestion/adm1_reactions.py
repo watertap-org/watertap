@@ -1319,7 +1319,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
 
         self.Dissociation = pyo.Constraint(
             rule=Dissociation_rule,
-            doc="Dissociation constant constraint",
+            doc="Water dissociation constant constraint",
         )
 
         # Equation from [2]
