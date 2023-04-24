@@ -329,3 +329,7 @@ class TestAdm(object):
                 "Heat Duty": adm.fs.unit.heat_duty[0],
             }
         }
+
+    @pytest.mark.unit
+    def test_report(self, adm):
+        adm.fs.unit.report()

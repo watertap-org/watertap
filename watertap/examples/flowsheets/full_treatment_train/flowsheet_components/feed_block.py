@@ -12,12 +12,10 @@
 
 """Feed blocks for supported property packages"""
 
-from pyomo.environ import Constraint
 from idaes.models.unit_models import Feed
 from watertap.examples.flowsheets.full_treatment_train.model_components import (
     property_models,
 )
-from idaes.core.util.scaling import calculate_scaling_factors
 
 
 def build_feed(m, base="TDS"):

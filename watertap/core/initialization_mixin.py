@@ -24,3 +24,4 @@ class InitializationMixin:
         except InitializationError:
             for blk in self._initialization_order:
                 blk.activate()
+            raise

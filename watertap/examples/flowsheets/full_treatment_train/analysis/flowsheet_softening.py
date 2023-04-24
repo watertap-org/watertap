@@ -10,16 +10,31 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from pyomo.environ import (
+    ConcreteModel,
+    Expression,
+    TransformationFactory,
+)
+
+from pyomo.network import Arc
+
+from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
+from idaes.core.util.initialization import propagate_state
+
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
     pretreatment_softening,
     costing,
 )
 
-# Added import statements for testing.
-#       Need the pretreatment_stoich_softening_block functions to setup
-#       flowsheet to solve for lime dosage
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.chemistry.pretreatment_stoich_softening_block import *
+from watertap.examples.flowsheets.full_treatment_train.model_components import (
+    property_models,
+)
+
+from watertap.examples.flowsheets.full_treatment_train.util import (
+    solve_block,
+    check_dof,
+)
 
 
 def build_components(m):
