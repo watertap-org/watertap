@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Thermophysical property package to be used in conjunction with ASM2d reactions.
+Thermophysical property package to be used in conjunction with modified ASM2d reactions for compatibility with the modified ADM1 model.
 
 Reference:
 [1] Henze, M., Gujer, W., Mino, T., Matsuo, T., Wentzel, M.C., Marais, G.v.R.,
