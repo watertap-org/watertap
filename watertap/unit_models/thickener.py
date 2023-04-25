@@ -127,7 +127,7 @@ class ThickenerUnit(SeparatorData):
 
         @self.Expression(self.flowsheet().time, doc="Remove factor")
         def f_q_du(blk, t):
-            return blk.TSS_rem / 100 / blk.f_thick[t]
+            return blk.TSS_rem / (pyunits.kg / pyunits.m**3) / 100 / blk.f_thick[t]
 
         self.non_particulate_components = Set(
             initialize=[

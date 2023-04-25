@@ -186,6 +186,10 @@ class TestDu(object):
     def test_dof(self, du):
         assert degrees_of_freedom(du) == 0
 
+    @pytest.mark.unit
+    def test_units(self, du):
+        assert_units_consistent(du)
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component

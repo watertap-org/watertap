@@ -52,6 +52,8 @@ from idaes.core.util.exceptions import (
     InitializationError,
 )
 
+from pyomo.util.check_units import assert_units_consistent
+
 from watertap.unit_models.thickener import Thickener_Unit
 from watertap.property_models.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
@@ -183,6 +185,10 @@ class TestThick(object):
     @pytest.mark.unit
     def test_dof(self, tu):
         assert degrees_of_freedom(tu) == 0
+
+    @pytest.mark.unit
+    def test_units(self, tu):
+        assert_units_consistent(tu)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
