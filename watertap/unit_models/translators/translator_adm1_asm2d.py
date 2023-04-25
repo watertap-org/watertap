@@ -151,9 +151,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 for i in blk.readily_biodegradable2
             )
 
-        self.unchanged_component = Set(
-            initialize=["S_I", "X_I", "X_PP", "X_PHA", "S_K", "S_Mg"]
-        )
+        self.unchanged_component = Set(initialize=["S_I", "X_I", "X_PP", "X_PHA"])
 
         @self.Constraint(
             self.flowsheet().time,
@@ -224,10 +222,10 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 "S_O2",
                 "X_AUT",
                 "X_H",
-                "X_MeOH",
-                "X_MeP",
                 "X_PAO",
                 "X_TSS",
+                "X_MeOH",
+                "X_MeP",
             ]
         )
 
@@ -241,6 +239,22 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 blk.properties_out[t].conc_mass_comp[i]
                 == 1e-6 * pyunits.kg / pyunits.m**3
             )
+
+        if (
+            self.config.outlet_property_package.config.additional_solute_list
+            is not None
+        ):
+
+            @self.Constraint(
+                self.flowsheet().time,
+                self.config.outlet_property_package.config.additional_solute_list,
+                doc="Equality ASM2D additional solute equation",
+            )
+            def eq_ASM2D_additional_conc(blk, t, i):
+                return (
+                    blk.properties_out[t].conc_mass_comp[i]
+                    == blk.properties_in[t].conc_mass_comp[i]
+                )
 
     def initialize_build(
         self,

@@ -61,14 +61,15 @@ class ModifiedASM2dParameterData(ASM2dParameterData):
         super().build()
         self._state_block_class = ModifiedASM2dStateBlock
         # Group components into different sets
-        for j in self.config.additional_solute_list:
-            if j == "H2O":
-                raise ConfigurationError(
-                    "'H2O'is reserved as the default solvent and cannot be a solute."
-                )
-            # Add valid members of solute_list into IDAES's Solute() class.
-            # This triggers the addition of j into component_list and solute_set.
-            self.add_component(j, Solute())
+        if self.config.additional_solute_list is not None:
+            for j in self.config.additional_solute_list:
+                if j == "H2O":
+                    raise ConfigurationError(
+                        "'H2O'is reserved as the default solvent and cannot be a solute."
+                    )
+                # Add valid members of solute_list into IDAES's Solute() class.
+                # This triggers the addition of j into component_list and solute_set.
+                self.add_component(j, Solute())
 
 
 class _ModifiedASM2dStateBlock(_ASM2dStateBlock):
