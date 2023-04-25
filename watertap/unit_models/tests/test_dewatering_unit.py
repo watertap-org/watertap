@@ -46,6 +46,12 @@ from idaes.core.util.testing import (
     initialization_tester,
 )
 
+from idaes.core.util.exceptions import (
+    ConfigurationError,
+    PropertyNotSupportedError,
+    InitializationError,
+)
+
 from watertap.unit_models.dewatering import Dewatering_Unit
 from watertap.property_models.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
@@ -72,7 +78,6 @@ def test_config():
         split_basis=SplittingType.componentFlow,
     )
 
-    m.display()
     assert len(m.fs.unit.config) == 15
 
     assert not m.fs.unit.config.dynamic
@@ -84,10 +89,32 @@ def test_config():
     assert SplittingType.componentFlow is m.fs.unit.config.split_basis
 
 
+@pytest.mark.unit
+def test_list_error():
+    m = ConcreteModel()
+
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.props = ASM1ParameterBlock()
+
+    with pytest.raises(
+        ConfigurationError,
+        match="fs.unit encountered unrecognised "
+        "outlet_list. This should not "
+        "occur - please use overflow "
+        "and underflow as outlets.",
+    ):
+        m.fs.unit = Dewatering_Unit(
+            property_package=m.fs.props,
+            outlet_list=["outlet1", "outlet2"],
+            split_basis=SplittingType.componentFlow,
+        )
+
+
 # -----------------------------------------------------------------------------
-class TestAdm(object):
+class TestDu(object):
     @pytest.fixture(scope="class")
-    def adm(self):
+    def du(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -125,116 +152,116 @@ class TestAdm(object):
 
     @pytest.mark.build
     @pytest.mark.unit
-    def test_build(self, adm):
+    def test_build(self, du):
 
-        assert hasattr(adm.fs.unit, "inlet")
-        assert len(adm.fs.unit.inlet.vars) == 5
-        assert hasattr(adm.fs.unit.inlet, "flow_vol")
-        assert hasattr(adm.fs.unit.inlet, "conc_mass_comp")
-        assert hasattr(adm.fs.unit.inlet, "temperature")
-        assert hasattr(adm.fs.unit.inlet, "pressure")
-        assert hasattr(adm.fs.unit.inlet, "alkalinity")
+        assert hasattr(du.fs.unit, "inlet")
+        assert len(du.fs.unit.inlet.vars) == 5
+        assert hasattr(du.fs.unit.inlet, "flow_vol")
+        assert hasattr(du.fs.unit.inlet, "conc_mass_comp")
+        assert hasattr(du.fs.unit.inlet, "temperature")
+        assert hasattr(du.fs.unit.inlet, "pressure")
+        assert hasattr(du.fs.unit.inlet, "alkalinity")
 
-        assert hasattr(adm.fs.unit, "underflow")
-        assert len(adm.fs.unit.underflow.vars) == 5
-        assert hasattr(adm.fs.unit.underflow, "flow_vol")
-        assert hasattr(adm.fs.unit.underflow, "conc_mass_comp")
-        assert hasattr(adm.fs.unit.underflow, "temperature")
-        assert hasattr(adm.fs.unit.underflow, "pressure")
-        assert hasattr(adm.fs.unit.underflow, "alkalinity")
+        assert hasattr(du.fs.unit, "underflow")
+        assert len(du.fs.unit.underflow.vars) == 5
+        assert hasattr(du.fs.unit.underflow, "flow_vol")
+        assert hasattr(du.fs.unit.underflow, "conc_mass_comp")
+        assert hasattr(du.fs.unit.underflow, "temperature")
+        assert hasattr(du.fs.unit.underflow, "pressure")
+        assert hasattr(du.fs.unit.underflow, "alkalinity")
 
-        assert hasattr(adm.fs.unit, "overflow")
-        assert len(adm.fs.unit.overflow.vars) == 5
-        assert hasattr(adm.fs.unit.overflow, "flow_vol")
-        assert hasattr(adm.fs.unit.overflow, "conc_mass_comp")
-        assert hasattr(adm.fs.unit.overflow, "temperature")
-        assert hasattr(adm.fs.unit.overflow, "pressure")
-        assert hasattr(adm.fs.unit.overflow, "alkalinity")
+        assert hasattr(du.fs.unit, "overflow")
+        assert len(du.fs.unit.overflow.vars) == 5
+        assert hasattr(du.fs.unit.overflow, "flow_vol")
+        assert hasattr(du.fs.unit.overflow, "conc_mass_comp")
+        assert hasattr(du.fs.unit.overflow, "temperature")
+        assert hasattr(du.fs.unit.overflow, "pressure")
+        assert hasattr(du.fs.unit.overflow, "alkalinity")
 
-        assert number_variables(adm) == 76
-        assert number_total_constraints(adm) == 60
-        assert number_unused_variables(adm) == 0
+        assert number_variables(du) == 76
+        assert number_total_constraints(du) == 60
+        assert number_unused_variables(du) == 0
 
     @pytest.mark.unit
-    def test_dof(self, adm):
-        assert degrees_of_freedom(adm) == 0
+    def test_dof(self, du):
+        assert degrees_of_freedom(du) == 0
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_initialize(self, adm):
+    def test_initialize(self, du):
 
-        iscale.calculate_scaling_factors(adm)
-        initialization_tester(adm)
+        iscale.calculate_scaling_factors(du)
+        initialization_tester(du)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solve(self, adm):
+    def test_solve(self, du):
         solver = get_solver()
-        results = solver.solve(adm)
+        results = solver.solve(du)
         assert_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solution(self, adm):
+    def test_solution(self, du):
         assert pytest.approx(101325.0, rel=1e-3) == value(
-            adm.fs.unit.overflow.pressure[0]
+            du.fs.unit.overflow.pressure[0]
         )
         assert pytest.approx(308.15, rel=1e-3) == value(
-            adm.fs.unit.overflow.temperature[0]
+            du.fs.unit.overflow.temperature[0]
         )
         assert pytest.approx(0.001954, rel=1e-3) == value(
-            adm.fs.unit.overflow.flow_vol[0]
+            du.fs.unit.overflow.flow_vol[0]
         )
         assert pytest.approx(0.1308, rel=1e-3) == value(
-            adm.fs.unit.overflow.conc_mass_comp[0, "S_I"]
+            du.fs.unit.overflow.conc_mass_comp[0, "S_I"]
         )
         assert pytest.approx(0.2585, rel=1e-3) == value(
-            adm.fs.unit.overflow.conc_mass_comp[0, "S_S"]
+            du.fs.unit.overflow.conc_mass_comp[0, "S_S"]
         )
         assert pytest.approx(0.3638, rel=1e-3) == value(
-            adm.fs.unit.overflow.conc_mass_comp[0, "X_I"]
+            du.fs.unit.overflow.conc_mass_comp[0, "X_I"]
         )
         assert pytest.approx(0.0552, rel=1e-3) == value(
-            adm.fs.unit.overflow.conc_mass_comp[0, "X_S"]
+            du.fs.unit.overflow.conc_mass_comp[0, "X_S"]
         )
-        assert value(adm.fs.unit.overflow.conc_mass_comp[0, "X_BH"]) <= 1e-6
-        assert value(adm.fs.unit.overflow.conc_mass_comp[0, "X_BA"]) <= 1e-6
+        assert value(du.fs.unit.overflow.conc_mass_comp[0, "X_BH"]) <= 1e-6
+        assert value(du.fs.unit.overflow.conc_mass_comp[0, "X_BA"]) <= 1e-6
         assert pytest.approx(0.01323, rel=1e-3) == value(
-            adm.fs.unit.overflow.conc_mass_comp[0, "X_P"]
+            du.fs.unit.overflow.conc_mass_comp[0, "X_P"]
         )
-        assert value(adm.fs.unit.overflow.conc_mass_comp[0, "S_O"]) <= 1e-6
-        assert value(adm.fs.unit.overflow.conc_mass_comp[0, "S_NO"]) <= 1e-6
+        assert value(du.fs.unit.overflow.conc_mass_comp[0, "S_O"]) <= 1e-6
+        assert value(du.fs.unit.overflow.conc_mass_comp[0, "S_NO"]) <= 1e-6
         assert pytest.approx(1.4427, rel=1e-3) == value(
-            adm.fs.unit.overflow.conc_mass_comp[0, "S_NH"]
+            du.fs.unit.overflow.conc_mass_comp[0, "S_NH"]
         )
         assert pytest.approx(0.000543, rel=1e-3) == value(
-            adm.fs.unit.overflow.conc_mass_comp[0, "S_ND"]
+            du.fs.unit.overflow.conc_mass_comp[0, "S_ND"]
         )
         assert pytest.approx(0.00213, rel=1e-3) == value(
-            adm.fs.unit.overflow.conc_mass_comp[0, "X_ND"]
+            du.fs.unit.overflow.conc_mass_comp[0, "X_ND"]
         )
         assert pytest.approx(0.09784, rel=1e-3) == value(
-            adm.fs.unit.overflow.alkalinity[0]
+            du.fs.unit.overflow.alkalinity[0]
         )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_conservation(self, adm):
+    def test_conservation(self, du):
         assert (
             abs(
                 value(
-                    adm.fs.unit.inlet.flow_vol[0] * adm.fs.props.dens_mass
-                    - adm.fs.unit.overflow.flow_vol[0] * adm.fs.props.dens_mass
-                    - adm.fs.unit.underflow.flow_vol[0] * adm.fs.props.dens_mass
+                    du.fs.unit.inlet.flow_vol[0] * du.fs.props.dens_mass
+                    - du.fs.unit.overflow.flow_vol[0] * du.fs.props.dens_mass
+                    - du.fs.unit.underflow.flow_vol[0] * du.fs.props.dens_mass
                 )
             )
             <= 1e-6
         )
 
     @pytest.mark.unit
-    def test_report(self, adm):
-        adm.fs.unit.report()
+    def test_report(self, du):
+        du.fs.unit.report()
