@@ -24,13 +24,12 @@ Water Research, 95, pp.370-382.
 """
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.core import declare_process_block_class
 from idaes.models.unit_models.translator import TranslatorData
 from idaes.core.util.config import (
-    is_physical_parameter_block,
     is_reaction_parameter_block,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -40,16 +39,9 @@ import idaes.logger as idaeslog
 from idaes.core.util.exceptions import InitializationError
 
 from pyomo.environ import (
-    Reference,
-    Var,
-    value,
-    Constraint,
-    Param,
     units as pyunits,
     check_optimal_termination,
-    exp,
     Set,
-    PositiveReals,
 )
 
 __author__ = "Chenyu Wang, Marcus Holly"
@@ -92,7 +84,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         ),
     )
 
-    # TODO: Revisit how build() is set up to match Alejandro's PR
     def build(self):
         """
         Begin building model.
