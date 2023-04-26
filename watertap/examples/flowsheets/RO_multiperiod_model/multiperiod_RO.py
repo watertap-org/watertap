@@ -52,13 +52,13 @@ def create_swro_mp_block(m=None):
 
     m = create_base_model(m)
 
-    # Create a ramping block with dynamic operation parameters 
-    m.fs.ramping = Block()
-    m.fs.ramping.ramp_time = Param(initialize=60,
+    # Create a dynamic block to store dynamic operation parameters 
+    m.fs.dynamic = Block()
+    m.fs.dynamic.ramp_time = Param(initialize=60,
                                    units= pyunits.s, 
                                    mutable=True,
                                    doc="Time associated with ramping up or down in system pressure")
-    m.fs.ramping.ramping_rate = Param(initialize=0.7e5,
+    m.fs.dynamic.ramping_rate = Param(initialize=0.7e5,
                                         units= pyunits.Pa/pyunits.s,
                                         mutable=True,
                                         doc="Slowest rate at which pressure can be ramped up or down")
@@ -74,14 +74,14 @@ def create_swro_mp_block(m=None):
     @m.Constraint(doc="Pressure ramping down constraint")
     def constraint_ramp_down(b):
         return (
-            b.fs.previous_pressure - b.fs.ramping.ramping_rate * b.fs.ramping.ramp_time
+            b.fs.previous_pressure - b.fs.dynamic.ramping_rate * b.fs.dynamic.ramp_time
             <= b.fs.P1.control_volume.properties_out[0].pressure
         )
 
     @m.Constraint(doc="Pressure ramping up constraint")
     def constraint_ramp_up(b):
         return (
-            b.fs.previous_pressure + b.fs.ramping.ramping_rate * b.fs.ramping.ramp_time
+            b.fs.previous_pressure + b.fs.dynamic.ramping_rate * b.fs.dynamic.ramp_time
             >= b.fs.P1.control_volume.properties_out[0].pressure
         )
     return m
@@ -127,17 +127,20 @@ def get_swro_periodic_variable_pairs(b1, b2):
     return []
 
 
-def create_multiperiod_swro_model(n_time_points=4):
+def create_multiperiod_swro_model(variable_efficiency,
+                                  n_time_points=4,
+                                  ):
     """
     n_time_points: Number of time blocks
     """
+    # TODO - add option to pass flowsheet build and unfix dof options (variable efficiency)
     multiperiod_swro = MultiPeriodModel(
         n_time_points= n_time_points,
         process_model_func=create_swro_mp_block,
         unfix_dof_func = unfix_dof,
         linking_variable_func= get_swro_link_variable_pairs,
     )
-
+    
     multiperiod_swro.build_multi_period_model()
     return multiperiod_swro
 

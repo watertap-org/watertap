@@ -13,7 +13,8 @@
 
 import numpy as np
 import pandas as pd
-import sys, os, matplotlib
+import os
+import matplotlib
 import matplotlib.pyplot as plt
 
 matplotlib.rc("font", size=22)
@@ -27,6 +28,7 @@ from pyomo.environ import (
     Objective,
     Constraint,
     units as pyunits,
+    Block,
     Expr_if,
     Var,
     value,
@@ -38,75 +40,76 @@ from watertap.examples.flowsheets.RO_multiperiod_model.multiperiod_RO import (
     create_multiperiod_swro_model,
 )
 import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as swro
-import watertap.core.util.infeasible as infeas
+from watertap.unit_models.pressure_changer import VariableEfficiency
 
 
 def main(
-    ndays=1,
-    # filename="pricesignals_GOLETA_6_N200_20220601.csv",
-    filename="dagget_CA_LMP_hourly_2015.csv",
-    price_multiplier=1,
+    n_steps=24,
+    filename="pricesignals_GOLETA_6_N200_20220601.csv",
+    cost_of_carbon = 0,
+    variable_efficiency = VariableEfficiency.none,
 ):
     file_path = os.path.realpath(__file__)
     base_path = os.path.dirname(file_path)
     data_path = os.path.join(base_path, filename)
-    # number of time steps assuming 1 hour as the base time
-    n_steps = int(ndays * 24)
-
-    if filename == "pricesignals_GOLETA_6_N200_20220601.csv":
-        carbon_intensity = True
-    else:
-        carbon_intensity = False
 
     # get data
-    lmp, co2i = _get_lmp(
+    price_signal, lmp, co2i = _get_lmp(
         time_steps=n_steps,
         data_path=data_path,
-        carbon_intensity=carbon_intensity,
-        price_multiplier=price_multiplier,
+        cost_of_carbon = cost_of_carbon,
     )
 
-    mp_swro = build_flowsheet(n_steps)
+    mp_swro = build_flowsheet(n_steps,
+                              variable_efficiency=variable_efficiency)
 
-    initialize_system(mp_swro)
+    # initialize_system(mp_swro,
+    #                   variable_efficiency=variable_efficiency)
 
-    m, t_blocks = set_objective(mp_swro, lmp, co2i)
+    m, t_blocks = set_objective(mp_swro,
+                                price_signal,
+                                lmp, 
+                                co2i,
+                                product_requirement=8,)
 
-    m, _ = solve(m)
+    m, results = solve(m)
 
     return m, t_blocks, [lmp, co2i]
 
 
-def _get_lmp(time_steps, data_path, carbon_intensity=False, price_multiplier=1):
+def _get_lmp(time_steps, 
+             data_path, 
+             cost_of_carbon):
     """
     Get price signals from data set
-    time_steps: Number of time steps considered in MP analysis
-    data_path: Price [$/kWh] on the same interval as time_steps
-    carbon_intensity: Boolean representing if the model should use carbon intensity data
-    :return: reshaped data
+        time_steps: Number of time steps considered in MP analysis
+        data_path: Price [$/kWh] and co2i [kg/kWh] on the same interval as time_steps, 
+        cost-of-carbon: represents the cost of carbon in $/kg
+    :return: 
+        weighted price signal
+        reshaped electricity price
+        reshaped carbon intensity
     """
     # read data into array from file
     data = np.genfromtxt(data_path, delimiter=",")
 
-    if carbon_intensity:
-        lmp = data[:time_steps, 0]
-        co2i = data[:time_steps, 1]
-    else:
-        lmp = data[:time_steps]
-        co2i = np.zeros_like(lmp)
+    lmp = data[:time_steps, 0]
+    co2i = data[:time_steps, 1]
 
-    # index only the desired number of timesteps
-    return lmp * price_multiplier, co2i
+    return lmp + co2i*cost_of_carbon, lmp, co2i
 
 
-def build_flowsheet(n_steps):
+def build_flowsheet(n_steps, variable_efficiency=VariableEfficiency.none):
     # create mp model
-    mp_swro = create_multiperiod_swro_model(n_time_points=n_steps)
-
+    mp_swro = create_multiperiod_swro_model(n_time_points=n_steps,
+                                            variable_efficiency=variable_efficiency)
     return mp_swro
 
 
-def initialize_system(m, fix_feedflow=False, fix_recovery=False):
+def initialize_system(m,
+                    variable_efficiency, 
+                    fix_feedflow=False,
+                    fix_recovery=False):
     """
     # loop through each time step block and refixes values appropriately
     m: model
@@ -118,41 +121,40 @@ def initialize_system(m, fix_feedflow=False, fix_recovery=False):
 
     for count, blk in enumerate(t_blocks):
         print(f"\n----- Initializing MultiPeriod Time Step {count} -----")
-        blk_swro = blk.ro_mp
-        blk_swro.fs.RO.area.fix()
+        blk.fs.RO.area.fix()
 
-        if fix_feedflow is False:
-            # unfix the pump flow ratios and fix the bep flowrate as the nominal volumetric flowrate
-            blk_swro.fs.P1.bep_flow.fix()
-            blk_swro.fs.P1.flow_ratio[0].unfix()
-            blk_swro.fs.costing.utilization_factor.fix(1)
+        # if fix_feedflow is False:
+        #     # unfix the pump flow ratios and fix the bep flowrate as the nominal volumetric flowrate
+        #     blk.fs.P1.bep_flow.fix()
+        #     blk.fs.P1.flow_ratio[0].unfix()
+        #     blk.fs.costing.utilization_factor.fix(1)
 
-            # unfix feed flow rate and fix concentration instead
-            blk_swro.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
-            blk_swro.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
-            blk_swro.fs.feed.properties[0.0].mass_frac_phase_comp["Liq", "NaCl"].fix(
-                0.035
-            )
-        else:
-            blk_swro.fs.P1.flow_ratio[0].fix()
+        #     # unfix feed flow rate and fix concentration instead
+        #     blk.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
+        #     blk.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
+        #     blk.fs.feed.properties[0.0].mass_frac_phase_comp["Liq", "NaCl"].fix(
+        #         0.035
+        #     )
+        # else:
+        #     blk.fs.P1.flow_ratio[0].fix()
 
         if fix_recovery is False:
             # unfix RO control volume operational variables
-            blk_swro.fs.P1.control_volume.properties_out[0.0].pressure.unfix()
-            blk_swro.fs.RO.recovery_mass_phase_comp[0.0, "Liq", "H2O"].unfix()
+            blk.fs.P1.control_volume.properties_out[0.0].pressure.unfix()
+            blk.fs.RO.recovery_mass_phase_comp[0.0, "Liq", "H2O"].unfix()
 
-        blk_swro.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"].setub(
+        blk.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"].setub(
             0.0005
         )
 
 
 def set_objective(
     mp_swro,
-    lmp,
+    price_signal,
+    lmp, 
     co2i,
-    carbontax=0,
-    permeate_tank_quality_constraint=False,
-    yield_equality_constraint=False,
+    product_requirement=8,
+    oversize_factor = 1.4
 ):
     """
     mp_swro: pyomo model
@@ -166,152 +168,101 @@ def set_objective(
     # Retrieve pyomo model and active process blocks (i.e. time blocks)
     m = mp_swro.pyomo_model
     t_blocks = mp_swro.get_active_process_blocks()
-    daily_water_production = (
-        38.52 * pyunits.m**3 / pyunits.day
-    )  # value taken from steady state RO flowsheet
-    fixed_hourly_cost = 0.6102  # value taken from steady state RO flowsheet
-    peak_load_surcharge = 0.1 * pyunits.USD_2018 / pyunits.kWh
-    load_shaving_benefit = (
-        0.1 * pyunits.USD_2018 / pyunits.kW
-    )  # TODO - replace with real market values
-    peak_time = [
-        15,
-        20,
-    ]  # hours in the day where load needs to be shaved (4-9pm) starting at count=0
-    nominal_load = (
-        4.31 * pyunits.kWh
-    )  # hourly load at steady conditions, value from steady state RO flowsheet
+    
+    m.mp = Block()  # create a block to store parameters at the multiperiod level
 
-    on_peak_demand_charge = Param(
-        default=10,
-        mutable=True,
-        units=t_blocks[0].ro_mp.fs.costing.base_currency / pyunits.kW,
+    m.mp.product_requirement = Param(
+        initialize=product_requirement,
+        mutable = True, 
+        units = pyunits.m**3,
+        doc="Water production requirement over all time steps[m3]",
     )
+
+    m.mp.time_steps = len(t_blocks)
+
+    m.mp.baseline_production = Param(initialize = value(
+                                                pyunits.convert(
+                                                m.blocks[0].process.fs.costing.annual_water_production,
+                                                to_units = pyunits.m**3/pyunits.hr)),
+                                        mutable = True,
+                                        units = pyunits.m**3/pyunits.hr,
+                                        doc = "Baseline hourly production [m3]")
+   
+    m.mp.baseline_load = Expression(
+        expr = m.blocks[0].process.fs.costing.specific_energy_consumption * m.mp.baseline_production,
+        doc = "Baseline hourly load [kWh]")
+    
+
+    m.mp.oversize_factor = Param(initialize = oversize_factor,
+                                mutable = True,
+                                doc = "Ratio between maximum and design water production")
 
     # index the flowsheet for each timestep
     for count, blk in enumerate(t_blocks):
-        blk_swro = blk.ro_mp
-
         # set price and carbon signals as parameters
-        blk.lmp_signal = Param(
+        blk.fs.dynamic.price_signal = Param(
+            default = price_signal[count],
+            mutable=True,
+            units = blk.fs.costing.base_currency / pyunits.MWh
+        )
+
+        blk.fs.dynamic.lmp_signal = Param(
             default=lmp[count],
             mutable=True,
-            units=blk_swro.fs.costing.base_currency / pyunits.kWh,
-        )
-        blk.carbon_intensity = Param(
-            default=co2i[count], mutable=True, units=pyunits.kg / pyunits.MWh
-        )
-        blk.carbon_tax = Param(
-            default=carbontax,
-            mutable=True,
-            units=blk_swro.fs.costing.base_currency / pyunits.kg,
+            units=blk.fs.costing.base_currency / pyunits.MWh,
         )
 
-        # set the electricity_price in each flowsheet
-        blk_swro.fs.costing.electricity_cost.fix(blk.lmp_signal)
-
-        # combine/place flowsheet level cost metrics on each time block
-        blk.water_prod = Expression(
-            expr=pyunits.convert(
-                blk_swro.fs.costing.annual_water_production,
-                to_units=pyunits.m**3 / pyunits.hour,
-            ),
-            doc="annual water production",
-        )
-        blk.max_capacity = Constraint(
-            expr=blk.water_prod
-            <= pyunits.convert(
-                daily_water_production, to_units=pyunits.m**3 / pyunits.hr
-            ),
-            doc="Set the maximum utilization on an hourly basis",
+        blk.fs.dynamic.carbon_intensity = Param(
+            default=co2i[count], 
+            mutable=True, 
+            units=pyunits.kg / pyunits.MWh
         )
 
-        blk.weighted_permeate_quality = Expression(
-            expr=blk.water_prod
-            * blk_swro.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"],
-            doc="Permeate flow weighted concentration of salt in the permeate",
-        )
-        blk.energy_consumption = Expression(
-            expr=blk_swro.fs.costing.specific_energy_consumption * blk.water_prod,
-            doc="Energy consumption per timestep kWh/hr",
-        )
-
-        blk.load_shaving_trigger = Expr_if(
-            count > peak_time[0],
-            Expr_if(
-                count < peak_time[1],
-                load_shaving_benefit,
-                0,
-            ),
-            0,
+        blk.fs.dynamic.hourly_water_production = Var(initialize = 0.0,
+                                                     bounds = (0, 
+                                                               value(m.mp.oversize_factor 
+                                                                     * m.mp.baseline_production)),
+                                                     units = pyunits.m**3 / pyunits.hr,
+                                                     doc = "Hourly water production [m3/hr]")
+        
+        blk.fs.production_constraint = Constraint(
+            expr = blk.fs.dynamic.hourly_water_production == 
+            pyunits.convert(blk.fs.costing.annual_water_production,
+                            to_units = pyunits.m**3 / pyunits.hr),
+            doc = "Set the hourly water production on the dynamic block to each time block",
         )
 
-        blk.carbon_emission = Expression(
-            expr=blk.energy_consumption
-            * pyunits.convert(blk.carbon_intensity, to_units=pyunits.kg / pyunits.kWh),
+        blk.fs.dynamic.hourly_energy_consumption = Expression(
+            expr= pyunits.convert(blk.fs.costing.specific_energy_consumption 
+                                  * blk.fs.dynamic.hourly_water_production,
+                                  to_units = pyunits.kWh / pyunits.hr),
+            doc="Energy consumption [kWh] per time step",
+        )
+
+        blk.fs.dynamic.hourly_carbon_emissions = Expression(
+            expr=pyunits.convert(blk.fs.dynamic.hourly_energy_consumption, to_units=pyunits.kWh / pyunits.hr)
+            * pyunits.convert(blk.fs.dynamic.carbon_intensity, to_units=pyunits.kg / pyunits.kWh),
             doc="Equivalent carbon emissions per timestep ",
         )
-        blk.annual_carbon_cost = Expression(
-            expr=blk.carbon_tax
-            * (blk_swro.fs.costing.base_currency / pyunits.kg)
-            * pyunits.convert(blk.carbon_emission, to_units=pyunits.kg / pyunits.hour),
-            doc="Hourly cost associated with carbon emissions $/hr",
-        )
 
-        blk.wholesale_energy_cost = blk.energy_consumption * blk.lmp_signal
-        blk.load_shaving_revenue = blk.load_shaving_trigger * (
-            nominal_load - blk.energy_consumption
-        )
+        # remove objective at the individual time-step level
+        blk.fs.objective.deactivate()
 
-        blk.weighted_LCOW = Expression(
-            expr=fixed_hourly_cost
-            + blk.wholesale_energy_cost
-            - blk.load_shaving_revenue,
-            doc="hourly cost [$/hr]",
-        )
-
-    # include demand charge
-    # TODO- include demand charge possibly nees
-    # compile time block level expressions into a model-level objective
-    m.obj = Objective(
-        expr=sum([blk.weighted_LCOW for blk in t_blocks])
-        / sum([blk.water_prod for blk in t_blocks]),
-        doc="Daily cost to produce water",
+    m.mp.product_requirement_constraint = Constraint(
+        expr=sum([blk.fs.dynamic.hourly_water_production for blk in t_blocks]) == m.mp.product_requirement,
+        doc="Daily water production requirement",
     )
 
-    if yield_equality_constraint is True:
-        m.permeate_yield = Constraint(
-            expr=(
-                daily_water_production - 1e-5,
-                sum(blk.water_prod for blk in t_blocks),
-                daily_water_production + 1e-5,
-            ),
-            doc="The water production over the day is fixed within a tolerance",
-        )
-
-    else:
-        m.permeate_yield = Constraint(
-            expr=sum(blk.water_prod for blk in t_blocks) <= daily_water_production,
-            doc="The water production over the day is fixed within a tolerance",
-        )
-
-    if permeate_tank_quality_constraint is True:
-
-        m.permeate_quality_ub = Constraint(
-            expr=(
-                sum([blk.weighted_permeate_quality for blk in t_blocks])
-                <= 0.0005 * sum([blk.water_prod for blk in t_blocks])
-            ),
-            doc="Flow-averaged permeate quality must be less than 500 ppm",
-        )
-
-        m.permeate_quality_lb = Constraint(
-            expr=(sum([blk.weighted_permeate_quality for blk in t_blocks]) >= 0),
-            doc="Flow-averaged permeate quality must be greater than 0 ppm",
-        )
+    # compile time block level expressions into a model-level objective
+    m.mp.obj = Objective(
+        expr = sum([pyunits.convert(blk.fs.dynamic.hourly_energy_consumption, to_units = pyunits.kWh / pyunits.hr)
+                     * pyunits.convert(blk.fs.dynamic.price_signal, to_units = blk.fs.costing.base_currency / pyunits.kWh) 
+                     for blk in t_blocks]),
+        doc = "Daily electricity and carbon cost to produce water", 
+    )
 
     # fix the initial pressure to default operating pressure at 1 kg/s and 50% recovery
-    t_blocks[0].ro_mp.previous_pressure.fix(50e5)
+    t_blocks[0].fs.previous_pressure.fix(50e5)
 
     return m, t_blocks
 
@@ -446,8 +397,11 @@ def save_results(m, t_blocks, data, savepath=None):
 
 
 def visualize_results(
-    path, erd_type=swro.ERDtype.pump_as_turbine, co2i=False, title_label=""
-):
+                path, 
+                erd_type=swro.ERDtype.pump_as_turbine, 
+                co2i=False, 
+                title_label=""
+            ):
     df = pd.read_csv(path)
     time_step = df["time"].values
 
@@ -461,10 +415,10 @@ def visualize_results(
     ax[0, 0].plot(time_step, df["lmp"].values, color="black", label="LMP")
     ax[0, 0].set_xlabel("Time [hr]")
     ax[0, 0].set_ylabel("Electricity price [$/kWh]", color="black")
-    if co2i:
-        ax2 = ax[0, 0].twinx()
-        ax2.plot(time_step, df["co2i"].values, color="forestgreen", label="CO2i")
-        ax2.set_ylabel("Carbon intensity [kgCO2/kWh]", color="forestgreen")
+
+    ax2 = ax[0, 0].twinx()
+    ax2.plot(time_step, df["co2i"].values, color="forestgreen", label="CO2i")
+    ax2.set_ylabel("Carbon intensity [kgCO2/kWh]", color="forestgreen")
 
     ax[0, 1].plot(time_step, df["power"].values / max(df["power"].values))
     ax[0, 1].set_xlabel("Time [hr]")
@@ -507,45 +461,60 @@ def visualize_results(
 
 
 if __name__ == "__main__":
-    case = 2
-    if case == 1:
-        price_multiplier = [0.25, 1, 3, 10]
-        file_save = [
-            "simulation_data_0_25_ubcon.csv",
-            # "simulation_data_0_25_unc.csv",
-            "simulation_data_1_00_ubcon.csv",
-            # "simulation_data_1_00_unc.csv",
-            "simulation_data_3_00_ubcon.csv",
-            # "simulation_data_3_00_unc.csv",
-            "simulation_data_10_00_ubcon.csv",
-            # "simulation_data_10_00_unc.csv",
-        ]
-        for i, multiplier in enumerate(price_multiplier):
+    m, t_blocks, data = main(
+        n_steps=4,
+        cost_of_carbon=0.0,
+    )
 
-            m, t_blocks, data = main(
-                ndays=1,
-                # filename="pricesignals_GOLETA_6_N200_20220601.csv",
-                filename="dagget_CA_LMP_hourly_2015.csv",
-                price_multiplier=multiplier,
-            )
-            path = os.path.join(os.getcwd(), file_save[i])
-            save_results(m, t_blocks, data, path)
-    elif case == 2:
-        price_multiplier = 10
-        m, t_blocks, data = main(
-            ndays=1,
-            # filename="pricesignals_GOLETA_6_N200_20220601.csv",
-            filename="dagget_CA_LMP_hourly_2015.csv",
-            price_multiplier=price_multiplier,
-        )
-        file_save = "temp.csv"
-        path = os.path.join(os.getcwd(), file_save)
-        save_results(m, t_blocks, data, path)
+    # path = os.path.join(os.getcwd(),  "temp.csv")
+    # save_results(m, t_blocks, data, path)
 
-        title_label = f"LMP scaling = {price_multiplier}"
-        visualize_results(
-            path,
-            erd_type=t_blocks[0].ro_mp.fs.erd_type,
-            co2i=False,
-            title_label=title_label,
-        )
+    # visualize_results(
+    #     path,
+    #     erd_type=t_blocks[0].ro_mp.fs.erd_type,
+    #     title_label="",
+    # )
+
+
+    # case = 2
+    # if case == 1:
+    #     price_multiplier = [0.25, 1, 3, 10]
+    #     file_save = [
+    #         "simulation_data_0_25_ubcon.csv",
+    #         # "simulation_data_0_25_unc.csv",
+    #         "simulation_data_1_00_ubcon.csv",
+    #         # "simulation_data_1_00_unc.csv",
+    #         "simulation_data_3_00_ubcon.csv",
+    #         # "simulation_data_3_00_unc.csv",
+    #         "simulation_data_10_00_ubcon.csv",
+    #         # "simulation_data_10_00_unc.csv",
+    #     ]
+    #     for i, multiplier in enumerate(price_multiplier):
+
+    #         m, t_blocks, data = main(
+    #             ndays=1,
+    #             # filename="pricesignals_GOLETA_6_N200_20220601.csv",
+    #             filename="dagget_CA_LMP_hourly_2015.csv",
+    #             price_multiplier=multiplier,
+    #         )
+    #         path = os.path.join(os.getcwd(), file_save[i])
+    #         save_results(m, t_blocks, data, path)
+    # elif case == 2:
+    #     price_multiplier = 10
+    #     m, t_blocks, data = main(
+    #         ndays=1,
+    #         # filename="pricesignals_GOLETA_6_N200_20220601.csv",
+    #         filename="dagget_CA_LMP_hourly_2015.csv",
+    #         price_multiplier=price_multiplier,
+    #     )
+    #     file_save = "temp.csv"
+    #     path = os.path.join(os.getcwd(), file_save)
+    #     save_results(m, t_blocks, data, path)
+
+    #     title_label = f"LMP scaling = {price_multiplier}"
+    #     visualize_results(
+    #         path,
+    #         erd_type=t_blocks[0].ro_mp.fs.erd_type,
+    #         co2i=False,
+    #         title_label=title_label,
+    #     )
