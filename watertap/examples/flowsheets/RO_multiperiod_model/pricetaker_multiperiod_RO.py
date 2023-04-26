@@ -63,9 +63,6 @@ def main(
     mp_swro = build_flowsheet(n_steps,
                               variable_efficiency=variable_efficiency)
 
-    # initialize_system(mp_swro,
-    #                   variable_efficiency=variable_efficiency)
-
     m, t_blocks = set_objective(mp_swro,
                                 price_signal,
                                 lmp, 
@@ -104,48 +101,6 @@ def build_flowsheet(n_steps, variable_efficiency=VariableEfficiency.none):
     mp_swro = create_multiperiod_swro_model(n_time_points=n_steps,
                                             variable_efficiency=variable_efficiency)
     return mp_swro
-
-
-def initialize_system(m,
-                    variable_efficiency, 
-                    fix_feedflow=False,
-                    fix_recovery=False):
-    """
-    # loop through each time step block and refixes values appropriately
-    m: model
-    fix_feedflow: Boolean for whether variables related to the feed flowrate should be fixed
-    fix_recovery: Boolean for whether variables related to the water recovery should be fixed
-    """
-
-    t_blocks = m.get_active_process_blocks()
-
-    for count, blk in enumerate(t_blocks):
-        print(f"\n----- Initializing MultiPeriod Time Step {count} -----")
-        blk.fs.RO.area.fix()
-
-        # if fix_feedflow is False:
-        #     # unfix the pump flow ratios and fix the bep flowrate as the nominal volumetric flowrate
-        #     blk.fs.P1.bep_flow.fix()
-        #     blk.fs.P1.flow_ratio[0].unfix()
-        #     blk.fs.costing.utilization_factor.fix(1)
-
-        #     # unfix feed flow rate and fix concentration instead
-        #     blk.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
-        #     blk.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
-        #     blk.fs.feed.properties[0.0].mass_frac_phase_comp["Liq", "NaCl"].fix(
-        #         0.035
-        #     )
-        # else:
-        #     blk.fs.P1.flow_ratio[0].fix()
-
-        if fix_recovery is False:
-            # unfix RO control volume operational variables
-            blk.fs.P1.control_volume.properties_out[0.0].pressure.unfix()
-            blk.fs.RO.recovery_mass_phase_comp[0.0, "Liq", "H2O"].unfix()
-
-        blk.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"].setub(
-            0.0005
-        )
 
 
 def set_objective(
