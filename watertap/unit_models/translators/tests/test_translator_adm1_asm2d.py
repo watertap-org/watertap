@@ -280,6 +280,12 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(1e-6, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_TSS"]
         )
+        assert pytest.approx(0.02268, rel=1e-3) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_K"]
+        )
+        assert pytest.approx(0.02893, rel=1e-3) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_Mg"]
+        )
         assert pytest.approx(0.028857, rel=1e-3) == value(
             asmadm.fs.unit.outlet.alkalinity[0]
         )
