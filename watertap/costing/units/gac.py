@@ -38,6 +38,21 @@ def build_gac_cost_param_block(blk):
         units=pyo.units.dimensionless,
         doc="Number of off-line redundant GAC contactors in parallel",
     )
+    contactor_cost_coeff_data = {
+        "pres": {0: 10010.9, 1: 2204.95, 2: 15.9378, 3: 0.110592},
+        "grav": {0: 75131.3, 1: 735.550, 2: 1.01827, 3: 0.000000},
+    }
+    print(contactor_cost_coeff_data)
+    contactor_cost_coeff_tup = _unpack_data_dict(contactor_cost_coeff_data)
+    print(contactor_cost_coeff_tup)
+    blk.contactor_cost_coeff = pyo.Var(
+        ["pres", "grav"],
+        [0, 1, 2, 3],
+        initialize=contactor_cost_coeff_tup,
+        units=pyo.units.USD_2020,
+        doc="contactor polynomial cost coefficient",
+    )
+    print(blk.contactor_cost_coeff)
     blk.pres_contactor_cost_coeff_0 = pyo.Var(
         initialize=10010.9,
         units=pyo.units.USD_2020,
@@ -376,3 +391,14 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
         pyo.units.convert(blk.energy_consumption, to_units=pyo.units.kW),
         "electricity",
     )
+
+
+def _unpack_data_dict(data_dict):
+
+    data_tuple = {
+        (key, sub_key): data_dict[key][sub_key]
+        for key in data_dict.keys()
+        for sub_key in data_dict[key].keys()
+    }
+
+    return data_tuple
