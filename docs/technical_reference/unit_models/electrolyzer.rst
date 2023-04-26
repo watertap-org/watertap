@@ -68,7 +68,21 @@ The following variables should then be fixed:
 
 Model Structure
 ------------------
-The electrolyzer model consists of 2 ControlVolume0DBlocks, one for the anolyte and another for the catholyte. Currently, the generation of species via electrolysis reactions is handled by the ``custom_molar_term`` within the ControlVolume0DBlock. Considering the reaction block and reaction package are omitted, no temperature dependence and rigorous energy balance are considered. Scaling of unit model variables should first be performed using ``calculate_scaling_factors()``. For the case that the model is poorly scaled, the ``current`` variable should be rescaled. Estimated scaling factors are propagated from the ``current`` scaling factor for other unit model variables which are dependent on process scale. An example of the methodology is the provided below.
+The electrolyzer model consists of 2 ``ControlVolume0DBlocks``, one for the anolyte and another for the catholyte. Currently, the generation of species via electrolysis reactions is handled by the ``custom_molar_term`` within the ``ControlVolume0DBlock``. Coupling this custom molar term with the Faradaic conversion, the material balance may be written by the following and calculated within the ``ControlVolume0DBlock``. Here, membrane flux is handled by relating the stoichiometric coefficient required to satisfy the charge balance. The direction of membrane flow is calculated from anode to cathode in the unit model, lending to the signage of the membrane stoichiometric coefficient shown.
+
+Anode:
+
+    .. math::
+
+        & \dot{n}_{j,in}-\dot{n}_{j,out}+\frac{\left(\varepsilon_{j,anode}-\varepsilon_{j,membrane}\right)I\eta_{current}}{F}=0 \\\\
+
+Cathode:
+
+    .. math::
+
+        & \dot{n}_{j,in}-\dot{n}_{j,out}+\frac{\left(\varepsilon_{j,cathode}+\varepsilon_{j,membrane}\right)I\eta_{current}}{F}=0 \\\\
+
+Considering the reaction block and reaction package are omitted, no temperature dependence and rigorous energy balance are considered. Scaling of unit model variables should first be performed using ``calculate_scaling_factors()``. For the case that the model is poorly scaled, the ``current`` variable should be rescaled. Estimated scaling factors are propagated from the ``current`` scaling factor for other unit model variables which are dependent on process scale. An example of the methodology is the provided below.
 
 .. code-block::
 
