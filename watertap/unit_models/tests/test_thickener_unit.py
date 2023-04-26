@@ -74,11 +74,7 @@ def test_config():
 
     m.fs.props = ASM1ParameterBlock()
 
-    m.fs.unit = Thickener_Unit(
-        property_package=m.fs.props,
-        outlet_list=["underflow", "overflow"],
-        split_basis=SplittingType.componentFlow,
-    )
+    m.fs.unit = Thickener_Unit(property_package=m.fs.props)
 
     assert len(m.fs.unit.config) == 15
 
@@ -107,9 +103,7 @@ def test_list_error():
         "and underflow as outlets.",
     ):
         m.fs.unit = Thickener_Unit(
-            property_package=m.fs.props,
-            outlet_list=["outlet1", "outlet2"],
-            split_basis=SplittingType.componentFlow,
+            property_package=m.fs.props, outlet_list=["outlet1", "outlet2"]
         )
 
 
@@ -122,11 +116,7 @@ class TestThick(object):
 
         m.fs.props = ASM1ParameterBlock()
 
-        m.fs.unit = Thickener_Unit(
-            property_package=m.fs.props,
-            outlet_list=["underflow", "overflow"],
-            split_basis=SplittingType.componentFlow,
-        )
+        m.fs.unit = Thickener_Unit(property_package=m.fs.props)
 
         m.fs.unit.inlet.flow_vol.fix(300 * units.m**3 / units.day)
         m.fs.unit.inlet.temperature.fix(308.15 * units.K)
@@ -273,6 +263,20 @@ class TestThick(object):
             )
             <= 1e-6
         )
+        for i in tu.fs.props.solute_set:
+            assert (
+                abs(
+                    value(
+                        tu.fs.unit.inlet.flow_vol[0]
+                        * tu.fs.unit.inlet.conc_mass_comp[0, i]
+                        - tu.fs.unit.overflow.flow_vol[0]
+                        * tu.fs.unit.overflow.conc_mass_comp[0, i]
+                        - tu.fs.unit.underflow.flow_vol[0]
+                        * tu.fs.unit.underflow.conc_mass_comp[0, i]
+                    )
+                )
+                <= 1e-6
+            )
 
     @pytest.mark.unit
     def test_report(self, tu):

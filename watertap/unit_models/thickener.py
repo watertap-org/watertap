@@ -29,7 +29,7 @@ from idaes.core import (
     declare_process_block_class,
     MaterialBalanceType,
 )
-from idaes.models.unit_models.separator import SeparatorData
+from idaes.models.unit_models.separator import SeparatorData, SplittingType
 
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -59,23 +59,16 @@ __author__ = "Alejandro Garciadiego"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
-# Enumerate options for balances
-class SplittingType(Enum):
-    """
-    Enum of supported material split types.
-    """
-
-    totalFlow = 1
-    phaseFlow = 2
-    componentFlow = 3
-    phaseComponentFlow = 4
-
 
 @declare_process_block_class("Thickener_Unit")
 class ThickenerUnit(SeparatorData):
     """
     Thickener unit block for BSM2
     """
+
+    CONFIG = SeparatorData.CONFIG()
+    CONFIG.outlet_list = ["underflow", "overflow"]
+    CONFIG.split_basis = SplittingType.componentFlow
 
     def build(self):
         """

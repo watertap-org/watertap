@@ -72,11 +72,7 @@ def test_config():
 
     m.fs.props = ASM1ParameterBlock()
 
-    m.fs.unit = Dewatering_Unit(
-        property_package=m.fs.props,
-        outlet_list=["underflow", "overflow"],
-        split_basis=SplittingType.componentFlow,
-    )
+    m.fs.unit = Dewatering_Unit(property_package=m.fs.props)
 
     assert len(m.fs.unit.config) == 15
 
@@ -107,7 +103,6 @@ def test_list_error():
         m.fs.unit = Dewatering_Unit(
             property_package=m.fs.props,
             outlet_list=["outlet1", "outlet2"],
-            split_basis=SplittingType.componentFlow,
         )
 
 
@@ -120,11 +115,7 @@ class TestDu(object):
 
         m.fs.props = ASM1ParameterBlock()
 
-        m.fs.unit = Dewatering_Unit(
-            property_package=m.fs.props,
-            outlet_list=["underflow", "overflow"],
-            split_basis=SplittingType.componentFlow,
-        )
+        m.fs.unit = Dewatering_Unit(property_package=m.fs.props)
 
         m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
         m.fs.unit.inlet.temperature.fix(308.15 * units.K)
@@ -265,6 +256,20 @@ class TestDu(object):
             )
             <= 1e-6
         )
+        for i in du.fs.props.solute_set:
+            assert (
+                abs(
+                    value(
+                        du.fs.unit.inlet.flow_vol[0]
+                        * du.fs.unit.inlet.conc_mass_comp[0, i]
+                        - du.fs.unit.overflow.flow_vol[0]
+                        * du.fs.unit.overflow.conc_mass_comp[0, i]
+                        - du.fs.unit.underflow.flow_vol[0]
+                        * du.fs.unit.underflow.conc_mass_comp[0, i]
+                    )
+                )
+                <= 1e-6
+            )
 
     @pytest.mark.unit
     def test_report(self, du):

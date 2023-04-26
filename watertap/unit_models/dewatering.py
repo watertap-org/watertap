@@ -29,7 +29,7 @@ from idaes.core import (
     declare_process_block_class,
     MaterialBalanceType,
 )
-from idaes.models.unit_models.separator import SeparatorData
+from idaes.models.unit_models.separator import SeparatorData, SplittingType
 
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -59,23 +59,16 @@ __author__ = "Alejandro Garciadiego"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
-# Enumerate options for balances
-class SplittingType(Enum):
-    """
-    Enum of supported material split types.
-    """
-
-    totalFlow = 1
-    phaseFlow = 2
-    componentFlow = 3
-    phaseComponentFlow = 4
-
 
 @declare_process_block_class("Dewatering_Unit")
 class DewateringUnit(SeparatorData):
     """
     Dewatering unit block for BSM2
     """
+
+    CONFIG = SeparatorData.CONFIG()
+    CONFIG.outlet_list = ["underflow", "overflow"]
+    CONFIG.split_basis = SplittingType.componentFlow
 
     def build(self):
         """
@@ -163,14 +156,11 @@ class DewateringUnit(SeparatorData):
             return blk.split_fraction[t, "overflow", i] == 1 - blk.f_q_du[t]
 
     def _get_performance_contents(self, time_point=0):
-        if hasattr(self, "split_fraction"):
-            var_dict = {}
-            for k in self.split_fraction.keys():
-                if k[0] == time_point:
-                    var_dict[f"Split Fraction [{str(k[1:])}]"] = self.split_fraction[k]
-            return {"vars": var_dict}
-        else:
-            return None
+        var_dict = {}
+        for k in self.split_fraction.keys():
+            if k[0] == time_point:
+                var_dict[f"Split Fraction [{str(k[1:])}]"] = self.split_fraction[k]
+        return {"vars": var_dict}
 
     def _get_stream_table_contents(self, time_point=0):
         outlet_list = self.create_outlet_list()
