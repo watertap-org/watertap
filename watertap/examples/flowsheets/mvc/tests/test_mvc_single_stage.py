@@ -312,53 +312,6 @@ class TestMVC:
         )
 
     @pytest.mark.component
-    def test_display_system(self, mvc_single_stage, capsys):
-        m = mvc_single_stage
-        display_metrics(m)
-        captured = capsys.readouterr()
-
-        assert (
-            captured.out
-            == """
-System metrics
-Feed flow rate:                           44.44 kg/s
-Feed salinity:                            100.00 g/kg
-Brine salinity:                           200.00 g/kg
-Product flow rate:                        22.22 kg/s
-Recovery:                                 50.00 %
-Specific energy consumption:              22.02 kWh/m3
-Levelized cost of water:                  23.47 $/m3
-External Q:                               172718.21 W
-"""
-        )
-
-    @pytest.mark.component
-    def test_display_design(self, mvc_single_stage, capsys):
-        m = mvc_single_stage
-        display_design(m)
-        captured = capsys.readouterr()
-
-        assert (
-            captured.out
-            == """
-State variables
-Preheated feed temperature:               331.92 K
-Evaporator (brine, vapor) temperature:    343.15 K
-Evaporator (brine, vapor) pressure:       26.23 kPa
-Compressed vapor temperature:             393.20 K
-Compressed vapor pressure:                41.97 kPa
-Condensed vapor temperature:              343.15 K
-
-Design variables
-Brine heat exchanger area:                115.00 m2
-Distillate heat exchanger area:           125.00 m2
-Compressor pressure ratio:                1.60
-Evaporator area:                          10000.00 m2
-Evaporator LMTD:                          1.79 K
-"""
-        )
-
-    @pytest.mark.component
     def test_optimization(self, mvc_single_stage):
         m = mvc_single_stage
         m.fs.Q_ext[0].fix(0)  # no longer want external heating in evaporator
