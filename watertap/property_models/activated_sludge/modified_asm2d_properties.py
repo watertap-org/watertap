@@ -65,7 +65,7 @@ class ModifiedASM2dParameterData(ASM2dParameterData):
             for j in self.config.additional_solute_list:
                 if j == "H2O":
                     raise ConfigurationError(
-                        "'H2O'is reserved as the default solvent and cannot be a solute."
+                        "'H2O' is reserved as the default solvent and cannot be a solute."
                     )
                 # Add valid members of solute_list into IDAES's Solute() class.
                 # This triggers the addition of j into component_list and solute_set.
