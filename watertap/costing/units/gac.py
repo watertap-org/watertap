@@ -34,17 +34,17 @@ def build_gac_cost_param_block(blk):
     blk.num_contactors_op = pyo.Var(
         initialize=1,
         units=pyo.units.dimensionless,
-        doc="Number of GAC contactors in operation in parallel",
+        doc="number of GAC contactors in operation in parallel",
     )
     blk.num_contactors_redundant = pyo.Var(
         initialize=1,
         units=pyo.units.dimensionless,
-        doc="Number of off-line redundant GAC contactors in parallel",
+        doc="number of off-line redundant GAC contactors in parallel",
     )
     blk.regen_frac = pyo.Var(
         initialize=0.70,
         units=pyo.units.dimensionless,
-        doc="Fraction of spent GAC adsorbent that can be regenerated for reuse",
+        doc="fraction of spent GAC adsorbent that can be regenerated for reuse",
     )
 
     # ---------------------------------------------------------------------
@@ -53,7 +53,7 @@ def build_gac_cost_param_block(blk):
     blk.bed_mass_max_ref = pyo.Var(
         initialize=18143.7,
         units=pyo.units.kg,
-        doc="Reference maximum value of GAC mass needed for initial charge where "
+        doc="reference maximum value of GAC mass needed for initial charge where "
         "economy of scale no longer discounts the unit price",
     )
 
@@ -84,37 +84,37 @@ def build_gac_cost_param_block(blk):
         range(4),
         initialize=_unpack_data_dict(contactor_cost_coeff_data),
         units=pyo.units.dimensionless,  # USD_2020 embedded in equation
-        doc="contactor polynomial cost coefficient",
+        doc="contactor polynomial cost coefficients",
     )
     blk.adsorbent_unit_cost_coeff = pyo.Var(
         range(2),
         initialize=adsorbent_unit_cost_coeff_data,
         units=pyo.units.dimensionless,  # USD_2020 * kg**-1 embedded in equation
-        doc="GAC adsorbent exponential cost parameters",
+        doc="GAC adsorbent cost exponential function parameters",
     )
     blk.other_cost_param = pyo.Var(
         blk.contactor_type_list,
         range(2),
         initialize=_unpack_data_dict(other_cost_param_data),
         units=pyo.units.dimensionless,  # USD_2020 embedded in equation
-        doc="contactor polynomial cost coefficient",
+        doc="other process cost power law parameters",
     )
     blk.regen_unit_cost = pyo.Var(
         initialize=4.28352,
         units=pyo.units.USD_2020 * pyo.units.kg**-1,
-        doc="Unit cost to regenerate spent GAC adsorbent by an offsite regeneration facility",
+        doc="unit cost to regenerate spent GAC adsorbent by an offsite regeneration facility",
     )
     blk.makeup_unit_cost = pyo.Var(
         initialize=4.58223,
         units=pyo.units.USD_2020 * pyo.units.kg**-1,
-        doc="Unit cost to makeup spent GAC adsorbent with fresh adsorbent",
+        doc="unit cost to makeup spent GAC adsorbent with fresh adsorbent",
     )
     blk.energy_consumption_coeff = pyo.Var(
         blk.contactor_type_list,
         range(3),
         initialize=_unpack_data_dict(energy_consumption_coeff_data),
         units=pyo.units.dimensionless,  # kW embedded in equation
-        doc="polynomial energy consumption coefficient",
+        doc="energy consumption polynomial coefficients",
     )
 
 
