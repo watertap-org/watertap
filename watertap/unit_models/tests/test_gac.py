@@ -37,6 +37,7 @@ from watertap.unit_models.gac import (
     SurfaceDiffusionCoefficientType,
 )
 from watertap.costing import WaterTAPCosting
+from watertap.costing.units.gac import ContactorType
 
 __author__ = "Hunter Barber"
 
@@ -418,7 +419,7 @@ class TestGACRobust:
 
         mr_grav.fs.unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=mr_grav.fs.costing,
-            costing_method_arguments={"contactor_type": "gravity"},
+            costing_method_arguments={"contactor_type": ContactorType.gravity},
         )
         mr_grav.fs.costing.cost_process()
         results = solver.solve(mr_grav)
