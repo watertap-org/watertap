@@ -39,6 +39,7 @@ from watertap.examples.flowsheets.mvc.mvc_single_stage import (
     set_up_optimization,
     display_metrics,
     display_design,
+    main,
 )
 
 import watertap.property_models.seawater_prop_pack as props_seawater
@@ -154,9 +155,7 @@ class TestMVC:
         # check fixed variables
         # feed
         assert m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"].is_fixed()
-        assert (
-            value(m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]) == 0.1
-        )
+        assert value(m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]) == 0.1
         assert m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].is_fixed()
         assert value(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]) == 40
         assert m.fs.feed.temperature[0].is_fixed()
@@ -223,9 +222,7 @@ class TestMVC:
         )
         assert (
             value(
-                m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp[
-                    "Liq", "TDS"
-                ]
+                m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp["Liq", "TDS"]
             )
             == 1e-5
         )
@@ -276,13 +273,9 @@ class TestMVC:
         )
 
         # compressor pressure outlet
-        assert value(
-            m.fs.compressor.control_volume.properties_out[0].pressure
-        ) / value(
+        assert value(m.fs.compressor.control_volume.properties_out[0].pressure) / value(
             m.fs.compressor.control_volume.properties_in[0].pressure
-        ) == pytest.approx(
-            1.6, rel=1e-3
-        )
+        ) == pytest.approx(1.6, rel=1e-3)
 
         # external Q
         assert value(m.fs.Q_ext[0]) == pytest.approx(0, 1e-3)
@@ -309,16 +302,12 @@ class TestMVC:
         # Check mass balance
         assert pytest.approx(
             value(m.fs.feed.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]), rel=1e-3
-        ) == value(
-            m.fs.distillate.inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ) + value(
+        ) == value(m.fs.distillate.inlet.flow_mass_phase_comp[0, "Liq", "H2O"]) + value(
             m.fs.brine.inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         assert pytest.approx(
             value(m.fs.feed.outlet.flow_mass_phase_comp[0, "Liq", "TDS"]), rel=1e-3
-        ) == value(
-            m.fs.distillate.inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
-        ) + value(
+        ) == value(m.fs.distillate.inlet.flow_mass_phase_comp[0, "Liq", "TDS"]) + value(
             m.fs.brine.inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
 
@@ -380,15 +369,15 @@ Evaporator LMTD:                          1.79 K
         results = solve(m, solver=solver, tee=False)
 
         # Check decision variables
-        assert value(
-            m.fs.evaporator.properties_brine[0].temperature) == pytest.approx(348.15, rel=1e-2)
-        assert value(
-            m.fs.evaporator.properties_brine[0].pressure) == pytest.approx(32448.24, rel=1e-2)
+        assert value(m.fs.evaporator.properties_brine[0].temperature) == pytest.approx(
+            348.15, rel=1e-2
+        )
+        assert value(m.fs.evaporator.properties_brine[0].pressure) == pytest.approx(
+            32448.24, rel=1e-2
+        )
         assert value(m.fs.hx_brine.area) == pytest.approx(173.99, rel=1e-2)
         assert value(m.fs.hx_distillate.area) == pytest.approx(206.31, rel=1e-2)
-        assert value(m.fs.compressor.pressure_ratio) == pytest.approx(
-            1.61, rel=1e-2
-        )
+        assert value(m.fs.compressor.pressure_ratio) == pytest.approx(1.61, rel=1e-2)
         assert value(m.fs.evaporator.area) == pytest.approx(777.37, rel=1e-2)
         assert value(m.fs.evaporator.lmtd) == pytest.approx(22.59, rel=1e-2)
 
@@ -397,5 +386,3 @@ Evaporator LMTD:                          1.79 K
             22.36, rel=1e-2
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(4.52, rel=1e-2)
-
-    # Add test for main
