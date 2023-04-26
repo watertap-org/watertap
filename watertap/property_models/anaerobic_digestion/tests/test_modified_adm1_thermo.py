@@ -10,18 +10,20 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for ASM1d thermo property package.
-Authors: Andrew Lee
+Tests for ADM1 thermo property package.
+Authors: Chenyu Wang, Marcus Holly
 """
 
 import pytest
+
 from pyomo.environ import ConcreteModel, Param, units, value, Var
 from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 
-from watertap.property_models.activated_sludge.asm2d_properties import (
-    ASM2dParameterBlock,
-    ASM2dStateBlock,
+from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
+    ModifiedADM1ParameterBlock,
+    ModifiedADM1StateBlock,
 )
 from idaes.core.util.model_statistics import (
     fixed_variables_set,
@@ -40,41 +42,53 @@ class TestParamBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = ASM2dParameterBlock()
+        model.params = ModifiedADM1ParameterBlock()
 
         return model
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.params.state_block_class is ASM2dStateBlock
+        assert model.params.state_block_class is ModifiedADM1StateBlock
 
         assert len(model.params.phase_list) == 1
         for i in model.params.phase_list:
             assert i == "Liq"
 
-        assert len(model.params.component_list) == 20
+        assert len(model.params.component_list) == 32
         for i in model.params.component_list:
             assert i in [
                 "H2O",
-                "S_A",
-                "S_F",
+                "S_su",
+                "S_aa",
+                "S_fa",
+                "S_va",
+                "S_bu",
+                "S_pro",
+                "S_ac",
+                "S_h2",
+                "S_ch4",
+                "S_IC",
+                "S_IN",
+                "S_IP",
                 "S_I",
-                "S_N2",
-                "S_NH4",
-                "S_NO3",
-                "S_O2",
-                "S_PO4",
-                "S_ALK",
-                "X_AUT",
-                "X_H",
+                "X_ch",
+                "X_pr",
+                "X_li",
+                "X_su",
+                "X_aa",
+                "X_fa",
+                "X_c4",
+                "X_pro",
+                "X_ac",
+                "X_h2",
                 "X_I",
-                "X_MeOH",
-                "X_MeP",
-                "X_PAO",
                 "X_PHA",
                 "X_PP",
-                "X_S",
-                "X_TSS",
+                "X_PAO",
+                "S_K",
+                "S_Mg",
+                "S_cat",
+                "S_an",
             ]
 
         assert isinstance(model.params.cp_mass, Param)
@@ -94,7 +108,7 @@ class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = ASM2dParameterBlock()
+        model.params = ModifiedADM1ParameterBlock()
 
         model.props = model.params.build_state_block([1])
 
@@ -111,88 +125,77 @@ class TestStateBlock(object):
         assert isinstance(model.props[1].temperature, Var)
         assert value(model.props[1].temperature) == 298.15
 
-        assert isinstance(model.props[1].alkalinity, Var)
-        assert value(model.props[1].alkalinity) == 1
+        assert isinstance(model.props[1].anions, Var)
+        assert value(model.props[1].anions) == 0.02
+
+        assert isinstance(model.props[1].cations, Var)
+        assert value(model.props[1].cations) == 0.04
 
         assert isinstance(model.props[1].conc_mass_comp, Var)
-        # H2O should not appear in conc_mass_comp
-        assert len(model.props[1].conc_mass_comp) == 18
+
+        assert len(model.props[1].conc_mass_comp) == 29
         for i in model.props[1].conc_mass_comp:
             assert i in [
-                "S_A",
-                "S_F",
+                "S_su",
+                "S_aa",
+                "S_fa",
+                "S_va",
+                "S_bu",
+                "S_pro",
+                "S_ac",
+                "S_h2",
+                "S_ch4",
+                "S_IC",
+                "S_IN",
+                "S_IP",
                 "S_I",
-                "S_N2",
-                "S_NH4",
-                "S_NO3",
-                "S_O2",
-                "S_PO4",
-                "X_AUT",
-                "X_H",
+                "X_ch",
+                "X_pr",
+                "X_li",
+                "X_su",
+                "X_aa",
+                "X_fa",
+                "X_c4",
+                "X_pro",
+                "X_ac",
+                "X_h2",
                 "X_I",
-                "X_MeOH",
-                "X_MeP",
-                "X_PAO",
                 "X_PHA",
                 "X_PP",
-                "X_S",
-                "X_TSS",
+                "X_PAO",
+                "S_K",
+                "S_Mg",
             ]
-            assert value(model.props[1].conc_mass_comp[i]) == 0.1
+            assert value(model.props[1].conc_mass_comp[i]) == 0.001
 
     @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                if j == "H2O":
-                    assert str(model.props[1].get_material_flow_terms(p, j)) == str(
-                        model.props[1].flow_vol * model.props[1].params.dens_mass
-                    )
-                elif j == "S_ALK":
-                    assert str(model.props[1].get_material_flow_terms(p, j)) == str(
-                        model.props[1].flow_vol
-                        * model.props[1].alkalinity
-                        * (61 * units.kg / units.kmol)
-                    )
-                else:
-                    assert str(model.props[1].get_material_flow_terms(p, j)) == str(
-                        model.props[1].flow_vol * model.props[1].conc_mass_comp[j]
-                    )
+                assert model.props[1].get_material_flow_terms(p, j) is (
+                    model.props[1].material_flow_expression[j]
+                )
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert str(model.props[1].get_enthalpy_flow_terms(p)) == str(
-                model.props[1].flow_vol
-                * model.props[1].params.dens_mass
-                * model.props[1].params.cp_mass
-                * (model.props[1].temperature - model.props[1].params.temperature_ref)
+            assert model.props[1].get_enthalpy_flow_terms(p) is (
+                model.props[1].enthalpy_flow_expression
             )
 
     @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                if j == "H2O":
-                    assert str(model.props[1].get_material_density_terms(p, j)) == str(
-                        model.props[1].params.dens_mass
-                    )
-                elif j == "S_ALK":
-                    assert str(model.props[1].get_material_density_terms(p, j)) == str(
-                        model.props[1].alkalinity * (61 * units.kg / units.kmol)
-                    )
-                else:
-                    assert str(model.props[1].get_material_density_terms(p, j)) == str(
-                        model.props[1].conc_mass_comp[j]
-                    )
+                assert model.props[1].get_material_density_terms(p, j) is (
+                    model.props[1].material_density_expression[j]
+                )
 
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert str(model.props[1].get_energy_density_terms(p)) == str(
-                model.props[1].params.dens_mass
-                * model.props[1].params.cp_mass
-                * (model.props[1].temperature - model.props[1].params.temperature_ref)
+            assert model.props[1].get_energy_density_terms(p) is (
+                model.props[1].energy_density_expression
             )
 
     @pytest.mark.unit
@@ -217,39 +220,42 @@ class TestStateBlock(object):
     def test_define_state_vars(self, model):
         sv = model.props[1].define_state_vars()
 
-        assert len(sv) == 5
+        assert len(sv) == 6
         for i in sv:
             assert i in [
                 "flow_vol",
-                "alkalinity",
-                "conc_mass_comp",
-                "temperature",
                 "pressure",
+                "temperature",
+                "conc_mass_comp",
+                "anions",
+                "cations",
             ]
 
     @pytest.mark.unit
     def test_define_port_members(self, model):
         sv = model.props[1].define_state_vars()
 
-        assert len(sv) == 5
+        assert len(sv) == 6
         for i in sv:
             assert i in [
                 "flow_vol",
-                "alkalinity",
-                "conc_mass_comp",
-                "temperature",
                 "pressure",
+                "temperature",
+                "conc_mass_comp",
+                "anions",
+                "cations",
             ]
 
     @pytest.mark.unit
     def test_define_display_vars(self, model):
         sv = model.props[1].define_display_vars()
 
-        assert len(sv) == 5
+        assert len(sv) == 6
         for i in sv:
             assert i in [
                 "Volumetric Flowrate",
-                "Molar Alkalinity",
+                "Molar anions",
+                "Molar cations",
                 "Mass Concentration",
                 "Temperature",
                 "Pressure",

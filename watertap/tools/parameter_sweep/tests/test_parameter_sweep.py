@@ -826,6 +826,41 @@ class TestParallelManager:
             _assert_h5_csv_agreement(csv_results_file_name, read_dict)
 
     @pytest.mark.component
+    def test_parameter_sweep_bad_reinitialize_call_2(self, model, tmp_path):
+        comm = MPI.COMM_WORLD
+
+        tmp_path = _get_rank0_path(comm, tmp_path)
+        results_fname = os.path.join(tmp_path, "global_results")
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
+
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            reinitialize_function=_reinitialize,
+            reinitialize_kwargs={"slack_penalty": 10.0, "foo": "bar"},
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            debugging_data_dir=tmp_path,
+            interpolate_nan_outputs=True,
+        )
+
+        m = model
+        m.fs.slack_penalty = 1000.0
+        m.fs.slack.setub(0)
+
+        A = m.fs.input["a"]
+        B = m.fs.input["b"]
+        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+
+        with pytest.raises(TypeError):
+            # Call the parameter_sweep function
+            _ = ps.parameter_sweep(
+                m,
+                sweep_params,
+                outputs=None,
+            )
+
+    @pytest.mark.component
     def test_parameter_sweep_recover(self, model, tmp_path):
         comm = MPI.COMM_WORLD
 
@@ -1478,6 +1513,58 @@ class TestParallelManager:
         sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
 
         with pytest.raises(ValueError):
+            # Call the parameter_sweep function
+            ps.parameter_sweep(
+                m,
+                sweep_params,
+                outputs=None,
+            )
+
+    @pytest.mark.component
+    def test_parameter_sweep_bad_optimization_call(self, model, tmp_path):
+
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            optimize_kwargs={"foo": "bar"},
+        )
+
+        m = model
+        m.fs.slack_penalty = 1000.0
+        m.fs.slack.setub(0)
+
+        A = m.fs.input["a"]
+        B = m.fs.input["b"]
+        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+
+        with pytest.raises(TypeError):
+            # Call the parameter_sweep function
+            ps.parameter_sweep(
+                m,
+                sweep_params,
+                outputs=None,
+            )
+
+    @pytest.mark.component
+    def test_parameter_sweep_bad_reinitialize_call(self, model, tmp_path):
+        def reinit(a=42):
+            pass
+
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            reinitialize_before_sweep=True,
+            reinitialize_function=reinit,
+            reinitialize_kwargs={"foo": "bar"},
+        )
+
+        m = model
+        m.fs.slack_penalty = 1000.0
+        m.fs.slack.setub(0)
+
+        A = m.fs.input["a"]
+        B = m.fs.input["b"]
+        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+
+        with pytest.raises(TypeError):
             # Call the parameter_sweep function
             ps.parameter_sweep(
                 m,
