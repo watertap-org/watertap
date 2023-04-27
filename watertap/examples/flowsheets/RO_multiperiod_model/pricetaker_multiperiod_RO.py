@@ -47,6 +47,7 @@ def main(
     n_steps=24,
     filename="pricesignals_GOLETA_6_N200_20220601.csv",
     cost_of_carbon = 0,
+    daily_production = 50,
     variable_efficiency = VariableEfficiency.none,
 ):
     file_path = os.path.realpath(__file__)
@@ -67,13 +68,13 @@ def main(
                                 price_signal,
                                 lmp, 
                                 co2i,
-                                product_requirement=8,)
+                                product_requirement=daily_production,)
 
     m, results = solve(m)
 
-    save_results(m)
+    df = save_results(m)
 
-    return m, t_blocks, [lmp, co2i]
+    return m, df
 
 
 def _get_lmp(time_steps, 
@@ -139,10 +140,10 @@ def set_objective(
 
     m.mp.baseline_production = Param(initialize = value(
                                                 pyunits.convert(
-                                                m.blocks[0].process.fs.costing.annual_water_production,
-                                                to_units = pyunits.m**3/pyunits.hr)),
+                                                m.mp.product_requirement,
+                                                to_units = pyunits.m**3)) / m.mp.time_steps,
                                         mutable = True,
-                                        units = pyunits.m**3/pyunits.hr,
+                                        units = pyunits.m**3,
                                         doc = "Baseline hourly production [m3]")
    
     m.mp.baseline_load = Expression(
@@ -175,7 +176,7 @@ def set_objective(
             units=pyunits.kg / pyunits.MWh
         )
 
-        blk.fs.dynamic.hourly_water_production = Var(initialize = 0.0,
+        blk.fs.dynamic.hourly_water_production = Var(initialize = value(m.mp.baseline_production),
                                                      bounds = (0, 
                                                                value(m.mp.oversize_factor 
                                                                      * m.mp.baseline_production)),
@@ -343,9 +344,10 @@ def visualize_results(
 
 
 if __name__ == "__main__":
-    m, t_blocks, data = main(
-        n_steps=4,
+    m, df = main(
+        n_steps=24,
         cost_of_carbon=0.0,
+        daily_production=42,
     )
 
     # path = os.path.join(os.getcwd(),  "temp.csv")

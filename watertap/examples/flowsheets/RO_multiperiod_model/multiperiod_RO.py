@@ -54,7 +54,7 @@ def create_swro_mp_block(m=None):
 
     # Create a dynamic block to store dynamic operation parameters 
     m.fs.dynamic = Block()
-    m.fs.dynamic.ramp_time = Param(initialize=60,
+    m.fs.dynamic.ramp_time = Param(initialize=300,
                                    units= pyunits.s, 
                                    mutable=True,
                                    doc="Time associated with ramping up or down in system pressure")
@@ -94,6 +94,9 @@ def unfix_dof(b):
     # fix the RO membrane area and utilization factor
     b.fs.RO.area.fix()
     b.fs.costing.utilization_factor.fix(1)
+
+    #unfix the recovery ratio
+    b.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
 
     # unfix feed flow rate and fix concentration instead
     b.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
@@ -140,7 +143,7 @@ def create_multiperiod_swro_model(variable_efficiency,
         unfix_dof_func = unfix_dof,
         linking_variable_func= get_swro_link_variable_pairs,
     )
-    
+
     multiperiod_swro.build_multi_period_model()
     return multiperiod_swro
 
