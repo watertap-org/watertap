@@ -61,7 +61,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Thickener")
-class ThickenerUnit(SeparatorData):
+class ThickenerData(SeparatorData):
     """
     Thickener unit block for BSM2
     """
@@ -80,7 +80,7 @@ class ThickenerUnit(SeparatorData):
         """
 
         # Call UnitModel.build to setup dynamics
-        super(ThickenerUnit, self).build()
+        super(ThickenerData, self).build()
 
         if "underflow" and "overflow" not in self.config.outlet_list:
             raise ConfigurationError(

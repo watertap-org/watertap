@@ -61,7 +61,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("DewateringUnit")
-class DewateringUnit(SeparatorData):
+class DewateringData(SeparatorData):
     """
     Dewatering unit block for BSM2
     """
@@ -80,7 +80,7 @@ class DewateringUnit(SeparatorData):
         """
 
         # Call UnitModel.build to setup dynamics
-        super(DewateringUnit, self).build()
+        super(DewateringData, self).build()
 
         if "underflow" and "overflow" not in self.config.outlet_list:
             raise ConfigurationError(
