@@ -52,7 +52,7 @@ from idaes.core.util.exceptions import (
     InitializationError,
 )
 
-from watertap.unit_models.dewatering import Dewatering_Unit
+from watertap.unit_models.dewatering import DewateringUnit
 from watertap.property_models.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
 )
@@ -72,7 +72,7 @@ def test_config():
 
     m.fs.props = ASM1ParameterBlock()
 
-    m.fs.unit = Dewatering_Unit(property_package=m.fs.props)
+    m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
     assert len(m.fs.unit.config) == 15
 
@@ -100,7 +100,7 @@ def test_list_error():
         "occur - please use overflow "
         "and underflow as outlets.",
     ):
-        m.fs.unit = Dewatering_Unit(
+        m.fs.unit = DewateringUnit(
             property_package=m.fs.props,
             outlet_list=["outlet1", "outlet2"],
         )
@@ -115,7 +115,7 @@ class TestDu(object):
 
         m.fs.props = ASM1ParameterBlock()
 
-        m.fs.unit = Dewatering_Unit(property_package=m.fs.props)
+        m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
         m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
         m.fs.unit.inlet.temperature.fix(308.15 * units.K)

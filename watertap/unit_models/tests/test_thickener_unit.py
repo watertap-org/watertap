@@ -54,7 +54,7 @@ from idaes.core.util.exceptions import (
 
 from pyomo.util.check_units import assert_units_consistent
 
-from watertap.unit_models.thickener import Thickener_Unit
+from watertap.unit_models.thickener import Thickener
 from watertap.property_models.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
 )
@@ -74,7 +74,7 @@ def test_config():
 
     m.fs.props = ASM1ParameterBlock()
 
-    m.fs.unit = Thickener_Unit(property_package=m.fs.props)
+    m.fs.unit = Thickener(property_package=m.fs.props)
 
     assert len(m.fs.unit.config) == 15
 
@@ -102,7 +102,7 @@ def test_list_error():
         "occur - please use overflow "
         "and underflow as outlets.",
     ):
-        m.fs.unit = Thickener_Unit(
+        m.fs.unit = Thickener(
             property_package=m.fs.props, outlet_list=["outlet1", "outlet2"]
         )
 
@@ -116,7 +116,7 @@ class TestThick(object):
 
         m.fs.props = ASM1ParameterBlock()
 
-        m.fs.unit = Thickener_Unit(property_package=m.fs.props)
+        m.fs.unit = Thickener(property_package=m.fs.props)
 
         m.fs.unit.inlet.flow_vol.fix(300 * units.m**3 / units.day)
         m.fs.unit.inlet.temperature.fix(308.15 * units.K)
