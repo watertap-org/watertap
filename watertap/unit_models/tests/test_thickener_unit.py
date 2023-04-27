@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for thickener unnit example.
+Tests for thickener unit example.
 """
 
 import pytest
