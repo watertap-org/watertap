@@ -60,7 +60,7 @@ __author__ = "Alejandro Garciadiego"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("Dewatering_Unit")
+@declare_process_block_class("DewateringUnit")
 class DewateringUnit(SeparatorData):
     """
     Dewatering unit block for BSM2
