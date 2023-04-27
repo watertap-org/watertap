@@ -54,7 +54,7 @@ def create_swro_mp_block(m=None):
 
     # Create a dynamic block to store dynamic operation parameters 
     m.fs.dynamic = Block()
-    m.fs.dynamic.ramp_time = Param(initialize=300,
+    m.fs.dynamic.ramp_time = Param(initialize=900,
                                    units= pyunits.s, 
                                    mutable=True,
                                    doc="Time associated with ramping up or down in system pressure")
@@ -148,4 +148,4 @@ def create_multiperiod_swro_model(variable_efficiency,
     return multiperiod_swro
 
 if __name__ == "__main__":
-    m = create_multiperiod_swro_model()
+    m = create_multiperiod_swro_model(variable_efficiency=VariableEfficiency.none)

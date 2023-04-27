@@ -111,7 +111,7 @@ def set_objective(
     price_signal,
     lmp, 
     co2i,
-    product_requirement=8,
+    product_requirement,
     oversize_factor = 1.4
 ):
     """
@@ -177,9 +177,9 @@ def set_objective(
         )
 
         blk.fs.dynamic.hourly_water_production = Var(initialize = value(m.mp.baseline_production),
-                                                     bounds = (0, 
-                                                               value(m.mp.oversize_factor 
-                                                                     * m.mp.baseline_production)),
+                                                     bounds = (0, None),
+                                                            #    value(m.mp.oversize_factor 
+                                                            #          * m.mp.baseline_production)),
                                                      units = pyunits.m**3 / pyunits.hr,
                                                      doc = "Hourly water production [m3/hr]")
         
@@ -347,7 +347,7 @@ if __name__ == "__main__":
     m, df = main(
         n_steps=24,
         cost_of_carbon=0.0,
-        daily_production=42,
+        daily_production=48,
     )
 
     # path = os.path.join(os.getcwd(),  "temp.csv")
