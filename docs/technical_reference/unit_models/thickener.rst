@@ -38,7 +38,7 @@ Sets
    "Time", ":math:`t`", "[0]"
    "Phases", ":math:`p`", "['Liq']"
    "Particulate Components", ":math:`j`", "['X_I', 'X_S', 'X_P', 'X_BH', 'X_BA', 'X_ND']"
-   "Non-particulate Components", ":math:`j`", "['H2O','S_I','S_S','S_O','S_NO','S_NH','S_ND','S_ALK' ]"
+   "Non-particulate Components", ":math:`j`", "['H2O', 'S_I', 'S_S', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'S_ALK']"
 
 Parameters
 ----------
