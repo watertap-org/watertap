@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for dewatering unnit example.
+Tests for dewatering unit example.
 """
 
 import pytest
