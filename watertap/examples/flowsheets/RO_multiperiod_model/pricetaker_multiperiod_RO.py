@@ -71,6 +71,8 @@ def main(
 
     m, results = solve(m)
 
+    save_results(m)
+
     return m, t_blocks, [lmp, co2i]
 
 
@@ -229,7 +231,7 @@ def solve(m):
     return m, results
 
 
-def save_results(m, t_blocks, data, savepath=None):
+def save_results(m, savepath=None):
     """
     Description: saves results as a dataframe
     m: pyomo model
@@ -237,118 +239,43 @@ def save_results(m, t_blocks, data, savepath=None):
     data: price signal (comprised of LMP and CO2i
     savepath: path to save results (in .csv format)
     """
-    time_step = np.array(range(len(t_blocks)))
-    LCOW = value(m.obj)
+    t_blocks = m.get_active_process_blocks()
 
     recovery = np.array(
         [
-            blk.ro_mp.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].value
+            value(blk.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"])
             for blk in t_blocks
         ]
     )
     pressure = np.array(
         [
-            blk.ro_mp.fs.P1.control_volume.properties_out[0].pressure.value
+            value(blk.fs.P1.control_volume.properties_out[0].pressure)
             for blk in t_blocks
         ]
     )
-    power = np.array([blk.energy_consumption() for blk in t_blocks])
-    permeate = np.array([blk.water_prod() for blk in t_blocks])
-
-    flowrate1 = np.array(
-        [
-            blk.ro_mp.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"]()
-            for blk in t_blocks
-        ]
-    )
-    efficiency1 = np.array([blk.ro_mp.fs.P1.efficiency_pump[0]() for blk in t_blocks])
-
-    wholesale_charge = np.array([blk.wholesale_energy_cost() for blk in t_blocks])
-    # demand_surcharge = np.array([blk.demand_surcharge_cost() for blk in t_blocks])
-    peak_load_revenue = np.array([-1 * blk.load_shaving_revenue() for blk in t_blocks])
-
+    energy_consumption = np.array([value(blk.fs.dynamic.hourly_energy_consumption) 
+                      for blk in t_blocks])
+    
+    permeate = np.array([value(blk.fs.dynamic.hourly_water_production)
+                          for blk in t_blocks])
+    
+    price_signal = np.array([value(blk.fs.dynamic.price_signal)
+                              for blk in t_blocks])
+    
+    lmp_signal = np.array([value(blk.fs.dynamic.lmp_signal)
+                              for blk in t_blocks])
+    
+    carbon_intensity = np.array([value(blk.fs.dynamic.carbon_intensity)
+                                for blk in t_blocks])
+    
     if savepath is None:
-        savepath = os.path.join(os.getcwd(), "simulation_data_0_25.csv")
-    if t_blocks[0].ro_mp.fs.erd_type is swro.ERDtype.pump_as_turbine:
-        output_data = np.hstack(
-            (
-                time_step.reshape(-1, 1),
-                data[0][:].reshape(-1, 1),
-                data[1][:].reshape(-1, 1),
-                power.reshape(-1, 1),
-                recovery.reshape(-1, 1),
-                pressure.reshape(-1, 1),
-                permeate.reshape(-1, 1),
-                flowrate1.reshape(-1, 1),
-                efficiency1.reshape(-1, 1),
-                wholesale_charge.reshape(-1, 1),
-                # demand_surcharge.reshape(-1, 1),
-                peak_load_revenue.reshape(-1, 1),
-            )
-        )
-        df = pd.DataFrame(
-            output_data,
-            columns=[
-                "time",
-                "lmp",
-                "co2i",
-                "power",
-                "recovery",
-                "pressure",
-                "permeate",
-                "flowrate1",
-                "efficiency1",
-                "wholesale_charge",
-                # "demand_surcharge",
-                "peak_load_revenue",
-            ],
-        )
+        savepath = os.path.join(os.getcwd(), "results.csv")
+    
+    output_data = np.vstack([recovery, pressure, energy_consumption, permeate, price_signal, lmp_signal, carbon_intensity])
 
-    elif t_blocks[0].ro_mp.fs.erd_type is swro.ERDtype.pressure_exchanger:
-        flowrate2 = np.array(
-            [
-                blk.ro_mp.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"]()
-                for blk in t_blocks
-            ]
-        )
-        efficiency2 = np.array(
-            [blk.ro_mp.fs.P2.efficiency_pump[0]() for blk in t_blocks]
-        )
-        output_data = np.hstack(
-            (
-                time_step.reshape(-1, 1),
-                data[0][:].reshape(-1, 1),
-                data[1][:].reshape(-1, 1),
-                power.reshape(-1, 1),
-                recovery.reshape(-1, 1),
-                pressure.reshape(-1, 1),
-                permeate.reshape(-1, 1),
-                flowrate1.reshape(-1, 1),
-                efficiency1.reshape(-1, 1),
-                flowrate2.reshape(-1, 1),
-                efficiency2.reshape(-1, 1),
-            )
-        )
-        df = pd.DataFrame(
-            output_data,
-            columns=[
-                "time",
-                "lmp",
-                "co2i",
-                "power",
-                "recovery",
-                "pressure",
-                "permeate",
-                "flowrate1",
-                "efficiency1",
-                "flowrate2",
-                "efficiency2",
-            ],
-        )
-    else:
-        return
-
-    df.to_csv(savepath)
+    df = pd.DataFrame(output_data.T, columns = ["recovery", "pressure", "energy_consumption", "permeate", "price_signal", "lmp_signal", "carbon_intensity"])
+    df.to_csv(savepath, index=True, index_label="time_step")
+    return df
 
 
 def visualize_results(
