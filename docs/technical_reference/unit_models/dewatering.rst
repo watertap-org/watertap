@@ -45,7 +45,7 @@ Parameters
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Value", "Units"
 
-   "Percentage of suspended solids in the underflow", ":math:`p_{thick}`", "p_thick", "None", "0.07", ":math:`\text{dimensionless}`"
+   "Percentage of suspended solids in the underflow", ":math:`p_{dewat}`", "p_dewat", "None", "0.28", ":math:`\text{dimensionless}`"
    "Percentage of suspended solids removed", ":math:`TSS_{rem}`", "TSS_rem", "None", "0.98", ":math:`\text{dimensionless}`"
 
 
@@ -56,8 +56,8 @@ Equations and Relationships
    :header: "Description", "Equation"
 
    "Suspended solid concentration", ":math:`C_{TSS} = 0.75 (C_{X_{I}} + C_{X_{IP}} + C_{X_{BH}} + C_{X_{BA}} + C_{X_{S}})`"
-   "Dewatering factor", ":math:`f_{thick} = p_{thick} (\frac{10}{C_{TSS}})`"
-   "Remove factor", ":math:`f_{q_{du}} = \frac{TSS_{rem}}{100 * f_{thick}}`"
+   "Dewatering factor", ":math:`f_{dewat} = p_{dewat} (\frac{10}{C_{TSS}})`"
+   "Remove factor", ":math:`f_{q_{du}} = \frac{TSS_{rem}}{100 * f_{dewat}}`"
    "Overflow particulate fraction", ":math:`split_{particulate} = 1 - TSS_{rem}`"
    "Overflow soluble fraction", ":math:`split_{soluble} = 1 - f_{q_{du}}`"
 
