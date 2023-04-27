@@ -20,7 +20,7 @@ from pyomo.environ import (
 from idaes.core import declare_process_block_class
 from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
-from watertap.core import (
+from watertap.core import (  # noqa # pylint: disable=unused-import
     ConcentrationPolarizationType,
     MembraneChannel0DBlock,
     MassTransferCoefficient,
@@ -33,10 +33,6 @@ from watertap.unit_models.reverse_osmosis_base import (
 )
 
 __author__ = "Tim Bartholomew, Adam Atia"
-
-# Allow users to import ConcentrationPolarizationType from here instead of
-# from watertap.core, this also avoids an unused import warning from linters
-ConcentrationPolarizationType = ConcentrationPolarizationType
 
 
 @declare_process_block_class("ReverseOsmosis0D")
