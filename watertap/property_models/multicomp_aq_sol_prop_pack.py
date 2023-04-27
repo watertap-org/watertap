@@ -1887,13 +1887,14 @@ class MCASStateBlockData(StateBlockData):
         for j, v in self.mw_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.mw_comp[j], value(v) ** -1)
-        for ind, v in self.diffus_phase_comp.items():
-            if iscale.get_scaling_factor(v) is None:
-                if ind in self.params.config.diffusivity_data.keys():
-                    sf = self.params.config.diffusivity_data[ind] ** -1
-                else:
-                    sf = 1e10
-                iscale.set_scaling_factor(self.diffus_phase_comp[ind], sf)
+        if self.is_property_constructed("diffus_phase_comp"):
+            for ind, v in self.diffus_phase_comp.items():
+                if iscale.get_scaling_factor(v) is None:
+                    if ind in self.params.config.diffusivity_data.keys():
+                        sf = self.params.config.diffusivity_data[ind] ** -1
+                    else:
+                        sf = 1e10
+                    iscale.set_scaling_factor(self.diffus_phase_comp[ind], sf)
         if self.is_property_constructed("dens_mass_solvent"):
             if iscale.get_scaling_factor(self.dens_mass_solvent) is None:
                 iscale.set_scaling_factor(self.dens_mass_solvent, 1e-3)
