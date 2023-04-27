@@ -21,36 +21,23 @@ P. A. Vanrolleghem
 Benchmark Simulation Model no. 2 (BSM2)
 """
 
-from enum import Enum
-from pandas import DataFrame
-
 # Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
-    MaterialBalanceType,
 )
 from idaes.models.unit_models.separator import SeparatorData, SplittingType
 
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.solvers import get_solver
-import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from pyomo.environ import (
-    Constraint,
     Param,
-    Block,
-    value,
     units as pyunits,
-    check_optimal_termination,
     Set,
 )
 
 from idaes.core.util.exceptions import (
     ConfigurationError,
-    PropertyNotSupportedError,
-    InitializationError,
 )
 
 __author__ = "Alejandro Garciadiego"
@@ -79,7 +66,7 @@ class ThickenerData(SeparatorData):
             None
         """
 
-        # Call UnitModel.build to setup dynamics
+        # Call UnitModel.build to set up dynamics
         super(ThickenerData, self).build()
 
         if "underflow" and "overflow" not in self.config.outlet_list:
@@ -107,11 +94,11 @@ class ThickenerData(SeparatorData):
         @self.Expression(self.flowsheet().time, doc="Suspended solid concentration")
         def TSS(blk, t):
             return 0.75 * (
-                blk.inlet.conc_mass_comp[0, "X_I"]
-                + blk.inlet.conc_mass_comp[0, "X_P"]
-                + blk.inlet.conc_mass_comp[0, "X_BH"]
-                + blk.inlet.conc_mass_comp[0, "X_BA"]
-                + blk.inlet.conc_mass_comp[0, "X_S"]
+                blk.inlet.conc_mass_comp[t, "X_I"]
+                + blk.inlet.conc_mass_comp[t, "X_P"]
+                + blk.inlet.conc_mass_comp[t, "X_BH"]
+                + blk.inlet.conc_mass_comp[t, "X_BA"]
+                + blk.inlet.conc_mass_comp[t, "X_S"]
             )
 
         @self.Expression(self.flowsheet().time, doc="Thickening factor")

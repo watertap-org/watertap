@@ -53,7 +53,7 @@ from watertap.property_models.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
 )
 
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+from pyomo.util.check_units import assert_units_consistent
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

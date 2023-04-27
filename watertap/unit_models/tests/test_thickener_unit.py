@@ -39,7 +39,6 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    large_residuals_set,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import (
@@ -48,12 +47,7 @@ from idaes.core.util.testing import (
 
 from idaes.core.util.exceptions import (
     ConfigurationError,
-    PropertyNotSupportedError,
-    InitializationError,
 )
-
-from pyomo.util.check_units import assert_units_consistent
-
 from watertap.unit_models.thickener import Thickener
 from watertap.property_models.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
