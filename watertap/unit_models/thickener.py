@@ -60,7 +60,7 @@ __author__ = "Alejandro Garciadiego"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("Thickener_Unit")
+@declare_process_block_class("Thickener")
 class ThickenerUnit(SeparatorData):
     """
     Thickener unit block for BSM2
