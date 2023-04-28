@@ -18,7 +18,7 @@ such as digestion and dewatering. This implementation of the thickener unit is b
 
 Degrees of Freedom
 ------------------
-The degrees of freedom in a thickener unit model are the the inlet feed state variables:
+The degrees of freedom in a thickener unit model are the inlet feed state variables:
 
     * temperature
     * pressure

@@ -18,7 +18,7 @@ related to storage, processing, disposal, etc. This implementation of the dewate
 
 Degrees of Freedom
 ------------------
-The degrees of freedom in a dewatering unit model are the the inlet feed state variables:
+The degrees of freedom in a dewatering unit model are the inlet feed state variables:
 
     * temperature
     * pressure
