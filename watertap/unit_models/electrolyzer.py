@@ -254,36 +254,8 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         self.add_outlet_port(name="catholyte_outlet", block=self.catholyte)
 
         # ---------------------------------------------------------------------
-        # electrolyzer variables
+        # membrane properties TODO: move to generic flat membrane block
 
-        self.electron_flow = Var(
-            initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("amount") * units_meta("time") ** -1,
-            doc="electrons passed between anode and cathode contributing to reactions",
-        )
-        self.current = Var(
-            initialize=1e5,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("current"),
-            doc="total current supplied",
-        )
-        self.efficiency_current = Var(
-            initialize=0.9,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="current efficiency",
-        )
-        self.current_density = Var(
-            initialize=1e4,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("current") * units_meta("length") ** -2,
-            doc="current density",
-        )
         self.membrane_area = Var(
             initialize=10,
             bounds=(0, None),
@@ -291,6 +263,27 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             units=units_meta("length") ** 2,
             doc="membrane area",
         )
+        self.membrane_current_density = Var(
+            initialize=1e4,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("current") * units_meta("length") ** -2,
+            doc="membrane current density",
+        )
+        self.membrane_ion_transport_number = Var(
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize=0,
+            bounds=(None, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="ion transport number of species passing from the anode to the cathode"
+            " through the membrane normalized to 1 electron",
+        )
+
+        # ---------------------------------------------------------------------
+        # anode properties TODO: move to generic anode block
+
         self.anode_area = Var(
             initialize=10,
             bounds=(0, None),
@@ -298,55 +291,32 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             units=units_meta("length") ** 2,
             doc="anode area",
         )
-        self.cathode_area = Var(
-            initialize=10,
+        self.anode_current_density = Var(
+            initialize=1e4,
             bounds=(0, None),
             domain=NonNegativeReals,
-            units=units_meta("length") ** 2,
-            doc="cathode area",
+            units=units_meta("current") * units_meta("length") ** -2,
+            doc="anode current density",
         )
-        self.voltage_applied = Var(
-            initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("mass")
-            * units_meta("length") ** 2
-            * units_meta("time") ** -3
-            * units_meta("current") ** -1,
-            doc="applied voltage",
-        )
-        self.efficiency_voltage = Var(
-            initialize=0.9,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="voltage efficiency",
-        )
-        self.power = Var(
-            initialize=1e5,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("power"),
-            doc="power",
-        )
-        self.efficiency_power = Var(
-            initialize=0.9,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="power efficiency",
-        )
-        # ---------------------------------------------------------------------
-        # TODO: transfer the following variables/sets to reaction package
-        self.voltage_min = Var(
-            initialize=1,
+        self.anode_electrochem_potential = Var(
+            initialize=0.1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass")
             * units_meta("length") ** 2
             * units_meta("time") ** -3
             * units_meta("current") ** -1,
-            doc="minimum voltage determined by the difference in electrochemical potentials",
+            doc="electrochemical potential of the reaction at the anode",
+        )
+        self.anode_overpotential = Var(
+            initialize=0.1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass")
+            * units_meta("length") ** 2
+            * units_meta("time") ** -3
+            * units_meta("current") ** -1,
+            doc="anode overpotential",
         )
         self.anode_stoich = Var(
             self.config.property_package.phase_list,
@@ -357,6 +327,44 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="stoichiometry of the reaction at the anode normalized to 1 electron",
         )
+
+        # ---------------------------------------------------------------------
+        # cathode properties TODO: move to generic cathode block
+
+        self.cathode_area = Var(
+            initialize=10,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") ** 2,
+            doc="anode area",
+        )
+        self.cathode_current_density = Var(
+            initialize=1e4,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("current") * units_meta("length") ** -2,
+            doc="anode current density",
+        )
+        self.cathode_electrochem_potential = Var(
+            initialize=0.1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass")
+            * units_meta("length") ** 2
+            * units_meta("time") ** -3
+            * units_meta("current") ** -1,
+            doc="electrochemical potential of the reaction at the cathode",
+        )
+        self.cathode_overpotential = Var(
+            initialize=0.1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass")
+            * units_meta("length") ** 2
+            * units_meta("time") ** -3
+            * units_meta("current") ** -1,
+            doc="cathode overpotential",
+        )
         self.cathode_stoich = Var(
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
@@ -366,76 +374,103 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="stoichiometry of the reaction at the cathode normalized to 1 electron",
         )
-        self.membrane_stoich = Var(
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            initialize=0,
-            bounds=(None, None),
+
+        # ---------------------------------------------------------------------
+        # electrolyzer cell design
+
+        self.current = Var(
+            initialize=1e5,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("current"),
+            doc="DC current supplied to the cell",
+        )
+        self.voltage_cell = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass")
+            * units_meta("length") ** 2
+            * units_meta("time") ** -3
+            * units_meta("current") ** -1,
+            doc="applied voltage to the cell",
+        )
+        self.resistance = Var(
+            initialize=1e-4,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass")
+            * units_meta("length") ** 2
+            * units_meta("time") ** -3
+            * units_meta("current") ** -2,
+            doc="ohmic resistance, the sum of membrane and electrolyte resistances",
+        )
+        self.power = Var(
+            initialize=1e5,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("power"),
+            doc="power",
+        )
+
+        # ---------------------------------------------------------------------
+        # performance variables
+
+        self.voltage_reversible = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass")
+            * units_meta("length") ** 2
+            * units_meta("time") ** -3
+            * units_meta("current") ** -1,
+            doc="reversible voltage",
+        )
+        self.electron_flow = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("amount") * units_meta("time") ** -1,
+            doc="electrons contributing to electrolysis reactions",
+        )
+        self.efficiency_current = Var(
+            initialize=0.9,
+            bounds=(0, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="stoichiometry of the mass transfer across the membrane w.r.t. the electrolysis reaction",
+            doc="current efficiency",
+        )
+        self.efficiency_voltage = Var(
+            initialize=0.9,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="voltage efficiency",
+        )
+        self.efficiency_power = Var(
+            initialize=0.81,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="power efficiency",
         )
 
         # ---------------------------------------------------------------------
-        # performance
+        # relieve exhaustive fixing of indexed variables
 
-        @self.Constraint(
-            doc="voltage efficiency as a function of minimum required by reaction"
-        )
-        def eq_efficiency_voltage(b):
-            return b.voltage_min == b.voltage_applied * b.efficiency_voltage
-
-        @self.Constraint(
-            doc="electrons passed between anode and cathode contributing to reactions"
-        )
-        def eq_electron_flow(b):
-            return (
-                b.electron_flow
-                * pyunits.convert(
-                    Constants.faraday_constant,
-                    to_units=units_meta("time")
-                    * units_meta("current")
-                    / units_meta("amount"),
-                )
-                == b.current * b.efficiency_current
-            )
-
-        @self.Constraint(doc="membrane area")
-        def eq_membrane_area(b):
-            return b.current_density * b.membrane_area == b.current
-
-        # TODO: find relationship between required surface area of electrode as a function of process (flowrate/volume)
-        #  or allow for custom area term without universal current density term
-        # assumed
-        @self.Constraint(doc="anode area")
-        def eq_anode_area(b):
-            return b.current_density * b.anode_area == b.current
-
-        # assumed
-        @self.Constraint(doc="cathode area")
-        def eq_cathode_area(b):
-            return b.current_density * b.cathode_area == b.current
-
-        @self.Constraint(doc="energy consumption")
-        def eq_power(b):
-            return b.power == b.voltage_applied * b.current
-
-        @self.Constraint(doc="energy efficiency")
-        def eq_efficiency_power(b):
-            return b.efficiency_power == b.efficiency_current * b.efficiency_voltage
-
-        # ---------------------------------------------------------------------
-        # reactions
-
-        # fix stoichiometry to zero to be overwritten when constructing flowsheet
+        # fix stoichiometry to zero, to be overwritten when constructing flowsheet
         for p in self.config.property_package.phase_list:
             for j in self.config.property_package.component_list:
                 self.anode_stoich[p, j].fix(0)
                 self.cathode_stoich[p, j].fix(0)
-                self.membrane_stoich[p, j].fix(0)
+                self.membrane_ion_transport_number[p, j].fix(0)
 
         # ---------------------------------------------------------------------
-        # mass balance
+        # membrane calculations
+
+        @self.Constraint(doc="membrane current density")
+        def eq_membrane_current_density(b):
+            return b.membrane_current_density * b.membrane_area == b.current
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -446,7 +481,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         def eq_membrane_permeation(b, t, p, j):
             return (
                 b.anolyte.mass_transfer_term[t, p, j]
-                == -b.electron_flow * b.membrane_stoich[p, j]
+                == -b.electron_flow * b.membrane_ion_transport_number[p, j]
             )
 
         @self.Constraint(
@@ -461,6 +496,13 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
                 == -b.anolyte.mass_transfer_term[t, p, j]
             )
 
+        # ---------------------------------------------------------------------
+        # anode calculations
+
+        @self.Constraint(doc="anode current density")
+        def eq_anode_current_density(b):
+            return b.anode_current_density * b.anode_area == b.current
+
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
@@ -471,6 +513,13 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             return (
                 b.custom_reaction_anode[t, j] == b.electron_flow * b.anode_stoich[p, j]
             )
+
+        # ---------------------------------------------------------------------
+        # cathode calculations
+
+        @self.Constraint(doc="cathode current density")
+        def eq_cathode_current_density(b):
+            return b.cathode_current_density * b.cathode_area == b.current
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -483,6 +532,54 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
                 b.custom_reaction_cathode[t, j]
                 == b.electron_flow * b.cathode_stoich[p, j]
             )
+
+        # ---------------------------------------------------------------------
+        # performance caclculations
+
+        @self.Constraint(
+            doc="reversible voltage based on the difference in electrochemical potentials"
+        )
+        def eq_voltage_reversible(b):
+            return (
+                b.voltage_reversible
+                == b.anode_electrochem_potential - b.cathode_electrochem_potential
+            )
+
+        @self.Constraint(
+            doc="cell voltage as the sum of overpotentials and ohms law relation"
+        )
+        def eq_voltage_cell(b):
+            return b.voltage_cell == (
+                b.voltage_reversible
+                + b.anode_overpotential
+                + b.cathode_overpotential
+                + b.current * b.resistance
+            )
+
+        @self.Constraint(doc="energy consumption")
+        def eq_power(b):
+            return b.power == b.voltage_applied * b.current
+
+        @self.Constraint(doc="electrons contributing to reactions")
+        def eq_electron_flow(b):
+            return (
+                b.electron_flow
+                * pyunits.convert(
+                    Constants.faraday_constant,
+                    to_units=units_meta("time")
+                    * units_meta("current")
+                    / units_meta("amount"),
+                )
+                == b.current * b.efficiency_current
+            )
+
+        @self.Constraint(doc="voltage efficiency")
+        def eq_efficiency_voltage(b):
+            return b.voltage_reversible == b.voltage_cell * b.efficiency_voltage
+
+        @self.Constraint(doc="energy efficiency")
+        def eq_efficiency_power(b):
+            return b.efficiency_power == b.efficiency_current * b.efficiency_voltage
 
     # ---------------------------------------------------------------------
     # initialize method
@@ -587,7 +684,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         var_dict["voltage efficiency"] = self.efficiency_voltage
         var_dict["power"] = self.power
         var_dict["efficiency_power"] = self.efficiency_power
-        var_dict["minimum voltage"] = self.voltage_min
+        var_dict["minimum voltage"] = self.voltage_reversible
 
         # loop through desired state block properties indexed by [phase, comp]
         phase_comp_prop_dict = {
@@ -666,8 +763,8 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.voltage_applied) is None:
             iscale.set_scaling_factor(self.voltage_applied, 1)
 
-        if iscale.get_scaling_factor(self.voltage_min) is None:
-            iscale.set_scaling_factor(self.voltage_min, 1)
+        if iscale.get_scaling_factor(self.voltage_reversible) is None:
+            iscale.set_scaling_factor(self.voltage_reversible, 1)
 
         if iscale.get_scaling_factor(self.efficiency_voltage) is None:
             iscale.set_scaling_factor(self.efficiency_voltage, 1)
