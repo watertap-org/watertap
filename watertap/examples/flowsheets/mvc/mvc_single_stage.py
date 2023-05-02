@@ -19,6 +19,7 @@ from pyomo.environ import (
     TransformationFactory,
     units as pyunits,
     check_optimal_termination,
+    assert_optimal_termination,
 )
 from pyomo.network import Arc
 
@@ -28,7 +29,6 @@ from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
-from idaes.core.util.model_diagnostics import DegeneracyHunter
 from idaes.models.unit_models import Feed, Separator, Mixer, Product
 from idaes.models.unit_models.translator import Translator
 from idaes.models.unit_models.separator import SplittingType
@@ -64,15 +64,15 @@ def main():
     fix_outlet_pressures(m)  # outlet pressure are initially unfixed for initialization
 
     # set up for minimizing Q_ext in first solve
-    print(
-        "DOF after initialization: ", degrees_of_freedom(m)
-    )  # should be 1 because Q_ext is unfixed
+    # should be 1 DOF because Q_ext is unfixed
+    print("DOF after initialization: ", degrees_of_freedom(m))
     m.fs.objective = Objective(expr=m.fs.Q_ext[0])
 
     print("\n***---First solve - simulation results---***")
     solver = get_solver()
     results = solve(m, solver=solver, tee=False)
     print("Termination condition: ", results.solver.termination_condition)
+    assert_optimal_termination(results)
     display_metrics(m)
     display_design(m)
 
@@ -109,8 +109,8 @@ def build():
     m.fs.hx_distillate = HeatExchanger(
         hot_side_name="hot",
         cold_side_name="cold",
-        hot={"property_package": m.fs.properties_feed},
-        cold={"property_package": m.fs.properties_feed},
+        hot={"property_package": m.fs.properties_feed, "has_pressure_change": True},
+        cold={"property_package": m.fs.properties_feed, "has_pressure_change": True},
         delta_temperature_callback=delta_temperature_chen_callback,
         flow_pattern=HeatExchangerFlowPattern.countercurrent,
     )
@@ -118,13 +118,12 @@ def build():
     m.fs.hx_distillate.delta_temperature_in.setlb(0)
     m.fs.hx_distillate.delta_temperature_out.setlb(0)
     m.fs.hx_distillate.area.setlb(10)
-    add_pressure_drop_to_hx(m.fs.hx_distillate, m.fs.config.time)
 
     m.fs.hx_brine = HeatExchanger(
         hot_side_name="hot",
         cold_side_name="cold",
-        hot={"property_package": m.fs.properties_feed},
-        cold={"property_package": m.fs.properties_feed},
+        hot={"property_package": m.fs.properties_feed, "has_pressure_change": True},
+        cold={"property_package": m.fs.properties_feed, "has_pressure_change": True},
         delta_temperature_callback=delta_temperature_chen_callback,
         flow_pattern=HeatExchangerFlowPattern.countercurrent,
     )
@@ -132,7 +131,6 @@ def build():
     m.fs.hx_brine.delta_temperature_in.setlb(0)
     m.fs.hx_brine.delta_temperature_out.setlb(0)
     m.fs.hx_brine.area.setlb(10)
-    add_pressure_drop_to_hx(m.fs.hx_brine, m.fs.config.time)
 
     m.fs.mixer_feed = Mixer(
         property_package=m.fs.properties_feed,
@@ -272,16 +270,24 @@ def build():
     )
 
     iscale.set_scaling_factor(m.fs.hx_distillate.area, 1e-1)
-    iscale.constraint_scaling_transform(m.fs.hx_distillate.cold.pressure_drop, 1e-5)
-    iscale.constraint_scaling_transform(m.fs.hx_distillate.hot.pressure_drop, 1e-5)
+    iscale.constraint_scaling_transform(
+        m.fs.hx_distillate.cold_side.pressure_balance[0], 1e-5
+    )
+    iscale.constraint_scaling_transform(
+        m.fs.hx_distillate.hot_side.pressure_balance[0], 1e-5
+    )
 
     # brine HX
     iscale.set_scaling_factor(m.fs.hx_brine.hot.heat, 1e-3)
     iscale.set_scaling_factor(m.fs.hx_brine.cold.heat, 1e-3)
     iscale.set_scaling_factor(m.fs.hx_brine.overall_heat_transfer_coefficient, 1e-3)
     iscale.set_scaling_factor(m.fs.hx_brine.area, 1e-1)
-    iscale.constraint_scaling_transform(m.fs.hx_brine.cold.pressure_drop, 1e-5)
-    iscale.constraint_scaling_transform(m.fs.hx_brine.hot.pressure_drop, 1e-5)
+    iscale.constraint_scaling_transform(
+        m.fs.hx_brine.cold_side.pressure_balance[0], 1e-5
+    )
+    iscale.constraint_scaling_transform(
+        m.fs.hx_brine.hot_side.pressure_balance[0], 1e-5
+    )
 
     # evaporator
     iscale.set_scaling_factor(m.fs.evaporator.area, 1e-3)
@@ -348,28 +354,10 @@ def add_costing(m):
     m.fs.costing.add_annual_water_production(m.fs.distillate.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.distillate.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.distillate.properties[0].flow_vol)
-
-
-def add_pressure_drop_to_hx(hx_blk, time_point):
-    # input: hx_blk - heat exchanger block
-    # output: deactivates control volume pressure balance and adds pressure drop to pressure balance equation
-    hx_blk.cold.pressure_balance.deactivate()
-    hx_blk.hot.pressure_balance.deactivate()
-    hx_blk.cold.deltaP = Var(time_point, initialize=7e4, units=pyunits.Pa)
-    hx_blk.hot.deltaP = Var(time_point, initialize=7e4, units=pyunits.Pa)
-    hx_blk.cold.pressure_drop = Constraint(
-        expr=hx_blk.cold.properties_in[0].pressure
-        == hx_blk.cold.properties_out[0].pressure + hx_blk.cold.deltaP[0]
-    )
-    hx_blk.hot.pressure_drop = Constraint(
-        expr=hx_blk.hot.properties_in[0].pressure
-        == hx_blk.hot.properties_out[0].pressure + hx_blk.hot.deltaP[0]
-    )
+    m.fs.costing.base_currency = pyo.units.USD_2020
 
 
 def set_operating_conditions(m):
-    m.fs.costing.base_currency = pyo.units.USD_2020
-
     # Feed inlet
     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"].fix(0.1)
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(40)
@@ -623,23 +611,6 @@ def solve(model, solver=None, tee=False, raise_on_failure=False):
     else:
         print(msg)
         return results
-
-
-def debug_infeasible(m, solver):
-    print("\n---infeasible constraints---")
-    infeas.log_infeasible_constraints(m)
-    print("\n---infeasible bounds---")
-    infeas.log_infeasible_bounds(m)
-    print("\n---close to bounds---")
-    infeas.log_close_to_bounds(m)
-    print("\n---poor scaling---")
-    bsv_gen = iscale.badly_scaled_var_generator(m)
-    for (var, val) in bsv_gen:
-        print(var.name, val)
-    # Create Degeneracy Hunter object
-    print("\n---degeneracy hunter---")
-    dh = DegeneracyHunter(m, solver=solver)
-    dh.check_residuals(tol=1e-8)
 
 
 def set_up_optimization(m):

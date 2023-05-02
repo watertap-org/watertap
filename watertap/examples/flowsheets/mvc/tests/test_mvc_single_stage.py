@@ -18,6 +18,7 @@ from pyomo.environ import (
     Expression,
     value,
     Objective,
+    assert_optimal_termination,
 )
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
@@ -257,9 +258,9 @@ class TestMVC:
         assert value(
             m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"]
         ) == pytest.approx(22.222, rel=1e-3)
-        # assert value(
-        #     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Liq", "H2O"]
-        # ) == pytest.approx(1e-8, rel=1e-3)
+        assert value(
+            m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Liq", "H2O"]
+        ) == pytest.approx(1e-8, abs=1e-3)
         assert value(
             m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "H2O"]
         ) == pytest.approx(17.777, rel=1e-3)
@@ -292,6 +293,7 @@ class TestMVC:
         m.fs.objective = Objective(expr=m.fs.Q_ext[0])
         solver = get_solver()
         results = solve(m, solver=solver)
+        assert_optimal_termination(results)
 
         # Check system metrics
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
