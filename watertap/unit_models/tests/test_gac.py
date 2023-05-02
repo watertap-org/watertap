@@ -37,7 +37,6 @@ from watertap.unit_models.gac import (
     SurfaceDiffusionCoefficientType,
 )
 from watertap.costing import WaterTAPCosting
-from watertap.costing.units.gac import ContactorType
 
 __author__ = "Hunter Barber"
 
