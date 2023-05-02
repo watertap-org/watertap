@@ -299,7 +299,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             doc="anode current density",
         )
         self.anode_electrochem_potential = Var(
-            initialize=0.1,
+            initialize=1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass")
@@ -346,7 +346,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             doc="anode current density",
         )
         self.cathode_electrochem_potential = Var(
-            initialize=0.1,
+            initialize=1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass")
@@ -396,7 +396,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             doc="applied voltage to the cell",
         )
         self.resistance = Var(
-            initialize=1e-4,
+            initialize=1e-5,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass")
@@ -558,7 +558,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="energy consumption")
         def eq_power(b):
-            return b.power == b.voltage_applied * b.current
+            return b.power == b.voltage_cell * b.current
 
         @self.Constraint(doc="electrons contributing to reactions")
         def eq_electron_flow(b):
@@ -673,18 +673,21 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         catholyte_out = self.catholyte.properties_out[time_point]
 
         # unit model variables
-        var_dict["electrons passed"] = self.electron_flow
-        var_dict["total current supplied"] = self.current
-        var_dict["current efficiency"] = self.efficiency_current
-        var_dict["current density"] = self.current_density
         var_dict["membrane area"] = self.membrane_area
-        var_dict["anode area"] = self.anode_area
-        var_dict["cathode area"] = self.cathode_area
-        var_dict["applied voltage"] = self.voltage_applied
-        var_dict["voltage efficiency"] = self.efficiency_voltage
+        var_dict["membrane current density"] = self.membrane_current_density
+        var_dict["anode area"] = self.membrane_area
+        var_dict["anode current density"] = self.membrane_current_density
+        var_dict["cathode area"] = self.membrane_area
+        var_dict["cathode current density"] = self.membrane_current_density
+        var_dict["DC current supplied"] = self.current
+        var_dict["applied voltage"] = self.voltage_cell
+        var_dict["ohmic resistance"] = self.resistance
         var_dict["power"] = self.power
-        var_dict["efficiency_power"] = self.efficiency_power
-        var_dict["minimum voltage"] = self.voltage_reversible
+        var_dict["reversible voltage"] = self.voltage_reversible
+        var_dict["electrons passed"] = self.electron_flow
+        var_dict["current efficiency"] = self.efficiency_current
+        var_dict["voltage efficiency"] = self.efficiency_voltage
+        var_dict["power efficiency"] = self.efficiency_power
 
         # loop through desired state block properties indexed by [phase, comp]
         phase_comp_prop_dict = {
@@ -754,17 +757,38 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # fixed sf
 
-        if iscale.get_scaling_factor(self.current_density) is None:
-            iscale.set_scaling_factor(self.current_density, 1e-4)
+        if iscale.get_scaling_factor(self.membrane_current_density) is None:
+            iscale.set_scaling_factor(self.membrane_current_density, 1e-4)
 
-        if iscale.get_scaling_factor(self.efficiency_current) is None:
-            iscale.set_scaling_factor(self.efficiency_current, 1)
+        if iscale.get_scaling_factor(self.anode_current_density) is None:
+            iscale.set_scaling_factor(self.anode_current_density, 1e-4)
 
-        if iscale.get_scaling_factor(self.voltage_applied) is None:
-            iscale.set_scaling_factor(self.voltage_applied, 1)
+        if iscale.get_scaling_factor(self.anode_electrochem_potential) is None:
+            iscale.set_scaling_factor(self.anode_electrochem_potential, 1)
+
+        if iscale.get_scaling_factor(self.anode_overpotential) is None:
+            iscale.set_scaling_factor(self.anode_overpotential, 1e1)
+
+        if iscale.get_scaling_factor(self.cathode_current_density) is None:
+            iscale.set_scaling_factor(self.cathode_current_density, 1e-4)
+
+        if iscale.get_scaling_factor(self.cathode_electrochem_potential) is None:
+            iscale.set_scaling_factor(self.cathode_electrochem_potential, 1)
+
+        if iscale.get_scaling_factor(self.cathode_overpotential) is None:
+            iscale.set_scaling_factor(self.cathode_overpotential, 1e1)
+
+        if iscale.get_scaling_factor(self.voltage_cell) is None:
+            iscale.set_scaling_factor(self.voltage_cell, 1)
+
+        if iscale.get_scaling_factor(self.resistance) is None:
+            iscale.set_scaling_factor(self.resistance, 1e5)
 
         if iscale.get_scaling_factor(self.voltage_reversible) is None:
             iscale.set_scaling_factor(self.voltage_reversible, 1)
+
+        if iscale.get_scaling_factor(self.efficiency_current) is None:
+            iscale.set_scaling_factor(self.efficiency_current, 1)
 
         if iscale.get_scaling_factor(self.efficiency_voltage) is None:
             iscale.set_scaling_factor(self.efficiency_voltage, 1)
@@ -774,12 +798,9 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
 
         for p in self.config.property_package.phase_list:
             for j in self.config.property_package.component_list:
-
-                if iscale.get_scaling_factor(self.anode_stoich[p, j]) is None:
-                    iscale.set_scaling_factor(self.anode_stoich[p, j], 1)
-
-                if iscale.get_scaling_factor(self.cathode_stoich[p, j]) is None:
-                    iscale.set_scaling_factor(self.cathode_stoich[p, j], 1)
+                iscale.set_scaling_factor(self.membrane_ion_transport_number[p, j], 1)
+                iscale.set_scaling_factor(self.anode_stoich[p, j], 1)
+                iscale.set_scaling_factor(self.cathode_stoich[p, j], 1)
 
         for t in self.flowsheet().time:
             for j in self.config.property_package.component_list:
@@ -796,33 +817,37 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # calculated sf
 
-        # determine sf as a function of current, therefore a user should first scale current if model is poorly scaled
+        # determine sf as a function of current, therefore a user should
+        # first scale current if the model is poorly scaled
         if iscale.get_scaling_factor(self.current) is None:
             sf_current = 1e-5
             iscale.set_scaling_factor(self.current, sf_current)
         else:
             sf_current = iscale.get_scaling_factor(self.current)
 
-        if iscale.get_scaling_factor(self.electron_flow) is None:
-            iscale.set_scaling_factor(self.electron_flow, sf_current * 1e5)
-
         if iscale.get_scaling_factor(self.membrane_area) is None:
             iscale.set_scaling_factor(
                 self.membrane_area,
-                sf_current * iscale.get_scaling_factor(self.current_density) ** -1,
+                sf_current
+                * iscale.get_scaling_factor(self.membrane_current_density) ** -1,
             )
 
         if iscale.get_scaling_factor(self.anode_area) is None:
             iscale.set_scaling_factor(
                 self.anode_area,
-                sf_current * iscale.get_scaling_factor(self.current_density) ** -1,
+                sf_current
+                * iscale.get_scaling_factor(self.anode_current_density) ** -1,
             )
 
         if iscale.get_scaling_factor(self.cathode_area) is None:
             iscale.set_scaling_factor(
                 self.cathode_area,
-                sf_current * iscale.get_scaling_factor(self.current_density) ** -1,
+                sf_current
+                * iscale.get_scaling_factor(self.cathode_current_density) ** -1,
             )
 
         if iscale.get_scaling_factor(self.power) is None:
             iscale.set_scaling_factor(self.power, sf_current)
+
+        if iscale.get_scaling_factor(self.electron_flow) is None:
+            iscale.set_scaling_factor(self.electron_flow, sf_current * 1e5)

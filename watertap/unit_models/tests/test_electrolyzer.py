@@ -153,8 +153,8 @@ class TestElectrolyzer:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(m) == 205
-        assert number_total_constraints(m) == 151
+        assert number_variables(m) == 212
+        assert number_total_constraints(m) == 153
         assert number_unused_variables(m) == 15
 
     @pytest.mark.unit
@@ -163,27 +163,35 @@ class TestElectrolyzer:
         m = chlor_alkali_elec
 
         # test initial degrees of freedom
-        assert degrees_of_freedom(m) == 5
+        assert degrees_of_freedom(m) == 10
 
-        # fix variables
-        m.fs.unit.current.fix(30000)
-        m.fs.unit.current_density.fix(5000)
-        m.fs.unit.efficiency_current.fix(0.9)
-        m.fs.unit.efficiency_voltage.fix(0.8)
-
-        # TODO: transfer the following variables/sets to reaction package
-        # reactions
-        # from reaction thermodynamic potential
-        m.fs.unit.voltage_min.fix(2.2)
-        # Cl- --> 0.5 Cl2 + e-
+        # fix electrolysis reaction variables, TODO: transfer the following variables to generic importable blocks
+        # membrane properties
+        m.fs.unit.membrane_ion_transport_number["Liq", "NA+"].fix(1)
+        # anode properties, Cl- --> 0.5 Cl2 + e-
+        m.fs.unit.anode_electrochem_potential.fix(1.21)
         m.fs.unit.anode_stoich["Liq", "CL-"].fix(-1)
         m.fs.unit.anode_stoich["Liq", "CL2-v"].fix(0.5)
-        # H20 + e- --> 0.5 H2 + OH-
+        # cathode properties, H20 + e- --> 0.5 H2 + OH-
+        m.fs.unit.cathode_electrochem_potential.fix(-0.99)
         m.fs.unit.cathode_stoich["Liq", "H2O"].fix(-1)
         m.fs.unit.cathode_stoich["Liq", "H2-v"].fix(0.5)
         m.fs.unit.cathode_stoich["Liq", "OH-"].fix(1)
-        # 1 Na+ from anolyte to catholyte per 1 e- in electrolysis reaction
-        m.fs.unit.membrane_stoich["Liq", "NA+"].fix(1)
+
+        # fix design and performance variables
+        # membrane properties
+        m.fs.unit.membrane_current_density.fix(4000)
+        # anode properties
+        m.fs.unit.anode_current_density.fix(3000)
+        m.fs.unit.anode_overpotential.fix(0.1)  # assumed
+        # cathode properties
+        m.fs.unit.cathode_current_density.fix(3000)
+        m.fs.unit.cathode_overpotential.fix(0.1)  # assumed
+        # electrolyzer cell design
+        m.fs.unit.current.fix(30000)
+        # performance variables
+        m.fs.unit.efficiency_current.fix(0.9)
+        m.fs.unit.efficiency_voltage.fix(0.8)
 
         # test degrees of freedom satisfied
         assert degrees_of_freedom(m) == 0
@@ -234,12 +242,15 @@ class TestElectrolyzer:
         m.fs.unit.report()
 
         # check solution values
-        assert pytest.approx(6.000, rel=1e-3) == pyo.value(m.fs.unit.anode_area)
-        assert pytest.approx(2.750, rel=1e-3) == pyo.value(m.fs.unit.voltage_applied)
-        assert pytest.approx(6.000, rel=1e-3) == pyo.value(m.fs.unit.cathode_area)
+        assert pytest.approx(7.500, rel=1e-3) == pyo.value(m.fs.unit.membrane_area)
+        assert pytest.approx(10.00, rel=1e-3) == pyo.value(m.fs.unit.anode_area)
+        assert pytest.approx(10.00, rel=1e-3) == pyo.value(m.fs.unit.cathode_area)
+        assert pytest.approx(2.750, rel=1e-3) == pyo.value(m.fs.unit.voltage_cell)
+        assert pytest.approx(1.167e-5, rel=1e-3) == pyo.value(m.fs.unit.resistance)
+        assert pytest.approx(82510, rel=1e-3) == pyo.value(m.fs.unit.power)
+        assert pytest.approx(2.200, rel=1e-3) == pyo.value(m.fs.unit.voltage_reversible)
         assert pytest.approx(0.2798, rel=1e-3) == pyo.value(m.fs.unit.electron_flow)
-        assert pytest.approx(6.000, rel=1e-3) == pyo.value(m.fs.unit.membrane_area)
-        assert pytest.approx(82500, rel=1e-3) == pyo.value(m.fs.unit.power)
+        assert pytest.approx(0.7200, rel=1e-3) == pyo.value(m.fs.unit.efficiency_power)
 
         # check flow at outlet
         assert pytest.approx(0.1399, rel=1e-3) == pyo.value(
@@ -305,7 +316,7 @@ class TestElectrolyzer:
         assert pyo.check_optimal_termination(results)
 
         # check solution values
-        assert pytest.approx(10810, rel=1e-3) == pyo.value(
+        assert pytest.approx(17930, rel=1e-3) == pyo.value(
             m.fs.unit.costing.capital_cost
         )
         assert pytest.approx(82.50, rel=1e-3) == pyo.value(
