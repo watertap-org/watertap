@@ -419,7 +419,7 @@ class TestGACRobust:
 
         mr_grav.fs.unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=mr_grav.fs.costing,
-            costing_method_arguments={"contactor_type": ContactorType.gravity},
+            costing_method_arguments={"contactor_type": "gravity"},
         )
         mr_grav.fs.costing.cost_process()
         results = solver.solve(mr_grav)

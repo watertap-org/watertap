@@ -22,8 +22,8 @@ from ..util import (
 
 
 class ContactorType(StrEnum):
-    pressure = "pres"
-    gravity = "grav"
+    pressure = "pressure"
+    gravity = "gravity"
 
 
 def build_gac_cost_param_block(blk):
@@ -60,43 +60,31 @@ def build_gac_cost_param_block(blk):
     # ---------------------------------------------------------------------
     # correlation parameter data
 
-    blk.contactor_type_list = pyo.Set(
-        dimen=1,
-        initialize=[type.value for type in list(ContactorType)],
-    )
+    # dummy data that is refixed in cost_gac based on the ContactorType
+    contactor_cost_coeff_dummy = {0: 10000, 1: 1000, 2: -10, 3: 0.1}
+    adsorbent_unit_cost_coeff_dummy = {0: 1, 1: -1e-5}
+    other_cost_param_dummy = {0: 10000, 1: 0.1}
+    energy_consumption_coeff_dummy = {0: 1e-3, 1: 1e-3, 2: 0}
 
-    contactor_cost_coeff_data = {
-        "pres": {0: 10010.9, 1: 2204.95, 2: -15.9378, 3: 0.110592},
-        "grav": {0: 75131.3, 1: 735.550, 2: -1.01827, 3: 0.000000},
-    }
-    adsorbent_unit_cost_coeff_data = {0: 4.58342, 1: -1.25311e-5}
-    other_cost_param_data = {
-        "pres": {0: 16660.7, 1: 0.552207},
-        "grav": {0: 38846.9, 1: 0.490571},
-    }
-    energy_consumption_coeff_data = {
-        "pres": {0: 8.09926e-4, 1: 8.70577e-4, 2: 0},
-        "grav": {0: 0.123782, 1: 0.132403, 2: -1.41512e-5},
-    }
-
+    # USD_2020 embedded in equation
     blk.contactor_cost_coeff = pyo.Var(
-        blk.contactor_type_list,
-        range(4),
-        initialize=_unpack_data_dict(contactor_cost_coeff_data),
-        units=pyo.units.dimensionless,  # USD_2020 embedded in equation
+        range(len(contactor_cost_coeff_dummy)),
+        initialize=contactor_cost_coeff_dummy,
+        units=pyo.units.dimensionless,
         doc="contactor polynomial cost coefficients",
     )
+    # USD_2020 * kg**-1 embedded in equation adsorbent_unit_cost_constraint
     blk.adsorbent_unit_cost_coeff = pyo.Var(
-        range(2),
-        initialize=adsorbent_unit_cost_coeff_data,
-        units=pyo.units.dimensionless,  # USD_2020 * kg**-1 embedded in equation
+        range(len(adsorbent_unit_cost_coeff_dummy)),
+        initialize=adsorbent_unit_cost_coeff_dummy,
+        units=pyo.units.dimensionless,
         doc="GAC adsorbent cost exponential function parameters",
     )
+    # USD_2020 embedded in equation other_process_cost_constraint
     blk.other_cost_param = pyo.Var(
-        blk.contactor_type_list,
-        range(2),
-        initialize=_unpack_data_dict(other_cost_param_data),
-        units=pyo.units.dimensionless,  # USD_2020 embedded in equation
+        range(len(other_cost_param_dummy)),
+        initialize=other_cost_param_dummy,
+        units=pyo.units.dimensionless,
         doc="other process cost power law parameters",
     )
     blk.regen_unit_cost = pyo.Var(
@@ -109,11 +97,11 @@ def build_gac_cost_param_block(blk):
         units=pyo.units.USD_2020 * pyo.units.kg**-1,
         doc="unit cost to makeup spent GAC adsorbent with fresh adsorbent",
     )
+    # kW embedded in equation energy_consumption_constraint
     blk.energy_consumption_coeff = pyo.Var(
-        blk.contactor_type_list,
-        range(3),
-        initialize=_unpack_data_dict(energy_consumption_coeff_data),
-        units=pyo.units.dimensionless,  # kW embedded in equation
+        range(len(energy_consumption_coeff_dummy)),
+        initialize=energy_consumption_coeff_dummy,
+        units=pyo.units.dimensionless,
         doc="energy consumption polynomial coefficients",
     )
 
@@ -136,11 +124,48 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
             default = ContactorType.pressure
     """
 
-    if contactor_type not in blk.costing_package.gac.contactor_type_list:
+    # ---------------------------------------------------------------------
+    # with ContactorType not assigned in build_gac_cost_param_block and blk.costing_package.gac variables
+    # fixed when register_costing_parameter_block, refix parameters based on contactor type here
+
+    # costing data parameters based on contactor type
+    adsorbent_unit_cost_coeff_data = {0: 4.58342, 1: -1.25311e-5}
+    if contactor_type == ContactorType.pressure:
+        contactor_cost_coeff_data = {0: 10010.9, 1: 2204.95, 2: -15.9378, 3: 0.110592}
+        other_cost_param_data = {0: 16660.7, 1: 0.552207}
+        energy_consumption_coeff_data = {0: 8.09926e-4, 1: 8.70577e-4, 2: 0}
+    elif contactor_type == ContactorType.gravity:
+        contactor_cost_coeff_data = {0: 75131.3, 1: 735.550, 2: -1.01827, 3: 0.000000}
+        other_cost_param_data = {0: 38846.9, 1: 0.490571}
+        energy_consumption_coeff_data = {0: 0.123782, 1: 0.132403, 2: -1.41512e-5}
+    else:
         raise ConfigurationError(
             f"{blk.unit_model.name} received invalid argument for contactor_type:"
             f" {contactor_type}. Argument must be a member of the ContactorType Enum."
         )
+
+    # iterable lists with matching indices
+    cost_param_data_list = [
+        adsorbent_unit_cost_coeff_data,
+        contactor_cost_coeff_data,
+        other_cost_param_data,
+        energy_consumption_coeff_data,
+    ]
+    cost_param_var_list = [
+        blk.costing_package.gac.adsorbent_unit_cost_coeff,
+        blk.costing_package.gac.contactor_cost_coeff,
+        blk.costing_package.gac.other_cost_param,
+        blk.costing_package.gac.energy_consumption_coeff,
+    ]
+
+    # refix variables to appropriate costing parameters
+    for index in range(len(cost_param_var_list)):
+        param_data = cost_param_data_list[index]
+        param_var = cost_param_var_list[index]
+        for param_index in param_var.keys():
+            param_var[param_index].fix(param_data[param_index])
+
+    # ---------------------------------------------------------------------
 
     make_capital_cost_var(blk)
     blk.contactor_cost = pyo.Var(
@@ -196,16 +221,16 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
         == num_contactors
         * pyo.units.convert(
             (
-                blk.costing_package.gac.contactor_cost_coeff[contactor_type, 3]
+                blk.costing_package.gac.contactor_cost_coeff[3]
                 * (pyo.units.m**3) ** -3
                 * unit_contactor_volume**3
-                + blk.costing_package.gac.contactor_cost_coeff[contactor_type, 2]
+                + blk.costing_package.gac.contactor_cost_coeff[2]
                 * (pyo.units.m**3) ** -2
                 * unit_contactor_volume**2
-                + blk.costing_package.gac.contactor_cost_coeff[contactor_type, 1]
+                + blk.costing_package.gac.contactor_cost_coeff[1]
                 * (pyo.units.m**3) ** -1
                 * unit_contactor_volume**1
-                + blk.costing_package.gac.contactor_cost_coeff[contactor_type, 0]
+                + blk.costing_package.gac.contactor_cost_coeff[0]
             )
             * pyo.units.USD_2020,
             to_units=blk.costing_package.base_currency,
@@ -243,9 +268,9 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
         expr=blk.other_process_cost
         == pyo.units.convert(
             (
-                blk.costing_package.gac.other_cost_param[contactor_type, 0]
+                blk.costing_package.gac.other_cost_param[0]
                 * (total_bed_volume * pyo.units.m**-3)
-                ** blk.costing_package.gac.other_cost_param[contactor_type, 1]
+                ** blk.costing_package.gac.other_cost_param[1]
             )
             * pyo.units.USD_2020,
             to_units=blk.costing_package.base_currency,
@@ -302,31 +327,12 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
 
     blk.energy_consumption_constraint = pyo.Constraint(
         expr=blk.energy_consumption
-        == blk.costing_package.gac.energy_consumption_coeff[contactor_type, 2]
-        * total_bed_volume**2
-        + blk.costing_package.gac.energy_consumption_coeff[contactor_type, 1]
-        * total_bed_volume
-        + blk.costing_package.gac.energy_consumption_coeff[contactor_type, 0]
+        == blk.costing_package.gac.energy_consumption_coeff[2] * total_bed_volume**2
+        + blk.costing_package.gac.energy_consumption_coeff[1] * total_bed_volume
+        + blk.costing_package.gac.energy_consumption_coeff[0]
     )
 
     blk.costing_package.cost_flow(
         pyo.units.convert(blk.energy_consumption, to_units=pyo.units.kW),
         "electricity",
     )
-
-
-def _unpack_data_dict(data_dict):
-    """
-    For data within nested dictionaries, data_dict argument accessed by data[a][b], this method converts the indices to
-    a tuple accessed by data[a, b] to allow a pyo.Var() to be directly initialized with the desired data
-
-    Returns: a 1 dimensional object of {(index_a, index_b): value} with accessible values by data[a, b]
-    """
-
-    data_tuple = {
-        (key, sub_key): data_dict[key][sub_key]
-        for key in data_dict.keys()
-        for sub_key in data_dict[key].keys()
-    }
-
-    return data_tuple
