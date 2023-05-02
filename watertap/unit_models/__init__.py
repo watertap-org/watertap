@@ -25,3 +25,5 @@ from .electrodialysis_1D import Electrodialysis1D
 from .electrolyzer import Electrolyzer
 from .gac import GAC
 from .ion_exchange_0D import IonExchange0D
+from .thickener import Thickener
+from .dewatering import DewateringUnit
