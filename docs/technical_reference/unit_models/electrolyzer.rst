@@ -50,20 +50,20 @@ The following variables should then be fixed:
 .. code-block::
 
    # membrane properties
-   m.fs.unit.membrane_ion_transport_number["Liq", "NA+"].fix(1)
+   m.fs.electrolyzer.membrane_ion_transport_number["Liq", "NA+"].fix(1)
 
    # anode properties
    # Cl- --> 0.5 Cl2 + e-
-   m.fs.unit.anode_electrochem_potential.fix(1.21)
-   m.fs.unit.anode_stoich["Liq", "CL-"].fix(-1)
-   m.fs.unit.anode_stoich["Liq", "CL2-v"].fix(0.5)
+   m.fs.electrolyzer.anode_electrochem_potential.fix(1.21)
+   m.fs.electrolyzer.anode_stoich["Liq", "CL-"].fix(-1)
+   m.fs.electrolyzer.anode_stoich["Liq", "CL2-v"].fix(0.5)
 
    # cathode properties
    # H20 + e- --> 0.5 H2 + OH-
-   m.fs.unit.cathode_electrochem_potential.fix(-0.99)
-   m.fs.unit.cathode_stoich["Liq", "H2O"].fix(-1)
-   m.fs.unit.cathode_stoich["Liq", "H2-v"].fix(0.5)
-   m.fs.unit.cathode_stoich["Liq", "OH-"].fix(1)
+   m.fs.electrolyzer.cathode_electrochem_potential.fix(-0.99)
+   m.fs.electrolyzer.cathode_stoich["Liq", "H2O"].fix(-1)
+   m.fs.electrolyzer.cathode_stoich["Liq", "H2-v"].fix(0.5)
+   m.fs.electrolyzer.cathode_stoich["Liq", "OH-"].fix(1)
 
 Model Structure
 ------------------
@@ -73,13 +73,13 @@ Anode:
 
     .. math::
 
-        & \dot{n}_{j,in}-\dot{n}_{j,out}+\frac{\left(\varepsilon_{j,anode}-\varepsilon_{j,membrane}\right)I\eta_{current}}{F}=0 \\\\
+        & \dot{n}_{in,j}-\dot{n}_{out,j}+\frac{\left(\varepsilon_{ano,j}-\varepsilon_{mem,j}\right)I\theta_{current}}{F}=0 \\\\
 
 Cathode:
 
     .. math::
 
-        & \dot{n}_{j,in}-\dot{n}_{j,out}+\frac{\left(\varepsilon_{j,cathode}+\varepsilon_{j,membrane}\right)I\eta_{current}}{F}=0 \\\\
+        & \dot{n}_{in,j}-\dot{n}_{out,j}+\frac{\left(\varepsilon_{cat,j}+\varepsilon_{mem,j}\right)I\theta_{current}}{F}=0 \\\\
 
 Considering the reaction block and reaction package are omitted, no temperature dependence and rigorous energy balance are considered. Scaling of unit model variables should first be performed using ``calculate_scaling_factors()``. For the case that the model is poorly scaled, the ``current`` variable should be rescaled. Estimated scaling factors are propagated from the ``current`` scaling factor for other unit model variables which are dependent on process scale. An example of the methodology is the provided below.
 
@@ -115,7 +115,7 @@ Variables
 
    "membrane area", ":math:`A_{mem}`", "membrane_area", "None", ":math:`m^2`"
    "membrane current density", ":math:`i_{mem}`", "membrane_current_density", "None", ":math:`\frac{A}{m^2}`"
-   "ion transport number of species passing through the membrane :math:`^{ab}`", ":math:`t_{j,mem}`", "membrane_ion_transport_number", "[p, j]", ":math:`\text{dimensionless}`"
+   "ion transport number of species passing through the membrane :math:`^{ab}`", ":math:`t_{mem,j}`", "membrane_ion_transport_number", "[p, j]", ":math:`\text{dimensionless}`"
    "anode area", ":math:`A_{ano}`", "anode_area", "None", ":math:`m^2`"
    "anode current density", ":math:`i_{ano}`", "anode_current_density", "None", ":math:`\frac{A}{m^2}`"
    "anode electrochemical potential :math:`^a`", ":math:`E_{ano}`", "anode_electrochem_potential", "None", ":math:`V`"
@@ -135,15 +135,15 @@ Variables
    "current efficiency", ":math:`\theta_{current}`", "efficiency_current", "None", ":math:`\text{dimensionless}`"
    "voltage efficiency", ":math:`\theta_{voltage}`", "efficiency_voltage", "None", ":math:`\text{dimensionless}`"
    "power efficiency", ":math:`\theta_{power}`", "efficiency_power", "None", ":math:`\text{dimensionless}`"
-   "molar flow of species j across the membrane from anolyte to catholyte", ":math:`\dot{n}_{j,mem}`", "mass_transfer_term", "[t, p, j]", ":math:`\frac{mol}{s}`"
-   "molar generation of species j by electrolysis at the anode", ":math:`\dot{n}_{j,anode}`", "custom_reaction_anode", "[t, j]", ":math:`\frac{mol}{s}`"
-   "molar generation of species j by electrolysis at the cathode", ":math:`\dot{n}_{j,cathode}`", "custom_reaction_cathode", "[t, j]", ":math:`\frac{mol}{s}`"
+   "molar flow of species j across the membrane from anolyte to catholyte", ":math:`\dot{n}_{mem,j}`", "mass_transfer_term", "[t, p, j]", ":math:`\frac{mol}{s}`"
+   "molar generation of species j by electrolysis at the anode", ":math:`\dot{n}_{ano,j}`", "custom_reaction_anode", "[t, j]", ":math:`\frac{mol}{s}`"
+   "molar generation of species j by electrolysis at the cathode", ":math:`\dot{n}_{cat,j}`", "custom_reaction_cathode", "[t, j]", ":math:`\frac{mol}{s}`"
 
-\ :math:`^a` Variable intended to be move to a interchangeable component block, callable to the base electrolyzer model
-\ :math:`^b` Value is normalized to 1 electron in electrolysis stoichiometry
+| :math:`^a` Variable intended to be move to a interchangeable component block, callable to the base electrolyzer model
+| :math:`^b` Value is normalized to 1 electron in electrolysis stoichiometry
 
 
-For non-fixed efficiencies, custom constraints for the current and voltage efficiencies may be constructed at the flowsheet level. These may allow for predicative performance as a function of temperature, concentration, overpotential, and other variables.
+For non-fixed efficiencies, electrochemical potentials, and other relevant variables, custom constraints  may be constructed at the flowsheet level. These may allow for predicative performance as a function of temperature, concentration, overpotential, and other variables.
 
 .. _electrolyzer_equations:
 
@@ -153,16 +153,16 @@ Equations
    :header: "Description", "Equation"
 
    "membrane current density", ":math:`I = i_{mem}A_{mem}`"
-   "ion permeation through the membrane", ":math:`\dot{n}_{j,mem} = -t_{j,mem}\dot{n}_{e^-}`"
+   "ion permeation through the membrane", ":math:`\dot{n}_{mem,j} = -t_{mem,j}\dot{n}_{e^-}`"
    "anode current density", ":math:`I = i_{ano}A_{ano}`"
-   "molar generation of species according the anode electrolysis reaction", ":math:`\dot{n}_{j,ano} = \varepsilon_{j,ano}\dot{n}_{e^-}`"
+   "molar generation of species according the anode electrolysis reaction", ":math:`\dot{n}_{ano,j} = \varepsilon_{ano,j}\dot{n}_{e^-}`"
    "cathode current density", ":math:`I = i_{cat}A_{cat}`"
-   "molar generation of species according the cathode electrolysis reaction", ":math:`\dot{n}_{j,cat} = \varepsilon_{j,cat}\dot{n}_{e^-}`"
+   "molar generation of species according the cathode electrolysis reaction", ":math:`\dot{n}_{cat,j} = \varepsilon_{cat,j}\dot{n}_{e^-}`"
    "reversible voltage", ":math:`V_{rev} = E_{ano}-E_{cat}`"
-   "cell voltage", ":math:`V_{cell} = V_{rev}+/eta_{ano}+\eta_{cat}+IR`"
+   "cell voltage", ":math:`V_{cell} = V_{rev}+\eta_{ano}+\eta_{cat}+IR`"
    "power", ":math:`P = IV_{cell}`"
-   "electrons contributing to reactions :math:`^c`", ":math:`\dot{n}_{e^-} = \frac{I\eta_{current}}{F}`"
-   "voltage efficiency", ":math:`V_{min} = V\theta_{voltage}`"
+   "electrons contributing to reactions :math:`^c`", ":math:`\dot{n}_{e^-} = \frac{I\theta_{current}}{F}`"
+   "voltage efficiency", ":math:`V_{rev} = V\theta_{voltage}`"
    "power efficiency", ":math:`\theta_{power} = \theta_{current}\theta_{voltage}`"
 
 \ :math:`^c` is Faraday's constant from ``idaes.core.util.constants``, 96,485 C/mol
