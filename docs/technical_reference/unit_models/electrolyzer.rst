@@ -35,7 +35,7 @@ For a given electrolyzer design, there are 8 degrees of freedom in addition to t
    * cathode overpotential, :math:`\eta_{cat}`
    * current, :math:`I`
    * current efficiency, :math:`\theta_{current}`
-   * voltage efficiency, :math:`\theta_{voltage}` _or_ resistance, :math:`R`
+   * voltage efficiency, :math:`\theta_{voltage}` *or* resistance, :math:`R`
 
 Additionally, the electrolysis reactions at the anode and cathode must be specified with stoichiometry and electrochemical potential (Phillips, 2017). By default, the following stoichiometric variables will be fixed to 0 when the electrolyzer model block is constructed. Therefore, only the nonzero stoichiometry must be additionally specified. As an example for the chlor-alkali process, the following reactions occur with sodium ions permeating from the anolyte to catholyte. The stoichiometry is normalized to 1 mole of electrons as intended in the model framework.
 
