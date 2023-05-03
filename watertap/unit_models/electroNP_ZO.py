@@ -336,7 +336,7 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
             )
 
     def initialize(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
         Initialization routine for single inlet-double outlet unit models.
@@ -359,16 +359,16 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
             optarg = {}
 
         # Set solver options
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         solver_obj = get_solver(solver, optarg)
 
         # Get initial guesses for inlet if none provided
         if state_args is None:
             state_args = {}
-            state_dict = blk.properties_in[
-                blk.flowsheet().time.first()
+            state_dict = self.properties_in[
+                self.flowsheet().time.first()
             ].define_port_members()
 
             for k in state_dict.keys():
@@ -381,21 +381,21 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
-        flags = blk.properties_in.initialize(
+        flags = self.properties_in.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args,
             hold_state=True,
         )
-        blk.properties_treated.initialize(
+        self.properties_treated.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args,
             hold_state=False,
         )
-        blk.properties_byproduct.initialize(
+        self.properties_byproduct.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -408,7 +408,7 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solver_obj.solve(blk, tee=slc.tee)
+            results = solver_obj.solve(self, tee=slc.tee)
 
         init_log.info_high(
             "Initialization Step 2 {}.".format(idaeslog.condition(results))
@@ -416,13 +416,13 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.properties_in.release_state(flags, outlvl)
+        self.properties_in.release_state(flags, outlvl)
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
 
         if not check_optimal_termination(results):
             raise InitializationError(
-                f"{blk.name} failed to initialize successfully. Please check "
+                f"{self.name} failed to initialize successfully. Please check "
                 f"the output logs for more information."
             )
 

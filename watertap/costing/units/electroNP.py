@@ -67,7 +67,7 @@ def cost_electroNP(blk, cost_electricity_flow=True, cost_MgCl2_flow=True):
 
 def cost_electroNP_capital(blk, HRT, sizing_cost):
     """
-    Generic function for costing a UV system.
+    Generic function for costing an ElectroNP system.
     """
     make_capital_cost_var(blk)
 
