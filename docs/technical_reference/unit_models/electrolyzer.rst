@@ -49,22 +49,21 @@ The following variables should then be fixed:
 
 .. code-block::
 
-   # thermodynamic minimum voltage
-   m.fs.electrolyzer.voltage_min.fix(2.2)
+   # membrane properties
+   m.fs.unit.membrane_ion_transport_number["Liq", "NA+"].fix(1)
 
-   # anode reactions
-   m.fs.electrolyzer.anode_stoich["Liq", "CL-"].fix(-1)
-   m.fs.electrolyzer.anode_stoich["Liq", "CL2-v"].fix(0.5)
+   # anode properties
+   # Cl- --> 0.5 Cl2 + e-
+   m.fs.unit.anode_electrochem_potential.fix(1.21)
+   m.fs.unit.anode_stoich["Liq", "CL-"].fix(-1)
+   m.fs.unit.anode_stoich["Liq", "CL2-v"].fix(0.5)
 
-   # cathode reactions
-   m.fs.electrolyzer.cathode_stoich["Liq", "H2O"].fix(-1)
-   m.fs.electrolyzer.cathode_stoich["Liq", "H2-v"].fix(0.5)
-   m.fs.electrolyzer.cathode_stoich["Liq", "OH-"].fix(1)
-
-   # membrane permeation (anode to cathode) satisfies charge balance
-   m.fs.electrolyzer.membrane_stoich["Liq", "NA+"].fix(1)
-
-
+   # cathode properties
+   # H20 + e- --> 0.5 H2 + OH-
+   m.fs.unit.cathode_electrochem_potential.fix(-0.99)
+   m.fs.unit.cathode_stoich["Liq", "H2O"].fix(-1)
+   m.fs.unit.cathode_stoich["Liq", "H2-v"].fix(0.5)
+   m.fs.unit.cathode_stoich["Liq", "OH-"].fix(1)
 
 Model Structure
 ------------------
@@ -114,31 +113,37 @@ Variables
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
+   "membrane area", ":math:`A_{mem}`", "membrane_area", "None", ":math:`m^2`"
+   "membrane current density", ":math:`i_{mem}`", "membrane_current_density", "None", ":math:`\frac{A}{m^2}`"
+   "ion transport number of species passing through the membrane :math:`^{ab}`", ":math:`t_{j,mem}`", "membrane_ion_transport_number", "[p, j]", ":math:`\text{dimensionless}`"
+   "anode area", ":math:`A_{ano}`", "anode_area", "None", ":math:`m^2`"
+   "anode current density", ":math:`i_{ano}`", "anode_current_density", "None", ":math:`\frac{A}{m^2}`"
+   "anode electrochemical potential :math:`^a`", ":math:`E_{ano}`", "anode_electrochem_potential", "None", ":math:`V`"
+   "anode overpotential", ":math:`\eta_{ano}`", "anode_overpotential", "None", ":math:`V`"
+   "anode stoichiometry of the reaction :math:`^{ab}`", ":math:`\varepsilon_{ano,j}`", "anode_stoich", "[p, j]", ":math:`\text{dimensionless}`"
+   "cathode area", ":math:`A_{cat}`", "cathode_area", "None", ":math:`m^2`"
+   "cathode current density", ":math:`i_{cat}`", "cathode_current_density", "None", ":math:`\frac{A}{m^2}`"
+   "cathode electrochemical potential :math:`^{ab}`", ":math:`E_{cat}`", "cathode_electrochem_potential", "None", ":math:`V`"
+   "cathode overpotential", ":math:`\eta_{cat}`", "cathode_overpotential", "None", ":math:`V`"
+   "cathode stoichiometry of the reaction :math:`^a`", ":math:`\varepsilon_{cat,j}`", "cathode_stoich", "[p, j]", ":math:`\text{dimensionless}`"
+   "current", ":math:`I`", "current", "None", ":math:`A`"
+   "cell voltage", ":math:`V_{cell}`", "voltage_cell", "None", ":math:`V`"
+   "ohmic resistance", ":math:`R`", "resistance", "None", ":math:`\Omega`"
+   "power", ":math:`P`", "power", "None", ":math:`W`"
+   "reversible voltage", ":math:`V_{rev}`", "voltage_reversible", "None", ":math:`V`"
+   "electrons contributing to electrolysis reactions", ":math:`\dot{n}_{e^-}`", "electron_flow", "None", ":math:`\frac{mol}{s}`"
+   "current efficiency", ":math:`\theta_{current}`", "efficiency_current", "None", ":math:`\text{dimensionless}`"
+   "voltage efficiency", ":math:`\theta_{voltage}`", "efficiency_voltage", "None", ":math:`\text{dimensionless}`"
+   "power efficiency", ":math:`\theta_{power}`", "efficiency_power", "None", ":math:`\text{dimensionless}`"
+   "molar flow of species j across the membrane from anolyte to catholyte", ":math:`\dot{n}_{j,mem}`", "mass_transfer_term", "[t, p, j]", ":math:`\frac{mol}{s}`"
    "molar generation of species j by electrolysis at the anode", ":math:`\dot{n}_{j,anode}`", "custom_reaction_anode", "[t, j]", ":math:`\frac{mol}{s}`"
    "molar generation of species j by electrolysis at the cathode", ":math:`\dot{n}_{j,cathode}`", "custom_reaction_cathode", "[t, j]", ":math:`\frac{mol}{s}`"
-   "moles of electrons contributing to electrolysis", ":math:`\dot{n}_{e^-}`", "electron_flow", "None", ":math:`\frac{mol}{s}`"
-   "current", ":math:`I`", "current", "None", ":math:`A`"
-   "current efficiency", ":math:`\eta_{current}`", "efficiency_current", "None", ":math:`\text{dimensionless}`"
-   "current density", ":math:`J`", "current_density", "None", ":math:`\frac{A}{m^2}`"
-   "membrane area", ":math:`A_{membrane}`", "membrane_area", "None", ":math:`m^2`"
-   "anode area", ":math:`A_{anode}`", "anode_area", "None", ":math:`m^2`"
-   "cathode area", ":math:`A_{cathode}`", "cathode_area", "None", ":math:`m^2`"
-   "applied voltage", ":math:`V`", "voltage_applied", "None", ":math:`V`"
-   "voltage efficiency", ":math:`\eta_{voltage}`", "efficiency_voltage", "None", ":math:`\text{dimensionless}`"
-   "power", ":math:`P`", "power", "None", ":math:`W`"
-   "power efficiency", ":math:`\eta_{power}`", "efficiency_power", "None", ":math:`\text{dimensionless}`"
+
+\ :math:`^a` Variable intended to be move to a interchangeable component block, callable to the base electrolyzer model
+\ :math:`^b` Value is normalized to 1 electron in electrolysis stoichiometry
+
 
 For non-fixed efficiencies, custom constraints for the current and voltage efficiencies may be constructed at the flowsheet level. These may allow for predicative performance as a function of temperature, concentration, overpotential, and other variables.
-
-The following variables are constructed on the unit model for the current build. However, these variables are specific to the electrolysis reactions targeted.
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "thermodynamic minimum voltage for electrolysis reactions to proceed", ":math:`V_{min}`", "voltage_min", "None", ":math:`V`"
-   "stoichiometry of the reaction at the anode normalized to 1 electron", ":math:`\varepsilon_{j,anode}`", "anode_stoich", "[p, j]", ":math:`\text{dimensionless}`"
-   "stoichiometry of the reaction at the cathode normalized to 1 electron", ":math:`\varepsilon_{j,cathode}`", "cathode_stoich", "[p, j]", ":math:`\text{dimensionless}`"
-   "stoichiometry of the mass transfer across the membrane w.r.t. the electrolysis reaction", ":math:`\varepsilon_{j,membrane}`", "membrane_stoich", "[p, j]", ":math:`\text{dimensionless}`"
 
 .. _electrolyzer_equations:
 
@@ -147,18 +152,20 @@ Equations
 .. csv-table::
    :header: "Description", "Equation"
 
-   "voltage efficiency as a function of minimum required by reaction", ":math:`V_{min} = V\eta_{voltage}`"
-   "electrons passed between anode and cathode contributing to reactions*", ":math:`\dot{n}_{e^-} = \frac{I\eta_{current}}{F}`"
-   "membrane area", ":math:`I = JA_{membrane}`"
-   "anode area", ":math:`I = JA_{anode}`"
-   "cathode area", ":math:`I = JA_{cathode}`"
-   "power", ":math:`P = IV`"
-   "power efficiency", ":math:`\eta_{power} = \eta_{current}\eta_{voltage}`"
-   "ion permeation through the membrane", ":math:`\dot{n}_{j,membrane} = -\varepsilon_{j,membrane}\dot{n}_{e^-}`"
-   "molar generation of species according the anode electrolysis reaction", ":math:`\dot{n}_{j,anode} = \varepsilon_{j,anode}\dot{n}_{e^-}`"
-   "molar generation of species according the cathode electrolysis reaction", ":math:`\dot{n}_{j,cathode} = \varepsilon_{j,cathode}\dot{n}_{e^-}`"
+   "membrane current density", ":math:`I = i_{mem}A_{mem}`"
+   "ion permeation through the membrane", ":math:`\dot{n}_{j,mem} = -t_{j,mem}\dot{n}_{e^-}`"
+   "anode current density", ":math:`I = i_{ano}A_{ano}`"
+   "molar generation of species according the anode electrolysis reaction", ":math:`\dot{n}_{j,ano} = \varepsilon_{j,ano}\dot{n}_{e^-}`"
+   "cathode current density", ":math:`I = i_{cat}A_{cat}`"
+   "molar generation of species according the cathode electrolysis reaction", ":math:`\dot{n}_{j,cat} = \varepsilon_{j,cat}\dot{n}_{e^-}`"
+   "reversible voltage", ":math:`V_{rev} = E_{ano}-E_{cat}`"
+   "cell voltage", ":math:`V_{cell} = V_{rev}+/eta_{ano}+\eta_{cat}+IR`"
+   "power", ":math:`P = IV_{cell}`"
+   "electrons contributing to reactions :math:`^c`", ":math:`\dot{n}_{e^-} = \frac{I\eta_{current}}{F}`"
+   "voltage efficiency", ":math:`V_{min} = V\theta_{voltage}`"
+   "power efficiency", ":math:`\theta_{power} = \theta_{current}\theta_{voltage}`"
 
-| \* ``F`` is Faraday's constant from ``idaes.core.util.constants``, 96,485 C/mol
+\ :math:`^c` is Faraday's constant from ``idaes.core.util.constants``, 96,485 C/mol
 
 Costing Method
 ---------------
