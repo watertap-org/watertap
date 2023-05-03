@@ -102,7 +102,7 @@ def _get_lmp(time_steps,
 def build_flowsheet(n_steps, variable_efficiency=VariableEfficiency.none):
     # create mp model
     mp_swro = create_multiperiod_swro_model(n_time_points=n_steps,
-                                            variable_efficiency=variable_efficiency)
+                                            variable_efficiency=variable_efficiency)    
     return mp_swro
 
 
@@ -161,13 +161,13 @@ def set_objective(
         blk.fs.dynamic.price_signal = Param(
             default = price_signal[count],
             mutable=True,
-            units = blk.fs.costing.base_currency / pyunits.MWh
+            units = blk.fs.costing.base_currency / pyunits.kWh
         )
 
         blk.fs.dynamic.lmp_signal = Param(
             default=lmp[count],
             mutable=True,
-            units=blk.fs.costing.base_currency / pyunits.MWh,
+            units=blk.fs.costing.base_currency / pyunits.kWh,
         )
 
         blk.fs.dynamic.carbon_intensity = Param(
@@ -175,6 +175,9 @@ def set_objective(
             mutable=True, 
             units=pyunits.kg / pyunits.MWh
         )
+
+        blk.fs.costing.electricity_cost = value(pyunits.convert(blk.fs.dynamic.price_signal,
+                                                                to_units = blk.fs.costing.base_currency / pyunits.kWh))
 
         blk.fs.dynamic.hourly_water_production = Var(initialize = value(m.mp.baseline_production),
                                                      bounds = (0, None),

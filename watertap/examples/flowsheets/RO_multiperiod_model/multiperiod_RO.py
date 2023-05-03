@@ -54,7 +54,7 @@ def create_swro_mp_block(m=None):
 
     # Create a dynamic block to store dynamic operation parameters 
     m.fs.dynamic = Block()
-    m.fs.dynamic.ramp_time = Param(initialize=900,
+    m.fs.dynamic.ramp_time = Param(initialize=60,
                                    units= pyunits.s, 
                                    mutable=True,
                                    doc="Time associated with ramping up or down in system pressure")
@@ -104,6 +104,7 @@ def unfix_dof(b):
     b.fs.feed.properties[0.0].mass_frac_phase_comp["Liq", "NaCl"].fix(
         0.035
     )
+    b.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
     b.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"].setub(
             0.0005
         )
