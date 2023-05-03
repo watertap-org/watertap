@@ -11,7 +11,7 @@ This is a simplified electrolyzer unit model used to approximate electrolysis pe
    * assumes isothermal conditions and performance is not temperature dependent
    * does not determine equilibrium of electrolysis products in solution
    * does not consider undesired reactions
-   * membrane, cathode, and anode areas are equal and a function of the current density, this does not consider the mass transfer limitations of volume to area ratios
+   * does not account for mass transfer limitations of electrolyte volume to electrode surface area ratios
 
 .. index::
    pair: watertap.unit_models.electrolyzer;electrolyzer
@@ -20,30 +20,36 @@ This is a simplified electrolyzer unit model used to approximate electrolysis pe
 
 Introduction
 ------------
-This model was primary motivated by the chlor-alkali membrane electrolysis process, a conventional electrolyzer unit for the production of chlorine gas and hydroxide (Bommaraju, 2015) (Kent, 2007). The model has been demonstrated for the chlor-alkali configuration in the electrolyzer testing file and may be generalizable to other electrolysis processes, but had not been validated for generalized simulation. Given a membrane electrolyzer, the catholyte and anolyte are separated by an ion exchange membrane. This provides two distinct control volumes to perform model calculations. The basis for determining electrolyzer performance is considering the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. Faradaic conversion considers equating the supplied electrical current to the amount of electrons available for electrochemical reaction by Faraday's law. The fundamental calculation of Faradaic conversion is described in "electrons passed between anode and cathode contributing to reactions" found in the :ref:`Equations <electrolyzer_equations>`.
+This model was primarily motivated to simulate the chlor-alkali membrane electrolysis process, a conventional electrolyzer for the production of chlorine gas and hydroxide (Bommaraju, 2015) (Kent, 2007). The model has been demonstrated for the chlor-alkali configuration in the electrolyzer testing file and may be generalizable to other electrolysis mechanisms, but has not been validated for generalized processes.
+
+Given a membrane electrolyzer, the catholyte and anolyte are separated by an ion exchange membrane. This provides two distinct control volumes to perform model calculations. The basis for determining electrolyzer performance is accounting for the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. Faradaic conversion considers equating the supplied electrical current to the amount of electrons available for electrochemical reaction by Faraday's law. The calculation of Faradaic conversion is described in "electrons passed between anode and cathode contributing to reactions" found in the :ref:`Equations <electrolyzer_equations>`.
 
 Degrees of Freedom
 ------------------
-In the fundamental calculations of the electrolyzer unit model, there are 4 degrees of freedom in addition to the inlet state variables (i.e., temperature, pressure, component flowrates) that should be fixed for the model to be fully specified. In typical design cases the following 4 variables are fixed:
+For a given electrolyzer design, there are 8 degrees of freedom in addition to the inlet state variables (i.e., temperature, pressure, component flowrates) that should be fixed for the model to be fully specified. In typical design cases the following 8 variables are fixed:
 
+   * membrane current density, :math:`i_{mem}`
+   * anode current density, :math:`i_{ano}`
+   * anode overpotential, :math:`\eta_{ano}`
+   * cathode current density, :math:`i_{cat}`
+   * cathode overpotential, :math:`\eta_{cat}`
    * current, :math:`I`
-   * current density, :math:`J`
-   * current efficiency, :math:`\eta_{current}`
-   * voltage efficiency, :math:`\eta_{voltage}`
+   * current efficiency, :math:`\theta_{current}`
+   * voltage efficiency, :math:`\theta_{voltage}` _or_ resistance, :math:`R`
 
-Additionally, the electrolysis reactions at the anode and cathode must be specified. By default, the following stoichiometric variables will be fixed to 0 when the electrolyzer model block is constructed. Therefore, only the nonzero stoichiometry must be specified. As an example for the chlor-alkali process, the following reactions occur with sodium ions permeating from the anolyte to catholyte. The stoichiometry is normalized to 1 mole of electrons as intended in the model framework.
+Additionally, the electrolysis reactions at the anode and cathode must be specified with stoichiometry and electrochemical potential (Phillips, 2017). By default, the following stoichiometric variables will be fixed to 0 when the electrolyzer model block is constructed. Therefore, only the nonzero stoichiometry must be additionally specified. As an example for the chlor-alkali process, the following reactions occur with sodium ions permeating from the anolyte to catholyte. The stoichiometry is normalized to 1 mole of electrons as intended in the model framework.
 
 Anode:
 
     .. math::
 
-        & Cl^- \to {\small\frac{1}{2}} Cl_2 + e^- \\\\
+        & Cl^-\to{\small\frac{1}{2}}Cl_2+e^-\hspace{4em}E=1.21V \\\\
 
 Cathode:
 
     .. math::
 
-        & H_2O + e^- \to {\small\frac{1}{2}} H_2 + OH^- \\\\
+        & H_2O+e^-\to{\small\frac{1}{2}}H_2+OH^-\hspace{4em}E=-0.99V \\\\
 
 The following variables should then be fixed:
 
@@ -81,7 +87,9 @@ Cathode:
 
         & \dot{n}_{in,j}-\dot{n}_{out,j}+\frac{\left(\varepsilon_{cat,j}+\varepsilon_{mem,j}\right)I\theta_{current}}{F}=0 \\\\
 
-Considering the reaction block and reaction package are omitted, no temperature dependence and rigorous energy balance are considered. Scaling of unit model variables should first be performed using ``calculate_scaling_factors()``. For the case that the model is poorly scaled, the ``current`` variable should be rescaled. Estimated scaling factors are propagated from the ``current`` scaling factor for other unit model variables which are dependent on process scale. An example of the methodology is the provided below.
+Considering the reaction block and reaction package are omitted, no temperature dependence and rigorous energy balance are considered.
+
+Scaling of unit model variables should first be performed using ``calculate_scaling_factors()``. For the case that the model is poorly scaled, the ``current`` variable should be rescaled. Estimated scaling factors are propagated from the ``current`` scaling factor for other unit model variables which are dependent on process scale. An example of the methodology is the provided below.
 
 .. code-block::
 
@@ -230,3 +238,6 @@ Kent, J. A. (Ed.). (2007). Kent and Riegel’s Handbook of Industrial Chemistry 
 
 
 O’Brien, T., Bommaraju, T. V., & Hine, F. (2005). Handbook of chlor-alkali technology. Springer.
+
+Phillips, R., Edwards, A., Rome, B., Jones, D. R., & Dunnill, C. W. (2017). Minimising the ohmic resistance of an alkaline electrolysis cell through effective cell design. International Journal of Hydrogen Energy, 42(38), 23986–23994. https://doi.org/10.1016/j.ijhydene.2017.07.184
+
