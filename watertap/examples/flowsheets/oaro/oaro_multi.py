@@ -563,26 +563,32 @@ def set_operating_conditions(
     #     feed_flow_mass * feed_mass_frac_H2O
     # )
 
-    Cin = 70
-    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"] = Cin
+    Cin = 75 * pyunits.g / pyunits.L
+    # m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(Cin)
+    # m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(19.5 * pyunits.m**3/pyunits.hr)
     m.fs.feed.properties.calculate_state(
         var_args={
             ("conc_mass_phase_comp", ("Liq", "NaCl")): value(
-                m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
+                Cin
             ),  # feed mass concentration
-            ("flow_vol_phase", "Liq"): 1e-3,
+            ("flow_vol_phase", "Liq"): 19.5 * pyunits.m**3 / pyunits.hr,
         },  # volumetric feed flowrate [-]
         hold_state=True,  # fixes the calculated component mass flow rates
     )
 
     # primary pumps
     for idx, pump in m.fs.PrimaryPumps.items():
-        pump.control_volume.properties_out[0].pressure = 10e5 + 65e5 / float(idx)
+        # pump.control_volume.properties_out[0].pressure = 10e5 + 65e5 / float(idx)
+        if idx == m.fs.LastStage:
+            pump.control_volume.properties_out[0].pressure = 85e5
+        else:
+            pump.control_volume.properties_out[0].pressure = 65e5
         pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
     for idx, pump in m.fs.RecyclePumps.items():
-        pump.control_volume.properties_out[0].pressure = 1e5 + 8e5 / float(idx)
+        # pump.control_volume.properties_out[0].pressure = 1.4e5 + 8e5 / float(idx)
+        pump.control_volume.properties_out[0].pressure = 4e5
         pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
@@ -602,7 +608,7 @@ def set_operating_conditions(
     #     ].value = (permeate_flow_mass * permeate_mass_frac_NaCl)
 
     # Initialize OARO
-    membrane_area = 100
+    membrane_area = 500 * pyunits.m**2
     A = 4.2e-12
     B = 3.5e-8
     spacer_porosity = 0.85
@@ -631,7 +637,7 @@ def set_operating_conditions(
     )  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO.width.fix(5)  # stage width [m]
-    m.fs.RO.area.fix(100)  # guess area for RO initialization
+    m.fs.RO.area.fix(500 * pyunits.m**2)  # guess area for RO initialization
 
     if m.fs.erd_type == ERDtype.pump_as_turbine:
         # energy recovery turbine - efficiency and outlet pressure
