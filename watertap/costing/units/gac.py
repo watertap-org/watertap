@@ -60,29 +60,27 @@ def build_gac_cost_param_block(blk):
     # ---------------------------------------------------------------------
     # correlation parameter data
 
-    # dummy data that is refixed in cost_gac based on the ContactorType
-    contactor_cost_coeff_dummy = {0: 10000, 1: 1000, 2: -10, 3: 0.1}
-    adsorbent_unit_cost_coeff_dummy = {0: 1, 1: -1e-5}
-    other_cost_param_dummy = {0: 10000, 1: 0.1}
-    energy_consumption_coeff_dummy = {0: 1e-3, 1: 1e-3, 2: 0}
-
+    # dummy data is used to initialize, fixed in cost_gac based on the ContactorType
     # USD_2020 embedded in equation
+    contactor_cost_coeff_dummy = {0: 10000, 1: 1000, 2: -10, 3: 0.1}
     blk.contactor_cost_coeff = pyo.Var(
-        range(len(contactor_cost_coeff_dummy)),
+        contactor_cost_coeff_dummy.keys(),
         initialize=contactor_cost_coeff_dummy,
         units=pyo.units.dimensionless,
         doc="contactor polynomial cost coefficients",
     )
     # USD_2020 * kg**-1 embedded in equation adsorbent_unit_cost_constraint
+    adsorbent_unit_cost_coeff_dummy = {0: 1, 1: -1e-5}
     blk.adsorbent_unit_cost_coeff = pyo.Var(
-        range(len(adsorbent_unit_cost_coeff_dummy)),
+        adsorbent_unit_cost_coeff_dummy.keys(),
         initialize=adsorbent_unit_cost_coeff_dummy,
         units=pyo.units.dimensionless,
         doc="GAC adsorbent cost exponential function parameters",
     )
     # USD_2020 embedded in equation other_process_cost_constraint
+    other_cost_param_dummy = {0: 10000, 1: 0.1}
     blk.other_cost_param = pyo.Var(
-        range(len(other_cost_param_dummy)),
+        other_cost_param_dummy.keys(),
         initialize=other_cost_param_dummy,
         units=pyo.units.dimensionless,
         doc="other process cost power law parameters",
@@ -98,8 +96,9 @@ def build_gac_cost_param_block(blk):
         doc="unit cost to makeup spent GAC adsorbent with fresh adsorbent",
     )
     # kW embedded in equation energy_consumption_constraint
+    energy_consumption_coeff_dummy = {0: 1e-3, 1: 1e-3, 2: 0}
     blk.energy_consumption_coeff = pyo.Var(
-        range(len(energy_consumption_coeff_dummy)),
+        energy_consumption_coeff_dummy.keys(),
         initialize=energy_consumption_coeff_dummy,
         units=pyo.units.dimensionless,
         doc="energy consumption polynomial coefficients",
@@ -144,26 +143,19 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
             f" {contactor_type}. Argument must be a member of the ContactorType Enum."
         )
 
-    # iterable lists with matching indices
-    cost_param_data_list = [
-        adsorbent_unit_cost_coeff_data,
-        contactor_cost_coeff_data,
-        other_cost_param_data,
-        energy_consumption_coeff_data,
-    ]
-    cost_param_var_list = [
-        blk.costing_package.gac.adsorbent_unit_cost_coeff,
-        blk.costing_package.gac.contactor_cost_coeff,
-        blk.costing_package.gac.other_cost_param,
-        blk.costing_package.gac.energy_consumption_coeff,
-    ]
+    # iterable matching coeff_data to vars
+    gac_cost = blk.costing_package.gac
+    cost_params = (
+        (adsorbent_unit_cost_coeff_data, gac_cost.adsorbent_unit_cost_coeff),
+        (contactor_cost_coeff_data, gac_cost.contactor_cost_coeff),
+        (other_cost_param_data, gac_cost.other_cost_param),
+        (energy_consumption_coeff_data, gac_cost.energy_consumption_coeff),
+    )
 
     # refix variables to appropriate costing parameters
-    for index in range(len(cost_param_var_list)):
-        param_data = cost_param_data_list[index]
-        param_var = cost_param_var_list[index]
-        for param_index in param_var.keys():
-            param_var[param_index].fix(param_data[param_index])
+    for indexed_data, indexed_var in cost_params:
+        for index, var in indexed_var.items():
+            var.fix(indexed_data[index])
 
     # ---------------------------------------------------------------------
 
