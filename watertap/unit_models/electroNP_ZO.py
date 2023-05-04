@@ -250,7 +250,7 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().time,
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
-            doc="Constraint for solute concentration in treated " "stream.",
+            doc="Constraint for solute concentration in treated stream.",
         )
         def solute_treated_equation(b, t, p, j):
             return (1 - b.removal_frac_mass_comp[t, j]) * b.properties_in[
@@ -349,7 +349,7 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
                 )
             )
 
-    def initialize(
+    def initialize_build(
         self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
