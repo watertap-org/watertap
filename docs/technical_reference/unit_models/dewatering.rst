@@ -40,6 +40,8 @@ Sets
    "Particulate Components", ":math:`j`", "['X_I', 'X_S', 'X_P', 'X_BH', 'X_BA', 'X_ND']"
    "Non-particulate Components", ":math:`j`", "['H2O', 'S_I', 'S_S', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'S_ALK']"
 
+NOTE: These components are defined in the `ASM1 Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_ documentation.
+
 Parameters
 ----------
 .. csv-table::
@@ -62,7 +64,7 @@ Equations and Relationships
    "Overflow soluble fraction", ":math:`split_{soluble} = 1 - f_{q_{du}}`"
 
 Class Documentation
--------
+-------------------
 .. currentmodule:: watertap.unit_models.dewatering
 
 .. autoclass:: DewateringUnit
