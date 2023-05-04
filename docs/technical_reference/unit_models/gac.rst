@@ -241,10 +241,10 @@ Costing Method Variables
 The following parameters are constructed when applying the GAC costing method in the ``watertap_costing_package``:
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Default Value", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
 
-   "Number of GAC contactors in operation in parallel", ":math:`N_{op}`", "num_contactors_op", "None", "1", ":math:`\text{dimensionless}`"
-   "Number of off-line redundant GAC contactors in parallel", ":math:`N_{red}`", "num_contactors_redundant", "1", "None", ":math:`\text{dimensionless}`"
+   "Number of GAC contactors in operation in parallel", ":math:`N_{op}`", "num_contactors_op", "1", ":math:`\text{dimensionless}`"
+   "Number of off-line redundant GAC contactors in parallel", ":math:`N_{red}`", "num_contactors_redundant", "1", ":math:`\text{dimensionless}`"
    "Fraction of spent GAC adsorbent that can be regenerated for reuse", ":math:`f_{regen}`", "regen_frac", "0.70", ":math:`\text{dimensionless}`"
    "Reference maximum value of GAC mass needed for initial charge where economy of scale no longer discounts the unit price  (U.S. EPA, 2021)", ":math:`M_{GAC}^{ref}`", "bed_mass_gac_max_ref", "18143.7", ":math:`kg`"
    "Contactor polynomial cost coefficients (U.S. EPA, 2021)", ":math:`x`", "contactor_cost_coeff", "tabulated", ":math:`\text{dimensionless}`"
@@ -254,7 +254,7 @@ The following parameters are constructed when applying the GAC costing method in
    "Unit cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{makeup}`", "makeup_unit_cost", "4.58223", ":math:`$/kg`"
    "Energy consumption polynomial coefficients", ":math:`alpha`", "energy_consumption_coeff", "tabulated", ":math:`\text{dimensionless}`"
 
-Variables with the (U.S. EPA, 2021) citation are directly taken from previously determined expressions. Other variables are regressed from higher detailed costing methods in (U.S. EPA, 2021). Costing methods are available for steel pressure vessel contactors (default) and concrete gravity basin contactors. Given that the form of the costing component equations are different (polynomial, exponential, and power law), the units associated with the parameters are embedded in the constraints and not directly applied to the variable and the index is generalized to its position ``([0:len(parameter_data)])`` in the list.
+Variables with the (U.S. EPA, 2021) citation are directly taken from previously determined expressions. Other variables are regressed from higher detailed costing methods in (U.S. EPA, 2021). Costing methods are available for steel pressure vessel contactors (default) and concrete gravity basin contactors. Given that the form of the costing component equations are different (polynomial, exponential, and power law), the units associated with the parameters are embedded in the constraints and not directly applied to the variable and the index is generalized to its position ``([0:len(parameter_data)])`` in the list. The variations in costing are tabulated below:
 
 .. csv-table::
    :header: "Variable Name", "Contactor Type", "Index 0", "Index 1", "Index 2", "Index 3"
