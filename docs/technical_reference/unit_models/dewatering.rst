@@ -61,7 +61,7 @@ Equations and Relationships
    "Overflow particulate fraction", ":math:`split_{particulate} = 1 - TSS_{rem}`"
    "Overflow soluble fraction", ":math:`split_{soluble} = 1 - f_{q_{du}}`"
 
-Classes
+Class Documentation
 -------
 .. currentmodule:: watertap.unit_models.dewatering
 
