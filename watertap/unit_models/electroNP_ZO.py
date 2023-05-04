@@ -187,12 +187,14 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
         # Add performance variables
         self.recovery_frac_mass_H2O = Var(
             self.flowsheet().time,
-            initialize=0.8,
+            initialize=1,
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             bounds=(0.0, 1.0000001),
             doc="Mass recovery fraction of water in the treated stream",
         )
+        self.recovery_frac_mass_H2O.fix()
+
         self.removal_frac_mass_comp = Var(
             self.flowsheet().time,
             self.config.property_package.solute_set,
@@ -227,11 +229,6 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
                 "Liq", "H2O"
             )
 
-        # default water recovery
-        @self.Constraint(self.flowsheet().time, doc="Default water recovery equation")
-        def default_water_recovery_equation(b, t):
-            return b.recovery_frac_mass_H2O[t] == 1
-
         # Solute removal
         @self.Constraint(
             self.flowsheet().time,
@@ -265,16 +262,33 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
             )
 
         # Default solute concentration
+        self.P_removal = Param(
+            within=NonNegativeReals,
+            mutable=True,
+            default=0.98,
+            doc="Reference phosphorus removal fraction on a mass basis",
+            units=pyunits.dimensionless,
+        )
+
+        self.N_removal = Param(
+            within=NonNegativeReals,
+            mutable=True,
+            default=0.3,
+            doc="Reference ammonia removal fraction on a mass basis",
+            units=pyunits.dimensionless,
+        )
+
+        # NOTE: revisit if we should sum soluble nitrogen as total nitrogen
         @self.Constraint(
             self.flowsheet().time,
             self.config.property_package.solute_set,
             doc="Default solute removal equations",
         )
         def default_solute_removal_equation(b, t, j):
-            if hasattr(self.config.property_package.solute_set, "S_PO4"):
-                return b.removal_frac_mass_comp[t, "S_PO4"] == 0.98
-            elif hasattr(self.config.property_package.solute_set, "S_NH4"):
-                return b.removal_frac_mass_comp[t, "S_NH4"] == 0.3
+            if j == "S_PO4":
+                return b.removal_frac_mass_comp[t, j] == b.P_removal
+            elif j == "S_NH4":
+                return b.removal_frac_mass_comp[t, j] == b.N_removal
             else:
                 return b.removal_frac_mass_comp[t, j] == 0
 

@@ -185,7 +185,7 @@ class TestElectroNP:
             0, abs=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            0.016, rel=1e-4
+            0.0112, rel=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             0, abs=1e-4
@@ -194,7 +194,7 @@ class TestElectroNP:
             0.01, rel=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            0.0036, rel=1e-4
+            7.2e-5, rel=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
             0, abs=1e-4
@@ -232,6 +232,12 @@ class TestElectroNP:
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_K"]) == pytest.approx(
             0, abs=1e-4
         )
+        assert value(m.fs.unit.byproduct.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
+            4.5289e14, rel=1e-4
+        )
+        assert value(m.fs.unit.byproduct.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
+            3.328756e14, rel=1e-4
+        )
         assert value(m.fs.unit.treated.alkalinity[0]) == pytest.approx(
             0.005083, rel=1e-4
         )
@@ -255,7 +261,7 @@ class TestElectroNP:
         assert pytest.approx(1295.765, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(0.000177707, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(5.800325e-5, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, ElectroNP_frame):
