@@ -109,6 +109,7 @@ setup(
             "jinja2<3.1.0",  # see watertap-org/watertap#449
             "Sphinx",  # docs
             "sphinx_rtd_theme",  # docs
+            "urllib3 < 2",  # see watertap-org/watertap#1021,
             # other requirements
             "linkify-it-py",
             "json-schema-for-humans",  # pretty JSON schema in HTML
