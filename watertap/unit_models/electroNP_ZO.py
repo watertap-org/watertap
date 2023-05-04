@@ -335,7 +335,7 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
                 )
             )
 
-    def initialize(
+    def initialize_build(
         self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
