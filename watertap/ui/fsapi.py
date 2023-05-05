@@ -477,7 +477,10 @@ class FlowsheetInterface:
                         f"See logs for details."
                     )
                 self.fs_exp.m = action_result
-                self.fs_exp.obj = action_result.fs
+                try:
+                    self.fs_exp.obj = action_result.fs
+                except:
+                    _log.info("unable to get action_result.fs")
                 # [re-]create exports (new model object)
                 if Actions.export not in self._actions:
                     raise KeyError(
