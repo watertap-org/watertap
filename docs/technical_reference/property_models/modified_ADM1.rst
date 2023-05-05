@@ -325,8 +325,8 @@ The rules for inhibition related to secondary substrate (:math:`I_{IN,lim}`), hy
 
        I_{h2s, pro}= \frac{1}{1 + \frac{Z_{h2s}}{K_{I,h2s,pro}}}
 
-Classes
--------
+Class Documentation
+-------------------
 .. currentmodule:: watertap.property_models.anaerobic_digestion.modified_adm1_properties
 
 .. autoclass:: ModifiedADM1ParameterBlock

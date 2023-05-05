@@ -245,8 +245,8 @@ The rules for inhibition related to secondary substrate (:math:`I_{IN,lim}`), hy
        I_{nh3}= \frac{1}{1 + \frac{M_{nh3}}{K_{I,nh3}}}
 
 
-Classes
--------
+Class Documentation
+-------------------
 .. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_properties
 
 .. autoclass:: ADM1ParameterBlock
