@@ -259,13 +259,13 @@ Variables with the (U.S. EPA, 2021) citation are directly taken from previously 
 .. csv-table::
    :header: "Variable Name", "Contactor Type", "Index 0", "Index 1", "Index 2", "Index 3"
 
-   "adsorbent_unit_cost_coeff", "n/a", "4.58342", "-1.25311e-5", "-", "-"
+   "adsorbent_unit_cost_coeff", "n/a", "4.58342", "-1.25311e-5", "", ""
    "contactor_cost_coeff", "pressure", "10010.9", "2204.95", "-15.9378", "0.110592"
-   "contactor_cost_coeff", "gravity", "75131.3", "735.550", "-1.01827" "0"
-   "other_cost_param", "pressure", "16660.7", "0.552207", "-", "-"
-   "other_cost_param", "gravity", "38846.9", "0.490571", "-", "-"
-   "energy_consumption_coeff_data", "pressure", "8.09926e-4", "8.70577e-4", "0", "-"
-   "energy_consumption_coeff_data", "gravity", "0.123782", "0.132403", "-1.41512e-5", "-"
+   "contactor_cost_coeff", "gravity", "75131.3", "735.550", "-1.01827", "0"
+   "other_cost_param", "pressure", "16660.7", "0.552207", "", ""
+   "other_cost_param", "gravity", "38846.9", "0.490571", "", ""
+   "energy_consumption_coeff_data", "pressure", "8.09926e-4", "8.70577e-4", "0", ""
+   "energy_consumption_coeff_data", "gravity", "0.123782", "0.132403", "-1.41512e-5", ""
 
 Costing GAC contactors is defaulted to purchasing 1 operational and 1 redundant contactor for alternating operation. For large systems this may be a poor
 assumption considering vessel sizing and achieving pseudo-steady state.  The number of contactors input by the user should justify reasonable
