@@ -351,4 +351,4 @@ Crittenden, J. C., Berrigan, J. K., Hand, D. W., & Lykins, B. (1987). Design of 
 Nonconstant Diffusivities. Journal of Environmental Engineering, 113(2), 243–259.
 
 United States Environmental Protection Agency. (2021). Work Breakdown Structure-Based Cost Model for Granular Activated
-Carbon Drinking Water Treatment.
+Carbon Drinking Water Treatment. https://www.epa.gov/system/files/documents/2022-03/gac-documentation-.pdf_0.pdf
