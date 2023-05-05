@@ -201,8 +201,6 @@ Kinetic Parameters
    ":lime:`Magnesium coefficient for polyphosphates, Mg_PP`", ":math:`Mg_{PP}`", "Mg_PP", 1/3, ":math:`\text{dimensionless}`"
    "Carbon dioxide acid-base equilibrium constant, K_a_co2", ":math:`K_{a,co2}`", "K_a_co2", 4.94e-7, ":math:`\text{kmol/}\text{m}^3`"
    "Inorganic nitrogen acid-base equilibrium constant, K_a_IN", ":math:`K_{a,IN}`", "K_a_IN", 1.11e-9, ":math:`\text{kmol/}\text{m}^3`"
-   "Molar concentration of hydrogen, S_H", ":math:`S_{H}`", "S_H", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
-   "Molar concentration of hydroxide, S_OH", ":math:`S_{OH}`", "S_OH", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
 
 Properties
 ----------
@@ -246,6 +244,14 @@ Process Rate Equations
    ":lime:`Lysis of X_PP`", ":math:`\rho_{24} = b_{PP} C_{X_{PP}}`"
    ":lime:`Lysis of X_PHA`", ":math:`\rho_{25} = b_{PHA} C_{X_{PHA}}`"
 
+Additional Variables
+--------------------
+.. csv-table::
+ :header: "Description", "Symbol", "Parameter", "Value at 20 C", "Units"
+
+   "Molar concentration of hydrogen, S_H", ":math:`S_{H}`", "S_H", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
+   "Molar concentration of hydroxide, S_OH", ":math:`S_{OH}`", "S_OH", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
+
 Additional Constraints
 ----------------------
 :lime:`Lime` text indicates the equation has been added, and :blue:`blue` text indicates the equation has been modified from its base ADM1 implementation.
@@ -253,7 +259,7 @@ Additional Constraints
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Dissociation constant constraint", ":math:`KW = 10^{-14} exp{(\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
+   "Water dissociation constant constraint", ":math:`KW = 10^{-14} exp{(\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
    "CO2 acid-base equilibrium constraint", ":math:`K_{a,co2} = 10^{-6.35} exp{(\frac{7646}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
    "Nitrogen acid-base equilibrium constraint", ":math:`K_{a,IN} = 10^{-9.25} exp{(\frac{51965}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
    "Mass concentration of valerate, va-", ":math:`C_{va} = \frac{K_{a,va} * C_{va,ref}}{K_{a,va} + S_{H}}`"

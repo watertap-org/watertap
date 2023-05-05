@@ -146,8 +146,6 @@ Kinetic Parameters
    "Acetate acid-base equilibrium constant, K_a_ac", ":math:`K_{a,ac}`", "K_a_ac", 1.74e-5, ":math:`\text{kmol/}\text{m}^3`"
    "Carbon dioxide acid-base equilibrium constant, K_a_co2", ":math:`K_{a,co2}`", "K_a_co2", 4.94e-7, ":math:`\text{kmol/}\text{m}^3`"
    "Inorganic nitrogen acid-base equilibrium constant, K_a_IN", ":math:`K_{a,IN}`", "K_a_IN", 1.11e-9, ":math:`\text{kmol/}\text{m}^3`"
-   "Molar concentration of hydrogen, S_H", ":math:`S_{H}`", "S_H", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
-   "Molar concentration of hydroxide, S_OH", ":math:`S_{OH}`", "S_OH", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
 
 Properties
 ----------
@@ -182,12 +180,20 @@ Process Rate Equations
    "Decay of X_ac", ":math:`\rho_{18} = k_{dec, X_{ac}} C_{X_{ac}}`"
    "Decay of X_h2", ":math:`\rho_{19} = k_{dec, X_{h2}} C_{X_{h2}}`"
 
+Additional Variables
+--------------------
+.. csv-table::
+ :header: "Description", "Symbol", "Parameter", "Value at 20 C", "Units"
+
+   "Molar concentration of hydrogen, S_H", ":math:`S_{H}`", "S_H", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
+   "Molar concentration of hydroxide, S_OH", ":math:`S_{OH}`", "S_OH", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
+
 Additional Constraints
 ----------------------
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Dissociation constant constraint", ":math:`KW = 10^{-14} exp{(\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
+   "Water dissociation constant constraint", ":math:`KW = 10^{-14} exp{(\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
    "CO2 acid-base equilibrium constraint", ":math:`K_{a,co2} = 10^{-6.35} exp{(\frac{7646}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
    "Nitrogen acid-base equilibrium constraint", ":math:`K_{a,IN} = 10^{-9.25} exp{(\frac{51965}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
    "Mass concentration of valerate, va-", ":math:`C_{va} = \frac{K_{a,va} * C_{va,ref}}{K_{a,va} + S_{H}}`"
