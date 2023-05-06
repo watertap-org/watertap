@@ -11,7 +11,7 @@ This is a simplified electrolyzer unit model used to approximate electrolysis pe
    * assumes isothermal conditions and performance is not temperature dependent
    * does not determine equilibrium of electrolysis products in solution
    * does not consider undesired reactions
-   * does not account for mass transfer limitations of electrolyte volume to electrode surface area ratios
+   * conversion of reactants is predicted by a yield model, therefore rate laws and limitations of reaction and mass transfer are not evaluated
 
 .. index::
    pair: watertap.unit_models.electrolyzer;electrolyzer
@@ -23,6 +23,8 @@ Introduction
 This model was primarily motivated to simulate the chlor-alkali membrane electrolysis process, a conventional electrolyzer for the production of chlorine gas and hydroxide (Bommaraju, 2015) (Kent, 2007). The model has been demonstrated for the chlor-alkali configuration in the electrolyzer testing file and may be generalizable to other electrolysis mechanisms, but has not been validated for generalized processes.
 
 Given a membrane electrolyzer, the catholyte and anolyte are separated by an ion exchange membrane. This provides two distinct control volumes to perform model calculations. The basis for determining electrolyzer performance is accounting for the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. Faradaic conversion considers equating the supplied electrical current to the amount of electrons available for electrochemical reaction by Faraday's law. The calculation of Faradaic conversion is described in "electrons passed between anode and cathode contributing to reactions" found in the :ref:`Equations <electrolyzer_equations>`.
+
+Given that Faraday's law with an applied current efficiency governs electrochemical conversion, inherently no reaction and mass transfer rate laws are considered. In this yield model, the surface area for electrochemical reaction on each electrode is the only relevant sizing variable required. This is used to validate that the current densities of each are tolerable by the material, and it is typically used as the fixed variable where the corresponding area is calculated as a degree of freedom. With no other sizing variables, effects in increased resistance through the electrolytes with further spaced electrodes and similar size dependent phenomena are not considered in the model.
 
 Degrees of Freedom
 ------------------
