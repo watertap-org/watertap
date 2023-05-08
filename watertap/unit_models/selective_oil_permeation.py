@@ -191,7 +191,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         # Add unit parameters
         self.pore_diameter = Param(
             mutable=True,
-            initialize=4e-8,
+            initialize=4.7e-8,
             units=units_meta("length"),
             doc="Average membrane pore diameter",
         )
@@ -303,6 +303,22 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             bounds=(0.0, 1.0),
             units=units.dimensionless,
             doc="Effective fraction of membrane being used for oil transfer",
+        )
+
+        self.effective_area_ratio_num = Var(
+            self.flowsheet().config.time,
+            initialize=0.1,
+            bounds=(0.0, None),
+            units=units.dimensionless,
+            doc="Effective area ratio numerator",
+        )
+
+        self.effective_area_ratio_den = Var(
+            self.flowsheet().config.time,
+            initialize=1,
+            bounds=(0.0, None),
+            units=units.dimensionless,
+            doc="Effective area ratio denominator",
         )
 
         self.recovery_frac_oil = Var(
@@ -500,14 +516,41 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
                 4 / 3
             )
 
-        def convert_dimensionless(expr, to_units=None):
-            """
-            Given a pyomo expression and desired units, detect the units of the
-            expression and convert to the desired units, and return only the
-            numerical value.
-            """
-            return units.convert_value(
-                value(expr), from_units=units.get_units(expr), to_units=to_units
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Effective area ratio numerator",
+        )
+        def eq_effective_area_ratio_num(b, t):
+            return b.effective_area_ratio_num[t] == (
+                b.num_constant
+                * b.feed_side.properties_in[t].vol_frac_phase_comp["Liq", "oil"]
+                * (
+                    b.feed_side.properties_in[t].visc_d_phase_comp["Liq", "oil"]
+                    * (units.Pa * units.s) ** -1
+                )
+                ** b.num_mu_exp
+                * (b.pressure_transmemb_avg[t] * units.Pa**-1) ** b.num_PT_exp
+                * (b.liquid_velocity_in[t] * (units.m * units.s**-1) ** -1)
+                ** b.num_v_exp
+            )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Effective area ratio denominator",
+        )
+        def eq_effective_area_ratio_den(b, t):
+            return b.effective_area_ratio_den[t] == (
+                1
+                + b.den_constant
+                * b.feed_side.properties_in[t].vol_frac_phase_comp["Liq", "oil"]
+                * (
+                    b.feed_side.properties_in[t].visc_d_phase_comp["Liq", "oil"]
+                    * (units.Pa * units.s) ** -1
+                )
+                ** b.den_mu_exp
+                * (b.pressure_transmemb_avg[t] * units.Pa**-1) ** b.den_PT_exp
+                * (b.liquid_velocity_in[t] * (units.m * units.s**-1) ** -1)
+                ** b.den_v_exp
             )
 
         @self.Constraint(
@@ -515,32 +558,9 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             doc="Effective area ratio for oil transfer",
         )
         def eq_effective_area_ratio(b, t):
-            return b.effective_area_ratio[
-                t
-            ] == b.num_constant * b.feed_side.properties_in[t].vol_frac_phase_comp[
-                "Liq", "oil"
-            ] * convert_dimensionless(
-                b.feed_side.properties_in[t].visc_d_phase_comp["Liq", "oil"],
-                to_units=units.Pa * units.s,
-            ) ** b.num_mu_exp * convert_dimensionless(
-                b.pressure_transmemb_avg[t], to_units=units.Pa
-            ) ** b.num_PT_exp * convert_dimensionless(
-                b.liquid_velocity_in[t], to_units=units.m * units.s**-1
-            ) ** b.num_v_exp / (
-                1
-                + b.den_constant
-                * b.feed_side.properties_in[t].vol_frac_phase_comp["Liq", "oil"]
-                * convert_dimensionless(
-                    b.feed_side.properties_in[t].visc_d_phase_comp["Liq", "oil"],
-                    to_units=units.Pa * units.s,
-                )
-                ** b.den_mu_exp
-                * convert_dimensionless(b.pressure_transmemb_avg[t], to_units=units.Pa)
-                ** b.den_PT_exp
-                * convert_dimensionless(
-                    b.liquid_velocity_in[t], to_units=units.m * units.s**-1
-                )
-                ** b.den_v_exp
+            return (
+                b.effective_area_ratio_num[t]
+                == b.effective_area_ratio_den[t] * b.effective_area_ratio[t]
             )
 
         @self.Constraint(
@@ -607,6 +627,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
+        state_args["flow_mass_phase_comp"][("Liq", "H2O")] = 0
         self.properties_permeate.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -641,6 +662,12 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         var_dict["Oil volumetric flux"] = self.flux_vol_oil[time_point]
         var_dict["Pure oil volumetric flux"] = self.flux_vol_oil_pure[time_point]
         var_dict["Effective area ratio"] = self.effective_area_ratio[time_point]
+        var_dict["Eff. area ratio numerator"] = self.effective_area_ratio_num[
+            time_point
+        ]
+        var_dict["Eff. area ratio denominator"] = self.effective_area_ratio_den[
+            time_point
+        ]
         var_dict["Oil recovery"] = self.recovery_frac_oil[time_point]
         var_dict["Shell side liquid velocity in"] = self.liquid_velocity_in[time_point]
         return {"vars": var_dict, "exprs": expr_dict}
@@ -661,7 +688,9 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         iscale.set_scaling_factor(self.area, 1e-1)
         iscale.set_scaling_factor(self.flux_vol_oil, 1e9)
         iscale.set_scaling_factor(self.flux_vol_oil_pure, 1e6)
-        iscale.set_scaling_factor(self.effective_area_ratio, 1e2)
+        iscale.set_scaling_factor(self.effective_area_ratio, 1e1)
+        iscale.set_scaling_factor(self.effective_area_ratio_num, 1e1)
+        iscale.set_scaling_factor(self.effective_area_ratio_den, 1)
         iscale.set_scaling_factor(self.recovery_frac_oil, 1)
         iscale.set_scaling_factor(self.liquid_velocity_in, 1e2)
         iscale.set_scaling_factor(

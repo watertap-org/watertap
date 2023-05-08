@@ -80,7 +80,7 @@ class SopParameterData(PhysicalParameterBlock):
             self.phase_list,
             self.component_list,
             mutable=True,
-            initialize={("Liq", "H2O"): 1e-3, ("Liq", "oil"): 3.5e-3},
+            initialize={("Liq", "H2O"): 1e-3, ("Liq", "oil"): 3.56e-3},
             units=units.kg * units.m**-1 * units.s**-1,
             doc="Dynamic viscosity",
         )
