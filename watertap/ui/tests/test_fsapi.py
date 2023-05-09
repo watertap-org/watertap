@@ -297,7 +297,7 @@ def test_empty_solve():
     fsi = flowsheet_interface()
     with pytest.raises(RuntimeError) as excinfo:
         fsi.build()
-        # fsi.solve()
+        fsi.solve()
     print(f"* RuntimeError: {excinfo.value}")
 
 
