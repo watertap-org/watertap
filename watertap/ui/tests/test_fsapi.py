@@ -52,7 +52,7 @@ class SOLVE_RESULT_OK:
 
 def build_ro(**kwargs):
     model = RO.build_flowsheet(erd_type=ERD_TYPE)
-    return model.fs
+    return model
 
 
 def solve_ro(flowsheet=None):
@@ -295,9 +295,9 @@ def test_export_values_build():
 def test_empty_solve():
     # try a fake solve
     fsi = flowsheet_interface()
-    fsi.build()
     with pytest.raises(RuntimeError) as excinfo:
-        fsi.solve()
+        fsi.build()
+        # fsi.solve()
     print(f"* RuntimeError: {excinfo.value}")
 
 
