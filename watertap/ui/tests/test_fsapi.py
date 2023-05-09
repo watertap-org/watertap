@@ -39,6 +39,7 @@ ERD_TYPE = "pressure_exchanger"
 
 class FAKE_FLOWSHEET:
     fs = "fs"
+    trash = "true"
 
 
 class SOLVE_RESULT_OK:
