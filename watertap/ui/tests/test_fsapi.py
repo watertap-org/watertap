@@ -37,6 +37,11 @@ ERD_TYPE = "pressure_exchanger"
 # Fake status=OK solver result
 
 
+class FAKE_FLOWSHEET:
+    fs = "fs"
+    trash = "true"
+
+
 class SOLVE_RESULT_OK:
     class SOLVE_STATUS:
         status = SolverStatus.ok
@@ -149,7 +154,8 @@ def test_build():
 def test_actions(add_variant: str):
     fsi = flowsheet_interface()
     built = False
-    garbage = {"trash": True}
+    # garbage = {"trash": True}
+    garbage = FAKE_FLOWSHEET
     v1 = Var(name="variable1")
     v1.construct()
     v1.value = 1
@@ -162,7 +168,7 @@ def test_actions(add_variant: str):
 
     def fake_solve(flowsheet=None):
         # flowsheet passed in here should be what fake_build() returns
-        assert flowsheet == garbage
+        assert flowsheet == FAKE_FLOWSHEET.fs
         return SOLVE_RESULT_OK
 
     def fake_export(flowsheet=None, exports=None):
