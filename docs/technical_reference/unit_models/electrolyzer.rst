@@ -81,13 +81,13 @@ Anode:
 
     .. math::
 
-        & \dot{n}_{in,j}-\dot{n}_{out,j}+\frac{\left(\varepsilon_{ano,j}-\varepsilon_{mem,j}\right)I\theta_{current}}{F}=0 \\\\
+        & \dot{n}_{in,j}-\dot{n}_{out,j}+\frac{\left(\varepsilon_{ano,j}-t_{mem,j}\right)I\theta_{current}}{F}=0 \\\\
 
 Cathode:
 
     .. math::
 
-        & \dot{n}_{in,j}-\dot{n}_{out,j}+\frac{\left(\varepsilon_{cat,j}+\varepsilon_{mem,j}\right)I\theta_{current}}{F}=0 \\\\
+        & \dot{n}_{in,j}-\dot{n}_{out,j}+\frac{\left(\varepsilon_{cat,j}+t_{mem,j}\right)I\theta_{current}}{F}=0 \\\\
 
 Considering the reaction block and reaction package are omitted, no temperature dependence and rigorous energy balance are considered.
 
@@ -153,7 +153,7 @@ Variables
 | :math:`^b` Value is normalized to 1 electron in electrolysis stoichiometry
 
 
-For non-fixed efficiencies, electrochemical potentials, and other relevant variables, custom constraints  may be constructed at the flowsheet level. These may allow for predicative performance as a function of temperature, concentration, overpotential, and other variables.
+For non-fixed efficiencies, electrochemical potentials, and other relevant variables, custom constraints  may be constructed at the flowsheet level. These may allow for predictive performance as a function of temperature, concentration, overpotential, and other variables.
 
 .. _electrolyzer_equations:
 
