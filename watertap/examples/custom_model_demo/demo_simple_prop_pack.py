@@ -48,12 +48,18 @@ def main():
 
     # touch another property
     m.fs.stream[0].flow_vol_phase
+    m.fs.stream[0].cp_mass_phase
+    m.fs.stream[0].th_cond_phase
+    m.fs.stream[0].vapor_pressure
+    m.fs.stream[0].visc_d_phase
+    m.fs.stream[0].diffus_phase_comp["Liq", "NaCl"]
+    m.fs.stream[0].solubility
 
     # now that we have a state block, we can fix the state variables and solve for the properties
-    m.fs.stream[0].temperature.fix(273.15 + 25)
+    m.fs.stream[0].temperature.fix(273.15 + 100)
     m.fs.stream[0].pressure.fix(101325)
-    m.fs.stream[0].flow_mass_phase_comp["Liq", "H2O"].fix(1)
-    m.fs.stream[0].flow_mass_phase_comp["Liq", "NaCl"].fix(0.035)
+    m.fs.stream[0].flow_mass_phase_comp["Liq", "H2O"].fix(0.9)
+    m.fs.stream[0].flow_mass_phase_comp["Liq", "NaCl"].fix(0.1)
 
     # the user should provide the scale for the flow rate, so that our tools can ensure the model is well scaled
     # generally scaling factors should be such that if it is multiplied by the variable it will range between 0.01 and 100
