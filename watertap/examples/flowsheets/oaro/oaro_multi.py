@@ -564,14 +564,16 @@ def set_operating_conditions(
     # )
 
     Cin = 75 * pyunits.g / pyunits.L
+    Qin = 0.005416667
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"] = Cin
     # m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(Cin)
-    # m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(19.5 * pyunits.m**3/pyunits.hr)
+    # m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(Qin)
     m.fs.feed.properties.calculate_state(
         var_args={
             ("conc_mass_phase_comp", ("Liq", "NaCl")): value(
-                Cin
+                m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
             ),  # feed mass concentration
-            ("flow_vol_phase", "Liq"): 19.5 * pyunits.m**3 / pyunits.hr,
+            ("flow_vol_phase", "Liq"): Qin,
         },  # volumetric feed flowrate [-]
         hold_state=True,  # fixes the calculated component mass flow rates
     )
@@ -588,7 +590,7 @@ def set_operating_conditions(
 
     for idx, pump in m.fs.RecyclePumps.items():
         # pump.control_volume.properties_out[0].pressure = 1.4e5 + 8e5 / float(idx)
-        pump.control_volume.properties_out[0].pressure = 4e5
+        pump.control_volume.properties_out[0].pressure = 3e5
         pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
@@ -608,17 +610,20 @@ def set_operating_conditions(
     #     ].value = (permeate_flow_mass * permeate_mass_frac_NaCl)
 
     # Initialize OARO
-    membrane_area = 500 * pyunits.m**2
-    A = 4.2e-12
-    B = 3.5e-8
-    spacer_porosity = 0.85
+    # membrane_area = 100 * pyunits.m ** 2 * (Qin/(3.6 * pyunits.m**3 / pyunits.hr))
+    # width = 5 * pyunits.m * (Qin/(3.6 * pyunits.m**3 / pyunits.hr))
+    width = 5 * Qin / 1e-3  # effective membrane width [m]
+    area = 100 * Qin / 1e-3  # membrane area [m^2]
+    A_OARO = 1.0e-12
+    B_OARO = 8.0e-8
+    spacer_porosity = 0.75
 
     for stage in m.fs.OAROUnits.values():
 
-        stage.area.fix(membrane_area)
+        stage.area.fix(area)
 
-        stage.A_comp.fix(A)
-        stage.B_comp.fix(B)
+        stage.A_comp.fix(A_OARO)
+        stage.B_comp.fix(B_OARO)
 
         stage.structural_parameter.fix(300e-6)
 
@@ -629,20 +634,22 @@ def set_operating_conditions(
         stage.feed_side.velocity[0, 0].fix(0.1)
 
     # RO unit
-    m.fs.RO.A_comp.fix(A)  # membrane water permeability coefficient [m/s-Pa]
-    m.fs.RO.B_comp.fix(B)  # membrane salt permeability coefficient [m/s]
-    m.fs.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
+    A_RO = 4.2e-12
+    B_RO = 3.5e-8
+    m.fs.RO.A_comp.fix(A_RO)  # membrane water permeability coefficient [m/s-Pa]
+    m.fs.RO.B_comp.fix(B_RO)  # membrane salt permeability coefficient [m/s]
+    m.fs.RO.feed_side.channel_height.fix(1.2e-3)  # channel height in membrane stage [m]
     m.fs.RO.feed_side.spacer_porosity.fix(
         spacer_porosity
     )  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
-    m.fs.RO.width.fix(5)  # stage width [m]
-    m.fs.RO.area.fix(500 * pyunits.m**2)  # guess area for RO initialization
+    m.fs.RO.width.fix(width)  # stage width [m]
+    m.fs.RO.area.fix(area)  # guess area for RO initialization
 
     if m.fs.erd_type == ERDtype.pump_as_turbine:
         # energy recovery turbine - efficiency and outlet pressure
         for erd in m.fs.EnergyRecoveryDevices.values():
-            erd.efficiency_pump.fix(0.8)
+            erd.efficiency_pump.fix(0.9)
             erd.control_volume.properties_out[0].pressure.fix(pressure_atmospheric)
     else:
         erd_type_not_found(m.fs.erd_type)
@@ -921,6 +928,7 @@ def optimize_set_up(
 
     m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"].setlb(0)
     m.fs.RO.feed_side.friction_factor_darcy[0.0, 1.0].setub(None)
+    m.fs.RO.feed_side.K[0.0, 0.0, "NaCl"].setub(0.1)
 
     # m.fs.RO.A_comp.unfix()
     # m.fs.RO.A_comp.setlb(2.78e-12)
@@ -1108,4 +1116,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(3, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
+    m = main(1, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
