@@ -10,8 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for ASM2d reaction package.
-Authors: Andrew Lee, Alejandro Garciadiego
+Tests for modified ASM2d reaction package.
+Authors: Andrew Lee, Alejandro Garciadiego, Chenyu Wang
 
 References:
 
@@ -41,12 +41,12 @@ from idaes.core import MaterialFlowBasis
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.property_models.activated_sludge.asm2d_properties import (
-    ASM2dParameterBlock,
+from watertap.property_models.activated_sludge.modified_asm2d_properties import (
+    ModifiedASM2dParameterBlock,
 )
-from watertap.property_models.activated_sludge.asm2d_reactions import (
-    ASM2dReactionParameterBlock,
-    ASM2dReactionBlock,
+from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
+    ModifiedASM2dReactionParameterBlock,
+    ModifiedASM2dReactionBlock,
 )
 import idaes.core.util.scaling as iscale
 
@@ -59,14 +59,18 @@ class TestParamBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.pparams = ASM2dParameterBlock()
-        model.rparams = ASM2dReactionParameterBlock(property_package=model.pparams)
+        model.pparams = ModifiedASM2dParameterBlock(
+            additional_solute_list=["S_K", "S_Mg"]
+        )
+        model.rparams = ModifiedASM2dReactionParameterBlock(
+            property_package=model.pparams
+        )
 
         return model
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.rparams.reaction_block_class is ASM2dReactionBlock
+        assert model.rparams.reaction_block_class is ModifiedASM2dReactionBlock
 
         assert len(model.rparams.rate_reaction_idx) == 21
         for i in model.rparams.rate_reaction_idx:
@@ -241,7 +245,7 @@ class TestParamBlock(object):
             ("R21", "Liq", "X_MeP"): -4.87,
         }
 
-        assert len(model.rparams.rate_reaction_stoichiometry) == 20 * 21
+        assert len(model.rparams.rate_reaction_stoichiometry) == 22 * 21
         for i, v in model.rparams.rate_reaction_stoichiometry.items():
             assert i[0] in [
                 "R1",
@@ -288,6 +292,8 @@ class TestParamBlock(object):
                 "X_PP",
                 "X_S",
                 "X_TSS",
+                "S_K",
+                "S_Mg",
             ]
 
             if i in stoic:
@@ -300,8 +306,12 @@ class TestReactionBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.pparams = ASM2dParameterBlock()
-        model.rparams = ASM2dReactionParameterBlock(property_package=model.pparams)
+        model.pparams = ModifiedASM2dParameterBlock(
+            additional_solute_list=["S_K", "S_Mg"]
+        )
+        model.rparams = ModifiedASM2dReactionParameterBlock(
+            property_package=model.pparams
+        )
 
         model.props = model.pparams.build_state_block([1])
 
@@ -340,8 +350,10 @@ class TestAerobic:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ASM2dParameterBlock()
-        m.fs.rxn_props = ASM2dReactionParameterBlock(property_package=m.fs.props)
+        m.fs.props = ModifiedASM2dParameterBlock(additional_solute_list=["S_K", "S_Mg"])
+        m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
+            property_package=m.fs.props
+        )
 
         m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
 
@@ -374,8 +386,10 @@ class TestAerobic:
         m.fs.R1.inlet.conc_mass_comp[0, "X_AUT"].fix(EPS * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
-        # No data on TSS from EXPOsan at this point
+        # No data on TSS, K and Mg from EXPOsan at this point
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
 
         # Alkalinity was givien in mg/L based on C
         m.fs.R1.inlet.alkalinity[0].fix(61 / 12 * units.mmol / units.liter)
@@ -467,6 +481,12 @@ class TestAerobic:
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
             5.5762e-3, rel=1e-4
         )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
+            0, abs=1e-4
+        )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
             5.1754e-3, rel=1e-4
         )
@@ -479,8 +499,10 @@ class TestAnoxic:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ASM2dParameterBlock()
-        m.fs.rxn_props = ASM2dReactionParameterBlock(property_package=m.fs.props)
+        m.fs.props = ModifiedASM2dParameterBlock(additional_solute_list=["S_K", "S_Mg"])
+        m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
+            property_package=m.fs.props
+        )
 
         m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
 
@@ -513,6 +535,9 @@ class TestAnoxic:
         # No data on TSS from EXPOsan at this point
         # However, TSS is needed for this reaction
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(100 * units.mg / units.liter)
+
+        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
 
         # Alkalinity was given in mg/L based on C
         m.fs.R1.inlet.alkalinity[0].fix(61 / 12 * units.mmol / units.liter)
@@ -604,6 +629,12 @@ class TestAnoxic:
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
             98.505e-3, rel=1e-4
         )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
+            0, abs=1e-4
+        )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
             5.0916e-3, rel=1e-4
         )
@@ -616,8 +647,10 @@ class TestAerobic15C:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ASM2dParameterBlock()
-        m.fs.rxn_props = ASM2dReactionParameterBlock(property_package=m.fs.props)
+        m.fs.props = ModifiedASM2dParameterBlock(additional_solute_list=["S_K", "S_Mg"])
+        m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
+            property_package=m.fs.props
+        )
 
         m.fs.rxn_props.K_H.fix(2.5 * 1 / units.day)
         m.fs.rxn_props.mu_H.fix(4.5 * 1 / units.day)
@@ -662,6 +695,9 @@ class TestAerobic15C:
         m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
 
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
+
+        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
 
         # Alkalinity was given in mg/L based on C
         m.fs.R1.inlet.alkalinity[0].fix(4.6663 * units.mmol / units.liter)
@@ -751,6 +787,12 @@ class TestAerobic15C:
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
             3.524, rel=1e-4
         )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
+            0, abs=1e-4
+        )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
             4.5433e-3, rel=1e-4
         )
@@ -763,8 +805,10 @@ class TestAnoxicPHA:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ASM2dParameterBlock()
-        m.fs.rxn_props = ASM2dReactionParameterBlock(property_package=m.fs.props)
+        m.fs.props = ModifiedASM2dParameterBlock(additional_solute_list=["S_K", "S_Mg"])
+        m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
+            property_package=m.fs.props
+        )
 
         m.fs.rxn_props.K_H.fix(2.5 * 1 / units.day)
         m.fs.rxn_props.mu_H.fix(4.5 * 1 / units.day)
@@ -809,6 +853,9 @@ class TestAnoxicPHA:
         m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
 
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
+
+        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
 
         # Alkalinity was given in mg/L based on C
         m.fs.R1.inlet.alkalinity[0].fix(5.980 * units.mmol / units.liter)
@@ -897,6 +944,12 @@ class TestAnoxicPHA:
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
             3.500, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
+            0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
             6.188e-3, rel=1e-4
