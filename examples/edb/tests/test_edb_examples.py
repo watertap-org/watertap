@@ -10,14 +10,14 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
-from watertap.examples.edb.the_basics import (
+from the_basics import (
     run_the_basics_with_mockdb,
     run_the_basics_alt_with_mockdb,
     run_the_basics_dummy_rxn_with_mockdb,
 )
-from watertap.examples.edb.simple_acid import run_simple_acid_with_mockdb
-from watertap.examples.edb.vapor_liquid_equilibrium import run_vap_liq_with_mockdb
-from watertap.examples.edb.solid_precipitation_reactions import (
+from simple_acid import run_simple_acid_with_mockdb
+from vapor_liquid_equilibrium import run_vap_liq_with_mockdb
+from solid_precipitation_reactions import (
     run_sol_liq_with_mockdb,
     run_liq_only_with_mockdb,
 )

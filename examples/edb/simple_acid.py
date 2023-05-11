@@ -10,8 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-    This file demonstrates how to use EDB to create a chemical reactor that
-    involves solid precipitation reactions.
+    This file demonstrates how to use EDB to create a simple acid problem.
 
     (1) Before we can start, you must install MongoDB (which is installed separately)
 
@@ -36,7 +35,7 @@
 
 
     (5) Grab a 'base' for a configuration dictionary, and place it into a class object
-        This time, we will grab a base that is for a Liq-Vap problem using FpcTP
+        This time, we will grab a base that is for a Liq only problem using FpcTP
         state variables.
 
 
@@ -50,15 +49,11 @@
 
     (7) Get the set of reactions you want in your system and put into a 'base' object.
         In this case, we are getting all reactions associated with a system of water
-        and lime (Ca[OH]2). We should get three reactions now::
+        and carbonic acid. We should get three reactions::
 
             H2O <--> H_+ + OH_-
-            CaOH <--> Ca + OH
-            Ca(OH)2 <--> Ca + 2 OH
-
-        [NOTE: If you provide a list of 'phases' to the 'get_reactions' function, then you
-                can control they types of reactions you get back. For instance, if you
-                ONLY want the 'Liq' phase reactions, then pass ["Liq"] as the phase list.]
+            H2CO3 <--> H_+ + HCO3_-
+            HCO3_- <--> H_+ + CO3_2-
 
 
     (8) When using an reactor object in IDAES, you must always provide a 'reaction_config'
@@ -70,17 +65,37 @@
                NOT be added to a 'reaction_config' as 'equilibrium']
 
 
-    (9) Build an equilibrium reactor from the 'thermo_config' and 'reaction_config'
+    (9) [NEW Step] Build an equilibrium reactor from the 'thermo_config' and 'reaction_config'
         that were generated from the EDB.
 
 """
 
-# Import ElectrolyteDB object
-from watertap.examples.edb.the_basics import grab_base_reaction_config
-from watertap.examples.edb.simple_acid import (
-    get_components_and_add_to_idaes_config,
-    build_equilibrium_model,
+# ========= These imports (below) are for testing the configs from EDB ===============
+# Import specific pyomo objects
+from pyomo.environ import (
+    ConcreteModel,
 )
+
+# Import the idaes objects for Generic Properties and Reactions
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
+from idaes.models.properties.modular_properties.base.generic_reaction import (
+    GenericReactionParameterBlock,
+)
+
+# Import the idaes object for the EquilibriumReactor unit model
+from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
+
+# Import the core idaes objects for Flowsheets and types of balances
+from idaes.core import FlowsheetBlock
+
+# ========= These imports (above) are for testing the configs from EDB ===============
+
+
+# ========================== (3 & 4) ================================
+# Import ElectrolyteDB object
+from the_basics import grab_base_reaction_config
 
 __author__ = "Austin Ladshaw"
 
@@ -88,72 +103,74 @@ __author__ = "Austin Ladshaw"
 # ========================== (5) ================================
 # Grab a new base config for our thermo, but this time we will use
 #   one of the newer bases that will use the FpcTP state vars and
-#   a Liq-Sol system.
-def grab_thermo_Liq_Sol_FpcTP_base(db):
+#   a Liq only system.
+def grab_thermo_Liq_FpcTP_base(db):
     # Get the base and place into a result object
-    base = db.get_base("thermo_Liq_Sol_FpcTP")
+    base = db.get_base("thermo_Liq_FpcTP")
     return base
+
+
+# ========================== (6) ================================
+# Get chemical components/species for a simulation case
+#       NOTE: This function here also returns a 'list' of the
+#           components that it finds. This is not a built in
+#           feature of the EDB, but is very useful because
+#           getting reactions is dependent on the component list.
+def get_components_and_add_to_idaes_config(db, base_obj, comp_list):
+    res_obj_comps = db.get_components(component_names=comp_list)
+
+    # Iterate through the results object and add the components
+    #   to the base_obj
+    for comp_obj in res_obj_comps:
+        print("Adding " + str(comp_obj.name) + "")
+        base_obj.add(comp_obj)
+    print()
+    return base_obj
 
 
 # ========================== (7) ================================
 # Grab the reactions associated with the list of components and add
-#   them to a reaction base as equilibrium reactions. You can also
-#   provide a list of valid phases when requesting reactions. By
-#   doing so, you can remove possible reactions if they include
-#   a species in an invalid phase.
-def add_equilibrium_reactions_by_phase_to_react_base(
-    db, react_base_obj, comp_list, phase_list
-):
-    react_obj = db.get_reactions(component_names=comp_list, phases=phase_list)
+#   them to a reaction base as equilibrium reactions
+#
+def add_equilibrium_reactions_to_react_base(db, react_base_obj, comp_list):
+    react_obj = db.get_reactions(component_names=comp_list)
     for r in react_obj:
         print("Found reaction: " + str(r.name))
         react_base_obj.add(r)
     return react_base_obj
 
 
-# Run script for testing
-def run_sol_liq_with_mockdb(db):
-    base_obj = grab_thermo_Liq_Sol_FpcTP_base(db)
-
-    # Our components for this problem are as follows:
-    comp_list = ["H2O", "H_+", "OH_-", "Ca[OH]2", "Ca_2+", "CaOH_+"]
-
-    # In this example, both Sol and Liq phases will be considered valid
-    #   when searching for reactions in the database.
-    phase_list = ["Sol", "Liq"]
-
-    base_obj = get_components_and_add_to_idaes_config(db, base_obj, comp_list)
-
-    # Create a reaction config
-    react_base = grab_base_reaction_config(db)
-
-    # Add reactions to the reaction base as 'equilibrium'
-    react_base = add_equilibrium_reactions_by_phase_to_react_base(
-        db, react_base, comp_list, phase_list
+# ========================== (9) ================================
+# Create the Pyomo model by using the thermo_config and reaction_config
+#   that were generated from the EDB.
+#
+def build_equilibrium_model(thermo_config, reaction_config):
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(dynamic=False)
+    model.fs.thermo_params = GenericParameterBlock(**thermo_config)
+    model.fs.rxn_params = GenericReactionParameterBlock(
+        property_package=model.fs.thermo_params, **reaction_config
     )
 
-    thermo_config = base_obj.idaes_config
-    reaction_config = react_base.idaes_config
+    model.fs.unit = EquilibriumReactor(
+        property_package=model.fs.thermo_params,
+        reaction_package=model.fs.rxn_params,
+        has_rate_reactions=False,
+        has_equilibrium_reactions=True,
+        has_heat_transfer=False,
+        has_heat_of_reaction=False,
+        has_pressure_change=False,
+    )
 
-    # Prior to sending the config to the IDAES objects, we will manually modifiy the
-    #   reaction order for the solubility equation.
-    reaction_config["equilibrium_reactions"]["CaOH2_Ksp"]["parameter_data"][
-        "reaction_order"
-    ][("Sol", "Ca[OH]2")] = 0
-    model = build_equilibrium_model(thermo_config, reaction_config)
     return model
 
 
 # Run script for testing
-def run_liq_only_with_mockdb(db):
-    base_obj = grab_thermo_Liq_Sol_FpcTP_base(db)
+def run_simple_acid_with_mockdb(db):
+    base_obj = grab_thermo_Liq_FpcTP_base(db)
 
     # Our components for this problem are as follows:
-    comp_list = ["H2O", "H_+", "OH_-", "Ca[OH]2", "Ca_2+", "CaOH_+"]
-
-    # In this example, both Sol and Liq phases will be considered valid
-    #   when searching for reactions in the database.
-    phase_list = ["Liq"]
+    comp_list = ["H2O", "H_+", "OH_-", "H2CO3", "HCO3_-", "CO3_2-"]
 
     base_obj = get_components_and_add_to_idaes_config(db, base_obj, comp_list)
 
@@ -161,11 +178,12 @@ def run_liq_only_with_mockdb(db):
     react_base = grab_base_reaction_config(db)
 
     # Add reactions to the reaction base as 'equilibrium'
-    react_base = add_equilibrium_reactions_by_phase_to_react_base(
-        db, react_base, comp_list, phase_list
-    )
+    react_base = add_equilibrium_reactions_to_react_base(db, react_base, comp_list)
 
+    # Now, we can actually see if we created a correct model by looking
+    #       for degrees of freedom, state variables, etc.
     thermo_config = base_obj.idaes_config
     reaction_config = react_base.idaes_config
     model = build_equilibrium_model(thermo_config, reaction_config)
+
     return model

@@ -92,6 +92,7 @@ from watertap.edb import ElectrolyteDB
 
 __author__ = "Austin Ladshaw"
 
+
 # ========================== (4) ================================
 # By default, invoking the 'ElectrolyteDB' object (with no args)
 #   will attempt to connect to the local host database. You can
