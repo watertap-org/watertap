@@ -212,40 +212,39 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             within=pyo.NonNegativeReals,
             mutable=True,
             default=0,
-            doc="Reference component mass concentrations of hydrogen sulfide",
+            doc="Reference component mass concentration of hydrogen sulfide",
             units=pyo.units.kg / pyo.units.m**3,
         )
-        self.f_sI_xc = pyo.Var(
+        self.f_xi_xb = pyo.Var(
             initialize=0.1,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Soluble inerts from composites",
+            doc="Fraction of inert particulate organics from biomass",
         )
-        self.f_xI_xc = pyo.Var(
-            initialize=0.20,  # replacing 0.25 with 0.2 in accordance with Rosen & Jeppsson, 2006
+        self.f_ch_xb = pyo.Var(
+            initialize=0.275,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Particulate inerts from composites",
+            doc="Fraction of carbohydrates from biomass",
         )
-        self.f_ch_xc = pyo.Var(
-            initialize=0.2,
+        self.f_li_xb = pyo.Var(
+            initialize=0.350,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Carbohydrates from composites",
+            doc="Fraction of lipids from biomass",
         )
-        self.f_pr_xc = pyo.Var(
-            initialize=0.2,
+        self.f_pr_xb = pyo.Var(
+            initialize=0.275,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Proteins from composites",
+            doc="Fraction of proteins from biomass",
         )
-        self.f_li_xc = pyo.Var(
-            initialize=0.30,  # replacing 0.25 with 0.3 in accordance with Rosen & Jeppsson, 2006
+        self.f_si_xb = pyo.Var(
+            initialize=0,
             units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Lipids from composites",
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of soluble inerts from biomass",
         )
-
         self.f_fa_li = pyo.Var(
             initialize=0.95,
             units=pyo.units.dimensionless,
@@ -585,36 +584,6 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Acetate acid-base equilibrium constant",
         )
-        self.f_xi_xb = pyo.Var(
-            initialize=0.1,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Fraction of inert particulate organics from biomass",
-        )
-        self.f_ch_xb = pyo.Var(
-            initialize=0.275,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Fraction of carbohydrates from biomass",
-        )
-        self.f_li_xb = pyo.Var(
-            initialize=0.350,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Fraction of lipids from biomass",
-        )
-        self.f_pr_xb = pyo.Var(
-            initialize=0.275,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Fraction of proteins from biomass",
-        )
-        self.f_si_xb = pyo.Var(
-            initialize=0,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Fraction of soluble inerts from biomass",
-        )
         self.K_I_h2s_ac = pyo.Var(
             initialize=460e-3,
             units=pyo.units.kg / pyo.units.m**3,
@@ -703,7 +672,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             initialize=3.0,
             units=pyo.units.day**-1,
             domain=pyo.PositiveReals,
-            doc="rate constant for storage of polyhydroxyalkanoates",
+            doc="Rate constant for storage of polyhydroxyalkanoates",
         )
         self.Y_PO4 = pyo.Var(
             initialize=12.903e-3,
