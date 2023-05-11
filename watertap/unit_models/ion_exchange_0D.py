@@ -333,13 +333,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 doc="Flow velocity",
             )
 
-            # self.vel_adsorb = Var(  # V_A
-            #     initialize=0.001,
-            #     units=pyunits.m / pyunits.s,
-            #     bounds=(0, None),
-            #     doc="Velocity of adsorption zone",
-            # )
-
             self.kinetic_param = Var(  # k_T
                 self.target_ion_set,
                 initialize=0.001,
@@ -348,29 +341,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 doc="Mass transfer coefficient - KINETIC PARAMETER",
             )
 
-            # self.rate_constant = Var(  # k
-            #     initialize=0.001,
-            #     units=pyunits.dimensionless,
-            #     bounds=(0, None),
-            #     doc="Rate constant",
-            # )
-
-            # self.conc_surf = Var(  # c_e
-            #     self.target_ion_set,
-            #     initialize=0.001,
-            #     units=pyunits.mol / pyunits.m**3,
-            #     bounds=(0, None),
-            #     doc="Equilibrium value for contaminant at solid surface",
-            # )
-
-            # self.freundlich_base = Var(  # k_e
-            #     self.target_ion_set,
-            #     initialize=1.5,
-            #     bounds=(1e-6, None),
-            #     units=pyunits.dimensionless,  # dynamic with freundlich_exp, ((length ** 3) * (mass ** -1)) ** freund_ninv,
-            #     doc="Freundlich isotherm base, provided in [m**3/kg]",
-            # )
-
             self.freundlich_exp = Var(  # n
                 self.target_ion_set,
                 initialize=2,
@@ -378,22 +348,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 units=pyunits.dimensionless,
                 doc="Freundlich isotherm exponent",
             )
-
-            # self.freundlich_X = Var(  # X
-            #     self.target_ion_set,
-            #     initialize=1.5,
-            #     bounds=(0, None),
-            #     units=pyunits.dimensionless,  # kg / kg
-            #     doc="Concentration of adsorbed solute per unit weight of adsorbent",
-            # )
-
-            # self.mass_vel_adsorb = Var(  # L_A
-            #     self.target_ion_set,
-            #     initialize=1.5,
-            #     bounds=(0, None),
-            #     units=(pyunits.kg * pyunits.m) / (pyunits.s * pyunits.m**3),
-            #     doc="Freundlich isotherm exponent",
-            # )
 
             self.c_breakthru = Var(  # c_b
                 self.target_ion_set,
@@ -410,32 +364,17 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 doc="Breakthrough time",
             )
 
-            # self.c_breakthru_50 = Var(  # c_b50
-            #     self.target_ion_set,
-            #     initialize=0.5,
-            #     bounds=(0, None),
-            #     units=pyunits.mol / pyunits.m**3,
-            #     doc="50 percent influent concentration",
-            # )
-
-            # self.t_breakthru_50 = Var(  # t_b50
-            #     initialize=1e5,  # DOW, ~7 weeks max breakthru time
-            #     bounds=(0, None),
-            #     units=pyunits.s,
-            #     doc="Breakthrough time at 50% influent concentration",
-            # )
-
             self.bv = Var(  # BV
                 initialize=1e5,
                 bounds=(0, None),
-                units=pyunits.s,
+                units=pyunits.dimensionless,
                 doc="Bed volumes of feed",
             )
 
             self.bv_50 = Var(  # BV_50
                 initialize=2e5,
                 bounds=(0, None),
-                units=pyunits.s,
+                units=pyunits.dimensionless,
                 doc="Bed volumes of feed at 50 percent breakthrough",
             )
 
@@ -487,22 +426,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 doc="small r",
             )
 
-            # self.c_norm = Var(
-            #     self.target_ion_set,
-            #     initialize=1e-5,
-            #     bounds=(0, 1.02),
-            #     units=pyunits.dimensionless,
-            #     doc="Normalized effluent concentration (cb/c0)",
-            # )
-
-            # self.mass_in = Var(
-            #     self.target_ion_set,
-            #     initialize=1e6,
-            #     bounds=(0, None),
-            #     units=pyunits.mol,
-            #     doc="Influent mass of ion",
-            # )
-
             self.mass_removed = Var(
                 self.target_ion_set,
                 initialize=1e6,
@@ -510,48 +433,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 units=pyunits.mol,
                 doc="Sorbed mass of ion",
             )
-
-            # self.mass_out = Var(
-            #     self.target_ion_set,
-            #     initialize=1,
-            #     bounds=(0, None),
-            #     units=pyunits.mol,
-            #     doc="Effluent mass of ion",
-            # )
-
-            # @self.Expression(self.target_ion_set, doc="R")
-            # def R(b, j):
-            #     return (b.kinetic_param[j] * b.vel_adsorb) / b.vel_bed
-
-            # @self.Expression(self.target_ion_set, doc="small r")
-            # def small_r_calc(b, j):
-            #     return b.R[j] * (b.freundlich_exp[j] - 1)
-
-            # @self.Expression(self.target_ion_set, doc="R")
-            # def A_calc(b, j):
-            #     prop_in = b.process_flow.properties_in[0]
-            #     return (
-            #         (
-            #             prop_in.conc_mass_phase_comp["Liq", j]
-            #             ** (b.freundlich_exp[j] - 1)
-            #         )
-            #         / (b.c_breakthru[j] ** (b.freundlich_exp[j] - 1))
-            #         - 1
-            #     ) * exp(b.small_r_calc[j] * b.t_breakthru)
-
-            # @self.Constraint(self.target_ion_set, doc="c norm")
-            # def eq_c_norm(b, j):
-            #     c0 = b.process_flow.properties_in[0].conc_mass_phase_comp["Liq", j]
-            #     return b.c_norm[j] == b.c_breakthru[j] / c0
-            # @self.Constraint(
-            #     self.target_ion_set, doc="Mass balance over mass transfer zone"
-            # )  # Eq.4
-            # def eq_4(b, j):
-            #     prop_in = b.process_flow.properties_in[0]
-            #     return (
-            #         b.vel_bed * prop_in.conc_equiv_phase_comp["Liq", j]
-            #         == b.mass_vel_adsorb[j] * b.freundlich_X[j]
-            #     )
 
             @self.Constraint(self.target_ion_set, doc="Kinetic parameter")  # Eq.4
             def eq_kinetic_param(b, j):
@@ -564,37 +445,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 c0 = b.process_flow.properties_in[0].conc_mass_phase_comp["Liq", j]
                 cb = b.c_breakthru[j]
                 n = b.freundlich_exp[j]
-                return b.A == ((c0 / cb) ** (n - 1) - 1) * exp(
+                return b.A == ((c0 ** (n - 1) / cb ** (n - 1)) - 1) * exp(
                     b.small_r * b.t_breakthru
                 )
-                # return b.A / exp(
-                #     b.small_r * b.t_breakthru
-                # )== ((c0/cb) ** (n - 1)  - 1)
-                # return exp(
-                #     b.small_r * b.t_breakthru
-                # )== ((c0/cb) ** (n - 1)  - 1) / b.A
-
-            # @self.Constraint(
-            #     self.target_ion_set, doc="Freundlich isotherm"
-            # )  # Eq. 7 or Eq. 8
-            # def eq_freund(b, j):
-            #     # return b.freundlich_X[j] == b.freundlich_base[j] * b.conc_surf[j] ** (1 / b.freundlich_exp[j])
-            #     return (
-            #         b.conc_surf[j]
-            #         == (b.freundlich_X[j] / b.freundlich_base[j]) ** b.freundlich_exp[j]
-            #     )
-
-            # @self.Constraint(
-            #     self.target_ion_set, doc="Freundlich base"
-            # )  # Eq. 7 or Eq. 8
-            # def eq_freund_base(b, j):
-            #     c0 = b.process_flow.properties_in[0].conc_mass_phase_comp["Liq", j]
-            #     rho = pyunits.convert(
-            #         b.resin_bulk_dens, to_units=pyunits.kg / pyunits.m**3
-            #     )
-            #     return b.freundlich_base[j] == (
-            #         c0 ** (1 - 1 / b.freundlich_exp[j]) * log(b.A + 1)
-            #     ) / (b.ebct * b.small_r * rho)
 
             @self.Expression(
                 self.target_ion_set, doc="Freundlich base"
@@ -604,8 +457,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 rho = pyunits.convert(
                     b.resin_bulk_dens, to_units=pyunits.kg / pyunits.m**3
                 )
-                return (c0 ** (1 - 1 / b.freundlich_exp[j]) * log(b.A + 1)) / (
-                    b.ebct * b.small_r * rho
+                n = b.freundlich_exp[j]
+                # return (c0 ** (1 - 1 / b.freundlich_exp[j]) * log(b.A + 1)) / (
+                #     b.ebct * b.small_r * rho
+                # )
+
+                return (c0 / (c0 ** (1 / n))) * (
+                    log(b.A + 1) / (b.ebct * b.small_r * rho)
                 )
 
             @self.Constraint(doc="EBCT")
@@ -616,34 +474,31 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             def eq_bed_vol(b):
                 return b.bed_vol == Constants.pi * (b.bed_diam / 2) ** 2 * b.bed_depth
 
-            # @self.Constraint(self.target_ion_set, doc="Rate constant")
-            # def eq_rate_constant(b, j):
-            #     return b.rate_constant == (
-            #         (1 / b.freundlich_base[j]) ** b.freundlich_exp[j]
-            #     ) * ((b.vel_bed / b.mass_vel_adsorb[j]) ** b.freundlich_exp[j])
-
             @self.Constraint(doc="BV")
             def eq_bv(b):
                 return b.t_breakthru * b.vel_bed == b.bv * b.bed_depth
-
-            # @self.Constraint(doc="BV_50")
-            # def eq_bv_50(b):
-            #     return b.t_breakthru_50 * b.vel_bed == b.bv_50 * b.bed_depth
 
             @self.Constraint(self.target_ion_set, doc="Main constraint")
             def eq_main(b, j):
                 c0 = b.process_flow.properties_in[0].conc_mass_phase_comp["Liq", j]
                 cb = b.c_breakthru[j]
-                denom2 = 1 + b.A * exp((-b.small_r * b.bed_depth * b.bv) / b.vel_bed)
-                denom = 1 + (2 ** (b.freundlich_exp[j] - 1) - 1) * exp(
-                    (
-                        (b.kinetic_param[j] * b.bed_depth * (b.freundlich_exp[j] - 1))
-                        / (b.bv_50 * b.vel_bed)
+                denom = (
+                    1
+                    + (2 ** (b.freundlich_exp[j] - 1) - 1)
+                    * exp(
+                        (
+                            (
+                                b.kinetic_param[j]
+                                * b.bed_depth
+                                * (b.freundlich_exp[j] - 1)
+                            )
+                            / (b.bv_50 * b.vel_bed)
+                        )
+                        * (b.bv_50 - b.bv)
                     )
-                    * (b.bv_50 - b.bv)
-                )
+                ) ** (1 / (b.freundlich_exp[j] - 1))
                 # return cb / c0 == 1 / denom
-                return denom == denom2
+                return c0 == denom * cb
 
             @self.Constraint(self.target_ion_set, doc="Main constraint")
             def eq_main2(b, j):
@@ -652,8 +507,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 denom = (
                     1 + b.A * exp((-b.small_r * b.bed_depth * b.bv) / b.vel_bed)
                 ) ** (1 / (b.freundlich_exp[j] - 1))
-                return cb / c0 == 1 / denom
-                # return c0 == denom * cb
+                # return cb / c0 == 1 / denom
+                return c0 == denom * cb
 
             @self.Expression()
             def volume_at_breakthru(b):
@@ -684,38 +539,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             for j in inerts:
                 self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
                 self.regeneration_stream[0].get_material_flow_terms("Liq", j).fix(0)
-
-            # for j in self.target_ion_set:
-            #     self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
-            #     self.regeneration_stream[0].get_material_flow_terms("Liq", j).fix(0)
-
-            # @self.Constraint(
-            #     self.target_ion_set, doc="Mass transfer for regeneration stream"
-            # )
-            # def eq_mass_transfer_target(b, j):
-            #     regen = b.regeneration_stream[0]
-            #     return (
-            #         regen.get_material_flow_terms("Liq", j)
-            #         == -b.process_flow.mass_transfer_term[0, "Liq", j]
-            #     )
-
-            # @self.Constraint(
-            #     doc="Isothermal assumption for absorbed contaminant",
-            # )
-            # def eq_isothermal_regeneration_stream(b):
-            #     return (
-            #         b.process_flow.properties_in[0].temperature
-            #         == b.regeneration_stream[0].temperature
-            #     )
-
-            # @self.Constraint(
-            #     doc="Isobaric assumption for absorbed contaminant",
-            # )
-            # def eq_isobaric_regeneration_stream(b):
-            #     return (
-            #         b.process_flow.properties_in[0].pressure
-            #         == b.regeneration_stream[0].pressure
-            #     )
 
             @self.Expression(self.target_ion_set, doc="Mass in")
             def mass_in(b, j):
