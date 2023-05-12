@@ -17,20 +17,15 @@ from pyomo.environ import (
     Param,
     Suffix,
     NonNegativeReals,
-    Reference,
     units as pyunits,
 )
-from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
-    MaterialFlowBasis,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -39,7 +34,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.core import ControlVolume0DBlock, InitializationMixin
+from watertap.core import InitializationMixin
 
 __author__ = "Chenyu Wang"
 
