@@ -122,7 +122,7 @@ from pyomo.environ import log10
 import idaes.logger as idaeslog
 
 # Import scaling helper functions
-from watertap.examples.chemistry.chem_scaling_utils import (
+from chem_scaling_utils import (
     _set_equ_rxn_scaling,
     _set_inherent_rxn_scaling,
     _set_mat_bal_scaling_FTPx,
