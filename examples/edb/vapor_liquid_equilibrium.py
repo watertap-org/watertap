@@ -73,8 +73,8 @@
 """
 
 # Import ElectrolyteDB object
-from the_basics import grab_base_reaction_config
-from simple_acid import (
+from examples.edb.the_basics import grab_base_reaction_config
+from examples.edb.simple_acid import (
     get_components_and_add_to_idaes_config,
     add_equilibrium_reactions_to_react_base,
     build_equilibrium_model,

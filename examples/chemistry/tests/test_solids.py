@@ -96,7 +96,7 @@ from idaes.models.properties.modular_properties.base.generic_reaction import (
 from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 
 # Import scaling helper functions
-from chem_scaling_utils import (
+from examples.chemistry.chem_scaling_utils import (
     _set_eps_vals,
     _set_equ_rxn_scaling,
     _set_mat_bal_scaling_FpcTP,

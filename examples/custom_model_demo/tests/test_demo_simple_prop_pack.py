@@ -14,7 +14,7 @@ import pytest
 from pyomo.environ import value
 from idaes.core.solvers import get_solver
 
-from demo_simple_prop_pack import main
+from examples.custom_model_demo.demo_simple_prop_pack import main
 
 solver = get_solver()
 

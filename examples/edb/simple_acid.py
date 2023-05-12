@@ -95,7 +95,7 @@ from idaes.core import FlowsheetBlock
 
 # ========================== (3 & 4) ================================
 # Import ElectrolyteDB object
-from the_basics import grab_base_reaction_config
+from examples.edb.the_basics import grab_base_reaction_config
 
 __author__ = "Austin Ladshaw"
 
