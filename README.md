@@ -17,6 +17,8 @@ WaterTAP is developed as part of the [National Alliance for Water Innovation](ht
 
 To quickly install and start using WaterTAP, head over to the [Getting Started](https://watertap.readthedocs.io/en/stable/getting_started.html) section of the documentation.
 
+If you wish to use the **WaterTAP UI**, you can [download and install](https://watertap-org.github.io) it from this page: https://watertap-org.github.io.
+
 ## Documentation
 
 The WaterTAP documentation is available online at <https://watertap.readthedocs.io>.
