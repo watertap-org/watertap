@@ -16,8 +16,6 @@ import copy
 import numpy as np
 import pyomo.environ as pyo
 
-from pyomo.environ import value
-
 from watertap.tools.parameter_sweep.sampling_types import (
     NormalSample,
     GeomSample,

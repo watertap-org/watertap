@@ -28,8 +28,10 @@ import idaes.logger as idaeslog
 from watertap.core.membrane_channel_base import (
     MembraneChannelMixin,
     PressureChangeType,
-    CONFIG_Template,
+    CONFIG_Template as Base_CONFIG_Template,
 )
+
+CONFIG_Template = Base_CONFIG_Template()
 
 
 @declare_process_block_class("MembraneChannel0DBlock")

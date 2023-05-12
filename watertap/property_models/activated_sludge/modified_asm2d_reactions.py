@@ -23,21 +23,9 @@ Wat. Sci. Tech. Vol. 39, No. 1, pp. 165-182
 anaerobic digestion processes", 2016, Water Research, 95, pp.370-382.
 """
 
-# Import Pyomo libraries
-import pyomo.environ as pyo
-
 # Import IDAES cores
-from idaes.core import (
-    declare_process_block_class,
-    MaterialFlowBasis,
-    ReactionParameterBlock,
-    ReactionBlockDataBase,
-    ReactionBlockBase,
-)
-from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import BurntToast
+from idaes.core import declare_process_block_class
 import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
 from watertap.property_models.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterData,
     _ASM2dReactionBlock,

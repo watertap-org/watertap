@@ -20,7 +20,6 @@ from typing import List, Optional, Tuple, Union, Any
 import pytest
 from click import Command
 from click.testing import CliRunner, Result
-from _pytest.monkeypatch import MonkeyPatch
 import pymongo
 
 from watertap.edb import commands, ElectrolyteDB
