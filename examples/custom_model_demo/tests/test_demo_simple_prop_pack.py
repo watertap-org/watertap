@@ -14,12 +14,11 @@ import pytest
 from pyomo.environ import value
 from idaes.core.solvers import get_solver
 
-from watertap.examples.custom_model_demo.demo_simple_prop_pack import main
+from demo_simple_prop_pack import main
 
 solver = get_solver()
 
 
-@pytest.mark.component
 def test_demo_simple_prop_pack():
     m = main()
 
