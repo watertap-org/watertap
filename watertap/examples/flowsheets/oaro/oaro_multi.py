@@ -222,7 +222,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         initialize=1e5, units=pyunits.Pa, mutable=True
     )
     m.fs.recycle_pump_max_pressure = Param(
-        initialize=10e5, units=pyunits.Pa, mutable=True
+        initialize=3e5, units=pyunits.Pa, mutable=True
     )
 
     # process costing and add system level metrics
@@ -564,7 +564,8 @@ def set_operating_conditions(
     # )
 
     Cin = 75 * pyunits.g / pyunits.L
-    Qin = 0.005416667
+    Qin = 5.416667e-3
+    # Qin = 1e-3
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"] = Cin
     # m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(Cin)
     # m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(Qin)
@@ -581,7 +582,7 @@ def set_operating_conditions(
     # primary pumps
     for idx, pump in m.fs.PrimaryPumps.items():
         # pump.control_volume.properties_out[0].pressure = 10e5 + 65e5 / float(idx)
-        if idx == m.fs.LastStage:
+        if idx == m.fs.Stages.last():
             pump.control_volume.properties_out[0].pressure = 85e5
         else:
             pump.control_volume.properties_out[0].pressure = 65e5
@@ -590,7 +591,7 @@ def set_operating_conditions(
 
     for idx, pump in m.fs.RecyclePumps.items():
         # pump.control_volume.properties_out[0].pressure = 1.4e5 + 8e5 / float(idx)
-        pump.control_volume.properties_out[0].pressure = 3e5
+        pump.control_volume.properties_out[0].pressure = 1.5e5
         pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
@@ -618,18 +619,18 @@ def set_operating_conditions(
     B_OARO = 8.0e-8
     spacer_porosity = 0.75
 
-    for stage in m.fs.OAROUnits.values():
+    for idx, stage in m.fs.OAROUnits.items():
 
-        stage.area.fix(area)
+        stage.area.fix(area / float(idx))
 
         stage.A_comp.fix(A_OARO)
         stage.B_comp.fix(B_OARO)
 
-        stage.structural_parameter.fix(300e-6)
+        stage.structural_parameter.fix(1200e-6)
 
-        stage.permeate_side.channel_height.fix(1e-3)
+        stage.permeate_side.channel_height.fix(2e-3)
         stage.permeate_side.spacer_porosity.fix(spacer_porosity)
-        stage.feed_side.channel_height.fix(1e-3)
+        stage.feed_side.channel_height.fix(2e-3)
         stage.feed_side.spacer_porosity.fix(spacer_porosity)
         stage.feed_side.velocity[0, 0].fix(0.1)
 
@@ -638,13 +639,15 @@ def set_operating_conditions(
     B_RO = 3.5e-8
     m.fs.RO.A_comp.fix(A_RO)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO.B_comp.fix(B_RO)  # membrane salt permeability coefficient [m/s]
-    m.fs.RO.feed_side.channel_height.fix(1.2e-3)  # channel height in membrane stage [m]
+    m.fs.RO.feed_side.channel_height.fix(2e-3)  # channel height in membrane stage [m]
     m.fs.RO.feed_side.spacer_porosity.fix(
         spacer_porosity
     )  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
-    m.fs.RO.width.fix(width)  # stage width [m]
-    m.fs.RO.area.fix(area)  # guess area for RO initialization
+    m.fs.RO.width.fix(width / float(m.fs.NumberOfStages))  # stage width [m]
+    m.fs.RO.area.fix(
+        area / float(m.fs.NumberOfStages)
+    )  # guess area for RO initialization
 
     if m.fs.erd_type == ERDtype.pump_as_turbine:
         # energy recovery turbine - efficiency and outlet pressure
@@ -707,31 +710,31 @@ def recycle_pump_initializer(pump, oaro, solvent_multiplier, solute_multiplier):
     )
 
 
-def solve(blk, solver=None, tee=True):
-    if solver is None:
-        solver = get_solver()
-    results = solver.solve(blk, tee=tee)
-    if not check_optimal_termination(results):
-        results = solver.solve(blk, tee=tee)
-    return results
-
-
-# def solve(model, solver=None, tee=False, raise_on_failure=False):
-#     # ---solving---
+# def solve(blk, solver=None, tee=True):
 #     if solver is None:
 #         solver = get_solver()
-#
-#     results = solver.solve(model, tee=tee)
-#     if check_optimal_termination(results):
-#         return results
-#     msg = (
-#         "The current configuration is infeasible. Please adjust the decision variables."
-#     )
-#     if raise_on_failure:
-#         raise RuntimeError(msg)
-#     else:
-#         print(msg)
-#         return results
+#     results = solver.solve(blk, tee=tee)
+#     if not check_optimal_termination(results):
+#         results = solver.solve(blk, tee=tee)
+#     return results
+
+
+def solve(model, solver=None, tee=False, raise_on_failure=False):
+    # ---solving---
+    if solver is None:
+        solver = get_solver()
+
+    results = solver.solve(model, tee=tee)
+    if check_optimal_termination(results):
+        return results
+    msg = (
+        "The current configuration is infeasible. Please adjust the decision variables."
+    )
+    if raise_on_failure:
+        raise RuntimeError(msg)
+    else:
+        print(msg)
+        return results
 
 
 def initialize_loop(m, solver):
@@ -851,21 +854,7 @@ def optimize_set_up(
     for idx, pump in m.fs.PrimaryPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
         pump.deltaP.setlb(0)
-        if idx > m.fs.Stages.first():
-            pump.max_oaro_pressure_con = Constraint(
-                expr=(
-                    m.fs.oaro_min_pressure,
-                    pump.control_volume.properties_out[0].pressure,
-                    m.fs.oaro_max_pressure,
-                )
-            )
-            iscale.constraint_scaling_transform(
-                pump.max_oaro_pressure_con,
-                iscale.get_scaling_factor(
-                    pump.control_volume.properties_out[0].pressure
-                ),
-            )
-        else:
+        if idx == m.fs.Stages.last():
             pump.max_ro_pressure_con = Constraint(
                 expr=(
                     m.fs.ro_min_pressure,
@@ -875,6 +864,20 @@ def optimize_set_up(
             )
             iscale.constraint_scaling_transform(
                 pump.max_ro_pressure_con,
+                iscale.get_scaling_factor(
+                    pump.control_volume.properties_out[0].pressure
+                ),
+            )
+        else:
+            pump.max_oaro_pressure_con = Constraint(
+                expr=(
+                    m.fs.oaro_min_pressure,
+                    pump.control_volume.properties_out[0].pressure,
+                    m.fs.oaro_max_pressure,
+                )
+            )
+            iscale.constraint_scaling_transform(
+                pump.max_oaro_pressure_con,
                 iscale.get_scaling_factor(
                     pump.control_volume.properties_out[0].pressure
                 ),
@@ -909,12 +912,14 @@ def optimize_set_up(
         stage.area.setub(20000)
 
         stage.feed_side.velocity[0, 0].unfix()
-        stage.feed_side.velocity[0, 0].setlb(0.1)
+        stage.feed_side.velocity[0, 0].setlb(0)
         stage.feed_side.velocity[0, 0].setub(1)
 
         stage.permeate_side.properties_out[0].pressure.setlb(101325)
 
         # stage.permeate_side.cp_modulus[0.0, 0.0, "NaCl"].setlb(0.01)
+        # stage.feed_side.friction_factor_darcy[0.0, 0.0].setub(None)
+        # stage.feed_side.friction_factor_darcy[0.0, 1.0].setub(None)
         stage.permeate_side.friction_factor_darcy[0.0, 1.0].setub(None)
 
         # stage.A_comp.unfix()
@@ -1116,4 +1121,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(1, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
+    m = main(2, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
