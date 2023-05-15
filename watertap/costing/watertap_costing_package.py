@@ -30,6 +30,7 @@ from watertap.unit_models import (
     OsmoticallyAssistedReverseOsmosis0D,
     NanoFiltration0D,
     NanofiltrationZO,
+    NanofiltrationDSPMDE0D,
     PressureExchanger,
     Crystallization,
     Ultraviolet0D,
@@ -93,6 +94,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         OsmoticallyAssistedReverseOsmosis0D: cost_osmotically_assisted_reverse_osmosis,
         NanoFiltration0D: cost_nanofiltration,
         NanofiltrationZO: cost_nanofiltration,
+        NanofiltrationDSPMDE0D: cost_nanofiltration,
         Crystallization: cost_crystallizer,
         Ultraviolet0D: cost_uv_aop,
         Electrodialysis0D: cost_electrodialysis,
@@ -107,7 +109,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self._registered_LCOWs = {}
 
     def build_global_params(self):
-
         # Register currency and conversion rates based on CE Index
         register_idaes_currency_units()
 
