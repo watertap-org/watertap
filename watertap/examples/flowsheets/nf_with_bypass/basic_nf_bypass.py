@@ -11,14 +11,11 @@
 #################################################################################
 
 from pyomo.environ import (
-    Boolean,
-    NonNegativeReals,
     units as pyunits,
 )
 from pyomo.network import Arc
 from idaes.core import (
     FlowsheetBlock,
-    ControlVolume0DBlock,
 )
 
 from idaes.core.solvers import get_solver
@@ -36,9 +33,9 @@ from watertap.unit_models.nanofiltration_DSPMDE_0D import (
     NanofiltrationDSPMDE0D,
 )
 
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
+from watertap.unit_models.pressure_changer import Pump
 
-from pyomo.environ import *
+from pyomo.environ import ConcreteModel, TransformationFactory
 
 import math
 
@@ -46,7 +43,6 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
     ActivityCoefficientModel,
     DensityCalculation,
-    MCASStateBlock,
 )
 import idaes.core.util.scaling as iscale
 
