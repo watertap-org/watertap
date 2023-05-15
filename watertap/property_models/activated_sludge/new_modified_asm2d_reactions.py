@@ -12,11 +12,6 @@
 """
 ASM2d reaction package.
 
-Important Note: ASM2d reactions depend on the presences of TSS in solution, however
-TSS does not take part in the rate expressions. Thus, it is possible to have cases
-where there is insufficient TSS present in the system for the reactions to occur
-resulting in an infeasible solution.
-
 Reference:
 
 X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
@@ -181,12 +176,6 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="N content of biomass, X_H, X_PAO, X_AUT, [kg N/kg COD]",
         )
-        self.i_PSI = pyo.Var(
-            initialize=0.00649,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="P content of inert soluble COD S_I, [kg P/kg COD]",
-        )
         self.i_PSF = pyo.Var(
             initialize=0.0559,
             units=pyo.units.dimensionless,
@@ -270,6 +259,18 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
             doc="Yield of autotrophic biomass per NO3- N, [kg COD/kg N]",
+        )
+        self.i_KXPP = pyo.Var(
+            initialize=0.4204,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Potassium coefficient for polyphosphates",
+        )
+        self.i_MgXPP = pyo.Var(
+            initialize=0.2614,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Magnesium coefficient for polyphosphates",
         )
 
         # Kinetic Parameters
@@ -468,551 +469,423 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
         self.rate_reaction_stoichiometry = {
             # R1: Aerobic hydrolysis
             ("R1", "Liq", "H2O"): 0,
-            ("R1", "Liq", "S_A"): 0,
+            ("R1", "Liq", "S_O2"): 0,
             ("R1", "Liq", "S_F"): 1 - self.f_SI,
+            ("R1", "Liq", "S_A"): 0,
             ("R1", "Liq", "S_I"): self.f_SI,
-            ("R1", "Liq", "S_N2"): 0,
             ("R1", "Liq", "S_NH4"): -(
                 (1 - self.f_SI) * self.i_NSF + self.f_SI * self.i_NSI - self.i_NXS
             ),
+            ("R1", "Liq", "S_N2"): 0,
             ("R1", "Liq", "S_NO3"): 0,
-            ("R1", "Liq", "S_O2"): 0,
-            ("R1", "Liq", "S_PO4"): -(
-                (1 - self.f_SI) * self.i_PSF + self.f_SI * self.i_PSI - self.i_PXS
-            ),
-            ("R1", "Liq", "S_ALK"): (
-                -((1 - self.f_SI) * self.i_NSF + self.f_SI * self.i_NSI - self.i_NXS)
-                * (mw_alk / mw_N)
-                - ((1 - self.f_SI) * self.i_PSF + self.f_SI * self.i_PSI - self.i_PXS)
-                * (1.5 * mw_alk / mw_P)
-            ),
-            ("R1", "Liq", "X_AUT"): 0,
-            ("R1", "Liq", "X_H"): 0,
+            ("R1", "Liq", "S_PO4"): -((1 - self.f_SI) * self.i_PSF - self.i_PXS) * mw_P,
+            ("R1", "Liq", "S_IC"): -(
+                (1 - self.f_SI) * self.i_CSF + self.f_SI * self.i_CSI - self.i_CXS
+            )
+            * mw_C,
             ("R1", "Liq", "X_I"): 0,
-            ("R1", "Liq", "X_MeOH"): 0,
-            ("R1", "Liq", "X_MeP"): 0,
-            ("R1", "Liq", "X_PAO"): 0,
-            ("R1", "Liq", "X_PHA"): 0,
-            ("R1", "Liq", "X_PP"): 0,
             ("R1", "Liq", "X_S"): -1,
-            ("R1", "Liq", "X_TSS"): -self.i_TSSXS,
+            ("R1", "Liq", "X_H"): 0,
+            ("R1", "Liq", "X_PAO"): 0,
+            ("R1", "Liq", "X_PP"): 0,
+            ("R1", "Liq", "X_PHA"): 0,
+            ("R1", "Liq", "X_AUT"): 0,
+            ("R1", "Liq", "S_K"): 0,
+            ("R1", "Liq", "S_Mg"): 0,
             # R2: Anoxic hydrolysis
             ("R2", "Liq", "H2O"): 0,
-            ("R2", "Liq", "S_A"): 0,
+            ("R2", "Liq", "S_O2"): 0,
             ("R2", "Liq", "S_F"): 1 - self.f_SI,
+            ("R2", "Liq", "S_A"): 0,
             ("R2", "Liq", "S_I"): self.f_SI,
-            ("R2", "Liq", "S_N2"): 0,
             ("R2", "Liq", "S_NH4"): -(
                 (1 - self.f_SI) * self.i_NSF + self.f_SI * self.i_NSI - self.i_NXS
             ),
+            ("R2", "Liq", "S_N2"): 0,
             ("R2", "Liq", "S_NO3"): 0,
-            ("R2", "Liq", "S_O2"): 0,
-            ("R2", "Liq", "S_PO4"): -(
-                (1 - self.f_SI) * self.i_PSF + self.f_SI * self.i_PSI - self.i_PXS
-            ),
-            ("R2", "Liq", "S_ALK"): (
-                -((1 - self.f_SI) * self.i_NSF + self.f_SI * self.i_NSI - self.i_NXS)
-                * (mw_alk / mw_N)
-                - ((1 - self.f_SI) * self.i_PSF + self.f_SI * self.i_PSI - self.i_PXS)
-                * (1.5 * mw_alk / mw_P)
-            ),
-            ("R2", "Liq", "X_AUT"): 0,
-            ("R2", "Liq", "X_H"): 0,
+            ("R2", "Liq", "S_PO4"): -((1 - self.f_SI) * self.i_PSF - self.i_PXS) * mw_P,
+            ("R2", "Liq", "S_IC"): -(
+                (1 - self.f_SI) * self.i_CSF + self.f_SI * self.i_CSI - self.i_CXS
+            )
+            * mw_C,
             ("R2", "Liq", "X_I"): 0,
-            ("R2", "Liq", "X_MeOH"): 0,
-            ("R2", "Liq", "X_MeP"): 0,
-            ("R2", "Liq", "X_PAO"): 0,
-            ("R2", "Liq", "X_PHA"): 0,
-            ("R2", "Liq", "X_PP"): 0,
             ("R2", "Liq", "X_S"): -1,
-            ("R2", "Liq", "X_TSS"): -self.i_TSSXS,
+            ("R2", "Liq", "X_H"): 0,
+            ("R2", "Liq", "X_PAO"): 0,
+            ("R2", "Liq", "X_PP"): 0,
+            ("R2", "Liq", "X_PHA"): 0,
+            ("R2", "Liq", "X_AUT"): 0,
+            ("R2", "Liq", "S_K"): 0,
+            ("R2", "Liq", "S_Mg"): 0,
             # R3: Anaerobic hydrolysis
             ("R3", "Liq", "H2O"): 0,
-            ("R3", "Liq", "S_A"): 0,
+            ("R3", "Liq", "S_O2"): 0,
             ("R3", "Liq", "S_F"): 1 - self.f_SI,
+            ("R3", "Liq", "S_A"): 0,
             ("R3", "Liq", "S_I"): self.f_SI,
-            ("R3", "Liq", "S_N2"): 0,
             ("R3", "Liq", "S_NH4"): -(
                 (1 - self.f_SI) * self.i_NSF + self.f_SI * self.i_NSI - self.i_NXS
             ),
+            ("R3", "Liq", "S_N2"): 0,
             ("R3", "Liq", "S_NO3"): 0,
-            ("R3", "Liq", "S_O2"): 0,
-            ("R3", "Liq", "S_PO4"): -(
-                (1 - self.f_SI) * self.i_PSF + self.f_SI * self.i_PSI - self.i_PXS
-            ),
-            ("R3", "Liq", "S_ALK"): (
-                -((1 - self.f_SI) * self.i_NSF + self.f_SI * self.i_NSI - self.i_NXS)
-                * (mw_alk / mw_N)
-                - ((1 - self.f_SI) * self.i_PSF + self.f_SI * self.i_PSI - self.i_PXS)
-                * (1.5 * mw_alk / mw_P)
-            ),
-            ("R3", "Liq", "X_AUT"): 0,
-            ("R3", "Liq", "X_H"): 0,
+            ("R3", "Liq", "S_PO4"): -((1 - self.f_SI) * self.i_PSF - self.i_PXS) * mw_P,
+            ("R3", "Liq", "S_IC"): -(
+                (1 - self.f_SI) * self.i_CSF + self.f_SI * self.i_CSI - self.i_CXS
+            )
+            * mw_C,
             ("R3", "Liq", "X_I"): 0,
-            ("R3", "Liq", "X_MeOH"): 0,
-            ("R3", "Liq", "X_MeP"): 0,
-            ("R3", "Liq", "X_PAO"): 0,
-            ("R3", "Liq", "X_PHA"): 0,
-            ("R3", "Liq", "X_PP"): 0,
             ("R3", "Liq", "X_S"): -1,
-            ("R3", "Liq", "X_TSS"): -self.i_TSSXS,
+            ("R3", "Liq", "X_H"): 0,
+            ("R3", "Liq", "X_PAO"): 0,
+            ("R3", "Liq", "X_PP"): 0,
+            ("R3", "Liq", "X_PHA"): 0,
+            ("R3", "Liq", "X_AUT"): 0,
+            ("R3", "Liq", "S_K"): 0,
+            ("R3", "Liq", "S_Mg"): 0,
             # R4: Aerobic growth on S_F
             ("R4", "Liq", "H2O"): 0,
-            ("R4", "Liq", "S_A"): 0,
-            ("R4", "Liq", "S_F"): -1 / self.Y_H,
-            ("R4", "Liq", "S_I"): 0,
-            ("R4", "Liq", "S_N2"): 0,
-            ("R4", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / self.Y_H),
-            ("R4", "Liq", "S_NO3"): 0,
             ("R4", "Liq", "S_O2"): 1 - 1 / self.Y_H,
-            ("R4", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / self.Y_H),
-            ("R4", "Liq", "S_ALK"): -(self.i_NBM - self.i_NSF / self.Y_H)
-            * mw_alk
-            / mw_N
-            + (self.i_PBM - self.i_PSF / self.Y_H) * 1.5 * mw_alk / mw_P,
-            ("R4", "Liq", "X_AUT"): 0,
-            ("R4", "Liq", "X_H"): 1,
+            ("R4", "Liq", "S_F"): -1 / self.Y_H,
+            ("R4", "Liq", "S_A"): 0,
+            ("R4", "Liq", "S_I"): 0,
+            ("R4", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / self.Y_H),
+            ("R4", "Liq", "S_N2"): 0,
+            ("R4", "Liq", "S_NO3"): 0,
+            ("R4", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / self.Y_H) * mw_P,
+            ("R4", "Liq", "S_IC"): -(self.i_CXB - self.i_CSF / self.Y_H) * mw_C,
             ("R4", "Liq", "X_I"): 0,
-            ("R4", "Liq", "X_MeOH"): 0,
-            ("R4", "Liq", "X_MeP"): 0,
-            ("R4", "Liq", "X_PAO"): 0,
-            ("R4", "Liq", "X_PHA"): 0,
-            ("R4", "Liq", "X_PP"): 0,
             ("R4", "Liq", "X_S"): 0,
-            ("R4", "Liq", "X_TSS"): self.i_TSSBM,
+            ("R4", "Liq", "X_H"): 1,
+            ("R4", "Liq", "X_PAO"): 0,
+            ("R4", "Liq", "X_PP"): 0,
+            ("R4", "Liq", "X_PHA"): 0,
+            ("R4", "Liq", "X_AUT"): 0,
+            ("R4", "Liq", "S_K"): 0,
+            ("R4", "Liq", "S_Mg"): 0,
             # R5: Aerobic growth on S_A
             ("R5", "Liq", "H2O"): 0,
-            ("R5", "Liq", "S_A"): -1 / self.Y_H,
-            ("R5", "Liq", "S_F"): 0,
-            ("R5", "Liq", "S_I"): 0,
-            ("R5", "Liq", "S_N2"): 0,
-            ("R5", "Liq", "S_NH4"): -self.i_NBM,
-            ("R5", "Liq", "S_NO3"): 0,
             ("R5", "Liq", "S_O2"): 1 - 1 / self.Y_H,
-            ("R5", "Liq", "S_PO4"): -self.i_PBM,
-            ("R5", "Liq", "S_ALK"): -self.i_NBM * mw_alk / mw_N
-            + self.i_PBM * 1.5 * mw_alk / mw_P
-            + (1 / self.Y_H) * mw_alk / (64 * pyo.units.kg / pyo.units.kmol),
-            ("R5", "Liq", "X_AUT"): 0,
-            ("R5", "Liq", "X_H"): 1,
+            ("R5", "Liq", "S_F"): 0,
+            ("R5", "Liq", "S_A"): -1 / self.Y_H,
+            ("R5", "Liq", "S_I"): 0,
+            ("R5", "Liq", "S_NH4"): -self.i_NBM,
+            ("R5", "Liq", "S_N2"): 0,
+            ("R5", "Liq", "S_NO3"): 0,
+            ("R5", "Liq", "S_PO4"): -self.i_PBM * mw_P,
+            ("R5", "Liq", "S_IC"): -(self.i_CXB - self.i_CSA / self.Y_H) * mw_C,
             ("R5", "Liq", "X_I"): 0,
-            ("R5", "Liq", "X_MeOH"): 0,
-            ("R5", "Liq", "X_MeP"): 0,
-            ("R5", "Liq", "X_PAO"): 0,
-            ("R5", "Liq", "X_PHA"): 0,
-            ("R5", "Liq", "X_PP"): 0,
             ("R5", "Liq", "X_S"): 0,
-            ("R5", "Liq", "X_TSS"): self.i_TSSBM,
+            ("R5", "Liq", "X_H"): 1,
+            ("R5", "Liq", "X_PAO"): 0,
+            ("R5", "Liq", "X_PP"): 0,
+            ("R5", "Liq", "X_PHA"): 0,
+            ("R5", "Liq", "X_AUT"): 0,
+            ("R5", "Liq", "S_K"): 0,
+            ("R5", "Liq", "S_Mg"): 0,
             # R6: Anoxic growth on S_F
             ("R6", "Liq", "H2O"): 0,
-            ("R6", "Liq", "S_A"): 0,
-            ("R6", "Liq", "S_F"): -1 / self.Y_H,
-            ("R6", "Liq", "S_I"): 0,
-            ("R6", "Liq", "S_N2"): (1 - self.Y_H) / (2.86 * self.Y_H),
-            ("R6", "Liq", "S_NH4"): -self.i_NBM + self.i_NSF / self.Y_H,
-            ("R6", "Liq", "S_NO3"): -(1 - self.Y_H) / (2.86 * self.Y_H),
             ("R6", "Liq", "S_O2"): 0,
-            ("R6", "Liq", "S_PO4"): -self.i_PBM + self.i_PSF / self.Y_H,
-            ("R6", "Liq", "S_ALK"): (
-                (-self.i_NBM + self.i_NSF / self.Y_H)
-                + (1 - self.Y_H) / (2.86 * self.Y_H)
-            )
-            * mw_alk
-            / mw_N
-            - (-self.i_PBM + self.i_PSF / self.Y_H) * 1.5 * mw_alk / mw_P,
-            ("R6", "Liq", "X_AUT"): 0,
-            ("R6", "Liq", "X_H"): 1,
+            ("R6", "Liq", "S_F"): -1 / self.Y_H,
+            ("R6", "Liq", "S_A"): 0,
+            ("R6", "Liq", "S_I"): 0,
+            ("R6", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / self.Y_H),
+            ("R6", "Liq", "S_N2"): (1 - self.Y_H) / (2.86 * self.Y_H),
+            ("R6", "Liq", "S_NO3"): -(1 - self.Y_H) / (2.86 * self.Y_H),
+            ("R6", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / self.Y_H) * mw_P,
+            ("R6", "Liq", "S_IC"): -(self.i_CXB - self.i_CSF / self.Y_H) * mw_C,
             ("R6", "Liq", "X_I"): 0,
-            ("R6", "Liq", "X_MeOH"): 0,
-            ("R6", "Liq", "X_MeP"): 0,
-            ("R6", "Liq", "X_PAO"): 0,
-            ("R6", "Liq", "X_PHA"): 0,
-            ("R6", "Liq", "X_PP"): 0,
             ("R6", "Liq", "X_S"): 0,
-            ("R6", "Liq", "X_TSS"): self.i_TSSBM,
+            ("R6", "Liq", "X_H"): 1,
+            ("R6", "Liq", "X_PAO"): 0,
+            ("R6", "Liq", "X_PP"): 0,
+            ("R6", "Liq", "X_PHA"): 0,
+            ("R6", "Liq", "X_AUT"): 0,
+            ("R6", "Liq", "S_K"): 0,
+            ("R6", "Liq", "S_Mg"): 0,
             # R7: Anoxic growth on S_A, denitrification
             ("R7", "Liq", "H2O"): 0,
-            ("R7", "Liq", "S_A"): -1 / self.Y_H,
-            ("R7", "Liq", "S_F"): 0,
-            ("R7", "Liq", "S_I"): 0,
-            ("R7", "Liq", "S_N2"): (1 - self.Y_H) / (2.86 * self.Y_H),
-            ("R7", "Liq", "S_NH4"): -self.i_NBM,
-            ("R7", "Liq", "S_NO3"): -(1 - self.Y_H) / (2.86 * self.Y_H),
             ("R7", "Liq", "S_O2"): 0,
-            ("R7", "Liq", "S_PO4"): -self.i_PBM,
-            ("R7", "Liq", "S_ALK"): (1 / self.Y_H)
-            * mw_alk
-            / (64 * pyo.units.kg / pyo.units.kmol)
-            + (-self.i_NBM + (1 - self.Y_H) / (2.86 * self.Y_H)) * mw_alk / mw_N
-            + self.i_PBM * 1.5 * mw_alk / mw_P,
-            ("R7", "Liq", "X_AUT"): 0,
-            ("R7", "Liq", "X_H"): 1,
+            ("R7", "Liq", "S_F"): 0,
+            ("R7", "Liq", "S_A"): -1 / self.Y_H,
+            ("R7", "Liq", "S_I"): 0,
+            ("R7", "Liq", "S_NH4"): -self.i_NBM,
+            ("R7", "Liq", "S_N2"): (1 - self.Y_H) / (2.86 * self.Y_H),
+            ("R7", "Liq", "S_NO3"): -(1 - self.Y_H) / (2.86 * self.Y_H),
+            ("R7", "Liq", "S_PO4"): -self.i_PBM * mw_P,
+            ("R7", "Liq", "S_IC"): -(self.i_CXB - self.i_CSA / self.Y_H) * mw_C,
             ("R7", "Liq", "X_I"): 0,
-            ("R7", "Liq", "X_MeOH"): 0,
-            ("R7", "Liq", "X_MeP"): 0,
-            ("R7", "Liq", "X_PAO"): 0,
-            ("R7", "Liq", "X_PHA"): 0,
-            ("R7", "Liq", "X_PP"): 0,
             ("R7", "Liq", "X_S"): 0,
-            ("R7", "Liq", "X_TSS"): self.i_TSSBM,
+            ("R7", "Liq", "X_H"): 1,
+            ("R7", "Liq", "X_PAO"): 0,
+            ("R7", "Liq", "X_PP"): 0,
+            ("R7", "Liq", "X_PHA"): 0,
+            ("R7", "Liq", "X_AUT"): 0,
+            ("R7", "Liq", "S_K"): 0,
+            ("R7", "Liq", "S_Mg"): 0,
             # R8: Fermentation
             ("R8", "Liq", "H2O"): 0,
-            ("R8", "Liq", "S_A"): 1,
-            ("R8", "Liq", "S_F"): -1,
-            ("R8", "Liq", "S_I"): 0,
-            ("R8", "Liq", "S_N2"): 0,
-            ("R8", "Liq", "S_NH4"): self.i_NSF,
-            ("R8", "Liq", "S_NO3"): 0,
             ("R8", "Liq", "S_O2"): 0,
-            ("R8", "Liq", "S_PO4"): self.i_PSF,
-            ("R8", "Liq", "S_ALK"): -1 / 64
-            + self.i_NSF * mw_alk / mw_N
-            - self.i_PSF * 1.5 * mw_alk / mw_P,
-            ("R8", "Liq", "X_AUT"): 0,
-            ("R8", "Liq", "X_H"): 0,
+            ("R8", "Liq", "S_F"): -1,
+            ("R8", "Liq", "S_A"): 1,
+            ("R8", "Liq", "S_I"): 0,
+            ("R8", "Liq", "S_NH4"): -self.i_NSF,
+            ("R8", "Liq", "S_N2"): 0,
+            ("R8", "Liq", "S_NO3"): 0,
+            ("R8", "Liq", "S_PO4"): -(-self.i_PSF) * mw_P,
+            ("R8", "Liq", "S_IC"): -(self.i_CSA - self.i_CSF) * mw_C,
             ("R8", "Liq", "X_I"): 0,
-            ("R8", "Liq", "X_MeOH"): 0,
-            ("R8", "Liq", "X_MeP"): 0,
-            ("R8", "Liq", "X_PAO"): 0,
-            ("R8", "Liq", "X_PHA"): 0,
-            ("R8", "Liq", "X_PP"): 0,
             ("R8", "Liq", "X_S"): 0,
-            ("R8", "Liq", "X_TSS"): 0,
+            ("R8", "Liq", "X_H"): 0,
+            ("R8", "Liq", "X_PAO"): 0,
+            ("R8", "Liq", "X_PP"): 0,
+            ("R8", "Liq", "X_PHA"): 0,
+            ("R8", "Liq", "X_AUT"): 0,
+            ("R8", "Liq", "S_K"): 0,
+            ("R8", "Liq", "S_Mg"): 0,
             # R9: Lysis
             ("R9", "Liq", "H2O"): 0,
-            ("R9", "Liq", "S_A"): 0,
+            ("R9", "Liq", "S_O2"): 0,
             ("R9", "Liq", "S_F"): 0,
+            ("R9", "Liq", "S_A"): 0,
             ("R9", "Liq", "S_I"): 0,
-            ("R9", "Liq", "S_N2"): 0,
             ("R9", "Liq", "S_NH4"): self.i_NBM
             - self.f_XI * self.i_NXI
             - (1 - self.f_XI) * self.i_NXS,
+            ("R9", "Liq", "S_N2"): 0,
             ("R9", "Liq", "S_NO3"): 0,
-            ("R9", "Liq", "S_O2"): 0,
-            ("R9", "Liq", "S_PO4"): self.i_PBM
-            - self.f_XI * self.i_PXI
-            - (1 - self.f_XI) * self.i_PXS,
-            ("R9", "Liq", "S_ALK"): (
-                self.i_NBM - self.f_XI * self.i_NXI - (1 - self.f_XI) * self.i_NXS
+            ("R9", "Liq", "S_PO4"): -(
+                self.f_XI * self.i_PXI + (1 - self.f_XI) * self.i_PXS - self.i_PBM
             )
-            * mw_alk
-            / mw_N
-            - (self.i_PBM - self.f_XI * self.i_PXI - (1 - self.f_XI) * self.i_PXS)
-            * 1.5
-            * mw_alk
-            / mw_P,
-            ("R9", "Liq", "X_AUT"): 0,
-            ("R9", "Liq", "X_H"): -1,
+            * mw_P,
+            ("R9", "Liq", "S_IC"): -(
+                self.f_XI * self.i_CXI + (1 - self.f_XI) * self.i_CXS - self.i_CXB
+            )
+            * mw_C,
             ("R9", "Liq", "X_I"): self.f_XI,
-            ("R9", "Liq", "X_MeOH"): 0,
-            ("R9", "Liq", "X_MeP"): 0,
-            ("R9", "Liq", "X_PAO"): 0,
-            ("R9", "Liq", "X_PHA"): 0,
-            ("R9", "Liq", "X_PP"): 0,
             ("R9", "Liq", "X_S"): 1 - self.f_XI,
-            ("R9", "Liq", "X_TSS"): -(
-                self.i_TSSBM - self.f_XI * self.i_TSSXI - (1 - self.f_XI) * self.i_TSSXS
-            ),
+            ("R9", "Liq", "X_H"): -1,
+            ("R9", "Liq", "X_PAO"): 0,
+            ("R9", "Liq", "X_PP"): 0,
+            ("R9", "Liq", "X_PHA"): 0,
+            ("R9", "Liq", "X_AUT"): 0,
+            ("R9", "Liq", "S_K"): 0,
+            ("R9", "Liq", "S_Mg"): 0,
             # R10: Storage of X_PHA
             ("R10", "Liq", "H2O"): 0,
-            ("R10", "Liq", "S_A"): -1,
-            ("R10", "Liq", "S_F"): 0,
-            ("R10", "Liq", "S_I"): 0,
-            ("R10", "Liq", "S_N2"): 0,
-            ("R10", "Liq", "S_NH4"): 0,
-            ("R10", "Liq", "S_NO3"): 0,
             ("R10", "Liq", "S_O2"): 0,
-            ("R10", "Liq", "S_PO4"): self.Y_PO4,
-            ("R10", "Liq", "S_ALK"): mw_alk / (64 * pyo.units.kg / pyo.units.kmol)
-            - self.Y_PO4 * 0.5 * mw_alk / mw_P,
-            ("R10", "Liq", "X_AUT"): 0,
-            ("R10", "Liq", "X_H"): 0,
+            ("R10", "Liq", "S_F"): 0,
+            ("R10", "Liq", "S_A"): -1,
+            ("R10", "Liq", "S_I"): 0,
+            ("R10", "Liq", "S_NH4"): 0,
+            ("R10", "Liq", "S_N2"): 0,
+            ("R10", "Liq", "S_NO3"): 0,
+            ("R10", "Liq", "S_PO4"): -(-self.Y_PO4) * mw_P,
+            ("R10", "Liq", "S_IC"): -(0.3 - self.i_CSA) * mw_C,
             ("R10", "Liq", "X_I"): 0,
-            ("R10", "Liq", "X_MeOH"): 0,
-            ("R10", "Liq", "X_MeP"): 0,
-            ("R10", "Liq", "X_PAO"): 0,
-            ("R10", "Liq", "X_PHA"): 1,
-            ("R10", "Liq", "X_PP"): -self.Y_PO4,
             ("R10", "Liq", "X_S"): 0,
-            ("R10", "Liq", "X_TSS"): 0.6 - self.Y_PO4 * 3.23,
+            ("R10", "Liq", "X_H"): 0,
+            ("R10", "Liq", "X_PAO"): 0,
+            ("R10", "Liq", "X_PP"): -self.Y_PO4,
+            ("R10", "Liq", "X_PHA"): 1,
+            ("R10", "Liq", "X_AUT"): 0,
+            ("R10", "Liq", "S_K"): self.Y_PO4 * self.i_KXPP,
+            ("R10", "Liq", "S_Mg"): self.Y_PO4 * self.i_MgXPP,
             # R11: Aerobic storage of X_PP
             ("R11", "Liq", "H2O"): 0,
-            ("R11", "Liq", "S_A"): 0,
-            ("R11", "Liq", "S_F"): 0,
-            ("R11", "Liq", "S_I"): 0,
-            ("R11", "Liq", "S_N2"): 0,
-            ("R11", "Liq", "S_NH4"): 0,
-            ("R11", "Liq", "S_NO3"): 0,
             ("R11", "Liq", "S_O2"): -self.Y_PHA,
-            ("R11", "Liq", "S_PO4"): -1,
-            ("R11", "Liq", "S_ALK"): 0.5 * mw_alk / mw_P,
-            ("R11", "Liq", "X_AUT"): 0,
-            ("R11", "Liq", "X_H"): 0,
+            ("R11", "Liq", "S_F"): 0,
+            ("R11", "Liq", "S_A"): 0,
+            ("R11", "Liq", "S_I"): 0,
+            ("R11", "Liq", "S_NH4"): 0,
+            ("R11", "Liq", "S_N2"): 0,
+            ("R11", "Liq", "S_NO3"): 0,
+            ("R11", "Liq", "S_PO4"): -1 * mw_P,
+            ("R11", "Liq", "S_IC"): -(-self.Y_PHA * 0.3) * mw_C,
             ("R11", "Liq", "X_I"): 0,
-            ("R11", "Liq", "X_MeOH"): 0,
-            ("R11", "Liq", "X_MeP"): 0,
-            ("R11", "Liq", "X_PAO"): 0,
-            ("R11", "Liq", "X_PHA"): -self.Y_PHA,
-            ("R11", "Liq", "X_PP"): 1,
             ("R11", "Liq", "X_S"): 0,
-            ("R11", "Liq", "X_TSS"): -(0.6 * self.Y_PHA - 3.23),
+            ("R11", "Liq", "X_H"): 0,
+            ("R11", "Liq", "X_PAO"): 0,
+            ("R11", "Liq", "X_PP"): 1,
+            ("R11", "Liq", "X_PHA"): -self.Y_PHA,
+            ("R11", "Liq", "X_AUT"): 0,
+            ("R11", "Liq", "S_K"): -self.i_KXPP,
+            ("R11", "Liq", "S_Mg"): -self.i_MgXPP,
             # R12: Anoxic storage of X_PP
             ("R12", "Liq", "H2O"): 0,
-            ("R12", "Liq", "S_A"): 0,
-            ("R12", "Liq", "S_F"): 0,
-            ("R12", "Liq", "S_I"): 0,
-            ("R12", "Liq", "S_N2"): self.Y_PHA
-            * mw_N
-            / (40 * pyo.units.kg / pyo.units.kmol),
-            ("R12", "Liq", "S_NH4"): 0,
-            ("R12", "Liq", "S_NO3"): -self.Y_PHA
-            * mw_N
-            / (40 * pyo.units.kg / pyo.units.kmol),
             ("R12", "Liq", "S_O2"): 0,
-            ("R12", "Liq", "S_PO4"): -1,
-            ("R12", "Liq", "S_ALK"): 0.5 * mw_alk / mw_P
-            + self.Y_PHA / (40 * pyo.units.kg / pyo.units.kmol) * mw_alk,
-            ("R12", "Liq", "X_AUT"): 0,
-            ("R12", "Liq", "X_H"): 0,
+            ("R12", "Liq", "S_F"): 0,
+            ("R12", "Liq", "S_A"): 0,
+            ("R12", "Liq", "S_I"): 0,
+            ("R12", "Liq", "S_NH4"): 0,
+            ("R12", "Liq", "S_N2"): self.Y_PHA / 2.86,
+            ("R12", "Liq", "S_NO3"): -0.07,
+            ("R12", "Liq", "S_PO4"): -1 * mw_P,
+            ("R12", "Liq", "S_IC"): -(-self.Y_PHA * 0.3) * mw_C,
             ("R12", "Liq", "X_I"): 0,
-            ("R12", "Liq", "X_MeOH"): 0,
-            ("R12", "Liq", "X_MeP"): 0,
-            ("R12", "Liq", "X_PAO"): 0,
-            ("R12", "Liq", "X_PHA"): -self.Y_PHA,
-            ("R12", "Liq", "X_PP"): 1,
             ("R12", "Liq", "X_S"): 0,
-            ("R12", "Liq", "X_TSS"): -(0.6 * self.Y_PHA - 3.23),
+            ("R12", "Liq", "X_H"): 0,
+            ("R12", "Liq", "X_PAO"): 0,
+            ("R12", "Liq", "X_PP"): 1,
+            ("R12", "Liq", "X_PHA"): -self.Y_PHA,
+            ("R12", "Liq", "X_AUT"): 0,
+            ("R12", "Liq", "S_K"): -self.i_KXPP,
+            ("R12", "Liq", "S_Mg"): -self.i_MgXPP,
             # R13: Aerobic growth of X_PAO
             ("R13", "Liq", "H2O"): 0,
-            ("R13", "Liq", "S_A"): 0,
+            ("R13", "Liq", "S_O2"): -(1 - self.Y_PAO) / self.Y_PAO,
             ("R13", "Liq", "S_F"): 0,
+            ("R13", "Liq", "S_A"): 0,
             ("R13", "Liq", "S_I"): 0,
-            ("R13", "Liq", "S_N2"): 0,
             ("R13", "Liq", "S_NH4"): -self.i_NBM,
+            ("R13", "Liq", "S_N2"): 0,
             ("R13", "Liq", "S_NO3"): 0,
-            ("R13", "Liq", "S_O2"): -(1 / self.Y_H - 1),
-            ("R13", "Liq", "S_PO4"): -self.i_PBM,
-            ("R13", "Liq", "S_ALK"): -self.i_NBM * mw_alk / mw_N
-            + self.i_PBM * 1.5 * mw_alk / mw_P,
-            ("R13", "Liq", "X_AUT"): 0,
-            ("R13", "Liq", "X_H"): 0,
+            ("R13", "Liq", "S_PO4"): -self.i_PBM * mw_P,
+            ("R13", "Liq", "S_IC"): -(self.i_CXB - 0.3 / self.Y_PAO) * mw_C,
             ("R13", "Liq", "X_I"): 0,
-            ("R13", "Liq", "X_MeOH"): 0,
-            ("R13", "Liq", "X_MeP"): 0,
-            ("R13", "Liq", "X_PAO"): 1,
-            ("R13", "Liq", "X_PHA"): -1 / self.Y_H,
-            ("R13", "Liq", "X_PP"): 0,
             ("R13", "Liq", "X_S"): 0,
-            ("R13", "Liq", "X_TSS"): (self.i_TSSBM - 0.6 / self.Y_H),
+            ("R13", "Liq", "X_H"): 0,
+            ("R13", "Liq", "X_PAO"): 1,
+            ("R13", "Liq", "X_PP"): 0,
+            ("R13", "Liq", "X_PHA"): -1 / self.Y_PAO,
+            ("R13", "Liq", "X_AUT"): 0,
+            ("R13", "Liq", "S_K"): 0,
+            ("R13", "Liq", "S_Mg"): 0,
             # R14: Anoxic growth of X_PAO
             ("R14", "Liq", "H2O"): 0,
-            ("R14", "Liq", "S_A"): 0,
-            ("R14", "Liq", "S_F"): 0,
-            ("R14", "Liq", "S_I"): 0,
-            ("R14", "Liq", "S_N2"): -(1 - 1 / self.Y_H)
-            * mw_N
-            / (40 * pyo.units.kg / pyo.units.kmol),
-            ("R14", "Liq", "S_NH4"): -self.i_NBM,
-            ("R14", "Liq", "S_NO3"): (1 - 1 / self.Y_H)
-            * mw_N
-            / (40 * pyo.units.kg / pyo.units.kmol),
             ("R14", "Liq", "S_O2"): 0,
-            ("R14", "Liq", "S_PO4"): -self.i_PBM,
-            ("R14", "Liq", "S_ALK"): (
-                -self.i_NBM
-                - (1 - 1 / self.Y_H) * mw_N / (40 * pyo.units.kg / pyo.units.kmol)
-            )
-            * mw_alk
-            / mw_N
-            + self.i_PBM * mw_alk / mw_P,
-            ("R14", "Liq", "X_AUT"): 0,
-            ("R14", "Liq", "X_H"): 0,
+            ("R14", "Liq", "S_F"): 0,
+            ("R14", "Liq", "S_A"): 0,
+            ("R14", "Liq", "S_I"): 0,
+            ("R14", "Liq", "S_NH4"): -self.i_NBM,
+            ("R14", "Liq", "S_N2"): (1 - self.Y_H) / (2.86 * self.Y_H),
+            ("R14", "Liq", "S_NO3"): -(1 - self.Y_H) / (2.86 * self.Y_H),
+            ("R14", "Liq", "S_PO4"): -self.i_PBM * mw_P,
+            ("R14", "Liq", "S_IC"): -(self.i_CXB - 0.3 / self.Y_PAO) * mw_C,
             ("R14", "Liq", "X_I"): 0,
-            ("R14", "Liq", "X_MeOH"): 0,
-            ("R14", "Liq", "X_MeP"): 0,
-            ("R14", "Liq", "X_PAO"): 1,
-            ("R14", "Liq", "X_PHA"): -1 / self.Y_H,
-            ("R14", "Liq", "X_PP"): 0,
             ("R14", "Liq", "X_S"): 0,
-            ("R14", "Liq", "X_TSS"): self.i_TSSBM - 0.6 / self.Y_H,
+            ("R14", "Liq", "X_H"): 0,
+            ("R14", "Liq", "X_PAO"): 1,
+            ("R14", "Liq", "X_PP"): 0,
+            ("R14", "Liq", "X_PHA"): -1 / self.Y_PAO,
+            ("R14", "Liq", "X_AUT"): 0,
+            ("R14", "Liq", "S_K"): 0,
+            ("R14", "Liq", "S_Mg"): 0,
             # R15: Lysis of X_PAO
             ("R15", "Liq", "H2O"): 0,
-            ("R15", "Liq", "S_A"): 0,
+            ("R15", "Liq", "S_O2"): 0,
             ("R15", "Liq", "S_F"): 0,
+            ("R15", "Liq", "S_A"): 0,
             ("R15", "Liq", "S_I"): 0,
-            ("R15", "Liq", "S_N2"): 0,
             ("R15", "Liq", "S_NH4"): self.i_NBM
             - self.f_XI * self.i_NXI
             - (1 - self.f_XI) * self.i_NXS,
+            ("R15", "Liq", "S_N2"): 0,
             ("R15", "Liq", "S_NO3"): 0,
-            ("R15", "Liq", "S_O2"): 0,
-            ("R15", "Liq", "S_PO4"): self.i_PBM
-            - self.f_XI * self.i_PXI
-            - (1 - self.f_XI) * self.i_PXS,
-            ("R15", "Liq", "S_ALK"): -(
-                -self.i_NBM + self.f_XI * self.i_NXI + (1 - self.f_XI) * self.i_NXS
+            ("R15", "Liq", "S_PO4"): -(
+                self.f_XI * self.i_PXI + (1 - self.f_XI) * self.i_PXS - self.i_PBM
             )
-            * mw_alk
-            / mw_N
-            + (-self.i_PBM + self.f_XI * self.i_PXI + (1 - self.f_XI) * self.i_PXS)
-            * 1.5
-            * mw_alk
-            / mw_P,
-            ("R15", "Liq", "X_AUT"): 0,
-            ("R15", "Liq", "X_H"): 0,
+            * mw_P,
+            ("R15", "Liq", "S_IC"): -(
+                self.f_XI * self.i_CXI + (1 - self.f_XI) * self.i_CXS - self.i_CXB
+            )
+            * mw_C,
             ("R15", "Liq", "X_I"): self.f_XI,
-            ("R15", "Liq", "X_MeOH"): 0,
-            ("R15", "Liq", "X_MeP"): 0,
-            ("R15", "Liq", "X_PAO"): -1,
-            ("R15", "Liq", "X_PHA"): 0,
-            ("R15", "Liq", "X_PP"): 0,
             ("R15", "Liq", "X_S"): 1 - self.f_XI,
-            ("R15", "Liq", "X_TSS"): -self.i_TSSBM
-            + self.f_XI * self.i_TSSXI
-            + (1 - self.f_XI) * self.i_TSSXS,
+            ("R15", "Liq", "X_H"): 0,
+            ("R15", "Liq", "X_PAO"): -1,
+            ("R15", "Liq", "X_PP"): 0,
+            ("R15", "Liq", "X_PHA"): 0,
+            ("R15", "Liq", "X_AUT"): 0,
+            ("R15", "Liq", "S_K"): 0,
+            ("R15", "Liq", "S_Mg"): 0,
             # R16: Lysis of X_PP
             ("R16", "Liq", "H2O"): 0,
-            ("R16", "Liq", "S_A"): 0,
-            ("R16", "Liq", "S_F"): 0,
-            ("R16", "Liq", "S_I"): 0,
-            ("R16", "Liq", "S_N2"): 0,
-            ("R16", "Liq", "S_NH4"): 0,
-            ("R16", "Liq", "S_NO3"): 0,
             ("R16", "Liq", "S_O2"): 0,
-            ("R16", "Liq", "S_PO4"): 1,
-            ("R16", "Liq", "S_ALK"): -0.5 * mw_alk / mw_P,
-            ("R16", "Liq", "X_AUT"): 0,
-            ("R16", "Liq", "X_H"): 0,
+            ("R16", "Liq", "S_F"): 0,
+            ("R16", "Liq", "S_A"): 0,
+            ("R16", "Liq", "S_I"): 0,
+            ("R16", "Liq", "S_NH4"): 0,
+            ("R16", "Liq", "S_N2"): 0,
+            ("R16", "Liq", "S_NO3"): 0,
+            ("R16", "Liq", "S_PO4"): 1 * mw_P,
+            ("R16", "Liq", "S_IC"): 0,
             ("R16", "Liq", "X_I"): 0,
-            ("R16", "Liq", "X_MeOH"): 0,
-            ("R16", "Liq", "X_MeP"): 0,
-            ("R16", "Liq", "X_PAO"): 0,
-            ("R16", "Liq", "X_PHA"): 0,
-            ("R16", "Liq", "X_PP"): -1,
             ("R16", "Liq", "X_S"): 0,
-            ("R16", "Liq", "X_TSS"): -3.23,
+            ("R16", "Liq", "X_H"): 0,
+            ("R16", "Liq", "X_PAO"): 0,
+            ("R16", "Liq", "X_PP"): -1,
+            ("R16", "Liq", "X_PHA"): 0,
+            ("R16", "Liq", "X_AUT"): 0,
+            ("R16", "Liq", "S_K"): self.i_KXPP,
+            ("R16", "Liq", "S_Mg"): self.i_MgXPP,
             # R17: Lysis of X_PAH
             ("R17", "Liq", "H2O"): 0,
-            ("R17", "Liq", "S_A"): 1,
-            ("R17", "Liq", "S_F"): 0,
-            ("R17", "Liq", "S_I"): 0,
-            ("R17", "Liq", "S_N2"): 0,
-            ("R17", "Liq", "S_NH4"): 0,
-            ("R17", "Liq", "S_NO3"): 0,
             ("R17", "Liq", "S_O2"): 0,
+            ("R17", "Liq", "S_F"): 0,
+            ("R17", "Liq", "S_A"): 1,
+            ("R17", "Liq", "S_I"): 0,
+            ("R17", "Liq", "S_NH4"): 0,
+            ("R17", "Liq", "S_N2"): 0,
+            ("R17", "Liq", "S_NO3"): 0,
             ("R17", "Liq", "S_PO4"): 0,
-            ("R17", "Liq", "S_ALK"): mw_alk / (64 * pyo.units.kg / pyo.units.kmol)
-            - mw_alk / (31 * pyo.units.kg / pyo.units.kmol),
-            ("R17", "Liq", "X_AUT"): 0,
-            ("R17", "Liq", "X_H"): 0,
+            ("R17", "Liq", "S_IC"): -(self.i_CSA - 0.3) * mw_C,
             ("R17", "Liq", "X_I"): 0,
-            ("R17", "Liq", "X_MeOH"): 0,
-            ("R17", "Liq", "X_MeP"): 0,
-            ("R17", "Liq", "X_PAO"): 0,
-            ("R17", "Liq", "X_PHA"): -1,
-            ("R17", "Liq", "X_PP"): 0,
             ("R17", "Liq", "X_S"): 0,
-            ("R17", "Liq", "X_TSS"): -0.6,
+            ("R17", "Liq", "X_H"): 0,
+            ("R17", "Liq", "X_PAO"): 0,
+            ("R17", "Liq", "X_PP"): 0,
+            ("R17", "Liq", "X_PHA"): -1,
+            ("R17", "Liq", "X_AUT"): 0,
+            ("R17", "Liq", "S_K"): 0,
+            ("R17", "Liq", "S_Mg"): 0,
             # R18: Aerobic growth of X_AUT
             ("R18", "Liq", "H2O"): 0,
-            ("R18", "Liq", "S_A"): 0,
-            ("R18", "Liq", "S_F"): 0,
-            ("R18", "Liq", "S_I"): 0,
-            ("R18", "Liq", "S_N2"): 0,
-            ("R18", "Liq", "S_NH4"): -1 / self.Y_A - self.i_NBM,
-            ("R18", "Liq", "S_NO3"): 1 / self.Y_A,
             ("R18", "Liq", "S_O2"): -(4.57 - self.Y_A) / self.Y_A,
-            ("R18", "Liq", "S_PO4"): -self.i_PBM,
-            ("R18", "Liq", "S_ALK"): (-1 / self.Y_A - self.i_NBM - 1 / self.Y_A)
-            * mw_alk
-            / mw_N
-            + self.i_PBM * 1.5 * mw_alk / mw_P,
-            ("R18", "Liq", "X_AUT"): 1,
-            ("R18", "Liq", "X_H"): 0,
+            ("R18", "Liq", "S_F"): 0,
+            ("R18", "Liq", "S_A"): 1,
+            ("R18", "Liq", "S_I"): 0,
+            ("R18", "Liq", "S_NH4"): -1 / self.Y_A - self.i_NBM,
+            ("R18", "Liq", "S_N2"): 0,
+            ("R18", "Liq", "S_NO3"): 1 / self.Y_A,
+            ("R18", "Liq", "S_PO4"): -self.i_PBM * mw_P,
+            ("R18", "Liq", "S_IC"): -self.i_CXB * mw_C,
             ("R18", "Liq", "X_I"): 0,
-            ("R18", "Liq", "X_MeOH"): 0,
-            ("R18", "Liq", "X_MeP"): 0,
-            ("R18", "Liq", "X_PAO"): 0,
-            ("R18", "Liq", "X_PHA"): 0,
-            ("R18", "Liq", "X_PP"): 0,
             ("R18", "Liq", "X_S"): 0,
-            ("R18", "Liq", "X_TSS"): self.i_TSSBM,
+            ("R18", "Liq", "X_H"): 0,
+            ("R18", "Liq", "X_PAO"): 0,
+            ("R18", "Liq", "X_PP"): 0,
+            ("R18", "Liq", "X_PHA"): 0,
+            ("R18", "Liq", "X_AUT"): 1,
+            ("R18", "Liq", "S_K"): 0,
+            ("R18", "Liq", "S_Mg"): 0,
             # R19: Lysis of X_AUT
             ("R19", "Liq", "H2O"): 0,
-            ("R19", "Liq", "S_A"): 0,
-            ("R19", "Liq", "S_F"): 0,
-            ("R19", "Liq", "S_I"): 0,
-            ("R19", "Liq", "S_N2"): 0,
-            ("R19", "Liq", "S_NH4"): -self.f_XI * self.i_NXI
-            - (1 - self.f_XI) * self.i_NXS
-            + self.i_NBM,
-            ("R19", "Liq", "S_NO3"): 0,
             ("R19", "Liq", "S_O2"): 0,
-            ("R19", "Liq", "S_PO4"): -self.f_XI * self.i_PXI
-            - (1 - self.f_XI) * self.i_PXS
-            + self.i_PBM,
-            ("R19", "Liq", "S_ALK"): (
-                -self.f_XI * self.i_NXI - (1 - self.f_XI) * self.i_NXS + self.i_NBM
+            ("R19", "Liq", "S_F"): 0,
+            ("R19", "Liq", "S_A"): 0,
+            ("R19", "Liq", "S_I"): 0,
+            ("R19", "Liq", "S_NH4"): self.i_NBM
+            - self.f_XI * self.i_NXI
+            - (1 - self.f_XI) * self.i_NXS,
+            ("R19", "Liq", "S_N2"): 0,
+            ("R19", "Liq", "S_NO3"): 0,
+            ("R19", "Liq", "S_PO4"): -(
+                self.f_XI * self.i_PXI + (1 - self.f_XI) * self.i_PXS - self.i_PBM
             )
-            * mw_alk
-            / mw_N
-            - (-self.f_XI * self.i_PXI - (1 - self.f_XI) * self.i_PXS + self.i_PBM)
-            * mw_alk
-            / mw_P,
-            ("R19", "Liq", "X_AUT"): -1,
-            ("R19", "Liq", "X_H"): 0,
+            * mw_P,
+            ("R19", "Liq", "S_IC"): -(
+                self.f_XI * self.i_CXI + (1 - self.f_XI) * self.i_CXS - self.i_CXB
+            )
+            * mw_C,
             ("R19", "Liq", "X_I"): self.f_XI,
-            ("R19", "Liq", "X_MeOH"): 0,
-            ("R19", "Liq", "X_MeP"): 0,
-            ("R19", "Liq", "X_PAO"): 0,
-            ("R19", "Liq", "X_PHA"): 0,
-            ("R19", "Liq", "X_PP"): 0,
             ("R19", "Liq", "X_S"): 1 - self.f_XI,
-            ("R19", "Liq", "X_TSS"): self.f_XI * self.i_TSSXI
-            + (1 - self.f_XI) * self.i_TSSXS
-            - self.i_TSSBM,
-            # R20: Precipitation
-            ("R20", "Liq", "H2O"): 0,
-            ("R20", "Liq", "S_A"): 0,
-            ("R20", "Liq", "S_F"): 0,
-            ("R20", "Liq", "S_I"): 0,
-            ("R20", "Liq", "S_N2"): 0,
-            ("R20", "Liq", "S_NH4"): 0,
-            ("R20", "Liq", "S_NO3"): 0,
-            ("R20", "Liq", "S_O2"): 0,
-            ("R20", "Liq", "S_PO4"): -1,
-            ("R20", "Liq", "S_ALK"): 1.5 * mw_alk / mw_P,
-            ("R20", "Liq", "X_AUT"): 0,
-            ("R20", "Liq", "X_H"): 0,
-            ("R20", "Liq", "X_I"): 0,
-            ("R20", "Liq", "X_MeOH"): -3.45,
-            ("R20", "Liq", "X_MeP"): 4.87,
-            ("R20", "Liq", "X_PAO"): 0,
-            ("R20", "Liq", "X_PHA"): 0,
-            ("R20", "Liq", "X_PP"): 0,
-            ("R20", "Liq", "X_S"): 0,
-            ("R20", "Liq", "X_TSS"): 1.42,
-            # R21: Re-dissolution
-            ("R21", "Liq", "H2O"): 0,
-            ("R21", "Liq", "S_A"): 0,
-            ("R21", "Liq", "S_F"): 0,
-            ("R21", "Liq", "S_I"): 0,
-            ("R21", "Liq", "S_N2"): 0,
-            ("R21", "Liq", "S_NH4"): 0,
-            ("R21", "Liq", "S_NO3"): 0,
-            ("R21", "Liq", "S_O2"): 0,
-            ("R21", "Liq", "S_PO4"): 1,
-            ("R21", "Liq", "S_ALK"): -1.5 * mw_alk / mw_P,
-            ("R21", "Liq", "X_AUT"): 0,
-            ("R21", "Liq", "X_H"): 0,
-            ("R21", "Liq", "X_I"): 0,
-            ("R21", "Liq", "X_MeOH"): 3.45,
-            ("R21", "Liq", "X_MeP"): -4.87,
-            ("R21", "Liq", "X_PAO"): 0,
-            ("R21", "Liq", "X_PHA"): 0,
-            ("R21", "Liq", "X_PP"): 0,
-            ("R21", "Liq", "X_S"): 0,
-            ("R21", "Liq", "X_TSS"): -1.42,
+            ("R19", "Liq", "X_H"): 0,
+            ("R19", "Liq", "X_PAO"): 0,
+            ("R19", "Liq", "X_PP"): 0,
+            ("R19", "Liq", "X_PHA"): 0,
+            ("R19", "Liq", "X_AUT"): -1,
+            ("R19", "Liq", "S_K"): 0,
+            ("R19", "Liq", "S_Mg"): 0,
         }
         # Fix all the variables we just created
         for v in self.component_objects(pyo.Var, descend_into=False):
@@ -1082,7 +955,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
         )
 
         try:
-
+            # TODO: verify reaction rates expressions (these are carried over from ASM2d_reactions minus S_ALK terms)
             def rate_expression_rule(b, r):
                 if r == "R1":
                     # R1: Aerobic hydrolysis
@@ -1184,10 +1057,6 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_PO4"]
                             / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
                         )
-                        * (
-                            b.state_ref.alkalinity
-                            / (b.params.K_ALK + b.state_ref.alkalinity)
-                        )
                         * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
@@ -1217,10 +1086,6 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         * (
                             b.conc_mass_comp_ref["S_PO4"]
                             / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
-                        )
-                        * (
-                            b.state_ref.alkalinity
-                            / (b.params.K_ALK + b.state_ref.alkalinity)
                         )
                         * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
@@ -1529,25 +1394,6 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     # R19: Aerobic growth of X_AUT
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.b_AUT * b.conc_mass_comp_ref["X_AUT"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
-                elif r == "R20":
-                    # R20: Precipitation
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_pre
-                        * b.conc_mass_comp_ref["S_PO4"]
-                        * b.conc_mass_comp_ref["X_MeOH"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
-                elif r == "R21":
-                    # R21: Re-dissolution
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_red
-                        * b.conc_mass_comp_ref["X_MeP"]
-                        * (
-                            b.state_ref.alkalinity
-                            / (b.params.K_ALK + b.state_ref.alkalinity)
-                        ),
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 else:
