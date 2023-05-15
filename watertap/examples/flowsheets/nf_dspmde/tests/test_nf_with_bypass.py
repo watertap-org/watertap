@@ -26,7 +26,7 @@ def test_main():
             53.60319873234126,
         ],
         "bypass": [
-            m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"].value * 100,
+            m.fs.by_pass_splitter.split_fraction[0, "bypass"].value * 100,
             4.127411072051739,
         ],
     }

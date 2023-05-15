@@ -73,6 +73,7 @@ def main():
     print("Feed hardness (mg/L as CaCO3)", m.fs.feed.total_hardness.value)
     print("Product hardness (mg/L as CaCO3)", m.fs.product.total_hardness.value)
     print("Disposal hardness (mg/L as CaCO3)", m.fs.disposal.total_hardness.value)
+    return m
 
 
 def build():
