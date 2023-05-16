@@ -476,11 +476,8 @@ class FlowsheetInterface:
                         f"Flowsheet `{Actions.build}` action failed. "
                         f"See logs for details."
                     )
-                try:
-                    self.fs_exp.obj = action_result.fs
-                    self.fs_exp.m = action_result
-                except Exception as e:
-                    self.fs_exp.obj = action_result
+                self.fs_exp.obj = action_result.fs
+                self.fs_exp.m = action_result
 
                 # [re-]create exports (new model object)
                 if Actions.export not in self._actions:
