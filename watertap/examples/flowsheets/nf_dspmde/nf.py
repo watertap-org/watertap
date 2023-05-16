@@ -13,7 +13,6 @@
 from pyomo.environ import (
     units as pyunits,
     Objective,
-    assert_optimal_termination,
     Var,
     Constraint,
     NonNegativeReals,
@@ -234,8 +233,6 @@ def fix_init_vars(m):
 
 
 def unfix_opt_vars(m):
-    # m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "H2O"].unfix()
-    # m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].unfix()
     m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
     for (phase, ion), obj in m.fs.feed.properties[0].conc_mass_phase_comp.items():
         m.fs.feed.properties[0].conc_mass_phase_comp["Liq", ion].fix()
@@ -245,9 +242,6 @@ def unfix_opt_vars(m):
     m.fs.NF.pump.outlet.pressure[0].unfix()
     m.fs.NF.nfUnit.area.unfix()
     m.fs.product.max_hardness.fix(200)
-
-
-# m.fs.product.max_hardness.fix(500)
 
 
 def add_objective(m):
@@ -265,6 +259,8 @@ def optimize(m, solver=None, **kwargs):
 
 
 def initialize(m, solver=None, **kwargs):
+    if solver is None:
+        solver = get_solver()
     set_default_feed(m, solver)
     fix_init_vars(m)
     init_system(m, solver)
@@ -276,13 +272,13 @@ def initialize(m, solver=None, **kwargs):
 
 
 def init_system(m, solver):
-    if solver == None:
+    if solver is None:
         solver = get_solver()
     m.fs.feed.initialize(optarg=solver.options)
 
     propagate_state(m.fs.feed_to_nfUnit_feed)
 
-    init_nf_block(m, m.fs.NF, solver)
+    init_nf_block(m.fs.NF, solver)
 
     propagate_state(m.fs.nfUnit_retentate_to_disposal)
     propagate_state(m.fs.nfUnit_product_to_product)
@@ -290,7 +286,9 @@ def init_system(m, solver):
     m.fs.NF.retentate.initialize(optarg=solver.options)
 
 
-def init_nf_block(m, blk, solver):
+def init_nf_block(blk, solver):
+    if solver is None:
+        solver = get_solver()
     blk.feed.initialize(optarg=solver.options)
     propagate_state(blk.feed_to_pump)
     blk.pump.initialize(optarg=solver.options)
@@ -318,6 +316,9 @@ def set_NF_feed(
     feed_mass_frac=None,
     mole_frac=None,
 ):
+    if solver is None:
+        solver = get_solver()
+
     mass_flow_in = flow_mass_h2o * pyunits.kg / pyunits.s
     blk.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(flow_mass_h2o)
 
@@ -348,7 +349,7 @@ def set_NF_feed(
         for ion, x in conc_mass_phase_comp.items():
             blk.feed.properties[0].conc_mass_phase_comp["Liq", ion].fix(x)
             blk.feed.properties[0].flow_mol_phase_comp["Liq", ion].unfix()
-        result = solver.solve(blk.feed)
+        solver.solve(blk.feed)
         blk.feed.properties[0].conc_mass_phase_comp["Liq", "H2O"].fix()
         for ion, x in conc_mass_phase_comp.items():
             blk.feed.properties[0].conc_mass_phase_comp["Liq", ion].unfix()
@@ -367,15 +368,11 @@ def set_NF_feed(
 
     blk.feed.properties[0].temperature.fix(298.15)
     iscale.calculate_scaling_factors(blk)
-    # switching to concetration for ease of adjusting in UI
 
+    # switching to concentration for ease of adjusting in UI
     for ion, x in conc_mass_phase_comp.items():
         blk.feed.properties[0].conc_mass_phase_comp["Liq", ion].unfix()
         blk.feed.properties[0].flow_mol_phase_comp["Liq", ion].fix()
-    # blk.feed.properties[0].conc_mass_phase_comp["Liq", "H2O"].unfix()
-    # blk.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].unfix()
-    # blk.feed.properties[0].flow_vol_phase["Liq"].fix()
-    # blk.feed.display()
 
 
 def calc_scale(value):

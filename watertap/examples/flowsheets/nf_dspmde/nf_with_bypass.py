@@ -10,9 +10,6 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from pyomo.environ import (
-    units as pyunits,
-)
 from pyomo.network import Arc
 from idaes.core import (
     FlowsheetBlock,
@@ -29,30 +26,19 @@ from idaes.models.unit_models import (
 )
 from idaes.models.unit_models.mixer import MomentumMixingType, MixingType
 
-from watertap.unit_models.nanofiltration_DSPMDE_0D import (
-    NanofiltrationDSPMDE0D,
-)
-
-from watertap.unit_models.pressure_changer import Pump
-
 from pyomo.environ import ConcreteModel, TransformationFactory
 
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
-    ActivityCoefficientModel,
-    DensityCalculation,
 )
 from watertap.examples.flowsheets.nf_dspmde import nf
 
-from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
 
 
 def main():
     solver = get_solver()
     m = build()
-    # Define composition in kg/m3 == g/l
-
     initialize(m, solver)
     unfix_opt_vars(m)
     nf.add_objective(m)
@@ -147,7 +133,9 @@ def fix_init_vars(m):
     nf.fix_init_vars(m)
 
 
-def initialize(m, solver=None, **kwargs):
+def initialize(m, solver=None):
+    if solver is None:
+        solver = get_solver()
     # use standard nf default feed
     nf.set_default_feed(m, solver)
     fix_init_vars(m)
@@ -162,7 +150,7 @@ def initialize(m, solver=None, **kwargs):
 
 
 def init_system(m, solver):
-    if solver == None:
+    if solver is None:
         solver = get_solver()
     m.fs.feed.initialize(optarg=solver.options)
 
@@ -173,7 +161,7 @@ def init_system(m, solver):
     propagate_state(m.fs.splitter_to_mixer)
     propagate_state(m.fs.splitter_to_nfUnit_feed)
 
-    nf.init_nf_block(m, m.fs.NF, solver)
+    nf.init_nf_block(m.fs.NF, solver)
 
     propagate_state(m.fs.nfUnit_product_to_mixer)
 
@@ -191,7 +179,9 @@ def unfix_opt_vars(m):
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].unfix()
 
 
-def optimize(m, solver, **kwargs):
+def optimize(m, solver):
+    if solver is None:
+        solver = get_solver()
     result = nf.optimize(m, solver)
     return result
 
