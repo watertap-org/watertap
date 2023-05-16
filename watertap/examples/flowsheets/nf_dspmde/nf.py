@@ -255,7 +255,9 @@ def add_objective(m):
         m.fs.LCOW_objective = Objective(expr=m.fs.costing.LCOW)
 
 
-def optimize(m, solver, **kwargs):
+def optimize(m, solver=None, **kwargs):
+    if solver is None:
+        solver = get_solver()
     # add_objective(m)
     print("Optimizing with {} DOFS".format(degrees_of_freedom(m)))
     result = solver.solve(m, tee=True)
