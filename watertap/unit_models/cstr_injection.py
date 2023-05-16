@@ -18,8 +18,7 @@ NOTE: This is likely a temporary model until a more detailed model is available.
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.environ import Reference, Block, Var, Constraint
-from pyomo.common.deprecation import deprecated
+from pyomo.environ import Reference
 
 # Import IDAES cores
 from idaes.core import (
