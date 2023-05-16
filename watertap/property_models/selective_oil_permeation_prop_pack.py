@@ -15,7 +15,7 @@
 Simple property package for selective oil permeation
 """
 
-from pyomo.environ import Constraint, Var, Param, NonNegativeReals, Suffix, value
+from pyomo.environ import Constraint, Var, Param, NonNegativeReals, Suffix
 from pyomo.environ import units
 
 # Import IDAES cores

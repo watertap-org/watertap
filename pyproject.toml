@@ -16,4 +16,5 @@ disable = [
 # for a list of all messages
 enable = [
     "unnecessary-pass",
+    "unused-import",
 ]

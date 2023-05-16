@@ -10,7 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Thermophysical property package to be used in conjunction with modified ASM2d reactions for compatibility with the modified ADM1 model.
+Thermophysical property package to be used in conjunction with modified ASM2d
+reactions for compatibility with the modified ADM1 model.
 
 Reference:
 [1] Henze, M., Gujer, W., Mino, T., Matsuo, T., Wentzel, M.C., Marais, G.v.R.,
@@ -22,12 +23,9 @@ Wat. Sci. Tech. Vol. 39, No. 1, pp. 165-182
 # Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
-    LiquidPhase,
-    Component,
     Solute,
-    Solvent,
 )
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigValue
 import idaes.logger as idaeslog
 from watertap.property_models.activated_sludge.asm2d_properties import (
     ASM2dParameterData,
@@ -35,7 +33,7 @@ from watertap.property_models.activated_sludge.asm2d_properties import (
     ASM2dStateBlockData,
 )
 
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import ConfigurationError
 
 # Some more information about this module
 __author__ = "Chenyu Wang"
@@ -61,14 +59,15 @@ class ModifiedASM2dParameterData(ASM2dParameterData):
         super().build()
         self._state_block_class = ModifiedASM2dStateBlock
         # Group components into different sets
-        for j in self.config.additional_solute_list:
-            if j == "H2O":
-                raise ConfigurationError(
-                    "'H2O'is reserved as the default solvent and cannot be a solute."
-                )
-            # Add valid members of solute_list into IDAES's Solute() class.
-            # This triggers the addition of j into component_list and solute_set.
-            self.add_component(j, Solute())
+        if self.config.additional_solute_list is not None:
+            for j in self.config.additional_solute_list:
+                if j == "H2O":
+                    raise ConfigurationError(
+                        "'H2O' is reserved as the default solvent and cannot be a solute."
+                    )
+                # Add valid members of solute_list into IDAES's Solute() class.
+                # This triggers the addition of j into component_list and solute_set.
+                self.add_component(j, Solute())
 
 
 class _ModifiedASM2dStateBlock(_ASM2dStateBlock):
