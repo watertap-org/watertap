@@ -156,6 +156,7 @@ def test_actions(add_variant: str):
     built = False
     # garbage = {"trash": True}
     garbage = FAKE_FLOWSHEET
+    m = FAKE_FLOWSHEET
     v1 = Var(name="variable1")
     v1.construct()
     v1.value = 1
@@ -164,11 +165,13 @@ def test_actions(add_variant: str):
     def fake_build():
         nonlocal built
         built = True
-        return garbage
+        nonlocal m
+        m = build_ro()
+        return m
 
     def fake_solve(flowsheet=None):
         # flowsheet passed in here should be what fake_build() returns
-        assert flowsheet == FAKE_FLOWSHEET.fs
+        assert flowsheet == m.fs
         return SOLVE_RESULT_OK
 
     def fake_export(flowsheet=None, exports=None):
