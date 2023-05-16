@@ -64,6 +64,7 @@ def main():
     solver = get_solver()
     m = build()
     initialize(m, solver)
+    add_objective(m)
     unfix_opt_vars(m)
     optimize(m, solver)
     print("Optimal cost", m.fs.costing.LCOW.value)
@@ -237,6 +238,14 @@ def fix_init_vars(m):
 
 
 def unfix_opt_vars(m):
+    # m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "H2O"].unfix()
+    # m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].unfix()
+    m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
+    for (phase, ion), obj in m.fs.feed.properties[0].conc_mass_phase_comp.items():
+        m.fs.feed.properties[0].conc_mass_phase_comp["Liq", ion].fix()
+        m.fs.feed.properties[0].flow_mol_phase_comp["Liq", ion].unfix()
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "H2O"].unfix()
+    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].unfix()
     m.fs.NF.pump.outlet.pressure[0].unfix()
     m.fs.NF.nfUnit.area.unfix()
     m.fs.product.max_hardness.fix(200)
@@ -251,7 +260,7 @@ def add_objective(m):
 
 
 def optimize(m, solver, **kwargs):
-    add_objective(m)
+    # add_objective(m)
     print("Optimizing with {} DOFS".format(degrees_of_freedom(m)))
     result = solver.solve(m, tee=True)
     return result
@@ -361,9 +370,14 @@ def set_NF_feed(
     blk.feed.properties[0].temperature.fix(298.15)
     iscale.calculate_scaling_factors(blk)
     # switching to concetration for ease of adjusting in UI
+
     for ion, x in conc_mass_phase_comp.items():
         blk.feed.properties[0].conc_mass_phase_comp["Liq", ion].unfix()
         blk.feed.properties[0].flow_mol_phase_comp["Liq", ion].fix()
+    # blk.feed.properties[0].conc_mass_phase_comp["Liq", "H2O"].unfix()
+    # blk.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].unfix()
+    # blk.feed.properties[0].flow_vol_phase["Liq"].fix()
+    # blk.feed.display()
 
 
 def calc_scale(value):
@@ -387,7 +401,7 @@ def add_hardness_constraint(stream):
         initialize=0.5,
         bounds=(0, 10000),
         domain=NonNegativeReals,
-        units=pyunits.mg / pyunits.kg,
+        units=pyunits.mg / pyunits.L,
         doc="Water Hardness as CO3",
     )
     stream.total_hardness.unfix()
@@ -396,7 +410,7 @@ def add_hardness_constraint(stream):
         initialize=0.5,
         bounds=(0, 10000),
         domain=NonNegativeReals,
-        units=pyunits.mg / pyunits.kg,
+        units=pyunits.mg / pyunits.L,
         doc="Water Hardness as CaCO3",
     )
     stream.Ca_hardness.unfix()
@@ -405,7 +419,7 @@ def add_hardness_constraint(stream):
         initialize=0,
         bounds=(0, 10000),
         domain=NonNegativeReals,
-        units=pyunits.mg / pyunits.kg,
+        units=pyunits.mg / pyunits.L,
         doc="Water Hardness as MgCO3",
     )
     stream.Mg_hardness.unfix()
@@ -420,7 +434,7 @@ def add_hardness_constraint(stream):
     stream.max_hardness = Var(
         initialize=10000,
         domain=NonNegativeReals,
-        units=pyunits.g / pyunits.mol,
+        units=pyunits.mg / pyunits.L,
         doc="System Water Recovery",
     )
     stream.max_hardness.unfix()

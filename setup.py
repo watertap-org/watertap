@@ -136,6 +136,8 @@ setup(
             "edb = watertap.edb.commands:command_base",
         ],
         "watertap.flowsheets": [
+            "nf = watertap.examples.flowsheets.nf_dspmde.nf_ui",
+            "nf_with_bypass = watertap.examples.flowsheets.nf_dspmde.nf_with_bypass_ui",
             "metab = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab_ui",
             "suboxic_ASM = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_ASM_ui",
             "Magprex = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex_ui",

@@ -60,6 +60,7 @@ def main():
 
     initialize(m, solver)
     unfix_opt_vars(m)
+    nf.add_objective(m)
     optimize(m, solver)
     print("Optimal cost", m.fs.costing.LCOW.value)
     print("Optimal NF pressure (Bar)", m.fs.NF.pump.outlet.pressure[0].value / 1e5)
@@ -191,9 +192,7 @@ def init_system(m, solver):
 
 
 def unfix_opt_vars(m):
-    m.fs.NF.pump.outlet.pressure[0].unfix()
-    m.fs.NF.nfUnit.area.unfix()
-    m.fs.product.max_hardness.fix(200)
+    nf.unfix_opt_vars(m)
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].unfix()
 
 
