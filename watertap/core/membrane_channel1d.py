@@ -10,13 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from copy import deepcopy
-
 from pyomo.common.config import ConfigValue, In
-from pyomo.environ import (
-    Constraint,
-    Set,
-)
+from pyomo.environ import Set
 from idaes.core import (
     declare_process_block_class,
     DistributedVars,
