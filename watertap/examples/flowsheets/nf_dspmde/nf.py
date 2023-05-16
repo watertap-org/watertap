@@ -17,7 +17,6 @@ from pyomo.environ import (
     Var,
     Constraint,
     NonNegativeReals,
-    Reals,
     Param,
 )
 
@@ -31,13 +30,10 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import (
-    Mixer,
-    Separator,
     Product,
     Feed,
     StateJunction,
 )
-from idaes.models.unit_models.mixer import MomentumMixingType, MixingType
 
 from watertap.unit_models.nanofiltration_DSPMDE_0D import (
     NanofiltrationDSPMDE0D,
