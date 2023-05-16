@@ -26,7 +26,6 @@ from idaes.models.unit_models import (
     Separator,
     Product,
     Feed,
-    StateJunction,
 )
 from idaes.models.unit_models.mixer import MomentumMixingType, MixingType
 
@@ -38,15 +37,11 @@ from watertap.unit_models.pressure_changer import Pump
 
 from pyomo.environ import ConcreteModel, TransformationFactory
 
-import math
-
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
     ActivityCoefficientModel,
     DensityCalculation,
 )
-import idaes.core.util.scaling as iscale
-
 from watertap.examples.flowsheets.nf_dspmde import nf
 
 from idaes.core import UnitModelCostingBlock

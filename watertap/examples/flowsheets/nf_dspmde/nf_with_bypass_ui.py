@@ -10,12 +10,9 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 from watertap.ui.fsapi import FlowsheetInterface
-from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.examples.flowsheets.nf_dspmde import nf_with_bypass
 from watertap.examples.flowsheets.nf_dspmde import nf
-from pyomo.environ import units as pyunits, assert_optimal_termination
-from pyomo.util.check_units import assert_units_consistent
-from idaes.core.util.model_statistics import degrees_of_freedom
+from pyomo.environ import units as pyunits
 from idaes.core.solvers import get_solver
 
 
