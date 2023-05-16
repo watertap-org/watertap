@@ -476,8 +476,11 @@ class FlowsheetInterface:
                         f"Flowsheet `{Actions.build}` action failed. "
                         f"See logs for details."
                     )
-                self.fs_exp.m = action_result
-                self.fs_exp.obj = action_result.fs
+                try:
+                    self.fs_exp.obj = action_result.fs
+                    self.fs_exp.m = action_result
+                except Exception as e:
+                    self.fs_exp.obj = action_result
 
                 # [re-]create exports (new model object)
                 if Actions.export not in self._actions:
@@ -545,6 +548,7 @@ class FlowsheetInterface:
         """
         _log.info("Exporting values from flowsheet model to UI")
         u = pyo.units
+        self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         for key, mo in self.fs_exp.model_objects.items():
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
             if not isinstance(
@@ -569,6 +573,7 @@ class FlowsheetInterface:
                     tmp = pyo.Var(initialize=mo.obj.lb, units=u.get_units(mo.obj))
                     tmp.construct()
                     mo.lb = pyo.value(u.convert(tmp, to_units=mo.ui_units))
+                mo.fixed = mo.obj.fixed
             else:
                 mo.has_bounds = False
 
