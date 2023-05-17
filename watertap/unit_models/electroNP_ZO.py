@@ -182,7 +182,7 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
         # Add performance variables
         self.recovery_frac_mass_H2O = Var(
             self.flowsheet().time,
-            initialize=1,
+            initialize=0.99999,
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             bounds=(0.0, 1.0000001),
@@ -285,7 +285,7 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
             elif j == "S_NH4":
                 return b.removal_frac_mass_comp[t, j] == b.N_removal
             else:
-                return b.removal_frac_mass_comp[t, j] == 0
+                return b.removal_frac_mass_comp[t, j] == 1e-9
 
         self._stream_table_dict = {
             "Inlet": self.inlet,

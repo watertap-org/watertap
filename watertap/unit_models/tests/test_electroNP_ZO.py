@@ -128,7 +128,6 @@ class TestElectroNP:
 
         # check that all variables have scaling factors
         unscaled_var_list = list(iscale.unscaled_variables_generator(m))
-        # [print(i) for i in unscaled_var_list]
         assert len(unscaled_var_list) == 0
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -248,10 +247,10 @@ class TestElectroNP:
             0, abs=1e-4
         )
         assert value(m.fs.unit.byproduct.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            4.5289e14, rel=1e-4
+            480, rel=1e-4
         )
         assert value(m.fs.unit.byproduct.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            3.328756e14, rel=1e-4
+            352.8, rel=1e-4
         )
         assert value(m.fs.unit.treated.alkalinity[0]) == pytest.approx(
             0.005083, rel=1e-4

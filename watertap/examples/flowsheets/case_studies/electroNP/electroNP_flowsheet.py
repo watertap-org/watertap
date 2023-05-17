@@ -47,6 +47,7 @@ from idaes.core.util.tables import (
     stream_table_dataframe_to_string,
 )
 from watertap.costing import WaterTAPCosting
+from watertap.core.util.model_diagnostics.infeasible import *
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -261,6 +262,8 @@ def build_flowsheet():
     solver = get_solver(options={"bound_push": 1e-8})
 
     results = solver.solve(m, tee=True)
+    print_close_to_bounds(m)
+    print_infeasible_constraints(m)
 
     pyo.assert_optimal_termination(results)
 
