@@ -43,7 +43,6 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 
 from watertap.property_models.activated_sludge.new_modified_asm2d_properties import (
     NewASM2dParameterBlock,
-    DecaySwitch,
 )
 from watertap.property_models.activated_sludge.new_modified_asm2d_reactions import (
     NewASM2dReactionParameterBlock,
@@ -94,140 +93,111 @@ class TestParamBlock(object):
             ]
 
         # Expected non-zero stoichiometries
-        # Values from table 11 in reference
+        # Values from Flores-Alsina BSM2.PSFe Gujer matrix Excel (https://github.com/wwtmodels/Plant-Wide-Models)
         stoic = {
             ("R1", "Liq", "S_F"): 1,
-            ("R1", "Liq", "S_NH4"): 0.01,
-            ("R1", "Liq", "S_ALK"): 0.01 * 61 / 14,  # ~0.001*61
             ("R1", "Liq", "X_S"): -1,
-            ("R1", "Liq", "X_TSS"): -0.75,
             ("R2", "Liq", "S_F"): 1,
-            ("R2", "Liq", "S_NH4"): 0.01,
-            ("R2", "Liq", "S_ALK"): 0.01 * 61 / 14,  # ~0.001*61
             ("R2", "Liq", "X_S"): -1,
-            ("R2", "Liq", "X_TSS"): -0.75,
             ("R3", "Liq", "S_F"): 1,
-            ("R3", "Liq", "S_NH4"): 0.01,
-            ("R3", "Liq", "S_ALK"): 0.01 * 61 / 14,  # ~0.001*61
             ("R3", "Liq", "X_S"): -1,
-            ("R3", "Liq", "X_TSS"): -0.75,
             ("R4", "Liq", "S_O2"): -0.6,
             ("R4", "Liq", "S_F"): -1.6,
-            ("R4", "Liq", "S_NH4"): -0.022,
-            ("R4", "Liq", "S_PO4"): -0.004,
-            ("R4", "Liq", "S_ALK"): -0.022 * 61 / 14
-            + 1.5 * 0.004 * 61 / 31,  # ~ -0.001*61
+            ("R4", "Liq", "S_NH4"): -0.032518,
+            ("R4", "Liq", "S_PO4"): -0.012596,
+            ("R4", "Liq", "S_IC"): 0.143367,
             ("R4", "Liq", "X_H"): 1,
-            ("R4", "Liq", "X_TSS"): 0.9,
             ("R5", "Liq", "S_O2"): -0.6,
             ("R5", "Liq", "S_A"): -1.6,
-            ("R5", "Liq", "S_NH4"): -0.07,
-            ("R5", "Liq", "S_PO4"): -0.02,
-            ("R5", "Liq", "S_ALK"): -0.07 * 61 / 14
-            + 1.5 * 0.02 * 61 / 31
-            + 1.6 * 61 / 64,  # ~0.021*61
+            ("R5", "Liq", "S_NH4"): -0.08615,
+            ("R5", "Liq", "S_PO4"): -0.02154,
+            ("R5", "Liq", "S_IC"): 0.23388,
             ("R5", "Liq", "X_H"): 1,
-            ("R5", "Liq", "X_TSS"): 0.9,
             ("R6", "Liq", "S_F"): -1.6,
-            ("R6", "Liq", "S_NH4"): -0.022,
+            ("R6", "Liq", "S_NH4"): -0.032518,
             ("R6", "Liq", "S_N2"): 0.21,
             ("R6", "Liq", "S_NO3"): -0.21,
-            ("R6", "Liq", "S_PO4"): -0.004,
-            ("R6", "Liq", "S_ALK"): -0.022 * 61 / 14
-            + 0.21 * 61 / 14
-            + 0.004 * 1.5 * 61 / 31,  # ~0.014*61
+            ("R6", "Liq", "S_PO4"): -0.012596,
+            ("R6", "Liq", "S_IC"): 0.143368,
             ("R6", "Liq", "X_H"): 1,
-            ("R6", "Liq", "X_TSS"): 0.9,
             ("R7", "Liq", "S_A"): -1.6,
-            ("R7", "Liq", "S_NH4"): -0.07,
+            ("R7", "Liq", "S_NH4"): -0.08615,
             ("R7", "Liq", "S_N2"): 0.21,
             ("R7", "Liq", "S_NO3"): -0.21,
-            ("R7", "Liq", "S_PO4"): -0.02,
-            ("R7", "Liq", "S_ALK"): 1.6 * 61 / 64
-            + (-0.07 + 0.21) * 61 / 14
-            + 0.02 * 1.5 * 61 / 31,  # ~0.036*61
+            ("R7", "Liq", "S_PO4"): -0.02154,
+            ("R7", "Liq", "S_IC"): 0.23388,
             ("R7", "Liq", "X_H"): 1,
-            ("R7", "Liq", "X_TSS"): 0.9,
             ("R8", "Liq", "S_F"): -1,
             ("R8", "Liq", "S_A"): 1,
-            ("R8", "Liq", "S_NH4"): 0.03,
-            ("R8", "Liq", "S_PO4"): 0.01,
-            ("R8", "Liq", "S_ALK"): -1 / 64
-            + 0.03 * 61 / 14
-            - 0.01 * 1.5 * 61 / 31,  # ~-0.0014*61
-            ("R9", "Liq", "S_NH4"): 0.032,
-            ("R9", "Liq", "S_PO4"): 0.01,
-            ("R9", "Liq", "S_ALK"): 0.032 * 61 / 14 - 0.01 * 1.5 * 61 / 31,  # ~0.002*61
+            ("R8", "Liq", "S_NH4"): -0.03352,
+            ("R8", "Liq", "S_PO4"): 0.00559,
+            ("R8", "Liq", "S_IC"): -0.05657,
+            ("R9", "Liq", "S_NH4"): 0.049979,
+            ("R9", "Liq", "S_PO4"): 0.01586,
+            ("R9", "Liq", "S_IC"): 0.043355,
             ("R9", "Liq", "X_I"): 0.1,
             ("R9", "Liq", "X_S"): 0.9,
             ("R9", "Liq", "X_H"): -1,
-            ("R9", "Liq", "X_TSS"): -0.15,
             ("R10", "Liq", "S_A"): -1,
-            ("R10", "Liq", "S_PO4"): 0.4,
-            ("R10", "Liq", "S_ALK"): 61 / 64 - 0.4 * 0.5 * 61 / 31,  # ~0.009*61
-            ("R10", "Liq", "X_PP"): -0.4,
+            ("R10", "Liq", "S_PO4"): 0.0129,
+            ("R10", "Liq", "S_IC"): 0.075,
+            ("R10", "Liq", "X_PP"): -0.0129,
             ("R10", "Liq", "X_PHA"): 1,
-            ("R10", "Liq", "X_TSS"): -0.69,
+            ("R10", "Liq", "S_K"): 0.00542316,
+            ("R10", "Liq", "S_Mg"): 0.00337206,
             ("R11", "Liq", "S_O2"): -0.2,
             ("R11", "Liq", "S_PO4"): -1,
-            ("R11", "Liq", "S_ALK"): 0.016 * 61,
+            ("R11", "Liq", "S_IC"): 0.06,
             ("R11", "Liq", "X_PP"): 1,
             ("R11", "Liq", "X_PHA"): -0.2,
-            ("R11", "Liq", "X_TSS"): 3.11,
+            ("R11", "Liq", "S_K"): -0.4204,
+            ("R11", "Liq", "S_Mg"): -0.2614,
             ("R12", "Liq", "S_N2"): 0.07,
             ("R12", "Liq", "S_NO3"): -0.07,
             ("R12", "Liq", "S_PO4"): -1,
-            ("R12", "Liq", "S_ALK"): 0.021 * 61,
+            ("R12", "Liq", "S_IC"): 0.06,
             ("R12", "Liq", "X_PP"): 1,
             ("R12", "Liq", "X_PHA"): -0.2,
-            ("R12", "Liq", "X_TSS"): 3.11,
+            ("R12", "Liq", "S_K"): -0.4204,
+            ("R12", "Liq", "S_Mg"): -0.2614,
             ("R13", "Liq", "S_O2"): -0.6,
-            ("R13", "Liq", "S_NH4"): -0.07,
-            ("R13", "Liq", "S_PO4"): -0.02,
-            ("R13", "Liq", "S_ALK"): -0.07 * 61 / 14
-            + 0.02 * 1.5 * 61 / 31,  # ~-0.004*61
+            ("R13", "Liq", "S_NH4"): -0.08615,
+            ("R13", "Liq", "S_PO4"): -0.02154,
+            ("R13", "Liq", "S_IC"): 0.11388,
             ("R13", "Liq", "X_PAO"): 1,
             ("R13", "Liq", "X_PHA"): -1.6,
-            ("R13", "Liq", "X_TSS"): -0.06,
-            ("R14", "Liq", "S_NH4"): -0.07,
+            ("R14", "Liq", "S_NH4"): -0.08615,
             ("R14", "Liq", "S_N2"): 0.21,
             ("R14", "Liq", "S_NO3"): -0.21,
-            ("R14", "Liq", "S_PO4"): -0.02,
-            ("R14", "Liq", "S_ALK"): (-0.07 + 0.21) * 61 / 14
-            + 0.02 * 61 / 31,  # ~0.011*61
+            ("R14", "Liq", "S_PO4"): -0.02154,
+            ("R14", "Liq", "S_IC"): 0.11388,
             ("R14", "Liq", "X_PAO"): 1,
             ("R14", "Liq", "X_PHA"): -1.6,
-            ("R14", "Liq", "X_TSS"): -0.06,
-            ("R15", "Liq", "S_NH4"): 0.032,
-            ("R15", "Liq", "S_PO4"): 0.01,
-            ("R15", "Liq", "S_ALK"): 0.032 * 61 / 14
-            - 0.01 * 1.5 * 61 / 31,  # ~0.002*61
+            ("R15", "Liq", "S_NH4"): 0.049979,
+            ("R15", "Liq", "S_PO4"): 0.01586,
+            ("R15", "Liq", "S_IC"): 0.043355,
             ("R15", "Liq", "X_I"): 0.1,
             ("R15", "Liq", "X_S"): 0.9,
             ("R15", "Liq", "X_PAO"): -1,
-            ("R15", "Liq", "X_TSS"): -0.15,
             ("R16", "Liq", "S_PO4"): 1,
-            ("R16", "Liq", "S_ALK"): -0.016 * 61,
             ("R16", "Liq", "X_PP"): -1,
-            ("R16", "Liq", "X_TSS"): -3.23,
+            ("R16", "Liq", "S_K"): 0.4204,
+            ("R16", "Liq", "S_Mg"): 0.2614,
             ("R17", "Liq", "S_A"): 1,
-            ("R17", "Liq", "S_ALK"): 61 * (1 / 64 - 1 / 31),  # ~-0.016*61
+            ("R17", "Liq", "S_IC"): -0.075,
             ("R17", "Liq", "X_PHA"): -1,
-            ("R17", "Liq", "X_TSS"): -0.6,
-            ("R18", "Liq", "S_O2"): -18,
-            ("R18", "Liq", "S_NH4"): -4.24,
+            ("R18", "Liq", "S_O2"): -18.048,
+            ("R18", "Liq", "S_NH4"): -4.253,
             ("R18", "Liq", "S_NO3"): 4.17,
-            ("R18", "Liq", "S_PO4"): -0.02,
-            ("R18", "Liq", "S_ALK"): -0.6 * 61,
+            ("R18", "Liq", "S_PO4"): -0.02154,
+            ("R18", "Liq", "S_IC"): -0.36612,
             ("R18", "Liq", "X_AUT"): 1,
-            ("R18", "Liq", "X_TSS"): 0.9,
-            ("R19", "Liq", "S_NH4"): 0.032,
-            ("R19", "Liq", "S_PO4"): 0.01,
-            ("R19", "Liq", "S_ALK"): 0.032 * 61 / 14 - 0.01 * 61 / 31,  # ~0.002*61
+            ("R19", "Liq", "S_NH4"): 0.049979,
+            ("R19", "Liq", "S_PO4"): 0.01586,
+            ("R19", "Liq", "S_IC"): 0.043355,
             ("R19", "Liq", "X_I"): 0.1,
             ("R19", "Liq", "X_S"): 0.9,
             ("R19", "Liq", "X_AUT"): -1,
-            ("R19", "Liq", "X_TSS"): -0.15,
         }
 
         assert len(model.rparams.rate_reaction_stoichiometry) == 19 * 19
@@ -355,7 +325,7 @@ class TestAerobic:
         # No data on S_IC, K and Mg from EXPOsan at this point
         m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_IC"].fix(10 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_IC"].fix(5 * units.mg / units.liter)
 
         m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(25 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(125 * units.mg / units.liter)
@@ -399,10 +369,10 @@ class TestAerobic:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            13.440e-3, rel=1e-4
+            15.510e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            23.543e-3, rel=1e-4
+            26.510e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
@@ -411,7 +381,7 @@ class TestAerobic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            15.632e-3, rel=1e-4
+            15.565e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             0, abs=1e-4
@@ -420,7 +390,7 @@ class TestAerobic:
             2e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            3.4932e-3, rel=1e-4
+            3.4743e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
             0, abs=1e-4
@@ -429,16 +399,16 @@ class TestAerobic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_IC"]) == pytest.approx(
-            0, abs=1e-4
+            6.5566e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            42.128e-3, rel=1e-4
+            38.171e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            25.122e-3, rel=1e-4
+            25.070e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
             0, abs=1e-4
@@ -450,7 +420,7 @@ class TestAerobic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            117.76e-3, rel=1e-4
+            119.415e-3, rel=1e-4
         )
 
 
@@ -487,7 +457,7 @@ class TestAnoxic:
         # No data on S_IC, K and Mg from EXPOsan at this point
         m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_IC"].fix(10 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_IC"].fix(5 * units.mg / units.liter)
 
         m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(25 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(125 * units.mg / units.liter)
@@ -521,9 +491,6 @@ class TestAnoxic:
 
     @pytest.mark.component
     def test_solution(self, model):
-        # EXPOsan calculations appear to be slightly off from this implementation
-        # It is supected that this is due to an error in the EXPOsan stoichiometric
-        # coefficient for alkalinity
         assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(0.21350, rel=1e-4)
 
         assert value(model.fs.R1.outlet.temperature[0]) == pytest.approx(
@@ -531,10 +498,10 @@ class TestAnoxic:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            24.093e-3, rel=1e-4
+            23.01e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            27.773e-3, rel=1e-4
+            28.552e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
@@ -543,7 +510,7 @@ class TestAnoxic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            16.162e-3, rel=1e-4
+            15.899e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             0, abs=1e-4
@@ -552,7 +519,7 @@ class TestAnoxic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            3.6473e-3, rel=1e-4
+            3.6168e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
             0, abs=1e-4
@@ -561,16 +528,16 @@ class TestAnoxic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_IC"]) == pytest.approx(
-            0, abs=1e-4
+            4.830e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            29.363e-3, rel=1e-4
+            3.0e-2, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            25.064e-3, rel=1e-4
+            25.0e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
             0, abs=1e-4
@@ -582,7 +549,7 @@ class TestAnoxic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            123.71e-3, rel=1e-4
+            123.44e-3, rel=1e-4
         )
 
 
@@ -775,7 +742,7 @@ class TestAnoxicPHA:
         # No data on S_IC, K and Mg from EXPOsan at this point
         m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_IC"].fix(10 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_IC"].fix(5 * units.mg / units.liter)
 
         m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(1686.7928 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(141.1854 * units.mg / units.liter)
@@ -817,10 +784,10 @@ class TestAnoxicPHA:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            15.592e-3, rel=1e-4
+            14.338e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            1.0699e-3, rel=1e-2
+            9.7237e-4, rel=1e-2
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
@@ -829,7 +796,7 @@ class TestAnoxicPHA:
             20.524e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            22.821e-3, rel=1e-4
+            20.660e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             4.3e-5, abs=1e-4
@@ -838,7 +805,7 @@ class TestAnoxicPHA:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            15.23e-3, rel=1e-4
+            10.601e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
             0, abs=1e-4
@@ -847,26 +814,26 @@ class TestAnoxicPHA:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_IC"]) == pytest.approx(
-            0, abs=1e-4
+            4.825e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
-            115.149e-3, abs=1e-4
+            115.460e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            1.8323, rel=1e-4
+            1.8472, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            1.6883, rel=1e-4
+            1.6868, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
-            209.312e-3, abs=1e-4
+            210.142e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PHA"]) == pytest.approx(
-            17.074e-3, abs=1e-4
+            17.205e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PP"]) == pytest.approx(
-            56.310e-3, abs=1e-4
+            60.576e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            134.494e-3, rel=1e-4
+            121.314e-3, rel=1e-4
         )
