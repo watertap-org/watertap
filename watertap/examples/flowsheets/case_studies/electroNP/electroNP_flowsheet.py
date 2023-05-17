@@ -209,41 +209,7 @@ def build_flowsheet():
         if "conc_mass_comp[X_h2]" in var.name:
             iscale.set_scaling_factor(var, 1e3)
 
-    # m.fs.props_ASM2D.set_default_scaling("pressure", 1e-3)
-    # m.fs.props_ASM2D.set_default_scaling("temperature", 1e-1)
-    # m.fs.props_ASM2D.set_default_scaling("flow_vol", 1e3)
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e3, index=("S_O2"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e3, index=("S_N2"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e1, index=("S_NH4"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e3, index=("S_NO3"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e-1, index=("S_PO4"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e-1, index=("S_F"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e1, index=("S_A"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e1, index=("S_I"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e-1, index=("X_I"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e1, index=("X_S"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e3, index=("X_H"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e3, index=("X_PAO"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e1, index=("X_PP"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e1, index=("X_PHA"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e3, index=("X_AUT"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e3, index=("X_MeOH"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e3, index=("X_MeP"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e3, index=("X_TSS"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e1, index=("S_K"))
-    # m.fs.props_ASM2D.set_default_scaling("conc_mass_comp", 1e1, index=("S_Mg"))
-    # m.fs.props_ASM2D.set_default_scaling("alkalinity", 1e-1)
-
     iscale.calculate_scaling_factors(m)
-
-    # TO DO: Fix initialization
-    # m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
-    # propagate_state(m.fs.stream_adm1_translator)
-    # m.fs.translator_adm1_asm2d.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
-    # propagate_state(m.fs.stream_translator_electroNP)
-    # m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
-    #
-    # solver = get_solver(options={"bound_push": 1e-2})
 
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()

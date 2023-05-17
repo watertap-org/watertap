@@ -37,6 +37,7 @@ class TestElectroNPFlowsheet:
 
         return m
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.integration
     def test_structure(self, model):
         assert_units_consistent(model)
