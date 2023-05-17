@@ -459,45 +459,25 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
         )
 
     def calculate_scaling_factors(self):
-        # Get default scale factors and do calculations from base classes
-        for t, v in self.water_recovery_equation.items():
-            iscale.constraint_scaling_transform(
-                v,
-                iscale.get_scaling_factor(
-                    self.properties_in[t].get_material_flow_terms("Liq", "H2O"),
-                    default=1,
-                    warning=True,
-                    hint=" for water recovery",
-                ),
+        super().calculate_scaling_factors()
+
+        iscale.set_scaling_factor(self.recovery_frac_mass_H2O, 1)
+        iscale.set_scaling_factor(self.removal_frac_mass_comp, 1)
+        iscale.set_scaling_factor(self.energy_electric_flow_mass, 1e2)
+        iscale.set_scaling_factor(self.magnesium_chloride_dosage, 1e1)
+
+        for t, v in self.electricity.items():
+            sf = (
+                iscale.get_scaling_factor(self.energy_electric_flow_mass)
+                * iscale.get_scaling_factor(self.treated.flow_vol[t])
+                * iscale.get_scaling_factor(self.treated.conc_mass_comp[0, "S_PO4"])
             )
+            iscale.set_scaling_factor(v, sf)
 
-        for t, v in self.water_balance.items():
-            iscale.constraint_scaling_transform(
-                v,
-                iscale.get_scaling_factor(
-                    self.properties_in[t].get_material_flow_terms("Liq", "H2O"),
-                    default=1,
-                    warning=False,
-                ),
-            )  # would just be a duplicate of above
-
-        for (t, p, j), v in self.solute_removal_equation.items():
-            iscale.constraint_scaling_transform(
-                v,
-                iscale.get_scaling_factor(
-                    self.properties_in[t].get_material_flow_terms(p, j),
-                    default=1,
-                    warning=True,
-                    hint=" for solute removal",
-                ),
+        for t, v in self.MgCl2_flowrate.items():
+            sf = (
+                iscale.get_scaling_factor(self.magnesium_chloride_dosage)
+                * iscale.get_scaling_factor(self.treated.flow_vol[t])
+                * iscale.get_scaling_factor(self.treated.conc_mass_comp[0, "S_PO4"])
             )
-
-        for (t, p, j), v in self.solute_treated_equation.items():
-            iscale.constraint_scaling_transform(
-                v,
-                iscale.get_scaling_factor(
-                    self.properties_in[t].get_material_flow_terms(p, j),
-                    default=1,
-                    warning=False,
-                ),
-            )  # would just be a duplicate of above
+            iscale.set_scaling_factor(v, sf)
