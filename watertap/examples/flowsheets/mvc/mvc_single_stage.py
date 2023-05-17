@@ -586,7 +586,7 @@ def initialize_system(m, solver=None):
 
     m.fs.costing.initialize()
 
-    solver.solve(m, tee=True)
+    solver.solve(m, tee=False)
 
     print("Initialization done")
 
