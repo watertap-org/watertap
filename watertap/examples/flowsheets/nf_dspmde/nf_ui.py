@@ -111,6 +111,115 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     exports.add(
+        obj=fs.NF.nfUnit.radius_pore,
+        name="Pore size",
+        ui_units=pyunits.nm,
+        display_units="nm",
+        rounding=2,
+        description="NF membrane props.",
+        is_input=True,
+        input_category="NF membrane props.",
+        is_output=True,
+        output_category="NF membrane props.",
+    )
+    exports.add(
+        obj=fs.NF.nfUnit.membrane_thickness_effective,
+        name="Effective membrane thickness",
+        ui_units=pyunits.nm,
+        display_units="nm",
+        rounding=2,
+        description="NF membrane props.",
+        is_input=True,
+        input_category="NF membrane props.",
+        is_output=True,
+        output_category="NF membrane props.",
+    )
+    exports.add(
+        obj=fs.NF.nfUnit.membrane_charge_density[0],
+        name="Charge",
+        ui_units=pyunits.mol / pyunits.m**3,
+        display_units="mol/m^3",
+        rounding=2,
+        description="NF membrane props.",
+        is_input=True,
+        input_category="NF membrane props.",
+        is_output=True,
+        output_category="NF membrane props.",
+    )
+    exports.add(
+        obj=fs.NF.nfUnit.dielectric_constant_pore[0],
+        name="Dielectric constant for pore",
+        ui_units=pyunits.dimensionless,
+        display_units="",
+        rounding=2,
+        description="NF membrane props.",
+        is_input=True,
+        input_category="NF membrane props.",
+        is_output=True,
+        output_category="NF membrane props.",
+    )
+
+    exports.add(
+        obj=fs.NF.nfUnit.costing.membrane_cost,
+        name="Membrane cost",
+        ui_units=fs.costing.base_currency / pyunits.m**2,
+        display_units="$/m^2",
+        rounding=2,
+        description="NF CAPEX",
+        is_input=True,
+        input_category="NF CAPEX",
+        is_output=True,
+        output_category="NF CAPEX",
+    )
+    exports.add(
+        obj=fs.NF.nfUnit.costing.factor_membrane_replacement,
+        name="Membrane replacment rate",
+        ui_units=pyunits.year**-1,
+        display_units="fraction/year",
+        rounding=2,
+        description="NF CAPEX",
+        is_input=True,
+        input_category="NF CAPEX",
+        is_output=True,
+        output_category="NF CAPEX",
+    )
+    exports.add(
+        obj=fs.costing.electricity_cost,
+        name="Membrane replacment rate",
+        ui_units=fs.costing.base_currency / pyunits.kWh,
+        display_units="$/kWhr",
+        rounding=2,
+        description="NF OPEX",
+        is_input=True,
+        input_category="NF OPEX",
+        is_output=True,
+        output_category="NF OPEX",
+    )
+    exports.add(
+        obj=fs.costing.utilization_factor,
+        name="Plant capacity utilization",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction of uptime",
+        rounding=2,
+        description="NF OPEX",
+        is_input=True,
+        input_category="NF OPEX",
+        is_output=True,
+        output_category="NF OPEX",
+    )
+    exports.add(
+        obj=fs.costing.factor_maintenance_labor_chemical,
+        name="Maintenance-labor-chemical factor",
+        ui_units=pyunits.year**-1,
+        display_units="fraction of investment cost/year",
+        rounding=4,
+        description="NF OPEX",
+        is_input=True,
+        input_category="NF OPEX",
+        is_output=True,
+        output_category="NF OPEX",
+    )
+    exports.add(
         obj=fs.product.max_hardness,
         name="Product quality",
         ui_units=pyunits.mg / pyunits.L,
