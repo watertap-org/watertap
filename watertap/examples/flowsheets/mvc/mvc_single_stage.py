@@ -29,7 +29,6 @@ from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
-from idaes.core.util.exceptions import InitializationError
 from idaes.models.unit_models import Feed, Separator, Mixer, Product
 from idaes.models.unit_models.translator import Translator
 from idaes.models.unit_models.separator import SplittingType
