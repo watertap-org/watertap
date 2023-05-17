@@ -34,7 +34,6 @@ from idaes.core import (
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
-from idaes.core.util.initialization import revert_state_vars
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 

@@ -22,7 +22,6 @@ from idaes.core.solvers import get_solver
 
 import watertap.property_models.NaCl_prop_pack as props
 
-from watertap.core.util.scaling import transform_property_constraints
 import idaes.logger as idaeslog
 
 __author__ = "Marcus Holly"
