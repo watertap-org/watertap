@@ -179,7 +179,7 @@ def unfix_opt_vars(m):
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].unfix()
 
 
-def optimize(m, solver):
+def optimize(m, solver=None):
     if solver is None:
         solver = get_solver()
     result = nf.optimize(m, solver)
