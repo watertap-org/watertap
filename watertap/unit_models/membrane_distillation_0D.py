@@ -20,11 +20,8 @@ __author__ = "Elmira Shamlou"
 from pyomo.environ import (
     Var,
     Constraint,
-    Param,
     check_optimal_termination,
-    Suffix,
     PositiveReals,
-    Reference,
     units as pyunits,
     value,
 )
