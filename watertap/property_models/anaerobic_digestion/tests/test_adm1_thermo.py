@@ -16,7 +16,7 @@ Authors: Adam Atia, Alejandro Garciadiego
 
 import pytest
 
-from pyomo.environ import ConcreteModel, Param, units, value, Var
+from pyomo.environ import ConcreteModel, Param, value, Var
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis

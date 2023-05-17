@@ -18,7 +18,6 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.GLSD
     solve,
     add_costing,
 )
-from idaes.core.solvers import get_solver
 from pyomo.environ import units as pyunits, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
 

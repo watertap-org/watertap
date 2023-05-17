@@ -23,10 +23,10 @@ Towards an ASM1 - ADM1 State Variable Interface for Plant-Wide Wastewater Treatm
 """
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.core import declare_process_block_class
 from idaes.models.unit_models.translator import TranslatorData
 from idaes.core.util.config import (
     is_reaction_parameter_block,
@@ -38,7 +38,6 @@ import idaes.logger as idaeslog
 from idaes.core.util.exceptions import InitializationError
 
 from pyomo.environ import (
-    Constraint,
     Param,
     units as pyunits,
     check_optimal_termination,

@@ -24,10 +24,10 @@ Proceedings of the Water Environment Federation, 2003, pp 498-510.
 """
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.core import declare_process_block_class
 from idaes.models.unit_models.translator import TranslatorData
 from idaes.core.util.config import (
     is_reaction_parameter_block,
@@ -37,7 +37,6 @@ from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 from pyomo.environ import (
-    Constraint,
     Param,
     PositiveReals,
     Var,

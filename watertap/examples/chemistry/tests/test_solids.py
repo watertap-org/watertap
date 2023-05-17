@@ -34,15 +34,13 @@ import pytest
 
 # Importing the object for units from pyomo
 from pyomo.environ import units as pyunits
-from pyomo.environ import Var
 
 # Imports from idaes core
 from idaes.core import AqueousPhase, SolidPhase, FlowsheetBlock, EnergyBalanceType
-from idaes.core.base.components import Solvent, Solute, Cation, Anion, Component
+from idaes.core.base.components import Solvent, Solute, Component
 from idaes.core.base.phases import PhaseType as PT
 
 # Imports from idaes generic models
-import idaes.models.properties.modular_properties.pure.Perrys as Perrys
 from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
 from idaes.models.properties.modular_properties.state_definitions import FTPx, FpcTP
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
@@ -55,12 +53,6 @@ from idaes.models.properties.modular_properties.base.generic_reaction import (
 # Import the object/function for heat of reaction
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 
-# Import safe log power law equation
-from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
-    log_power_law_equil,
-    power_law_equil,
-)
-
 # Import built-in van't Hoff function
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
     van_t_hoff,
@@ -69,10 +61,6 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_constant i
 from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     solubility_product,
     log_solubility_product,
-    log_power_law_equil,
-)
-from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    ConstantKeq,
 )
 
 # Import specific pyomo objects
@@ -94,14 +82,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 # Import idaes methods to check the model during construction
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    fixed_variables_set,
-    activated_constraints_set,
-    number_variables,
-    number_total_constraints,
-    number_unused_variables,
-)
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import the idaes objects for Generic Properties and Reactions
 from idaes.models.properties.modular_properties.base.generic_property import (
@@ -114,16 +95,12 @@ from idaes.models.properties.modular_properties.base.generic_reaction import (
 # Import the idaes object for the EquilibriumReactor unit model
 from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 
-# Import log10 function from pyomo
-from pyomo.environ import log10
-
 # Import scaling helper functions
 from watertap.examples.chemistry.chem_scaling_utils import (
     _set_eps_vals,
     _set_equ_rxn_scaling,
     _set_mat_bal_scaling_FpcTP,
     _set_mat_bal_scaling_FTPx,
-    _set_ene_bal_scaling,
 )
 
 __author__ = "Austin Ladshaw"
