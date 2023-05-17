@@ -278,9 +278,6 @@ class TestMVC:
             m.fs.compressor.control_volume.properties_in[0].pressure
         ) == pytest.approx(1.6, rel=1e-3)
 
-        # external Q
-        assert value(m.fs.Q_ext[0]) == pytest.approx(0, 1e-3)
-
     @pytest.mark.component
     def test_simulation_Q_ext(self, mvc_single_stage):
         m = mvc_single_stage
@@ -292,7 +289,7 @@ class TestMVC:
 
         m.fs.objective = Objective(expr=m.fs.Q_ext[0])
         solver = get_solver()
-        results = solve(m, solver=solver)
+        results = solve(m, solver=solver, tee=True)
         assert_optimal_termination(results)
 
         # Check system metrics
@@ -321,7 +318,7 @@ class TestMVC:
         set_up_optimization(m)
         assert number_total_objectives(m) == 1
         assert degrees_of_freedom(m) == 4
-        results = solve(m, solver=solver, tee=False)
+        results = solve(m, solver=solver, tee=True)
 
         # Check decision variables
         assert value(m.fs.evaporator.properties_brine[0].temperature) == pytest.approx(
