@@ -27,7 +27,6 @@ from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     Constraint,
-    units,
     value,
     Var,
 )
@@ -37,7 +36,6 @@ from idaes.core import FlowsheetBlock
 from watertap.unit_models.anaerobic_digestor import AD
 from idaes.core import MaterialFlowBasis
 from idaes.core.solvers import get_solver
-import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -426,7 +424,7 @@ class TestReactionBlock(object):
     def test_initialize(self, model):
         assert model.rxns.initialize() is None
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def check_units(self, model):
         assert_units_consistent(model)
 
@@ -490,15 +488,15 @@ class TestReactor:
 
         return m
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_dof(self, model):
         assert degrees_of_freedom(model) == 0
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_unit_consistency(self, model):
         assert_units_consistent(model) == 0
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_scaling_factors(self, model):
 
         m = model

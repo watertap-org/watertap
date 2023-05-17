@@ -12,4 +12,5 @@ Property Models
    ASM1
    ASM2D
    ADM1
+   modified_ADM1
    mc_aq_sol

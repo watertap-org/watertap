@@ -24,8 +24,7 @@ from pyomo.environ import units as pyunits
 
 # Imports from idaes core
 from idaes.core import AqueousPhase
-from idaes.core.base.components import Solvent, Solute, Cation, Anion
-from idaes.core.base.phases import PhaseType as PT
+from idaes.core.base.components import Solvent, Cation, Anion
 
 # Imports from idaes generic models
 import idaes.models.properties.modular_properties.pure.Perrys as Perrys
@@ -47,7 +46,6 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_forms impo
 
 # Import k-value functions
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    gibbs_energy,
     van_t_hoff,
 )
 

@@ -66,7 +66,7 @@ class ADM1_vaporParameterData(PhysicalParameterBlock):
         # All soluble components on kg COD/m^3 basis
         self.S_h2 = Solute(doc="Hydrogen gas")
         self.S_ch4 = Solute(doc="Methane gas")
-        self.S_co2 = Solute(doc="Carbon dioxide carbon")
+        self.S_co2 = Solute(doc="Carbon dioxide")
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(
@@ -108,11 +108,7 @@ class ADM1_vaporParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "temperature": {"method": None},
                 "conc_mass_comp": {"method": None},
-            }
-        )
-        obj.define_custom_properties(
-            {
-                "p_sat": {"method": None},
+                "pressure_sat": {"method": None},
             }
         )
         obj.add_default_units(
@@ -265,26 +261,19 @@ class ADM1_vaporStateBlockData(StateBlockData):
             units=pyo.units.kg / pyo.units.m**3,
         )
 
-        self.p_w_sat = pyo.Var(
-            domain=pyo.NonNegativeReals,
-            initialize=5643.8025,
-            doc="Water pressure",
-            units=pyo.units.Pa,
-        )
+        init = {"S_ch4": 65077, "S_co2": 36255, "S_h2": 1.639, "H2O": 5643.8025}
 
-        init = {"S_ch4": 65077, "S_co2": 36255, "S_h2": 1.639}
-
-        self.p_sat = pyo.Var(
-            self.params.solute_set,
+        self.pressure_sat = pyo.Var(
+            self.params.component_list,
             domain=pyo.NonNegativeReals,
             initialize=init,
             doc="Component pressure",
             units=pyo.units.Pa,
         )
 
-        def p_sat_rule(b, j):
+        def pressure_sat_rule(b, j):
             if j == "S_h2":
-                return self.p_sat[j] == pyo.units.convert(
+                return b.pressure_sat[j] == pyo.units.convert(
                     b.conc_mass_comp[j]
                     * (1000 * pyo.units.g / pyo.units.kg)
                     * Constants.gas_constant
@@ -293,7 +282,7 @@ class ADM1_vaporStateBlockData(StateBlockData):
                     to_units=pyo.units.Pa,
                 )
             elif j == "S_ch4":
-                return self.p_sat[j] == pyo.units.convert(
+                return b.pressure_sat[j] == pyo.units.convert(
                     b.conc_mass_comp[j]
                     * (1000 * pyo.units.g / pyo.units.kg)
                     * Constants.gas_constant
@@ -301,8 +290,19 @@ class ADM1_vaporStateBlockData(StateBlockData):
                     / (64 * pyo.units.g / pyo.units.mole),
                     to_units=pyo.units.Pa,
                 )
+            elif j == "H2O":
+                return b.pressure_sat[j] == (
+                    0.0313
+                    * pyo.exp(
+                        5290
+                        * pyo.units.K
+                        * ((1 / b.params.temperature_ref) - (1 / b.temperature))
+                    )
+                    * 101325
+                    * pyo.units.Pa
+                )
             else:
-                return self.p_sat[j] == pyo.units.convert(
+                return b.pressure_sat[j] == pyo.units.convert(
                     b.conc_mass_comp[j]
                     * (1000 * pyo.units.g / pyo.units.kg)
                     * Constants.gas_constant
@@ -311,27 +311,10 @@ class ADM1_vaporStateBlockData(StateBlockData):
                     to_units=pyo.units.Pa,
                 )
 
-        self._p_sat = pyo.Constraint(
-            self.params.solute_set,
-            rule=p_sat_rule,
+        self._pressure_sat = pyo.Constraint(
+            self.params.component_list,
+            rule=pressure_sat_rule,
             doc="Saturation pressure for components",
-        )
-
-        def p_w_sat_rule(b, t):
-            return (
-                self.p_w_sat
-                == 0.0313
-                * pyo.exp(
-                    5290
-                    * pyo.units.K
-                    * ((1 / self.params.temperature_ref) - (1 / self.temperature[t]))
-                )
-                * 101325
-                * pyo.units.Pa
-            )
-
-        self._p_w_sat = pyo.Constraint(
-            rule=p_w_sat_rule, doc="Saturation pressure for water"
         )
 
         def material_flow_expression(self, j):
@@ -385,10 +368,10 @@ class ADM1_vaporStateBlockData(StateBlockData):
         iscale.set_scaling_factor(self.temperature, 1e-2)
         iscale.set_scaling_factor(self.pressure, 1e-4)
         iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
-        iscale.set_scaling_factor(self.p_sat["S_ch4"], 1e-4)
-        iscale.set_scaling_factor(self.p_sat["S_co2"], 1e-4)
-        iscale.set_scaling_factor(self.p_sat["S_h2"], 1e-1)
-        iscale.set_scaling_factor(self.p_w_sat, 1e-3)
+        iscale.set_scaling_factor(self.pressure_sat["S_ch4"], 1e-4)
+        iscale.set_scaling_factor(self.pressure_sat["S_co2"], 1e-4)
+        iscale.set_scaling_factor(self.pressure_sat["S_h2"], 1e-1)
+        iscale.set_scaling_factor(self.pressure_sat["H2O"], 1e-3)
 
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]
@@ -455,21 +438,11 @@ class ADM1_vaporStateBlockData(StateBlockData):
         )
         iscale.set_scaling_factor(self.energy_density_expression, sf_rho_cp * sf_T)
 
-        for t, v in self._p_sat.items():
+        for t, v in self._pressure_sat.items():
             iscale.constraint_scaling_transform(
                 v,
                 iscale.get_scaling_factor(
-                    self.p_sat,
-                    default=1,
-                    warning=True,
-                ),
-            )
-
-        for t, v in self._p_w_sat.items():
-            iscale.constraint_scaling_transform(
-                v,
-                iscale.get_scaling_factor(
-                    self.p_w_sat,
+                    self.pressure_sat,
                     default=1,
                     warning=True,
                 ),
