@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Thermophysical property package to be used in conjunction with ASM2d reactions.
+Thermophysical property package to be used in conjunction with modified ASM2d reactions.
 
 Reference:
 X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
@@ -21,6 +21,8 @@ Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article
 
 # Import Pyomo libraries
 import pyomo.environ as pyo
+
+from enum import Enum, auto
 
 # Import IDAES cores
 from idaes.core import (
@@ -40,6 +42,8 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
 
+from pyomo.common.config import ConfigValue, In
+
 # Some more information about this module
 __author__ = "Marcus Holly"
 
@@ -48,11 +52,38 @@ __author__ = "Marcus Holly"
 _log = idaeslog.getLogger(__name__)
 
 
+class DecaySwitch(Enum):
+    on = auto()
+    off = auto()
+
+
 @declare_process_block_class("NewASM2dParameterBlock")
 class NewASM2dParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
     """
+
+    CONFIG = PhysicalParameterBlock.CONFIG()
+
+    CONFIG.declare(
+        "decay_switch",
+        ConfigValue(
+            default=DecaySwitch.on,
+            domain=In(DecaySwitch),
+            description="Switching function for decay",
+            doc="""
+           Options to account for solution density.
+
+           **default** - `DecaySwitch.on``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``DecaySwitch.on``", "Accounts for decay in reaction rate expressions"
+           "``DecaySwitch.off``", "Does not account for decay in reaction rate expressions"
+       """,
+        ),
+    )
 
     def build(self):
         """
@@ -87,9 +118,9 @@ class NewASM2dParameterData(PhysicalParameterBlock):
         self.S_PO4 = Solute(
             doc="Inorganic soluble phosphorus, primarily ortho-phosphates. [kg P/m^3]"
         )
-        self.S_K = Component(doc="Potassium, [kg K/m^3]")
-        self.S_Mg = Component(doc="Magnesium, [kg Mg/m^3]")
-        self.S_IC = Component(doc="Inorganic carbon, [kg C/m^3]")
+        self.S_K = Solute(doc="Potassium, [kg K/m^3]")
+        self.S_Mg = Solute(doc="Magnesium, [kg Mg/m^3]")
+        self.S_IC = Solute(doc="Inorganic carbon, [kg C/m^3]")
 
         # Particulate species
         self.X_AUT = Solute(doc="Autotrophic nitrifying organisms. [kg COD/m^3]")
@@ -141,11 +172,6 @@ class NewASM2dParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "temperature": {"method": None},
                 "conc_mass_comp": {"method": None},
-            }
-        )
-        obj.define_custom_properties(
-            {
-                "alkalinity": {"method": None},
             }
         )
         obj.add_default_units(
@@ -303,21 +329,10 @@ class NewASM2dStateBlockData(StateBlockData):
             doc="Component mass concentrations",
             units=pyo.units.kg / pyo.units.m**3,
         )
-        self.alkalinity = pyo.Var(
-            domain=pyo.NonNegativeReals,
-            initialize=1,
-            doc="Alkalinity in molar concentration",
-            units=pyo.units.kmol / pyo.units.m**3,
-        )
 
     def get_material_flow_terms(self, p, j):
         if j == "H2O":
             return self.flow_vol * self.params.dens_mass
-        elif j == "S_ALK":
-            # Convert moles of alkalinity to mass assuming all is HCO3-
-            return (
-                self.flow_vol * self.alkalinity * (61 * pyo.units.kg / pyo.units.kmol)
-            )
         else:
             return self.flow_vol * self.conc_mass_comp[j]
 
@@ -332,9 +347,6 @@ class NewASM2dStateBlockData(StateBlockData):
     def get_material_density_terms(self, p, j):
         if j == "H2O":
             return self.params.dens_mass
-        elif j == "S_ALK":
-            # Convert moles of alkalinity to mass assuming all is HCO3-
-            return self.alkalinity * (61 * pyo.units.kg / pyo.units.kmol)
         else:
             return self.conc_mass_comp[j]
 
@@ -354,7 +366,6 @@ class NewASM2dStateBlockData(StateBlockData):
     def define_state_vars(self):
         return {
             "flow_vol": self.flow_vol,
-            "alkalinity": self.alkalinity,
             "conc_mass_comp": self.conc_mass_comp,
             "temperature": self.temperature,
             "pressure": self.pressure,
@@ -363,7 +374,6 @@ class NewASM2dStateBlockData(StateBlockData):
     def define_display_vars(self):
         return {
             "Volumetric Flowrate": self.flow_vol,
-            "Molar Alkalinity": self.alkalinity,
             "Mass Concentration": self.conc_mass_comp,
             "Temperature": self.temperature,
             "Pressure": self.pressure,

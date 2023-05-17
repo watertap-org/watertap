@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-ASM2d reaction package.
+Modified ASM2d reaction package.
 
 Reference:
 
@@ -32,6 +32,9 @@ from idaes.core import (
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast
+from watertap.property_models.activated_sludge.new_modified_asm2d_properties import (
+    DecaySwitch,
+)
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
@@ -275,36 +278,72 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
 
         # Kinetic Parameters
         self.K_H = pyo.Var(
-            initialize=3.0,
+            initialize=2.46,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Hydrolysis rate constant",
         )
-        self.eta_NO3 = pyo.Var(
+        self.hL_NO3 = pyo.Var(
             initialize=0.60,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
             doc="Anoxic hydrolysis reduction factor",
         )
-        self.eta_fe = pyo.Var(
+        self.hL_fe = pyo.Var(
             initialize=0.40,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
             doc="Anaerobic hydrolysis reduction factor",
         )
-        self.K_O2 = pyo.Var(
+        self.KH_O2 = pyo.Var(
+            initialize=2e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for oxygen, [kg O2/m^3]",
+        )
+        self.KL_O2 = pyo.Var(
             initialize=2e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="Saturation/inhibition coefficient for oxygen, [kg O2/m^3]",
         )
-        self.K_NO3 = pyo.Var(
+        self.KA_O2 = pyo.Var(
+            initialize=5e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation/inhibition coefficient for oxygen, [kg O2/m^3]",
+        )
+        self.KP_O2 = pyo.Var(
+            initialize=2e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for oxygen, [kg O2/m^3]",
+        )
+        self.KH_NO3 = pyo.Var(
             initialize=5e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="Saturation/inhibition coefficient for nitrate, [kg N/m^3]",
         )
-        self.K_X = pyo.Var(
+        self.KA_NO3 = pyo.Var(
+            initialize=5e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation/inhibition coefficient for nitrate, [kg N/m^3]",
+        )
+        self.KL_NO3 = pyo.Var(
+            initialize=5e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation/inhibition coefficient for nitrate, [kg N/m^3]",
+        )
+        self.KP_NO3 = pyo.Var(
+            initialize=5e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for nitrate, [kg N/m^3]",
+        )
+        self.KL_X = pyo.Var(
             initialize=0.1,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
@@ -312,19 +351,19 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
         )
 
         self.mu_H = pyo.Var(
-            initialize=6.0,
+            initialize=4.23,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Maximum growth rate on substrate, [kg X_S/kg X_H/day]",
         )
         self.q_fe = pyo.Var(
-            initialize=3.0,
+            initialize=2.11,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Maximum rate for fermentation, [kg S_F/kg X_H/day]",
         )
         self.b_H = pyo.Var(
-            initialize=0.4,
+            initialize=0.28,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Rate constant for lysis and decay",
@@ -341,75 +380,98 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="Saturation coefficient for fermentation of SF, [kg COD/m^3]",
         )
-        self.K_A = pyo.Var(
+        self.KH_A = pyo.Var(
             initialize=4e-3,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="Saturation coefficient for growth on acetate SA, [kg COD/m^3]",
         )
-        self.K_NH4 = pyo.Var(
+        self.KP_A = pyo.Var(
+            initialize=4e-3,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for acetate SA, [kg COD/m^3]",
+        )
+        self.KH_NH4 = pyo.Var(
             initialize=5e-5,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="Saturation coefficient for ammonium (nutrient), [kg N/m^3]",
         )
-        self.K_P = pyo.Var(
+        self.KA_NH4 = pyo.Var(
+            initialize=1e-3,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for SNH4, [kg N/m^3]",
+        )
+        self.KP_NH4 = pyo.Var(
+            initialize=5e-5,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for ammonium, [kg N/m^3]",
+        )
+        self.KH_PO4 = pyo.Var(
             initialize=1e-5,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
-            doc="Saturation coefficient for phosphate (nutrient), [kg P/m^3]",
+            doc="Saturation coefficient for SPO4 as nutrient, [kg P/m^3]",
         )
-        # TODO: Verify this value (currently equivalent to K_ALK in base ASM2d)
-        self.K_C = pyo.Var(
-            initialize=12e-4,
+        self.KA_PO4 = pyo.Var(
+            initialize=1e-5,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
-            doc="Saturation coefficient for carbon (nutrient), [kg C/m^3]",
+            doc="Saturation coefficient for SPO4, [kg P/m^3]",
+        )
+        self.KP_PO4 = pyo.Var(
+            initialize=1e-5,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for phosphate for growth, [kg P/m^3]",
         )
 
         self.q_PHA = pyo.Var(
-            initialize=3.0,
+            initialize=2.46,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Rate constant for storage of X_PHA (base Xpp), [kg PHA/kg PAO/day]",
         )
         self.q_PP = pyo.Var(
-            initialize=1.50,
+            initialize=1.23,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Rate constant for storage of X_PP, [kg PP/kg PAO/day]",
         )
         self.mu_PAO = pyo.Var(
-            initialize=1.0,
+            initialize=0.82,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Maximum growth rate of PAO",
         )
         self.b_PAO = pyo.Var(
-            initialize=0.2,
+            initialize=0.14,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Rate for Lysis of X_PAO",
         )
         self.b_PP = pyo.Var(
-            initialize=0.2,
+            initialize=0.14,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Rate for Lysis of X_PP",
         )
         self.b_PHA = pyo.Var(
-            initialize=0.2,
+            initialize=0.14,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Rate for Lysis of X_PHA",
         )
-        self.K_PS = pyo.Var(
+        self.KP_P = pyo.Var(
             initialize=2e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
-            doc="Saturation coefficient for phosphorus in storage of PP, [kg P/m^3]",
+            doc="Saturation coefficient for phosphate for XPP formation, [kg P/m^3]",
         )
-        self.K_PP = pyo.Var(
+        self.KP_PP = pyo.Var(
             initialize=0.01,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
@@ -421,13 +483,13 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="Maximum ratio of X_PP/X_PAO, [kg PP/kg PAO]",
         )
-        self.K_IPP = pyo.Var(
+        self.KI_PP = pyo.Var(
             initialize=0.02,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
             doc="Inhibition coefficient for PP storage, [kg PP/kg PAO]",
         )
-        self.K_PHA = pyo.Var(
+        self.KP_PHA = pyo.Var(
             initialize=0.01,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
@@ -435,13 +497,13 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
         )
 
         self.mu_AUT = pyo.Var(
-            initialize=1.0,
+            initialize=0.61,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Maximum growth rate of X_AUT",
         )
         self.b_AUT = pyo.Var(
-            initialize=0.15,
+            initialize=0.09,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Decay rate of X_AUT",
@@ -458,6 +520,48 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Rate constant for redissolution",
+        )
+        self.hH_NO3 = pyo.Var(
+            initialize=0.8,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Reduction factor for denitrification",
+        )
+        self.hH_NO3_end = pyo.Var(
+            initialize=0.5,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Anoxic reduction factor for endogenous respiration",
+        )
+        self.hP_NO3 = pyo.Var(
+            initialize=0.6,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Reduction factor under anoxic conditions",
+        )
+        self.hP_NO3_end = pyo.Var(
+            initialize=0.33,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Anoxic reduction factor for decay of PAOs",
+        )
+        self.hPP_NO3_end = pyo.Var(
+            initialize=0.33,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Anoxic reduction factor for decay of PP",
+        )
+        self.hPHA_NO3_end = pyo.Var(
+            initialize=0.33,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Anoxic reduction factor for decay of PHA",
+        )
+        self.hAUT_NO3_end = pyo.Var(
+            initialize=0.33,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Anoxic reduction factor for decay of autotrophs",
         )
 
         # Reaction Stoichiometry
@@ -819,7 +923,7 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
             ("R16", "Liq", "X_AUT"): 0,
             ("R16", "Liq", "S_K"): self.i_KXPP,
             ("R16", "Liq", "S_Mg"): self.i_MgXPP,
-            # R17: Lysis of X_PAH
+            # R17: Lysis of X_PHA
             ("R17", "Liq", "H2O"): 0,
             ("R17", "Liq", "S_O2"): 0,
             ("R17", "Liq", "S_F"): 0,
@@ -910,7 +1014,7 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
         )
 
 
-class _ASM2dReactionBlock(ReactionBlockBase):
+class _NewASM2dReactionBlock(ReactionBlockBase):
     """
     This Class contains methods which should be applied to Reaction Blocks as a
     whole, rather than individual elements of indexed Reaction Blocks.
@@ -930,8 +1034,10 @@ class _ASM2dReactionBlock(ReactionBlockBase):
         init_log.info("Initialization Complete.")
 
 
-@declare_process_block_class("ASM2dReactionBlock", block_class=_ASM2dReactionBlock)
-class ASM2dReactionBlockData(ReactionBlockDataBase):
+@declare_process_block_class(
+    "NewASM2dReactionBlock", block_class=_NewASM2dReactionBlock
+)
+class NewASM2dReactionBlockData(ReactionBlockDataBase):
     """
     Reaction Block for ASM2d.
     """
@@ -956,20 +1062,20 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
         )
 
         try:
-            # TODO: verify these rxn rate expressions (S_ALK terms from base ASM2d are replaced with S_IC)
-            def rate_expression_rule(b, r):
+            # TODO: Refer to Flores-Alsina c code to account for sulfur in rate expressions
+            def rate_expression_rule(b, r, decay_switch=DecaySwitch.on):
                 if r == "R1":
                     # R1: Aerobic hydrolysis
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.K_H
                         * (
                             b.conc_mass_comp_ref["S_O2"]
-                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                            / (b.params.KL_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
                         * (
                             (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"])
                             / (
-                                b.params.K_X
+                                b.params.KL_X
                                 + (
                                     b.conc_mass_comp_ref["X_S"]
                                     / b.conc_mass_comp_ref["X_H"]
@@ -983,19 +1089,19 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     # R2: Anoxic hydrolysis
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.K_H
-                        * b.params.eta_NO3
+                        * b.params.hL_NO3
                         * (
-                            b.params.K_O2
-                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                            b.params.KL_O2
+                            / (b.params.KL_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_NO3"]
-                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                            / (b.params.KL_NO3 + b.conc_mass_comp_ref["S_NO3"])
                         )
                         * (
                             (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"])
                             / (
-                                b.params.K_X
+                                b.params.KL_X
                                 + (
                                     b.conc_mass_comp_ref["X_S"]
                                     / b.conc_mass_comp_ref["X_H"]
@@ -1009,19 +1115,19 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     # R3: Anaerobic hydrolysis
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.K_H
-                        * b.params.eta_fe
+                        * b.params.hL_fe
                         * (
-                            b.params.K_O2
-                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                            b.params.KL_O2
+                            / (b.params.KL_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
                         * (
-                            b.params.K_NO3
-                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                            b.params.KL_NO3
+                            / (b.params.KL_NO3 + b.conc_mass_comp_ref["S_NO3"])
                         )
                         * (
                             (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"])
                             / (
-                                b.params.K_X
+                                b.params.KL_X
                                 + (
                                     b.conc_mass_comp_ref["X_S"]
                                     / b.conc_mass_comp_ref["X_H"]
@@ -1037,7 +1143,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         b.params.mu_H
                         * (
                             b.conc_mass_comp_ref["S_O2"]
-                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                            / (b.params.KH_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_F"]
@@ -1052,15 +1158,11 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         )
                         * (
                             b.conc_mass_comp_ref["S_NH4"]
-                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                            / (b.params.KH_NH4 + b.conc_mass_comp_ref["S_NH4"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_PO4"]
-                            / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_IC"]
-                            / (b.params.K_C + b.conc_mass_comp_ref["S_IC"])
+                            / (b.params.KH_PO4 + b.conc_mass_comp_ref["S_PO4"])
                         )
                         * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
@@ -1071,11 +1173,11 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         b.params.mu_H
                         * (
                             b.conc_mass_comp_ref["S_O2"]
-                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                            / (b.params.KH_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_A"]
-                            / (b.params.K_A + b.conc_mass_comp_ref["S_A"])
+                            / (b.params.KH_A + b.conc_mass_comp_ref["S_A"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_A"]
@@ -1086,15 +1188,11 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         )
                         * (
                             b.conc_mass_comp_ref["S_NH4"]
-                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                            / (b.params.KH_NH4 + b.conc_mass_comp_ref["S_NH4"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_PO4"]
-                            / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_IC"]
-                            / (b.params.K_C + b.conc_mass_comp_ref["S_IC"])
+                            / (b.params.KH_PO4 + b.conc_mass_comp_ref["S_PO4"])
                         )
                         * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
@@ -1103,14 +1201,10 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     # R6: Anoxic growth on S_F
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.mu_H
-                        * b.params.eta_NO3
+                        * b.params.hH_NO3
                         * (
-                            b.params.K_O2
-                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_NO3"]
-                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                            b.params.KH_O2
+                            / (b.params.KH_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_F"]
@@ -1124,16 +1218,16 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             )
                         )
                         * (
+                            b.conc_mass_comp_ref["S_NO3"]
+                            / (b.params.KH_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                        )
+                        * (
                             b.conc_mass_comp_ref["S_NH4"]
-                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                            / (b.params.KH_NH4 + b.conc_mass_comp_ref["S_NH4"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_PO4"]
-                            / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_IC"]
-                            / (b.params.K_C + b.conc_mass_comp_ref["S_IC"])
+                            / (b.params.KH_PO4 + b.conc_mass_comp_ref["S_PO4"])
                         )
                         * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
@@ -1142,18 +1236,14 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     # R7: Anoxic growth on S_A, denitrification
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.mu_H
-                        * b.params.eta_NO3
+                        * b.params.hH_NO3
                         * (
-                            b.params.K_O2
-                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_NO3"]
-                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                            b.params.KH_O2
+                            / (b.params.KH_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_A"]
-                            / (b.params.K_A + b.conc_mass_comp_ref["S_A"])
+                            / (b.params.KH_A + b.conc_mass_comp_ref["S_A"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_A"]
@@ -1163,16 +1253,16 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             )
                         )
                         * (
+                            b.conc_mass_comp_ref["S_NO3"]
+                            / (b.params.KH_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                        )
+                        * (
                             b.conc_mass_comp_ref["S_NH4"]
-                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                            / (b.params.KH_NH4 + b.conc_mass_comp_ref["S_NH4"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_PO4"]
-                            / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_IC"]
-                            / (b.params.K_C + b.conc_mass_comp_ref["S_IC"])
+                            / (b.params.KH_PO4 + b.conc_mass_comp_ref["S_PO4"])
                         )
                         * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
@@ -1182,41 +1272,49 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.q_fe
                         * (
-                            b.params.K_O2
-                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                            b.params.KH_O2
+                            / (b.params.KH_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
                         * (
-                            b.params.K_NO3
-                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                            b.params.KH_NO3
+                            / (b.params.KH_NO3 + b.conc_mass_comp_ref["S_NO3"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_F"]
-                            / (b.params.K_F + b.conc_mass_comp_ref["S_F"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_IC"]
-                            / (b.params.K_C + b.conc_mass_comp_ref["S_IC"])
+                            / (b.params.K_fe + b.conc_mass_comp_ref["S_F"])
                         )
                         * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R9":
                     # R9: Lysis
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.b_H * b.conc_mass_comp_ref["X_H"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
+                    if decay_switch == DecaySwitch.on:
+                        return b.reaction_rate[r] == pyo.units.convert(
+                            b.params.b_H
+                            * (
+                                b.conc_mass_comp_ref["S_O2"]
+                                / (b.params.KH_O2 + b.conc_mass_comp_ref["S_O2"])
+                                + b.params.hH_NO3_end
+                                * b.params.KH_O2
+                                / (b.params.KH_O2 + b.conc_mass_comp_ref["S_O2"])
+                                * b.conc_mass_comp_ref["S_NO3"]
+                                / (b.params.KH_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                            )
+                            * b.conc_mass_comp_ref["X_H"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                    elif decay_switch == DecaySwitch.off:
+                        return b.reaction_rate[r] == pyo.units.convert(
+                            b.params.b_H * b.conc_mass_comp_ref["X_H"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
                 elif r == "R10":
                     # R10: Storage of X_PHA
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.q_PHA
                         * (
                             b.conc_mass_comp_ref["S_A"]
-                            / (b.params.K_A + b.conc_mass_comp_ref["S_A"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_IC"]
-                            / (b.params.K_C + b.conc_mass_comp_ref["S_IC"])
+                            / (b.params.KP_A + b.conc_mass_comp_ref["S_A"])
                         )
                         * (
                             (
@@ -1224,7 +1322,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                                 / b.conc_mass_comp_ref["X_PAO"]
                             )
                             / (
-                                b.params.K_PP
+                                b.params.KP_PP
                                 + (
                                     b.conc_mass_comp_ref["X_PP"]
                                     / b.conc_mass_comp_ref["X_PAO"]
@@ -1240,15 +1338,11 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         b.params.q_PP
                         * (
                             b.conc_mass_comp_ref["S_O2"]
-                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                            / (b.params.KP_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_PO4"]
-                            / (b.params.K_PS + b.conc_mass_comp_ref["S_PO4"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_IC"]
-                            / (b.params.K_C + b.conc_mass_comp_ref["S_IC"])
+                            / (b.params.KP_P + b.conc_mass_comp_ref["S_PO4"])
                         )
                         * (
                             (
@@ -1256,7 +1350,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                                 / b.conc_mass_comp_ref["X_PAO"]
                             )
                             / (
-                                b.params.K_PHA
+                                b.params.KP_PHA
                                 + (
                                     b.conc_mass_comp_ref["X_PHA"]
                                     / b.conc_mass_comp_ref["X_PAO"]
@@ -1272,7 +1366,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                                 )
                             )
                             / (
-                                b.params.K_IPP
+                                b.params.KI_PP
                                 + b.params.K_MAX
                                 - (
                                     b.conc_mass_comp_ref["X_PP"]
@@ -1286,13 +1380,47 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                 elif r == "R12":
                     # R12: Anoxic storage of X_PP
                     return b.reaction_rate[r] == pyo.units.convert(
-                        b.reaction_rate["R11"]
-                        * b.params.eta_NO3
-                        * (b.params.K_O2 / b.conc_mass_comp_ref["S_O2"])
+                        b.params.q_PP
+                        * b.params.hP_NO3
+                        * (
+                            b.params.KP_O2
+                            / (b.params.KP_O2 + b.conc_mass_comp_ref["S_O2"])
+                        )
                         * (
                             b.conc_mass_comp_ref["S_NO3"]
-                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
-                        ),
+                            / (b.params.KP_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_PO4"]
+                            / (b.params.KP_P + b.conc_mass_comp_ref["S_PO4"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["X_PHA"]
+                            / b.conc_mass_comp_ref["X_PAO"]
+                            / (
+                                b.params.KP_PHA
+                                + b.conc_mass_comp_ref["X_PHA"]
+                                / b.conc_mass_comp_ref["X_PAO"]
+                            )
+                        )
+                        * (
+                            (
+                                b.params.K_MAX
+                                - (
+                                    b.conc_mass_comp_ref["X_PP"]
+                                    / b.conc_mass_comp_ref["X_PAO"]
+                                )
+                            )
+                            / (
+                                b.params.KI_PP
+                                + b.params.K_MAX
+                                - (
+                                    b.conc_mass_comp_ref["X_PP"]
+                                    / b.conc_mass_comp_ref["X_PAO"]
+                                )
+                            )
+                        )
+                        * b.conc_mass_comp_ref["X_PAO"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R13":
@@ -1301,19 +1429,15 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         b.params.mu_PAO
                         * (
                             b.conc_mass_comp_ref["S_O2"]
-                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                            / (b.params.KP_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_NH4"]
-                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                            / (b.params.KP_NH4 + b.conc_mass_comp_ref["S_NH4"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_PO4"]
-                            / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_IC"]
-                            / (b.params.K_C + b.conc_mass_comp_ref["S_IC"])
+                            / (b.params.KP_PO4 + b.conc_mass_comp_ref["S_PO4"])
                         )
                         * (
                             (
@@ -1321,7 +1445,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                                 / b.conc_mass_comp_ref["X_PAO"]
                             )
                             / (
-                                b.params.K_PHA
+                                b.params.KP_PHA
                                 + (
                                     b.conc_mass_comp_ref["X_PHA"]
                                     / b.conc_mass_comp_ref["X_PAO"]
@@ -1334,77 +1458,143 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                 elif r == "R14":
                     # R14: Anoxic growth of X_PAO
                     return b.reaction_rate[r] == pyo.units.convert(
-                        b.reaction_rate["R13"]
-                        * b.params.eta_NO3
-                        * (b.params.K_O2 / b.conc_mass_comp_ref["S_O2"])
+                        b.params.mu_PAO
+                        * b.params.hP_NO3
+                        * (
+                            b.params.KP_O2
+                            / (b.params.KP_O2 + b.conc_mass_comp_ref["S_O2"])
+                        )
                         * (
                             b.conc_mass_comp_ref["S_NO3"]
-                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
-                        ),
+                            / (b.params.KP_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NH4"]
+                            / (b.params.KP_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_PO4"]
+                            / (b.params.KP_PO4 + b.conc_mass_comp_ref["S_PO4"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["X_PHA"]
+                            / b.conc_mass_comp_ref["X_PAO"]
+                            / (
+                                b.params.KP_PHA
+                                + b.conc_mass_comp_ref["X_PHA"]
+                                / b.conc_mass_comp_ref["X_PAO"]
+                            )
+                        )
+                        * b.conc_mass_comp_ref["X_PAO"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R15":
                     # R15: Lysis of X_PAO
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.b_PAO
-                        * b.conc_mass_comp_ref["X_PAO"]
-                        * (
-                            b.conc_mass_comp_ref["S_IC"]
-                            / (b.params.K_C + b.conc_mass_comp_ref["S_IC"])
-                        ),
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
+                    if decay_switch == DecaySwitch.on:
+                        return b.reaction_rate[r] == pyo.units.convert(
+                            b.params.b_PAO
+                            * (
+                                b.conc_mass_comp_ref["S_O2"]
+                                / (b.params.KP_O2 + b.conc_mass_comp_ref["S_O2"])
+                                + b.params.hP_NO3_end
+                                * b.params.KP_O2
+                                / (b.params.KP_O2 + b.conc_mass_comp_ref["S_O2"])
+                                * b.conc_mass_comp_ref["S_NO3"]
+                                / (b.params.KP_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                            )
+                            * b.conc_mass_comp_ref["X_PAO"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                    elif decay_switch == DecaySwitch.off:
+                        return b.reaction_rate[r] == pyo.units.convert(
+                            b.params.b_PAO * b.conc_mass_comp_ref["X_PAO"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
                 elif r == "R16":
                     # R16: Lysis of X_PP
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.b_PP
-                        * b.conc_mass_comp_ref["X_PP"]
-                        * (
-                            b.conc_mass_comp_ref["S_IC"]
-                            / (b.params.K_C + b.conc_mass_comp_ref["S_IC"])
-                        ),
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
+                    if decay_switch == DecaySwitch.on:
+                        return b.reaction_rate[r] == pyo.units.convert(
+                            b.params.b_PP
+                            * (
+                                b.conc_mass_comp_ref["S_O2"]
+                                / (b.params.KP_O2 + b.conc_mass_comp_ref["S_O2"])
+                                + b.params.hPP_NO3_end
+                                * b.params.KP_O2
+                                / (b.params.KP_O2 + b.conc_mass_comp_ref["S_O2"])
+                                * b.conc_mass_comp_ref["S_NO3"]
+                                / (b.params.KP_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                            )
+                            * b.conc_mass_comp_ref["X_PP"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                    elif decay_switch == DecaySwitch.off:
+                        return b.reaction_rate[r] == pyo.units.convert(
+                            b.params.b_PP * b.conc_mass_comp_ref["X_PP"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
                 elif r == "R17":
-                    # R17: Lysis of X_PAH
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.b_PHA
-                        * b.conc_mass_comp_ref["X_PHA"]
-                        * (
-                            b.conc_mass_comp_ref["S_IC"]
-                            / (b.params.K_C + b.conc_mass_comp_ref["S_IC"])
-                        ),
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
+                    # R17: Lysis of X_PHA
+                    if decay_switch == DecaySwitch.on:
+                        return b.reaction_rate[r] == pyo.units.convert(
+                            b.params.b_PHA
+                            * (
+                                b.conc_mass_comp_ref["S_O2"]
+                                / (b.params.KP_O2 + b.conc_mass_comp_ref["S_O2"])
+                                + b.params.hPHA_NO3_end
+                                * b.params.KP_O2
+                                / (b.params.KP_O2 + b.conc_mass_comp_ref["S_O2"])
+                                * b.conc_mass_comp_ref["S_NO3"]
+                                / (b.params.KP_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                            )
+                            * b.conc_mass_comp_ref["X_PHA"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                    elif decay_switch == DecaySwitch.off:
+                        return b.reaction_rate[r] == pyo.units.convert(
+                            b.params.b_PHA * b.conc_mass_comp_ref["X_PHA"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
                 elif r == "R18":
                     # R18: Lysis of X_AUT
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.mu_AUT
                         * (
                             b.conc_mass_comp_ref["S_O2"]
-                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                            / (b.params.KA_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_NH4"]
-                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                            / (b.params.KA_NH4 + b.conc_mass_comp_ref["S_NH4"])
                         )
                         * (
                             b.conc_mass_comp_ref["S_PO4"]
-                            / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_IC"]
-                            / (b.params.K_C + b.conc_mass_comp_ref["S_IC"])
+                            / (b.params.KA_PO4 + b.conc_mass_comp_ref["S_PO4"])
                         )
                         * b.conc_mass_comp_ref["X_AUT"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R19":
                     # R19: Aerobic growth of X_AUT
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.b_AUT * b.conc_mass_comp_ref["X_AUT"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
+                    if decay_switch == DecaySwitch.on:
+                        return b.reaction_rate[r] == pyo.units.convert(
+                            b.params.b_AUT
+                            * (
+                                b.conc_mass_comp_ref["S_O2"]
+                                / (b.params.KA_O2 + b.conc_mass_comp_ref["S_O2"])
+                                + b.params.hAUT_NO3_end
+                                * b.params.KA_O2
+                                / (b.params.KA_O2 + b.conc_mass_comp_ref["S_O2"])
+                                * b.conc_mass_comp_ref["S_NO3"]
+                                / (b.params.KA_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                            )
+                            * b.conc_mass_comp_ref["X_AUT"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                    elif decay_switch == DecaySwitch.off:
+                        return b.reaction_rate[r] == pyo.units.convert(
+                            b.params.b_AUT * b.conc_mass_comp_ref["X_AUT"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
                 else:
                     raise BurntToast()
 
