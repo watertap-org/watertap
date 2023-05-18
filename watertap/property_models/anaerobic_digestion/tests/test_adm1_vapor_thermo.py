@@ -19,7 +19,6 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     Param,
-    units,
     value,
     Var,
     check_optimal_termination,
@@ -194,7 +193,7 @@ class TestStateBlock(object):
                 "Pressure",
             ]
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, model):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
@@ -228,7 +227,7 @@ class TestStateBlock(object):
         results = solver.solve(model, tee=True)
         assert check_optimal_termination(results)
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_pressures(self, model):
 
         assert value(model.props[1].conc_mass_comp["S_h2"]) == pytest.approx(
@@ -241,16 +240,20 @@ class TestStateBlock(object):
             0.1692, rel=1e-4
         )
 
-        assert value(model.props[1].p_sat["S_h2"]) == pytest.approx(1.6397, rel=1e-4)
-        assert value(model.props[1].p_sat["S_ch4"]) == pytest.approx(
+        assert value(model.props[1].pressure_sat["S_h2"]) == pytest.approx(
+            1.6397, rel=1e-4
+        )
+        assert value(model.props[1].pressure_sat["S_ch4"]) == pytest.approx(
             65077.382, rel=1e-4
         )
-        assert value(model.props[1].p_sat["S_co2"]) == pytest.approx(
+        assert value(model.props[1].pressure_sat["S_co2"]) == pytest.approx(
             36125.633, rel=1e-4
         )
 
-        assert value(model.props[1].p_w_sat) == pytest.approx(5640.534, rel=1e-4)
+        assert value(model.props[1].pressure_sat["H2O"]) == pytest.approx(
+            5640.5342, rel=1e-4
+        )
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def check_units(self, model):
         assert_units_consistent(model)

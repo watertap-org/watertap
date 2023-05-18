@@ -24,10 +24,10 @@ Proceedings of the Water Environment Federation, 2003, pp 498-510.
 """
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.core import declare_process_block_class
 from idaes.models.unit_models.translator import TranslatorData
 from idaes.core.util.config import (
     is_reaction_parameter_block,
@@ -37,7 +37,6 @@ from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 from pyomo.environ import (
-    Constraint,
     Param,
     PositiveReals,
     Var,
@@ -365,9 +364,7 @@ see reaction package for documentation.}""",
                 * mw_n
             )
 
-        @self.Expression(
-            self.flowsheet().time, doc="Inert organic nitrogen mapping step B"
-        )
+        @self.Expression(self.flowsheet().time, doc="Soluble inert mapping step B")
         def si_mapping_B(blk, t):
             return Expr_if(
                 blk.ORGN_remain_a[t] > blk.ReqOrgNS[t],
@@ -375,7 +372,7 @@ see reaction package for documentation.}""",
                 blk.ORGN_remain_a[t] / blk.config.reaction_package.N_I / mw_n,
             )
 
-        @self.Expression(self.flowsheet().time, doc="Monosacharides mapping step B")
+        @self.Expression(self.flowsheet().time, doc="Monosaccharides mapping step B")
         def ssu_mapping_B(blk, t):
             return Expr_if(
                 blk.ORGN_remain_a[t] > blk.ReqOrgNS[t],
@@ -432,7 +429,10 @@ see reaction package for documentation.}""",
                 * mw_n
             )
 
-        @self.Expression(self.flowsheet().time, doc="Monosacharides mapping step B")
+        @self.Expression(
+            self.flowsheet().time,
+            doc="Inert particulate organic material mapping step C",
+        )
         def xi_mapping(blk, t):
             return Expr_if(
                 blk.ORGN_remain_b[t] > blk.ReqOrgNx[t],
