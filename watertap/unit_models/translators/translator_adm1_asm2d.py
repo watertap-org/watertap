@@ -10,16 +10,17 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Translator block representing the ADM1/ASM1 interface.
+Translator block representing the ADM1/ASM2d interface.
+This is copied from the Generic template for a translator block.
 
 Assumptions:
      * Steady-state only
 
 Model formulated from:
 
-Copp J. and Jeppsson, U., Rosen, C., 2006.
-Towards an ASM1 - ADM1 State Variable Interface for Plant-Wide Wastewater Treatment Modeling.
- Proceedings of the Water Environment Federation, 2003, pp 498-510.
+Flores-Alsina, X., Solon, K., Mbamba, C.K., Tait, S., Gernaey, K.V., Jeppsson, U. and Batstone, D.J., 2016.
+Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes.
+Water Research, 95, pp.370-382.
 """
 
 # Import Pyomo libraries
@@ -38,23 +39,22 @@ import idaes.logger as idaeslog
 from idaes.core.util.exceptions import InitializationError
 
 from pyomo.environ import (
-    Param,
     units as pyunits,
     check_optimal_termination,
     Set,
 )
 
-__author__ = "Alejandro Garciadiego, Andrew Lee"
+__author__ = "Chenyu Wang, Marcus Holly"
 
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("Translator_ADM1_ASM1")
-class TranslatorDataADM1ASM1(TranslatorData):
+@declare_process_block_class("Translator_ADM1_ASM2D")
+class TranslatorDataADM1ASM2D(TranslatorData):
     """
-    Translator block representing the ADM1/ASM1 interface
+    Translator block representing the ADM1/ASM2D interface
     """
 
     CONFIG = TranslatorData.CONFIG()
@@ -65,10 +65,10 @@ class TranslatorDataADM1ASM1(TranslatorData):
             domain=is_reaction_parameter_block,
             description="Reaction package to use for control volume",
             doc="""Reaction parameter object used to define reaction calculations,
-**default** - None.
-**Valid values:** {
-**None** - no reaction package,
-**ReactionParameterBlock** - a ReactionParameterBlock object.}""",
+    **default** - None.
+    **Valid values:** {
+    **None** - no reaction package,
+    **ReactionParameterBlock** - a ReactionParameterBlock object.}""",
         ),
     )
     CONFIG.declare(
@@ -77,10 +77,10 @@ class TranslatorDataADM1ASM1(TranslatorData):
             implicit=True,
             description="Arguments to use for constructing reaction packages",
             doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
-and used when constructing these,
-**default** - None.
-**Valid values:** {
-see reaction package for documentation.}""",
+    and used when constructing these,
+    **default** - None.
+    **Valid values:** {
+    see reaction package for documentation.}""",
         ),
     )
 
@@ -93,16 +93,8 @@ see reaction package for documentation.}""",
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(TranslatorDataADM1ASM1, self).build()
+        super(TranslatorDataADM1ASM2D, self).build()
 
-        self.i_xe = Param(
-            initialize=0.06,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Nitrogen inert content",
-        )
-
-        mw_n = 14 * pyunits.kg / pyunits.kmol
         mw_c = 12 * pyunits.kg / pyunits.kmol
 
         @self.Constraint(
@@ -126,7 +118,31 @@ see reaction package for documentation.}""",
         def eq_pressure_rule(blk, t):
             return blk.properties_out[t].pressure == blk.properties_in[t].pressure
 
-        self.unchanged_component = Set(initialize=["S_I", "X_I"])
+        self.readily_biodegradable = Set(initialize=["S_su", "S_aa", "S_fa"])
+
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Equality S_F equation",
+        )
+        def eq_SF_conc(blk, t):
+            return blk.properties_out[t].conc_mass_comp["S_F"] == sum(
+                blk.properties_in[t].conc_mass_comp[i]
+                for i in blk.readily_biodegradable
+            )
+
+        self.readily_biodegradable2 = Set(initialize=["S_va", "S_bu", "S_pro", "S_ac"])
+
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Equality S_A equation",
+        )
+        def eq_SA_conc(blk, t):
+            return blk.properties_out[t].conc_mass_comp["S_A"] == sum(
+                blk.properties_in[t].conc_mass_comp[i]
+                for i in blk.readily_biodegradable2
+            )
+
+        self.unchanged_component = Set(initialize=["S_I", "X_I", "X_PP", "X_PHA"])
 
         @self.Constraint(
             self.flowsheet().time,
@@ -139,107 +155,27 @@ see reaction package for documentation.}""",
                 == blk.properties_in[t].conc_mass_comp[i]
             )
 
-        self.readily_biodegradable = Set(
-            initialize=["S_su", "S_aa", "S_fa", "S_va", "S_bu", "S_pro", "S_ac"]
-        )
-
-        self.slowly_biodegradable = Set(
-            initialize=[
-                "X_c",
-                "X_ch",
-                "X_pr",
-                "X_li",
-                "X_su",
-                "X_aa",
-                "X_fa",
-                "X_c4",
-                "X_pro",
-                "X_ac",
-                "X_h2",
-            ]
-        )
-
         @self.Constraint(
             self.flowsheet().time,
-            doc="Equality S_S equation",
+            doc="Equality S_NH4 equation",
         )
-        def eq_SS_conc(blk, t):
-            return blk.properties_out[t].conc_mass_comp["S_S"] == sum(
-                blk.properties_in[t].conc_mass_comp[i]
-                for i in blk.readily_biodegradable
-            )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Equality X_S equation",
-        )
-        def eq_XS_conc(blk, t):
-            return blk.properties_out[t].conc_mass_comp["X_S"] == sum(
-                blk.properties_in[t].conc_mass_comp[i] for i in blk.slowly_biodegradable
-            )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Equality S_NH equation",
-        )
-        def eq_Snh_conc(blk, t):
+        def eq_SNH4_conc(blk, t):
             return (
-                blk.properties_out[t].conc_mass_comp["S_NH"]
+                blk.properties_out[t].conc_mass_comp["S_NH4"]
                 == blk.properties_in[t].conc_mass_comp["S_IN"]
             )
 
         @self.Constraint(
             self.flowsheet().time,
-            doc="Equality S_ND equation",
+            doc="Equality S_PO4 equation",
         )
-        def eq_Snd_conc(blk, t):
-            return blk.properties_out[t].conc_mass_comp["S_ND"] == mw_n * (
-                (
-                    blk.properties_in[t].conc_mass_comp["S_I"]
-                    * blk.config.reaction_package.N_I
-                )
-                + (
-                    blk.properties_in[t].conc_mass_comp["S_aa"]
-                    * blk.config.reaction_package.N_aa
-                )
+        def eq_SPO4_conc(blk, t):
+            return (
+                blk.properties_out[t].conc_mass_comp["S_PO4"]
+                == blk.properties_in[t].conc_mass_comp["S_IP"]
             )
 
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Equality Xnd equation",
-        )
-        def eq_Xnd_conc(blk, t):
-            return blk.properties_out[t].conc_mass_comp["X_ND"] == (
-                mw_n
-                * (
-                    (
-                        blk.config.reaction_package.N_bac
-                        * (
-                            blk.properties_in[t].conc_mass_comp["X_su"]
-                            + blk.properties_in[t].conc_mass_comp["X_aa"]
-                            + blk.properties_in[t].conc_mass_comp["X_fa"]
-                            + blk.properties_in[t].conc_mass_comp["X_c4"]
-                            + blk.properties_in[t].conc_mass_comp["X_pro"]
-                            + blk.properties_in[t].conc_mass_comp["X_ac"]
-                            + blk.properties_in[t].conc_mass_comp["X_h2"]
-                        )
-                    )
-                    + (
-                        blk.properties_in[t].conc_mass_comp["X_I"]
-                        * blk.config.reaction_package.N_I
-                    )
-                    + (
-                        blk.properties_in[t].conc_mass_comp["X_c"]
-                        * blk.config.reaction_package.N_xc
-                    )
-                    + (
-                        blk.properties_in[t].conc_mass_comp["X_pr"]
-                        * blk.config.reaction_package.N_aa
-                    )
-                )
-                - (blk.properties_in[t].conc_mass_comp["X_I"] * blk.i_xe)
-            )
-
+        # TODO: No S_IC for current ASM2D, need to revisit it later
         @self.Constraint(
             self.flowsheet().time,
             doc="Equality alkalinity equation",
@@ -250,8 +186,38 @@ see reaction package for documentation.}""",
                 == blk.properties_in[t].conc_mass_comp["S_IC"] / mw_c
             )
 
+        self.slowly_biodegradable = Set(
+            initialize=[
+                "X_ch",
+                "X_pr",
+                "X_li",
+            ]
+        )
+
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Equality X_S equation",
+        )
+        def eq_XS_conc(blk, t):
+            return blk.properties_out[t].conc_mass_comp["X_S"] == sum(
+                blk.properties_in[t].conc_mass_comp[i] for i in blk.slowly_biodegradable
+            )
+
+        # TODO: check if we track S_SO4, S_Na, S_Cl, S_Ca, X_Ca2(PO4)3, X_MgNH4PO4
+
+        # TODO: X_TSS, X_MeOH and X_MeP are not given in Flores-Alsina's paper, need to check how to address them
         self.zero_flow_components = Set(
-            initialize=["X_BH", "X_BA", "X_P", "S_O", "S_NO"]
+            initialize=[
+                "S_N2",
+                "S_NO3",
+                "S_O2",
+                "X_AUT",
+                "X_H",
+                "X_PAO",
+                "X_TSS",
+                "X_MeOH",
+                "X_MeP",
+            ]
         )
 
         @self.Constraint(
@@ -264,6 +230,22 @@ see reaction package for documentation.}""",
                 blk.properties_out[t].conc_mass_comp[i]
                 == 1e-6 * pyunits.kg / pyunits.m**3
             )
+
+        if (
+            self.config.outlet_property_package.config.additional_solute_list
+            is not None
+        ):
+
+            @self.Constraint(
+                self.flowsheet().time,
+                self.config.outlet_property_package.config.additional_solute_list,
+                doc="Equality ASM2D additional solute equation",
+            )
+            def eq_ASM2D_additional_conc(blk, t, i):
+                return (
+                    blk.properties_out[t].conc_mass_comp[i]
+                    == blk.properties_in[t].conc_mass_comp[i]
+                )
 
     def initialize_build(
         self,

@@ -14,7 +14,6 @@
 from pyomo.environ import (
     Var,
     NonNegativeReals,
-    NegativeReals,
     value,
 )
 
