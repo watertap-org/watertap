@@ -176,38 +176,38 @@ def build_flowsheet():
             iscale.set_scaling_factor(var, 1e-1)
         if "conc_mass_comp[X_I]" in var.name:
             iscale.set_scaling_factor(var, 1e-1)
-        if "conc_mass_comp[S_O2]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[S_N2]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[S_NO3]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[X_H]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[X_PAO]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[X_AUT]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[X_MeOH]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[X_MeP]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[X_TSS]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[S_ch4]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[X_su]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[X_fa]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[X_c4]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[X_pro]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[X_ac]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
-        if "conc_mass_comp[X_h2]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[S_O2]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[S_N2]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[S_NO3]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[X_H]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[X_PAO]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[X_AUT]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[X_MeOH]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[X_MeP]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[X_TSS]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[S_ch4]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[X_su]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[X_fa]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[X_c4]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[X_pro]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[X_ac]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
+        # if "conc_mass_comp[X_h2]" in var.name:
+        #     iscale.set_scaling_factor(var, 1e3)
 
     iscale.calculate_scaling_factors(m)
 
@@ -225,7 +225,7 @@ def build_flowsheet():
 
     seq.run(m, function)
 
-    solver = get_solver(options={"bound_push": 1e-8})
+    solver = get_solver(options={"bound_push": 1e-2})
 
     results = solver.solve(m, tee=True)
     print_close_to_bounds(m)
