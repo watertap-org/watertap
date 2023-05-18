@@ -159,10 +159,10 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     exports.add(
-        obj=fs.NF.nfUnit.costing.membrane_cost,
+        obj=fs.costing.nanofiltration.membrane_cost,
         name="Membrane cost",
         ui_units=fs.costing.base_currency / pyunits.m**2,
-        display_units="",
+        display_units="$/m^2",
         rounding=2,
         description="NF CAPEX",
         is_input=True,
@@ -171,7 +171,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="NF CAPEX",
     )
     exports.add(
-        obj=fs.NF.nfUnit.costing.factor_membrane_replacement,
+        obj=fs.costing.nanofiltration.factor_membrane_replacement,
         name="Membrane replacment rate",
         ui_units=pyunits.year**-1,
         display_units="fraction/year",
@@ -193,6 +193,7 @@ def export_variables(flowsheet=None, exports=None):
         input_category="NF OPEX",
         is_output=True,
         output_category="NF OPEX",
+        is_readonly=False,
     )
     exports.add(
         obj=fs.costing.utilization_factor,
