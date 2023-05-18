@@ -15,14 +15,13 @@ Author: Marcus Holly
 """
 
 import pytest
-from pyomo.environ import ConcreteModel, Param, units, value, Var
+from pyomo.environ import ConcreteModel, Param, value, Var
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 
 from watertap.property_models.activated_sludge.new_modified_asm2d_properties import (
     NewASM2dParameterBlock,
     NewASM2dStateBlock,
-    DecaySwitch,
 )
 from idaes.core.util.model_statistics import (
     fixed_variables_set,

@@ -34,7 +34,6 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
     LiquidPhase,
-    Component,
     Solute,
     Solvent,
 )

@@ -15,13 +15,9 @@ Author: Marcus Holly
 
 References:
 
-[1] Henze, M., Gujer, W., Mino, T., Matsuo, T., Wentzel, M.C., Marais, G.v.R.,
-Van Loosdrecht, M.C.M., "Activated Sludge Model No.2D, ASM2D", 1999,
-Wat. Sci. Tech. Vol. 39, No. 1, pp. 165-182
-
-[2] Flores-Alsina X., Gernaey K.V. and Jeppsson, U. "Benchmarking biological
-nutrient removal in wastewater treatment plants: influence of mathematical model
-assumptions", 2012, Wat. Sci. Tech., Vol. 65 No. 8, pp. 1496-1505
+X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
+Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions fordynamic simulations of anaerobic digestion processes,
+Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
 """
 import pytest
 
