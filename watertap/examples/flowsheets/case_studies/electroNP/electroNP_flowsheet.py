@@ -16,8 +16,6 @@ from pyomo.environ import (
     units,
 )
 from pyomo.network import Arc, SequentialDecomposition
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.initialization import propagate_state
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
@@ -41,7 +39,6 @@ from watertap.property_models.activated_sludge.modified_asm2d_properties import 
 )
 from watertap.unit_models.translators.translator_adm1_asm2d import Translator_ADM1_ASM2D
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
-from idaes.core.util.testing import initialization_tester
 from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
@@ -94,6 +91,13 @@ def build_flowsheet():
     )
 
     m.fs.electroNP = ElectroNPZO(property_package=m.fs.props_ASM2D)
+    m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(
+        m.fs.electroNP.properties_treated[0].flow_vol
+    )
+    m.fs.costing.add_LCOW(m.fs.electroNP.properties_treated[0].flow_vol)
 
     m.fs.stream_adm1_translator = Arc(
         source=m.fs.AD.liquid_outlet, destination=m.fs.translator_adm1_asm2d.inlet
@@ -176,38 +180,38 @@ def build_flowsheet():
             iscale.set_scaling_factor(var, 1e-1)
         if "conc_mass_comp[X_I]" in var.name:
             iscale.set_scaling_factor(var, 1e-1)
-        # if "conc_mass_comp[S_O2]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[S_N2]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[S_NO3]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_H]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_PAO]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_AUT]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_MeOH]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_MeP]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_TSS]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[S_ch4]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_su]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_fa]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_c4]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_pro]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_ac]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_h2]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[S_O2]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[S_N2]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[S_NO3]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[X_H]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[X_PAO]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[X_AUT]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[X_MeOH]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[X_MeP]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[X_TSS]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[S_ch4]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[X_su]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[X_fa]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[X_c4]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[X_pro]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[X_ac]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[X_h2]" in var.name:
+            iscale.set_scaling_factor(var, 1e3)
 
     iscale.calculate_scaling_factors(m)
 
@@ -225,7 +229,7 @@ def build_flowsheet():
 
     seq.run(m, function)
 
-    solver = get_solver(options={"bound_push": 1e-2})
+    solver = get_solver(options={"bound_push": 1e-3})
 
     results = solver.solve(m, tee=True)
     print_close_to_bounds(m)
