@@ -95,24 +95,30 @@ class TestParamBlock(object):
         # Expected non-zero stoichiometries
         # Values from Flores-Alsina BSM2.PSFe Gujer matrix Excel (https://github.com/wwtmodels/Plant-Wide-Models)
         stoic = {
+            # R1: Aerobic hydrolysis
             ("R1", "Liq", "S_F"): 1,
             ("R1", "Liq", "X_S"): -1,
+            # R2: Anoxic hydrolysis
             ("R2", "Liq", "S_F"): 1,
             ("R2", "Liq", "X_S"): -1,
+            # R3: Anaerobic hydrolysis
             ("R3", "Liq", "S_F"): 1,
             ("R3", "Liq", "X_S"): -1,
+            # R4: Aerobic growth on S_F
             ("R4", "Liq", "S_O2"): -0.6,
             ("R4", "Liq", "S_F"): -1.6,
             ("R4", "Liq", "S_NH4"): -0.032518,
             ("R4", "Liq", "S_PO4"): -0.012596,
             ("R4", "Liq", "S_IC"): 0.143367,
             ("R4", "Liq", "X_H"): 1,
+            # R5: Aerobic growth on S_A
             ("R5", "Liq", "S_O2"): -0.6,
             ("R5", "Liq", "S_A"): -1.6,
             ("R5", "Liq", "S_NH4"): -0.08615,
             ("R5", "Liq", "S_PO4"): -0.02154,
             ("R5", "Liq", "S_IC"): 0.23388,
             ("R5", "Liq", "X_H"): 1,
+            # R6: Anoxic growth on S_F
             ("R6", "Liq", "S_F"): -1.6,
             ("R6", "Liq", "S_NH4"): -0.032518,
             ("R6", "Liq", "S_N2"): 0.21,
@@ -120,6 +126,7 @@ class TestParamBlock(object):
             ("R6", "Liq", "S_PO4"): -0.012596,
             ("R6", "Liq", "S_IC"): 0.143368,
             ("R6", "Liq", "X_H"): 1,
+            # R7: Anoxic growth on S_A, denitrification
             ("R7", "Liq", "S_A"): -1.6,
             ("R7", "Liq", "S_NH4"): -0.08615,
             ("R7", "Liq", "S_N2"): 0.21,
@@ -127,17 +134,20 @@ class TestParamBlock(object):
             ("R7", "Liq", "S_PO4"): -0.02154,
             ("R7", "Liq", "S_IC"): 0.23388,
             ("R7", "Liq", "X_H"): 1,
+            # R8: Fermentation
             ("R8", "Liq", "S_F"): -1,
             ("R8", "Liq", "S_A"): 1,
             ("R8", "Liq", "S_NH4"): -0.03352,
             ("R8", "Liq", "S_PO4"): 0.00559,
             ("R8", "Liq", "S_IC"): -0.05657,
+            # R9: Lysis
             ("R9", "Liq", "S_NH4"): 0.049979,
             ("R9", "Liq", "S_PO4"): 0.01586,
             ("R9", "Liq", "S_IC"): 0.043355,
             ("R9", "Liq", "X_I"): 0.1,
             ("R9", "Liq", "X_S"): 0.9,
             ("R9", "Liq", "X_H"): -1,
+            # R10: Storage of X_PHA
             ("R10", "Liq", "S_A"): -1,
             ("R10", "Liq", "S_PO4"): 0.0129,
             ("R10", "Liq", "S_IC"): 0.075,
@@ -145,6 +155,7 @@ class TestParamBlock(object):
             ("R10", "Liq", "X_PHA"): 1,
             ("R10", "Liq", "S_K"): 0.00542316,
             ("R10", "Liq", "S_Mg"): 0.00337206,
+            # R11: Aerobic storage of X_PP
             ("R11", "Liq", "S_O2"): -0.2,
             ("R11", "Liq", "S_PO4"): -1,
             ("R11", "Liq", "S_IC"): 0.06,
@@ -152,6 +163,7 @@ class TestParamBlock(object):
             ("R11", "Liq", "X_PHA"): -0.2,
             ("R11", "Liq", "S_K"): -0.4204,
             ("R11", "Liq", "S_Mg"): -0.2614,
+            # R12: Anoxic storage of X_PP
             ("R12", "Liq", "S_N2"): 0.07,
             ("R12", "Liq", "S_NO3"): -0.07,
             ("R12", "Liq", "S_PO4"): -1,
@@ -160,12 +172,14 @@ class TestParamBlock(object):
             ("R12", "Liq", "X_PHA"): -0.2,
             ("R12", "Liq", "S_K"): -0.4204,
             ("R12", "Liq", "S_Mg"): -0.2614,
+            # R13: Aerobic growth of X_PAO
             ("R13", "Liq", "S_O2"): -0.6,
             ("R13", "Liq", "S_NH4"): -0.08615,
             ("R13", "Liq", "S_PO4"): -0.02154,
             ("R13", "Liq", "S_IC"): 0.11388,
             ("R13", "Liq", "X_PAO"): 1,
             ("R13", "Liq", "X_PHA"): -1.6,
+            # R14: Anoxic growth of X_PAO
             ("R14", "Liq", "S_NH4"): -0.08615,
             ("R14", "Liq", "S_N2"): 0.21,
             ("R14", "Liq", "S_NO3"): -0.21,
@@ -173,25 +187,30 @@ class TestParamBlock(object):
             ("R14", "Liq", "S_IC"): 0.11388,
             ("R14", "Liq", "X_PAO"): 1,
             ("R14", "Liq", "X_PHA"): -1.6,
+            # R15: Lysis of X_PAO
             ("R15", "Liq", "S_NH4"): 0.049979,
             ("R15", "Liq", "S_PO4"): 0.01586,
             ("R15", "Liq", "S_IC"): 0.043355,
             ("R15", "Liq", "X_I"): 0.1,
             ("R15", "Liq", "X_S"): 0.9,
             ("R15", "Liq", "X_PAO"): -1,
+            # R16: Lysis of X_PP
             ("R16", "Liq", "S_PO4"): 1,
             ("R16", "Liq", "X_PP"): -1,
             ("R16", "Liq", "S_K"): 0.4204,
             ("R16", "Liq", "S_Mg"): 0.2614,
+            # R17: Lysis of X_PHA
             ("R17", "Liq", "S_A"): 1,
             ("R17", "Liq", "S_IC"): -0.075,
             ("R17", "Liq", "X_PHA"): -1,
+            # R18: Aerobic growth of X_AUT
             ("R18", "Liq", "S_O2"): -18.048,
             ("R18", "Liq", "S_NH4"): -4.253,
             ("R18", "Liq", "S_NO3"): 4.17,
             ("R18", "Liq", "S_PO4"): -0.02154,
             ("R18", "Liq", "S_IC"): -0.36612,
             ("R18", "Liq", "X_AUT"): 1,
+            # R19: Lysis of X_AUT
             ("R19", "Liq", "S_NH4"): 0.049979,
             ("R19", "Liq", "S_PO4"): 0.01586,
             ("R19", "Liq", "S_IC"): 0.043355,
