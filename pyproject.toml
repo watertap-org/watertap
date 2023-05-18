@@ -1,0 +1,20 @@
+[tool.pylint.main]
+py-version = "3.8"
+
+[tool.pylint."messages control"]
+disable = [
+    "W", # all warnings
+    "C", # all conventions
+    "R", # all refactor
+    "invalid-unary-operand-type", # Pyomo -(Var) or -(Expression)
+    "unsupported-binary-operation", # Pyomo Set union |
+    "no-member", # Pyomo / IDAES metaprogramming, a few other places
+    "no-name-in-module", # IDAES metaprogramming
+    "undefined-variable", # IDAES metaprogramming, a few other places
+]
+# see https://pylint.readthedocs.io/en/latest/user_guide/messages/messages_overview.html
+# for a list of all messages
+enable = [
+    "unnecessary-pass",
+    "unused-import",
+]

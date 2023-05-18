@@ -1,35 +1,32 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Shared input data for tests
 """
 from pyomo.environ import units as pyunits
-from idaes.core.phases import PhaseType as PT
-import idaes.generic_models.properties.core.pure.Perrys as Perrys
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
-    van_t_hoff,
-)
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.generic.generic_reaction import (
-    ConcentrationForm,
-)
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
-    gibbs_energy, van_t_hoff
-)
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+from idaes.core.base.phases import PhaseType as PT
+import idaes.models.properties.modular_properties.pure.Perrys as Perrys
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
+    gibbs_energy,
+    van_t_hoff,
+)
+from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.modular_properties.base.generic_reaction import (
+    ConcentrationForm,
+)
+
 
 _reaction = {
     "stoichiometry": {"Liq": {"NH4 +": -1, "H +": 1, "NH3": 1}},
@@ -78,7 +75,7 @@ _component = {
     },
     "name": "Ca[OH]2",
     "type": "solute",
-    "elements": ["Ca", "O", "H"]
+    "elements": ["Ca", "O", "H"],
 }
 
 reaction_data = [_reaction, _reaction]
@@ -99,7 +96,7 @@ Ca_thermo_config = {
             "parameter_data": {
                 "mw": (40.078, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "1": (13.5, pyunits.kmol * pyunits.m ** -3),
+                    "1": (13.5, pyunits.kmol * pyunits.m**-3),
                     "2": (1, pyunits.dimensionless),
                     "3": (1, pyunits.K),
                     "4": (1, pyunits.dimensionless),
@@ -107,10 +104,10 @@ Ca_thermo_config = {
                 "enth_mol_form_liq_comp_ref": (-542.83, pyunits.J / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "entr_mol_form_liq_comp_ref": (
                     -53,
@@ -192,22 +189,25 @@ bicarbonate_reaction_data = {
     "name": "H2CO3_Ka2",
     "components": ["H2CO3", "Ka2"],
     "reactant_elements": ["H", "O", "C"],
-    "type": "equilibrium"
+    "type": "equilibrium",
 }
 
 # ==========================================================
 
-from idaes.generic_models.properties.core.pure.Perrys import Perrys
-from idaes.generic_models.properties.core.pure.NIST import NIST
+from idaes.models.properties.modular_properties.pure.Perrys import Perrys
+from idaes.models.properties.modular_properties.pure.NIST import NIST
+
 # Import statements to be used in the starter config dict
 from idaes.core import VaporPhase, AqueousPhase
-from idaes.core.components import Solvent, Solute, Cation, Anion
-from idaes.core.phases import PhaseType as PT
-from idaes.generic_models.properties.core.phase_equil.forms import fugacity
-from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.phase_equil import SmoothVLE
-from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.phases import PhaseType as PT
+from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
+from idaes.models.properties.modular_properties.state_definitions import FTPx
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
+from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    IdealBubbleDew,
+)
 
 recarbonation_thermo_config = {
     "components": {
@@ -228,7 +228,7 @@ recarbonation_thermo_config = {
                 "temperature_crit": (647, pyunits.K),
                 # Comes from Perry's Handbook:  p. 2-98
                 "dens_mol_liq_comp_coeff": {
-                    "1": (5.459, pyunits.kmol * pyunits.m ** -3),
+                    "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
                     "4": (0.081, pyunits.dimensionless),
@@ -238,40 +238,40 @@ recarbonation_thermo_config = {
                 # Comes from Perry's Handbook:  p. 2-174
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "cp_mol_ig_comp_coeff": {
                     "A": (30.09200, pyunits.J / pyunits.mol / pyunits.K),
                     "B": (
                         6.832514,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -1,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-1,
                     ),
                     "C": (
                         6.793435,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -2,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-2,
                     ),
                     "D": (
                         -2.534480,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -3,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-3,
                     ),
                     "E": (
                         0.082139,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** 2,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**2,
                     ),
                     "F": (-250.8810, pyunits.kJ / pyunits.mol),
                     "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
@@ -302,7 +302,7 @@ recarbonation_thermo_config = {
                 "pressure_crit": (73.825e5, pyunits.Pa),
                 "temperature_crit": (304.23, pyunits.K),
                 "dens_mol_liq_comp_coeff": {
-                    "1": (2.768, pyunits.kmol * pyunits.m ** -3),
+                    "1": (2.768, pyunits.kmol * pyunits.m**-3),
                     "2": (0.26212, None),
                     "3": (304.21, pyunits.K),
                     "4": (0.2908, None),
@@ -312,30 +312,30 @@ recarbonation_thermo_config = {
                     "B": (
                         55.18696,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -1,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-1,
                     ),
                     "C": (
                         -33.69137,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -2,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-2,
                     ),
                     "D": (
                         7.948387,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -3,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-3,
                     ),
                     "E": (
                         -0.136638,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** 2,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**2,
                     ),
                     "F": (-403.6075, pyunits.kJ / pyunits.mol),
                     "G": (228.2431, pyunits.J / pyunits.mol / pyunits.K),
@@ -343,10 +343,10 @@ recarbonation_thermo_config = {
                 },
                 "cp_mol_liq_comp_coeff": {
                     "1": (-8.3043e6, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (1.0437e5, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (4.333e2, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (6.0052e-1, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (1.0437e5, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (4.333e2, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (6.0052e-1, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "enth_mol_form_liq_comp_ref": (-285.83, pyunits.kJ / pyunits.mol),
                 "enth_mol_form_vap_comp_ref": (-393.52, pyunits.kJ / pyunits.mol),
@@ -371,7 +371,7 @@ recarbonation_thermo_config = {
             "parameter_data": {
                 "mw": (1.00784, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "1": (5.459, pyunits.kmol * pyunits.m ** -3),
+                    "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
                     "4": (0.081, pyunits.dimensionless),
@@ -379,10 +379,10 @@ recarbonation_thermo_config = {
                 "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "entr_mol_form_liq_comp_ref": (
                     -10.75,
@@ -402,7 +402,7 @@ recarbonation_thermo_config = {
             "parameter_data": {
                 "mw": (17.008, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "1": (5.459, pyunits.kmol * pyunits.m ** -3),
+                    "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
                     "4": (0.081, pyunits.dimensionless),
@@ -410,10 +410,10 @@ recarbonation_thermo_config = {
                 "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "entr_mol_form_liq_comp_ref": (
                     -10.75,
@@ -433,7 +433,7 @@ recarbonation_thermo_config = {
             "parameter_data": {
                 "mw": (62.03, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "1": (5.4495, pyunits.kmol * pyunits.m ** -3),
+                    "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
                     "4": (0.259, pyunits.dimensionless),
@@ -441,10 +441,10 @@ recarbonation_thermo_config = {
                 "enth_mol_form_liq_comp_ref": (-699.7, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (135749.9, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (0, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (0, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (0, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "entr_mol_form_liq_comp_ref": (
                     187,
@@ -464,7 +464,7 @@ recarbonation_thermo_config = {
             "parameter_data": {
                 "mw": (61.0168, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "1": (5.4495, pyunits.kmol * pyunits.m ** -3),
+                    "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
                     "4": (0.259, pyunits.dimensionless),
@@ -472,10 +472,10 @@ recarbonation_thermo_config = {
                 "enth_mol_form_liq_comp_ref": (-692, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (135749.9, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (0, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (0, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (0, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "entr_mol_form_liq_comp_ref": (
                     91.2,
@@ -495,7 +495,7 @@ recarbonation_thermo_config = {
             "parameter_data": {
                 "mw": (60.01, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "1": (5.4495, pyunits.kmol * pyunits.m ** -3),
+                    "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
                     "4": (0.259, pyunits.dimensionless),
@@ -503,10 +503,10 @@ recarbonation_thermo_config = {
                 "enth_mol_form_liq_comp_ref": (-677.1, pyunits.J / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (135749.9, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (0, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (0, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (0, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "entr_mol_form_liq_comp_ref": (
                     -56.9,
@@ -588,7 +588,7 @@ recarbonation_reaction_config = {
             "concentration_form": ConcentrationForm.molarity,
             "parameter_data": {
                 "dh_rxn_ref": (0, pyunits.kJ / pyunits.mol),
-                "k_eq_ref": (1.7 * 10 ** -3, None),
+                "k_eq_ref": (1.7 * 10**-3, None),
                 "T_eq_ref": (300, pyunits.K),
                 # By default, reaction orders follow stoichiometry
                 #    manually set reaction order here to override

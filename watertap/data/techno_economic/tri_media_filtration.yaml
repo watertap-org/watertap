@@ -1,0 +1,44 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0.9
+    units: dimensionless
+    reference: Texas Water Development Board IT3PR User Manual
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    eeq:
+      value: 0.2
+      units: dimensionless
+      constituent_longform: Estradiol Equivalency (EEQ)
+    nonvolatile_toc:
+      value: 0.2
+      units: dimensionless
+      constituent_longform: Nonvolatile TOC
+    toc:
+      value: 0.2
+      units: dimensionless
+      constituent_longform: Total Organic Carbon (TOC)
+    nitrate:
+      value: 0.8
+      units: dimensionless
+      constituent_longform: Nitrate-N, Dissolved
+    tss:
+      value: 0.95
+      units: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)
+  energy_electric_flow_vol_inlet:
+    value: 0.00045 # revisit this value later on
+    units: kWh/m^3
+  capital_cost:
+    basis: flow_vol
+    cost_factor: None
+    reference_state:
+      value: 1
+      units: Mgallons/day
+    capital_a_parameter:
+      value: 0.72557e6
+      units: USD_2014
+    capital_b_parameter:
+      value: 0.5862
+      units: dimensionless

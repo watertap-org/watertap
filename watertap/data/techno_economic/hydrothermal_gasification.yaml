@@ -1,0 +1,128 @@
+default:
+  energy_electric_flow_mass:
+    value: 1.90
+    units: kWh/metric_ton
+  recovery_frac_mass_H2O:
+    value: 1      # no water wasting
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    organic_liquid:
+      value: 0   # Reactive removal is handled in reaction
+      units: dimensionless
+      constituent_longform: Organic Liquid
+    inorganic_solid:
+      value: 0
+      units: dimensionless
+      constituent_longform: Inorganic Liquid
+    carbon_dioxide:
+      value: 1   # Reactive removal is handled in reaction
+      units: dimensionless
+      constituent_longform: Carbon Dioxide
+  reactions:
+    hydrothermal_gasification:
+      key_reactant: organic_liquid
+      conversion: 0.99
+      stoichiometry:
+        organic_liquid:
+          conversion_ratio: -1
+        carbon_dioxide:
+          conversion_ratio: 1
+  capital_cost:
+    basis: flow_mass
+    cost_factor: TIC
+    installation_factor_reactor:
+      value: 2
+      units: dimensionless
+    equipment_cost_reactor:
+      value: 2041875
+      units: USD_2011
+    base_flowrate_reactor:
+      value: 76235
+      units: pound/hr
+    scaling_exponent_reactor:
+      value: 0.65
+      units: dimensionless
+    installation_factor_pump:
+      value: 1.4
+      units: dimensionless
+    equipment_cost_pump:
+      value: 611300
+      units: USD_2011
+    base_flowrate_pump:
+      value: 201905
+      units: pound/hr
+    scaling_exponent_pump:
+      value: 0.8
+      units: dimensionless
+    installation_factor_booster:
+      value: 3.2
+      units: dimensionless
+    equipment_cost_booster:
+      value: 8900
+      units: USD_2011
+    base_flowrate_booster:
+      value: 201905
+      units: pound/hr
+    scaling_exponent_booster:
+      value: 0.8
+      units: dimensionless
+    installation_factor_hydrocyclone:
+      value: 2.1
+      units: dimensionless
+    equipment_cost_hydrocyclone:
+      value: 5000000
+      units: USD_2009
+    base_flowrate_hydrocyclone:
+      value: 968859
+      units: pound/hr
+    scaling_exponent_hydrocyclone:
+      value: 0.65
+      units: dimensionless
+    installation_factor_cooler:
+      value: 1.31
+      units: dimensionless
+    equipment_cost_cooler:
+      value: 204100
+      units: USD_2011
+    base_flowrate_cooler:
+      value: 201905
+      units: pound/hr
+    scaling_exponent_cooler:
+      value: 0.65
+      units: dimensionless
+    installation_factor_exchanger:
+      value: 2.2
+      units: dimensionless
+    equipment_cost_exchanger:
+      value: 5013647
+      units: USD_2011
+    base_area_exchanger:
+      value: 7720
+      units: ft^2
+    new_area_exchanger:
+      value: 1334
+      units: ft^2
+    scaling_exponent_exchanger:
+      value: 0.7
+      units: dimensionless
+    installation_factor_heater:
+      value: 1.21
+      units: dimensionless
+    equipment_cost_heater:
+      value: 1372262
+      units: USD_2011
+    base_heat_duty_heater:
+      value: 33703.173
+      units: kWh
+    new_heat_duty_heater:
+      value: 5861.421
+      units: kWh
+    scaling_exponent_heater:
+      value: 0.65
+      units: dimensionless
+  catalyst_dosage:
+    value: 367.4
+    units: pound/metric_ton

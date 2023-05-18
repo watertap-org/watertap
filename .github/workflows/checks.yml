@@ -16,10 +16,49 @@ defaults:
     shell: bash -l {0}
 
 env:
-  # needed for colorized output to be shown in GHA logs
+  # --color=yes needed for colorized output to be shown in GHA logs
+  # --pyargs watertap is needed to be able to define CLI options in watertap/conftest.py
   PYTEST_ADDOPTS: "--color=yes"
 
 jobs:
+
+  code-formatting:
+    name: Check code is formatted (Black)
+    # OS and/or Python version don't make a difference, so we choose ubuntu and 3.8 as defaults
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: Install Black
+        # unlike the other jobs, we don't need to install WaterTAP and/or all the dev dependencies,
+        # but we still want to specify the Black version to use in requirements-dev.txt for local development
+        # so we extract the relevant line and pass it to a simple `pip install`
+        run: |
+          black_requirement="$(grep '^black==' requirements-dev.txt)"
+          pip --no-cache-dir install --progress-bar off "$black_requirement"
+      - name: Run Black to verify that the committed code is formatted
+        run: |
+          black --check .
+
+  pylint:
+    name: Code linting (pylint)
+    runs-on: ubuntu-latest
+    needs: [code-formatting]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+      - name: Install dev dependencies
+        run: |
+          pip install --progress-bar off -r requirements-dev.txt
+          pip list
+      - name: Run pylint
+        run: |
+          pylint watertap
+
   tests:
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
@@ -34,6 +73,7 @@ jobs:
           - '3.7'
           - '3.8'
           - '3.9'
+          - '3.10'
         os:
           - linux
           - win64
@@ -48,10 +88,6 @@ jobs:
           - python-version: '3.8'
             # limit uploading coverage report for a single Python version in the matrix
             cov_report: true
-          - python-version: '3.9'
-            os: linux
-            # same for link-checking in the HTML docs so we don't slam external sites
-            check_docs_links: true
           - os: linux
             # supercharge/mongodb-github-action is a container action, that's only available for Linux
             mongodb_server: true
@@ -65,7 +101,7 @@ jobs:
     - name: Install dependencies
       run: |
         echo '::group::Output of "conda install" commands'
-        conda install --quiet --yes pip=21.1 wheel setuptools pandoc
+        conda install --quiet --yes pip setuptools wheel pandoc
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
         pip install --progress-bar off -r requirements-dev.txt
@@ -102,36 +138,30 @@ jobs:
         bash -c 'grep "SKIPPED" "$_pytest_output_to_inspect" ; test $? -eq 1'
         echo '::endgroup::'
     - name: Require EDB tests to connect to MongoDB if server is set up
-      # if: matrix.mongodb_server
+      if: matrix.mongodb_server
       run:
         |
-        # --pyargs watertap is needed to be able to define the CLI options in watertap/conftest.py
-        # 
-        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --pyargs watertap --edb-no-mock" >> $GITHUB_ENV
+        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --edb-no-mock" >> $GITHUB_ENV
     - name: Test EDB client
-      run: pytest -k test_edb_client
+      run: pytest --pyargs watertap -k test_edb_client
     - name: Add coverage report pytest options
       if: matrix.cov_report
       run:
         |
         echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-report=xml" >> $GITHUB_ENV
-    - name: Run sample tests with new parametrization to show how parametrized tests are run
-      env:
-        _subset_to_show: -k test_pure_water_pH
-      run: pytest $_subset_to_show --verbose
     - name: Test with pytest
       run: |
-        pytest
+        pytest --pyargs watertap
     - name: Upload coverage report to Codecov
       if: matrix.cov_report
       uses: codecov/codecov-action@v2
     - name: Test documentation code
       run: |
         make -C docs doctest -d
-    # just run the linkcheck on one of the jobs
-    # so we don't slam external sites
+    # TODO: this should be moved to a dedicated job/workflow
+    # until then, we can leave this here as a reminder
     - name: Test documentation links
-      if: matrix.check_docs_links
+      if: 'false'
       run: |
         make -C docs linkcheck -d
 
@@ -142,7 +172,8 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - '3.8'
+          - '3.7'
+          - '3.10'
         os:
           - linux
           - win64
@@ -183,6 +214,90 @@ jobs:
         echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --verbose
         echo '::endgroup::'
+    - name: Run pytest
+      run: |
+        pytest --pyargs watertap
+
+  notebooks:
+    name: Test notebooks (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.7'
+          - '3.10'
+        os:
+          - linux
+          - win64
+        include:
+          - os: linux
+            os-version: ubuntu-20.04
+          - os: win64
+            os-version: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: watertap-dev
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        echo '::group::Output of "conda install" commands'
+        conda install --quiet --yes pip setuptools wheel pandoc
+        echo '::endgroup::'
+        echo '::group::Output of "pip install" commands'
+        pip install --progress-bar off -r requirements-dev.txt
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --verbose
+        echo '::endgroup::'
+    - name: Run pytest with nbmake
+      run:
+        pytest --nbmake **/*.ipynb
+
+  macos:
+    name: macOS setup (EXPERIMENTAL)
+    runs-on: macos-11
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.8'
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: watertap
+        python-version: ${{ matrix.python-version }}
+    - name: Install WaterTAP (dev) without idaes get-extensions
+      run: |
+        echo '::group::Output of "conda install" commands'
+        conda install --quiet --yes pip=21.1 wheel setuptools pandoc
+        echo '::endgroup::'
+        echo '::group::Output of "pip install" commands'
+        pip install --progress-bar off -r requirements-dev.txt
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show pyomo idaes-pse
+        echo '::endgroup::'
+    - name: Install Ipopt from conda-forge
+      run:
+        conda install --quiet --yes -c conda-forge ipopt
+    - name: Build Pyomo extensions
+      run: |
+        conda install --quiet --yes cmake
+        # some failures are expected, but this should succeed as long as pynumero is built correctly
+        pyomo build-extensions || python -c "from pyomo.contrib.pynumero.asl import AmplInterface; exit(0) if AmplInterface.available() else exit(1)"
     - name: Run pytest
       run: |
         pytest --pyargs watertap

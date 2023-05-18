@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Database operations API
 """
@@ -25,10 +24,11 @@ try:
 except ImportError:
     certifi = None
 from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, PyMongoError
+from pymongo.errors import ConnectionFailure
 
 # package
 from .data_model import Result, Component, Reaction, Base, DataWrapper
+from .error import BadConfiguration
 
 __author__ = "Dan Gunter (LBNL)"
 
@@ -139,6 +139,16 @@ class ElectrolyteDB:
             result = False
         return result
 
+    def _client_can_connect(self, client: MongoClient) -> bool:
+        # NOTE the "ping" command is chosen because it's the only one available when using mocked MongoClient instances
+        # therefore, having a single commands that works for both mock- and non-mock objects makes the mocking easier
+        server_resp = client.admin.command("ping")
+        try:
+            return bool(server_resp["ok"])
+        except (KeyError, TypeError) as e:
+            _log.exception(f"Unexpected format for server response: {server_resp}")
+        return None
+
     def _mongoclient(self, url: str, check, **client_kw) -> Union[MongoClient, None]:
         _log.debug(f"Begin: Create MongoDB client. url={url}")
         mc = MongoClient(url, **client_kw)
@@ -149,22 +159,25 @@ class ElectrolyteDB:
         # check that client actually works
         _log.info(f"Connection check MongoDB client url={url}")
         try:
-            mc.admin.command("ismaster")
-            self._mongoclient_connect_status["initial"] = "ok"
+            if self._client_can_connect(mc):
+                self._mongoclient_connect_status["initial"] = "ok"
             _log.info("MongoDB connection succeeded")
         except ConnectionFailure as conn_err:
             mc = None
             self._mongoclient_connect_status["initial"] = str(conn_err)
             if "CERTIFICATE_VERIFY_FAILED" in str(conn_err):
-                _log.warning(f"MongoDB connection failed due to certificate "
-                             f"verification.")
+                _log.warning(
+                    f"MongoDB connection failed due to certificate " f"verification."
+                )
                 if certifi is not None:
-                    _log.info("Retrying MongoDB connection with explicit location "
-                              f"for client certificates ({certifi.where()})")
+                    _log.info(
+                        "Retrying MongoDB connection with explicit location "
+                        f"for client certificates ({certifi.where()})"
+                    )
                     try:
                         mc = MongoClient(url, tlsCAFile=certifi.where(), **client_kw)
-                        mc.admin.command("ismaster")
-                        _log.info("Retried MongoDB connection succeeded")
+                        if self._client_can_connect(mc):
+                            _log.info("Retried MongoDB connection succeeded")
                     except ConnectionFailure as err:
                         mc = None
                         self._mongoclient_connect_status["retry"] = str(err)
@@ -282,11 +295,11 @@ class ElectrolyteDB:
                         disallow = True
                     for n in item[stoich_field][phase]:
                         stoich[n] = item[stoich_field][phase][n]
-                #If the item involves a phase that is not allowed, then move on to next item
-                if (disallow):
+                # If the item involves a phase that is not allowed, then move on to next item
+                if disallow:
                     continue
-                #If stoich is empty, then move on to next item
-                if (stoich == {}):
+                # If stoich is empty, then move on to next item
+                if stoich == {}:
                     continue
                 if any_components:
                     # look for non-empty intersection
@@ -301,9 +314,11 @@ class ElectrolyteDB:
                         # Add a reaction if all the products/reactants
                         #   can be formed. This allows addition of reactions
                         #   that may include species not yet considered.
-                        if (include_new_components == True):
+                        if include_new_components == True:
                             for side in -1, 1:
-                                side_keys = (k for k, v in stoich.items() if abs(v)/v == side)
+                                side_keys = (
+                                    k for k, v in stoich.items() if abs(v) / v == side
+                                )
                                 if set(side_keys).issubset(cnames):
                                     found.append(item)
                                     break  # found; stop
@@ -344,6 +359,51 @@ class ElectrolyteDB:
         else:
             return result
 
+    def list_bases(self):
+        """List the currently loaded bases and provide brief description
+
+        Args:
+            None
+        Returns:
+            No return, just display info to console
+        """
+        for item in self.get_base():
+            print(
+                f"base name: {item.name}\t\tdescription -> {self._base_desc(item.name)}"
+            )
+
+    def _base_desc(self, name) -> str:
+        """Creates a description of a base based on the standard naming
+
+        Args:
+            name: Name of the base to describe
+        Returns:
+            desc: String of the description of the base
+        """
+        if name == "default_thermo":
+            desc = "ThermoConfig: Default uses FTPx state vars for Liq phase"
+        elif name == "reaction":
+            desc = "ReactionConfig: Blank reaction template"
+        else:
+            items = name.split("_")
+            if len(items) < 3:
+                raise BadConfiguration(
+                    "ElectrolyteDB._base_desc",
+                    self.get_base(name).idaes_config,
+                    missing=None,
+                    why="\nName of base (" + name + ") is of unknown format\n",
+                )
+            if items[0] == "thermo":
+                desc = "ThermoConfig: "
+            else:
+                desc = "ReactionConfig: "
+            desc += "uses " + items[-1] + " state vars for "
+            for i in range(1, len(items) - 1):
+                desc += items[i] + ","
+            desc += " phases"
+
+        return desc
+
     # older method name
     get_one_base = get_base
 
@@ -382,24 +442,30 @@ class ElectrolyteDB:
             num += 1
         return num
 
-    # XXX: This preprocessing overlaps with data_model.DataWrapper subclasses.
-    # XXX: It should all be moved to one place
+    # TODO: This preprocessing overlaps with data_model.DataWrapper subclasses.
+    #       It should all be moved to one place. Unclear how to accomplish this
+    #       without also disrupting how structure is validated. The _preprocess
+    #       functions in each data_model.DataWrapper do not explicitly perform
+    #       these actions and do not return anything. Some of the data_model.
+    #       DataWrapper objects do not have a _preprocess function.
 
+    # record is a dict and rec_type is a string
     @classmethod
     def preprocess_record(cls, record, rec_type):
         process_func = getattr(cls, f"_process_{rec_type}")
         return process_func(record)
 
+    # You each of these are needed because they get checked in 'validate.py'
     @staticmethod
     def _process_component(rec):
+        # This line is needed because it is checked for in structure
         rec["elements"] = get_elements_from_components([rec["name"]])
         return rec
 
     @staticmethod
     def _process_reaction(rec):
-        rec["reactant_elements"] = get_elements_from_components(
-            rec.get("components", []))
-
+        # These lines seem integral to loading the database
+        # ------------------------------------------------
         # If reaction_order is not present in parameters, create it by
         # copying the stoichiometry (or empty for each phase, if stoich. not found)
         if Reaction.NAMES.param in rec:
@@ -407,7 +473,8 @@ class ElectrolyteDB:
             if Reaction.NAMES.reaction_order not in param:
                 if Reaction.NAMES.stoich in rec:
                     param[Reaction.NAMES.reaction_order] = rec[
-                        Reaction.NAMES.stoich].copy()
+                        Reaction.NAMES.stoich
+                    ].copy()
                 else:
                     param[Reaction.NAMES.reaction_order] = {
                         phase: {} for phase in Reaction.PHASES
@@ -415,10 +482,13 @@ class ElectrolyteDB:
 
         return rec
 
+    # This function does nothing... but gets called
     @staticmethod
     def _process_base(rec):
         return rec
 
+    # This function appears to be done implicitly by data_model.Component
+    # and is never actually called from the above 'load' function
     @staticmethod
     def _process_species(s):
         """Make species match https://jess.murdoch.edu.au/jess_spcdoc.shtml"""
@@ -435,14 +505,13 @@ class ElectrolyteDB:
             charge = f"{sign}{num}"
         else:
             charge = input_charge
-        # print(f"{s} -> {symbols}{charge}")
         return f"{symbols}{charge}"
 
 
+# Helper function used by _process_component above
 def get_elements_from_components(components):
     elements = set()
     for comp in components:
-        # print(f"Get elements from: {comp}")
         for m in re.finditer(r"[A-Z][a-z]?", comp):
             element = comp[m.start() : m.end()]
             if element[0] == "K" and len(element) > 1:

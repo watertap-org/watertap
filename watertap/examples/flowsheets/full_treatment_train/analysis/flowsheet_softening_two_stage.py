@@ -1,27 +1,28 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
-'''
+#################################################################################
+"""
 mutable parameters for optimization:
     m.fs.system_recovery_target
     m.fs.max_allowable_pressure
-'''
+"""
 from pyomo.environ import ConcreteModel, TransformationFactory
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 
-from watertap.examples.flowsheets.full_treatment_train.util import (solve_block,
-                                                             check_dof)
+from watertap.examples.flowsheets.full_treatment_train.util import (
+    solve_block,
+    check_dof,
+)
 
 import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_softening as flowsheet_softening
 import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_two_stage as flowsheet_two_stage
@@ -32,10 +33,10 @@ def build(m, **kwargs):
     Build a flowsheet with softening pretreatment and RO.
     """
 
-    assert kwargs['RO_base'] == 'TDS'
-    assert not kwargs['has_desal_feed']
+    assert kwargs["RO_base"] == "TDS"
+    assert not kwargs["has_desal_feed"]
     flowsheet_softening.build_components(m)
-    flowsheet_two_stage.build_components(m, pretrt_type='softening', **kwargs)
+    flowsheet_two_stage.build_components(m, pretrt_type="softening", **kwargs)
 
     return m
 
@@ -73,8 +74,8 @@ def set_up_optimization(m, system_recovery=0.50, **kwargs):
     check_dof(m, 7)
 
 
-def optimize(m):
-    solve_block(m, tee=False, fail_flag=True)
+def optimize(m, check_termination=True):
+    return solve_block(m, tee=False, fail_flag=check_termination)
 
 
 def solve_flowsheet(**desal_kwargs):
@@ -82,7 +83,7 @@ def solve_flowsheet(**desal_kwargs):
         desal_kwargs = flowsheet_two_stage.desal_kwargs
 
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     build(m, **desal_kwargs)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -97,8 +98,7 @@ def solve_flowsheet(**desal_kwargs):
     solve_block(m, tee=False, fail_flag=True)
 
     # report
-    print('==================================='
-          '\n          Simulation          ')
+    print("===================================" "\n          Simulation          ")
     report(m, **desal_kwargs)
 
     return m
@@ -109,8 +109,7 @@ def optimize_flowsheet(system_recovery=0.50, **kwargs):
     set_up_optimization(m, system_recovery=system_recovery, **kwargs)
     optimize(m)
 
-    print('==================================='
-          '\n       Optimization            ')
+    print("===================================" "\n       Optimization            ")
     report(m, **flowsheet_two_stage.desal_kwargs)
 
     return m
@@ -118,6 +117,7 @@ def optimize_flowsheet(system_recovery=0.50, **kwargs):
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) == 1:
         m = solve_flowsheet()
     else:

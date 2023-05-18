@@ -1,0 +1,174 @@
+default: # TODO: confirm any differentiation in removal across subtypes
+  electricity_intensity_parameter:
+    value: 0.106310
+    units: kW/m^3
+  recovery_frac_mass_H2O:
+    value: 0.96
+    units: dimensionless
+    reference: Heap leaching (gold/copper) case study.
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    nonvolatile_toc:
+      value: 0.2
+      units: dimensionless
+      constituent_longform: Nonvolatile TOC
+    tss:
+      value: 0.97
+      units: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)
+  empty_bed_contact_time:
+    value: 10
+    units: min
+  activated_carbon_replacement:
+    value: 0.0550884
+    units: kg/m^3
+  activated_carbon_bulk_density:
+    value: 500
+    units: kg/m^3
+  capital_cost:
+    cost_factor: None
+    contactor_cost_coeff_0:
+      value: 10010.9
+      units: USD_2020
+    contactor_cost_coeff_1:
+      value: 2204.95
+      units: USD_2020/m^3
+    contactor_cost_coeff_2:
+      value: -15.9378
+      units: USD_2020/m^6
+    contactor_cost_coeff_3:
+      value: 0.110592
+      units: USD_2020/m^9
+    adsorbent_unit_cost_coeff:
+      value: 4.58342
+      units: USD_2020/kg
+    adsorbent_unit_cost_exp_coeff:
+      value: -1.25311e-5
+      units: 1/kg
+    other_cost_coeff:
+      value: 16660.7
+      units: USD_2020
+    other_cost_exp:
+      value: 0.552207
+      units: dimensionless
+    bed_mass_max_ref:
+      value: 18143.7
+      units: kg
+pressure_vessel:
+  electricity_intensity_parameter:
+    value: 0.0521749
+    units: kW/m^3
+  recovery_frac_mass_H2O:
+    value: 0.96
+    units: dimensionless
+    reference: Heap leaching (gold/copper) case study.
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    nonvolatile_toc:
+      value: 0.2
+      units: dimensionless
+      constituent_longform: Nonvolatile TOC
+    tss:
+      value: 0.97
+      units: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)
+  empty_bed_contact_time:
+    value: 10
+    units: min
+  activated_carbon_replacement:
+    value: 0.0550884
+    units: kg/m^3
+  activated_carbon_bulk_density:
+    value: 500
+    units: kg/m^3
+  capital_cost:
+    cost_factor: None
+    contactor_cost_coeff_0:
+      value: 10010.9
+      units: USD_2020
+    contactor_cost_coeff_1:
+      value: 2204.95
+      units: USD_2020/m^3
+    contactor_cost_coeff_2:
+      value: -15.9378
+      units: USD_2020/m^6
+    contactor_cost_coeff_3:
+      value: 0.110592
+      units: USD_2020/m^9
+    adsorbent_unit_cost_coeff:
+      value: 4.58342
+      units: USD_2020/kg
+    adsorbent_unit_cost_exp_coeff:
+      value: -1.25311e-5
+      units: 1/kg
+    other_cost_coeff:
+      value: 16660.7
+      units: USD_2020
+    other_cost_exp:
+      value: 0.552207
+      units: dimensionless
+    bed_mass_max_ref:
+      value: 18143.7
+      units: kg
+gravity:
+  electricity_intensity_parameter:
+    value: 0.106310
+    units: kW/m^3
+  recovery_frac_mass_H2O:
+    value: 0.96
+    units: dimensionless
+    reference: Heap leaching (gold/copper) case study.
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    nonvolatile_toc:
+      value: 0.2
+      units: dimensionless
+      constituent_longform: Nonvolatile TOC
+    tss:
+      value: 0.97
+      units: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)
+  empty_bed_contact_time:
+    value: 10
+    units: min
+  activated_carbon_replacement:
+    value: 0.0550884
+    units: kg/m^3
+  activated_carbon_bulk_density:
+    value: 500
+    units: kg/m^3
+  capital_cost:
+    cost_factor: None
+    contactor_cost_coeff_0:
+      value: 75131.3
+      units: USD_2020
+    contactor_cost_coeff_1:
+      value: 735.550
+      units: USD_2020/m^3
+    contactor_cost_coeff_2:
+      value: -1.01827
+      units: USD_2020/m^6
+    contactor_cost_coeff_3:
+      value: 0
+      units: USD_2020/m^9
+    adsorbent_unit_cost_coeff:
+      value: 4.58342
+      units: USD_2020/kg
+    adsorbent_unit_cost_exp_coeff:
+      value: -1.25311e-5
+      units: 1/kg
+    other_cost_coeff:
+      value: 38846.9
+      units: USD_2020
+    other_cost_exp:
+      value: 0.490571
+      units: dimensionless
+    bed_mass_max_ref:
+      value: 18143.7
+      units: kg

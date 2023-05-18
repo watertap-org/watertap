@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 This module contains utility functions for initialization of WaterTAP models.
 """
@@ -19,12 +18,12 @@ __author__ = "Adam Atia"
 
 from math import fabs
 from pyomo.environ import check_optimal_termination, Var, Constraint, value
+from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.scaling import get_scaling_factor, __none_left_mult
-from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
+
 
 def check_solve(results, checkpoint=None, logger=_log, fail_flag=False):
     """
@@ -46,19 +45,25 @@ def check_solve(results, checkpoint=None, logger=_log, fail_flag=False):
     """
     if check_optimal_termination(results):
         if checkpoint is None:
-            logger.info(f'Solve successful.')
+            logger.info("Solve successful.")
         else:
-            logger.info(f'{checkpoint} successful.')
+            logger.info(f"{checkpoint} successful.")
     else:
         if checkpoint is None:
-            msg = f"The solver failed to converge to an optimal solution. " \
-                  f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
+            msg = (
+                f"The solver failed to converge to an optimal solution. "
+                "This suggests that the user provided infeasible inputs or that the model "
+                "is poorly scaled, poorly initialized, or degenerate."
+            )
         else:
-            msg = f"{checkpoint} failed. The solver failed to converge to an optimal solution. " \
-                  f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
+            msg = (
+                f" The solver at the {checkpoint} step failed to converge to an optimal solution."
+                "This suggests that the user provided infeasible inputs or that the model "
+                "is poorly scaled, poorly initialized, or degenerate."
+            )
         if fail_flag:
             logger.error(msg)
-            raise ValueError(msg)
+            raise InitializationError(msg)
         else:
             logger.warning(msg)
 
@@ -82,17 +87,23 @@ def check_dof(blk, fail_flag=False, logger=_log, expected_dof=0):
     """
     if degrees_of_freedom(blk) != expected_dof:
         if expected_dof == 0:
-            msg = f"Non-zero degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. " \
-                  f"Fix {degrees_of_freedom(blk)} more variable(s)"
+            msg = (
+                f"Non-zero degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. "
+                f"Fix {degrees_of_freedom(blk)} more variable(s)"
+            )
         elif degrees_of_freedom(blk) < expected_dof:
-            msg = f"Unexpected degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. " \
-                  f"Expected {expected_dof}. Unfix {expected_dof - degrees_of_freedom(blk)} variable(s)"
+            msg = (
+                f"Unexpected degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. "
+                f"Expected {expected_dof}. Unfix {expected_dof - degrees_of_freedom(blk)} variable(s)"
+            )
         elif degrees_of_freedom(blk) > expected_dof:
-            msg = f"Unexpected degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. " \
-                  f"Expected {expected_dof}. Fix {degrees_of_freedom(blk) - expected_dof} variable(s)"
+            msg = (
+                f"Unexpected degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. "
+                f"Expected {expected_dof}. Fix {degrees_of_freedom(blk) - expected_dof} variable(s)"
+            )
         if fail_flag:
             logger.error(msg)
-            raise ValueError(msg)
+            raise InitializationError(msg)
         else:
             logger.warning(msg)
 

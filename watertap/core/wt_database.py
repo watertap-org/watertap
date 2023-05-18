@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 This module contains the base class for interacting with WaterTAP data files
 with zero-order model parameter data.
@@ -27,7 +26,7 @@ class Database:
     associated with zero-order models in WaterTap.
 
     Args:
-        dbpath - (optional) path to database folder containing yml files
+        dbpath - (optional) path to database folder containing yaml files
 
     Returns:
         an instance of a Database object linked to the provided database
@@ -39,7 +38,10 @@ class Database:
         if dbpath is None:
             self._dbpath = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "..", "data", "techno_economic")
+                "..",
+                "data",
+                "techno_economic",
+            )
         else:
             self._dbpath = dbpath
 
@@ -47,7 +49,11 @@ class Database:
             if not os.path.isdir(self._dbpath):
                 raise OSError(
                     f"Could not find requested path {self._dbpath}. Please "
-                    f"check that this path exists.")
+                    f"check that this path exists."
+                )
+
+        # Create placeholder _component_list attribute
+        self._component_list = None
 
     def get_source_data(self, water_source=None):
         """
@@ -69,12 +75,11 @@ class Database:
         else:
             # Else load data from required file
             try:
-                with open(os.path.join(self._dbpath, "water_sources.yml"),
-                          "r") as f:
+                with open(os.path.join(self._dbpath, "water_sources.yaml"), "r") as f:
                     lines = f.read()
                     f.close()
             except OSError:
-                raise KeyError("Could not find water_sources.yml in database.")
+                raise KeyError("Could not find water_sources.yaml in database.")
 
             source_data = yaml.load(lines, yaml.Loader)
 
@@ -88,7 +93,8 @@ class Database:
             except KeyError:
                 raise KeyError(
                     "Database has not defined a default water source and "
-                    "none was provided.")
+                    "none was provided."
+                )
 
         return source_data[water_source]
 
@@ -145,12 +151,13 @@ class Database:
             except KeyError:
                 raise KeyError(
                     f"Received unrecognised subtype {subtype} for technology "
-                    f"{technology}.")
+                    f"{technology}."
+                )
         else:
             # Assume subtype is list-like and raise an exception if not
             try:
                 for s in subtype:
-                    # Iterate throguh provided subtypes and update parameters
+                    # Iterate through provided subtypes and update parameters
                     # Note that this will overwrite previous parameters if
                     # there is overlap, so we might need to be careful in use.
                     try:
@@ -158,11 +165,13 @@ class Database:
                     except KeyError:
                         raise KeyError(
                             f"Received unrecognised subtype {s} for "
-                            f"technology {technology}.")
+                            f"technology {technology}."
+                        )
             except TypeError:
                 raise TypeError(
                     f"Unexpected type for subtype {subtype}: must be string "
-                    f"or list like.")
+                    f"or list like."
+                )
 
         return sparams
 
@@ -172,6 +181,15 @@ class Database:
         """
         self._cached_files = {}
 
+    @property
+    def component_list(self):
+        return self._return_component_list()
+
+    def _return_component_list(self):
+        if self._component_list is None:
+            self._load_component_list()
+        return self._component_list
+
     def _get_technology(self, technology):
         if technology in self._cached_files:
             # If data is already in cached files, return
@@ -179,16 +197,31 @@ class Database:
         else:
             # Else load data from required file
             try:
-                with open(os.path.join(self._dbpath, technology+".yml"),
-                          "r") as f:
+                with open(os.path.join(self._dbpath, technology + ".yaml"), "r") as f:
                     lines = f.read()
                     f.close()
             except OSError:
-                raise KeyError(
-                    f"Could not find entry for {technology} in database.")
+                raise KeyError(f"Could not find entry for {technology} in database.")
 
             fdata = yaml.load(lines, yaml.Loader)
 
             # Store data in cache and return
             self._cached_files[technology] = fdata
             return fdata
+
+    def _load_component_list(self):
+        """
+        Load list of supported components from component_list.yaml file and
+        store as _component_list attribute.
+
+        Returns:
+            None
+        """
+        try:
+            with open(os.path.join(self._dbpath, "component_list.yaml"), "r") as f:
+                lines = f.read()
+                f.close()
+        except OSError:
+            raise KeyError("Could not find component_list.yaml in database.")
+
+        self._component_list = yaml.load(lines, yaml.Loader)

@@ -1,3 +1,14 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 import logging
 from pathlib import Path
 from watertap.edb import ElectrolyteDB
@@ -23,8 +34,7 @@ def get_docs_root():
 
 @pytest.fixture(scope="session")
 def docs_root():
-    """Find docs root, or call pytest.skip
-    """
+    """Find docs root, or call pytest.skip"""
     start, result = get_docs_root()
     if result is None:
         pytest.skip(f"No directory '{DOCS_DIR}' found from '{start}'")
@@ -42,7 +52,6 @@ def check_for_mongodb() -> bool:
 
 @pytest.fixture(scope="module")
 def electrolytedb():
-    """See if EDB can be instantiated, or call pytest.skip
-    """
+    """See if EDB can be instantiated, or call pytest.skip"""
     if not check_for_mongodb():
         pytest.skip("MongoDB is required")

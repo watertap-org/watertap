@@ -1,0 +1,205 @@
+default:
+  energy_electric_flow_vol_inlet:
+    value: 0.0
+    units: kWh/m^3
+  air_temperature:
+    value: 298
+    units: kelvin
+  solar_radiation:
+    value: 25
+    units: mJ/m^2
+  evap_rate_calc_a_parameter:
+    value: 0.41
+    units: mm/day
+  evap_rate_calc_b_parameter:
+    value: 0.025
+    units: m^2/mJ
+  evap_rate_calc_c_parameter:
+    value: 0.078
+    units: m^2/mJ
+  evaporation_rate_adj_factor:
+    value: 0.7
+    units: dimensionless
+  adj_area_calc_a_parameter:
+    value: 1.2
+    units: acres
+  adj_area_calc_b_parameter:
+    value: 0.155
+    units: dimensionless
+  evaporation_rate_adj_factor:
+    value: 0.7
+    units: dimensionless
+  dike_height:
+    value: 8
+    units: ft
+  capital_cost:
+    cost_factor: None
+    liner_thickness:
+      value: 50
+      units: mil
+    land_cost:
+      value: 5000
+      units: acre^-1 
+    land_clearing_cost:
+      value: 1000
+      units: acre^-1     
+    cost_per_acre_a_parameter:
+      value: 5406
+      units: USD_2007/acre
+    cost_per_acre_b_parameter:
+      value: 465
+      units: USD_2007/(mil*acre)
+    cost_per_acre_c_parameter:
+      value: 1.07
+      units: USD_2007
+    cost_per_acre_d_parameter:
+      value: 0.931
+      units: USD_2007
+    cost_per_acre_e_parameter:
+      value: 217.5
+      units: USD_2007/(ft*acre)
+  recovery_frac_mass_H2O:
+    value: 0.0001
+    units: dimensionless
+    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for
+      Water Utilities (2008).
+  default_removal_frac_mass_comp:
+    value: 0.98
+    units: dimensionless
+  removal_frac_mass_comp:
+    aluminum:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: aluminum
+    arsenic:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: arsenic
+    barium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: barium
+    bicarbonate_alkalinity_as_caco3:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: bicarbonate_alkalinity_as_caco3
+    boron:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: boron
+    bromide:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: bromide
+    calcium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: calcium
+    chloride:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: chloride
+    chromium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: chromium
+    cyanide_as_free:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: cyanide_as_free
+    fluoride:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: fluoride
+    hardness:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: hardness
+    iron:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: iron
+    lead:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: lead
+    magnesium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: magnesium
+    manganese:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: manganese
+    mercury:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: mercury
+    nickel:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: nickel
+    nitrate:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: nitrate
+    nitrite:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: nitrite
+    phosphates:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: phosphates
+    potassium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: potassium
+    selenium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: selenium
+    silicon:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: silicon
+    silver:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: silver
+    sodium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: sodium
+    strontium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: strontium
+    sulfate:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: sulfate
+    tds:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: tds
+    total_coliforms_fecal_ecoli:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: total_coliforms_fecal_ecoli
+    trihalomethanes:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: trihalomethanes
+    tss:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: tss
+    turbidity:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: turbidity
+    zinc:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: zinc

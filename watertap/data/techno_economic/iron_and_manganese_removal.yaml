@@ -1,0 +1,55 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0.9999
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    iron:
+      value: 0.9
+      units: dimensionless
+      constituent_longform: Iron
+    manganese:
+      value: 0.9
+      units: dimensionless
+      constituent_longform: Manganese
+  air_water_ratio:
+    value: 0.001
+    units: dimensionless
+  flow_basis:
+    value: 4732
+    units: m^3/hr
+  electricity_intensity_parameter:
+    value: 147.8
+    units: hp/(m^3/hr)
+  filter_surf_area:
+    value: 580
+    units: m^2
+  num_filter_units:
+    value: 6
+    units: dimensionless
+  capital_cost:
+    basis: flow_vol
+    cost_factor: TPEC
+    reference_state:
+      value: 1
+      units: m^3/hr
+    capital_blower_a_parameter:
+      value: 1.0e5
+      units: USD_2014
+    capital_backwash_a_parameter:
+      value: 92947
+      units: USD_2014
+    capital_backwash_b_parameter:
+      value: 292.44
+      units: USD_2014/ft^2
+    capital_filter_a_parameter:
+      value: 21377
+      units: USD_2014
+    capital_filter_b_parameter:
+      value: 38.319
+      units: USD_2014/ft^2
+    flow_exponent:
+      value: 0.7
+      units: dimensionless

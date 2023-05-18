@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Utility script to document schema files.
 
@@ -20,7 +19,7 @@ Example usage and expected output::
     > ls html
 
 
-    Directory: C:\Users\MyName\my_output_dir\html
+    Directory: C:\\Users\\MyName\\my_output_dir\\html
 
 
     Mode                 LastWriteTime         Length Name
@@ -39,6 +38,7 @@ from json_schema_for_humans.generate import generate_from_file_object
 import json
 from pathlib import Path
 import sys
+
 # package
 from watertap.edb.schemas import schemas
 

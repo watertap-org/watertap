@@ -1,0 +1,202 @@
+default:
+  # This is a placeholder that is required by the database class and testing
+  chemical_dosage:
+    value: 1
+    units: mg/L
+  solution_density:
+    value: 1000
+    units: kg/m^3
+  ratio_in_solution:
+    value: 0.5
+    units: dimensionless
+alum:
+  chemical_dosage:
+    value: 10
+    units: mg/L
+  solution_density:
+    value: 1360
+    units: kg/m^3
+  ratio_in_solution:
+    value: 0.5
+    units: dimensionless
+  capital_cost:
+    basis: chemical_flow_mass
+    cost_factor: TPEC
+    capital_a_parameter:
+      value: 15408
+      units: USD_2007
+    capital_b_parameter:
+      value: 0.5479
+      units: dimensionless
+ammonia:
+  chemical_dosage:
+    value: 10
+    units: mg/L
+  solution_density:
+    value: 900
+    units: kg/m^3
+  ratio_in_solution:
+    value: 0.3
+    units: dimensionless
+  capital_cost:
+    basis: chemical_flow_mass
+    cost_factor: TPEC
+    capital_a_parameter:
+      value: 6699.1
+      units: USD_2007
+    capital_b_parameter:
+      value: 0.4219
+      units: dimensionless
+anti-scalant:
+  # Hydrazine
+  chemical_dosage:
+    value: 10
+    units: mg/L
+  solution_density:
+    value: 1021
+    units: kg/m^3
+  ratio_in_solution:
+    value: 1
+    units: dimensionless
+  capital_cost:
+    basis: chemical_flow_mass
+    cost_factor: TPEC
+    capital_a_parameter:
+      value: 900.97
+      units: USD_2007
+    capital_b_parameter:
+      value: 0.6179
+      units: dimensionless
+caustic_soda:
+  chemical_dosage:
+    value: 10
+    units: mg/L
+  solution_density:
+    value: 1540
+    units: kg/m^3
+  ratio_in_solution:
+    value: 0.5
+    units: dimensionless
+  capital_cost:
+    basis: chemical_flow_mass
+    cost_factor: TPEC
+    capital_a_parameter:
+      value: 2262.8
+      units: USD_2007
+    capital_b_parameter:
+      value: 0.6195
+      units: dimensionless
+# coagulant:
+#   chemical_dosage:
+#     value: 10
+#     units: mg/L
+#   solution_density:
+#     value: 1360
+#     units: kg/m^3
+#   ratio_in_solution:
+#     value: 0.5
+#     units: dimensionless
+#   capital_cost:
+#     basis: chemical_flow_mass
+#     cost_factor: TPEC
+#     capital_a_parameter:
+#       value: 15408
+#       units: USD_2007
+#     capital_b_parameter:
+#       value: 0.5479
+#       units: dimensionless
+ferric_chloride:
+  chemical_dosage:
+    value: 10
+    units: mg/L
+  solution_density:
+    value: 1460
+    units: kg/m^3
+  ratio_in_solution:
+    value: 0.42
+    units: dimensionless
+  capital_cost:
+    basis: chemical_flow_mass
+    cost_factor: TPEC
+    capital_a_parameter:
+      value: 34153
+      units: USD_2007
+    capital_b_parameter:
+      value: 0.319
+      units: dimensionless
+hydrochloric_acid:
+  chemical_dosage:
+    value: 10
+    units: mg/L
+  solution_density:
+    value: 1490
+    units: kg/m^3
+  ratio_in_solution:
+    value: 1
+    units: dimensionless
+  capital_cost:
+    basis: chemical_flow_mass
+    cost_factor: TPEC
+    capital_a_parameter:
+      value: 900.97
+      units: USD_2007
+    capital_b_parameter:
+      value: 0.6179
+      units: dimensionless
+lime:
+  chemical_dosage:
+    value: 10
+    units: mg/L
+  solution_density:
+    value: 1250
+    units: kg/m^3
+  ratio_in_solution:
+    value: 1
+    units: dimensionless
+  capital_cost:
+    basis: chemical_flow_mass
+    cost_factor: TPEC
+    capital_a_parameter:
+      value: 12985
+      units: USD_2007
+    capital_b_parameter:
+      value: 0.5901
+      units: dimensionless
+sodium_bisulfite:
+  chemical_dosage:
+    value: 10
+    units: mg/L
+  solution_density:
+    value: 1480
+    units: kg/m^3
+  ratio_in_solution:
+    value: 1
+    units: dimensionless
+  capital_cost:
+    basis: chemical_flow_mass
+    cost_factor: TPEC
+    capital_a_parameter:
+      value: 900.97
+      units: USD_2007
+    capital_b_parameter:
+      value: 0.6179
+      units: dimensionless
+sulfuric_acid:
+  chemical_dosage:
+    value: 10
+    units: mg/L
+  solution_density:
+    value: 1781
+    units: kg/m^3
+  ratio_in_solution:
+    value: 1
+    units: dimensionless
+  capital_cost:
+    basis: chemical_flow_mass
+    cost_factor: TPEC
+    capital_a_parameter:
+      value: 900.97
+      units: USD_2007
+    capital_b_parameter:
+      value: 0.6179
+      units: dimensionless

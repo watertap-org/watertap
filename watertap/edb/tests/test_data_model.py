@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for data_model module
 """
@@ -21,21 +20,21 @@ from typing import Dict
 from pyomo.environ import units as pyunits
 
 # Used to test IDAES config -> DataWrapper
-from idaes.generic_models.properties.core.pure import Perrys
-from idaes.generic_models.properties.core.pure.NIST import NIST
-from idaes.generic_models.properties.core.phase_equil.forms import fugacity
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+from idaes.models.properties.modular_properties.pure import Perrys
+from idaes.models.properties.modular_properties.pure.NIST import NIST
+from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
 from idaes.core import Component as IComponent
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
     van_t_hoff,
 )
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     ConcentrationForm,
 )
-from idaes.core.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
 
 
 from ..data_model import (
@@ -44,7 +43,6 @@ from ..data_model import (
     Reaction,
     Result,
     Base,
-    ThermoConfig,
 )
 
 # For validating DataWrapper contents
@@ -189,7 +187,7 @@ def test_base(starting_value):
     # also required: elements, parameter_data
     c = Component({"name": "a", "elements": ["H +"], "parameter_data": {}})
     b.add(c)
-    assert b.idaes_config[mk0]["foo"] == starting[mk0]["foo"]
+    assert b.idaes_config[mk0]["foo"] == foo_value
     # Add a non-empty component
     name = "baz"
     component_data = {
@@ -277,7 +275,7 @@ def test_component_from_idaes_config(debug_logging):
                     "temperature_crit": (647, pyunits.K),
                     # Comes from Perry's Handbook:  p. 2-98
                     "dens_mol_liq_comp_coeff": {
-                        "1": (5.459, pyunits.kmol * pyunits.m ** -3),
+                        "1": (5.459, pyunits.kmol * pyunits.m**-3),
                         "2": (0.30542, pyunits.dimensionless),
                         "3": (647.13, pyunits.K),
                         "4": (0.081, pyunits.dimensionless),
@@ -287,40 +285,40 @@ def test_component_from_idaes_config(debug_logging):
                     # Comes from Perry's Handbook:  p. 2-174
                     "cp_mol_liq_comp_coeff": {
                         "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
-                        "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                        "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                        "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                        "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                        "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
+                        "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K**3),
+                        "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
+                        "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                     },
                     "cp_mol_ig_comp_coeff": {
                         "A": (30.09200, pyunits.J / pyunits.mol / pyunits.K),
                         "B": (
                             6.832514,
                             pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** -1,
+                            * pyunits.mol**-1
+                            * pyunits.K**-1
+                            * pyunits.kiloK**-1,
                         ),
                         "C": (
                             6.793435,
                             pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** -2,
+                            * pyunits.mol**-1
+                            * pyunits.K**-1
+                            * pyunits.kiloK**-2,
                         ),
                         "D": (
                             -2.534480,
                             pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** -3,
+                            * pyunits.mol**-1
+                            * pyunits.K**-1
+                            * pyunits.kiloK**-3,
                         ),
                         "E": (
                             0.082139,
                             pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** 2,
+                            * pyunits.mol**-1
+                            * pyunits.K**-1
+                            * pyunits.kiloK**2,
                         ),
                         "F": (-250.8810, pyunits.kJ / pyunits.mol),
                         "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
@@ -376,7 +374,7 @@ def test_reaction_from_idaes_config(debug_logging):
                     "dh_rxn_ref": (0, pyunits.kJ / pyunits.mol),
                     # NOTE: This 'ds_rxn_ref' was calculated to give 'keq' of 1.7*10**-3
                     # "ds_rxn_ref": (-53.0, pyunits.J/pyunits.mol/pyunits.K),
-                    "k_eq_ref": (1.7 * 10 ** -3, None),
+                    "k_eq_ref": (1.7 * 10**-3, None),
                     "T_eq_ref": (300, pyunits.K),
                     "reaction_order": {
                         ("Liq", "H2CO3"): 1,
@@ -479,20 +477,20 @@ def test_reaction_order():
     # minimal Reaction object to work with
     def reaction():
         return Reaction(
-        {
-            "name": "foo",
-            "components": [],
-            "elements": ["Ca", "O", "H"],
-            # valid chemistry? no. useful? yes.
-            Reaction.NAMES.param: {
-                "reaction_order": {
-                    "Liq": {"B": 2, "C": 1, "H": 1},
-                    "Vap": {"B": 1, "C": -2, "H": 1},
-                    "Sol": {"B": -1, "C": 2, "H": 0},
-                }
-            },
-            "type": "equilibrium",
-        }
+            {
+                "name": "foo",
+                "components": [],
+                "elements": ["Ca", "O", "H"],
+                # valid chemistry? no. useful? yes.
+                Reaction.NAMES.param: {
+                    "reaction_order": {
+                        "Liq": {"B": 2, "C": 1, "H": 1},
+                        "Vap": {"B": 1, "C": -2, "H": 1},
+                        "Sol": {"B": -1, "C": 2, "H": 0},
+                    }
+                },
+                "type": "equilibrium",
+            }
         )
 
     # the error you get when the input doesn't pass JSON schema validation
@@ -503,9 +501,15 @@ def test_reaction_order():
     # Reaction missing reaction_order, still OK handled in pre-processing
     # but empty input list causes an error
     with pytest.raises(ValueError):
-        Reaction({"components": [], "elements": ["H"], Reaction.NAMES.param: {},
-                  "type": "equilibrium", "name": "Foo"}).set_reaction_order(
-                    "Foo", {})
+        Reaction(
+            {
+                "components": [],
+                "elements": ["H"],
+                Reaction.NAMES.param: {},
+                "type": "equilibrium",
+                "name": "Foo",
+            }
+        ).set_reaction_order("Foo", {})
     # Invalid phase
     r = reaction()
     with pytest.raises(ValueError):  # bad phase

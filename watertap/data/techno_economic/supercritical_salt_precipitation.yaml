@@ -1,0 +1,38 @@
+default:
+  energy_electric_flow_mass:
+    value: 8.53
+    units: kWh/metric_ton
+  recovery_frac_mass_H2O:
+    value: 0.9925
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    organic_solid:
+      value: 1
+      units: dimensionless
+      constituent_longform: Organic Solid
+    organic_liquid:
+      value: 0
+      units: dimensionless
+      constituent_longform: Organic Liquid
+    inorganic_solid:
+      value: 0.7986
+      units: dimensionless
+      constituent_longform: Inorganic Liquid
+  capital_cost:
+    basis: flow_mass
+    cost_factor: TIC
+    installation_factor:
+      value: 2.1
+      units: dimensionless
+    equipment_cost:
+      value: 3218170
+      units: USD_2011
+    base_flowrate:
+      value: 69401
+      units: pound/hr
+    scaling_exponent:
+      value: 0.77
+      units: dimensionless

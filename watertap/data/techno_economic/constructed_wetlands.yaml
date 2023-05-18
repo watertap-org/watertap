@@ -1,0 +1,21 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0.85       #Todo: revisit value later
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    nitrate:      #TODO: just a placeholder until we have info on removal fractions of constituents
+      value: 0.40
+      units: dimensionless
+      reference: https://doi.org/10.1016/j.wre.2013.09.001   #TODO: temporary ref for nitrate removal until alternatives provided
+    ammonium_as_nitrogen: # assume to be proxy for nitrate in the context of AMO 1503 flowsheet
+      value: 0.40
+      units: dimensionless
+      reference: https://doi.org/10.1016/j.wre.2013.09.001
+  capital_cost:
+    cost_factor: TIC
+    unit_capex:
+      value: 6.09
+      units: USD_2020/(L/day)

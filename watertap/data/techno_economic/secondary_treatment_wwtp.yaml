@@ -1,0 +1,80 @@
+default:  # conventional activated sludge with nitrification; #TODO: add subtypes for biological nitrogen removal and membrane_bioreactor
+  energy_electric_flow_vol_inlet:
+    value: 0.14
+    units: kWh/m^3
+    reference: Table 17-3 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy (range of 0.1 - 0.18)
+  capital_cost:  # maintaining cost parameters from municipal_wwtp.yaml
+    basis: flow_mass
+    cost_factor: None
+    reference_state:
+      value: 100000.0
+      units: kg/hr
+    capital_a_parameter:
+      value: 1e6
+      units: USD_2020
+    capital_b_parameter:
+      value: 0.7
+      units: dimensionless
+  recovery_frac_mass_H2O:
+    value: 1   # temporary placeholder- value suspected to be relatively close to 1 (i.e., 0.9 - 0.99)
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    tss:
+      value: 0.94231
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy
+    bod:
+      value: 0.91304
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy
+    cod:
+      value: 0.88571
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy
+    toc:
+      value: 0.82352
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy
+    ammonia_as_nitrogen:
+      value: 0.80702
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy
+    nitrogen:
+      value: 0.44444
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy
+    phosphorus:
+      value: 0.125
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy
+    voc:
+      value: 0.9
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy
+    metals:
+      value: 0.375
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy
+    tds:
+      value: 0.18605
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy; relative to TDS influent of 270-860 mg/L
+    trace_constituents:
+      value: 0.25
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy
+    total_coliforms_fecal_ecoli:  # TODO: typical units for total coliform in No./100 mL and should probably be omitted in mass balance and reformulated in ZO modeling
+      value: 0.99989
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy
+    protozoan_cysts_oocysts: # TODO: typical units for protozoan cysts and oocysts in No./100 mL and should probably be omitted in mass balance and reformulated in ZO modeling
+      value: 0.98901
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy
+    viruses_enteric: # TODO: typical units for viruses in PFU/100 mL and should probably be omitted in mass balance and reformulated in ZO modeling
+      value: 0.89910
+      units: dimensionless
+      reference: Based on average effluent and influent data from Table 4-5 in "Wastewater Engineering:Treatement and Reuse" by Metcalf & Eddy

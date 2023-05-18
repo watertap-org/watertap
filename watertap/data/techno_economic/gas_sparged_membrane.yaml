@@ -1,0 +1,15 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0.979
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    cod:
+      value: 1    # Todo: revisit this value later
+      units: dimensionless
+      constituent_longform: Chemical Oxygen Demand
+  gas_mass_influent_ratio:   # 5 L H2/ L/day influent --> convert to mass ratio (multiply by rho_h2/rho_solution)
+    value: 0.00041175
+    units: dimensionless

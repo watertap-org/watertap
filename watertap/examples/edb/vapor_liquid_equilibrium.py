@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
     This file demonstrates how to use EDB to create a chemical reactor that
     involves vapor-liquid equilibrium.
@@ -51,7 +50,8 @@
 
     (7) Get the set of reactions you want in your system and put into a 'base' object.
         In this case, we are getting all reactions associated with a system of water
-        and carbonic acid. We should get four reactions now:
+        and carbonic acid. We should get four reactions now::
+
             H2O <--> H_+ + OH_-
             H2CO3 <--> H_+ + HCO3_-
             HCO3_- <--> H_+ + CO3_2-
@@ -72,36 +72,8 @@
 
 """
 
-# ========= These imports (below) are for testing the configs from EDB ===============
-# Import specific pyomo objects
-from pyomo.environ import (
-    ConcreteModel,
-)
-# Import the idaes objects for Generic Properties and Reactions
-from idaes.generic_models.properties.core.generic.generic_property import (
-    GenericParameterBlock,
-)
-from idaes.generic_models.properties.core.generic.generic_reaction import (
-    GenericReactionParameterBlock,
-)
-
-# Import the idaes object for the EquilibriumReactor unit model
-from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
-
-# Import the core idaes objects for Flowsheets and types of balances
-from idaes.core import FlowsheetBlock
-# ========= These imports (above) are for testing the configs from EDB ===============
-
-
-# ========================== (3 & 4) ================================
 # Import ElectrolyteDB object
-from watertap.edb import ElectrolyteDB
-from watertap.examples.edb.the_basics import (
-    connect_to_edb,
-    is_thermo_config_valid,
-    grab_base_reaction_config,
-    is_thermo_reaction_pair_valid,
-)
+from watertap.examples.edb.the_basics import grab_base_reaction_config
 from watertap.examples.edb.simple_acid import (
     get_components_and_add_to_idaes_config,
     add_equilibrium_reactions_to_react_base,
@@ -109,6 +81,7 @@ from watertap.examples.edb.simple_acid import (
 )
 
 __author__ = "Austin Ladshaw"
+
 
 # ========================== (5) ================================
 # Grab a new base config for our thermo, but this time we will use
@@ -119,6 +92,7 @@ def grab_thermo_Liq_Vap_FpcTP_base(db):
     # Get the base and place into a result object
     base = db.get_base("thermo_Liq_Vap_FpcTP")
     return base
+
 
 # Run script for testing
 def run_vap_liq_with_mockdb(db):

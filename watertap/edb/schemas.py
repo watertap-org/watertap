@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 # WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 #
 # This module is a work in progress. Do not use it for real work right now.
@@ -22,7 +21,7 @@ JSON schema embedded as variables for:
   - reaction
 """
 
-from .data_model import Base, Component, Reaction
+from .data_model import Reaction
 
 
 _parameter_def = {
@@ -87,13 +86,17 @@ schemas = {
                 "items": {
                     "type": "string",
                     "description": "Valid phase types should start with 'PT.' and then match "
-                    "attributes in idaes.core.phases.PhaseType",
+                    "attributes in idaes.core.base.phases.PhaseType",
                     "examples": [["PT.liquidPhase"]],
                 },
             },
             "phase_equilibrium_form": {
                 "type": "object",
-                "properties": {phase1+"-"+phase2: {"type": "string"} for phase1 in Reaction.PHASES for phase2 in Reaction.PHASES},
+                "properties": {
+                    phase1 + "-" + phase2: {"type": "string"}
+                    for phase1 in Reaction.PHASES
+                    for phase2 in Reaction.PHASES
+                },
             },
             "parameter_data": {
                 "type": "object",

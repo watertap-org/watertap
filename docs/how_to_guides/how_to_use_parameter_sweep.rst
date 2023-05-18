@@ -48,7 +48,7 @@ Thus, these steps are left to the user and handled outside the parameter sweep f
 Depending on how the functions you've defined work, this could be as straightforward as
 
 .. testcode::
-   
+
     # replace these function calls with
     # those in your own flowsheet module
 
@@ -62,6 +62,10 @@ Depending on how the functions you've defined work, this could be as straightfor
 
     # set up the model for optimization
     RO_flowsheet.optimize_set_up(m)
+
+.. testoutput::
+
+   ...
 
 where ``m`` is the flowsheet model that results after the initial "build" step and subsequent operations are performed on that object.
 
@@ -87,24 +91,28 @@ For this RO flowsheet we'll report the levelized cost of water, the optimized RO
     outputs = dict()
     outputs['RO membrane area'] = m.fs.RO.area
     outputs['Pump 1 pressure'] = m.fs.P1.control_volume.properties_out[0].pressure
-    outputs['Levelized Cost of Water'] = m.fs.costing.LCOW 
+    outputs['Levelized Cost of Water'] = m.fs.costing.LCOW
 
-Once the problem is setup and the parameters are identified, the parameter_sweep function can finally be invoked which will perform the adjustment and optimization of the model using each combination of variables specified above and saving to `results.csv` (utilizing the solve method defined in our flowsheet module).
+Once the problem is setup and the parameters are identified, the parameter_sweep function can finally be invoked which will perform the adjustment and optimization of the model using each combination of variables specified above (utilizing the solve method defined in our flowsheet module).
+If specified, the parameter_sweep function will optionally write results in CSV format to the path specified in `csv_results_file_name` or in H5 format to the path specified in `h5_results_file_name`.
+The file `outputs_results.csv` contains the `sweep_param` values and `outputs` values in an array format, while `outputs_results.h5` contains a dictionary containing the `sweep_params`, `outputs`, and a boolean list of successful or failed solves.
+The H5 writer also creates a companion text file containing the metadata of the h5 file in `outputs_results.h5.txt`.
+Note that if `outputs = None` and an H5 results file is specified, all of the pyomo model variables will be stored in the `outputs_results.h5` and `outputs_results.h5.txt` files.
 
 .. testcode::
 
-    parameter_sweep(m, sweep_params, outputs, 'results.csv')
+    parameter_sweep(m, sweep_params, outputs, csv_results_file_name='outputs_results.csv', h5_results_file_name='outputs_results.h5')
 
 .. testcleanup::
 
     import os
-    os.remove('results.csv')
+    os.remove('outputs_results.csv')
+    os.remove('outputs_results.h5')
+    os.remove('outputs_results.h5.txt')
 
 Note that there are additional keyword arguments that can be passed to this function if you desire more control or debugging outputs, especially with regard to the restart logic used after a previous optimization attempt has failed or with managing local outputs computed on parallel hardware.  For more information, consult the technical reference for the parameter sweep tool.
 
-Function Documentation
-----------------------
+Module Documentation
+--------------------
 
-.. automodule :: watertap.tools.parameter_sweep
-   :noindex:
-   :members:
+* :mod:`watertap.tools.parameter_sweep`

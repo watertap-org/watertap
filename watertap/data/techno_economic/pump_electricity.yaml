@@ -1,0 +1,15 @@
+default: # low pressure pump
+  lift_height:
+    value: 30.47 # 100 ft
+    units: m
+  eta_pump:
+    value: 0.9
+    units: dimensionless
+  eta_motor:
+    value: 0.9
+    units: dimensionless
+  capital_cost:
+    cost_factor: TIC
+    pump_cost:
+      value: 94.0
+      units: USD_2020/(m^3/hr)

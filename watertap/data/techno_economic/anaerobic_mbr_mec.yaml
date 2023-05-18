@@ -1,0 +1,33 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0.3968    #Todo: assuming value for water recovery
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    cod:
+      value: 0
+      units: dimensionless
+      constituent_longform: Chemical Oxygen Demand
+    nonbiodegradable_cod:
+      value: 1
+      units: dimensionless
+      constituent_longform: Nonbiodegradable Chemical Oxygen Demand (ffCOD)
+  reactions:
+    cod_to_nonbiodegradable_cod:
+      key_reactant: cod
+      conversion: 0.5
+      stoichiometry:
+        cod:
+          conversion_ratio: -1
+        nonbiodegradable_cod:
+          conversion_ratio: 1
+  capital_cost:
+    cost_factor: TIC
+    unit_capex:
+      value: 7.18
+      units: USD_2020/(L/day)
+    unit_opex:
+      value: 5.63
+      units: USD_2020/m^3

@@ -1,0 +1,139 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+hydrogen:
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    cod:
+      value: 0
+      units: dimensionless
+      constituent_longform: Chemical Oxygen Demand
+    hydrogen:
+      value: 1
+      units: dimensionless
+      constituent_longform: Hydrogen
+  reactions:
+    cod_to_hydrogen:
+      key_reactant: cod
+      conversion: 0.22
+      stoichiometry:
+        cod:
+          conversion_ratio: -1
+        hydrogen:
+          conversion_ratio: 0.00503
+  hydraulic_retention_time:
+    value: 12
+    units: hour
+  energy_electric_mixer_vol:
+    value: 0.049875
+    units: kW/m^3
+  energy_thermal_flow_vol_inlet:
+    value: 78750
+    units: kJ/m^3
+  energy_electric_vacuum_flow_vol_byproduct:
+    value: 9190
+    units: kW/(kg/hr)
+  capital_cost:
+    cost_factor: TIC
+    reactor_cost:
+      value: 789
+      units: USD_2020/m^3
+    mixer_cost:
+      value: 2740
+      units: USD_2020/kW
+    bead_bulk_density:
+      value: 23.9
+      units: kg/m^3
+    bead_cost:
+      value: 1440
+      units: USD_2020/kg
+    bead_replacement_factor:
+      value: 3.376
+      units: 1/year
+    membrane_sidestream_fraction:
+      value: 0.1
+      units: dimensionless
+    membrane_specific_size:
+      value: 6.67
+      units: m^2/(m^3/hr)
+    membrane_cost:
+      value: 498
+      units: USD_2020/m^2
+    vacuum_cost:
+      value: 59300
+      units: USD_2020/(kg/hr)
+methane:
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    cod:
+      value: 0
+      units: dimensionless
+      constituent_longform: Chemical Oxygen Demand
+    methane:
+      value: 1
+      units: dimensionless
+      constituent_longform: Hydrogen
+  reactions:
+    cod_to_methane:
+      key_reactant: cod
+      conversion: 0.59
+      stoichiometry:
+        cod:
+          conversion_ratio: -1
+        methane:
+          conversion_ratio: 0.101
+  hydraulic_retention_time:
+    value: 150
+    units: hour
+  energy_electric_mixer_vol:
+    value: 0.049875
+    units: kW/m^3
+  energy_thermal_flow_vol_inlet:
+    value: 0
+    units: kJ/m^3
+  energy_electric_vacuum_flow_vol_byproduct:
+    value: 15.3
+    units: kW/(kg/hr)
+  capital_cost:
+    cost_factor: TIC
+    reactor_cost:
+      value: 789
+      units: USD_2020/m^3
+    mixer_cost:
+      value: 2740
+      units: USD_2020/kW
+    bead_bulk_density:
+      value: 23.9
+      units: kg/m^3
+    bead_cost:
+      value: 1440
+      units: USD_2020/kg
+    bead_replacement_factor:
+      value: 3.376
+      units: 1/year
+    membrane_sidestream_fraction:
+      value: 0.1
+      units: dimensionless
+    membrane_specific_size:
+      value: 6.67
+      units: m^2/(m^3/hr)
+    membrane_cost:
+      value: 498
+      units: USD_2020/m^2
+    vacuum_cost:
+      value: 1360
+      units: USD_2020/(kg/hr)

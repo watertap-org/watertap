@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """
     This test is to establish that the core chemistry packages in IDAES solve
@@ -25,30 +24,28 @@ from pyomo.environ import units as pyunits
 
 # Imports from idaes core
 from idaes.core import AqueousPhase
-from idaes.core.components import Solvent, Solute, Cation, Anion
-from idaes.core.phases import PhaseType as PT
+from idaes.core.base.components import Solvent, Cation, Anion
 
 # Imports from idaes generic models
-import idaes.generic_models.properties.core.pure.Perrys as Perrys
-from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.ideal import Ideal
+import idaes.models.properties.modular_properties.pure.Perrys as Perrys
+from idaes.models.properties.modular_properties.state_definitions import FTPx
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     ConcentrationForm,
 )
 
 # Import the object/function for heat of reaction
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 
 # Import safe log power law equation
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
 
 # Import k-value functions
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
-    gibbs_energy,
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
     van_t_hoff,
 )
 
@@ -67,7 +64,7 @@ from idaes.core.util import scaling as iscale
 from pyomo.util.check_units import assert_units_consistent
 
 # Import idaes methods to check the model during construction
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     fixed_variables_set,
@@ -78,15 +75,15 @@ from idaes.core.util.model_statistics import (
 )
 
 # Import the idaes objects for Generic Properties and Reactions
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
 )
 
 # Import the idaes object for the EquilibriumReactor unit model
-from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
+from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
@@ -108,21 +105,14 @@ class Variant(str, enum.Enum):
     inherent = "inherent"
 
     def __str__(self):
-        return f'{self.__class__.__name__}.{self.name}'
+        return f"{self.__class__.__name__}.{self.name}"
 
     @property
     def is_equilibrium(self):
         return self is Variant.equilibrium
 
 
-@pytest.fixture(
-    scope="module",
-    params=[
-        Variant.equilibrium,
-        Variant.inherent
-    ],
-    ids=str
-)
+@pytest.fixture(scope="module", params=[Variant.equilibrium, Variant.inherent], ids=str)
 def variant(request) -> Variant:
     return request.param
 
@@ -164,7 +154,8 @@ def thermo_config(base_units):
                     "temperature_crit": (647, pyunits.K),
                     # Comes from Perry's Handbook:  p. 2-98
                     "dens_mol_liq_comp_coeff": {
-                        "1": (5.459, pyunits.kmol * pyunits.m ** -3),
+                        "eqn_type": 1,
+                        "1": (5.459, pyunits.kmol * pyunits.m**-3),
                         "2": (0.30542, pyunits.dimensionless),
                         "3": (647.13, pyunits.K),
                         "4": (0.081, pyunits.dimensionless),
@@ -174,40 +165,40 @@ def thermo_config(base_units):
                     # Comes from Perry's Handbook:  p. 2-174
                     "cp_mol_liq_comp_coeff": {
                         "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
-                        "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                        "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                        "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                        "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                        "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
+                        "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K**3),
+                        "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
+                        "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                     },
                     "cp_mol_ig_comp_coeff": {
                         "A": (30.09200, pyunits.J / pyunits.mol / pyunits.K),
                         "B": (
                             6.832514,
                             pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** -1,
+                            * pyunits.mol**-1
+                            * pyunits.K**-1
+                            * pyunits.kiloK**-1,
                         ),
                         "C": (
                             6.793435,
                             pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** -2,
+                            * pyunits.mol**-1
+                            * pyunits.K**-1
+                            * pyunits.kiloK**-2,
                         ),
                         "D": (
                             -2.534480,
                             pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** -3,
+                            * pyunits.mol**-1
+                            * pyunits.K**-1
+                            * pyunits.kiloK**-3,
                         ),
                         "E": (
                             0.082139,
                             pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** 2,
+                            * pyunits.mol**-1
+                            * pyunits.K**-1
+                            * pyunits.kiloK**2,
                         ),
                         "F": (-250.8810, pyunits.kJ / pyunits.mol),
                         "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
@@ -237,7 +228,8 @@ def thermo_config(base_units):
                 "parameter_data": {
                     "mw": (1.00784, pyunits.g / pyunits.mol),
                     "dens_mol_liq_comp_coeff": {
-                        "1": (5.459, pyunits.kmol * pyunits.m ** -3),
+                        "eqn_type": 1,
+                        "1": (5.459, pyunits.kmol * pyunits.m**-3),
                         "2": (0.30542, pyunits.dimensionless),
                         "3": (647.13, pyunits.K),
                         "4": (0.081, pyunits.dimensionless),
@@ -245,10 +237,10 @@ def thermo_config(base_units):
                     "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ / pyunits.mol),
                     "cp_mol_liq_comp_coeff": {
                         "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
-                        "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                        "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                        "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                        "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                        "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
+                        "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K**3),
+                        "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
+                        "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                     },
                     "entr_mol_form_liq_comp_ref": (
                         -10.75,
@@ -269,7 +261,8 @@ def thermo_config(base_units):
                 "parameter_data": {
                     "mw": (17.008, pyunits.g / pyunits.mol),
                     "dens_mol_liq_comp_coeff": {
-                        "1": (5.459, pyunits.kmol * pyunits.m ** -3),
+                        "eqn_type": 1,
+                        "1": (5.459, pyunits.kmol * pyunits.m**-3),
                         "2": (0.30542, pyunits.dimensionless),
                         "3": (647.13, pyunits.K),
                         "4": (0.081, pyunits.dimensionless),
@@ -277,10 +270,10 @@ def thermo_config(base_units):
                     "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ / pyunits.mol),
                     "cp_mol_liq_comp_coeff": {
                         "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
-                        "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                        "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                        "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                        "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                        "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
+                        "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K**3),
+                        "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
+                        "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                     },
                     "entr_mol_form_liq_comp_ref": (
                         -10.75,
@@ -316,7 +309,7 @@ def thermo_config(base_units):
                 "concentration_form": ConcentrationForm.moleFraction,
                 "parameter_data": {
                     "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
-                    "k_eq_ref": (10 ** -14 / 55.2 / 55.2, pyunits.dimensionless),
+                    "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                     "T_eq_ref": (298, pyunits.K),
                     # By default, reaction orders follow stoichiometry
                     #    manually set reaction order here to override
@@ -329,7 +322,7 @@ def thermo_config(base_units):
                 # End parameter_data
             }
             # End R1
-        }
+        },
     }
     return data
 
@@ -352,7 +345,7 @@ def water_reaction_config(base_units):
                 "concentration_form": ConcentrationForm.moleFraction,
                 "parameter_data": {
                     "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
-                    "k_eq_ref": (10 ** -14 / 55.2 / 55.2, pyunits.dimensionless),
+                    "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                     "T_eq_ref": (298, pyunits.K),
                     # By default, reaction orders follow stoichiometry
                     #    manually set reaction order here to override
@@ -370,35 +363,35 @@ def water_reaction_config(base_units):
     }
     # End reaction_config definition
 
-def _get_without_inherent_reactions(config_dict: dict, key="inherent_reactions") -> dict:
+
+def _get_without_inherent_reactions(
+    config_dict: dict, key="inherent_reactions"
+) -> dict:
     data = dict(config_dict)
     del data[key]
     return data
 
+
 class TestPureWater:
-
-
     @pytest.fixture
     def model(self, thermo_config, variant: Variant, water_reaction_config):
         if variant.is_equilibrium:
             thermo_config = _get_without_inherent_reactions(thermo_config)
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
-        model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+        model.fs = FlowsheetBlock(dynamic=False)
+        model.fs.thermo_params = GenericParameterBlock(**thermo_config)
         print(water_reaction_config)
         model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **water_reaction_config}
+            property_package=model.fs.thermo_params, **water_reaction_config
         )
         model.fs.unit = EquilibriumReactor(
-            default={
-                "property_package": model.fs.thermo_params,
-                "reaction_package": model.fs.rxn_params,
-                "has_rate_reactions": False,
-                "has_equilibrium_reactions": variant.is_equilibrium,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "has_pressure_change": False,
-            }
+            property_package=model.fs.thermo_params,
+            reaction_package=model.fs.rxn_params,
+            has_rate_reactions=False,
+            has_equilibrium_reactions=variant.is_equilibrium,
+            has_heat_transfer=False,
+            has_heat_of_reaction=False,
+            has_pressure_change=False,
         )
 
         model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix(0.0)
@@ -445,8 +438,8 @@ class TestPureWater:
             Variant.equilibrium: {
                 number_variables: 75,
                 number_total_constraints: 28,
-                number_unused_variables: 6
-            }
+                number_unused_variables: 6,
+            },
         }
         return expected[variant]
 
@@ -558,8 +551,8 @@ class TestPureWater:
         return {
             "mole_frac_comp": {
                 "H2O": 1,
-                "H_+": 10 ** -7 / 55.6,
-                "OH_-": 10 ** -7 / 55.6,
+                "H_+": 10**-7 / 55.6,
+                "OH_-": 10**-7 / 55.6,
             },
             "pressure": 101325,
             "temperature": 298,
@@ -571,8 +564,9 @@ class TestPureWater:
         def _collect_data_to_check(m):
             return {
                 fixed_variables_set: fixed_variables_set(m),
-                activated_constraints_set: activated_constraints_set(m)
+                activated_constraints_set: activated_constraints_set(m),
             }
+
         data_before = _collect_data_to_check(model)
         model.fs.unit.initialize(state_args=state_args, optarg=solver.options)
 
@@ -634,7 +628,6 @@ class TestPureWater:
 
 
 class TestPureWaterEDB(TestPureWater):
-
     @pytest.fixture
     def thermo_config(self, edb):
         base = edb.get_base("default_thermo")
@@ -657,7 +650,6 @@ class TestPureWaterEDB(TestPureWater):
             r._data["type"] = "inherent"
             base.add(r)
         return base.idaes_config
-
 
     @pytest.fixture
     def water_reaction_config(self, edb):

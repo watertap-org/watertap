@@ -1,14 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-###############################################################################
+#################################################################################
 """
 Data model for electrolyte database.
 
@@ -73,9 +73,6 @@ Class diagram::
 """
 __author__ = "Dan Gunter"
 
-# stdlib
-import collections
-
 from contextlib import contextmanager
 import copy
 from fnmatch import fnmatchcase
@@ -89,33 +86,35 @@ from pyomo.environ import units as pyunits
 
 # IDAES methods and constants
 from idaes.core import AqueousPhase, LiquidPhase, SolidPhase, VaporPhase
-from idaes.core.phases import PhaseType
+from idaes.core.base.phases import PhaseType
 from idaes.core import Component as IComponent
-from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     ConcentrationForm,
 )
-from idaes.generic_models.properties.core.phase_equil.forms import fugacity
-from idaes.generic_models.properties.core.pure import Perrys
-from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
-from idaes.generic_models.properties.core.pure.NIST import NIST
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.pure.electrolyte import (
+from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
+from idaes.models.properties.modular_properties.pure import Perrys
+from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
+from idaes.models.properties.modular_properties.pure.NIST import NIST
+from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.modular_properties.pure.electrolyte import (
     relative_permittivity_constant,
 )
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
     van_t_hoff,
 )
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     power_law_equil,
     log_power_law_equil,
     solubility_product,
     log_solubility_product,
 )
-from idaes.generic_models.properties.core.state_definitions import FTPx, FpcTP
-from idaes.core.components import Solvent, Solute, Cation, Anion
-from idaes.generic_models.properties.core.phase_equil import SmoothVLE
-from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
+from idaes.models.properties.modular_properties.state_definitions import FTPx, FpcTP
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
+from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    IdealBubbleDew,
+)
 
 from .error import ConfigGeneratorError, BadConfiguration
 
@@ -215,6 +214,11 @@ class ConfigGenerator:
                 params[param_key] = (item["v"], built_units)
                 if debugging:
                     _log.debug(f"done: transform single parameter key={param_key}")
+        # we use pop() so that `parameter_data_extra` doesn't end up in the final dict
+        # since it's not an allowed config field
+        extra = comp.pop("parameter_data_extra", {})
+        for param_key, update_for_param in extra.items():
+            params[param_key].update(update_for_param)
 
     @staticmethod
     def _iterate_dict_or_list(value):
@@ -443,7 +447,6 @@ class ThermoConfig(ConfigGenerator):
         for name in data["components"]:
             cls._key_to_tuple(data["components"][name], "phase_equilibrium_form")
 
-
     @classmethod
     def _key_to_tuple(cls, data, section):
         """Change all key values separated by '-' in the given section to tuples of those values."""
@@ -452,9 +455,13 @@ class ThermoConfig(ConfigGenerator):
         temp = {}
         for key in data[section]:
             item_list = key.split("-")
-            if (len(item_list)!=2):
-                raise BadConfiguration("BaseConfig._key_to_tuple", data,
-                    missing=None,why="\n"+section+" tuple key must be only 2 items\n")
+            if len(item_list) != 2:
+                raise BadConfiguration(
+                    "ThermoConfig._key_to_tuple",
+                    data,
+                    missing=None,
+                    why="\n" + section + " tuple key must be only 2 items\n",
+                )
             temp[tuple(item_list)] = data[section][key]
         data[section] = temp
 
@@ -581,9 +588,13 @@ class BaseConfig(ConfigGenerator):
         temp = {}
         for key in data[section]:
             item_list = key.split("-")
-            if (len(item_list)!=2):
-                raise BadConfiguration("BaseConfig._key_to_tuple", data,
-                    missing=None,why="\n"+section+" tuple key must be only 2 items\n")
+            if len(item_list) != 2:
+                raise BadConfiguration(
+                    "BaseConfig._key_to_tuple",
+                    data,
+                    missing=None,
+                    why="\n" + section + " tuple key must be only 2 items\n",
+                )
             temp[tuple(item_list)] = data[section][key]
         data[section] = temp
 
@@ -723,7 +734,7 @@ class DataWrapper:
             BadConfiguration: If the configuration can't be transformed into the EDB form due
                               to missing/invalid fields.
         """
-        pass  # subclasses need to define this, using helper functions in this class
+        # subclasses need to define this, using helper functions in this class
 
     @classmethod
     def _method_to_str(
@@ -834,7 +845,7 @@ class Component(DataWrapper):
             match = re.match(r".*(\d+)\+$", name)
             charge = 1 if match is None else int(match.group(1))
             self._data["charge"] = charge
-        elif set(elements) == {"H", "O"}:  # water
+        elif name == "H2O":  # water is always "H2O"
             component_type = "solvent"
         else:  # anything else neutral
             component_type = "solute"

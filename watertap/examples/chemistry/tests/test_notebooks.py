@@ -1,3 +1,14 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 """
 Test Jupyter notebooks in the docs.
 """
@@ -82,6 +93,7 @@ def mongodb():
         _log.warning(f"Could not connect to MongoDB: {err}")
     return False
 
+
 # Tests
 # =====
 
@@ -95,4 +107,3 @@ def test_edb_notebooks(docs_root):
             continue
         print(f"run notebook: {nb_path}")
         run_notebook(nb_path)
-

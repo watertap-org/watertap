@@ -1,0 +1,36 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0.0001
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0.98
+    units: dimensionless
+  hours_per_day_operation:
+    value: 24
+    units: hours/day
+  cycle_time:
+    value: 3
+    units: hours
+  electricity_a_parameter:
+    value: 16.285
+    units: kWh/(year*ft^3)
+  electricity_b_parameter:
+    value: 1.2434
+    units: dimensionless
+  capital_cost:
+    cost_factor: None
+    capital_a_parameter:
+      value: 146.29
+      units: USD_2007/(gal/hr)
+    capital_b_parameter:
+      value: 433972
+      units: USD_2007
+  removal_frac_mass_comp:
+    tss:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: tss
+    turbidity:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: turbidity

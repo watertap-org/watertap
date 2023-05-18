@@ -83,7 +83,7 @@ The user can specify the scaling factors for component mass flowrates with the f
    from pyomo.environ import ConcreteModel
    from idaes.core import FlowsheetBlock
 
-.. testcode::
+.. doctest::
    
    # relevant imports
    import watertap.property_models.NaCl_prop_pack as props
@@ -91,7 +91,7 @@ The user can specify the scaling factors for component mass flowrates with the f
 
    # relevant assignments
    m = ConcreteModel()
-   m.fs = FlowsheetBlock(default={"dynamic": False})
+   m.fs = FlowsheetBlock(dynamic=False)
    m.fs.properties = props.NaClParameterBlock()
 
    # set scaling for component mass flowrate

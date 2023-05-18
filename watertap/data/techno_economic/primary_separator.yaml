@@ -1,43 +1,36 @@
 default:
   energy_electric_flow_vol_inlet:
     value: 0.0
-    unit: kWh/m^3
-  specific_capital_cost_flow_vol_inlet:
-    flow_basis_par:
+    units: kWh/m^3
+  capital_cost:
+    basis: flow_vol
+    cost_factor: TIC
+    reference_state:
       value: 5450.0
-      unit: m^3/hr
-    cap_basis_par:
-      value: 0.603553383
-      unit: M$
-    cap_exp_par:
+      units: m^3/hr
+    capital_a_parameter:
+      value: 6.03553383e5
+      units: USD_2015
+    capital_b_parameter:
       value: 0.3182
-      unit: dimensionless
-    vol unit:
-      value: m^3/hr
-    capital cost unit:
-      value: M$
-    year:
-      value: 2015
-    cost_function_form:
-      function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
-      unit: $
-  recovery_vol:
+      units: dimensionless
+  recovery_frac_mass_H2O:
     value: 0.999
-    unit: dimensionless
+    units: dimensionless
     reference: Defined based on the Iron and Steel case study data.
-  default_removal_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
-    unit: dimensionless
-  removal_frac_mass_solute:
+    units: dimensionless
+  removal_frac_mass_comp:
     oil_and_grease:
       value: 0.9
-      unit: dimensionless
+      units: dimensionless
       constituent_longform: Oil and Grease
     oily_matter:
       value: 0.9
-      unit: dimensionless
+      units: dimensionless
       constituent_longform: Oily Matter
     tss:
       value: 0.990826
-      unit: dimensionless
+      units: dimensionless
       constituent_longform: Total Suspended Solids (TSS)

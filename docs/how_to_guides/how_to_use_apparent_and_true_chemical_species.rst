@@ -1,6 +1,9 @@
 How to use apparent and true chemical species
 =============================================
 
+.. note:: This page provides a manual approach to building an IDAES configuration dictionary.
+    The same result can be achieved by using the :doc:`Electrolyte Database (EDB)</technical_reference/edb/index>`.
+
 In WaterTAP, most all chemical processes simulated will be considered "true"
 species, i.e., species that actually exist in an aqueous solution (e.g., Na+ and Cl- for NaCl). However, there
 may be times when you want to have your system report the "apparent" species
@@ -41,15 +44,15 @@ an ``"Apparent"`` species.
   from idaes.core import AqueousPhase
 
   # Add Apparent in this import statement
-  from idaes.core.components import Solvent, Cation, Anion, Apparent
+  from idaes.core.base.components import Solvent, Cation, Anion, Apparent
 
-  import idaes.generic_models.properties.core.pure.Perrys as Perrys
-  from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
-  from idaes.generic_models.properties.core.state_definitions import FTPx
-  from idaes.generic_models.properties.core.eos.ideal import Ideal
+  import idaes.models.properties.modular_properties.pure.Perrys as Perrys
+  from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
+  from idaes.models.properties.modular_properties.state_definitions import FTPx
+  from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
   # Add the import for StateIndex
-  from idaes.generic_models.properties.core.generic.generic_property import StateIndex
+  from idaes.models.properties.modular_properties.base.generic_property import StateIndex
 
   # Configuration dictionary
   thermo_config = {
@@ -65,6 +68,7 @@ an ``"Apparent"`` species.
                       "mw": (18.0153, pyunits.g/pyunits.mol),
                       # Parameters here come from Perry's Handbook:  p. 2-98
                       "dens_mol_liq_comp_coeff": {
+                          'eqn_type': 1,
                           '1': (5.459, pyunits.kmol*pyunits.m**-3),
                           '2': (0.30542, pyunits.dimensionless),
                           '3': (647.13, pyunits.K),

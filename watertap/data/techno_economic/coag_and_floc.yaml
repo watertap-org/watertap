@@ -1,0 +1,79 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0.9
+    units: dimensionless
+    reference: Based on costs for Aluminum Sulfate (Liquid Alum Feed) from Cost Estimating
+      Manual for Water Treatment Facilities (McGivney/Kawamura)
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  alum_dose:
+    value: 10
+    units: mg/L
+    constituent_longform: Aluminum Sulphate Dosage
+  polymer_dose:
+    value: 0.1
+    units: mg/L
+    constituent_longform: Polymer Dosage
+  anion_to_cation_polymer_ratio:
+    value: 1
+    units: dimensionless
+  rapid_mix_retention_time:
+    value: 5.5
+    units: s
+  floc_retention_time:
+    value: 12
+    units: min
+  num_rapid_mixers:
+    value: 1
+    units: dimensionless
+  num_floc_mixers:
+    value: 3
+    units: dimensionless
+  num_rapid_mix_processes:
+    value: 1
+    units: dimensionless
+  num_floc_processes:
+    value: 2
+    units: dimensionless
+  num_coag_processes:
+    value: 1
+    units: dimensionless
+  num_floc_injection_processes:
+    value: 1
+    units: dimensionless
+  velocity_gradient_rapid_mix:
+    value: 900
+    units: 1/s
+  velocity_gradient_floc:
+    value: 80
+    units: 1/s
+  capital_cost:
+    cost_factor: TPEC
+    capital_mix_a_parameter:
+      value: 7.0814
+      units: USD_2007/gallons
+    capital_mix_b_parameter:
+      value: 33269
+      units: USD_2007
+    capital_floc_a_parameter:
+      value: 952902
+      units: USD_2007/Mgallons
+    capital_floc_b_parameter:
+      value: 177335
+      units: USD_2007
+    capital_coag_inj_a_parameter:
+      value: 212.32
+      units: USD_2007/(lb/hr)
+    capital_coag_inj_b_parameter:
+      value: 73225
+      units: USD_2007
+    capital_floc_inj_a_parameter:
+      value: 13662
+      units: USD_2007/(lb/day)
+    capital_floc_inj_b_parameter:
+      value: 20861
+      units: USD_2007
+
+
+

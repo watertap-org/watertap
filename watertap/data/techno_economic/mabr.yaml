@@ -1,0 +1,50 @@
+default:    # mabr for nitrification
+  energy_electric_flow_vol_inlet:
+    value: 0.00693 # blower energy input
+    units: kWh/m^3
+  recovery_frac_mass_H2O:
+    value: 1      # no water wasting
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    bod:
+      value: 0
+      units: dimensionless
+      constituent_longform: Biological Oxygen Demand (BOD)
+    tss:
+      value: 0
+      units: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)
+    ammonium_as_nitrogen:
+      value: 0   # Reactive removal is handled in reaction
+      units: dimensionless
+    nitrate:     # NO3 are tracked in terms of g-N
+      value: 0   # Reactive removal is handled in reaction
+      units: dimensionless
+  reactions:
+    ammonium_to_nitrate:
+      key_reactant: ammonium_as_nitrogen
+      conversion: 0.7
+      stoichiometry:
+        ammonium_as_nitrogen:
+          conversion_ratio: -1
+        nitrate:
+          conversion_ratio: 1
+        bod:
+          conversion_ratio: -2.0 # 2.0g-BOD/g-N
+  capital_cost:
+    cost_factor: TIC
+    reactor_cost:
+      value: 71
+      units: USD_2020/m^2
+    blower_cost:
+      value: 36
+      units: USD_2020/(m^3/hr)
+  nitrogen_removal_rate:
+    value: 1.3
+    units: g/m^2/day
+  air_flow_rate:
+    value: 0.004
+    units: m^3/hr/m^2

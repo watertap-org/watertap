@@ -1,0 +1,22 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    nonbiodegradable_cod:
+      value: 0.5    # Todo: revisit this value later
+      units: dimensionless
+      constituent_longform: Nonbiodegradable Chemical Oxygen Demand (ffCOD) representing volatile fatty acids (VFAs)
+  heat_required_per_vfa_mass:
+    value: 0.273231148
+    units: kJ/kg
+    metadata: assuming kJ/kmol value divided by molecular weight of propionate
+  capital_cost:
+    cost_factor: TIC
+    unit_capex:
+      value: 25.53
+      units: USD_2020/(L/day)
+

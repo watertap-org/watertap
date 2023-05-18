@@ -1,22 +1,21 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """Desalination flowsheet components"""
 
-from pyomo.environ import ConcreteModel, TransformationFactory, Constraint
+from pyomo.environ import ConcreteModel, TransformationFactory
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-from watertap.examples.flowsheets.full_treatment_train.model_components import Mixer
+from idaes.models.unit_models import Mixer
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     set_scaling_factor,
@@ -24,7 +23,7 @@ from idaes.core.util.scaling import (
     constraint_scaling_transform,
 )
 from idaes.core.util.initialization import propagate_state
-from watertap.unit_models.pump_isothermal import Pump
+from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
     feed_block,
 )
@@ -38,7 +37,6 @@ from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )
-from idaes.core.util.model_statistics import fixed_variables_generator
 
 
 def build_desalination(
@@ -96,12 +94,7 @@ def build_desalination(
                 "Unexpected model type {RO_type} provided to build_desalination when has_ERD is True"
                 "".format(RO_type=RO_type)
             )
-        m.fs.ERD = Pump(default={"property_package": prop})
-        m.fs.ERD.actual_work.deactivate()  # this constraint is for pumps, not turbines
-        m.fs.ERD.turbine_work = Constraint(
-            expr=m.fs.ERD.work_fluid[0] * m.fs.ERD.efficiency_pump[0]
-            == m.fs.ERD.control_volume.work[0]
-        )
+        m.fs.ERD = EnergyRecoveryDevice(property_package=prop)
 
     # auxiliary units
     if RO_type == "Sep":
@@ -121,12 +114,10 @@ def build_desalination(
 
     elif RO_type == "0D" or RO_type == "1D":
         # build auxiliary units
-        m.fs.pump_RO = Pump(default={"property_package": prop})
+        m.fs.pump_RO = Pump(property_package=prop)
         if is_twostage:
-            m.fs.pump_RO2 = Pump(default={"property_package": prop})
-            m.fs.mixer_permeate = Mixer(
-                default={"property_package": prop, "inlet_list": ["RO", "RO2"]}
-            )
+            m.fs.pump_RO2 = Pump(property_package=prop)
+            m.fs.mixer_permeate = Mixer(property_package=prop, inlet_list=["RO", "RO2"])
 
         # connect models
         if has_desal_feed:
@@ -250,9 +241,6 @@ def scale_desalination(m, **kwargs):
         set_scaling_factor(
             m.fs.ERD.ratioP, 1
         )  # TODO: IDAES should have a default and link to the constraint
-        constraint_scaling_transform(
-            m.fs.ERD.turbine_work, get_scaling_factor(m.fs.ERD.control_volume.work)
-        )
         calculate_scaling_factors(m.fs.ERD)
 
 
@@ -323,7 +311,7 @@ def display_desalination(m, **kwargs):
 
 def solve_desalination(**kwargs):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     property_models.build_prop(m, base="TDS")
     build_desalination(m, **kwargs)
     TransformationFactory("network.expand_arcs").apply_to(m)
@@ -342,7 +330,7 @@ def solve_desalination(**kwargs):
 
 
 if __name__ == "__main__":
-    solve_desalination(
+    m = solve_desalination(
         has_desal_feed=True,
         is_twostage=True,
         has_ERD=True,

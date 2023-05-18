@@ -1,0 +1,19 @@
+#================================================================
+A_comp:
+  type: NormalSample
+  param: fs.RO.A_comp
+  mean: 4.0e-12
+  std: 0.5e-12
+  num_samples: 10
+B_comp:
+  type: NormalSample
+  param: fs.RO.B_comp
+  mean: 3.5e-8
+  std: 0.5e-8
+  num_samples: 10
+Spacer_porosity:
+  type: UniformSample
+  param: fs.RO.feed_side.spacer_porosity
+  lower_limit: 0.95
+  upper_limit: 0.99
+  num_samples: 10

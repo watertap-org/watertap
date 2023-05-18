@@ -1,0 +1,25 @@
+default:
+  energy_electric_flow_vol_inlet:
+    value: 0
+    units: kWh/m^3
+  capital_cost:
+    basis: flow_vol
+    cost_factor: TIC
+    HRT: # Hydraulic retention time
+      value: 1
+      units: hr
+    sizing_cost:
+      value: 1
+      units: USD_2020/m^3
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    struvite:
+      value: 0
+      units: dimensionless
+      constituent_longform: Struvite
+

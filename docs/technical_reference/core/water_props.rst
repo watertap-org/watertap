@@ -8,7 +8,7 @@ Ideal Water Properties
 
 The ideal water properties module contains a simple property package for saline waters which is intended for use with the WaterTap zero-order unit model library. The ideal water property package can be used in a flowsheet as shown below:
 
-.. testcode::
+.. doctest::
 
   import pyomo.environ as pyo # Pyomo environment
 
@@ -19,10 +19,10 @@ The ideal water properties module contains a simple property package for saline 
 
   # Create a flowsheet
   m = pyo.ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs = FlowsheetBlock(dynamic=False)
 
   # Add an instance of the ideal water property package with three solutes A, B and C
-  m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
+  m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
 
 Package Details
 ---------------
@@ -46,14 +46,7 @@ The ideal water property package requires users to define the list of dissolved 
 Class Documentation
 -------------------
 
-.. autoclass:: WaterParameterBlock
-   :members:
-
-.. autoclass:: WaterParameterBlockData
-   :members:
-
-.. autoclass:: WaterStateBlock
-   :members:
-
-.. autoclass:: WaterStateBlockData
-   :members:
+* :class:`WaterParameterBlock`
+* :class:`WaterParameterBlockData`
+* :class:`WaterStateBlock`
+* :class:`WaterStateBlockData`

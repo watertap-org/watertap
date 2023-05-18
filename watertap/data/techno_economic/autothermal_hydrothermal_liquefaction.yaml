@@ -1,0 +1,104 @@
+default:
+  energy_electric_flow_mass:
+    value: 8.71
+    units: kWh/metric_ton
+  recovery_frac_mass_H2O:
+    value: 1      # no water wasting
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    organic_solid:
+      value: 0   # Reactive removal is handled in reaction
+      units: dimensionless
+      constituent_longform: Organic Solid
+    organic_liquid:
+      value: 0   # Reactive removal is handled in reaction
+      units: dimensionless
+      constituent_longform: Organic Liquid
+    inorganic_solid:
+      value: 0
+      units: dimensionless
+      constituent_longform: Inorganic Liquid
+    carbon_dioxide:
+      value: 1   # Reactive removal is handled in reaction
+      units: dimensionless
+      constituent_longform: Carbon Dioxide
+  reactions:
+    hydrothermal_liquefaction:
+      key_reactant: organic_solid
+      conversion: 0.9
+      stoichiometry:
+        organic_solid:
+          conversion_ratio: -1
+        organic_liquid:
+          conversion_ratio: 0.9454
+        carbon_dioxide:
+          conversion_ratio: 0.0546
+  capital_cost:
+    basis: flow_mass
+    cost_factor: TIC
+    installation_factor_reactor:
+      value: 2.1
+      units: dimensionless
+    equipment_cost_reactor:
+      value: 3218170
+      units: USD_2011
+    base_flowrate_reactor:
+      value: 69401
+      units: pound/hr
+    scaling_exponent_reactor:
+      value: 0.77
+      units: dimensionless
+    installation_factor_pump:
+      value: 2.3
+      units: dimensionless
+    equipment_cost_pump:
+      value: 379600
+      units: USD_2007
+    base_flowrate_pump:
+      value: 367437
+      units: pound/hr
+    scaling_exponent_pump:
+      value: 0.8
+      units: dimensionless
+    installation_factor_other:
+      value: 2.1
+      units: dimensionless
+    equipment_cost_other:
+      value: 14195358
+      units: USD_2011
+    base_flowrate_other:
+      value: 306198
+      units: pound/hr
+    scaling_exponent_other:
+      value: 0.77
+      units: dimensionless
+    installation_factor_solid_filter:
+      value: 1.9
+      units: dimensionless
+    equipment_cost_solid_filter:
+      value: 3945523
+      units: USD_2011
+    base_flowrate_solid_filter:
+      value: 1219765
+      units: pound/hr
+    scaling_exponent_solid_filter:
+      value: 0.68
+      units: dimensionless
+    installation_factor_heat:
+      value: 1.4
+      units: dimensionless
+    equipment_cost_heat:
+      value: 4670532
+      units: USD_2011
+    base_flowrate_heat:
+      value: 306198
+      units: pound/hr
+    scaling_exponent_heat:
+      value: 0.6
+      units: dimensionless
+  catalyst_dosage:
+    value: 51.5
+    units: pound/metric_ton

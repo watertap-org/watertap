@@ -1,90 +1,72 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from pyomo.environ import (
     Block,
-    ConcreteModel,
     Constraint,
     Expression,
     Var,
     Param,
     value,
-    TransformationFactory,
-    units as pyunits,
 )
-import watertap.examples.flowsheets.full_treatment_train.flowsheet_components.financials as financials
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
-    feed_block,
-)
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
-    unit_separator,
-    unit_0DRO,
-    unit_1DRO,
-    property_models,
+from idaes.core import UnitModelCostingBlock
+from watertap.costing import (
+    WaterTAPCosting,
+    PumpType,
+    EnergyRecoveryDeviceType,
+    MixerType,
+    ROType,
 )
 
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.desalination import (
-    build_desalination,
-    solve_desalination,
-    scale_desalination,
-    initialize_desalination,
-    display_desalination,
-)
-
-# from watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_softening_two_stage import build, scale, initialize
 import idaes.core.util.scaling as iscale
-from idaes.core import FlowsheetBlock
 
 
-cost_capacity_flag = False
-
-
-def build_costing(m, module=financials, **kwargs):
-    """Add costing to a given flowsheet. This function will:
-        1) call the get_costing method for each unit model (note: unit model must have a get_costing method
-           to be detected), and
-        2) call get_system_costing which will tally up all capex and opex for each process
+def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
+    """Add costing to a given flowsheet
 
     Args:
         m: model
-        module: financials module
+        costing_package : FlowsheetCostingBlock
     """
-    crf = m.fs.costing_param.factor_capital_annualization
 
     # call get_costing for each unit model
-    # TODO: add in other components as they become available
-    m.fs.costing = Block()
+    m.fs.costing = costing_package()
+    # the full_treatment_train uses a lower than default value
+    # for factor_maintenance_labor_chemical
+    m.fs.costing.factor_maintenance_labor_chemical.fix(0.02)
+    crf = m.fs.costing.factor_capital_annualization
 
     # Nanofiltration
     if hasattr(m.fs, "NF"):
         if kwargs["NF_type"] == "ZO":
-            m.fs.NF.get_costing(module=module, section="pretreatment")
+            m.fs.NF.costing = UnitModelCostingBlock(
+                flowsheet_costing_block=m.fs.costing
+            )
         elif kwargs["NF_type"] == "Sep":
             raise NotImplementedError(
                 "get_costing will not be implemented for the NF separator model."
             )
     if hasattr(m.fs, "pump_NF"):
-        m.fs.pump_NF.get_costing(
-            module=module,
-            section="pretreatment",
-            pump_type="low pressure",
-            cost_capacity=cost_capacity_flag,
+        m.fs.pump_NF.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"pump_type": PumpType.low_pressure},
         )
 
     # Reverse Osmosis
     if hasattr(m.fs, "RO"):
         if kwargs["RO_type"] == "0D" or kwargs["RO_type"] == "1D":
-            m.fs.RO.get_costing(module=module, section="primary")
+            m.fs.RO.costing = UnitModelCostingBlock(
+                flowsheet_costing_block=m.fs.costing
+            )
         elif kwargs["RO_type"] == "Sep":
             raise NotImplementedError(
                 "get_costing will not be implemented for the RO separator model."
@@ -92,76 +74,83 @@ def build_costing(m, module=financials, **kwargs):
 
     # Stage 2 RO
     if hasattr(m.fs, "RO2"):
-        m.fs.RO2.get_costing(module=module, RO_type="high pressure", section="primary")
+        m.fs.RO2.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"ro_type": ROType.high_pressure},
+        )
 
     # Pump
     if hasattr(m.fs, "pump_RO"):
-        m.fs.pump_RO.get_costing(
-            module=module, section="primary", pump_type="high pressure"
+        m.fs.pump_RO.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"pump_type": PumpType.high_pressure},
         )
 
     # Stage 2 pump
     if hasattr(m.fs, "pump_RO2"):
-        m.fs.pump_RO2.get_costing(
-            module=module, section="primary", pump_type="high pressure"
+        m.fs.pump_RO2.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"pump_type": PumpType.high_pressure},
         )
 
     # ERD
     if hasattr(m.fs, "ERD"):
-        m.fs.ERD.get_costing(
-            module=module, section="primary", pump_type="pressure exchanger"
+        m.fs.ERD.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={
+                "energy_recovery_device_type": EnergyRecoveryDeviceType.pressure_exchanger
+            },
         )
 
     # Pretreatment
     if hasattr(m.fs, "stoich_softening_mixer_unit"):
-        m.fs.stoich_softening_mixer_unit.get_costing(
-            module=module,
-            section="pretreatment",
-            mixer_type="lime_softening",
-            cost_capacity=cost_capacity_flag,
+        m.fs.stoich_softening_mixer_unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={
+                "mixer_type": MixerType.CaOH2,
+                "dosing_rate": m.fs.stoich_softening_mixer_unit.dosing_rate,
+            },
         )
-        m.fs.lime_softening_unit_capex = Expression(
-            expr=m.fs.stoich_softening_mixer_unit.costing.capital_cost
-            / m.fs.annual_water_production
-            * crf
-        )
-        m.fs.lime_softening_unit_opex = Expression(
-            expr=m.fs.stoich_softening_mixer_unit.costing.operating_cost
-            / m.fs.annual_water_production
-        )
-    else:
-        m.fs.lime_softening_unit_capex = Expression(expr=0)
-        m.fs.lime_softening_unit_opex = Expression(expr=0)
 
     # Post-treatment
     if hasattr(m.fs, "ideal_naocl_mixer_unit"):
         # print('FOUND CHLORINATION UNIT')
-        m.fs.ideal_naocl_mixer_unit.get_costing(
-            module=module,
-            section="post_treatment",
-            mixer_type="naocl_mixer",
-            cost_capacity=cost_capacity_flag,
+        m.fs.ideal_naocl_mixer_unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={
+                "mixer_type": MixerType.NaOCl,
+                "dosing_rate": m.fs.ideal_naocl_mixer_unit.dosing_rate,
+            },
         )
-        m.fs.chlorination_unit_capex = Expression(
-            expr=m.fs.ideal_naocl_mixer_unit.costing.capital_cost
-            / m.fs.annual_water_production
-            * crf
-        )
-        m.fs.chlorination_unit_opex = Expression(
-            expr=m.fs.ideal_naocl_mixer_unit.costing.operating_cost
-            / m.fs.annual_water_production
-        )
-    else:
-        m.fs.chlorination_unit_capex = Expression(expr=0)
-        m.fs.chlorination_unit_opex = Expression(expr=0)
 
     if hasattr(m.fs, "mixer_permeate"):
-        m.fs.mixer_permeate.get_costing(
-            module=module, section="primary", cost_capacity=cost_capacity_flag
+        m.fs.mixer_permeate.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"mixer_type": MixerType.default},
         )
 
     # call get_system_costing for whole flowsheet
-    module.get_system_costing(m.fs)
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(m.fs.treated_flow_vol)
+    m.fs.costing.add_LCOW(m.fs.treated_flow_vol)
+
+    if hasattr(m.fs, "stoich_softening_mixer_unit"):
+        m.fs.lime_softening_unit_capex = Expression(
+            expr=m.fs.stoich_softening_mixer_unit.costing.capital_cost
+            / m.fs.costing.annual_water_production
+            * crf
+        )
+    else:
+        m.fs.lime_softening_unit_capex = Expression(expr=0)
+
+    if hasattr(m.fs, "ideal_naocl_mixer_unit"):
+        m.fs.chlorination_unit_capex = Expression(
+            expr=m.fs.ideal_naocl_mixer_unit.costing.capital_cost
+            / m.fs.costing.annual_water_production
+            * crf
+        )
+    else:
+        m.fs.chlorination_unit_capex = Expression(expr=0)
 
     # apply scaling to cost variables and constraints
     scale_costing(m)
@@ -174,62 +163,63 @@ def scale_costing(self):
             for var in base.component_objects(Var):
                 if iscale.get_scaling_factor(var) is None:
                     iscale.set_scaling_factor(var, 1e-3)
-                for con in base.component_objects(Constraint):
-                    sf = iscale.get_scaling_factor(var)
-                    iscale.constraint_scaling_transform(con, sf)
+            for con in base.component_data_objects(Constraint):
+                iscale.constraint_scaling_transform(con, 1e-3)
 
 
 def display_costing(m):
-    crf = m.fs.costing_param.factor_capital_annualization
+    crf = m.fs.costing.factor_capital_annualization
     if not hasattr(m.fs, "pump_RO2"):
         m.fs.pump_RO2 = Block()
         m.fs.pump_RO2.costing = Block()
-        m.fs.pump_RO2.costing.operating_cost = Param(initialize=0)
+        m.fs.pump_RO2.costing.fixed_operating_cost = Param(initialize=0)
     if not hasattr(m.fs, "NF"):
         m.fs.NF = Block()
         m.fs.NF.costing = Block()
-        m.fs.NF.costing.operating_cost = Param(initialize=0)
+        m.fs.NF.costing.fixed_operating_cost = Param(initialize=0)
     if not hasattr(m.fs, "RO2"):
         m.fs.RO2 = Block()
         m.fs.RO2.costing = Block()
-        m.fs.RO2.costing.operating_cost = Param(initialize=0)
+        m.fs.RO2.costing.fixed_operating_cost = Param(initialize=0)
 
     # UNITS FOR ALL COST COMPONENTS [=] $/m3 of permeate water produced
     cost_dict = {
         "LCOW": m.fs.costing.LCOW,  # Total LCOW
-        "Total CAPEX": m.fs.costing.investment_cost_total
+        "Total CAPEX": m.fs.costing.total_capital_cost
         * crf
-        / m.fs.annual_water_production,  # Direct + Indirect CAPEX
-        "Direct CAPEX": m.fs.costing.capital_cost_total
+        / m.fs.costing.annual_water_production,  # Direct + Indirect CAPEX
+        "Direct CAPEX": m.fs.costing.aggregate_capital_cost
         * crf
-        / m.fs.annual_water_production,  # Direct CAPEX for all system components
+        / m.fs.costing.annual_water_production,  # Direct CAPEX for all system components
         "Indirect CAPEX": (
-            m.fs.costing.investment_cost_total - m.fs.costing.capital_cost_total
+            m.fs.costing.total_capital_cost - m.fs.costing.aggregate_capital_cost
         )
         * crf
-        / m.fs.annual_water_production,  # Indirect CAPEX for miscellaneous items
-        "Total OPEX": m.fs.costing.operating_cost_total
-        / m.fs.annual_water_production,  # Total OPEX
-        "Labor & Maintenance Costs": m.fs.costing.operating_cost_labor_maintenance
-        / m.fs.annual_water_production,
-        "Total Electricity Cost": m.fs.costing.electricity_cost_total
-        / m.fs.annual_water_production,
+        / m.fs.costing.annual_water_production,  # Indirect CAPEX for miscellaneous items
+        "Total OPEX": m.fs.costing.total_operating_cost
+        / m.fs.costing.annual_water_production,  # Total OPEX
+        "Labor & Maintenance Costs": m.fs.costing.maintenance_labor_chemical_operating_cost
+        / m.fs.costing.annual_water_production,
+        "Total Electricity Cost": m.fs.costing.aggregate_flow_costs["electricity"]
+        / m.fs.costing.annual_water_production
+        if "electricity" in m.fs.costing.aggregate_flow_costs
+        else 0.0,
         "Total Membrane Replacement Cost": (
-            m.fs.NF.costing.operating_cost
-            + m.fs.RO.costing.operating_cost
-            + m.fs.RO2.costing.operating_cost
+            m.fs.NF.costing.fixed_operating_cost
+            + m.fs.RO.costing.fixed_operating_cost
+            + m.fs.RO2.costing.fixed_operating_cost
         )
-        / m.fs.annual_water_production,
-        "Total Pretreatment Cost": m.fs.costing.pretreatment_cost_total
-        / m.fs.annual_water_production,
-        "Total Primary Cost": m.fs.costing.primary_cost_total
-        / m.fs.annual_water_production,
-        "Total Post-treatment Cost": m.fs.costing.post_treatment_cost_total
-        / m.fs.annual_water_production,
+        / m.fs.costing.annual_water_production,
         "Lime softener CAPEX": m.fs.lime_softening_unit_capex,
-        "Lime softener OPEX": m.fs.lime_softening_unit_opex,
+        "Lime softener OPEX": m.fs.costing.aggregate_flow_costs["CaOH2"]
+        / m.fs.costing.annual_water_production
+        if "CaOH2" in m.fs.costing.aggregate_flow_costs
+        else 0.0,
         "Chlorination CAPEX": m.fs.chlorination_unit_capex,
-        "Chlorination OPEX": m.fs.chlorination_unit_opex,
+        "Chlorination OPEX": m.fs.costing.aggregate_flow_costs["NaOCl"]
+        / m.fs.costing.annual_water_production
+        if "NaOCl" in m.fs.costing.aggregate_flow_costs
+        else 0.0,
     }
 
     for item, val in cost_dict.items():

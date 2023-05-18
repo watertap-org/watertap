@@ -1,0 +1,42 @@
+default:
+  energy_electric_flow_vol_inlet:
+    value: 0.5
+    units: kWh/m^3
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    bod:
+      value: 0.9682
+      units: dimensionless
+      constituent_longform: Biological Oxygen Demand (BOD)
+    tss:
+      value: 0.9851
+      units: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)
+    tkn:
+      value: 0.8846
+      units: dimensionless
+      constituent_longform: Total Kjeldahl Nitrogen (TKN)
+    phosphorus:
+      value: 0.8333
+      units: dimensionless
+      constituent_longform: Phosphorus
+  capital_cost: # TODO: add baffle walls and membrane diffusers costs
+    basis: flow_vol
+    cost_factor: TIC
+    reference_state:
+      value: 1280
+      units: m^3/hr
+    aeration_basin_cost:
+      value: 25360.5
+      units: USD_2020/(m^3/hr)
+    other_equipment_cost:
+      value: 1523.4375
+      units: USD_2020/(m^3/hr)
+    control_system_cost:
+      value: 282.8125
+      units: USD_2020/(m^3/hr)

@@ -1,0 +1,464 @@
+default: seawater
+agricultural:
+  metadata: Based on San Luis case study
+  solutes:
+    arsenic:
+      constituent_longform: Arsenic
+      value: 1.3E-05
+      units: kg/m^3
+    boron:
+      constituent_longform: Boron
+      value: 0.00315
+      units: kg/m^3
+    calcium:
+      constituent_longform: Calcium
+      value: 0.000483
+      units: kg/m^3
+    chromium:
+      constituent_longform: Chromium
+      value: 1.45E-05
+      units: kg/m^3
+    iron:
+      constituent_longform: Iron
+      value: 0.000964
+      units: kg/m^3
+    manganese:
+      constituent_longform: Manganese
+      value: 2.8E-05
+      units: kg/m^3
+    mercury:
+      constituent_longform: Mercury
+      value: 1.5E-06
+      units: kg/m^3
+    molybdenum:
+      constituent_longform: Molybdenum
+      value: 0.000204
+      units: kg/m^3
+    nitrate:
+      constituent_longform: Nitrate
+      value: 0.0125
+      units: kg/m^3
+    phosphates:
+      constituent_longform: Phosphates
+      value: 6.4E-05
+      units: kg/m^3
+    selenium:
+      constituent_longform: Selenium
+      value: 0.000209
+      units: kg/m^3
+    sulfate:
+      constituent_longform: Sulfate
+      value: 7.2255
+      units: kg/m^3
+    tds:
+      constituent_longform: Total Dissolved Solids (TDS)
+      value: 12.408
+      units: kg/m^3
+    turbidity:
+      constituent_longform: Turbidity
+      value: 0.0004
+      units: kg/m^3
+    uranium:
+      constituent_longform: Uranium
+      # Converted from pCi/L
+      value: 9.74E-05
+      units: kg/m^3
+  default_flow:
+    value: 0.012618
+    units: m^3/s
+  pH:
+    max: 7.8
+    min: 6
+brackish_ave:
+  metadata: Based on kbhdp case study
+  solutes:
+    hydroxide_alkalinity_as_caco3:
+      constituent_longform: Hydroxide Alkalinity as CaCO3
+      value: 0.08
+      units: kg/m^3
+    calcium:
+      constituent_longform: Calcium
+      value: 0.13
+      units: kg/m^3
+    chloride:
+      constituent_longform: Chloride
+      value: 1.18
+      units: kg/m^3
+    magnesium:
+      constituent_longform: Magnesium
+      value: 0.03
+      units: kg/m^3
+    potassium:
+      constituent_longform: Potassium
+      value: 0.016
+      units: kg/m^3
+    silicon:
+      constituent_longform: Silicon
+      value: 0.031
+      units: kg/m^3
+    sodium:
+      constituent_longform: Sodium
+      value: 0.77
+      units: kg/m^3
+    sulfate:
+      constituent_longform: Sulfate
+      value: 0.23
+      units: kg/m^3
+    tds:
+      constituent_longform: Total Dissolved Solids (TDS)
+      value: 2.5
+      units: kg/m^3
+  default_flow:
+    value: 1.336278
+    units: m^3/s
+  pH:
+    max: 7.6
+    min: 7.6
+brackish_high:
+  metadata: Based on kbhdp case study
+  solutes:
+    hydroxide_alkalinity_as_caco3:
+      constituent_longform: Hydroxide Alkalinity as CaCO3
+      value: 0.0825
+      units: kg/m^3
+    calcium:
+      constituent_longform: Calcium
+      value: 0.145
+      units: kg/m^3
+    chloride:
+      constituent_longform: Chloride
+      value: 1.315
+      units: kg/m^3
+    magnesium:
+      constituent_longform: Magnesium
+      value: 0.04
+      units: kg/m^3
+    potassium:
+      constituent_longform: Potassium
+      value: 0.019
+      units: kg/m^3
+    silicon:
+      constituent_longform: Silicon
+      value: 0.0345
+      units: kg/m^3
+    sodium:
+      constituent_longform: Sodium
+      value: 0.825
+      units: kg/m^3
+    sulfate:
+      constituent_longform: Sulfate
+      value: 0.29
+      units: kg/m^3
+    tds:
+      constituent_longform: Total Dissolved Solids (TDS)
+      value: 2.75
+      units: kg/m^3
+  default_flow:
+    value: 1.336278
+    units: m^3/s
+  pH:
+    max: 7.6
+    min: 7.6
+municipal:
+  metadata: Based on hrsd case study
+  solutes:
+    arsenic:
+      constituent_longform: Arsenic
+      value: 0.01
+      units: kg/m^3
+    barium:
+      constituent_longform: Barium
+      value: 0.0000452
+      units: kg/m^3
+    boron:
+      constituent_longform: Boron
+      value: 0.0004
+      units: kg/m^3
+    bromate:
+      constituent_longform: Bromate
+      value: 0.01
+      units: kg/m^3
+    calcium:
+      constituent_longform: Calcium
+      value: 0.08045
+      units: kg/m^3
+    chloride:
+      constituent_longform: Chloride
+      value: 0.29792
+      units: kg/m^3
+    fluoride:
+      constituent_longform: Fluoride
+      value: 0.004
+      units: kg/m^3
+    hardness:
+      constituent_longform: Hardness
+      value: 0.312
+      units: kg/m^3
+    iron:
+      constituent_longform: Iron
+      value: 0.000302
+      units: kg/m^3
+    magnesium:
+      constituent_longform: Magnesium
+      value: 0.02701
+      units: kg/m^3
+    manganese:
+      constituent_longform: Manganese
+      value: 0.0000526
+      units: kg/m^3
+    nitrate:
+      constituent_longform: Nitrate
+      value: 0.01
+      units: kg/m^3
+    nitrite:
+      constituent_longform: Nitrite
+      value: 0.001
+      units: kg/m^3
+    nitrogen:
+      constituent_longform: Nitrogen
+      value: 0.008
+      units: kg/m^3
+    phosphates:
+      constituent_longform: Phosphates
+      value: 0.00052
+      units: kg/m^3
+    potassium:
+      constituent_longform: Potassium
+      value: 0.01897
+      units: kg/m^3
+    radium_226:
+      constituent_longform: Radium 226
+      # Converted from pCi/L
+      value: 3.43E-12
+      units: kg/m^3
+    radium_228:
+      constituent_longform: Radium 228
+      # Converted from pCi/L
+      value: 5.86E-15
+      units: kg/m^3
+    silicon:
+      constituent_longform: Silicon
+      value: 0.02104
+      units: kg/m^3
+    sodium:
+      constituent_longform: Sodium
+      value: 0.23158
+      units: kg/m^3
+    sulfate:
+      constituent_longform: Sulfate
+      value: 0.188
+      units: kg/m^3
+    tds:
+      constituent_longform: Total Dissolved Solids (TDS)
+      value: 0.63
+      units: kg/m^3
+    toc:
+      constituent_longform: Total Organic Carbon (TOC)
+      value: 0.004
+      units: kg/m^3
+    tss:
+      constituent_longform: Total Suspended Solids (TSS)
+      value: 0.006525
+      units: kg/m^3
+    turbidity:
+      constituent_longform: Turbidity
+      value: 0.0016
+      units: kg/m^3
+    zinc:
+      constituent_longform: zinc
+      value: 0.0000153
+      units: kg/m^3
+  default_flow:
+    value: 0.92237125
+    units: m^3/s
+  pH:
+    max: 7.28
+    min: 7.28
+produced_water:
+  metadata: Based on Kern County case study
+  solutes:
+    arsenic:
+      constituent_longform: Arsenic
+      value: 0.0000162
+      units: kg/m^3
+    boron:
+      constituent_longform: Boron
+      value: 0.00078
+      units: kg/m^3
+    chloride:
+      constituent_longform: Chloride
+      value: 0.116
+      units: kg/m^3
+    sodium:
+      constituent_longform: Sodium
+      value: 0.12
+      units: kg/m^3
+    tds:
+      constituent_longform: Total Dissolved Solids (TDS)
+      value: 0.5
+      units: kg/m^3
+  default_flow:
+    value: 0.963878005
+    units: m^3/s
+  pH:
+    max: 7.5
+    min: 7.5
+seawater:
+  metadata: Based on Carlsbad case study for seawater
+  solutes:
+    boron:
+      constituent_longform: Boron
+      value: 0.0044
+      units: kg/m^3
+    bromide:
+      constituent_longform: Bromide
+      value: 0.0663
+      units: kg/m^3
+    calcium:
+      constituent_longform: Calcium
+      value: 0.4096
+      units: kg/m^3
+    chloride:
+      constituent_longform: Chloride
+      value: 19.162
+      units: kg/m^3
+    magnesium:
+      constituent_longform: Magnesium
+      value: 1.278
+      units: kg/m^3
+    potassium:
+      constituent_longform: Potassium
+      value: 0.3953
+      units: kg/m^3
+    sodium:
+      constituent_longform: Sodium
+      value: 10.679
+      units: kg/m^3
+    strontium:
+      constituent_longform: Strontium
+      value: 0.0013
+      units: kg/m^3
+    sulfate:
+      constituent_longform: Sulfate
+      value: 2.68
+      units: kg/m^3
+    tds:
+      constituent_longform: Total Dissolved Solids (TDS)
+      value: 35
+      units: kg/m^3
+    tss:
+      constituent_longform: Total Suspended Solids (TSS)
+      value: 0.03
+      units: kg/m^3
+  default_flow:
+    value: 4.5833
+    units: m^3/s
+  pH:
+    max: 7
+    min: 7
+seawater_atlantic:
+  metadata: Based on Tampa Bay case study for seawater
+  solutes:
+    boron:
+      constituent_longform: Boron
+      value: 0.00377143
+      units: kg/m^3
+    bromide:
+      constituent_longform: Bromide
+      value: 0.05682857
+      units: kg/m^3
+    calcium:
+      constituent_longform: Calcium
+      value: 0.35108571
+      units: kg/m^3
+    chloride:
+      constituent_longform: Chloride
+      value: 16.4245714
+      units: kg/m^3
+    magnesium:
+      constituent_longform: Magnesium
+      value: 1.09542857
+      units: kg/m^3
+    potassium:
+      constituent_longform: Potassium
+      value: 0.33882857
+      units: kg/m^3
+    sodium:
+      constituent_longform: Sodium
+      value: 9.15342857
+      units: kg/m^3
+    strontium:
+      constituent_longform: Strontium
+      value: 0.00111429
+      units: kg/m^3
+    sulfate:
+      constituent_longform: Sulfate
+      value: 2.29714286
+      units: kg/m^3
+    tds:
+      constituent_longform: Total Dissolved Solids (TDS)
+      value: 30
+      units: kg/m^3
+    tss:
+      constituent_longform: Total Suspended Solids (TSS)
+      value: 0.02571429
+      units: kg/m^3
+  default_flow:
+    value: 1.92775
+    units: m^3/s
+  pH:
+    max: 7
+    min: 7
+seawater_mediterranean:
+  metadata: Based on Ashkelon case study for seawater
+  solutes:
+    boron:
+      constituent_longform: Boron
+      value: 0.00502857
+      units: kg/m^3
+    bromide:
+      constituent_longform: Bromide
+      value: 0.07577143
+      units: kg/m^3
+    calcium:
+      constituent_longform: Calcium
+      value: 0.46811429
+      units: kg/m^3
+    chloride:
+      constituent_longform: Chloride
+      value: 21.8994286
+      units: kg/m^3
+    magnesium:
+      constituent_longform: Magnesium
+      value: 1.46057143
+      units: kg/m^3
+    potassium:
+      constituent_longform: Potassium
+      value: 0.45177143
+      units: kg/m^3
+    sodium:
+      constituent_longform: Sodium
+      value: 12.2045714
+      units: kg/m^3
+    strontium:
+      constituent_longform: Strontium
+      value: 0.00148571
+      units: kg/m^3
+    sulfate:
+      constituent_longform: Sulfate
+      value: 3.06285714
+      units: kg/m^3
+    tds:
+      constituent_longform: Total Dissolved Solids (TDS)
+      value: 40.7
+      units: kg/m^3
+    tss:
+      constituent_longform: Total Suspended Solids (TSS)
+      value: 0.03428571
+      units: kg/m^3
+  default_flow:
+    value: 7.7819
+    units: m^3/s
+  pH:
+    max: 7
+    min: 7

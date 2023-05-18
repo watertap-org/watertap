@@ -48,28 +48,28 @@ be declared as **inherent** and, thus, be a part of this configuration dictionar
 
     # Imports from idaes core
     from idaes.core import AqueousPhase
-    from idaes.core.components import Solvent, Cation, Anion
+    from idaes.core.base.components import Solvent, Cation, Anion
 
     # Imports from idaes generic models
-    import idaes.generic_models.properties.core.pure.Perrys as Perrys
-    from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
-    from idaes.generic_models.properties.core.state_definitions import FTPx
-    from idaes.generic_models.properties.core.eos.ideal import Ideal
+    import idaes.models.properties.modular_properties.pure.Perrys as Perrys
+    from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
+    from idaes.models.properties.modular_properties.state_definitions import FTPx
+    from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
     # Importing the object for units from pyomo
     from pyomo.environ import units as pyunits
 
     # Import the object/function for heat of reaction
-    from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+    from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 
     # Import built-in Gibb's Energy function
-    from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
+    from idaes.models.properties.modular_properties.reactions.equilibrium_constant import van_t_hoff
 
     # Import safe log power law equation
-    from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+    from idaes.models.properties.modular_properties.reactions.equilibrium_forms import log_power_law_equil
 
     # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
-    from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
+    from idaes.models.properties.modular_properties.base.generic_reaction import ConcentrationForm
 
     # Configuration dictionary
     thermo_config = {
@@ -85,6 +85,7 @@ be declared as **inherent** and, thus, be a part of this configuration dictionar
                         "mw": (18.0153, pyunits.g/pyunits.mol),
                         # Parameters here come from Perry's Handbook:  p. 2-98
                         "dens_mol_liq_comp_coeff": {
+                            'eqn_type': 1,
                             '1': (5.459, pyunits.kmol*pyunits.m**-3),
                             '2': (0.30542, pyunits.dimensionless),
                             '3': (647.13, pyunits.K),
@@ -221,7 +222,7 @@ Example of a dummy **reaction_config**
     from pyomo.environ import units as pyunits
 
     # Import safe log power law equation
-    from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+    from idaes.models.properties.modular_properties.reactions.equilibrium_forms import log_power_law_equil
 
     # This config is REQUIRED to use EquilibriumReactor even if we have no equilibrium reactions
     reaction_config = {
@@ -258,28 +259,27 @@ code below.
     from idaes.core import FlowsheetBlock
 
     # Import the idaes objects for Generic Properties and Reactions
-    from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
-    from idaes.generic_models.properties.core.generic.generic_reaction import GenericReactionParameterBlock
+    from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+    from idaes.models.properties.modular_properties.base.generic_reaction import GenericReactionParameterBlock
 
     # Import the idaes object for the EquilibriumReactor unit model
-    from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
+    from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 
     # Create an instance of a pyomo model
     model = ConcreteModel()
 
     # Add an IDAES flowsheet to that model
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs = FlowsheetBlock(dynamic=False)
 
     # Add a thermo parameter block to that flowsheet
     #   Here, we are passing our 'thermo_config' dictionary we created earlier
-    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs.thermo_params = GenericParameterBlock(**thermo_config)
 
     # Add a reaction parameter block to that flowsheet
     #   Here, we are passing our thermo block created above as the property package
     #   and then giving our 'reaction_config' as the instructions for how the
     #   reactions will be constructed from the thermo package.
-    model.fs.rxn_params = GenericReactionParameterBlock(
-                default={"property_package": model.fs.thermo_params, **reaction_config})
+    model.fs.rxn_params = GenericReactionParameterBlock(property_package=model.fs.thermo_params, **reaction_config)
 
     # Add an EquilibriumReactor object as the unit model
     #   Here, we pass both the thermo package and reaction package, as well
@@ -289,14 +289,13 @@ code below.
     # NOTE: What is different here is now we state that there are no
     #       equilibrium reactions in this unit model because we defined
     #       those reactions as inherent.
-    model.fs.unit = EquilibriumReactor(default={
-                "property_package": model.fs.thermo_params,
-                "reaction_package": model.fs.rxn_params,
-                "has_rate_reactions": False,
-                "has_equilibrium_reactions": False,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "has_pressure_change": False})
+    model.fs.unit = EquilibriumReactor(property_package=model.fs.thermo_params,
+                                       reaction_package=model.fs.rxn_params,
+                                       has_rate_reactions=False,
+                                       has_equilibrium_reactions=False,
+                                       has_heat_transfer=False,
+                                       has_heat_of_reaction=False,
+                                       has_pressure_change=False)
 
     # At this point, you can 'fix' your inlet/outlet state conditions,
     #     setup scaling factors, initialize the model, then solve the model

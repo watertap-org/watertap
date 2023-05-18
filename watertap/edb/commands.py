@@ -1,7 +1,19 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 """
 Commands for Electrolyte Database
 """
 # stdlib
+import enum
 import json
 import logging
 import pathlib
@@ -12,7 +24,6 @@ import tempfile
 import click
 from json_schema_for_humans import generate as schema_gen
 from json_schema_for_humans.generation_configuration import GenerationConfiguration
-from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
 # package
@@ -21,6 +32,51 @@ from .validate import validate, ValidationError
 from .schemas import schemas as edb_schemas
 
 _log = logging.getLogger(__name__)
+
+
+class ExitCode(enum.IntEnum):
+    OK = 0
+    ERROR = 1
+    INVALID_USAGE = 2
+    DATABASE_ERROR = 3
+
+
+class EDBCommandError(click.ClickException):
+    pass
+
+
+class DatabaseError(EDBCommandError):
+    exit_code: ExitCode = ExitCode.DATABASE_ERROR
+
+    @classmethod
+    def connection_failed(cls, url: str, database: str):
+        return cls(f"Failed to connect to database {database} at {url}")
+
+    @classmethod
+    def unexpected_data_type(cls, attempted: str):
+        return cls(f"Unexpected data type: {attempted}")
+
+    @classmethod
+    def already_exists(cls, url: str, database: str):
+        return cls(
+            f"Cannot bootstrap: database {database} at {url} already exists "
+            f"and has one or more of the EDB collections"
+        )
+
+    @classmethod
+    def validation_failed(cls, record, display: bool = False):
+        parts = ["Validation failed"]
+        if display:
+            parts += ["Record:", json.dumps(record, indent=2)]
+        return cls("\n".join(parts))
+
+
+class MissingRequired(EDBCommandError):
+    exit_code: ExitCode = ExitCode.INVALID_USAGE
+
+    @classmethod
+    def option(cls, name: str):
+        return cls(f"{name} is required")
 
 
 def get_edb_data(filename: str) -> pathlib.Path:
@@ -54,12 +110,16 @@ def level_from_verbosity(vb):
     return level
 
 
-def _connect(url, db):
+def _connect_or_quit(url, database):
     """Connect to Mongo at given URL and database."""
-    _log.info(f"Begin: Connect to MongoDB at: {url}/{db}")
-    db = ElectrolyteDB(url=url, db=db)
-    _log.info(f"End: Connect to MongoDB at: {url}/{db}")
-    return db
+    _log.info(f"Begin: Connect to MongoDB at: {url}/{database}")
+    try:
+        edb = ElectrolyteDB(url, database)
+    except ConnectionFailure as err:
+        raise DatabaseError.connection_failed(url, database) from err
+    else:
+        _log.info(f"End: Connect to MongoDB at: {url}/{database}")
+    return edb
 
 
 @click.group()
@@ -86,7 +146,8 @@ def command_base(verbose, quiet):
     if verbose > 0:
         _h = logging.StreamHandler()
         _h.setFormatter(
-            logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s"))
+            logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s")
+        )
         log_root.addHandler(_h)
         log_root.setLevel(level_from_verbosity(verbose))
     else:
@@ -136,26 +197,16 @@ def command_base(verbose, quiet):
     default=False,
 )
 def load_data(input_file, data_type, url, database, validate, bootstrap):
-    try:
-        edb = ElectrolyteDB(url, database)
-    except ConnectionFailure as err:
-        click.echo(f"Database connection failure: {err}")
-        return -1
+    edb = _connect_or_quit(url, database)
     if bootstrap:
         if not edb.is_empty():
-            click.echo(
-                f"Cannot bootstrap: database {database} at {url} already exists "
-                f"and has one or more of the EDB collections"
-            )
-            return -1
+            raise DatabaseError.already_exists(url, database)
         _load_bootstrap(edb, do_validate=validate)
     else:
         if input_file is None:
-            click.echo("Error: -f/--file is required")
-            return -1
+            raise MissingRequired.option("-f/--file")
         if data_type is None:
-            click.echo("Error: -t/--type is required")
-            return -2
+            raise MissingRequired.option("-t/--type")
         _load(input_file, data_type, edb, do_validate=validate)
 
 
@@ -176,17 +227,18 @@ def _load(input_file, data_type, edb, do_validate=True):
             if data_type in ("component", "reaction"):
                 obj_type = data_type
             else:
-                raise RuntimeError(f"Unexpected data type: {data_type}")
+                raise DatabaseError.unexpected_data_type(data_type)
             data = []
             for record in input_data:
                 try:
                     validate(record, obj_type=obj_type)
                 except ValidationError as err:
-                    click.echo(f"Validation failed: {err}")
-                    if print_messages:
-                        click.echo("Record:")
-                        click.echo(json.dumps(record, indent=2))
-                    return -1
+                    # TODO this causes the program to quit at the first invalid record
+                    # we might want to accumulate the invalid records and corresponding errors
+                    # and display all of them at the end
+                    raise DatabaseError.validation_failed(
+                        record, display=bool(print_messages)
+                    ) from err
                 data.append(record)
     else:
         data = input_data
@@ -243,18 +295,19 @@ def dump_data(output_file, data_type, url, database):
     filename = output_file.name
     _log.debug(f"Writing records to output file '{filename}'")
 
-    _log.info(f"Connecting to MongoDB at: {url}/{database}")
-    db = ElectrolyteDB(url=url, db=database)
+    edb = _connect_or_quit(url, database)
 
     _log.debug("Retrieving records")
     if data_type == "component":
-        records = db.get_components()
+        records = edb.get_components()
     elif data_type == "reaction":
-        records = db.get_reactions()
+        records = edb.get_reactions()
     elif data_type == "base":
-        records = db.get_base()
+        records = edb.get_base()
     else:
-        raise RuntimeError(f"Unexpected data type: {data_type}")
+        # NOTE this can never be reached because Click will have already enforced
+        # that the value of 'data_type' is one of the specified choices
+        raise DatabaseError.unexpected_data_type(data_type)
 
     record_list = [r.json_data for r in records]
     n = len(record_list)
@@ -291,8 +344,7 @@ def drop_database(url, database, yes):
     print_messages = _log.isEnabledFor(logging.ERROR)
 
     # attempt to connect
-    if not ElectrolyteDB.can_connect(url):
-        raise click.Abort()
+    _connect_or_quit(url, database)
 
     if not yes:
         confirm = click.prompt(
@@ -369,3 +421,60 @@ def schema(output_file, output_format, data_type, url, database):
                 json.dump(schema_data, schema_file)
                 schema_file.seek(0)
                 schema_gen.generate_from_file_object(schema_file, stream, config=config)
+
+
+#################################################################################
+# INFO command
+# Report information on records in the database
+#################################################################################
+@command_base.command(
+    name="info", help="Provides some basic information on records loaded"
+)
+@click.option(
+    "-t",
+    "--type",
+    "data_type",
+    required=True,
+    help="Type of records",
+    type=click.Choice(["component", "reaction", "base"], case_sensitive=False),
+    default=None,
+)
+@click.option(
+    "-u", "--url", help="Database connection URL", default=ElectrolyteDB.DEFAULT_URL
+)
+@click.option(
+    "-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB
+)
+def info(data_type, url, database):
+    print_messages = _log.isEnabledFor(logging.ERROR)
+
+    edb = _connect_or_quit(url, database)
+
+    _log.debug("Retrieving records")
+
+    if data_type == "base":
+        print(
+            "Info: Base configuration files are for initializing "
+            "thermo or reaction configuration dictionaries \n"
+            "used by the IDAES GenericParameterBlock and "
+            "GenericReactionParameterBlock\n"
+        )
+        print("Loaded base options:")
+        print("--------------------")
+        edb.list_bases()
+    elif data_type == "component":
+        print(
+            "Info: Components are chemical species registered "
+            "within the database. They are stored with their \n"
+            "appropriate methods and/or parameters necessary "
+            "for calculating properties of the phases and/or \n"
+            "mixtures of phases.\n\nTo view loaded components, use the "
+            "'edb dump' command."
+        )
+    else:
+        print(
+            "Info: Reactions are registered relationships between "
+            "component records within the database.\nThese currently include, "
+            "(i) equilibrium reactions and (ii) solubility products.\n\n"
+            "To view loaded reactions, use the 'edb dump' command."
+        )

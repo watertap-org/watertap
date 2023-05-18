@@ -1,0 +1,38 @@
+default:    # Electrochemical Nutrient Recovery
+  energy_electric_flow_mass:
+    value: 0.044 # Update according to the latest data sent by Ohio University
+    units: kWh/kg # KWh/kg P
+  recovery_frac_mass_H2O:
+    value: 1 # no water wasting
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    nitrogen:
+      value: 0.3 # Update according to the latest data sent by Ohio University
+      units: dimensionless
+      constituent_longform: Nitrogen
+    phosphorus:
+      value: 0.98 # Update according to the latest data sent by Ohio University
+      units: dimensionless
+      consituent_longform: Phosphorus
+    calcium:
+      value: 0.25 # Update according to the latest data sent by Ohio University
+      units: dimensionless
+      consituent_longform: Calcium
+  magnesium_chloride_dosage:
+    value: 0.388 # g-MgCl2/g-struvite
+    units: dimensionless
+  capital_cost:
+    basis: flow_vol
+    cost_factor: TIC
+    reference_state:
+      value: 37.9
+      units: m^3/hr
+    HRT: # Hydraulic retention time
+      value: 1.3333
+      units: hr
+    sizing_cost:
+      value: 1.25
+      units: USD_2020/m^3

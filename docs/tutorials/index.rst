@@ -2,7 +2,7 @@ Tutorials
 =========
 
 Since WaterTAP is based on the IDAES platform and follows its conventions,
-the `IDAES tutorials <https://idaes-pse.readthedocs.io/en/stable/tutorials_examples.html>`_ are a good starting point for learning how to use WaterTAP.
+the `IDAES tutorials <https://idaes-pse.readthedocs.io/en/stable/tutorials/tutorials_examples.html>`_ are a good starting point for learning how to use WaterTAP.
 
 In particular, new users should be familiar with Python and Pyomo. Because WaterTAP
 and IDAES share this common base, we refer users unfamiliar with Python or Pyomo to

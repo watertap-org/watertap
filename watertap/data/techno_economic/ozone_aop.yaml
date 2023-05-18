@@ -1,0 +1,141 @@
+default:  #default aop is for hydrogen peroxide
+  oxidant_ozone_ratio:
+    value: 0.5
+    units: dimensionless
+  capital_cost:
+    cost_factor: None
+    ozone_capital_a_parameter:
+      value: -3806310
+      units: USD_2014
+    ozone_capital_b_parameter:
+      value: -953016
+      units: USD_2014
+    ozone_capital_c_parameter:
+      value: 884691
+      units: USD_2014
+    ozone_capital_d_parameter:
+      value: 235793
+      units: USD_2014
+    aop_capital_a_parameter:
+      value: 1228000
+      units: USD_2014
+    aop_capital_b_parameter:
+      value: 0.2277
+      units: dimensionless
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+    reference: Texas Water Development Board IT3PR User Manual
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    cryptosporidium:
+      value: 0.294787
+      units: dimensionless
+      constituent_longform: Cryptosporidium
+    toc:
+      value: 0.728305
+      units: dimensionless
+      constituent_longform: Total Organic Carbon (TOC)
+    giardia_lamblia:
+      value: 0.903239
+      units: dimensionless
+      constituent_longform: Giardia lamblia
+    eeq:
+      value: 0.989434
+      units: dimensionless
+      constituent_longform: Estradiol Equivalency (EEQ)
+    total_coliforms_fecal_ecoli:
+      value: 0.997225
+      units: dimensionless
+      constituent_longform: Total Coliforms (including fecal coliform and E.Coli)
+    viruses_enteric:
+      value: 0.997225
+      units: dimensionless
+      constituent_longform: Viruses (enteric)
+  contact_time:
+    value: 1  
+    units: min
+  concentration_time:  
+    value: 1
+    units: (mg*min)/L
+  mass_transfer_efficiency:
+    value: 0.8      
+    units: dimensionless
+  specific_energy_coeff:
+    value: 5      
+    units: kWh/lb
+    reference: B. Mundy et al. (2018) doi.org/10.1080/01919512.2018.1467187 - Energy consumption 
+      for ozone generator, ozone destruct, nitrogen feed system, cooling water pumps, and other misc. energy uses.
+
+hydrogen_peroxide:
+  oxidant_ozone_ratio:
+    value: 0.5
+    units: dimensionless
+  capital_cost:
+    cost_factor: None
+    ozone_capital_a_parameter:
+      value: -3806310
+      units: USD_2014
+    ozone_capital_b_parameter:
+      value: -953016
+      units: USD_2014
+    ozone_capital_c_parameter:
+      value: 884691
+      units: USD_2014
+    ozone_capital_d_parameter:
+      value: 235793
+      units: USD_2014
+    aop_capital_a_parameter:
+      value: 1228000
+      units: USD_2014
+    aop_capital_b_parameter:
+      value: 0.2277
+      units: dimensionless
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+    reference: Texas Water Development Board IT3PR User Manual
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    cryptosporidium:
+      value: 0.294787
+      units: dimensionless
+      constituent_longform: Cryptosporidium
+    toc:
+      value: 0.728305
+      units: dimensionless
+      constituent_longform: Total Organic Carbon (TOC)
+    giardia_lamblia:
+      value: 0.903239
+      units: dimensionless
+      constituent_longform: Giardia lamblia
+    eeq:
+      value: 0.989434
+      units: dimensionless
+      constituent_longform: Estradiol Equivalency (EEQ)
+    total_coliforms_fecal_ecoli:
+      value: 0.997225
+      units: dimensionless
+      constituent_longform: Total Coliforms (including fecal coliform and E.Coli)
+    viruses_enteric:
+      value: 0.997225
+      units: dimensionless
+      constituent_longform: Viruses (enteric)
+  contact_time:
+    value: 1  
+    units: min
+  concentration_time:  
+    value: 1
+    units: (mg*min)/L
+  mass_transfer_efficiency:
+    value: 0.8      
+    units: dimensionless
+  specific_energy_coeff:
+    value: 5      
+    units: kWh/lb
+    reference: B. Mundy et al. (2018) doi.org/10.1080/01919512.2018.1467187 - Energy consumption 
+      for ozone generator, ozone destruct, nitrogen feed system, cooling water pumps, and other misc. energy uses. 

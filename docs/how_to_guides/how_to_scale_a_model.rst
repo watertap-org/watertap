@@ -37,10 +37,10 @@ This object is a Pyomo Suffix and can be displayed to show what variables have s
    from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 
    m = ConcreteModel()
-   m.fs = FlowsheetBlock(default={"dynamic": False})
+   m.fs = FlowsheetBlock(dynamic=False)
    m.fs.properties = props.NaClParameterBlock()
 
-   m.fs.unit = ReverseOsmosis0D(default={"property_package": m.fs.properties})
+   m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
    blk = m.fs.unit
 
@@ -93,7 +93,7 @@ A user can achieve this by setting the default scaling at the property Parameter
    from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 
    m = ConcreteModel()
-   m.fs = FlowsheetBlock(default={"dynamic": False})
+   m.fs = FlowsheetBlock(dynamic=False)
    m.fs.properties = props.NaClParameterBlock()
 
    prop = m.fs.properties
@@ -161,15 +161,16 @@ the function will use a non-case specific default value and provide a warning th
 Passing scaling factors to the solver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In order to pass scaling factors to IPOPT, the user-scaling option must be specified as shown below.
+The scaling factors are automatically passed-in when using the default WaterTAP solver, `ipopt-watertap`:
 
 .. testcode:: [scaling_factor]
 
-    from pyomo.environ import SolverFactory
-    # Create IPOPT solver object
-    opt = SolverFactory('ipopt')
-    # Set user-scaling option
-    opt.options = {'nlp_scaling_method': 'user-scaling'}
+    from idaes.core.solvers import get_solver
+    # Create default WaterTAP solver object
+    opt = get_solver()
     # Solve model m
-    opt.solve(m)
+    # TODO: COSTING_UPDATE: remove capture output below
+    from pyomo.common.tee import capture_output
+    with capture_output():
+        opt.solve(m)
 

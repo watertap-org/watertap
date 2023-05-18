@@ -1,0 +1,46 @@
+default:
+  capital_cost:  #Cost parameters retrieved by fitting TWDB data in ALAMO (MADp modeler, max terms=4)
+    cost_factor: None
+    reactor_cost:
+      value: 202.346
+      units: USD_2020/(m^3/hr)
+    lamp_cost:
+      value: 235.5
+      units: USD_2020/kW
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    eeq:
+      value: 0.054565
+      units: dimensionless
+      constituent_longform: Estradiol Equivalency (EEQ)
+    toc:
+      value: 0.054565
+      units: dimensionless
+      constituent_longform: Total Organic Carbon (TOC)
+    viruses_enteric:
+      value: 0.965403
+      units: dimensionless
+      constituent_longform: Viruses (enteric)
+    cryptosporidium:
+      value: 0.999989
+      units: dimensionless
+      constituent_longform: Cryptosporidium
+    giardia_lamblia:
+      value: 0.999989
+      units: dimensionless
+      constituent_longform: Giardia lamblia
+    total_coliforms_fecal_ecoli:
+      value: 0.999994
+      units: dimensionless
+      constituent_longform: Total Coliforms (including fecal coliform and E. Coli)
+  uv_reduced_equivalent_dose:
+    value: 100  #todo: not provided in uv_irradiation yaml
+    units: mJ/cm^2
+  uv_transmittance_in:  # making this unit model specific but really is a stream property
+    value: 0.9
+    units: dimensionless
+  energy_electric_flow_vol_inlet:
+    value: 0.1      #todo: revisit this value later on
+    units: kWh/m^3

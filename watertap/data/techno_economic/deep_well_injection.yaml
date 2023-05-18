@@ -1,0 +1,30 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0.9999
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  capital_cost:
+    cost_factor: None
+    well_pump_cost:
+      value: 16.9e6 # this is wells/pumps fixed capital AFTER applying TIC factor
+      units: USD_2011
+    pipe_cost_basis:
+      value: 35000
+      units: USD_2011/(miles*inches)
+    flow_exponent:
+      value: 0.7
+      units: dimensionless
+  flow_basis:
+    value: 473.2
+    units: m^3/hr
+  lift_height:
+    value: 400
+    units: ft
+  pipe_diameter:
+    value: 8
+    units: inches
+  pipe_distance:
+    value: 0 # default case includes no pipe costs
+    units: miles

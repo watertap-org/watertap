@@ -1,0 +1,51 @@
+default: # dmbr for denitrification
+  energy_electric_flow_vol_inlet:
+    value: 0.1
+    units: kWh/m^3
+  recovery_frac_mass_H2O:
+    value: 0.95
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    bod:
+      value: 0   # Reactive removal is handled in reaction
+      units: dimensionless
+      constituent_longform: Biological Oxygen Demand (BOD)
+    tss:
+      value: 0.8 # Effluent TSS should be 20 mg/L default, lb-10, ub-50
+      units: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)
+    ammonium_as_nitrogen:
+      value: 0
+      units: dimensionless
+    nitrate: # NO3 are tracked in terms of g-N
+      value: 0   # Reactive removal is handled in reaction
+      units: dimensionless
+    nitrogen:
+      value: 0
+      units: dimensionless
+  reactions:
+    nitrate_to_nitrogen:
+      key_reactant: nitrate
+      conversion: 0.95
+      stoichiometry:
+        nitrate:
+          conversion_ratio: -1
+        nitrogen:
+          conversion_ratio: 1
+    BOD_usage:
+      key_reactant: bod
+      conversion: 0.9
+      stoichiometry:
+        bod:
+          conversion_ratio: -1
+  capital_cost:
+    cost_factor: TIC
+    water_flux:
+      value: 30
+      units: L/m^2/hr
+    reactor_cost:
+      value: 71.4
+      units: USD_2020/m^2
