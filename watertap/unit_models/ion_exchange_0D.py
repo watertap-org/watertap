@@ -600,11 +600,18 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Breakthrough time",
         )
 
+        self.t_contact = Var(
+            initialize=120,
+            bounds=(0, None),
+            units=pyunits.s,
+            doc="Resin contact time",
+        )
+
         self.ebct = Var(
             initialize=520,
             bounds=(120, None),
             units=pyunits.s,
-            doc="Contact time",
+            doc="Empty bed contact time",
         )
 
         self.mass_removed = Var(
@@ -714,16 +721,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 units=pyunits.m / pyunits.s,
                 doc="Fluid mass transfer coefficient",
             )
-
-            if self.config.diffusion_control == DiffusionControlType.solid:
-
-                self.diff_resin_comp = Var(
-                    self.target_ion_set,
-                    initialize=1e-10,  # default value is for Na+ in 8% crosslinked polystyrene-divinylbenzene IX resin (Dowex 50) @ 25% (approximate) -- Perry's Table 16-8
-                    bounds=(0, None),
-                    units=pyunits.m**2 / pyunits.s,
-                    doc="Diffusivity of ion through resin bead",  # Perry's
-                )
 
         if self.config.isotherm == IsothermType.freundlich:
 
@@ -1098,6 +1095,10 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(doc="Contact time")
         def eq_ebct(b):
             return b.ebct == b.bed_depth / b.vel_bed
+
+        @self.Constraint(doc="Contact time")
+        def eq_t_contact(b):
+            return b.t_contact == b.ebct * b.bed_porosity
 
         @self.Constraint(doc="Service flow rate")
         def eq_service_flow_rate(b):
