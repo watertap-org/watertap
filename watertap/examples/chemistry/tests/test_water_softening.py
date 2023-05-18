@@ -88,9 +88,6 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_forms impo
     log_power_law_equil,
 )
 
-# Import log10 function from pyomo
-from pyomo.environ import log10
-
 __author__ = "Srikanth Allu, Austin Ladshaw"
 
 thermo_config = {
