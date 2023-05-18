@@ -391,7 +391,6 @@ def set_NF_feed_scaling(blk):
 
 def add_hardness_constraint(stream):
     comp_list = stream.properties[0.0].component_list
-    # print("comp_list", comp_list)
     stream.total_hardness = Var(
         initialize=0.5,
         bounds=(0, 10000),
@@ -399,7 +398,6 @@ def add_hardness_constraint(stream):
         units=pyunits.mg / pyunits.L,
         doc="Water Hardness as CO3",
     )
-    stream.total_hardness.unfix()
     iscale.set_scaling_factor(stream.total_hardness, 1)
     stream.Ca_hardness = Var(
         initialize=0.5,
@@ -408,7 +406,6 @@ def add_hardness_constraint(stream):
         units=pyunits.mg / pyunits.L,
         doc="Water Hardness as CaCO3",
     )
-    stream.Ca_hardness.unfix()
     iscale.set_scaling_factor(stream.Ca_hardness, 1)
     stream.Mg_hardness = Var(
         initialize=0,
@@ -417,22 +414,20 @@ def add_hardness_constraint(stream):
         units=pyunits.mg / pyunits.L,
         doc="Water Hardness as MgCO3",
     )
-    stream.Mg_hardness.unfix()
     iscale.set_scaling_factor(stream.Mg_hardness, 1)
     stream.CaCO3_mw = Param(
         initialize=100.1,
         domain=NonNegativeReals,
         units=pyunits.g / pyunits.mol,
-        doc="System Water Recovery",
+        doc="Molecular weight of CaCO3",
     )
     iscale.set_scaling_factor(stream.CaCO3_mw, 0.01)
     stream.max_hardness = Var(
         initialize=10000,
         domain=NonNegativeReals,
         units=pyunits.mg / pyunits.L,
-        doc="System Water Recovery",
+        doc="Maximum hardness",
     )
-    stream.max_hardness.unfix()
     if "Ca_2+" in comp_list:
         stream.Ca_hardness_constraint = Constraint(
             expr=stream.Ca_hardness
