@@ -612,8 +612,8 @@ class TestAerobic15C:
         m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
 
         # No data on S_IC, K and Mg from EXPOsan at this point
-        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(7 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(6 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "S_IC"].fix(10 * units.mg / units.liter)
 
         m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(1695.7695 * units.mg / units.liter)
@@ -656,58 +656,58 @@ class TestAerobic15C:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            4.6374e-5, rel=1e-4
+            3.0560e-5, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            4.555e-4, rel=1e-2
+            3.840e-4, rel=1e-2
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_N2"]) == pytest.approx(
-            29.748e-3, abs=1e-4
+            29.606e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            6.8070e-3, rel=1e-4
+            6.8638e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             7.273e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_O2"]) == pytest.approx(
-            1.210e-4, abs=1e-4
+            2.700e-4, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            7.4478e-3, rel=1e-4
+            7.2940e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
-            0, abs=1e-4
+            6.757e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
-            0, abs=1e-4
+            5.849e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_IC"]) == pytest.approx(
-            7.5e-5, abs=1e-4
+            11.177e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
             118.547e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            1.8554, rel=1e-4
+            1.8574, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
             1.6964, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
-            214.821e-3, abs=1e-4
+            214.976e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PHA"]) == pytest.approx(
-            1.668e-3, abs=1e-4
+            1.543e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PP"]) == pytest.approx(
-            64.001e-3, abs=1e-4
+            64.109e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            64.513e-3, rel=1e-4
+            62.358e-3, rel=1e-4
         )
 
 
