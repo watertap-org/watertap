@@ -710,31 +710,31 @@ def recycle_pump_initializer(pump, oaro, solvent_multiplier, solute_multiplier):
     )
 
 
-# def solve(blk, solver=None, tee=True):
-#     if solver is None:
-#         solver = get_solver()
-#     results = solver.solve(blk, tee=tee)
-#     if not check_optimal_termination(results):
-#         results = solver.solve(blk, tee=tee)
-#     return results
-
-
-def solve(model, solver=None, tee=False, raise_on_failure=False):
-    # ---solving---
+def solve(blk, solver=None, tee=True):
     if solver is None:
-        solver = get_solver()
+        solver = get_solver(options={"bound_push": 1e-4})
+    results = solver.solve(blk, tee=tee)
+    if not check_optimal_termination(results):
+        results = solver.solve(blk, tee=tee)
+    return results
 
-    results = solver.solve(model, tee=tee)
-    if check_optimal_termination(results):
-        return results
-    msg = (
-        "The current configuration is infeasible. Please adjust the decision variables."
-    )
-    if raise_on_failure:
-        raise RuntimeError(msg)
-    else:
-        print(msg)
-        return results
+
+# def solve(model, solver=None, tee=False, raise_on_failure=False):
+#     # ---solving---
+#     if solver is None:
+#         solver = get_solver(options={"bound_push": 1e-8})
+#
+#     results = solver.solve(model, tee=tee)
+#     if check_optimal_termination(results):
+#         return results
+#     msg = (
+#         "The current configuration is infeasible. Please adjust the decision variables."
+#     )
+#     if raise_on_failure:
+#         raise RuntimeError(msg)
+#     else:
+#         print(msg)
+#         return results
 
 
 def initialize_loop(m, solver):
