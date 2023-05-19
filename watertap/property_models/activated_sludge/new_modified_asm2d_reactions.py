@@ -143,12 +143,6 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="C content of inert soluble COD X_B, [kg C/kg COD]",
         )
-        self.i_CXPHA = pyo.Var(
-            initialize=0.30000,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="C content of inert soluble COD X_PHA, [kg C/kg COD]",
-        )
         self.i_NSI = pyo.Var(
             initialize=0.06003,
             units=pyo.units.dimensionless,
@@ -202,24 +196,6 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
             doc="P content of biomass, X_H, X_PAO, X_AUT, [kg P/kg COD]",
-        )
-        self.i_TSSXI = pyo.Var(
-            initialize=0.75,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="TSS content of inert particulate COD X_I, [kg TSS/kg COD]",
-        )
-        self.i_TSSXS = pyo.Var(
-            initialize=0.75,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="TSS content of slowly biodegradable substrate X_S, [kg TSS/kg COD]",
-        )
-        self.i_TSSBM = pyo.Var(
-            initialize=0.90,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="TSS content of biomass, X_H, X_PAO, X_AUT, [kg TSS/kg COD]",
         )
         self.f_SI = pyo.Var(
             initialize=0.00,
@@ -507,19 +483,6 @@ class NewASM2dReactionParameterData(ReactionParameterBlock):
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Decay rate of X_AUT",
-        )
-
-        self.k_pre = pyo.Var(
-            initialize=1e3,
-            units=pyo.units.m**3 / pyo.units.kg / pyo.units.day,
-            domain=pyo.NonNegativeReals,
-            doc="Rate constant for P precipitation, [m^3/kg Fe(OH)3/day",
-        )
-        self.k_red = pyo.Var(
-            initialize=0.6,
-            units=1 / pyo.units.day,
-            domain=pyo.NonNegativeReals,
-            doc="Rate constant for redissolution",
         )
         self.hH_NO3 = pyo.Var(
             initialize=0.8,
