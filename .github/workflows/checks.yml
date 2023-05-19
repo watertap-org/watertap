@@ -292,7 +292,7 @@ jobs:
         echo '::endgroup::'
     - name: Install Ipopt from conda-forge
       run:
-        conda install --quiet --yes -c conda-forge ipopt
+        conda install --quiet --yes -c conda-forge ipopt=3.14.11
     - name: Build Pyomo extensions
       run: |
         conda install --quiet --yes cmake
