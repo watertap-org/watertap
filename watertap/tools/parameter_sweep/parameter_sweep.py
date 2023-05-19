@@ -52,7 +52,6 @@ def _default_optimize(model, options=None, tee=False):
 
 
 class _ParameterSweepBase(ABC):
-
     CONFIG = ParameterSweepWriter.CONFIG()
 
     CONFIG.declare(
@@ -129,7 +128,6 @@ class _ParameterSweepBase(ABC):
         self,
         **options,
     ):
-
         self.comm = options.pop("comm", MPI.COMM_WORLD)
         self.rank = self.comm.Get_rank()
         self.num_procs = self.comm.Get_size()
@@ -148,7 +146,6 @@ class _ParameterSweepBase(ABC):
 
     @staticmethod
     def _assign_variable_names(model, outputs):
-
         # Only assign output variable names to unassigned outputs
         exprs = pyo.Expression(pyo.Any)
         model.add_component(
@@ -232,7 +229,6 @@ class _ParameterSweepBase(ABC):
         return global_combo_array
 
     def _divide_combinations(self, global_combo_array):
-
         # Split the total list of combinations into NUM_PROCS chunks,
         # one per each of the MPI ranks
         # divided_combo_array = np.array_split(global_combo_array, num_procs, axis=0)
@@ -244,9 +240,7 @@ class _ParameterSweepBase(ABC):
         return local_combo_array
 
     def _update_model_values(self, m, param_dict, values):
-
         for k, item in enumerate(param_dict.values()):
-
             param = item.pyomo_object
 
             if param.is_variable_type():
@@ -261,7 +255,6 @@ class _ParameterSweepBase(ABC):
                 raise RuntimeError(f"Unrecognized Pyomo object {param}")
 
     def _aggregate_results_arr(self, global_results_dict, num_cases):
-
         global_results = np.zeros(
             (num_cases, len(global_results_dict["outputs"])), dtype=float
         )
@@ -276,12 +269,10 @@ class _ParameterSweepBase(ABC):
         return global_results
 
     def _process_sweep_params(self, sweep_params):
-
         sampling_type = None
 
         # Check the list of parameters to make sure they are valid
         for k in sweep_params:
-
             # Convert to using Sample class
             if isinstance(sweep_params[k], (list, tuple)):
                 sweep_params[k] = LinearSample(*sweep_params[k])
@@ -298,7 +289,6 @@ class _ParameterSweepBase(ABC):
         return sweep_params, sampling_type
 
     def _create_local_output_skeleton(self, model, sweep_params, outputs, num_samples):
-
         output_dict = {}
         output_dict["sweep_params"] = {}
         output_dict["outputs"] = {}
@@ -332,7 +322,6 @@ class _ParameterSweepBase(ABC):
         return output_dict
 
     def _create_component_output_skeleton(self, component, num_samples):
-
         comp_dict = {}
         comp_dict["value"] = np.zeros(num_samples, dtype=float)
         if hasattr(component, "lb"):
@@ -355,7 +344,6 @@ class _ParameterSweepBase(ABC):
     def _update_local_output_dict(
         self, model, sweep_params, case_number, run_successful, output_dict
     ):
-
         # Get the inputs
         op_ps_dict = output_dict["sweep_params"]
         for key, item in sweep_params.items():
@@ -381,7 +369,6 @@ class _ParameterSweepBase(ABC):
                     output_dict["outputs"][label]["value"][case_number] = np.nan
 
     def _create_global_output(self, local_output_dict, req_num_samples=None):
-
         # We make the assumption that the parameter sweep is running the same
         # flowsheet num_samples number of times, i.e., the structure of the
         # local_output_dict remains the same across all mpi_ranks
@@ -446,7 +433,6 @@ class _ParameterSweepBase(ABC):
         return global_output_dict
 
     def _param_sweep_kernel(self, model, reinitialize_values):
-
         optimize_function = self.config.optimize_function
         optimize_kwargs = self.config.optimize_kwargs
         reinitialize_before_sweep = self.config.reinitialize_before_sweep
@@ -538,7 +524,6 @@ class _ParameterSweepBase(ABC):
         return run_successful
 
     def _do_param_sweep(self, model, sweep_params, outputs, local_values):
-
         # Initialize space to hold results
         local_num_cases = np.shape(local_values)[0]
 
@@ -581,13 +566,11 @@ class _ParameterSweepBase(ABC):
 
 
 class ParameterSweep(_ParameterSweepBase):
-
     CONFIG = _ParameterSweepBase.CONFIG()
 
     def _aggregate_local_results(
         self, global_values, local_output_dict, num_samples, local_num_cases
     ):
-
         # Create the dictionary
         global_results_dict = self._create_global_output(local_output_dict, num_samples)
 
@@ -607,7 +590,6 @@ class ParameterSweep(_ParameterSweepBase):
         num_samples=None,
         seed=None,
     ):
-
         # Convert sweep_params to LinearSamples
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
 
@@ -637,11 +619,11 @@ class ParameterSweep(_ParameterSweepBase):
             )
         else:
             local_results_dict = self.config.custom_do_param_sweep(
+                self,
                 model,
                 sweep_params,
                 outputs,
                 local_values,
-                **self.config.custom_do_param_sweep_kwargs,
             )
 
         # Aggregate results on Master
@@ -663,13 +645,11 @@ class ParameterSweep(_ParameterSweepBase):
 
 
 class RecursiveParameterSweep(_ParameterSweepBase):
-
     CONFIG = _ParameterSweepBase.CONFIG()
 
     def _filter_recursive_solves(
         self, model, sweep_params, outputs, recursive_local_dict
     ):
-
         # Figure out how many filtered solves did this rank actually do
         filter_counter = 0
         for case, content in recursive_local_dict.items():
@@ -711,7 +691,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         return local_filtered_dict, filter_counter
 
     def _aggregate_filtered_input_arr(self, global_filtered_dict, req_num_samples):
-
         global_filtered_values = np.zeros(
             (req_num_samples, len(global_filtered_dict["sweep_params"])),
             dtype=float,
@@ -729,7 +708,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         return global_filtered_values
 
     def _aggregate_filtered_results(self, local_filtered_dict, req_num_samples):
-
         global_filtered_dict = self._create_global_output(
             local_filtered_dict, req_num_samples
         )
@@ -755,7 +733,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         req_num_samples=None,
         seed=None,
     ):
-
         # Convert sweep_params to LinearSamples
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
 
@@ -771,7 +748,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         local_output_collection = {}
         for loop_ctr in range(10):
-
             if n_samples_remaining <= 0:
                 break
 
