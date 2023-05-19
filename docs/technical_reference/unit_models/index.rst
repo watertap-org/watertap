@@ -21,5 +21,7 @@ Unit Models
    anaerobic_digestor
    ion_exchange_0D
    mvc
+   thickener
+   dewatering
    translators/index
    zero_order_unit_models/index
