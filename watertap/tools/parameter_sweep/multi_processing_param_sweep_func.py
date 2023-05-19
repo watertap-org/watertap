@@ -105,13 +105,9 @@ def _merge_copied_dicts(dict_array):
     global_output_dict = copy.deepcopy(local_copy)
     global_output_dict["solve_successful"] = np.zeros(num_samples)
     for cn, case_dict in enumerate(dict_array):
-        # 3if "order_index" in case_dict:
         case_number = case_dict["order_index"]
         case_dict.pop("order_index", None)
-        # else:
-        #    case_number = cn
 
-        # print("case_number", case_dict)
         for key in global_output_dict["sweep_params"].keys():
             try:
                 if (
@@ -310,8 +306,6 @@ class paramActor:
         if self.json_string is not None:
             from_json(self.model, sd=None, fname=None, s=self.json_string)
         self.reinitialize_function(self.model, **self.reinitialize_kwargs)
-        # self.model_state = modelStateStorage(self.model)
-        # self.clean_state = to_json(self.model, return_json_string=True)
         self.model_init = True
 
     def get_probe_result(self, m, sweep_params):
@@ -328,7 +322,6 @@ class paramActor:
 
     def solve_problem(self, sweep_params):
         order_index = sweep_params["order_index"]
-        # print("order_index", order_index)
         sweep_params.pop("order_index", None)
 
         run_successful = False
