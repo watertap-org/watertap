@@ -16,24 +16,6 @@ from pyomo.environ import units as pyunits
 from idaes.core.solvers import get_solver
 
 
-def build_flowsheet():
-    # build and solve initial flowsheet
-    solver = get_solver()
-    m = nf_with_bypass.build()
-    nf_with_bypass.initialize(m, solver)
-    nf_with_bypass.unfix_opt_vars(m)
-    nf.add_objective(m)
-    return m.fs
-
-
-def solve_flowsheet(flowsheet=None):
-    fs = flowsheet
-    solver = get_solver()
-    # nf.add_objective(fs)
-    results = nf_with_bypass.optimize(fs, solver)
-    return results
-
-
 def export_to_ui(flowsheet=None, exports=None):
     return FlowsheetInterface(
         name="NF-DSPM-DE with bypass",
@@ -333,3 +315,21 @@ def export_variables(flowsheet=None, exports=None):
             is_output=True,
             output_category="NF observed rejection",
         )
+
+
+def build_flowsheet():
+    # build and solve initial flowsheet
+    solver = get_solver()
+    m = nf_with_bypass.build()
+    nf_with_bypass.initialize(m, solver)
+    nf_with_bypass.unfix_opt_vars(m)
+    nf.add_objective(m)
+    return m
+
+
+def solve_flowsheet(flowsheet=None):
+    fs = flowsheet
+    solver = get_solver()
+    # nf.add_objective(fs)
+    results = nf_with_bypass.optimize(fs, solver)
+    return results

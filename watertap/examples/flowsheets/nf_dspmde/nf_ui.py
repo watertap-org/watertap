@@ -310,7 +310,7 @@ def build_flowsheet():
     nf.initialize(m, solver)
     nf.add_objective(m)
     nf.unfix_opt_vars(m)
-    return m.fs
+    return m
 
 
 def solve_flowsheet(flowsheet=None):
