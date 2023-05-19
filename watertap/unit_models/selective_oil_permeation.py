@@ -21,7 +21,6 @@ from pyomo.environ import (
     NonNegativeReals,
     Reference,
     units,
-    value,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
