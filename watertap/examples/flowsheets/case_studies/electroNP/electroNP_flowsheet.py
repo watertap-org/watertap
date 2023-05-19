@@ -20,7 +20,6 @@ from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
-
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -60,6 +59,7 @@ def automate_rescale_variables(m):
 
 
 def build_flowsheet():
+    # flowsheet set up
     m = pyo.ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
@@ -99,6 +99,7 @@ def build_flowsheet():
     )
     m.fs.costing.add_LCOW(m.fs.electroNP.properties_treated[0].flow_vol)
 
+    # connections
     m.fs.stream_adm1_translator = Arc(
         source=m.fs.AD.liquid_outlet, destination=m.fs.translator_adm1_asm2d.inlet
     )
@@ -240,6 +241,51 @@ def build_flowsheet():
     return m, results
 
 
+def display_costing(m):
+    print("\nUnit Capital Costs\n")
+    for u in m.fs.costing._registered_unit_costing:
+        print(
+            u.name,
+            " :   ",
+            value(units.convert(u.capital_cost, to_units=units.USD_2018)),
+        )
+
+    print("\nUtility Costs\n")
+    for f in m.fs.costing.used_flows:
+        print(
+            f,
+            " :   ",
+            value(
+                units.convert(
+                    m.fs.costing.aggregate_flow_costs[f],
+                    to_units=units.USD_2018 / units.year,
+                )
+            ),
+        )
+
+    print("")
+    total_capital_cost = value(
+        units.convert(m.fs.costing.total_capital_cost, to_units=units.USD_2018)
+    )
+    print(f"Total Capital Costs: {total_capital_cost:.2f} $")
+    total_operating_cost = value(
+        units.convert(
+            m.fs.costing.total_operating_cost, to_units=units.USD_2018 / units.year
+        )
+    )
+    print(f"Total Operating Costs: {total_operating_cost:.2f} $/year")
+    electricity_intensity = value(
+        units.convert(
+            m.fs.electroNP.energy_electric_flow_mass, to_units=units.kWh / units.kg
+        )
+    )
+    print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/kg - P")
+    LCOW = value(
+        units.convert(m.fs.costing.LCOW, to_units=units.USD_2018 / units.m**3)
+    )
+    print(f"Levelized Cost of Water: {LCOW:.4f} $/m^3")
+
+
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge
     # flowsheet.
@@ -248,9 +294,11 @@ if __name__ == "__main__":
         {
             "AD inlet": m.fs.AD.inlet,
             "AD liquid outlet": m.fs.AD.liquid_outlet,
+            "AD vapor outlet": m.fs.AD.vapor_outlet,
             "Translator outlet": m.fs.translator_adm1_asm2d.outlet,
             "ElectroNP outlet": m.fs.electroNP.treated,
         },
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
+    display_costing(m)
