@@ -71,7 +71,7 @@ class NewASM2dParameterData(PhysicalParameterBlock):
             domain=In(DecaySwitch),
             description="Switching function for decay",
             doc="""
-           Options to account for solution density.
+           Switching function to account for decay in reaction rate expressions.
 
            **default** - `DecaySwitch.on``
 
