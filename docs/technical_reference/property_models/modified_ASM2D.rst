@@ -210,39 +210,40 @@ A thorough scaling routine for the ASM2D property package has yet to be implemen
 
 Class Documentation
 -------------------
-.. currentmodule:: watertap.property_models.activated_sludge.new_modified_asm2d_properties
+**NOTE: This section will be updated with the classes for the new ASM2d model once PR 1031 is merged.**
+.. currentmodule:: watertap.property_models.activated_sludge.asm2d_properties
 
-.. autoclass:: NewASM2dParameterBlock
+.. autoclass:: ASM2dParameterBlock
     :members:
     :noindex:
 
-.. autoclass:: NewASM2dParameterData
+.. autoclass:: ASM2dParameterData
     :members:
     :noindex:
 
-.. autoclass:: _NewASM2dStateBlock
+.. autoclass:: _ASM2dStateBlock
     :members:
     :noindex:
 
-.. autoclass:: NewASM2dStateBlockData
+.. autoclass:: ASM2dStateBlockData
     :members:
     :noindex:
 
-.. currentmodule:: watertap.property_models.activated_sludge.new_modified_asm2d_reactions
+.. currentmodule:: watertap.property_models.activated_sludge.asm2d_reactions
 
-.. autoclass:: NewASM2dReactionParameterBlock
+.. autoclass:: ASM2dReactionParameterBlock
     :members:
     :noindex:
 
-.. autoclass:: NewASM2dReactionParameterData
+.. autoclass:: SM2dReactionParameterData
     :members:
     :noindex:
 
-.. autoclass:: _NewASM2dReactionBlock
+.. autoclass:: _ASM2dReactionBlock
     :members:
     :noindex:
 
-.. autoclass:: NewASM2dReactionBlockData
+.. autoclass:: ASM2dReactionBlockData
     :members:
     :noindex:
 
