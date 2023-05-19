@@ -330,6 +330,5 @@ def build_flowsheet():
 def solve_flowsheet(flowsheet=None):
     fs = flowsheet
     solver = get_solver()
-    # nf.add_objective(fs)
     results = nf_with_bypass.optimize(fs, solver)
     return results
