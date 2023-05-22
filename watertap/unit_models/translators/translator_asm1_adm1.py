@@ -185,9 +185,12 @@ see reaction package for documentation.}""",
             doc="COD demand minus readily biodegradable substrate",
         )
         def CODd_step1(blk, t):
-            return (
-                blk.inter_S_S[t]
-                == blk.properties_in[t].conc_mass_comp["S_S"] - blk.CODd[t]
+            return blk.inter_S_S[t] == 0.5 * (
+                (blk.properties_in[t].conc_mass_comp["S_S"] - blk.CODd[t])
+                + sqrt(
+                    (blk.properties_in[t].conc_mass_comp["S_S"] - blk.CODd[t]) ** 2
+                    + eps
+                )
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after S_S")

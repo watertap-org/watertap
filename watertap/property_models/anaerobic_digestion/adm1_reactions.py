@@ -1325,7 +1325,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         # Equation from [2]
         def CO2_acid_base_equilibrium_rule(self, t):
             return (
-                self.K_a_co2
+                self.K_a_co2 * 1e-2
                 == (
                     4.46684e-07
                     * pyo.exp(
@@ -1336,6 +1336,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                         * ((1 / self.params.temperature_ref) - (1 / self.temperature))
                     )
                 )
+                * 1e-2
                 * pyo.units.kilomole
                 / pyo.units.meter**3
             )
