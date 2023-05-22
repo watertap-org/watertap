@@ -33,7 +33,7 @@ class TestSOPProperty(PropertyTestHarness):
         }
         self.default_solution = {
             ("visc_d_phase_comp", ("Liq", "H2O")): 1e-3,
-            ("visc_d_phase_comp", ("Liq", "oil")): 3.5e-3,
+            ("visc_d_phase_comp", ("Liq", "oil")): 3.56e-3,
             ("dens_mass_phase_comp", ("Liq", "H2O")): 1e3,
             ("dens_mass_phase_comp", ("Liq", "oil")): 780,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.990099,
@@ -66,7 +66,7 @@ class TestSOPPropertySolution(PropertyRegressionTest):
         }
         self.regression_solution = {
             ("visc_d_phase_comp", ("Liq", "H2O")): 1e-3,
-            ("visc_d_phase_comp", ("Liq", "oil")): 3.5e-3,
+            ("visc_d_phase_comp", ("Liq", "oil")): 3.56e-3,
             ("dens_mass_phase_comp", ("Liq", "H2O")): 1e3,
             ("dens_mass_phase_comp", ("Liq", "oil")): 780,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.5,
