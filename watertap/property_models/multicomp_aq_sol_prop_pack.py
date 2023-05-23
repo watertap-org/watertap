@@ -565,6 +565,7 @@ class MCASParameterData(PhysicalParameterBlock):
                 "dielectric_constant": {"method": "_dielectric_constant"},
                 "debye_huckel_constant": {"method": "_debye_huckel_constant"},
                 "ionic_strength_molal": {"method": "_ionic_strength_molal"},
+                "total_hardness": {"method": "_total_hardness"},
             }
         )
 
@@ -1690,6 +1691,33 @@ class MCASStateBlockData(StateBlockData):
             self.params.phase_list, rule=rule_elec_cond_phase
         )
 
+    def _total_hardness(self):
+        self.total_hardness = Var(
+            initialize=100,
+            domain=NonNegativeReals,
+            bounds=(0, None),
+            units=pyunits.mg / pyunits.L,
+            doc="total hardness as CaCO3",
+        )
+
+        def rule_total_hardness(b):
+            return b.total_hardness == pyunits.convert(
+                sum(
+                    b.flow_mol_phase_comp["Liq", j]
+                    / b.flow_vol_phase["Liq"]
+                    * 100.0869
+                    * pyunits.g
+                    / pyunits.mol
+                    * b.charge_comp[j]
+                    / 2.0
+                    for j in b.params.cation_set
+                    if value(b.charge_comp[j]) > 1
+                ),
+                to_units=pyunits.mg / pyunits.L,
+            )
+
+        self.eq_total_hardness = Constraint(rule=rule_total_hardness)
+
     # -----------------------------------------------------------------------------
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
@@ -2137,6 +2165,10 @@ class MCASStateBlockData(StateBlockData):
                 )
                 iscale.set_scaling_factor(self.ionic_strength_molal, sf)
 
+        if self.is_property_constructed("total_hardness"):
+            if iscale.get_scaling_factor(self.total_hardness) is None:
+                sf = 1 / value(self.total_hardness)
+                iscale.set_scaling_factor(self.total_hardness, sf)
         # transforming constraints
         transform_property_constraints(self)
 
@@ -2145,6 +2177,10 @@ class MCASStateBlockData(StateBlockData):
 
         if self.is_property_constructed("ionic_strength_molal"):
             iscale.constraint_scaling_transform(self.eq_ionic_strength_molal, 1)
+
+        if self.is_property_constructed("total_hardness"):
+            sf = iscale.get_scaling_factor(self.total_hardness)
+            iscale.constraint_scaling_transform(self.eq_total_hardness, sf)
 
         if hasattr(self, "eq_diffus_phase_comp"):
             for ind, v in self.eq_diffus_phase_comp.items():

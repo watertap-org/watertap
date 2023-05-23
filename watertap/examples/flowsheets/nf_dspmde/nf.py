@@ -191,7 +191,7 @@ def build():
 def build_nf_block(m, blk):
     # setting up state junction
     blk.feed = StateJunction(property_package=m.fs.properties)
-    m.fs.NF.product = StateJunction(property_package=m.fs.properties)
+    blk.product = StateJunction(property_package=m.fs.properties)
     blk.retentate = StateJunction(property_package=m.fs.properties)
 
     blk.pump = Pump(property_package=m.fs.properties)
@@ -396,7 +396,7 @@ def add_hardness_constraint(stream):
         bounds=(0, 10000),
         domain=NonNegativeReals,
         units=pyunits.mg / pyunits.L,
-        doc="Water Hardness as CO3",
+        doc="Total hardness as CaCO3",
     )
     iscale.set_scaling_factor(stream.total_hardness, 1)
     stream.Ca_hardness = Var(
@@ -404,7 +404,7 @@ def add_hardness_constraint(stream):
         bounds=(0, 10000),
         domain=NonNegativeReals,
         units=pyunits.mg / pyunits.L,
-        doc="Water Hardness as CaCO3",
+        doc="Calcium hardness as CaCO3",
     )
     iscale.set_scaling_factor(stream.Ca_hardness, 1)
     stream.Mg_hardness = Var(
@@ -412,7 +412,7 @@ def add_hardness_constraint(stream):
         bounds=(0, 10000),
         domain=NonNegativeReals,
         units=pyunits.mg / pyunits.L,
-        doc="Water Hardness as MgCO3",
+        doc="Magnesium hardness as CaCO3",
     )
     iscale.set_scaling_factor(stream.Mg_hardness, 1)
     stream.CaCO3_mw = Param(

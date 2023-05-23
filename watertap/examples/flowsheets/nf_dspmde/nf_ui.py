@@ -166,7 +166,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.costing.electricity_cost,
-        name="Membrane replacment rate",
+        name="Electricity cost",
         ui_units=fs.costing.base_currency / pyunits.kWh,
         display_units="$/kWhr",
         rounding=2,
@@ -202,7 +202,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.product.max_hardness,
-        name="Product quality",
+        name="Product hardness as CaCO3",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
         rounding=2,
@@ -256,11 +256,11 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m^3",
         rounding=2,
-        description="Process cost and opertaing metrics",
+        description="Process cost and operating metrics",
         is_input=False,
-        input_category="Process cost and opertaing metrics",
+        input_category="Process cost and operating metrics",
         is_output=True,
-        output_category="Process cost and opertaing metrics",
+        output_category="Process cost and operating metrics",
     )
     exports.add(
         obj=fs.costing.specific_energy_consumption,
@@ -268,11 +268,11 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=pyunits.hr * pyunits.kW / pyunits.m**3,
         display_units="kWhr/m^3",
         rounding=2,
-        description="Process cost and opertaing metrics",
+        description="Process cost and operating metrics",
         is_input=False,
-        input_category="Process cost and opertaing metrics",
+        input_category="Process cost and operating metrics",
         is_output=True,
-        output_category="Process cost and opertaing metrics",
+        output_category="Process cost and operating metrics",
     )
 
     for (t, phase, ion), obj in fs.NF.nfUnit.rejection_intrinsic_phase_comp.items():

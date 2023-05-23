@@ -1498,12 +1498,11 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 self._automate_rescale_variables()
         # ---------------------------------------------------------------------
         # Solve unit attempt 1
-        # self.eq_solute_solvent_flux.deactivate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
             if not check_optimal_termination(res):
                 init_log.warning(
-                    "Trouble solving NanofiltrationDSPMDE0D unit model with deactivated constraint."
+                    "Trouble solving NanofiltrationDSPMDE0D unit model on first attempt."
                 )
                 if automate_rescale:
                     badly_scaled_vars = list(iscale.badly_scaled_var_generator(self))
@@ -1518,7 +1517,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 res = opt.solve(self, tee=slc.tee)
                 if not check_optimal_termination(res):
                     init_log.warning(
-                        "Trouble solving NanofiltrationDSPMDE0D unit model. Trying one more time."
+                        "Trouble solving NanofiltrationDSPMDE0D unit model on second attempt. Trying one more time."
                     )
                     if automate_rescale:
                         badly_scaled_vars = list(
@@ -1751,6 +1750,10 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             var_dict[
                 f"Intrinsic Rejection of {j}"
             ] = self.rejection_intrinsic_phase_comp[time_point, "Liq", j]
+
+            expr_dict[
+                f"Observed Rejection of {j}"
+            ] = self.rejection_observed_phase_comp[time_point, "Liq", j]
 
             if self.feed_side.properties_in[time_point].is_property_constructed(
                 "pressure_osm_phase"

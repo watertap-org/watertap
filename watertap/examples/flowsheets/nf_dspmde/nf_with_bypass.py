@@ -67,7 +67,6 @@ def build():
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
     m.fs.feed.properties[0].flow_mass_phase_comp[...]
-    # building conc mass phase component as its not build by default
 
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
@@ -126,10 +125,10 @@ def build():
 
 
 def fix_init_vars(m):
-    # fix intial guess for splitter
+    # fix initial guess for splitter
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].fix(0.5)
 
-    # apply defualts ofr normal NF init
+    # apply defaults for normal NF init
     nf.fix_init_vars(m)
 
 
@@ -143,7 +142,7 @@ def initialize(m, solver=None):
     init_system(m, solver)
 
     # solve box problem
-    print("initalized, DOFS:", degrees_of_freedom(m))
+    print("initialized, DOFs:", degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
     solver.solve(m, tee=True)
     print("Solved box problem")
