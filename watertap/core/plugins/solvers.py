@@ -52,7 +52,7 @@ class IpoptWaterTAP(IPOPT):
 
         # Set the default watertap options
         if "tol" not in self.options:
-            self.options["tol"] = 1e-06
+            self.options["tol"] = 1e-08
         if "constr_viol_tol" not in self.options:
             self.options["constr_viol_tol"] = 1e-06
 
