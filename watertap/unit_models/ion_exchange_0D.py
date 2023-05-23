@@ -243,7 +243,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         """
 
-        ion_set = self.config.property_package.ion_set
         comps = self.config.property_package.component_list
         target_ion = self.config.target_ion
 
@@ -627,7 +626,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )
 
         self.Sc = Var(
-            ion_set,
+            self.target_ion_set,
             initialize=700,
             units=pyunits.dimensionless,
             doc="Schmidt number",
@@ -642,7 +641,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         self.Pe_p = Var(
             initialize=0.1,
-            # bounds=(0.01, 0.8),
             units=pyunits.dimensionless,
             doc="Peclet particle number",
         )
@@ -732,7 +730,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 doc="Minimum relative breakthrough concentration for estimating area under curve",
             )
 
-            # TODO: use trapezoidal approach for langmuir CONFIG?
+            # TODO: use trapezoidal approach for langmuir?
             self.c_traps = Var(
                 self.trap_disc,
                 initialize=0.5,
@@ -772,7 +770,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 self.target_ion_set,
                 initialize=0.5,
                 bounds=(0, None),
-                units=pyunits.mol / pyunits.m**3,
+                units=pyunits.kg / pyunits.m**3,
                 doc="Breakthrough concentration of target ion",
             )
 
