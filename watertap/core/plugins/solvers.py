@@ -52,9 +52,9 @@ class IpoptWaterTAP(IPOPT):
 
         # Set the default watertap options
         if "tol" not in self.options:
-            self.options["tol"] = 1e-08
+            self.options["tol"] = 1e-06
         if "constr_viol_tol" not in self.options:
-            self.options["constr_viol_tol"] = 1e-08
+            self.options["constr_viol_tol"] = 1e-06
 
         # temporarily switch to nl_v1 writer
         WriterFactory.register("nl")(WriterFactory.get_class("nl_v1"))
