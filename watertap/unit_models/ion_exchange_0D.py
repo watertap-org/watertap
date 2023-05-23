@@ -216,8 +216,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
     def build(self):
         super().build()
 
-        ### REFERENCES ###
         """
+        REFERENCES
+
         LeVan, M. D., Carta, G., & Yon, C. M. (2019).
         Section 16: Adsorption and Ion Exchange.
         Perry's Chemical Engineers' Handbook, 9th Edition.
@@ -240,6 +241,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         Hydrodynamic Design, Part 8: Flow Through Ion Exchange Beds
         Water Conditioning & Purification Magazine (WC&P)
         https://wcponline.com/2013/08/06/hydrodynamic-design-part-8-flow-ion-exchange-beds/
+
+        Clark, R. M. (1987). 
+        Evaluating the cost and performance of field-scale granular activated carbon systems. 
+        Environ Sci Technol, 21(6), 573-580. doi:10.1021/es00160a008
+
+        Croll, H. C., Adelman, M. J., Chow, S. J., Schwab, K. J., Capelle, R., Oppenheimer, J., & Jacangelo, J. G. (2023). 
+        Fundamental kinetic constants for breakthrough of per- and polyfluoroalkyl substances at varying empty bed contact times: 
+        Theoretical analysis and pilot scale demonstration. 
+        Chemical Engineering Journal, 464. doi:10.1016/j.cej.2023.142587
 
         """
 
@@ -985,7 +995,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
             @self.Expression(
                 self.target_ion_set, doc="Removed total mass of ion at resin exhaustion"
-            )  # Clark et al (2023), Eq.16
+            )  # Croll et al (2023), Eq.16
             def mass_removed_total(b, j):
                 return (prop_in.flow_mass_phase_comp["Liq", j] / b.kinetic_param) * log(
                     b.bed_capacity_param + 1
@@ -994,7 +1004,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             @self.Expression(
                 self.target_ion_set,
                 doc="Clark equation bed capacity fitting parameter A",
-            )  # Clark et al (2023), Eq.19
+            )  # Croll et al (2023), Eq.19
             def clark_A_expr(b, j):
                 n = b.freundlich_n
                 x = 1 / b.c_norm[j]
@@ -1218,7 +1228,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             @self.Constraint(
                 self.target_ion_set,
                 doc="Mass transfer coefficient [A] from Clark equation",
-            )  # Clark et al (2023), Eq.19
+            )  # Croll et al (2023), Eq.19
             def eq_mass_transfer_coeff(b, j):
                 return b.mass_transfer_coeff * (b.freundlich_n - 1) == (
                     b.kinetic_param * b.bv_50
@@ -1230,7 +1240,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
             @self.Constraint(
                 self.target_ion_set, doc="Clark equation with fundamental constants"
-            )  # Clark et al (2023), Eq.9
+            )  # Croll et al (2023), Eq.9
             def eq_clark_1(b, j):
                 c0 = prop_in.conc_mass_phase_comp["Liq", j]
                 cb = b.c_breakthru[j]
@@ -1249,7 +1259,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
             @self.Constraint(
                 self.target_ion_set, doc="Clark equation for fitting"
-            )  # Clark et al (2023), Eq.12
+            )  # Croll et al (2023), Eq.12
             def eq_clark_2(b, j):
                 c0 = prop_in.conc_mass_phase_comp["Liq", j]
                 cb = b.c_breakthru[j]
@@ -1573,10 +1583,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         for ind, c in self.eq_vel_inter.items():
             sf = iscale.get_scaling_factor(self.vel_inter)
             iscale.constraint_scaling_transform(c, sf)
-
-        # for ind, c in self.eq_mass_removed.items():
-        #     sf = iscale.get_scaling_factor(self.mass_removed[ind])
-        #     iscale.constraint_scaling_transform(c, sf)
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
