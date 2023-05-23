@@ -71,15 +71,15 @@ class NewASM2dParameterData(PhysicalParameterBlock):
             domain=In(DecaySwitch),
             description="Switching function for decay",
             doc="""
-           Switching function to account for decay in reaction rate expressions.
+           Switching function for handling decay in reaction rate expressions.
 
            **default** - `DecaySwitch.on``
 
        .. csv-table::
            :header: "Configuration Options", "Description"
 
-           "``DecaySwitch.on``", "Accounts for decay in reaction rate expressions"
-           "``DecaySwitch.off``", "Does not account for decay in reaction rate expressions"
+           "``DecaySwitch.on``", "The decay of heterotrophs and autotrophs is dependent on the electron acceptor present"
+           "``DecaySwitch.off``", "The decay of heterotrophs and autotrophs does not change"
        """,
         ),
     )
