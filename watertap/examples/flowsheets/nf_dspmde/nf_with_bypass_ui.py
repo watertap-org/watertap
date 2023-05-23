@@ -84,9 +84,33 @@ def export_variables(flowsheet=None, exports=None):
         name="NF water recovery".format(ion),
         ui_units=pyunits.dimensionless,
         display_units="fraction",
-        rounding=2,
+        rounding=3,
         description="NF design",
         is_input=True,
+        input_category="NF design",
+        is_output=True,
+        output_category="NF design",
+    )
+    exports.add(
+        obj=fs.NF.product.properties[0].flow_vol_phase["Liq"],
+        name="NF product volume flow",
+        ui_units=pyunits.L / pyunits.hr,
+        display_units="L/h",
+        rounding=2,
+        description="NF design",
+        is_input=False,
+        input_category="NF design",
+        is_output=True,
+        output_category="NF design",
+    )
+    exports.add(
+        obj=fs.NF.nf_flux,
+        name="NF water flux",
+        ui_units=pyunits.dimensionless,
+        display_units="LMH",
+        rounding=2,
+        description="NF design",
+        is_input=False,
         input_category="NF design",
         is_output=True,
         output_category="NF design",
@@ -157,7 +181,7 @@ def export_variables(flowsheet=None, exports=None):
         name="Membrane replacment rate",
         ui_units=pyunits.year**-1,
         display_units="fraction/year",
-        rounding=2,
+        rounding=3,
         description="NF CAPEX",
         is_input=True,
         input_category="NF CAPEX",
@@ -166,7 +190,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.costing.electricity_cost,
-        name="Membrane replacment rate",
+        name="Electricity price",
         ui_units=fs.costing.base_currency / pyunits.kWh,
         display_units="$/kWhr",
         rounding=2,
@@ -202,11 +226,23 @@ def export_variables(flowsheet=None, exports=None):
         output_category="NF OPEX",
     )
     exports.add(
+        obj=fs.costing.disposal_cost,
+        name="Disposal cost",
+        ui_units=pyunits.USD_2020 / pyunits.m**3,
+        display_units="$/m^3",
+        rounding=4,
+        description="System constraints",
+        is_input=True,
+        input_category="System constraints",
+        is_output=True,
+        output_category="System constraints",
+    )
+    exports.add(
         obj=fs.by_pass_splitter.split_fraction[0, "bypass"],
         name="NF bypass",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
-        rounding=2,
+        rounding=4,
         description="Bypass design",
         is_input=True,
         input_category="Bypass design",
@@ -233,11 +269,23 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
         rounding=2,
-        description="System streams quality",
+        description="System streams",
         is_input=False,
-        input_category="System streams quality",
+        input_category="System streams",
         is_output=True,
-        output_category="System streams quality",
+        output_category="System streams",
+    )
+    exports.add(
+        obj=fs.product.properties[0].flow_vol_phase["Liq"],
+        name="Product volume flow",
+        ui_units=pyunits.L / pyunits.hr,
+        display_units="L/h",
+        rounding=2,
+        description="System streams",
+        is_input=False,
+        input_category="System streams",
+        is_output=True,
+        output_category="System streams",
     )
     exports.add(
         obj=fs.feed.total_hardness,
@@ -245,23 +293,36 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
         rounding=2,
-        description="System streams quality",
+        description="System streams",
         is_input=False,
-        input_category="System streams quality",
+        input_category="System streams",
         is_output=True,
-        output_category="System streams quality",
+        output_category="System streams",
     )
+
     exports.add(
         obj=fs.disposal.total_hardness,
         name="Disposal hardness",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
         rounding=2,
-        description="System streams quality",
+        description="System streams",
         is_input=False,
-        input_category="System streams quality",
+        input_category="System streams",
         is_output=True,
-        output_category="System streams quality",
+        output_category="System streams",
+    )
+    exports.add(
+        obj=fs.disposal.properties[0].flow_vol_phase["Liq"],
+        name="Disposal volume flow",
+        ui_units=pyunits.L / pyunits.hr,
+        display_units="L/h",
+        rounding=2,
+        description="System streams",
+        is_input=False,
+        input_category="System streams",
+        is_output=True,
+        output_category="System streams",
     )
 
     exports.add(
@@ -281,7 +342,7 @@ def export_variables(flowsheet=None, exports=None):
         name="System energy consumption",
         ui_units=pyunits.hr * pyunits.kW / pyunits.m**3,
         display_units="kWhr/m^3",
-        rounding=2,
+        rounding=4,
         description="Process cost and opertaing metrics",
         is_input=False,
         input_category="Process cost and opertaing metrics",
@@ -291,11 +352,11 @@ def export_variables(flowsheet=None, exports=None):
 
     for (t, phase, ion), obj in fs.NF.nfUnit.rejection_intrinsic_phase_comp.items():
         exports.add(
-            obj=obj * 100,
+            obj=obj,
             name="{} intrinsic rejection".format(ion),
             ui_units=pyunits.dimensionless,
-            display_units="%",
-            rounding=2,
+            display_units="fraction",
+            rounding=5,
             description="NF int. rejection",
             is_input=False,
             input_category="NF intrinsic rejection",
@@ -304,11 +365,11 @@ def export_variables(flowsheet=None, exports=None):
         )
     for (t, phase, ion), obj in fs.NF.nfUnit.rejection_observed_phase_comp.items():
         exports.add(
-            obj=obj * 100,
+            obj=obj,
             name="{} obs. rejection".format(ion),
             ui_units=pyunits.dimensionless,
-            display_units="%",
-            rounding=2,
+            display_units="fraction",
+            rounding=5,
             description="NF observed rejection",
             is_input=False,
             input_category="NF observed rejection",

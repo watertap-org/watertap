@@ -116,19 +116,36 @@ def build():
     m.fs.mixer_to_product = Arc(
         source=m.fs.total_product_mixer.outlet, destination=m.fs.product.inlet
     )
+    m.fs.costing.disposal_cost = Var(
+        initialize=0.1,
+        doc="disposal cost",
+        units=pyunits.USD_2020 / pyunits.m**3,
+    )
+    m.fs.costing.disposal_cost.fix()
+    m.fs.costing.add_defined_flow("disposal cost", m.fs.costing.disposal_cost)
+    m.fs.costing.cost_flow(
+        pyunits.convert(
+            m.fs.disposal.properties[0].flow_vol_phase["Liq"],
+            pyunits.m**3 / pyunits.s,
+        ),
+        "disposal cost",
+    )
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
-
+    iscale.set_scaling_factor(m.fs.costing.aggregate_flow_costs["disposal cost"], 1)
+    iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1 / 1000)
     TransformationFactory("network.expand_arcs").apply_to(m)
+
     return m
 
 
 def fix_init_vars(m):
     # fix intial guess for splitter
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].fix(0.5)
-
+    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setlb(0.01)
+    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setub(1 - 0.01)
     # apply defualts ofr normal NF init
     nf.fix_init_vars(m)
 
@@ -182,6 +199,7 @@ def unfix_opt_vars(m):
 def optimize(m, solver=None):
     if solver is None:
         solver = get_solver()
+    result = nf.optimize(m, solver)
     result = nf.optimize(m, solver)
     return result
 
