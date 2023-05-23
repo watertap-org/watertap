@@ -170,8 +170,10 @@ Properties
    "Fluid specific heat capacity", ":math:`c_p`", "cp", "None", ":math:`\text{J/kg/K}`"
    "Mass density", ":math:`\rho`", "dens_mass", "[p]", ":math:`\text{kg/}\text{m}^3`"
 
-Process Rate Equations (without decay)
---------------------------------------
+Process Rate Equations
+----------------------
+Equations marked "(with decay)" indicate that the decay of heterotrophs and autotrophs is dependent on the electron acceptor present. Equations marked "(without decay)" indicate that the decay of heterotrophs and autotrophs does not change.
+
 :red:`Red` text indicates the equation has been removed in the Modified ASM2d model, and :blue:`blue` text indicates the equation has been modified from its base ASM2d implementation.
 
 .. csv-table::
