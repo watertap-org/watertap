@@ -1359,7 +1359,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        self.state_args_out = state_args_out = deepcopy(state_args)
+        state_args_out = deepcopy(state_args)
 
         for p, j in self.process_flow.properties_out.phase_component_set:
             if j == self.config.target_ion:
@@ -1375,7 +1375,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )
         init_log.info("Initialization Step 1b Complete.")
 
-        self.state_args_regen = state_args_regen = deepcopy(state_args)
+        state_args_regen = deepcopy(state_args)
 
         self.regeneration_stream.initialize(
             outlvl=outlvl,
@@ -1401,13 +1401,12 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         self.process_flow.properties_in.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
-        # if not check_optimal_termination(res):
-        #     raise InitializationError(f"Unit model {self.name} failed to initialize")
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {self.name} failed to initialize.")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        # TODO: modify as needed for different model configuration
         target_ion = self.config.target_ion
         isotherm = self.config.isotherm
 
