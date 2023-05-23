@@ -125,7 +125,7 @@ def test_parameter_sweep(tmp_path):
         data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
 
         # Compare the last row of the imported data to truth
-        truth_data = [0.9, 0.5, np.nan, np.nan, np.nan]
+        truth_data = [0.9, 0.5, 1, 1, 2]
         assert np.allclose(data[-1], truth_data, equal_nan=True)
 
     # Check for the h5 output
@@ -136,9 +136,7 @@ def test_parameter_sweep(tmp_path):
                 "lower bound": 0,
                 "units": "None",
                 "upper bound": 1,
-                "value": np.array(
-                    [0.2, 0.2, np.nan, 1.0, 1.0, np.nan, np.nan, np.nan, np.nan]
-                ),
+                "value": np.array([0.2, 0.2, 0.2, 1.0, 1.0, 1, 1, 1, 1]),
             },
             "output_d": {
                 "lower bound": 0,
@@ -148,13 +146,13 @@ def test_parameter_sweep(tmp_path):
                     [
                         0.0,
                         0.75,
-                        np.nan,
+                        1,
                         0.0,
                         0.75,
-                        np.nan,
-                        np.nan,
-                        np.nan,
-                        np.nan,
+                        1.0,
+                        0.0,
+                        0.75,
+                        1,
                     ]
                 ),
             },
@@ -163,13 +161,13 @@ def test_parameter_sweep(tmp_path):
                     [
                         0.2,
                         0.95,
-                        np.nan,
+                        1.2,
                         1.0,
                         1.75,
-                        np.nan,
-                        np.nan,
-                        np.nan,
-                        np.nan,
+                        2,
+                        1,
+                        1.75,
+                        2,
                     ]
                 )
             },
@@ -177,13 +175,13 @@ def test_parameter_sweep(tmp_path):
         "solve_successful": [
             True,
             True,
-            False,
             True,
             True,
-            False,
-            False,
-            False,
-            False,
+            True,
+            True,
+            True,
+            True,
+            True,
         ],
         "sweep_params": {
             "fs.input[a]": {

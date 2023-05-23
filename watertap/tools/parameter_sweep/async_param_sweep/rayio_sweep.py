@@ -14,9 +14,6 @@ from idaes.core.util import to_json, from_json
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 
-from watertap.tools.analysis_tools.model_state_tool import modelStateStorage
-
-import watertap.tools.analysis_tools.step_optimize_tool as stepTool
 
 from watertap.tools.parameter_sweep.async_param_sweep.async_utils import (
     _create_component_output_skeleton,
@@ -26,7 +23,7 @@ from watertap.tools.parameter_sweep.async_param_sweep.async_utils import (
     _convert_outputs_to_dict,
     _update_model_values_from_dict,
 )
-from watertap.tools.parameter_sweep.async_param_sweep.asnyc_sweep_logic import (
+from watertap.tools.parameter_sweep.async_param_sweep.async_param_sweep_func import (
     paramActor,
 )
 
@@ -87,16 +84,11 @@ def setupRayActors(
 ):
     actors = []
     for cpu in range(num_workers):
-        actors.append(paramActor.remote(param_options))
+        actors.append(paramActorRay.remote(param_options))
     time.sleep(1)
     return actors
 
 
 @ray.remote(num_cpus=1, scheduling_strategy="SPREAD")
-class paramActor:
-    def __init__(
-        self,
-        param_options,
-    ):
-        self.param_actor = paramActor.init(param_options)
-        self.solve_problem = self.param_actor.solve_problem
+class paramActorRay(paramActor):
+    pass

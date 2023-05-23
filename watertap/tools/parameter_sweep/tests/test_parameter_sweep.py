@@ -522,7 +522,6 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep(self, model, tmp_path):
-
         comm = MPI.COMM_WORLD
 
         tmp_path = _get_rank0_path(comm, tmp_path)
@@ -750,7 +749,6 @@ class TestParallelManager:
 
         # Check the h5
         if ps.rank == 0:
-
             truth_dict = {
                 "outputs": {
                     "output_c": {
@@ -1275,7 +1273,6 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_force_initialize(self, model, tmp_path):
-
         results_fname = os.path.join(tmp_path, "global_results_force_initialize")
         csv_results_file_name = str(results_fname) + ".csv"
         h5_results_file_name = str(results_fname) + ".h5"
@@ -1496,7 +1493,6 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_bad_force_initialize(self, model, tmp_path):
-
         ps = ParameterSweep(
             optimize_function=_optimization,
             reinitialize_before_sweep=True,
@@ -1522,7 +1518,6 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_bad_optimization_call(self, model, tmp_path):
-
         ps = ParameterSweep(
             optimize_function=_optimization,
             optimize_kwargs={"foo": "bar"},
@@ -1574,7 +1569,6 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_probe_fail(self, model, tmp_path):
-
         comm = MPI.COMM_WORLD
 
         tmp_path = _get_rank0_path(comm, tmp_path)
@@ -1916,7 +1910,6 @@ def _bad_test_function(m):
 
 
 def _assert_dictionary_correctness(truth_dict, test_dict):
-
     assert truth_dict.keys() == test_dict.keys()
 
     for key, item in truth_dict.items():
@@ -1971,7 +1964,6 @@ def _build_header_list_from_csv(csv_filename):
 
 
 def _read_output_h5(filevar):
-
     if isinstance(filevar, str):
         f = h5py.File(filevar, "r")
     elif isinstance(filevar, h5py.Group):
@@ -1995,6 +1987,7 @@ def _read_output_h5(filevar):
                         output_dict[key][subkey][subsubkey] = output_dict[key][subkey][
                             subsubkey
                         ].decode("utf-8")
+
         elif key == "solve_successful":
             output_dict[key] = list(f[key]["solve_successful"][()])
 

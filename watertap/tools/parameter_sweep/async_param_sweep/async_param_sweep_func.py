@@ -47,7 +47,7 @@ def do_async_sweep(self, model, sweep_params, outputs, local_values):
     else:
         json_string = None
     # create ouptut dict for paramActor
-    outputs = _convert_outputs_to_dict(outputs)
+    output_dict = _convert_outputs_to_dict(outputs)
     # create paramActor option dict (Must be pickle safe)
     parall_kwargs = {}
 
@@ -68,7 +68,9 @@ def do_async_sweep(self, model, sweep_params, outputs, local_values):
     parall_kwargs["sweep_kwargs"] = self.config.custom_do_param_sweep_kwargs.get(
         "build_kwargs"
     )
-
+    parall_kwargs["loop_options"] = self.config.custom_do_param_sweep_kwargs.get(
+        "loop_options"
+    )
     parall_kwargs["html_notice"] = None  # not implemented
     parall_kwargs["use_analysis_tools"] = self.config.custom_do_param_sweep_kwargs[
         "use_analysis_tools"
@@ -78,7 +80,7 @@ def do_async_sweep(self, model, sweep_params, outputs, local_values):
             "step_tool_options"
         ] = self.config.custom_do_param_sweep_kwargs.get("step_tool_options")
     parall_kwargs["json_string"] = json_string
-    parall_kwargs["outputs"] = outputs
+    parall_kwargs["outputs"] = output_dict
     # check if ray is avaiallbe for paraell solving
 
     # create loal run dict
@@ -89,10 +91,10 @@ def do_async_sweep(self, model, sweep_params, outputs, local_values):
     try:
         import ray
 
-        ray_unavailable = True
+        ray_unavailable = False
 
     except ImportError:
-        ray_unavailable = False
+        ray_unavailable = True
 
     if (
         self.config.custom_do_param_sweep_kwargs.get("use_mp") == True
@@ -124,6 +126,7 @@ class paramActor:
         self.json_string = options["json_string"]
         self.sweep_kwargs = options["sweep_kwargs"]
         self.use_analysis_tools = options["use_analysis_tools"]
+
         if options.get("step_tool_options") != None:
             self.try_final_first = options.get("try_final_first")
             self.num_steps = options.get("num_steps")
@@ -132,6 +135,9 @@ class paramActor:
             self.try_final_first = True
             self.num_steps = 5
             self.re_steps = 2
+
+        if options.get("loop_options") != None:
+            self.update_vars_before_init = False
         self.model_init = False
         self.model = None
         self.build_model()
@@ -149,8 +155,10 @@ class paramActor:
 
             self.model_init = True
 
-    def init_model(self):
+    def init_model(self, sweep_params):
         self.build_model()
+        if self.update_vars_before_init:
+            _update_model_values_from_dict(self.model, sweep_params)
         if self.reinitialize_function is not None:
             self.reinitialize_function(self.model, **self.reinitialize_kwargs)
             self.model_init = True
@@ -197,12 +205,11 @@ class paramActor:
 
         run_successful = False
 
-        _update_model_values_from_dict(self.model, sweep_params)
         if self.get_probe_result(self.model, self.reinitialize_kwargs):
             for i in ["Try #0", "Try #1"]:
                 if self.reinitialize_function is not None and self.model_init == False:
                     try:
-                        self.init_model()
+                        self.init_model(sweep_params)
                         self.model_init = True
                     except:
                         self.model_init = False
@@ -215,9 +222,7 @@ class paramActor:
                     self.model, self.reinitialize_kwargs
                 ):
                     try:
-                        results = self.step_optimize(
-                            self.model
-                        )  # , **self.optimize_kwargs)
+                        results = self.opt()  # , **self.optimize_kwargs)
                         pyo.assert_optimal_termination(results)
                         run_successful = True
                         break

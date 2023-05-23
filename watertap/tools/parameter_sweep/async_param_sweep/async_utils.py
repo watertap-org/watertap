@@ -61,7 +61,6 @@ def _create_local_output_skeleton(model, sweep_params, outputs, run_successful):
     else:
         # Save only the outputs specified in the outputs dictionary
         for short_name, object_name in outputs.items():
-            print(short_name, object_name)
             pyo_obj = model.find_component(object_name)
             if run_successful:
                 val = pyo.value(pyo_obj)
@@ -135,7 +134,6 @@ def _convert_sweep_params_to_dict(params, values):
 def _convert_outputs_to_dict(outputs):
     out_dict = {}
     for key, obj in outputs.items():
-        print(key, obj.name)
         out_dict[key] = obj.name
     return out_dict
 

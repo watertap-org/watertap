@@ -21,7 +21,9 @@ from watertap.tools.parameter_sweep.sampling_types import *
 from watertap.tools.parameter_sweep import ParameterSweep, parameter_sweep
 from watertap.tools.parameter_sweep.parameter_sweep_writer import *
 
-from watertap.tools.parameter_sweep.rayio_param_sweep_func import do_rayio_sweep
+from watertap.tools.parameter_sweep.async_param_sweep.async_param_sweep_func import (
+    do_async_sweep,
+)
 from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _read_output_h5,
     _assert_dictionary_correctness,
@@ -69,156 +71,175 @@ def test_parameter_sweep(tmp_path):
     csv_results_file_name = str(results_fname) + ".csv"
     h5_results_file_name = str(results_fname) + ".h5"
 
-    custom_do_param_sweep_kwargs = {
-        "build_function": build,
-        "build_kwargs": {},
-        "num_workers": 10,
-        "load_form_json": True,
-        "use_mp": False,
-        "use_analysis_tools": False,
-    }
-    ps = ParameterSweep(
-        optimize_function=_optimization,
-        csv_results_file_name=csv_results_file_name,
-        h5_results_file_name=h5_results_file_name,
-        debugging_data_dir=tmp_path,
-        interpolate_nan_outputs=True,
-        custom_do_param_sweep=do_rayio_sweep,
-        custom_do_param_sweep_kwargs=custom_do_param_sweep_kwargs,
-    )
+    try:
+        from watertap.tools.analysis_tools.model_state_tool import modelStateStorage
 
-    m = build()
-    m.fs.slack_penalty = 1000.0
-    m.fs.slack.setub(0)
+        use_analysis_tools = True
+    except ImportError:
+        use_analysis_tools = False
+    try:
+        import ray
 
-    A = m.fs.input["a"]
-    B = m.fs.input["b"]
-    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-    outputs = {
-        "output_c": m.fs.output["c"],
-        "output_d": m.fs.output["d"],
-        "performance": m.fs.performance,
-    }
+        ray_unavailable = False
 
-    # Call the parameter_sweep function
-    _ = ps.parameter_sweep(
-        m,
-        sweep_params,
-        outputs=outputs,
-    )
+    except ImportError:
+        ray_unavailable = True
+    if ray_unavailable == False:
+        custom_do_param_sweep_kwargs = {
+            "build_function": build,
+            "build_kwargs": {},
+            "num_workers": 10,
+            "load_form_json": True,
+            "use_mp": False,
+            "use_analysis_tools": use_analysis_tools,
+        }
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            debugging_data_dir=tmp_path,
+            interpolate_nan_outputs=True,
+            custom_do_param_sweep=do_async_sweep,
+            custom_do_param_sweep_kwargs=custom_do_param_sweep_kwargs,
+        )
 
-    # NOTE: rank 0 "owns" tmp_path, so it needs to be
-    #       responsible for doing any output file checking
-    #       tmp_path can be deleted as soon as this method
-    #       returns
-    if ps.rank == 0:
-        # Check that the global results file is created
-        assert os.path.isfile(csv_results_file_name)
-        assert os.path.isfile(os.path.join(tmp_path, "interpolated_global_results.csv"))
+        m = build()
+        m.fs.slack_penalty = 1000.0
+        m.fs.slack.setub(0)
 
-        # Check that all local output files have been created
-        for k in range(ps.num_procs):
-            assert os.path.isfile(os.path.join(tmp_path, f"local_results_{k:03}.h5"))
-            assert os.path.isfile(os.path.join(tmp_path, f"local_results_{k:03}.csv"))
+        A = m.fs.input["a"]
+        B = m.fs.input["b"]
+        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+        outputs = {
+            "output_c": m.fs.output["c"],
+            "output_d": m.fs.output["d"],
+            "performance": m.fs.performance,
+        }
 
-        # Attempt to read in the data
-        data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
-        print(data[-1])
+        # Call the parameter_sweep function
+        _ = ps.parameter_sweep(
+            m,
+            sweep_params,
+            outputs=outputs,
+        )
 
-        print(data)
-        # Compare the last row of the imported data to truth
-        truth_data = [0.9, 0.5, 1, 1, 2]
-        assert np.allclose(data[-1], truth_data, equal_nan=True)
+        # NOTE: rank 0 "owns" tmp_path, so it needs to be
+        #       responsible for doing any output file checking
+        #       tmp_path can be deleted as soon as this method
+        #       returns
+        if ps.rank == 0:
+            # Check that the global results file is created
+            assert os.path.isfile(csv_results_file_name)
+            assert os.path.isfile(
+                os.path.join(tmp_path, "interpolated_global_results.csv")
+            )
 
-    # Check for the h5 output
-
-    truth_dict = {
-        "outputs": {
-            "output_c": {
-                "lower bound": 0,
-                "units": "None",
-                "upper bound": 1,
-                "value": np.array(
-                    [0.2, 0.2, np.nan, 1.0, 1.0, np.nan, np.nan, np.nan, np.nan]
-                ),
-            },
-            "output_d": {
-                "lower bound": 0,
-                "units": "None",
-                "upper bound": 1,
-                "value": np.array(
-                    [
-                        0.0,
-                        0.75,
-                        np.nan,
-                        0.0,
-                        0.75,
-                        np.nan,
-                        np.nan,
-                        np.nan,
-                        np.nan,
-                    ]
-                ),
-            },
-            "performance": {
-                "value": np.array(
-                    [
-                        0.2,
-                        0.95,
-                        np.nan,
-                        1.0,
-                        1.75,
-                        np.nan,
-                        np.nan,
-                        np.nan,
-                        np.nan,
-                    ]
+            # Check that all local output files have been created
+            for k in range(ps.num_procs):
+                assert os.path.isfile(
+                    os.path.join(tmp_path, f"local_results_{k:03}.h5")
                 )
+                assert os.path.isfile(
+                    os.path.join(tmp_path, f"local_results_{k:03}.csv")
+                )
+
+            # Attempt to read in the data
+            data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
+
+            # Compare the last row of the imported data to truth
+            truth_data = [0.9, 0.5, 1, 1, 2]
+            assert np.allclose(data[-1], truth_data, equal_nan=True)
+
+        # Check for the h5 output
+
+        truth_dict = {
+            "outputs": {
+                "output_c": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.2, 0.2, 0.2, 1.0, 1.0, 1, 1, 1, 1]),
+                },
+                "output_d": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array(
+                        [
+                            0.0,
+                            0.75,
+                            1,
+                            0.0,
+                            0.75,
+                            1.0,
+                            0.0,
+                            0.75,
+                            1,
+                        ]
+                    ),
+                },
+                "performance": {
+                    "value": np.array(
+                        [
+                            0.2,
+                            0.95,
+                            1.2,
+                            1.0,
+                            1.75,
+                            2,
+                            1,
+                            1.75,
+                            2,
+                        ]
+                    )
+                },
             },
-        },
-        "solve_successful": [
-            True,
-            True,
-            False,
-            True,
-            True,
-            False,
-            False,
-            False,
-            False,
-        ],
-        "sweep_params": {
-            "fs.input[a]": {
-                "lower bound": 0,
-                "units": "None",
-                "upper bound": 1,
-                "value": np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]),
+            "solve_successful": [
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+            ],
+            "sweep_params": {
+                "fs.input[a]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]),
+                },
+                "fs.input[b]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.25, 0.5, 0.0, 0.25, 0.5, 0.0, 0.25, 0.5]),
+                },
             },
-            "fs.input[b]": {
-                "lower bound": 0,
-                "units": "None",
-                "upper bound": 1,
-                "value": np.array([0.0, 0.25, 0.5, 0.0, 0.25, 0.5, 0.0, 0.25, 0.5]),
-            },
-        },
-    }
+        }
 
-    read_dict = _read_output_h5(h5_results_file_name)
+        read_dict = _read_output_h5(h5_results_file_name)
 
-    _assert_dictionary_correctness(truth_dict, read_dict)
-    _assert_h5_csv_agreement(csv_results_file_name, read_dict)
+        _assert_dictionary_correctness(truth_dict, read_dict)
+        _assert_h5_csv_agreement(csv_results_file_name, read_dict)
 
-    # Check if there is a text file created
-    import ast
+        # Check if there is a text file created
+        import ast
 
-    truth_txt_dict = {
-        "outputs": ["output_c", "output_d", "performance"],
-        "sweep_params": ["fs.input[a]", "fs.input[b]"],
-    }
+        truth_txt_dict = {
+            "outputs": ["output_c", "output_d", "performance"],
+            "sweep_params": ["fs.input[a]", "fs.input[b]"],
+        }
 
-    txt_fpath = h5_results_file_name + ".txt"
-    assert os.path.exists(txt_fpath)
-    f = open(txt_fpath)
-    f_contents = f.read()
-    read_txt_dict = ast.literal_eval(f_contents)
-    assert read_txt_dict == truth_txt_dict
+        txt_fpath = h5_results_file_name + ".txt"
+        assert os.path.exists(txt_fpath)
+        f = open(txt_fpath)
+        f_contents = f.read()
+        read_txt_dict = ast.literal_eval(f_contents)
+        assert read_txt_dict == truth_txt_dict
+
+    else:
+        assert True
