@@ -15,6 +15,13 @@ from idaes.core import (
     FlowsheetBlock,
 )
 
+from pyomo.environ import (
+    units as pyunits,
+    Var,
+    Constraint,
+)
+
+import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.model_statistics import degrees_of_freedom

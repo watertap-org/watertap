@@ -16,6 +16,13 @@ from pyomo.environ import units as pyunits
 from idaes.core.solvers import get_solver
 
 
+from pyomo.environ import (
+    units as pyunits,
+    Var,
+    Constraint,
+)
+
+
 def export_to_ui(flowsheet=None, exports=None):
     return FlowsheetInterface(
         name="NF-DSPM-DE with bypass",

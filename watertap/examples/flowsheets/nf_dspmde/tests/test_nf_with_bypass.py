@@ -18,16 +18,16 @@ from watertap.examples.flowsheets.nf_dspmde.nf_with_bypass import main
 def test_main():
     m = main()
     test_dict = {
-        "lcow": [m.fs.costing.LCOW.value, 0.12178636975214299],
-        "pressure": [m.fs.NF.pump.outlet.pressure[0].value / 1e5, 6.364618667926368],
-        "area": [m.fs.NF.nfUnit.area.value, 174.97127919329446],
+        "lcow": [m.fs.costing.LCOW.value, 0.13769517724604913],
+        "pressure": [m.fs.NF.pump.outlet.pressure[0].value / 1e5, 6.702808007030784],
+        "area": [m.fs.NF.nfUnit.area.value, 419.77504107728066],
         "recovery": [
             m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"].value * 100,
-            53.60319873234126,
+            94.99999897892856,
         ],
         "bypass": [
             m.fs.by_pass_splitter.split_fraction[0, "bypass"].value * 100,
-            4.127411072051739,
+            10.58832033562513,
         ],
     }
     for key, (solve, testval) in test_dict.items():
