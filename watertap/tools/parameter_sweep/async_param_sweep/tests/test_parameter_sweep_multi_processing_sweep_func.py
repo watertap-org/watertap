@@ -21,7 +21,7 @@ from watertap.tools.parameter_sweep.sampling_types import *
 from watertap.tools.parameter_sweep import ParameterSweep, parameter_sweep
 from watertap.tools.parameter_sweep.parameter_sweep_writer import *
 
-from watertap.tools.parameter_sweep.multi_processing_param_sweep_func import do_mp_sweep
+from watertap.tools.parameter_sweep.async_param_sweep import async_param_sweep_func
 from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _read_output_h5,
     _assert_dictionary_correctness,
@@ -74,6 +74,8 @@ def test_parameter_sweep(tmp_path):
         "build_kwargs": {},
         "num_workers": 10,
         "load_form_json": True,
+        "use_mp": True,
+        "use_analysis_tools": False,
     }
     ps = ParameterSweep(
         optimize_function=_optimization,
@@ -81,7 +83,7 @@ def test_parameter_sweep(tmp_path):
         h5_results_file_name=h5_results_file_name,
         debugging_data_dir=tmp_path,
         interpolate_nan_outputs=True,
-        custom_do_param_sweep=do_mp_sweep,
+        custom_do_param_sweep=async_param_sweep_func.do_async_sweep,
         custom_do_param_sweep_kwargs=custom_do_param_sweep_kwargs,
     )
 

@@ -74,6 +74,8 @@ def test_parameter_sweep(tmp_path):
         "build_kwargs": {},
         "num_workers": 10,
         "load_form_json": True,
+        "use_mp": False,
+        "use_analysis_tools": False,
     }
     ps = ParameterSweep(
         optimize_function=_optimization,
