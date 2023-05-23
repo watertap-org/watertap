@@ -11,7 +11,6 @@
 #################################################################################
 
 import pyomo.environ as pyo
-from idaes.core.util.exceptions import ConfigurationError
 from ..util import (
     register_costing_parameter_block,
     make_capital_cost_var,
@@ -289,11 +288,6 @@ def cost_ion_exchange(blk):
 
     elif ix_type == "anion":
         resin_cost = ion_exchange_params.anion_exchange_resin_cost
-
-    elif ix_type == "mixed":
-        raise ConfigurationError(
-            "IonExchangeOD model for IonExchangeType.mixed has not been implemented yet."
-        )
 
     blk.capital_cost_vessel_constraint = pyo.Constraint(
         expr=blk.capital_cost_vessel

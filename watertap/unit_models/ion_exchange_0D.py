@@ -55,7 +55,6 @@ _log = idaeslog.getLogger(__name__)
 class IonExchangeType(StrEnum):
     anion = "anion"
     cation = "cation"
-    mixed = "mixed"
 
 
 class RegenerantChem(StrEnum):
@@ -64,6 +63,7 @@ class RegenerantChem(StrEnum):
     H2SO4 = "H2SO4"
     NaCl = "NaCl"
     MeOH = "MeOH"
+    none = "none"
 
 
 class IsothermType(StrEnum):
@@ -189,7 +189,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
     CONFIG.declare(
         "regenerant",
         ConfigValue(
-            default=RegenerantChem.NaCl,
+            default=RegenerantChem.none,
             domain=In(RegenerantChem),
             description="Chemical used for regeneration of fixed bed",
         ),
@@ -254,13 +254,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         if "+" in target_ion:
             self.ion_exchange_type = IonExchangeType.cation
-            self.regen_chem = RegenerantChem.HCl
         if "-" in target_ion:
             self.ion_exchange_type = IonExchangeType.anion
-            self.regen_chem = RegenerantChem.NaOH
 
-        if "regenerant" in self.config.keys():
+        if self.config.regenerant is not RegenerantChem.none:
             self.regen_chem = RegenerantChem(self.config["regenerant"])
+        else:
+            self.regen_chem = (
+                RegenerantChem.NaCl
+            )  # default to NaCl as regenerant for both anion and cation exchange
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
