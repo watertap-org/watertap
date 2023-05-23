@@ -15,7 +15,6 @@ from copy import deepcopy
 # Import Pyomo libraries
 from pyomo.environ import (
     Set,
-    Constraint,
     Var,
     check_optimal_termination,
     Param,
@@ -1143,7 +1142,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 self.target_ion_set,
                 doc="Mass transfer term for target ion",
             )
-            def eq_mass_transfer_target(b, j):
+            def eq_mass_transfer_target_lang(b, j):
                 return (
                     b.mass_removed[j]
                     == -b.process_flow.mass_transfer_term[0, "Liq", j] * b.t_breakthru
@@ -1309,7 +1308,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 self.target_ion_set,
                 doc="Mass transfer term for target ion",
             )
-            def eq_mass_transfer_target(b, j, doc="CV mass transfer term"):
+            def eq_mass_transfer_target_fr(b, j, doc="CV mass transfer term"):
                 return (1 - b.c_norm_avg[j]) * prop_in.get_material_flow_terms(
                     "Liq", j
                 ) == -b.process_flow.mass_transfer_term[0, "Liq", j]

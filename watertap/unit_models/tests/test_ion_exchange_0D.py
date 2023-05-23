@@ -16,28 +16,16 @@ from pyomo.environ import (
     value,
     Var,
     Param,
-    Objective,
-    units as pyunits,
     assert_optimal_termination,
 )
 from pyomo.network import Port
-from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock,
-    MCASStateBlock,
-)
-from watertap.unit_models.ion_exchange_0D import (
-    IonExchange0D,
-    IonExchangeType,
-    RegenerantChem,
-    IsothermType,
-)
-from watertap.costing import WaterTAPCosting
-from watertap.core.util.initialization import check_dof
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
+    FlowsheetBlock,
+    UnitModelCostingBlock,
 )
 from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.model_statistics import (
@@ -49,10 +37,20 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
-    set_scaling_factor,
 )
-from pyomo.util.check_units import assert_units_consistent
 import idaes.logger as idaeslog
+
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+)
+from watertap.unit_models.ion_exchange_0D import (
+    IonExchange0D,
+    IonExchangeType,
+    RegenerantChem,
+    IsothermType,
+)
+from watertap.costing import WaterTAPCosting
+from watertap.core.util.initialization import check_dof
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
