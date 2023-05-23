@@ -259,10 +259,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         if self.config.regenerant is not RegenerantChem.none:
             self.regen_chem = RegenerantChem(self.config["regenerant"])
-        else:
-            self.regen_chem = (
-                RegenerantChem.NaCl
-            )  # default to NaCl as regenerant for both anion and cation exchange
+        else:  # default to NaCl as regenerant for both anion and cation exchange
+            self.regen_chem = RegenerantChem.NaCl
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
