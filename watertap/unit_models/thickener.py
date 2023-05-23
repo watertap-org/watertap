@@ -13,7 +13,7 @@
 """
 Thickener unit model for BSM2. Based on IDAES separator unit
 
-Model based on 
+Model based on
 
 J. Alex, L. Benedetti, J.B. Copp, K.V. Gernaey, U. Jeppsson,
 I. Nopens, M.N. Pons, C. Rosen, J.P. Steyer and
@@ -109,7 +109,7 @@ class ThickenerData(SeparatorData):
         def f_q_du(blk, t):
             return blk.TSS_rem / (pyunits.kg / pyunits.m**3) / 100 / blk.f_thick[t]
 
-        self.non_particulate_components = Set(
+        self.non_particulate_components_set = Set(
             initialize=[
                 "S_I",
                 "S_S",
@@ -136,7 +136,7 @@ class ThickenerData(SeparatorData):
 
         @self.Constraint(
             self.flowsheet().time,
-            self.non_particulate_components,
+            self.non_particulate_components_set,
             doc="soluble fraction",
         )
         def non_particulate_components(blk, t, i):
