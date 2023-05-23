@@ -59,9 +59,15 @@ def main():
     )
     print("bypass (%)", m.fs.by_pass_splitter.split_fraction[0, "bypass"].value * 100)
 
-    print("Feed hardness (mg/L as CaCO3)", m.fs.feed.total_hardness.value)
-    print("Product hardness (mg/L as CaCO3)", m.fs.product.total_hardness.value)
-    print("Disposal hardness (mg/L as CaCO3)", m.fs.disposal.total_hardness.value)
+    print("Feed hardness (mg/L as CaCO3)", m.fs.feed.properties[0].total_hardness.value)
+    print(
+        "Product hardness (mg/L as CaCO3)",
+        m.fs.product.properties[0].total_hardness.value,
+    )
+    print(
+        "Disposal hardness (mg/L as CaCO3)",
+        m.fs.disposal.properties[0].total_hardness.value,
+    )
     return m
 
 
@@ -78,9 +84,9 @@ def build():
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
 
-    nf.add_hardness_constraint(m.fs.feed)
+    # nf.add_hardness_constraint(m.fs.feed)
     nf.add_hardness_constraint(m.fs.product)
-    nf.add_hardness_constraint(m.fs.disposal)
+    # nf.add_hardness_constraint(m.fs.disposal)
 
     m.fs.by_pass_splitter = Separator(
         property_package=m.fs.properties,

@@ -43,6 +43,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.common.config import ConfigValue, In
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES cores
 from idaes.core import (
@@ -640,7 +641,7 @@ class _MCASStateBlock(StateBlock):
         # Fix state variables
         flags = fix_state_vars(self, state_args)
 
-        # initialize vars caculated from state vars
+        # initialize vars calculated from state vars
         for k in self.keys():
 
             # Vars indexed by phase and component_list
@@ -771,6 +772,10 @@ class _MCASStateBlock(StateBlock):
                         * self[k].conc_mol_phase_comp["Liq", j]
                         for j in self[k].params.cation_set
                     )
+                )
+            if self[k].is_property_constructed("total_hardness"):
+                calculate_variable_from_constraint(
+                    self[k].total_hardness, self[k].eq_total_hardness
                 )
 
         # Check when the state vars are fixed already result in dof 0
@@ -1693,7 +1698,7 @@ class MCASStateBlockData(StateBlockData):
 
     def _total_hardness(self):
         self.total_hardness = Var(
-            initialize=100,
+            initialize=1000,
             domain=NonNegativeReals,
             bounds=(0, None),
             units=pyunits.mg / pyunits.L,

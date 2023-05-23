@@ -16,7 +16,7 @@ from pyomo.environ import (
     Var,
     Constraint,
     NonNegativeReals,
-    Param,
+    value,
 )
 
 
@@ -70,9 +70,15 @@ def main():
         m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"].value * 100,
     )
 
-    print("Feed hardness (mg/L as CaCO3)", m.fs.feed.total_hardness.value)
-    print("Product hardness (mg/L as CaCO3)", m.fs.product.total_hardness.value)
-    print("Disposal hardness (mg/L as CaCO3)", m.fs.disposal.total_hardness.value)
+    print("Feed hardness (mg/L as CaCO3)", m.fs.feed.properties[0].total_hardness.value)
+    print(
+        "Product hardness (mg/L as CaCO3)",
+        m.fs.product.properties[0].total_hardness.value,
+    )
+    print(
+        "Disposal hardness (mg/L as CaCO3)",
+        m.fs.disposal.properties[0].total_hardness.value,
+    )
     return m
 
 
@@ -161,11 +167,12 @@ def build():
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
     m.fs.feed.properties[0].conc_mol_phase_comp[...]
     m.fs.feed.properties[0].flow_mass_phase_comp[...]
+
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
-    add_hardness_constraint(m.fs.feed)
+    m.fs.product.properties[0].total_hardness
+
     add_hardness_constraint(m.fs.product)
-    add_hardness_constraint(m.fs.disposal)
     m.fs.NF = FlowsheetBlock(dynamic=False)
     build_nf_block(m, m.fs.NF)
     m.fs.feed_to_nfUnit_feed = Arc(
@@ -229,7 +236,7 @@ def build_nf_block(m, blk):
 def fix_init_vars(m):
     m.fs.feed.properties[0].pressure.fix(101325)
     m.fs.feed.properties[0].temperature.fix(293.15)
-    # splitter guiess
+    # splitter guess
 
     # pump operation
     m.fs.NF.pump.outlet.pressure[0].fix(3.0 * 1e5)
@@ -262,6 +269,10 @@ def unfix_opt_vars(m):
     m.fs.NF.pump.outlet.pressure[0].unfix()
     m.fs.NF.nfUnit.area.unfix()
     m.fs.product.max_hardness.fix(200)
+
+    # Touch total_hardness (on-demand property) at feed and disposal for reporting
+    m.fs.feed.properties[0].total_hardness
+    m.fs.disposal.properties[0].total_hardness
 
 
 def add_objective(m):
@@ -314,15 +325,7 @@ def init_nf_block(blk, solver):
     propagate_state(blk.feed_to_pump)
     blk.pump.initialize(optarg=solver.options)
     propagate_state(blk.pump_to_nf)
-    blk.nfUnit.initialize(
-        optarg=solver.options,
-        automate_rescale=False,
-        initialize_guess={
-            "solvent_recovery": 0.01,
-            "solute_recovery": 0.01,
-            "cp_modulus": 1,
-        },
-    )
+    blk.nfUnit.initialize(optarg=solver.options)
     propagate_state(blk.nf_to_product)
     propagate_state(blk.nf_to_retentate)
     blk.product.initialize(optarg=solver.options)
@@ -411,79 +414,15 @@ def set_NF_feed_scaling(blk):
 
 
 def add_hardness_constraint(stream):
-    comp_list = stream.properties[0.0].component_list
-    # print("comp_list", comp_list)
-    stream.total_hardness = Var(
-        initialize=0.5,
-        bounds=(0, None),
-        domain=NonNegativeReals,
-        units=pyunits.mg / pyunits.L,
-        doc="Total hardness as CaCO3",
-    )
-    stream.total_hardness.unfix()
-    iscale.set_scaling_factor(stream.total_hardness, 1 / 10)
-    stream.Ca_hardness = Var(
-        initialize=0.5,
-        bounds=(0, None),
-        domain=NonNegativeReals,
-        units=pyunits.mg / pyunits.L,
-        doc="Calcium hardness as CaCO3",
-    )
-    stream.Ca_hardness.unfix()
-    iscale.set_scaling_factor(stream.Ca_hardness, 1 / 10)
-    stream.Mg_hardness = Var(
-        initialize=0,
-        bounds=(0, None),
-        domain=NonNegativeReals,
-        units=pyunits.mg / pyunits.L,
-        doc="Magnesium hardness as CaCO3",
-    )
-    stream.Mg_hardness.unfix()
-    iscale.set_scaling_factor(stream.Mg_hardness, 1 / 10)
-    stream.CaCO3_mw = Param(
-        initialize=100.1,
-        domain=NonNegativeReals,
-        units=pyunits.g / pyunits.mol,
-        doc="System Water Recovery",
-    )
-    iscale.set_scaling_factor(stream.CaCO3_mw, 0.1)
     stream.max_hardness = Var(
         initialize=10000,
         domain=NonNegativeReals,
         units=pyunits.mg / pyunits.L,
-        doc="System Water Recovery",
-    )
-    iscale.set_scaling_factor(stream.Mg_hardness, 1 / 10)
-    stream.max_hardness.unfix()
-    if "Ca_2+" in comp_list:
-        stream.Ca_hardness_constraint = Constraint(
-            expr=stream.Ca_hardness
-            == (
-                stream.properties[0].conc_mol_phase_comp["Liq", "Ca_2+"]
-                * pyunits.convert(stream.CaCO3_mw, pyunits.mg / pyunits.mol)
-            )
-            / 1000
-        )
-    else:
-        stream.Ca_hardness.fix(0)
-    if "Mg_2+" in comp_list:
-        stream.Mg_hardness_constraint = Constraint(
-            expr=stream.Mg_hardness
-            == (
-                stream.properties[0].conc_mol_phase_comp["Liq", "Mg_2+"]
-                * pyunits.convert(stream.CaCO3_mw, pyunits.mg / pyunits.mol)
-            )
-            / 1000
-        )
-    else:
-        stream.Mg_hardness.fix(0)
-
-    stream.total_hardness_constraint = Constraint(
-        expr=stream.total_hardness == stream.Ca_hardness + stream.Mg_hardness
+        doc="Maximum total hardness as CaCO3",
     )
 
     stream.max_hardness_constraint = Constraint(
-        expr=stream.total_hardness <= stream.max_hardness
+        expr=stream.properties[0].total_hardness <= stream.max_hardness
     )
 
 
