@@ -100,6 +100,50 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
     )
 
 
+def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
+    """
+    Method to cost rectifiers required for electrified process units that use DC current. Note that if power is supplied
+    by solar or some other DC power generator, this method should not be used. Assumes the unit_model has an `power`
+    variable or parameter.
+
+    Args:
+        ac_dc_conversion_efficiency - Efficiency of the conversion from AC to DC current
+    """
+
+    make_capital_cost_var(blk)
+    make_fixed_operating_cost_var(blk)
+    blk.ac_dc_conversion_efficiency = pyo.Expression(expr=ac_dc_conversion_efficiency)
+    blk.ac_power = pyo.Var(
+        initialize=100,
+        domain=pyo.NonNegativeReals,
+        units=pyo.units.kW,
+        doc="Unit AC power",
+    )
+
+    blk.power_conversion = pyo.Constraint(
+        expr=blk.ac_power * blk.ac_dc_conversion_efficiency
+        == pyo.units.convert(blk.power, to_units=pyo.units.kW)
+    )
+
+    rectifier_cost_coeff = {0: 508.6, 1: 2810}
+    blk.rectifier_cost_coeff = pyo.Var(
+        rectifier_cost_coeff.keys(),
+        initialize=rectifier_cost_coeff,
+        units=pyo.units.dimensionless,
+        doc="rectifier cost coefficients",
+    )
+
+    blk.capital_cost_constraint = pyo.Constraint(
+        expr=blk.capital_cost
+        == blk.rectifier_cost_coeff[0]
+        * blk.power ** blk.rectifier_cost_coeff[1]
+        * pyo.units.USD_2022
+        * pyo.units.kW**-1
+    )
+
+    blk.costing_package.cost_flow(blk.ac_power, "electricity")
+
+
 def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     """
     Generic function for costing by flow volume.
