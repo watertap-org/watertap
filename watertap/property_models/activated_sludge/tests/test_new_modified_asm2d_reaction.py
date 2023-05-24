@@ -496,10 +496,9 @@ class TestAnoxic:
 
     @pytest.mark.component
     def test_solve(self, model):
-        model.fs.R1.initialize(optarg={"bound_push": 1e-8, "mu_init": 1e-8})
+        model.fs.R1.initialize()
 
         solver = get_solver()
-        solver.options = {"bound_push": 1e-8, "mu_init": 1e-8}
         results = solver.solve(model, tee=True)
 
         assert check_optimal_termination(results)
@@ -638,10 +637,9 @@ class TestAerobic15C:
 
     @pytest.mark.component
     def test_solve(self, model):
-        model.fs.R1.initialize(optarg={"bound_push": 1e-8, "mu_init": 1e-8})
+        model.fs.R1.initialize()
 
         solver = get_solver()
-        solver.options = {"bound_push": 1e-8, "mu_init": 1e-8}
         results = solver.solve(model, tee=True)
 
         assert check_optimal_termination(results)
@@ -781,10 +779,9 @@ class TestAnoxicPHA:
 
     @pytest.mark.component
     def test_solve(self, model):
-        model.fs.R1.initialize(optarg={"bound_push": 1e-8, "mu_init": 1e-8})
+        model.fs.R1.initialize()
 
         solver = get_solver()
-        solver.options = {"bound_push": 1e-8, "mu_init": 1e-8}
         results = solver.solve(model, tee=True)
 
         assert check_optimal_termination(results)
