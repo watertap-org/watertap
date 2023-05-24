@@ -76,15 +76,6 @@ from idaes.models.unit_models import (
     PressureChanger,
     Product,
 )
-from idaes.models.unit_models.separator import SplittingType
-from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
-import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
-from idaes.core.util.tables import (
-    create_stream_table_dataframe,
-    stream_table_dataframe_to_string,
-)
 
 from watertap.unit_models.cstr_injection import CSTR_Injection
 from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
@@ -104,51 +95,57 @@ def build_flowsheet():
     m.fs.props_ADM1 = ADM1ParameterBlock()
     m.fs.props_vap = ADM1_vaporParameterBlock()
     m.fs.ADM1_rxn_props = ADM1ReactionParameterBlock(property_package=m.fs.props_ADM1)
-
-    m.fs.props = ASM1ParameterBlock()
-    m.fs.rxn_props = ASM1ReactionParameterBlock(property_package=m.fs.props)
+    m.fs.ASM1_rxn_props = ASM1ReactionParameterBlock(property_package=m.fs.props_ASM1)
     # Feed water stream
-    m.fs.FeedWater = Feed(property_package=m.fs.props)
+    m.fs.FeedWater = Feed(property_package=m.fs.props_ASM1)
     # Mixer for feed water and recycled sludge
-    m.fs.MX1 = Mixer(property_package=m.fs.props, inlet_list=["feed_water", "recycle"])
+    m.fs.MX1 = Mixer(
+        property_package=m.fs.props_ASM1, inlet_list=["feed_water", "recycle"]
+    )
     # First reactor (anoxic) - standard CSTR
-    m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R1 = CSTR(
+        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+    )
     # Second reactor (anoxic) - standard CSTR
-    m.fs.R2 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R2 = CSTR(
+        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+    )
     # Third reactor (aerobic) - CSTR with injection
     m.fs.R3 = CSTR_Injection(
-        property_package=m.fs.props, reaction_package=m.fs.rxn_props
+        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
     )
     # Fourth reactor (aerobic) - CSTR with injection
     m.fs.R4 = CSTR_Injection(
-        property_package=m.fs.props, reaction_package=m.fs.rxn_props
+        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
     )
     # Fifth reactor (aerobic) - CSTR with injection
     m.fs.R5 = CSTR_Injection(
-        property_package=m.fs.props, reaction_package=m.fs.rxn_props
+        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
     )
     m.fs.SP5 = Separator(
-        property_package=m.fs.props, outlet_list=["underflow", "overflow"]
+        property_package=m.fs.props_ASM1, outlet_list=["underflow", "overflow"]
     )
     # Clarifier
     # TODO: Replace with more detailed model when available
     m.fs.CL1 = Separator(
-        property_package=m.fs.props,
+        property_package=m.fs.props_ASM1,
         outlet_list=["underflow", "effluent"],
         split_basis=SplittingType.componentFlow,
     )
     # Sludge purge splitter
     m.fs.SP6 = Separator(
-        property_package=m.fs.props,
+        property_package=m.fs.props_ASM1,
         outlet_list=["recycle", "waste"],
         split_basis=SplittingType.totalFlow,
     )
     # Mixing sludge recycle and R5 underflow
-    m.fs.MX6 = Mixer(property_package=m.fs.props, inlet_list=["clarifier", "reactor"])
+    m.fs.MX6 = Mixer(
+        property_package=m.fs.props_ASM1, inlet_list=["clarifier", "reactor"]
+    )
     # Product Blocks
-    m.fs.Treated = Product(property_package=m.fs.props)
+    m.fs.Treated = Product(property_package=m.fs.props_ASM1)
     # Recycle pressure changer - use a simple isothermal unit for now
-    m.fs.P1 = PressureChanger(property_package=m.fs.props)
+    m.fs.P1 = PressureChanger(property_package=m.fs.props_ASM1)
 
     # Link units
     m.fs.stream2 = Arc(source=m.fs.MX1.outlet, destination=m.fs.R1.inlet)
@@ -231,7 +228,7 @@ def build_flowsheet():
     m.fs.R5.volume.fix(1333 * pyo.units.m**3)
 
     # Injection rates to Reactions 3, 4 and 5
-    for j in m.fs.props.component_list:
+    for j in m.fs.props_ASM1.component_list:
         if j != "S_O":
             # All components except S_O have no injection
             m.fs.R3.injection[:, :, j].fix(0)
@@ -263,7 +260,7 @@ def build_flowsheet():
     m.fs.CL1.split_fraction[0, "effluent", "S_ALK"].fix(0.48956)
 
     # Sludge purge separator
-    m.fs.SP6.split_fraction[:, "recycle"].fix(0.975)
+    m.fs.SP6.split_fraction[:, "recycle"].fix(0.97955)
 
     # Outlet pressure from recycle pump
     m.fs.P1.outlet.pressure.fix(101325)
@@ -293,7 +290,7 @@ def build_flowsheet():
     )
 
     m.fs.CL = Separator(
-        property_package=m.fs.props,
+        property_package=m.fs.props_ASM1,
         outlet_list=["underflow", "effluent"],
         split_basis=SplittingType.componentFlow,
     )
@@ -332,7 +329,6 @@ def build_flowsheet():
     m.fs.RADM.liquid_outlet.temperature.fix(308.15)
 
     # Apply scaling
-    iscale.calculate_scaling_factors(m.fs)
 
     m.fs.stream2adm = Arc(
         source=m.fs.RADM.liquid_outlet, destination=m.fs.adm_asm.inlet
@@ -350,6 +346,9 @@ def build_flowsheet():
     m.fs.stream10adm = Arc(source=m.fs.MX4.outlet, destination=m.fs.asm_adm.inlet)
     m.fs.stream1adm = Arc(source=m.fs.asm_adm.outlet, destination=m.fs.RADM.inlet)
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
+
+    iscale.calculate_scaling_factors(m.fs)
+    m.fs.set_default_scaling("conc_mass_comp", 1)
 
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
@@ -403,7 +402,7 @@ def build_flowsheet():
     results = solver.solve(m, tee=True)
     print(degrees_of_freedom(m))
     # pyo.assert_optimal_termination(results)
-    m.display()
+    # m.display()
 
     print(large_residuals_set(m))
 
