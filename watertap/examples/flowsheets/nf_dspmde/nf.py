@@ -285,7 +285,7 @@ def optimize(m, solver=None, **kwargs):
     if solver is None:
         solver = get_solver()
     # add_objective(m)
-    print("Optimizing with {} DOFS".format(degrees_of_freedom(m)))
+    print("Optimizing with {} DOFs".format(degrees_of_freedom(m)))
     result = solver.solve(m, tee=False)
     return result
 
@@ -297,7 +297,7 @@ def initialize(m, solver=None, **kwargs):
     fix_init_vars(m)
     init_system(m, solver)
     # solve box problem
-    print("initalized, DOFS:", degrees_of_freedom(m))
+    print("initalized, DOFs:", degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
     solver.solve(m, tee=True)
     print("Solved box problem")
