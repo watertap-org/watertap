@@ -13,6 +13,7 @@
 import pytest
 import os
 import numpy as np
+import requests
 import pyomo.environ as pyo
 
 from pyomo.environ import value
@@ -179,6 +180,15 @@ class TestParallelManager:
         assert global_combo_array[-1, 0] == pytest.approx(range_A[1])
         assert global_combo_array[-1, 1] == pytest.approx(range_B[1])
         assert global_combo_array[-1, 2] == pytest.approx(range_C[1])
+
+    @pytest.mark.component
+    def test_status_publishing(self):
+        ps = ParameterSweep(
+            publish_progress=True, publish_address="http://localhost:8888"
+        )
+
+        with pytest.raises(requests.exceptions.ConnectionError):
+            r = ps._publish_updates(1, True)
 
     def test_random_build_combinations(self):
         ps = ParameterSweep()
