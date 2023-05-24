@@ -21,6 +21,9 @@ Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article
 
 # Import Pyomo libraries
 import pyomo.environ as pyo
+from pyomo.common.config import ConfigValue, In
+
+from enum import Enum, auto
 
 # Import IDAES cores
 from idaes.core import (
@@ -32,9 +35,7 @@ from idaes.core import (
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast
-from watertap.property_models.activated_sludge.new_modified_asm2d_properties import (
-    DecaySwitch,
-)
+
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
@@ -47,11 +48,38 @@ __author__ = "Marcus Holly"
 _log = idaeslog.getLogger(__name__)
 
 
+class DecaySwitch(Enum):
+    on = auto()
+    off = auto()
+
+
 @declare_process_block_class("NewASM2dReactionParameterBlock")
 class NewASM2dReactionParameterData(ReactionParameterBlock):
     """
     Property Parameter Block Class
     """
+
+    CONFIG = ReactionParameterBlock.CONFIG()
+
+    CONFIG.declare(
+        "decay_switch",
+        ConfigValue(
+            default=DecaySwitch.on,
+            domain=In(DecaySwitch),
+            description="Switching function for decay",
+            doc="""
+           Switching function for handling decay in reaction rate expressions.
+
+           **default** - `DecaySwitch.on``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``DecaySwitch.on``", "The decay of heterotrophs and autotrophs is dependent on the electron acceptor present"
+           "``DecaySwitch.off``", "The decay of heterotrophs and autotrophs does not change"
+       """,
+        ),
+    )
 
     def build(self):
         """
