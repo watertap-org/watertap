@@ -51,10 +51,20 @@ class IpoptWaterTAP(IPOPT):
         self._tee = kwds.get("tee", False)
 
         # Set the default watertap options
-        if "tol" not in self.options:
-            self.options["tol"] = 1e-08
-        if "constr_viol_tol" not in self.options:
-            self.options["constr_viol_tol"] = 1e-06
+        # We use tight default tolerances for the small values
+        # WaterTAP sometimes deals with, but if we do not make
+        # quick progress to those tight tolerances we settle
+        # for scaled tolerance of 1e-06 and absolute feasibility
+        # tolerance of 1e-06.
+        default_options = { "tol" : 1e-08,
+                            "constr_viol_tol" : 1e-08,
+                            "acceptable_tol" : 1e-06,
+                            "acceptable_constr_viol_tol" : 1e-06,
+                            "acceptable_iter" : 3,
+                          }
+        for option, value in default_options.items():
+            if option not in self.options:
+                self.options[option] = value
 
         # temporarily switch to nl_v1 writer
         WriterFactory.register("nl")(WriterFactory.get_class("nl_v1"))
