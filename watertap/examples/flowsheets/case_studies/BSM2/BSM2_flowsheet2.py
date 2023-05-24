@@ -61,10 +61,6 @@ from idaes.core.util.tables import (
     stream_table_dataframe_to_string,
 )
 
-from watertap.examples.flowsheets.case_studies.activated_sludge.ASM1 import (
-    build_flowsheet as build_ASM,
-)
-
 from watertap.core.util.initialization import check_solve
 
 from idaes.core import FlowsheetBlock
@@ -260,7 +256,7 @@ def build_flowsheet():
     m.fs.CL1.split_fraction[0, "effluent", "S_ALK"].fix(0.48956)
 
     # Sludge purge separator
-    m.fs.SP6.split_fraction[:, "recycle"].fix(0.97955)
+    m.fs.SP6.split_fraction[:, "recycle"].fix(0.975)
 
     # Outlet pressure from recycle pump
     m.fs.P1.outlet.pressure.fix(101325)
@@ -369,7 +365,7 @@ def build_flowsheet():
 
     # Initial guesses for flow into first reactor
     tear_guesses = {
-        "flow_vol": {0: 0.2423},
+        "flow_vol": {0: 0.26},
         "conc_mass_comp": {
             (0, "S_I"): 0.028,
             (0, "S_S"): 0.059,
