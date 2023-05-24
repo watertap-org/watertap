@@ -188,7 +188,7 @@ class TestParallelManager:
         )
 
         with pytest.raises(requests.exceptions.ConnectionError):
-            r = ps._publish_updates(1, True)
+            r = ps._publish_updates(1, True, 5.0)
 
     def test_random_build_combinations(self):
         ps = ParameterSweep()

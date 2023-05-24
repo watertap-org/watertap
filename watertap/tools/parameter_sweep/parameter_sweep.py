@@ -14,6 +14,7 @@ import pyomo.environ as pyo
 import warnings
 import copy
 import requests
+import time
 
 from abc import abstractmethod, ABC
 from idaes.core.solvers import get_solver
@@ -179,13 +180,14 @@ class _ParameterSweepBase(ABC):
                 exprs[output_name] = _pyo_obj
                 outputs[output_name] = exprs[output_name]
 
-    def _publish_updates(self, iteration, solve_status):
+    def _publish_updates(self, iteration, solve_status, solve_time):
 
         if self.config.publish_progress:
             publish_dict = {
                 "worker_number": self.comm.Get_rank(),
                 "iteration": iteration,
                 "solve_status": solve_status,
+                "solve_time": solve_time,
             }
 
             return requests.put(self.config.publish_address, data=publish_dict)
@@ -591,6 +593,7 @@ class _ParameterSweepBase(ABC):
         # ================================================================
 
         for k in range(local_num_cases):
+            start_time = time.time()
             run_successful = self._run_sample(
                 model,
                 reinitialize_values,
@@ -599,8 +602,9 @@ class _ParameterSweepBase(ABC):
                 sweep_params,
                 local_output_dict,
             )
+            time_elapsed = time.time() - start_time
             local_solve_successful_list.append(run_successful)
-            self._publish_updates(k, run_successful)
+            self._publish_updates(k, run_successful, time_elapsed)
 
         local_output_dict["solve_successful"] = local_solve_successful_list
 
