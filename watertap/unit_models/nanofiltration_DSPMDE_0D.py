@@ -1577,24 +1577,24 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             var_dict[
                 f"Volumetric flow rate @ feed inlet"
             ] = self.feed_side.properties_in[time_point].flow_vol_phase["Liq"]
-        if self.feed_side.properties_interface[time_point, 0].is_property_constructed(
-            "flow_vol_phase"
-        ):
-            var_dict[
-                f"Volumetric flow rate @ inlet interface"
-            ] = self.feed_side.properties_interface[time_point, 0].flow_vol_phase["Liq"]
-        if self.pore_entrance[time_point, 0].is_property_constructed("flow_vol_phase"):
-            var_dict[
-                f"Volumetric flow rate @ inlet pore entrance"
-            ] = self.pore_entrance[time_point, 0].flow_vol_phase["Liq"]
-        if self.pore_exit[time_point, 0].is_property_constructed("flow_vol_phase"):
-            var_dict[f"Volumetric flow rate @ inlet pore exit"] = self.pore_exit[
-                time_point, 0
-            ].flow_vol_phase["Liq"]
-        if self.permeate_side[time_point, 0].is_property_constructed("flow_vol_phase"):
-            var_dict[f"Volumetric flow rate @ inlet permeate"] = self.permeate_side[
-                time_point, 0
-            ].flow_vol_phase["Liq"]
+        # if self.feed_side.properties_interface[time_point, 0].is_property_constructed(
+        #     "flow_vol_phase"
+        # ):
+        #     var_dict[
+        #         f"Volumetric flow rate @ inlet interface"
+        #     ] = self.feed_side.properties_interface[time_point, 0].flow_vol_phase["Liq"]
+        # if self.pore_entrance[time_point, 0].is_property_constructed("flow_vol_phase"):
+        #     var_dict[
+        #         f"Volumetric flow rate @ inlet pore entrance"
+        #     ] = self.pore_entrance[time_point, 0].flow_vol_phase["Liq"]
+        # if self.pore_exit[time_point, 0].is_property_constructed("flow_vol_phase"):
+        #     var_dict[f"Volumetric flow rate @ inlet pore exit"] = self.pore_exit[
+        #         time_point, 0
+        #     ].flow_vol_phase["Liq"]
+        # if self.permeate_side[time_point, 0].is_property_constructed("flow_vol_phase"):
+        #     var_dict[f"Volumetric flow rate @ inlet permeate"] = self.permeate_side[
+        #         time_point, 0
+        #     ].flow_vol_phase["Liq"]
 
         if self.feed_side.properties_out[time_point].is_property_constructed(
             "flow_vol_phase"
@@ -1602,26 +1602,26 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             var_dict[
                 f"Volumetric flow rate @ feed outlet"
             ] = self.feed_side.properties_out[time_point].flow_vol_phase["Liq"]
-            if self.feed_side.properties_interface[
-                time_point, 1
-            ].is_property_constructed("flow_vol_phase"):
-                var_dict[
-                    f"Volumetric flow rate @ outlet interface"
-                ] = self.feed_side.properties_interface[time_point, 1].flow_vol_phase[
-                    "Liq"
-                ]
-        if self.pore_entrance[time_point, 1].is_property_constructed("flow_vol_phase"):
-            var_dict[
-                f"Volumetric flow rate @ outlet pore entrance"
-            ] = self.pore_entrance[time_point, 1].flow_vol_phase["Liq"]
-        if self.pore_exit[time_point, 1].is_property_constructed("flow_vol_phase"):
-            var_dict[f"Volumetric flow rate @ outlet pore exit"] = self.pore_exit[
-                time_point, 1
-            ].flow_vol_phase["Liq"]
-        if self.permeate_side[time_point, 0].is_property_constructed("flow_vol_phase"):
-            var_dict[f"Volumetric flow rate @ outlet permeate"] = self.permeate_side[
-                time_point, 1
-            ].flow_vol_phase["Liq"]
+            # if self.feed_side.properties_interface[
+            #     time_point, 1
+            # ].is_property_constructed("flow_vol_phase"):
+            #     var_dict[
+            #         f"Volumetric flow rate @ outlet interface"
+            #     ] = self.feed_side.properties_interface[time_point, 1].flow_vol_phase[
+            #         "Liq"
+            #     ]
+        # if self.pore_entrance[time_point, 1].is_property_constructed("flow_vol_phase"):
+        #     var_dict[
+        #         f"Volumetric flow rate @ outlet pore entrance"
+        #     ] = self.pore_entrance[time_point, 1].flow_vol_phase["Liq"]
+        # if self.pore_exit[time_point, 1].is_property_constructed("flow_vol_phase"):
+        #     var_dict[f"Volumetric flow rate @ outlet pore exit"] = self.pore_exit[
+        #         time_point, 1
+        #     ].flow_vol_phase["Liq"]
+        # if self.permeate_side[time_point, 0].is_property_constructed("flow_vol_phase"):
+        #     var_dict[f"Volumetric flow rate @ outlet permeate"] = self.permeate_side[
+        #         time_point, 1
+        #     ].flow_vol_phase["Liq"]
         var_dict[f"Volumetric flow rate @ final permeate"] = self.mixed_permeate[
             time_point
         ].flow_vol_phase["Liq"]
@@ -1640,34 +1640,34 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             var_dict[
                 f"Molar flow rate of {j} @ feed outlet"
             ] = self.feed_side.properties_out[time_point].flow_mol_phase_comp["Liq", j]
-            var_dict[
-                f"Molar flow rate of {j} @ membrane-interface inlet"
-            ] = self.feed_side.properties_interface[time_point, 0].flow_mol_phase_comp[
-                "Liq", j
-            ]
-            var_dict[
-                f"Molar flow rate of {j} @ membrane-interface outlet"
-            ] = self.feed_side.properties_interface[time_point, 1].flow_mol_phase_comp[
-                "Liq", j
-            ]
-            var_dict[
-                f"Molar flow rate of {j} @ pore entrance, inlet"
-            ] = self.pore_entrance[time_point, 0].flow_mol_phase_comp["Liq", j]
-            var_dict[
-                f"Molar flow rate of {j} @ pore entrance, outlet"
-            ] = self.pore_entrance[time_point, 1].flow_mol_phase_comp["Liq", j]
-            var_dict[f"Molar flow rate of {j} @ pore exit, inlet"] = self.pore_exit[
-                time_point, 0
-            ].flow_mol_phase_comp["Liq", j]
-            var_dict[f"Molar flow rate of {j} @ pore exit, outlet"] = self.pore_exit[
-                time_point, 1
-            ].flow_mol_phase_comp["Liq", j]
-            var_dict[f"Molar flow rate of {j} @ permeate, inlet"] = self.permeate_side[
-                time_point, 0
-            ].flow_mol_phase_comp["Liq", j]
-            var_dict[f"Molar flow rate of {j} @ permeate, outlet"] = self.permeate_side[
-                time_point, 1
-            ].flow_mol_phase_comp["Liq", j]
+            # var_dict[
+            #     f"Molar flow rate of {j} @ membrane-interface inlet"
+            # ] = self.feed_side.properties_interface[time_point, 0].flow_mol_phase_comp[
+            #     "Liq", j
+            # ]
+            # var_dict[
+            #     f"Molar flow rate of {j} @ membrane-interface outlet"
+            # ] = self.feed_side.properties_interface[time_point, 1].flow_mol_phase_comp[
+            #     "Liq", j
+            # ]
+            # var_dict[
+            #     f"Molar flow rate of {j} @ pore entrance, inlet"
+            # ] = self.pore_entrance[time_point, 0].flow_mol_phase_comp["Liq", j]
+            # var_dict[
+            #     f"Molar flow rate of {j} @ pore entrance, outlet"
+            # ] = self.pore_entrance[time_point, 1].flow_mol_phase_comp["Liq", j]
+            # var_dict[f"Molar flow rate of {j} @ pore exit, inlet"] = self.pore_exit[
+            #     time_point, 0
+            # ].flow_mol_phase_comp["Liq", j]
+            # var_dict[f"Molar flow rate of {j} @ pore exit, outlet"] = self.pore_exit[
+            #     time_point, 1
+            # ].flow_mol_phase_comp["Liq", j]
+            # var_dict[f"Molar flow rate of {j} @ permeate, inlet"] = self.permeate_side[
+            #     time_point, 0
+            # ].flow_mol_phase_comp["Liq", j]
+            # var_dict[f"Molar flow rate of {j} @ permeate, outlet"] = self.permeate_side[
+            #     time_point, 1
+            # ].flow_mol_phase_comp["Liq", j]
             var_dict[f"Molar flow rate of {j} @ mixed permeate"] = self.mixed_permeate[
                 time_point
             ].flow_mol_phase_comp["Liq", j]

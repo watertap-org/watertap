@@ -1820,7 +1820,6 @@ class MCASStateBlockData(StateBlockData):
             solve.solve(self)
             results = solve.solve(self)
             if check_optimal_termination(results):
-                self.conc_mol_phase_comp[...].pprint()
                 val = value(
                     sum(
                         self.charge_comp[j] * self.conc_mol_phase_comp["Liq", j]

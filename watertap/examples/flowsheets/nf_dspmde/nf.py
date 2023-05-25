@@ -83,6 +83,7 @@ def main():
 
 
 def set_default_feed(m, solver):
+    """Set a default feed composition for use in flowsheet initialization routine"""
     conc_mass_phase_comp = {
         "Ca_2+": 258 / 1000,
         "HCO3_-": 385 / 1000,
@@ -236,7 +237,6 @@ def build_nf_block(m, blk):
 def fix_init_vars(m):
     m.fs.feed.properties[0].pressure.fix(101325)
     m.fs.feed.properties[0].temperature.fix(293.15)
-    # splitter guess
 
     # pump operation
     m.fs.NF.pump.outlet.pressure[0].fix(3.0 * 1e5)
@@ -427,4 +427,4 @@ def add_hardness_constraint(stream):
 
 
 if __name__ == "__main__":
-    main()
+    m = main()
