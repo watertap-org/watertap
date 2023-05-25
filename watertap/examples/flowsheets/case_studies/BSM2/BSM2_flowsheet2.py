@@ -61,10 +61,6 @@ from idaes.core.util.tables import (
     stream_table_dataframe_to_string,
 )
 
-from watertap.examples.flowsheets.case_studies.activated_sludge.ASM1 import (
-    build_flowsheet as build_ASM,
-)
-
 from watertap.core.util.initialization import check_solve
 
 from idaes.core import FlowsheetBlock
