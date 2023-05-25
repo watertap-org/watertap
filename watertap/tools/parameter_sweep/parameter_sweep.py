@@ -272,14 +272,16 @@ class _ParameterSweepBase(ABC):
     Put together all of the parameter combinations that the sweep will be run for.
     """
 
-    def _build_combinations(self, d, sampling_type):
+    def _build_combinations(self, d, sampling_type, num_samples):
         # only build the full array of combinations on the root process. on the non-root
         # processes, initialize an empty array of the right size that will be synced
         # over from the root process.
         if self.parallel_manager.is_root_process():
             global_combo_array = self._create_global_combo_array(d, sampling_type)
         else:
-            global_combo_array = self._create_empty_global_combo_array(d, sampling_type)
+            global_combo_array = self._create_empty_global_combo_array(
+                d, sampling_type, num_samples
+            )
 
         # make sure all processes running in parallel have an identical copy of the data
         self.parallel_manager.sync_data(global_combo_array)
