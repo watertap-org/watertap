@@ -26,6 +26,7 @@ from pyomo.environ import (
     RangeSet,
     Set,
     check_optimal_termination,
+    SolverFactory,
     units as pyunits,
 )
 from pyomo.network import Arc
@@ -61,6 +62,7 @@ from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 
 from watertap.core.util.model_diagnostics.infeasible import *
+from idaes.core.util.model_diagnostics import DegeneracyHunter
 
 
 class ERDtype(StrEnum):
@@ -100,6 +102,8 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     # print_infeasible_constraints(m)
 
     optimize_set_up(m, water_recovery=system_recovery)
+    # model_debug(m)
+    # check_jac(m)
     solve(m, solver=solver)
     print_close_to_bounds(m)
     print_infeasible_constraints(m)
@@ -222,7 +226,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         initialize=1e5, units=pyunits.Pa, mutable=True
     )
     m.fs.recycle_pump_max_pressure = Param(
-        initialize=20e5, units=pyunits.Pa, mutable=True
+        initialize=30e5, units=pyunits.Pa, mutable=True
     )
 
     # process costing and add system level metrics
@@ -246,7 +250,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     m.fs.costing.add_specific_electrical_carbon_intensity(product_flow_vol_total)
 
     # objective
-    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
+    # m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     # Expressions for parameter sweep -----------------------------------------
     # Final permeate concentration as mass fraction
@@ -495,6 +499,24 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
             source=m.fs.RO.retentate,
             destination=m.fs.EnergyRecoveryDevices[last_stage].inlet,
         )
+        #
+        # # Connect purge streams to disposal
+        # m.fs.purge_to_disposal = Arc(
+        #     m.fs.NonFirstStages,
+        #     rule=lambda fs, n: {
+        #         "source": fs.EnergyRecoveryDevices[n].outlet,
+        #         "destination": fs.disposal.inlet,
+        #     },
+        # )
+        #
+        # # Connect recycle streams
+        # m.fs.recycle = Arc(
+        #     m.fs.IntermediateStages,
+        #     rule=lambda fs, n: {
+        #         "source": fs.EnergyRecoveryDevices[n+1].outlet,
+        #         "destination": fs.RecyclePumps[n].inlet,
+        #     },
+        # )
 
     else:
         # this case should be caught in the previous conditional
@@ -563,7 +585,7 @@ def set_operating_conditions(
     #     feed_flow_mass * feed_mass_frac_H2O
     # )
 
-    Cin = 50 * pyunits.g / pyunits.L
+    Cin = 75 * pyunits.g / pyunits.L
     Qin = 5.416667e-3
     # Qin = 1e-3
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"] = Cin
@@ -714,7 +736,7 @@ def recycle_pump_initializer(pump, oaro, solvent_multiplier, solute_multiplier):
 
 def solve(blk, solver=None, tee=True):
     if solver is None:
-        solver = get_solver(options={"bound_push": 1e-4})
+        solver = get_solver(options={"bound_push": 1e-2})
     results = solver.solve(blk, tee=tee)
     if not check_optimal_termination(results):
         results = solver.solve(blk, tee=tee)
@@ -724,7 +746,7 @@ def solve(blk, solver=None, tee=True):
 # def solve(model, solver=None, tee=False, raise_on_failure=False):
 #     # ---solving---
 #     if solver is None:
-#         solver = get_solver(options={"bound_push": 1e-8})
+#         solver = get_solver(options={"bound_push": 1e-2})
 #
 #     results = solver.solve(model, tee=tee)
 #     if check_optimal_termination(results):
@@ -922,8 +944,8 @@ def optimize_set_up(
         # stage.permeate_side.cp_modulus[0.0, 0.0, "NaCl"].setlb(0.01)
         # stage.feed_side.friction_factor_darcy[0.0, 0.0].setub(None)
         # stage.feed_side.friction_factor_darcy[0.0, 1.0].setub(None)
-
         # stage.permeate_side.friction_factor_darcy[0.0, 1.0].setub(None)
+        # stage.feed_side.K[0.0, 0.0, "NaCl"].setub(1e-2)
 
         # stage.A_comp.unfix()
         # stage.A_comp.setlb(2.78e-12)
@@ -937,6 +959,7 @@ def optimize_set_up(
     m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"].setlb(0)
     # m.fs.RO.feed_side.friction_factor_darcy[0.0, 1.0].setub(None)
     # m.fs.RO.feed_side.K[0.0, 0.0, "NaCl"].setub(0.1)
+    # m.fs.RO.feed_side.K[0.0, 1.0, "NaCl"].setlb(0)
 
     # m.fs.RO.A_comp.unfix()
     # m.fs.RO.A_comp.setlb(2.78e-12)
@@ -944,7 +967,7 @@ def optimize_set_up(
 
     # additional specifications
     m.fs.product_salinity = Param(
-        initialize=1000e-6, mutable=True
+        initialize=2000e-6, mutable=True
     )  # product NaCl mass fraction [-]
     m.fs.minimum_water_flux = Param(
         initialize=1.0 / 3600.0, mutable=True
@@ -1123,5 +1146,69 @@ def display_state(m):
     print_state(f"Product", m.fs.product.inlet)
 
 
+def model_debug(model):
+
+    check_jac(model)
+
+    model.fs.obj = Objective(expr=0)
+    solver = get_solver()
+
+    # initial point
+    solver.options["max_iter"] = 0
+    solver.solve(model, tee=False)
+    dh = DegeneracyHunter(model, solver=SolverFactory("cbc"))
+    dh.check_residuals(tol=1e-8)
+    dh.check_variable_bounds(tol=1e-8)
+
+    # solved model
+    solver.options["max_iter"] = 10000
+    solver.solve(model, tee=False)
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(
+        model, large=1e1, small=1e-1
+    )
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    dh.check_residuals(tol=1e-8)
+    dh.check_variable_bounds(tol=1e-8)
+    dh.check_rank_equality_constraints(dense=True)
+    ds = dh.find_candidate_equations(verbose=True, tee=True)
+    ids = dh.find_irreducible_degenerate_sets(verbose=True)
+
+    """
+    variables_near_bounds_list = variables_near_bounds_generator(model)
+    for x in variables_near_bounds_list:
+        print(x, x.value)
+    """
+
+    return model
+
+
+def check_jac(model):
+    jac, jac_scaled, nlp = iscale.constraint_autoscale_large_jac(model, min_scale=1e-8)
+    # cond_number = iscale.jacobian_cond(model, jac=jac_scaled)  # / 1e10
+    # print("--------------------------")
+    print("Extreme Jacobian entries:")
+    extreme_entries = iscale.extreme_jacobian_entries(
+        model, jac=jac_scaled, zero=1e-20, large=10
+    )
+    extreme_entries = sorted(extreme_entries, key=lambda x: x[0], reverse=True)
+
+    print("EXTREME_ENTRIES")
+    print(f"\nThere are {len(extreme_entries)} extreme Jacobian entries")
+    for i in extreme_entries:
+        print(i[0], i[1], i[2])
+
+    print("--------------------------")
+    print("Extreme Jacobian columns:")
+    extreme_cols = iscale.extreme_jacobian_columns(model, jac=jac_scaled)
+    for val, var in extreme_cols:
+        print(val, var.name)
+    print("------------------------")
+    print("Extreme Jacobian rows:")
+    extreme_rows = iscale.extreme_jacobian_rows(model, jac=jac_scaled)
+    for val, con in extreme_rows:
+        print(val, con.name)
+
+
 if __name__ == "__main__":
-    m = main(2, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
+    m = main(3, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
