@@ -272,7 +272,7 @@ class _ParameterSweepBase(ABC):
     Put together all of the parameter combinations that the sweep will be run for.
     """
 
-    def _build_combinations(self, d, sampling_type, num_samples):
+    def _build_combinations(self, d, sampling_type):
         # only build the full array of combinations on the root process. on the non-root
         # processes, initialize an empty array of the right size that will be synced
         # over from the root process.

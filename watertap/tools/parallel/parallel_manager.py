@@ -5,99 +5,92 @@ import numpy
 
 from pyomo.common.dependencies import attempt_import
 
+mpi4py, mpi4py_available = attempt_import("mpi4py")
+
 
 class ParallelManager(ABC):
-    """
-    Create and return an instance of a ParallelManager, based on the libraries available in the
-    runtime environment.
-
-    Allows an optional python class to be passed in as parallel_manager_class. If so, this class
-    is instantiated and returned rather than checking the local environment.
-    """
-
     @classmethod
     def create_parallel_manager(cls, parallel_manager_class=None):
+        """
+        Create and return an instance of a ParallelManager, based on the libraries available in the
+        runtime environment.
+
+        Allows an optional python class to be passed in as parallel_manager_class. If so, this class
+        is instantiated and returned rather than checking the local environment.
+        """
         if parallel_manager_class is not None:
             return parallel_manager_class()
 
-        mpi4py, mpi4py_available = attempt_import("mpi4py")
         if mpi4py_available and ParallelManager.is_running_under_mpi():
             return MPIParallelManager(mpi4py)
 
         return SingleProcessParallelManager()
 
-    """
-    Returns whether the process was run as part of an MPI group.
-    """
-
     @classmethod
     def is_running_under_mpi(cls):
+        """
+        Returns whether the process was run as part of an MPI group.
+        """
         # see https://www.open-mpi.org/faq/?category=running#mpi-environmental-variables.
         # this is one of the environment variables that MPI sets.
         return os.getenv("OMPI_COMM_WORLD_SIZE") is not None
 
-    """
-    Return whether the current process should be considered as the root of the parallel group it
-    is a part of.
-    """
-
     @abstractmethod
     def is_root_process(self):
+        """
+        Return whether the current process should be considered as the root of the parallel group it
+        is a part of.
+        """
         raise NotImplementedError
-
-    """
-    Synchronize a piece of data with all peer processes. The data parameter is either:
-    - (if root) the source of truth that will be broadcast to all processes
-    - (if not root) an empty buffer that will hold the data sent from root once sync_data returns
-    """
 
     @abstractmethod
     def sync_data(self, data):
+        """
+        Synchronize a piece of data with all peer processes. The data parameter is either:
+        - (if root) the source of truth that will be broadcast to all processes
+        - (if not root) an empty buffer that will hold the data sent from root once sync_data returns
+        """
         raise NotImplementedError
-
-    """
-    Scatter a function out to a set of child processes, to be run
-    for a list of parameters.
-    - all_parameter_combos is a list, where each item represents the
-    parameters for a single run.
-    - fn is a function to be run, and should accept a single parameter. 
-    It will be called for each item in the all_parameter_combos list.
-    """
 
     def scatter(self, all_parameter_combos, fn):
+        """
+        Scatter a function out to a set of child processes, to be run
+        for a list of parameters.
+        - all_parameter_combos is a list, where each item represents the
+        parameters for a single run.
+        - fn is a function to be run, and should accept a single parameter.
+        It will be called for each item in the all_parameter_combos list.
+        """
         raise NotImplementedError
-
-    """
-    Gather the results of the computation that was kicked off via a previous
-    scatter.
-    - returns: an instance of GatherResults
-    """
 
     def gather(self):
+        """
+        Gather the results of the computation that was kicked off via a previous
+        scatter.
+        - returns: an instance of GatherResults
+        """
         raise NotImplementedError
-
-
-"""
-Class representing the results of one process's run of an optimization routine.
-"""
 
 
 class LocalResults:
+    """
+    Class representing the results of one process's run of an optimization routine.
+    """
+
     def __init__(self, parameters, results):
         self.parameters = parameters
         self.results = results
 
 
-"""
-Class representing all of the results of a sweep.
-- local_results is an instance of LocalResults representing the results
-from this process.
-- all_results is a list containing one instance of LocalResults for 
-each process, including the local one.
-"""
-
-
 class GatherResults:
+    """
+    Class representing all of the results of a sweep.
+    - local_results is an instance of LocalResults representing the results
+    from this process.
+    - all_results is a list containing one instance of LocalResults for
+    each process, including the local one.
+    """
+
     def __init__(self, local_results, all_results):
         self.local_results = local_results
         self.all_results = all_results
@@ -135,8 +128,10 @@ class MPIParallelManager(ParallelManager):
         return self.rank == self.ROOT
 
     def sync_data(self, data):
-        # broadcast the array to all processes. this call acts as a synchronization point
-        # when run by multiple peer mpi processes.
+        """
+        Broadcast the array to all processes. this call acts as a synchronization point
+        when run by multiple peer mpi processes.
+        """
         if self.num_procs > 1:
             self.comm.Bcast(data, root=self.ROOT)
 

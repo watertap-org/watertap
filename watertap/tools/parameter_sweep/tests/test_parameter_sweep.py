@@ -23,7 +23,6 @@ from watertap.tools.parameter_sweep import ParameterSweep, parameter_sweep
 from watertap.tools.parameter_sweep.parameter_sweep_writer import *
 
 import watertap.tools.MPI as MPI
-from watertap.tools.parallel.parallel_manager import ParallelManager
 
 # -----------------------------------------------------------------------------
 
@@ -868,7 +867,7 @@ class TestParallelManager:
             _ = ps.parameter_sweep(
                 m,
                 sweep_params,
-                outputs=None,
+                combined_outputs=None,
             )
 
     @pytest.mark.component
@@ -1552,7 +1551,7 @@ class TestParallelManager:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                outputs=None,
+                combined_outputs=None,
             )
 
     @pytest.mark.component
@@ -1580,7 +1579,7 @@ class TestParallelManager:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                outputs=None,
+                combined_outputs=None,
             )
 
     @pytest.mark.component
