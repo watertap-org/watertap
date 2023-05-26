@@ -21,19 +21,17 @@ class ParallelManager(ABC):
         if parallel_manager_class is not None:
             return parallel_manager_class()
 
-        if mpi4py_available and ParallelManager.is_running_under_mpi():
+        if mpi4py_available and ParallelManager.has_mpi_peer_processes():
             return MPIParallelManager(mpi4py)
 
         return SingleProcessParallelManager()
 
     @classmethod
-    def is_running_under_mpi(cls):
+    def has_mpi_peer_processes(cls):
         """
-        Returns whether the process was run as part of an MPI group.
+        Returns whether the process was run as part of an MPI group with > 1 processes.
         """
-        # see https://www.open-mpi.org/faq/?category=running#mpi-environmental-variables.
-        # this is one of the environment variables that MPI sets.
-        return os.getenv("OMPI_COMM_WORLD_SIZE") is not None
+        return mpi4py_available and mpi4py.MPI.COMM_WORLD.Get_size() > 1
 
     @abstractmethod
     def is_root_process(self):
