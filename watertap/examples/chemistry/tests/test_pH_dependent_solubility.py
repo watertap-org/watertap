@@ -381,7 +381,7 @@ def run_case1(
 
     ## ==================== Start Scaling for this problem ===========================
     _set_eps_vals(model.fs.rxn_params, rxn_config)
-    _set_equ_rxn_scaling(model.fs.unit, rxn_config)
+    _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, rxn_config)
     _set_mat_bal_scaling_FpcTP(model.fs.unit)
     if has_energy_balance == True:
         _set_ene_bal_scaling(model.fs.unit)
@@ -919,7 +919,7 @@ def run_case2(
 
     ## ==================== Start Scaling for this problem ===========================
     _set_eps_vals(model.fs.rxn_params, rxn_config)
-    _set_equ_rxn_scaling(model.fs.unit, rxn_config)
+    _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, rxn_config)
     _set_mat_bal_scaling_FpcTP(model.fs.unit)
     if has_energy_balance == True:
         _set_ene_bal_scaling(model.fs.unit)
@@ -1533,8 +1533,8 @@ def run_case3(
 
     ## ==================== Start Scaling for this problem ===========================
     #   Modify some of the default scaling factors with function args
-    _set_eps_vals(model.fs.rxn_params, rxn_config, factor=1e-2, max_k_eq_ref=1e-16)
-    _set_equ_rxn_scaling(model.fs.unit, rxn_config, min_k_eq_ref=1e-3)
+    _set_eps_vals(model.fs.rxn_params, rxn_config, factor=1e-2, max_k_eq_ref=1e-12)
+    _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, rxn_config, min_k_eq_ref=1e-2)
     _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=1e-2)
     if has_energy_balance == True:
         _set_ene_bal_scaling(model.fs.unit)
@@ -1553,6 +1553,7 @@ def run_case3(
     #       config dict replacing default values (this does so without any
     #       changes to the global solver options in WaterTAP)
     temp_config = {
+        "linear_solver": "ma57",
         "constr_viol_tol": 1e-5,
         "tol": 1e-5,
     }
@@ -2430,7 +2431,7 @@ def run_case4(
     # # TODO: NOTE: The _set_eps_vals function may need to change. Some cases run
     #               better without it included.
     _set_eps_vals(model.fs.rxn_params, rxn_config)
-    _set_equ_rxn_scaling(model.fs.unit, rxn_config)
+    _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, rxn_config)
     _set_mat_bal_scaling_FpcTP(model.fs.unit)
     if has_energy_balance == True:
         _set_ene_bal_scaling(model.fs.unit)
