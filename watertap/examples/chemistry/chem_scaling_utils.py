@@ -20,7 +20,7 @@ __author__ = "Austin Ladshaw"
 
 ## Helper function for setting eps values associated with solubility_product functions
 # NOTE: Function does nothing if no solubility reactions are present
-def _set_eps_vals(rxn_params, rxn_config, factor=1e-2, max_k_eq_ref=1e-16):
+def _set_eps_vals(rxn_params, rxn_config, factor=1e-2, max_k_eq_ref=1e-12):
     # For solubility reactions, have to set the eps value
     if hasattr(rxn_params, "equilibrium_reaction_idx"):
         for rid in rxn_params.equilibrium_reaction_idx:
@@ -38,7 +38,7 @@ def _set_eps_vals(rxn_params, rxn_config, factor=1e-2, max_k_eq_ref=1e-16):
 
 
 ## Helper function for setting scaling factors for equilibrium reactions
-def _set_equ_rxn_scaling(unit, rxn_config, min_k_eq_ref=1e-3):
+def _set_equ_rxn_scaling(unit, rxn_params, rxn_config, min_k_eq_ref=1e-3):
     # Add scaling factors for reactions (changes depending on if it is a log form or not)
     for i in unit.control_volume.equilibrium_reaction_extent_index:
         # i[0] = time, i[1] = reaction
@@ -50,9 +50,22 @@ def _set_equ_rxn_scaling(unit, rxn_config, min_k_eq_ref=1e-3):
         iscale.set_scaling_factor(
             unit.control_volume.equilibrium_reaction_extent[0.0, i[1]], 10 / scale
         )
+        
+        # Add scale for constraints in log form
+        log_scale = min(min_k_eq_ref, 1e-3)
+        # Scale keq calculation from keq_ref
         iscale.constraint_scaling_transform(
-            unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1
+            unit.control_volume.reactions[0.0].log_k_eq_constraint[i[1]], 1*scale/log_scale
         )
+        # Solubility_product with eps has different order of magnitude compare to other equilibrium constraints
+        if hasattr(rxn_params.component("reaction_" + i[1]), "eps"):
+            iscale.constraint_scaling_transform(
+                unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 1*scale/log_scale
+            )                
+        else:
+            iscale.constraint_scaling_transform(
+                unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1*scale/log_scale
+            )
 
 
 ## Helper function for setting scaling factors for inherent reactions
@@ -99,7 +112,7 @@ def _set_mat_bal_scaling_FpcTP(unit, min_flow_mol_phase_comp=1e-3):
             unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10 / scale
         )
         iscale.set_scaling_factor(
-            unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10 / scale
+            unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 100 / scale
         )
         iscale.set_scaling_factor(
             unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10 / scale
@@ -124,7 +137,7 @@ def _set_mat_bal_scaling_FTPx(unit, min_mole_frac_comp=1e-3):
             unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10 / scale
         )
         iscale.set_scaling_factor(
-            unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10 / scale
+            unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 100 / scale
         )
         iscale.set_scaling_factor(
             unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10 / scale
