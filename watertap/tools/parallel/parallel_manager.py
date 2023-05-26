@@ -21,7 +21,7 @@ class ParallelManager(ABC):
         if parallel_manager_class is not None:
             return parallel_manager_class()
 
-        if mpi4py_available and ParallelManager.has_mpi_peer_processes():
+        if ParallelManager.has_mpi_peer_processes():
             return MPIParallelManager(mpi4py)
 
         return SingleProcessParallelManager()
