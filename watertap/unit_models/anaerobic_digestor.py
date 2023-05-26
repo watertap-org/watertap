@@ -462,7 +462,7 @@ see reaction package for documentation.}""",
             mutable=True,
             doc="Gas-liquid transfer coefficient",
         )
-        self.electricity = Var(
+        self.electricity_consumption = Var(
             self.flowsheet().time,
             units=pyunits.kW,
             bounds=(0, None),
@@ -758,8 +758,8 @@ see reaction package for documentation.}""",
 
         # Electricity constraint
         def rule_electricity_consumption(self, t):
-            return self.electricity[t] == (
-                self.energy_electric_flow_mass
+            return self.electricity_consumption[t] == (
+                self.energy_electric_flow_vol_inlet
                 * pyunits.convert(
                     self.liquid_phase.properties_in[t].flow_vol,
                     to_units=pyunits.m**3 / pyunits.hr,
@@ -786,7 +786,7 @@ see reaction package for documentation.}""",
         iscale.set_scaling_factor(self.KH_co2, 1e2)
         iscale.set_scaling_factor(self.KH_ch4, 1e3)
         iscale.set_scaling_factor(self.KH_h2, 1e4)
-        iscale.set_scaling_factor(self.electricity, 1e0)
+        iscale.set_scaling_factor(self.electricity_consumption, 1e0)
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(

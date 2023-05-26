@@ -275,7 +275,9 @@ class TestAdm(object):
         assert pytest.approx(0.0271, abs=1e-2) == value(adm.fs.unit.KH_co2[0])
         assert pytest.approx(0.00116, abs=1e-2) == value(adm.fs.unit.KH_ch4[0])
         assert pytest.approx(7.8e-4, abs=1e-2) == value(adm.fs.unit.KH_h2[0])
-        assert pytest.approx(0.2054, rel=1e-2) == value(adm.fs.unit.electricity[0])
+        assert pytest.approx(0.2054, rel=1e-2) == value(
+            adm.fs.unit.electricity_consumption[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

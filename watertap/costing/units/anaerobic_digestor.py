@@ -19,7 +19,7 @@ from ..util import (
 
 def build_anaerobic_digestor_cost_param_block(blk):
 
-    # NOTE: costing data are from anaerobic_digestion_reative.yaml
+    # NOTE: costing data are from NREL Waste-to-Energy Model
     blk.capital_a_parameter = pyo.Var(
         initialize=19.3552312e6,
         doc="A parameter for capital cost",
@@ -56,7 +56,7 @@ def cost_anaerobic_digestor(blk, cost_electricity_flow=True):
     if cost_electricity_flow:
         blk.costing_package.cost_flow(
             pyo.units.convert(
-                blk.unit_model.electricity[t0],
+                blk.unit_model.electricity_consumption[t0],
                 to_units=pyo.units.kW,
             ),
             "electricity",
