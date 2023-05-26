@@ -18,6 +18,7 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
     ParameterSweep,
 )
 from watertap.tools.MPI.dummy_mpi import DummyCOMM
+from watertap.tools.parallel.parallel_manager import SingleProcessParallelManager
 
 
 class DifferentialParameterSweep(_ParameterSweepBase):
@@ -246,6 +247,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             reinitialize_function=self.config.reinitialize_function,
             reinitialize_kwargs=self.config.reinitialize_kwargs,
             reinitialize_before_sweep=self.config.reinitialize_before_sweep,
+            parallel_manager_class=SingleProcessParallelManager,
             comm=DummyCOMM,
         )
 
