@@ -469,7 +469,7 @@ see reaction package for documentation.}""",
             doc="Electricity consumption of unit",
         )
         # The value is taken from Maravelias' data
-        self.energy_electric_flow_mass = Param(
+        self.energy_electric_flow_vol_inlet = Param(
             initialize=0.029,
             units=pyunits.kWh / pyunits.m**3,
             mutable=True,
