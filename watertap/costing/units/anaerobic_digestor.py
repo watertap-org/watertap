@@ -19,6 +19,7 @@ from ..util import (
 
 def build_anaerobic_digestor_cost_param_block(blk):
 
+    # NOTE: costing data are from anaerobic_digestion_reative.yaml
     blk.capital_a_parameter = pyo.Var(
         initialize=19.3552312e6,
         doc="A parameter for capital cost",
