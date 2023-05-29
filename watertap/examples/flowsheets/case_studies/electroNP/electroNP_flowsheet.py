@@ -81,6 +81,7 @@ def build_flowsheet():
         has_heat_transfer=True,
         has_pressure_change=False,
     )
+    m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.translator_adm1_asm2d = Translator_ADM1_ASM2D(
         inlet_property_package=m.fs.props_ADM1,
