@@ -567,7 +567,7 @@ class TestParallelManager:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            outputs=outputs,
+            combined_outputs=outputs,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -734,7 +734,7 @@ class TestParallelManager:
         ps.parameter_sweep(
             m,
             sweep_params,
-            outputs=outputs,
+            combined_outputs=outputs,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -867,7 +867,7 @@ class TestParallelManager:
             _ = ps.parameter_sweep(
                 m,
                 sweep_params,
-                outputs=None,
+                combined_outputs=None,
             )
 
     @pytest.mark.component
@@ -901,7 +901,7 @@ class TestParallelManager:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            outputs=None,
+            combined_outputs=None,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1124,7 +1124,7 @@ class TestParallelManager:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            outputs=None,
+            combined_outputs=None,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1312,7 +1312,7 @@ class TestParallelManager:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            outputs=None,
+            combined_outputs=None,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1527,7 +1527,7 @@ class TestParallelManager:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                outputs=None,
+                combined_outputs=None,
             )
 
     @pytest.mark.component
@@ -1551,7 +1551,7 @@ class TestParallelManager:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                outputs=None,
+                combined_outputs=None,
             )
 
     @pytest.mark.component
@@ -1579,7 +1579,7 @@ class TestParallelManager:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                outputs=None,
+                combined_outputs=None,
             )
 
     @pytest.mark.component
@@ -1623,7 +1623,7 @@ class TestParallelManager:
         ps.parameter_sweep(
             m,
             sweep_params,
-            outputs=outputs,
+            combined_outputs=outputs,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
