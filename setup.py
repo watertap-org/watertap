@@ -80,7 +80,8 @@ setup(
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
         *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
-        "pyomo>=6.2,<6.6",  # (also needed for units in electrolyte database (edb))
+        # "pyomo>=6.2,<6.6",  # (also needed for units in electrolyte database (edb))
+        "pyomo @ git+https://github.com/Pyomo/pyomo@a8350090be66d112d728f5fcdc4bdfa6335b4ec6",
         # the following requirements are for the electrolyte database (edb)
         "pymongo>3",  # database interface
         "fastjsonschema",  # schema validation
