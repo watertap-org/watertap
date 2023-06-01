@@ -337,7 +337,7 @@ class FlowsheetInterface:
                 This will be called automatically by :meth:`build()`. **Required**
             do_solve: Function to solve the model. It should return the result
                 that the solver itself returns. **Required**
-            custom_do_param_sweep_kwargs: Option for setting up parallel solver using 
+            custom_do_param_sweep_kwargs: Option for setting up parallel solver using
                 custom solve function.
             **kwargs: See `fs` arg. If the `fs` arg *is* provided, these are ignored.
         """
@@ -359,7 +359,9 @@ class FlowsheetInterface:
                 raise ValueError(f"'do_{name}' argument is required")
             if isinstance(custom_do_param_sweep_kwargs, dict):
                 self.custom_do_param_sweep_kwargs = custom_do_param_sweep_kwargs
-                self._actions["custom_do_param_sweep_kwargs"] = custom_do_param_sweep_kwargs
+                self._actions[
+                    "custom_do_param_sweep_kwargs"
+                ] = custom_do_param_sweep_kwargs
             else:
                 self.custom_do_param_sweep_kwargs = None
                 self._actions["custom_do_param_sweep_kwargs"] = None
