@@ -191,7 +191,9 @@ see reaction package for documentation.}""",
         )
         def CODd_step1(blk, t):
             return blk.inter_S_S[t] == smooth_max(
-                blk.properties_in[t].conc_mass_comp["S_S"], blk.CODd[t], eps=self.epsm
+                blk.properties_in[t].conc_mass_comp["S_S"] - blk.CODd[t],
+                0,
+                eps=self.epsm,
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after S_S")
@@ -200,7 +202,9 @@ see reaction package for documentation.}""",
         # COD remains
         def CODd2(blk, t):
             return smooth_max(
-                blk.CODd[t], blk.properties_in[t].conc_mass_comp["S_S"], eps=self.epsm
+                blk.CODd[t] - blk.properties_in[t].conc_mass_comp["S_S"],
+                0,
+                eps=self.epsm,
             )
 
         self.inter_X_S = Var(
@@ -217,13 +221,17 @@ see reaction package for documentation.}""",
         )
         def CODd_step2(blk, t):
             return blk.inter_X_S[t] == smooth_max(
-                blk.properties_in[t].conc_mass_comp["X_S"], blk.CODd2[t], eps=self.epsm
+                blk.properties_in[t].conc_mass_comp["X_S"] - blk.CODd2[t],
+                0,
+                eps=self.epsm,
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after X_S")
         def CODd3(blk, t):
             return smooth_max(
-                blk.CODd2[t], blk.properties_in[t].conc_mass_comp["X_S"], eps=self.epsm
+                blk.CODd2[t] - blk.properties_in[t].conc_mass_comp["X_S"],
+                0,
+                eps=self.epsm,
             )
 
         self.inter_X_BH = Var(
@@ -240,13 +248,17 @@ see reaction package for documentation.}""",
         )
         def CODd_step3(blk, t):
             return blk.inter_X_BH[t] == smooth_max(
-                blk.properties_in[t].conc_mass_comp["X_BH"], blk.CODd3[t], eps=self.epsm
+                blk.properties_in[t].conc_mass_comp["X_BH"] - blk.CODd3[t],
+                0,
+                eps=self.epsm,
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after X_BH")
         def CODd4(blk, t):
             return smooth_max(
-                blk.CODd3[t], blk.properties_in[t].conc_mass_comp["X_BH"], eps=self.epsm
+                blk.CODd3[t] - blk.properties_in[t].conc_mass_comp["X_BH"],
+                0,
+                eps=self.epsm,
             )
 
         self.inter_X_BA = Var(
@@ -270,7 +282,9 @@ see reaction package for documentation.}""",
         @self.Expression(self.flowsheet().time, doc="COD demand after X_BA")
         def CODd5(blk, t):
             return smooth_max(
-                blk.CODd4[t], blk.properties_in[t].conc_mass_comp["X_BA"], eps=self.epsm
+                blk.CODd4[t] - blk.properties_in[t].conc_mass_comp["X_BA"],
+                0,
+                eps=self.epsm,
             )
 
         @self.Expression(self.flowsheet().time, doc="Soluble COD")
@@ -324,7 +338,7 @@ see reaction package for documentation.}""",
 
         @self.Expression(self.flowsheet().time, doc="COD remaining from step A")
         def COD_remain_a(blk, t):
-            return smooth_max(blk.CODt[t], blk.inter_S_S[t], eps=self.epsm)
+            return smooth_max(blk.CODt[t] - blk.inter_S_S[t], 0, eps=self.epsm)
 
         @self.Expression(self.flowsheet().time, doc="Organic nitrogen pool from step A")
         def ORGN_remain_a(blk, t):
@@ -383,8 +397,8 @@ see reaction package for documentation.}""",
         @self.Expression(self.flowsheet().time, doc="COD remaining from step B")
         def COD_remain_b(blk, t):
             return smooth_max(
-                blk.COD_remain_a[t],
-                blk.properties_in[t].conc_mass_comp["S_I"],
+                blk.COD_remain_a[t] - blk.properties_in[t].conc_mass_comp["S_I"],
+                0,
                 eps=self.epsm,
             )
 
@@ -437,8 +451,8 @@ see reaction package for documentation.}""",
         @self.Expression(self.flowsheet().time, doc="COD remaining from step C")
         def COD_remain_c(blk, t):
             return smooth_max(
-                blk.COD_remain_b[t],
-                blk.properties_out[t].conc_mass_comp["X_I"],
+                blk.COD_remain_b[t] - blk.properties_out[t].conc_mass_comp["X_I"],
+                0,
                 eps=self.epsm,
             )
 
