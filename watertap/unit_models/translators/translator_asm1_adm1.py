@@ -122,8 +122,8 @@ see reaction package for documentation.}""",
         )
 
         self.epsm = Param(
-            initialize=1e-10,
-            units=pyunits.kg**2 / pyunits.m**6,
+            initialize=1e-4,
+            units=pyunits.kg / pyunits.m**3,
             mutable=True,
             doc="epsilon parameter for smooth max",
         )
