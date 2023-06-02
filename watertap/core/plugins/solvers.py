@@ -23,6 +23,7 @@ from idaes.core.util.scaling import (
     unset_scaling_factor,
 )
 from idaes.logger import getLogger
+from watertap.core.util.scaling import set_equilibrium_variable_scaling_factors
 
 _log = getLogger("watertap.core")
 _default_nl_writer = WriterFactory.get_class("nl")
@@ -98,6 +99,13 @@ class IpoptWaterTAP(IPOPT):
         ignore_constraint_scaling = self._get_option("ignore_constraint_scaling", False)
 
         self._model = args[0]
+
+        # TODO: we shouldn't create two NLP objects here
+        equilibriate_variables = self._get_option("equilibriate_variables", True)
+        if equilibriate_variables:
+            self._cache_variable_scaling_factors()
+            set_equilibrium_variable_scaling_factors(self._model)
+
         self._cache_scaling_factors()
         self._cache_and_set_relaxed_bounds(bound_relax_factor)
         self._cleanup_needed = True
@@ -154,6 +162,7 @@ class IpoptWaterTAP(IPOPT):
     def _cleanup(self):
         WriterFactory.register("nl")(_default_nl_writer)
         if self._cleanup_needed:
+            self._reset_variable_scaling_factors()
             self._reset_scaling_factors()
             self._reset_bounds()
             # remove our reference to the model
@@ -162,6 +171,24 @@ class IpoptWaterTAP(IPOPT):
     def _postsolve(self):
         self._cleanup()
         return super()._postsolve()
+
+    def _cache_variable_scaling_factors(self):
+        self._variable_scaling_cache = [
+            (v, get_scaling_factor(v))
+            for v in self._model.component_data_objects(
+                pyo.Var, active=True, descend_into=True
+            )
+        ]
+
+    def _reset_variable_scaling_factors(self):
+        if not hasattr(self, "_variable_scaling_cache"):
+            return
+        for v, s in self._variable_scaling_cache:
+            if s is None:
+                unset_scaling_factor(v)
+            else:
+                set_scaling_factor(v, s)
+        del self._variable_scaling_cache
 
     def _cache_scaling_factors(self):
         self._scaling_cache = [

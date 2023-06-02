@@ -10,16 +10,51 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-This module contains a utility function for the scaling of WaterTAP property model constraints.
+This module contains a utility functions for scaling WaterTAP models.
 """
+import numpy as np
 import pyomo.environ as pyo
+from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.contrib.pynumero.asl import AmplInterface
+from pyomo.common.modeling import unique_component_name
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
 
+def set_equilibrium_variable_scaling_factors(m):
+    # Pynumero requires an objective, but I don't, so let's see if we have one
+    n_obj = 0
+    for c in m.component_data_objects(pyo.Objective, active=True):
+        n_obj += 1
+    # Add an objective if there isn't one
+    if n_obj == 0:
+        dummy_objective_name = unique_component_name(m, "objective")
+        setattr(m, dummy_objective_name, pyo.Objective(expr=0))
+    # Create NLP and calculate the objective
+    if not AmplInterface.available():
+        raise RuntimeError("Pynumero not available.")
+    nlp = PyomoNLP(m)
+    jac = nlp.evaluate_jacobian().tocsc()
+    for i, v in enumerate(nlp.get_pyomo_variables()):
+        abs_data = np.abs(jac.getcol(i).data)
+        max_abs_val = abs_data.max()
+        #print(f"current scaling for variable {v.name} was {iscale.get_scaling_factor(v)}")
+        iscale.set_scaling_factor( v, 1.0*max_abs_val )
+        #print(f"updated scaling for variable {v.name} to {max_abs_val}")
+        jac[:,i] *= 1.0/max_abs_val
+
+    # delete dummy objective
+    if n_obj == 0:
+        delattr(m, dummy_objective_name)
+    return jac
+
+
 def transform_property_constraints(self):
+    """
+    This is a utility function for the scaling of WaterTAP property model constraints.
+    """
     for p in self.params.get_metadata().properties.list_supported_properties():
         var_str = p.name
         if p.method is not None and self.is_property_constructed(var_str):
