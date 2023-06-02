@@ -23,7 +23,7 @@ from idaes.core.util.scaling import (
     unset_scaling_factor,
 )
 from idaes.logger import getLogger
-from watertap.core.util.scaling import set_equilibrium_variable_scaling_factors
+import watertap.core.util.scaling as wtscaling
 
 _log = getLogger("watertap.core")
 _default_nl_writer = WriterFactory.get_class("nl")
@@ -102,12 +102,9 @@ class IpoptWaterTAP(IPOPT):
 
         # TODO: we shouldn't create two NLP objects here
         equilibriate_variables = self._get_option("equilibriate_variables", True)
-        if equilibriate_variables:
-            self._cache_variable_scaling_factors()
-            set_equilibrium_variable_scaling_factors(self._model)
 
+        self._cache_variable_scaling_factors()
         self._cache_scaling_factors()
-        self._cache_and_set_relaxed_bounds(bound_relax_factor)
         self._cleanup_needed = True
 
         # NOTE: This function sets the scaling factors on the
@@ -116,12 +113,13 @@ class IpoptWaterTAP(IPOPT):
         #       so that repeated calls to solve change the scaling
         #       each time based on the initial values, just like in Ipopt.
         try:
-            _, _, nlp = iscale.constraint_autoscale_large_jac(
+            nlp = wtscaling.set_autoscaling_factors(
                 self._model,
                 ignore_constraint_scaling=ignore_constraint_scaling,
                 ignore_variable_scaling=ignore_variable_scaling,
                 max_grad=max_grad,
                 min_scale=min_scale,
+                equilibriate_variables=equilibriate_variables,
             )
         except Exception as err:
             nlp = None
@@ -144,6 +142,8 @@ class IpoptWaterTAP(IPOPT):
                 print("Error in constraint_autoscale_large_jac")
                 self._cleanup()
                 raise
+
+        self._cache_and_set_relaxed_bounds(bound_relax_factor)
 
         # set different default for `alpha_for_y` if this is an LP
         # see: https://coin-or.github.io/Ipopt/OPTIONS.html#OPT_alpha_for_y
@@ -230,6 +230,8 @@ class IpoptWaterTAP(IPOPT):
                 )
 
     def _reset_bounds(self):
+        if not hasattr(self, "_bound_cache"):
+            return
         for v, (lb, ub) in self._bound_cache.items():
             v.lb = lb
             v.ub = ub

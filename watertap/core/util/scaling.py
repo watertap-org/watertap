@@ -23,7 +23,14 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-def set_equilibrium_variable_scaling_factors(m):
+def set_autoscaling_factors(
+    m,
+    ignore_constraint_scaling=False,
+    ignore_variable_scaling=False,
+    max_grad=100,
+    min_scale=1e-6,
+    equilibriate_variables=True,
+):
     # Pynumero requires an objective, but I don't, so let's see if we have one
     n_obj = 0
     for c in m.component_data_objects(pyo.Objective, active=True):
@@ -37,19 +44,37 @@ def set_equilibrium_variable_scaling_factors(m):
         raise RuntimeError("Pynumero not available.")
     nlp = PyomoNLP(m)
     jac = nlp.evaluate_jacobian().tocsc()
-    for i, v in enumerate(nlp.get_pyomo_variables()):
-        #old_factor = iscale.get_scaling_factor(v)
-        abs_data = np.abs(jac.getcol(i).data)
-        max_abs_val = abs_data.max()
-        iscale.set_scaling_factor( v, max_abs_val )
-        #if old_factor != max_abs_val:
-        #    print(f"updated scaling factor for {v.name} from {old_factor} to {max_abs_val}")
-        jac[:,i] *= 1.0/max_abs_val
+    if not ignore_variable_scaling:
+        for i, v in enumerate(nlp.get_pyomo_variables()):
+            current_factor = iscale.get_scaling_factor(v, default=1.9)
+            if equilibriate_variables:
+                abs_data = np.abs(jac.getcol(i).data)
+                if len(abs_data) == 0:
+                    continue
+                new_factor = abs_data.max()
+                iscale.set_scaling_factor(v, new_factor, data_objects=False)
+            else:
+                new_factor = current_factor
+            # if current_factor != new_factor:
+            #    print(f"updated scaling factor for {v.name} from {current_factor} to {new_factor}")
+            jac[:, i] *= 1.0 / new_factor
+
+    jac = jac.tocsr()
+    # calculate constraint scale factors
+    for i, c in enumerate(nlp.get_pyomo_constraints()):
+        sc = iscale.get_scaling_factor(c, default=1)
+        if ignore_constraint_scaling or iscale.get_scaling_factor(c) is None:
+            sc = 1
+            abs_row = np.abs(jac.getrow(i).data)
+            mg = abs_row.max()
+            if mg > max_grad:
+                sc = max(min_scale, max_grad / mg)
+            iscale.set_scaling_factor(c, sc, data_objects=False)
 
     # delete dummy objective
     if n_obj == 0:
         delattr(m, dummy_objective_name)
-    return jac
+    return nlp
 
 
 def transform_property_constraints(self):

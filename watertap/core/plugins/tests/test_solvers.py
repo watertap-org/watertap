@@ -12,7 +12,6 @@
 
 import pytest
 import pyomo.environ as pyo
-import idaes.core.util.scaling as iscale
 
 from pyomo.opt import WriterFactory
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
@@ -23,6 +22,7 @@ from idaes.core.util.scaling import (
 )
 from idaes.core.solvers import get_solver
 from watertap.core.plugins.solvers import IpoptWaterTAP
+import watertap.core.util.scaling as wtscale
 
 _default_nl_writer = WriterFactory.get_class("nl")
 
@@ -218,7 +218,7 @@ class TestIpoptWaterTAP:
 
     @pytest.mark.unit
     def test_presolve_constraint_autoscale_large_jac_error_cleans_up(self, m, s):
-        constraint_autoscale_large_jac = iscale.constraint_autoscale_large_jac
+        set_autoscaling_factors = wtscale.set_autoscaling_factors
 
         class CALJErrorException(Exception):
             pass
@@ -226,12 +226,12 @@ class TestIpoptWaterTAP:
         def _bad_constraint_autoscale_large_jac(*args, **kwargs):
             raise CALJErrorException
 
-        iscale.constraint_autoscale_large_jac = _bad_constraint_autoscale_large_jac
+        wtscale.set_autoscaling_factors = _bad_constraint_autoscale_large_jac
         with pytest.raises(CALJErrorException):
             s.solve(m)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
-        iscale.constraint_autoscale_large_jac = constraint_autoscale_large_jac
+        wtscale.set_autoscaling_factors = set_autoscaling_factors
 
     @pytest.mark.unit
     def test_honor_original_bounds(self, m, s):
