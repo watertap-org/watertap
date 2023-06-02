@@ -38,11 +38,12 @@ def set_equilibrium_variable_scaling_factors(m):
     nlp = PyomoNLP(m)
     jac = nlp.evaluate_jacobian().tocsc()
     for i, v in enumerate(nlp.get_pyomo_variables()):
+        #old_factor = iscale.get_scaling_factor(v)
         abs_data = np.abs(jac.getcol(i).data)
         max_abs_val = abs_data.max()
-        #print(f"current scaling for variable {v.name} was {iscale.get_scaling_factor(v)}")
-        iscale.set_scaling_factor( v, 1.0*max_abs_val )
-        #print(f"updated scaling for variable {v.name} to {max_abs_val}")
+        iscale.set_scaling_factor( v, max_abs_val )
+        #if old_factor != max_abs_val:
+        #    print(f"updated scaling factor for {v.name} from {old_factor} to {max_abs_val}")
         jac[:,i] *= 1.0/max_abs_val
 
     # delete dummy objective
