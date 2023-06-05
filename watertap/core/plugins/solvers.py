@@ -100,7 +100,6 @@ class IpoptWaterTAP(IPOPT):
 
         self._model = args[0]
 
-        # TODO: we shouldn't create two NLP objects here
         equilibriate_variables = self._get_option("equilibriate_variables", True)
 
         self._cache_variable_scaling_factors()

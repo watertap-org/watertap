@@ -46,7 +46,7 @@ def set_autoscaling_factors(
     jac = nlp.evaluate_jacobian().tocsc()
     if not ignore_variable_scaling:
         for i, v in enumerate(nlp.get_pyomo_variables()):
-            current_factor = iscale.get_scaling_factor(v, default=1.9)
+            current_factor = iscale.get_scaling_factor(v, default=1.0)
             if equilibriate_variables:
                 abs_data = np.abs(jac.getcol(i).data)
                 if len(abs_data) == 0:
@@ -62,10 +62,11 @@ def set_autoscaling_factors(
     jac = jac.tocsr()
     # calculate constraint scale factors
     for i, c in enumerate(nlp.get_pyomo_constraints()):
-        sc = iscale.get_scaling_factor(c, default=1)
         if ignore_constraint_scaling or iscale.get_scaling_factor(c) is None:
             sc = 1
             abs_row = np.abs(jac.getrow(i).data)
+            if len(abs_row) == 0:
+                continue
             mg = abs_row.max()
             if mg > max_grad:
                 sc = max(min_scale, max_grad / mg)
