@@ -16,6 +16,13 @@
 from idaes.core.util import scaling as iscale
 from pyomo.environ import value
 
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
+    log_power_law_equil,
+    power_law_equil,
+    log_solubility_product,
+    solubility_product,
+)
+
 __author__ = "Austin Ladshaw"
 
 ## Helper function for setting eps values associated with solubility_product functions
@@ -57,15 +64,28 @@ def _set_equ_rxn_scaling(unit, rxn_params, rxn_config, min_k_eq_ref=1e-3):
         iscale.constraint_scaling_transform(
             unit.control_volume.reactions[0.0].log_k_eq_constraint[i[1]], 1*scale/log_scale
         )
-        # Solubility_product with eps has different order of magnitude compare to other equilibrium constraints
-        if hasattr(rxn_params.component("reaction_" + i[1]), "eps"):
-            iscale.constraint_scaling_transform(
-                unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 1*scale/log_scale
-            )                
+    
+        if rxn_config["equilibrium_reactions"][i[1]]["equilibrium_form"] is solubility_product \
+            or rxn_config["equilibrium_reactions"][i[1]]["equilibrium_form"] is power_law_equil:
+            if hasattr(rxn_params.component("reaction_" + i[1]), "eps"):
+                iscale.constraint_scaling_transform(
+                    unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 10 / scale
+                )                
+            else:
+                iscale.constraint_scaling_transform(
+                    unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 1 / scale
+                )
+                
         else:
-            iscale.constraint_scaling_transform(
-                unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1*scale/log_scale
-            )
+            # Solubility_product with eps has different order of magnitude compare to other equilibrium constraints
+            if hasattr(rxn_params.component("reaction_" + i[1]), "eps"):
+                iscale.constraint_scaling_transform(
+                    unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 1*scale/log_scale
+                )                
+            else:
+                iscale.constraint_scaling_transform(
+                    unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1*scale/log_scale
+                )
 
 
 ## Helper function for setting scaling factors for inherent reactions

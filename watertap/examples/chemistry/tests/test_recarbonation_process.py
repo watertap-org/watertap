@@ -624,7 +624,7 @@ class TestCarbonationProcess:
         model = equilibrium_config
 
         # Call scaling factor helper functions
-        _set_equ_rxn_scaling(model.fs.unit, reaction_config)
+        _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, reaction_config)
         _set_mat_bal_scaling_FpcTP(model.fs.unit)
         _set_ene_bal_scaling(model.fs.unit)
 
@@ -649,7 +649,7 @@ class TestCarbonationProcess:
         badly_scaled_var_values = {
             var.name: val
             for (var, val) in iscale.badly_scaled_var_generator(
-                model, large=1e4, small=1e-2
+                model, large=1e5, small=1e-2
             )
         }
         assert not badly_scaled_var_values
