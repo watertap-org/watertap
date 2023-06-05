@@ -1,11 +1,4 @@
 from abc import abstractmethod, ABC
-import os
-
-import numpy
-
-from pyomo.common.dependencies import attempt_import
-
-mpi4py, mpi4py_available = attempt_import("mpi4py")
 
 
 class ParallelManager(ABC):
@@ -13,28 +6,32 @@ class ParallelManager(ABC):
     ROOT_PROCESS_RANK = 0
 
     @classmethod
-    def create_parallel_manager(cls, parallel_manager_class=None):
+    def remove_unpicklable_state(cls, parameter_sweep_instance):
         """
-        Create and return an instance of a ParallelManager, based on the libraries available in the
-        runtime environment.
-
-        Allows an optional python class to be passed in as parallel_manager_class. If so, this class
-        is instantiated and returned rather than checking the local environment.
+        Remove and return any state from the ParameterSweep object that cannot be
+        pickled, to make the instance picklable. Needed in order to use the
+        ConcurrentFuturesParallelManager.
         """
-        if parallel_manager_class is not None:
-            return parallel_manager_class()
+        saved_state = {
+            "parallel_manager": parameter_sweep_instance.parallel_manager,
+            "comm": parameter_sweep_instance.comm,
+            "writer": parameter_sweep_instance.writer,
+        }
 
-        if ParallelManager.has_mpi_peer_processes():
-            return MPIParallelManager(mpi4py)
-
-        return SingleProcessParallelManager()
+        parameter_sweep_instance.parallel_manager = None
+        parameter_sweep_instance.comm = None
+        parameter_sweep_instance.writer = None
+        return saved_state
 
     @classmethod
-    def has_mpi_peer_processes(cls):
+    def restore_unpicklable_state(cls, parameter_sweep_instance, state):
         """
-        Returns whether the process was run as part of an MPI group with > 1 processes.
+        Restore a collection of saved state that was removed in order to pickle
+        the ParameterSweep object.
         """
-        return mpi4py_available and mpi4py.MPI.COMM_WORLD.Get_size() > 1
+        parameter_sweep_instance.parallel_manager = state.get("parallel_manager", None)
+        parameter_sweep_instance.comm = state.get("comm", None)
+        parameter_sweep_instance.writer = state.get("writer", None)
 
     @abstractmethod
     def is_root_process(self):
@@ -52,137 +49,64 @@ class ParallelManager(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def number_of_processes(self):
+    def number_of_worker_processes(self):
         """
-        Return how many processes are part of the parallel peer group.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def sync_point(self):
-        """
-        Implement a synchronization point. All processes must reach this point before any continue.
+        Return how many total processes are running local simulations.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def sync_data(self, data):
+    def sync_with_peers(self):
         """
-        Synchronize a piece of data with all peer processes. The data parameter is either:
+        Implement a synchronization point with any peer processes.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def sync_data_with_peers(self, data):
+        """
+        Synchronize a piece of data with all peers processes. The data parameter is either:
         - (if root) the source of truth that will be broadcast to all processes
-        - (if not root) an empty buffer that will hold the data sent from root once sync_data returns
+        - (if not root) an empty buffer that will hold the data sent from root once the function returns
         """
         raise NotImplementedError
 
-    def scatter(self, all_parameter_combos, fn):
+    def scatter(self, param_sweep_instance, common_params, all_parameter_combos):
         """
-        Scatter a function out to a set of child processes, to be run
-        for a list of parameters.
-        - all_parameter_combos is a list, where each item represents the
-        parameters for a single run.
-        - fn is a function to be run, and should accept a single parameter.
-        It will be called for each item in the all_parameter_combos list.
+        Scatter a function out to a set of child processes, to be run for a list of parameters.
+        - param_sweep_instance: a reference to the ParameterSweep object
+        - common_params: a list of the parameters that every processes' invocation of the sweep should receive.
+        - all_parameter_combos: a list, where each item represents the parameters for a single run.
         """
         raise NotImplementedError
 
     def gather(self):
         """
-        Gather the results of the computation that was kicked off via a previous
-        scatter.
-        - returns: an instance of GatherResults
+        Gather the results of the computation that was kicked off via a previous scatter.
+        Returns:
+        - a list of LocalResults, representing the results for each process
+        """
+        raise NotImplementedError
+
+    def results_from_local_tree(self, results):
+        """
+        Given a list of LocalResults objects, return a sublist of the ones the current process
+        is responsible for.
         """
         raise NotImplementedError
 
 
-class LocalResults:
+def run_sweep(param_sweep_instance, common_params, local_combo_array):
     """
-    Class representing the results of one process's run of an optimization routine.
+    Run the parameter sweep object's sweep function. Implemented as a top-level function in
+    this module so that it is picklable for the ConcurrentFuturesParallelManager.
+    Parameters are:
+    - common_params: the parameters that all processes' invocations of the sweep function need
+    - local_combo_array: the list of combinations to be run on the current processes
     """
+    if param_sweep_instance.config.custom_do_param_sweep is not None:
+        return param_sweep_instance.custom_do_param_sweep(
+            *common_params, local_combo_array
+        )
 
-    def __init__(self, parameters, results):
-        self.parameters = parameters
-        self.results = results
-
-
-class GatherResults:
-    """
-    Class representing all of the results of a sweep.
-    - local_results is an instance of LocalResults representing the results
-    from this process.
-    - all_results is a list containing one instance of LocalResults for
-    each process, including the local one.
-    """
-
-    def __init__(self, local_results, all_results):
-        self.local_results = local_results
-        self.all_results = all_results
-
-
-class SingleProcessParallelManager(ParallelManager):
-    def __init__(self):
-        self.results = None
-
-    def is_root_process(self):
-        return True
-
-    def get_rank(self):
-        return self.ROOT_PROCESS_RANK
-
-    def number_of_processes(self):
-        return 1
-
-    def sync_point(self):
-        pass
-
-    def sync_data(self, data):
-        pass
-
-    def scatter(self, all_parameter_combos, fn):
-        self.results = LocalResults(all_parameter_combos, fn(all_parameter_combos))
-
-    def gather(self):
-        return GatherResults(self.results, [self.results])
-
-
-class MPIParallelManager(ParallelManager):
-    def __init__(self, mpi4py_lib):
-        self.mpi4py = mpi4py_lib
-        self.comm = self.mpi4py.MPI.COMM_WORLD
-        self.rank = self.comm.Get_rank()
-        self.num_procs = self.comm.Get_size()
-
-        self.results = None
-
-    def is_root_process(self):
-        return self.rank == self.ROOT_PROCESS_RANK
-
-    def get_rank(self):
-        return self.comm.Get_rank()
-
-    def number_of_processes(self):
-        return self.num_procs
-
-    def sync_point(self):
-        self.comm.Barrier()
-
-    def sync_data(self, data):
-        """
-        Broadcast the array to all processes. this call acts as a synchronization point
-        when run by multiple peer mpi processes.
-        """
-        if self.num_procs > 1:
-            self.comm.Bcast(data, root=self.ROOT_PROCESS_RANK)
-
-    def scatter(self, all_parameter_combos, fn):
-        # Split the total list of combinations into NUM_PROCS chunks,
-        # one per each of the MPI ranks
-        divided_combo_array = numpy.array_split(all_parameter_combos, self.num_procs)
-
-        # The current process's portion of the total workload
-        local_combo_array = divided_combo_array[self.rank]
-
-        self.results = LocalResults(local_combo_array, fn(local_combo_array))
-
-    def gather(self):
-        all_results = self.comm.allgather(self.results)
-        return GatherResults(self.results, all_results)
+    return param_sweep_instance._do_param_sweep(*common_params, local_combo_array)

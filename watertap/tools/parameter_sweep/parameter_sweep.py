@@ -32,6 +32,7 @@ from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSa
 
 import watertap.tools.MPI as MPI
 from watertap.tools.parallel.parallel_manager import ParallelManager
+from watertap.tools.parallel.parallel_manager_factory import create_parallel_manager
 
 
 def _default_optimize(model, options=None, tee=False):
@@ -146,19 +147,30 @@ class _ParameterSweepBase(ABC):
         ),
     )
 
+    CONFIG.declare(
+        "number_of_subprocesses",
+        ConfigValue(
+            default=1,
+            domain=int,
+            description="Number of processes to fan out to locally - ignored if running under MPI.",
+        ),
+    )
+
     def __init__(
         self,
         **options,
     ):
 
-        self.parallel_manager = ParallelManager.create_parallel_manager(
-            options.pop("parallel_manager_class", None)
-        )
-
         self.comm = options.pop("comm", MPI.COMM_WORLD)
-        self.rank = self.comm.Get_rank()
+        parallel_manager_class = options.pop("parallel_manager_class", None)
 
+        self.rank = self.comm.Get_rank()
         self.config = self.CONFIG(options)
+
+        self.parallel_manager = create_parallel_manager(
+            parallel_manager_class=parallel_manager_class,
+            number_of_subprocesses=self.config.number_of_subprocesses,
+        )
 
         # Initialize the writer
         self.writer = ParameterSweepWriter(
@@ -283,7 +295,7 @@ class _ParameterSweepBase(ABC):
             )
 
         # make sure all processes running in parallel have an identical copy of the data
-        self.parallel_manager.sync_data(global_combo_array)
+        self.parallel_manager.sync_data_with_peers(global_combo_array)
 
         return global_combo_array
 
@@ -293,7 +305,7 @@ class _ParameterSweepBase(ABC):
         # one per each of the MPI ranks
         # divided_combo_array = np.array_split(global_combo_array, num_procs, axis=0)
         divided_combo_array = np.array_split(
-            global_combo_array, self.parallel_manager.number_of_processes()
+            global_combo_array, self.parallel_manager.number_of_worker_processes()
         )
 
         # Return only this rank's portion of the total workload
@@ -328,7 +340,7 @@ class _ParameterSweepBase(ABC):
             for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
                 global_results[:, i] = item["value"][:num_cases]
 
-        self.parallel_manager.sync_data(global_results)
+        self.parallel_manager.sync_data_with_peers(global_results)
 
         return global_results
 
@@ -733,40 +745,38 @@ class ParameterSweep(_ParameterSweepBase):
         if combined_outputs is not None:
             self._assign_variable_names(model, combined_outputs)
 
-        # Do the Loop
-        if self.config.custom_do_param_sweep is None:
-            sweep_fn = lambda local_values: self._do_param_sweep(
-                model, sweep_params, combined_outputs, local_values
-            )
-        else:
-            sweep_fn = lambda local_values: self.config.custom_do_param_sweep(
-                model, sweep_params, combined_outputs, local_values
-            )
+        # save a reference to the parallel manager since it will be removed
+        # along with the other unpicklable state
+        parallel_manager = self.parallel_manager
+        saved_state = ParallelManager.remove_unpicklable_state(self)
 
         # scatter out the computation
-        self.parallel_manager.scatter(
+        parallel_manager.scatter(
+            self,
+            [model, sweep_params, combined_outputs],
             all_parameter_combinations,
-            sweep_fn,
         )
 
         # gather the results and combine them into the format we want
-        gather_results = self.parallel_manager.gather()
-        global_sweep_results = self._combine_gather_results(gather_results.all_results)
+        all_results = parallel_manager.gather()
+        ParallelManager.restore_unpicklable_state(self, saved_state)
+
+        global_sweep_results = self._combine_gather_results(all_results)
         combined_outputs = self._combine_outputs(global_sweep_results)
 
-        local_parameters = gather_results.local_results.parameters
-        local_results_dict = gather_results.local_results.results
+        # save the results for all simulations run by this process and its children
+        for results in parallel_manager.results_from_local_tree(all_results):
+            self.writer.save_results(
+                sweep_params,
+                results.parameters,
+                all_parameter_combinations,
+                results.results,
+                global_sweep_results,
+                combined_outputs,
+                process_number=results.process_number,
+            )
 
-        # Save to file
-        global_save_data = self.writer.save_results(
-            sweep_params,
-            local_parameters,
-            all_parameter_combinations,
-            local_results_dict,
-            global_sweep_results,
-            combined_outputs,
-        )
-
+        global_save_data = np.hstack((all_parameter_combinations, combined_outputs))
         return global_save_data, global_sweep_results
 
 
@@ -831,7 +841,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             ):
                 global_filtered_values[:, i] = item["value"][:req_num_samples]
 
-        self.parallel_manager.sync_data(global_filtered_values)
+        self.parallel_manager.sync_data_with_peers(global_filtered_values)
 
         return global_filtered_values
 
@@ -920,7 +930,9 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             failure_count = local_num_cases - success_count
 
             # Get the global number of successful solves and update the number of remaining samples
-            if self.parallel_manager.number_of_processes() > 1:  # pragma: no cover
+            if (
+                self.parallel_manager.number_of_worker_processes() > 1
+            ):  # pragma: no cover
                 global_success_count = np.zeros(1, dtype=float)
                 global_failure_count = np.zeros(1, dtype=float)
                 self.comm.Allreduce(
@@ -986,6 +998,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             local_filtered_dict,
             global_filtered_dict,
             global_filtered_results,
+            self.parallel_manager.get_rank(),
         )
 
         return global_save_data

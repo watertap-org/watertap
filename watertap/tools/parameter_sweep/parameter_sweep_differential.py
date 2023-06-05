@@ -18,7 +18,9 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
     ParameterSweep,
 )
 from watertap.tools.MPI.dummy_mpi import DummyCOMM
-from watertap.tools.parallel.parallel_manager import SingleProcessParallelManager
+from watertap.tools.parallel.single_process_parallel_manager import (
+    SingleProcessParallelManager,
+)
 
 
 class DifferentialParameterSweep(_ParameterSweepBase):
@@ -373,6 +375,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             local_results_dict,
             global_results_dict,
             global_results_arr,
+            self.parallel_manager.get_rank(),
         )
 
         return global_results_dict, global_save_data

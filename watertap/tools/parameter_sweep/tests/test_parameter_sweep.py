@@ -274,7 +274,7 @@ class TestParallelManager:
             param_dict, SamplingType.FIXED, None
         )
 
-        num_procs = ps.parallel_manager.number_of_processes()
+        num_procs = ps.parallel_manager.number_of_worker_processes()
         rank = ps.rank
         test = np.array_split(global_combo_array, num_procs, axis=0)[rank]
 
@@ -478,7 +478,7 @@ class TestParallelManager:
         m.fs.slack_penalty = 1000.0
         m.fs.slack.setub(0)
 
-        global_num_cases = 2 * ps.parallel_manager.number_of_processes()
+        global_num_cases = 2 * ps.parallel_manager.number_of_worker_processes()
         sweep_params = {
             "input_a": NormalSample(m.fs.input["a"], 0.1, 0.9, global_num_cases),
             "input_b": NormalSample(m.fs.input["b"], 0.0, 0.5, global_num_cases),
@@ -521,7 +521,10 @@ class TestParallelManager:
             assert global_output_dict == local_output_dict
         else:
             test_array = np.repeat(
-                np.arange(0, ps.parallel_manager.number_of_processes(), dtype=float), 2
+                np.arange(
+                    0, ps.parallel_manager.number_of_worker_processes(), dtype=float
+                ),
+                2,
             )
             test_list = [True] * global_num_cases
             for key, value in global_output_dict.items():
@@ -533,7 +536,8 @@ class TestParallelManager:
         ps.comm.Barrier()
 
     @pytest.mark.component
-    def test_parameter_sweep(self, model, tmp_path):
+    @pytest.mark.parametrize("number_of_subprocesses", [1, 2, 3])
+    def test_parameter_sweep(self, model, tmp_path, number_of_subprocesses):
 
         comm = MPI.COMM_WORLD
 
@@ -550,6 +554,7 @@ class TestParallelManager:
             h5_results_file_name=h5_results_file_name,
             debugging_data_dir=tmp_path,
             interpolate_nan_outputs=True,
+            number_of_subprocesses=number_of_subprocesses,
         )
 
         m = model
@@ -584,7 +589,7 @@ class TestParallelManager:
             )
 
             # Check that all local output files have been created
-            for k in range(ps.parallel_manager.number_of_processes()):
+            for k in range(ps.parallel_manager.number_of_worker_processes()):
                 assert os.path.isfile(
                     os.path.join(tmp_path, f"local_results_{k:03}.h5")
                 )
