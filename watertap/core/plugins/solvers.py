@@ -16,7 +16,6 @@ from pyomo.core.base.block import _BlockData
 from pyomo.core.kernel.block import IBlock
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 
-import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import (
     get_scaling_factor,
     set_scaling_factor,
@@ -112,7 +111,7 @@ class IpoptWaterTAP(IPOPT):
         #       so that repeated calls to solve change the scaling
         #       each time based on the initial values, just like in Ipopt.
         try:
-            nlp = wtscaling.set_autoscaling_factors(
+            nlp, _ = wtscaling.set_autoscaling_factors(
                 self._model,
                 ignore_constraint_scaling=ignore_constraint_scaling,
                 ignore_variable_scaling=ignore_variable_scaling,

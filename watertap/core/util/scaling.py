@@ -51,12 +51,17 @@ def set_autoscaling_factors(
                 abs_data = np.abs(jac.getcol(i).data)
                 if len(abs_data) == 0:
                     continue
-                new_factor = abs_data.max()
+                # drag halfway to 1 on a log scale
+                mg = abs_data.max()
+                if mg > max_grad:
+                    new_factor = min( 1.0 / min_scale, mg / max_grad )
+                else:
+                    new_factor = 1.0
                 iscale.set_scaling_factor(v, new_factor, data_objects=False)
             else:
                 new_factor = current_factor
             # if current_factor != new_factor:
-            #    print(f"updated scaling factor for {v.name} from {current_factor} to {new_factor}")
+            #    print(f"updated scaling factor for {v.name} at index {i} from {current_factor} to {new_factor}")
             jac[:, i] *= 1.0 / new_factor
 
     jac = jac.tocsr()
@@ -71,11 +76,12 @@ def set_autoscaling_factors(
             if mg > max_grad:
                 sc = max(min_scale, max_grad / mg)
             iscale.set_scaling_factor(c, sc, data_objects=False)
+            jac[i,:] *= sc
 
     # delete dummy objective
     if n_obj == 0:
         delattr(m, dummy_objective_name)
-    return nlp
+    return nlp, jac
 
 
 def transform_property_constraints(self):
