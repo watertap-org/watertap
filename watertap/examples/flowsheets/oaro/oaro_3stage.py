@@ -1258,12 +1258,6 @@ def display_state(m):
             pass
         else:
             print_state(f"Recycle Pump {stage} out", m.fs.RecyclePumps[stage].outlet)
-            print_state(f"Purge {stage} out", m.fs.Separators[stage].purge)
-
-        if stage == m.fs.FirstStage or stage == m.fs.LastStage:
-            pass
-        else:
-            print_state(f"Recycle {stage} out", m.fs.IntermediateMixers[stage].recycle)
 
     print_state(f"RO permeate", m.fs.RO.permeate)
     print_state(f"RO retentate", m.fs.RO.retentate)
