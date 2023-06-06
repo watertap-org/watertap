@@ -1642,4 +1642,3 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             var_dict[f"Clark Kinetic Param."] = self.kinetic_param
 
         return {"vars": var_dict}
-
