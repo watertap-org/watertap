@@ -62,9 +62,9 @@ class TestNaClProperty(PropertyTestHarness):
             ("diffus_phase_comp", ("Liq", "NaCl")): 1.517e-9,
             ("visc_d_phase", "Liq"): 0.000967,
             ("enth_mass_phase", "Liq"): 101.09,
-            ("cp_mass_phase", 'Liq'): 4000,
+            ("cp_mass_phase", "Liq"): 4000,
             ("solubility", None): 0.265,
-            ("th_cond_phase", 'Liq'): 0.6015,
+            ("th_cond_phase", "Liq"): 0.6015,
             ("vapor_pressure", None): 0.00293,
         }
 
@@ -105,9 +105,9 @@ class TestNaClPropertySolution_1(PropertyRegressionTest):
             ("osm_coeff", None): 0.9322,
             ("pressure_osm_phase", "Liq"): 4.4579e6,
             ("enth_mass_phase", "Liq"): 197.9,
-            ("cp_mass_phase", 'Liq'): 3941.9,
+            ("cp_mass_phase", "Liq"): 3941.9,
             ("solubility", None): 0.2686,
-            ("th_cond_phase", 'Liq'): 0.6392,
+            ("th_cond_phase", "Liq"): 0.6392,
             ("vapor_pressure", None): 0.01224,
         }
 
@@ -148,11 +148,12 @@ class TestNaClPropertySolution_2(PropertyRegressionTest):
             ("osm_coeff", None): 1.045,
             ("pressure_osm_phase", "Liq"): 1.877e7,
             ("enth_mass_phase", "Liq"): 353.9,
-            ("cp_mass_phase", 'Liq'): 3603.7,
+            ("cp_mass_phase", "Liq"): 3603.7,
             ("solubility", None): 0.2799,
-            ("th_cond_phase", 'Liq'): 0.6648,
+            ("th_cond_phase", "Liq"): 0.6648,
             ("vapor_pressure", None): 0.09011,
         }
+
 
 @pytest.mark.component
 class TestNaClPropertySolution_3(PropertyRegressionTest):
@@ -190,8 +191,8 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
             ("osm_coeff", None): 1.134,
             ("pressure_osm_phase", "Liq"): 4.399e7,
             ("enth_mass_phase", "Liq"): 475.3,
-            ("cp_mass_phase", 'Liq'): 3422.6,
+            ("cp_mass_phase", "Liq"): 3422.6,
             ("solubility", None): 0.2966,
-            ("th_cond_phase", 'Liq'): 0.6627,
+            ("th_cond_phase", "Liq"): 0.6627,
             ("vapor_pressure", None): 0.3688,
         }

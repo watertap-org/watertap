@@ -545,18 +545,8 @@ class NaClParameterData(PhysicalParameterBlock):
             "2": -157.366583,
             "3": 392.883082,
         }
-        cp_C_param_dict = {
-            "0": 0.001698,
-            "1": -0.137938,
-            "2": 1.541653,
-            "3": -3.799609
-        }
-        cp_D_param_dict = {
-            "0": 0.000034,
-            "1": 0.000376,
-            "2": -0.004463,
-            "3": 0.010904
-        }
+        cp_C_param_dict = {"0": 0.001698, "1": -0.137938, "2": 1.541653, "3": -3.799609}
+        cp_D_param_dict = {"0": 0.000034, "1": 0.000376, "2": -0.004463, "3": 0.010904}
         self.cp_param_A = Var(
             cp_A_param_dict.keys(),
             domain=Reals,
@@ -695,8 +685,8 @@ class NaClParameterData(PhysicalParameterBlock):
         )
 
         # water density parameters from: water_prop_pack for liq water density
-        dens_units = pyunits.kg / pyunits.m ** 3
-        t_inv_units = pyunits.K ** -1
+        dens_units = pyunits.kg / pyunits.m**3
+        t_inv_units = pyunits.K**-1
 
         self.dens_mass_param_A1 = Var(
             within=Reals,
@@ -713,19 +703,19 @@ class NaClParameterData(PhysicalParameterBlock):
         self.dens_mass_param_A3 = Var(
             within=Reals,
             initialize=-6.162e-3,
-            units=dens_units * t_inv_units ** 2,
+            units=dens_units * t_inv_units**2,
             doc="Mass density parameter A3",
         )
         self.dens_mass_param_A4 = Var(
             within=Reals,
             initialize=2.261e-5,
-            units=dens_units * t_inv_units ** 3,
+            units=dens_units * t_inv_units**3,
             doc="Mass density parameter A4",
         )
         self.dens_mass_param_A5 = Var(
             within=Reals,
             initialize=-4.657e-8,
-            units=dens_units * t_inv_units ** 4,
+            units=dens_units * t_inv_units**4,
             doc="Mass density parameter A5",
         )
 
@@ -747,7 +737,7 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("cp_mass_phase", 1e-4, index="Liq")
         self.set_default_scaling("vapor_pressure", 1e2)
         self.set_default_scaling("th_cond_phase", 1e0, index="Liq")
-        self.set_default_scaling("solubility",1e0)
+        self.set_default_scaling("solubility", 1e0)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -1474,12 +1464,15 @@ class NaClStateBlockData(StateBlockData):
                     + param_vec[k]["3"] * b.mass_frac_phase_comp[p, "NaCl"] ** 3
                 )
                 k += 1
-            return b.diffus_phase_comp[p, j] == ((
-                iter_param["A"]
-                + iter_param["B"] * t
-                + iter_param["C"] * t**2
-                + iter_param["D"] * t**3
-            ) * 1e-9)
+            return b.diffus_phase_comp[p, j] == (
+                (
+                    iter_param["A"]
+                    + iter_param["B"] * t
+                    + iter_param["C"] * t**2
+                    + iter_param["D"] * t**3
+                )
+                * 1e-9
+            )
 
         self.eq_diffus_phase_comp = Constraint(
             self.params.phase_list, ["NaCl"], rule=rule_diffus_phase_comp
@@ -1495,7 +1488,7 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_osm_coeff(b):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
-            m = (b.molality_phase_comp['Liq', "NaCl"]) / (pyunits.mole / pyunits.kg)
+            m = (b.molality_phase_comp["Liq", "NaCl"]) / (pyunits.mole / pyunits.kg)
             param_vec = [
                 b.params.osm_coeff_param_A,
                 b.params.osm_coeff_param_B,
@@ -1506,17 +1499,18 @@ class NaClStateBlockData(StateBlockData):
             k = 0
             for key in iter_param:
                 iter_param[key] = (
-                        param_vec[k]["0"]
-                        + param_vec[k]["1"] * m
-                        + param_vec[k]["2"] * m ** 2
-                        + param_vec[k]["3"] * m ** 3
+                    param_vec[k]["0"]
+                    + param_vec[k]["1"] * m
+                    + param_vec[k]["2"] * m**2
+                    + param_vec[k]["3"] * m**3
                 )
                 k += 1
-            return (b.osm_coeff
-                    == iter_param["A"]
-                    + iter_param["B"] * t
-                    + iter_param["C"] * t ** 2
-                    + iter_param["D"] * t ** 3
+            return (
+                b.osm_coeff
+                == iter_param["A"]
+                + iter_param["B"] * t
+                + iter_param["C"] * t**2
+                + iter_param["D"] * t**3
             )
 
         self.eq_osm_coeff = Constraint(rule=rule_osm_coeff)
@@ -1534,11 +1528,11 @@ class NaClStateBlockData(StateBlockData):
             i = 2  # number of ionic species
             t = b.temperature - 273.15 * pyunits.K
             dens_mass = (
-                    b.params.dens_mass_param_A1
-                    + b.params.dens_mass_param_A2 * t
-                    + b.params.dens_mass_param_A3 * t ** 2
-                    + b.params.dens_mass_param_A4 * t ** 3
-                    + b.params.dens_mass_param_A5 * t ** 4
+                b.params.dens_mass_param_A1
+                + b.params.dens_mass_param_A2 * t
+                + b.params.dens_mass_param_A3 * t**2
+                + b.params.dens_mass_param_A4 * t**3
+                + b.params.dens_mass_param_A5 * t**4
             )
             return (
                 b.pressure_osm_phase[p]
