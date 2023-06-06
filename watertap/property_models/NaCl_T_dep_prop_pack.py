@@ -640,18 +640,96 @@ class NaClParameterData(PhysicalParameterBlock):
             doc="Diffusivity (solution) parameter D",
         )
 
-        # TODO: update osmotic coeff. with temperature dependence
         # osmotic coefficient parameters, eq. 3b in Bartholomew
-        osm_coeff_param_dict = {"0": 0.918, "1": 8.89e-2, "2": 4.92}
-        self.osm_coeff_param = Var(
-            osm_coeff_param_dict.keys(),
+        osm_coeff_A_param_dict = {
+            "0": 0.9399062962108361,
+            "1": -0.0189882837141575,
+            "2": 0.019107595372900864,
+            "3": -0.0011117486936487648,
+        }
+        osm_coeff_B_param_dict = {
+            "0": -0.0007061546095086372,
+            "1": 0.0008291452376952367,
+            "2": -6.51004044513984e-05,
+            "3": -8.040912167732404e-06,
+        }
+        osm_coeff_C_param_dict = {
+            "0": 2.5295381526926904e-06,
+            "1": -4.995407097616723e-06,
+            "2": 3.626080914442103e-07,
+            "3": 2.643648394495091e-08,
+        }
+        osm_coeff_D_param_dict = {
+            "0": -4.6659633952665815e-09,
+            "1": 3.766553344020095e-09,
+            "2": 1.761632037484241e-10,
+            "3": -7.493701294810002e-11,
+        }
+        self.osm_coeff_param_A = Var(
+            osm_coeff_A_param_dict.keys(),
             domain=Reals,
-            initialize=osm_coeff_param_dict,
+            initialize=osm_coeff_A_param_dict,
             units=pyunits.dimensionless,
-            doc="Osmotic coefficient parameters",
+            doc="Osmotic coefficient parameter A",
+        )
+        self.osm_coeff_param_B = Var(
+            osm_coeff_B_param_dict.keys(),
+            domain=Reals,
+            initialize=osm_coeff_B_param_dict,
+            units=pyunits.dimensionless,
+            doc="Osmotic coefficient parameter B",
+        )
+        self.osm_coeff_param_C = Var(
+            osm_coeff_C_param_dict.keys(),
+            domain=Reals,
+            initialize=osm_coeff_C_param_dict,
+            units=pyunits.dimensionless,
+            doc="Osmotic coefficient parameter C",
+        )
+        self.osm_coeff_param_D = Var(
+            osm_coeff_D_param_dict.keys(),
+            domain=Reals,
+            initialize=osm_coeff_D_param_dict,
+            units=pyunits.dimensionless,
+            doc="Osmotic coefficient parameter D",
         )
 
-        # TODO: add vapor phase and according properties
+        # water density parameters from: water_prop_pack for liq water density
+        dens_units = pyunits.kg / pyunits.m ** 3
+        t_inv_units = pyunits.K ** -1
+
+        self.dens_mass_param_A1 = Var(
+            within=Reals,
+            initialize=9.999e2,
+            units=dens_units,
+            doc="Mass density parameter A1",
+        )
+        self.dens_mass_param_A2 = Var(
+            within=Reals,
+            initialize=2.034e-2,
+            units=dens_units * t_inv_units,
+            doc="Mass density parameter A2",
+        )
+        self.dens_mass_param_A3 = Var(
+            within=Reals,
+            initialize=-6.162e-3,
+            units=dens_units * t_inv_units ** 2,
+            doc="Mass density parameter A3",
+        )
+        self.dens_mass_param_A4 = Var(
+            within=Reals,
+            initialize=2.261e-5,
+            units=dens_units * t_inv_units ** 3,
+            doc="Mass density parameter A4",
+        )
+        self.dens_mass_param_A5 = Var(
+            within=Reals,
+            initialize=-4.657e-8,
+            units=dens_units * t_inv_units ** 4,
+            doc="Mass density parameter A5",
+        )
+
+        # TODO: add vapor phase and according properties (if deemed necessary)
         # including: specific enthalpy, diffusivity(water-air), density, specific heat, heat of vaporization
 
         # traditional parameters are the only Vars currently on the block and should be fixed
@@ -666,8 +744,8 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("diffus_phase_comp", 1e9, index=("Liq", "NaCl"))
         self.set_default_scaling("osm_coeff", 1e0)
         self.set_default_scaling("enth_mass_phase", 1e-2, index="Liq")
-        self.set_default_scaling("cp_mass_phase", 1e0, index="Liq")
-        self.set_default_scaling("vapor_pressure", 1e0)
+        self.set_default_scaling("cp_mass_phase", 1e-4, index="Liq")
+        self.set_default_scaling("vapor_pressure", 1e2)
         self.set_default_scaling("th_cond_phase", 1e0, index="Liq")
         self.set_default_scaling("solubility",1e0)
 
@@ -976,7 +1054,7 @@ class NaClStateBlockData(StateBlockData):
 
         self.pressure = Var(
             initialize=101325,
-            bounds=(1e4, 5e7),
+            bounds=(1e3, 5e7),
             domain=NonNegativeReals,
             units=pyunits.Pa,
             doc="State pressure",
@@ -1416,11 +1494,29 @@ class NaClStateBlockData(StateBlockData):
         )
 
         def rule_osm_coeff(b):
-            return b.osm_coeff == (
-                b.params.osm_coeff_param["2"]
-                * b.mass_frac_phase_comp["Liq", "NaCl"] ** 2
-                + b.params.osm_coeff_param["1"] * b.mass_frac_phase_comp["Liq", "NaCl"]
-                + b.params.osm_coeff_param["0"]
+            t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
+            m = (b.molality_phase_comp['Liq', "NaCl"]) / (pyunits.mole / pyunits.kg)
+            param_vec = [
+                b.params.osm_coeff_param_A,
+                b.params.osm_coeff_param_B,
+                b.params.osm_coeff_param_C,
+                b.params.osm_coeff_param_D,
+            ]
+            iter_param = {"A": 0, "B": 0, "C": 0, "D": 0}
+            k = 0
+            for key in iter_param:
+                iter_param[key] = (
+                        param_vec[k]["0"]
+                        + param_vec[k]["1"] * m
+                        + param_vec[k]["2"] * m ** 2
+                        + param_vec[k]["3"] * m ** 3
+                )
+                k += 1
+            return (b.osm_coeff
+                    == iter_param["A"]
+                    + iter_param["B"] * t
+                    + iter_param["C"] * t ** 2
+                    + iter_param["D"] * t ** 3
             )
 
         self.eq_osm_coeff = Constraint(rule=rule_osm_coeff)
@@ -1436,15 +1532,20 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_pressure_osm_phase(b, p):
             i = 2  # number of ionic species
-            rhow = (
-                1000 * pyunits.kg / pyunits.m**3
-            )  # TODO: could make this variable based on temperature
+            t = b.temperature - 273.15 * pyunits.K
+            dens_mass = (
+                    b.params.dens_mass_param_A1
+                    + b.params.dens_mass_param_A2 * t
+                    + b.params.dens_mass_param_A3 * t ** 2
+                    + b.params.dens_mass_param_A4 * t ** 3
+                    + b.params.dens_mass_param_A5 * t ** 4
+            )
             return (
                 b.pressure_osm_phase[p]
                 == i
                 * b.osm_coeff
                 * b.molality_phase_comp[p, "NaCl"]
-                * rhow
+                * dens_mass
                 * Constants.gas_constant
                 * b.temperature
             )
