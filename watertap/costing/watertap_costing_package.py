@@ -25,6 +25,7 @@ from idaes.core.base.costing_base import (
 from idaes.models.unit_models import Mixer
 
 from watertap.unit_models import (
+    AD,
     ReverseOsmosis0D,
     ReverseOsmosis1D,
     OsmoticallyAssistedReverseOsmosis0D,
@@ -37,10 +38,12 @@ from watertap.unit_models import (
     EnergyRecoveryDevice,
     Electrodialysis0D,
     Electrodialysis1D,
+    ElectroNPZO,
     IonExchange0D,
     GAC,
 )
 
+from .units.anaerobic_digestor import cost_anaerobic_digestor
 from .units.crystallizer import cost_crystallizer
 from .units.electrodialysis import cost_electrodialysis
 from .units.energy_recovery_device import cost_energy_recovery_device
@@ -55,6 +58,7 @@ from .units.pressure_exchanger import cost_pressure_exchanger
 from .units.pump import cost_pump
 from .units.reverse_osmosis import cost_reverse_osmosis
 from .units.uv_aop import cost_uv_aop
+from .units.electroNP import cost_electroNP
 
 
 class _DefinedFlowsDict(MutableMapping, dict):
@@ -82,6 +86,7 @@ class _DefinedFlowsDict(MutableMapping, dict):
 class WaterTAPCostingData(FlowsheetCostingBlockData):
     # Define default mapping of costing methods to unit models
     unit_mapping = {
+        AD: cost_anaerobic_digestor,
         Mixer: cost_mixer,
         Pump: cost_pump,
         EnergyRecoveryDevice: cost_energy_recovery_device,
@@ -95,6 +100,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         Ultraviolet0D: cost_uv_aop,
         Electrodialysis0D: cost_electrodialysis,
         Electrodialysis1D: cost_electrodialysis,
+        ElectroNPZO: cost_electroNP,
         IonExchange0D: cost_ion_exchange,
         GAC: cost_gac,
     }
@@ -158,6 +164,14 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Grid carbon intensity [kgCO2_eq/kWh]",
             units=pyo.units.kg / pyo.units.kWh,
         )
+
+        self.magnesium_chloride_cost = pyo.Param(
+            mutable=True,
+            initialize=0.0786,
+            doc="Magnesium chloride cost",
+            units=pyo.units.USD_2020 / pyo.units.kg,
+        )
+        self.add_defined_flow("magnesium chloride", self.magnesium_chloride_cost)
 
         # fix the parameters
         self.fix_all_vars()

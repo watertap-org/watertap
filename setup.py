@@ -15,24 +15,10 @@ Project setup with setuptools
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_namespace_packages
-import pathlib
+from pathlib import Path
 
-cwd = pathlib.Path(__file__).parent.resolve()  # this will come in handy, probably
-
-long_description = """WaterTAP is an open-source, integrated suite of predictive multi-scale models
-for design and optimization of water treatment processes and systems. Specifically, WaterTAP is a new
-library of water treatment-specific property, process unit, and network models that depend on the IDAES Platform,
-an open source, next generation process systems engineering platform developed at the National Energy Technology
-Laboratory with other partners. The WaterTAP project is funded by the NAWI  as a part of U.S. Department of
-Energy’s Energy-Water Desalination Hub. The goal of WaterTAP is to assist the hub and the broader water R&D
-community in assessing existing and emerging water treatment technologies by 1) providing predictive capabilities
-involving the design, optimization, and performance of water treatment systems that will lead to improved energy
-efficiency and lower cost, 2) advancing the state of the art for the design of water treatment components, systems
-and networks to be comparable with, or even surpass, that in the chemical industry, and 3) disseminating these tools
-for active use by water treatment researchers and engineers.""".replace(
-    "\n", " "
-).strip()
-
+cwd = Path(__file__).parent
+long_description = (cwd / "README.md").read_text()
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
     "idaes-pse==2.0.*",  # from PyPI
@@ -54,7 +40,7 @@ setup(
     version="0.9.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
-    long_description_content_type="text/plain",
+    long_description_content_type="text/markdown",
     author="NAWI team",
     license="BSD",
     # Classifiers help users find your project by categorizing it.
@@ -94,7 +80,7 @@ setup(
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
         *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
-        "pyomo>=6.2",  # (also needed for units in electrolyte database (edb))
+        "pyomo>=6.2,<6.6",  # (also needed for units in electrolyte database (edb))
         # the following requirements are for the electrolyte database (edb)
         "pymongo>3",  # database interface
         "fastjsonschema",  # schema validation
@@ -123,6 +109,7 @@ setup(
             "jinja2<3.1.0",  # see watertap-org/watertap#449
             "Sphinx",  # docs
             "sphinx_rtd_theme",  # docs
+            "urllib3 < 2",  # see watertap-org/watertap#1021,
             # other requirements
             "linkify-it-py",
             "json-schema-for-humans",  # pretty JSON schema in HTML
