@@ -16,7 +16,7 @@ from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 
-import watertap.property_models.NaCl_T_dep_prop_pack as props
+import watertap.examples.custom_model_demo.simple_prop_pack as props
 
 
 def main():
@@ -24,7 +24,7 @@ def main():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     # attach property package
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = props.PropParameterBlock()
     # build a state block, must specify a time which by convention for steady state models is just 0
     m.fs.stream = m.fs.properties.build_state_block([0])
 
@@ -48,18 +48,13 @@ def main():
 
     # touch another property
     m.fs.stream[0].flow_vol_phase
-    m.fs.stream[0].cp_mass_phase
-    m.fs.stream[0].th_cond_phase
-    m.fs.stream[0].vapor_pressure
-    m.fs.stream[0].visc_d_phase
-    m.fs.stream[0].diffus_phase_comp["Liq", "NaCl"]
-    m.fs.stream[0].solubility
 
     # now that we have a state block, we can fix the state variables and solve for the properties
-    m.fs.stream[0].temperature.fix(273.15 + 100)
+    m.fs.stream[0].temperature.fix(273.15 + 25)
     m.fs.stream[0].pressure.fix(101325)
-    m.fs.stream[0].flow_mass_phase_comp["Liq", "H2O"].fix(0.9)
-    m.fs.stream[0].flow_mass_phase_comp["Liq", "NaCl"].fix(0.1)
+    m.fs.stream[0].flow_mass_phase_comp["Liq", "H2O"].fix(1)
+    m.fs.stream[0].flow_mass_phase_comp["Liq", "NaCl"].fix(0.035)
+    m.fs.stream[0].flow_mass_phase_comp["Liq", "TSS"].fix(120e-6)
 
     # the user should provide the scale for the flow rate, so that our tools can ensure the model is well scaled
     # generally scaling factors should be such that if it is multiplied by the variable it will range between 0.01 and 100
@@ -67,7 +62,9 @@ def main():
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
-
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e4, index=("Liq", "TSS")
+    )
     iscale.calculate_scaling_factors(m.fs)  # this utility scales the model
 
     # solving
@@ -85,6 +82,24 @@ def main():
     print("\n---fourth display---")
     m.fs.stream[0].display()
     # note that the properties are solved, and the body of the constraints are small (residual)
+
+    # equation oriented modeling has several advantages, one of them is that we can unfix variables and fix others
+    # instead of setting the mass flow rates, we can set the volumetric flow rate and mass fractions
+    m.fs.stream[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
+    m.fs.stream[0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
+    m.fs.stream[0].flow_mass_phase_comp["Liq", "TSS"].unfix()
+
+    m.fs.stream[0].flow_vol_phase["Liq"].fix(1.5e-3)
+    m.fs.stream[0].mass_frac_phase_comp["Liq", "NaCl"].fix(0.05)
+    m.fs.stream[0].mass_frac_phase_comp["Liq", "TSS"].fix(80e-6)
+
+    # resolve
+    results = solver.solve(m, tee=False)
+    assert_optimal_termination(results)
+
+    print("\n---fifth display---")
+    m.fs.stream[0].display()
+
     return m
 
 
