@@ -6,6 +6,7 @@ Property Models
 
    water
    NaCl
+   NaCl_T_dep
    seawater
    seawater_ion_generic
    coagulation
