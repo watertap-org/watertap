@@ -210,7 +210,7 @@ case1_thermo_config = {
                 "mw": (40.078, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "cp_mol_liq_comp_coeff": (167039, pyunits.J / pyunits.kmol / pyunits.K),
-                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.kJ / pyunits.mol),
                 "entr_mol_form_liq_comp_ref": (
                     -53,
                     pyunits.J / pyunits.K / pyunits.mol,
@@ -296,7 +296,7 @@ case1_log_rxn_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
@@ -623,7 +623,7 @@ case2_thermo_config = {
                 "mw": (40.078, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "cp_mol_liq_comp_coeff": (167039, pyunits.J / pyunits.kmol / pyunits.K),
-                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.kJ / pyunits.mol),
                 "entr_mol_form_liq_comp_ref": (
                     -53,
                     pyunits.J / pyunits.K / pyunits.mol,
@@ -772,7 +772,7 @@ case2_log_rxn_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
@@ -918,9 +918,9 @@ def run_case2(
     assert degrees_of_freedom(model) == 0
 
     ## ==================== Start Scaling for this problem ===========================
-    _set_eps_vals(model.fs.rxn_params, rxn_config)
-    _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, rxn_config)
-    _set_mat_bal_scaling_FpcTP(model.fs.unit)
+    _set_eps_vals(model.fs.rxn_params, rxn_config, max_k_eq_ref=1e-12)
+    _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, rxn_config, min_k_eq_ref=1e-3)
+    _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=1e-2)
     if has_energy_balance == True:
         _set_ene_bal_scaling(model.fs.unit)
 
@@ -943,6 +943,13 @@ def run_case2(
 
     assert degrees_of_freedom(model) == 0
 
+    for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
+        if hasattr(model.fs.rxn_params.component("reaction_" + i[1]), "eps"):
+            iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1
+            )
+    iscale.calculate_scaling_factors(model.fs.unit)
+    
     results = solver.solve(model, tee=True)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
@@ -1194,7 +1201,7 @@ case3_thermo_config = {
                 "mw": (40.078, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "cp_mol_liq_comp_coeff": (167039, pyunits.J / pyunits.kmol / pyunits.K),
-                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.kJ / pyunits.mol),
                 "entr_mol_form_liq_comp_ref": (
                     -53,
                     pyunits.J / pyunits.K / pyunits.mol,
@@ -1380,7 +1387,7 @@ case3_log_rxn_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
@@ -2076,7 +2083,7 @@ case4_log_rxn_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
