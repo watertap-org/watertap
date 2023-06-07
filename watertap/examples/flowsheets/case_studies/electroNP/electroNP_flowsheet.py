@@ -159,12 +159,16 @@ def build_flowsheet():
     m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * units.kWh / units.kg)
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
-    # iscale.set_scaling_factor(m.fs.electroNP.electricity[0], 1)
-    # iscale.set_scaling_factor(m.fs.electroNP.MgCl2_flowrate[0], 1e-1)
-
     # Costing
     iscale.set_scaling_factor(m.fs.electroNP.costing.capital_cost, 1e-1)
-    # iscale.set_scaling_factor(m.fs.AD.costing.capital_cost, 1e-6)
+    iscale.set_scaling_factor(m.fs.AD.costing.capital_cost, 1e-6)
+
+    # iscale.constraint_scaling_transform(
+    #     m.fs.electroNP.electricity_consumption[0], 1e0
+    # )
+    # iscale.constraint_scaling_transform(
+    #     m.fs.electroNP.MgCl2_demand[0], 1e-1
+    # )
 
     # scaling
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
@@ -189,7 +193,7 @@ def build_flowsheet():
         if "conc_mass_comp[S_F]" in var.name:
             iscale.set_scaling_factor(var, 1e-1)
         if "conc_mass_comp[X_I]" in var.name:
-            iscale.set_scaling_factor(var, 1e0)
+            iscale.set_scaling_factor(var, 1e-1)
         # if "conc_mass_comp[S_O2]" in var.name:
         #     iscale.set_scaling_factor(var, 1e3)
         # if "conc_mass_comp[S_N2]" in var.name:
@@ -224,8 +228,15 @@ def build_flowsheet():
             iscale.set_scaling_factor(var, 1e3)
 
     iscale.calculate_scaling_factors(m)
+
+    # iscale.set_scaling_factor(m.fs.electroNP.electricity[0], 1)
+    # iscale.set_scaling_factor(m.fs.electroNP.MgCl2_flowrate[0], 1e-1)
+
     print(
         f"electricity scaling factor: {iscale.get_scaling_factor(m.fs.electroNP.electricity[0])}"
+    )
+    print(
+        f"MgCl2 flowrate scaling factor: {iscale.get_scaling_factor(m.fs.electroNP.MgCl2_flowrate[0])}"
     )
 
     # Apply sequential decomposition - 1 iteration should suffice
@@ -244,6 +255,9 @@ def build_flowsheet():
     print(
         f"electricity scaling factor: {iscale.get_scaling_factor(m.fs.electroNP.electricity[0])}"
     )
+    print(
+        f"MgCl2 flowrate scaling factor: {iscale.get_scaling_factor(m.fs.electroNP.MgCl2_flowrate[0])}"
+    )
 
     # m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
     # propagate_state(m.fs.stream_adm1_translator)
@@ -256,7 +270,7 @@ def build_flowsheet():
     # propagate_state(m.fs.stream_translator_electroNP)
     # m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
 
-    solver = get_solver(options={"bound_push": 1e-3})
+    solver = get_solver(options={"bound_push": 1e-2})
 
     results = solver.solve(m, tee=True)
     print_close_to_bounds(m)
