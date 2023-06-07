@@ -36,12 +36,12 @@ from idaes.core import (
     UnitModelBlockData,
     ControlVolume0DBlock,
     useDefault,
-    FlowDirection,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import InitializationError
+from idaes.core.util.constants import Constants
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -76,7 +76,6 @@ def _make_MD_channel_control_volume(o, name, config, dynamic=None, has_holdup=No
     if has_holdup:
         control_volume.add_geometry()
     control_volume.add_state_blocks(
-        information_flow=config.information_flow,
         has_phase_equilibrium=config.has_phase_equilibrium,
     )
     # Add material balance
@@ -226,12 +225,6 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}""",
-        ),
-    )
-    config.declare(
-        "information_flow",
-        ConfigValue(
-            default=FlowDirection.forward,
         ),
     )
 
@@ -392,7 +385,7 @@ class MembraneDistillationData(UnitModelBlockData, InitializationMixin):
 
         self.recovery_mass_phase_comp = Var(
             self.flowsheet().config.time,
-            initialize=lambda b, t: 0.4037,
+            initialize=lambda b, t: 0.1,
             bounds=lambda b, t: (0, 1 - 1e-6),
             units=pyunits.dimensionless,
             doc="Mass-based component recovery",
@@ -437,7 +430,6 @@ class MembraneDistillationData(UnitModelBlockData, InitializationMixin):
             doc="Mass transfer term for components of the solution (hot side)",
         )
         def eq_mass_transfer_term_hot_side(b, t):
-            print(b.hot_side.mass_transfer_term.keys())
             return (
                 b.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"]
                 == -b.hot_side.mass_transfer_term[t, "Liq", "H2O"]
@@ -466,9 +458,9 @@ class MembraneDistillationData(UnitModelBlockData, InitializationMixin):
                 / b.membrane_thickness
                 * (
                     b.hot_side.properties_in[t].pressure_sat
-                    - b.cold_side.properties_in[t].pressure_sat
-                    + b.hot_side.properties_out[t].pressure_sat
                     - b.cold_side.properties_out[t].pressure_sat
+                    + b.hot_side.properties_out[t].pressure_sat
+                    - b.cold_side.properties_in[t].pressure_sat
                 )
                 / 2
             )
@@ -542,36 +534,49 @@ class MembraneDistillationData(UnitModelBlockData, InitializationMixin):
             solver=solver,
             state_args=state_args_cold_side,
         )
+
+        if state_args_hot_side is None:
+            state_args_hot_side = {}
+            state_dict = self.hot_side.properties_in[
+                self.flowsheet().config.time.first()
+            ].define_port_members()
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args_hot_side[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args_hot_side[k][m] = state_dict[k][m].value
+                else:
+                    state_args_hot_side[k] = state_dict[k].value
+
+        state_args_vapor = {}
+        state_args_vapor["pressure"] = 0.5 * state_args_hot_side["pressure"]
+        state_args_vapor["temperature"] = state_args_hot_side["temperature"]
+        state_args_vapor["flow_mass_phase_comp"] = {
+            ("Liq", "H2O"): self.properties_vapor[0]
+            .flow_mass_phase_comp["Liq", "H2O"]
+            .lb,
+            ("Vap", "H2O"): 0.1
+            * state_args_hot_side["flow_mass_phase_comp"][("Liq", "H2O")],
+        }
+
+        self.properties_vapor.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args_vapor,
+        )
         init_log.info_high("Initialization Step 1 Complete.")
 
-        # Initialize additional variables and constraints
         for t in self.flowsheet().config.time:
-            # Initialize variables related to mass transfer
-            self.recovery_mass_phase_comp[t] = 0.5  # Arbitrary initial value
             for p in self.config.hot_side.property_package.phase_list:
-                self.mass_transfer_phase_comp[
-                    t, p, "H2O"
-                ] = 0.0  # No mass transfer initially
-                self.eq_mass_transfer_term[
-                    t, p, "H2O"
-                ].deactivate()  # Temporarily deactivate constraints
+                self.eq_mass_transfer_term[t, p, "H2O"].deactivate()
 
-            # Initialize vapor-related variables
-            self.vapor_flux[t] = 0.0  # No vapor flux initially
-            self.eq_vapor_flux[t].deactivate()  # Temporarily deactivate constraint
-            self.eq_vapor_mass_transfer[
-                t
-            ].deactivate()  # Temporarily deactivate constraint
+            self.eq_vapor_flux[t].activate()
+            self.eq_vapor_mass_transfer[t].deactivate()
 
-            # Initialize heat-related variables
-            self.hot_side.heat[t] = 0.0  # No heat transfer initially
-            self.cold_side.heat[t] = 0.0  # No heat transfer initially
-            self.eq_hot_side_energy_balance[
-                t
-            ].deactivate()  # Temporarily deactivate constraint
-            self.eq_cold_side_energy_balance[
-                t
-            ].deactivate()  # Temporarily deactivate constraint
+            self.eq_hot_side_energy_balance[t].deactivate()
+            self.eq_cold_side_energy_balance[t].deactivate()
 
         # Try solving the model with these initial values
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
