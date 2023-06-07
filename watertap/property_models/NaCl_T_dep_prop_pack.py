@@ -27,7 +27,6 @@ from pyomo.environ import (
     Suffix,
     value,
     check_optimal_termination,
-    exp,
 )
 from pyomo.environ import units as pyunits
 
@@ -63,7 +62,7 @@ from idaes.core.util.exceptions import (
 import idaes.core.util.scaling as iscale
 
 from watertap.core.util.scaling import transform_property_constraints
-import numpy as np
+
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
