@@ -189,12 +189,12 @@ def _set_ene_bal_scaling(unit):
         )
         max_enth_mol_phase = max(val, max_enth_mol_phase)
         iscale.set_scaling_factor(
-            unit.control_volume.properties_in[0.0]._enthalpy_flow_term[phase], 10 / val
+            unit.control_volume.properties_in[0.0]._enthalpy_flow_term[phase], 1 / val
         )
         iscale.set_scaling_factor(
-            unit.control_volume.properties_out[0.0]._enthalpy_flow_term[phase], 10 / val
+            unit.control_volume.properties_out[0.0]._enthalpy_flow_term[phase], 1 / val
         )
 
     iscale.constraint_scaling_transform(
-        unit.control_volume.enthalpy_balances[0.0], 10 / max_enth_mol_phase
+        unit.control_volume.enthalpy_balances[0.0], 1 / max_enth_mol_phase
     )
