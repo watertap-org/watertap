@@ -188,41 +188,6 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # Add unit parameters
-        self.pore_diameter = Param(
-            mutable=True,
-            initialize=4.7e-8,
-            units=units_meta("length"),
-            doc="Average membrane pore diameter",
-        )
-
-        self.porosity = Param(
-            mutable=True,
-            initialize=0.4,
-            units=units.dimensionless,
-            doc="Membrane porosity",
-        )
-
-        self.membrane_thickness = Param(
-            mutable=True,
-            initialize=4e-5,
-            units=units_meta("length"),
-            doc="Membrane thickness",
-        )
-
-        self.permeability_constant = Param(
-            mutable=True,
-            initialize=150,
-            units=units.dimensionless,
-            doc="Permeability constant",
-        )
-
-        self.module_diameter = Param(
-            mutable=True,
-            initialize=0.064,
-            units=units_meta("length"),
-            doc="Module diameter",
-        )
-
         self.num_constant = Param(
             mutable=True,
             initialize=1.65e12,
@@ -280,6 +245,45 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         )
 
         # Add unit variables
+        self.pore_diameter = Var(
+            self.flowsheet().config.time,
+            initialize=4.7e-8,
+            bounds=(0.0, None),
+            units=units_meta("length"),
+            doc="Average membrane pore diameter",
+        )
+
+        self.porosity = Var(
+            self.flowsheet().config.time,
+            initialize=0.4,
+            bounds=(0.0, None),
+            units=units.dimensionless,
+            doc="Membrane porosity",
+        )
+
+        self.membrane_thickness = Var(
+            self.flowsheet().config.time,
+            initialize=4e-5,
+            bounds=(0.0, None),
+            units=units_meta("length"),
+            doc="Membrane thickness",
+        )
+
+        self.permeability_constant = Var(
+            self.flowsheet().config.time,
+            initialize=150,
+            bounds=(0.0, None),
+            units=units.dimensionless,
+            doc="Permeability constant",
+        )
+
+        self.module_diameter = Var(
+            self.flowsheet().config.time,
+            initialize=0.064,
+            bounds=(0.0, None),
+            units=units_meta("length"),
+            doc="Module diameter",
+        )
         self.flux_vol_oil = Var(
             self.flowsheet().config.time,
             initialize=1e-8,
@@ -484,7 +488,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
                 == b.liquid_velocity_in[t]
                 * 0.25
                 * Constants.pi
-                * b.module_diameter**2
+                * b.module_diameter[t] ** 2
             )
 
         @self.Constraint(
@@ -503,14 +507,18 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         def eq_flux_vol_oil_pure(b, t):
             return b.flux_vol_oil_pure[t] == b.pressure_transmemb_avg[
                 t
-            ] * b.pore_diameter**2 * b.porosity ** (
+            ] * b.pore_diameter[t] ** 2 * b.porosity[t] ** (
                 7 / 3
-            ) / b.permeability_constant / b.membrane_thickness / b.feed_side.properties_in[
+            ) / b.permeability_constant[
+                t
+            ] / b.membrane_thickness[
+                t
+            ] / b.feed_side.properties_in[
                 t
             ].visc_d_phase_comp[
                 "Liq", "oil"
             ] / (
-                1 - b.porosity
+                1 - b.porosity[t]
             ) ** (
                 4 / 3
             )
@@ -692,6 +700,11 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         iscale.set_scaling_factor(self.effective_area_ratio_den, 1)
         iscale.set_scaling_factor(self.recovery_frac_oil, 1)
         iscale.set_scaling_factor(self.liquid_velocity_in, 1e2)
+        iscale.set_scaling_factor(self.pore_diameter, 1e9)
+        iscale.set_scaling_factor(self.porosity, 1e1)
+        iscale.set_scaling_factor(self.membrane_thickness, 1e5)
+        iscale.set_scaling_factor(self.permeability_constant, 1e-2)
+        iscale.set_scaling_factor(self.module_diameter, 1e2)
         iscale.set_scaling_factor(
             self.pressure_transmemb_avg,
             iscale.get_scaling_factor(self.feed_side.properties_in[0].pressure),
