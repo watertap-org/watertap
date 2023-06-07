@@ -89,6 +89,7 @@ class ModelExport(BaseModel):
     lb: Union[None, float] = 0.0
     ub: Union[None, float] = 0.0
     has_bounds: bool = True
+    is_sweep: bool = False
 
     class Config:
         arbitrary_types_allowed = True
@@ -429,6 +430,7 @@ class FlowsheetInterface:
 
                 dst.obj.fixed = src.fixed
                 dst.fixed = src.fixed
+                dst.is_sweep = src.is_sweep
 
                 # update bounds
                 if src.lb is None or src.lb == "":
