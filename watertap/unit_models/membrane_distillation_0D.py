@@ -345,28 +345,6 @@ class MembraneDistillationData(UnitModelBlockData, InitializationMixin):
             **tmp_dict,
         )
 
-        def _add_interface_stateblock(self, has_phase_equilibrium=None):
-            """
-            This method constructs the interface state blocks for the
-            control volume.
-
-            Args:
-                has_phase_equilibrium: indicates whether equilibrium calculations
-                                        will be required in state blocks
-            Returns:
-                None
-            """
-            tmp_dict = dict(**self.config.property_package_args)
-            tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
-            tmp_dict["defined_state"] = False  # these blocks are not inlets or outlets
-
-            self.properties_interface = self.config.property_package.build_state_block(
-                self.flowsheet().config.time,
-                self.length_domain,
-                doc="Material properties of flows at membrane interface",
-                **tmp_dict,
-        )
-
         self.membrane_area = Var(
             domain=PositiveReals,
             initialize=10,
