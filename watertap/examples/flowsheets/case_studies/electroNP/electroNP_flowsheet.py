@@ -42,6 +42,7 @@ from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
+from idaes.core.util.initialization import propagate_state
 from watertap.costing import WaterTAPCosting
 from watertap.core.util.model_diagnostics.infeasible import *
 
@@ -158,6 +159,13 @@ def build_flowsheet():
     m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * units.kWh / units.kg)
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
+    # iscale.set_scaling_factor(m.fs.electroNP.electricity[0], 1)
+    # iscale.set_scaling_factor(m.fs.electroNP.MgCl2_flowrate[0], 1e-1)
+
+    # Costing
+    iscale.set_scaling_factor(m.fs.electroNP.costing.capital_cost, 1e-1)
+    # iscale.set_scaling_factor(m.fs.AD.costing.capital_cost, 1e-6)
+
     # scaling
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
         if "flow_vol" in var.name:
@@ -181,7 +189,7 @@ def build_flowsheet():
         if "conc_mass_comp[S_F]" in var.name:
             iscale.set_scaling_factor(var, 1e-1)
         if "conc_mass_comp[X_I]" in var.name:
-            iscale.set_scaling_factor(var, 1e-1)
+            iscale.set_scaling_factor(var, 1e0)
         # if "conc_mass_comp[S_O2]" in var.name:
         #     iscale.set_scaling_factor(var, 1e3)
         # if "conc_mass_comp[S_N2]" in var.name:
@@ -216,6 +224,9 @@ def build_flowsheet():
             iscale.set_scaling_factor(var, 1e3)
 
     iscale.calculate_scaling_factors(m)
+    print(
+        f"electricity scaling factor: {iscale.get_scaling_factor(m.fs.electroNP.electricity[0])}"
+    )
 
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
@@ -230,6 +241,20 @@ def build_flowsheet():
             automate_rescale_variables(unit)
 
     seq.run(m, function)
+    print(
+        f"electricity scaling factor: {iscale.get_scaling_factor(m.fs.electroNP.electricity[0])}"
+    )
+
+    # m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
+    # propagate_state(m.fs.stream_adm1_translator)
+    #
+    # badly_scaled_vars = list(iscale.badly_scaled_var_generator(m.fs))
+    # if len(badly_scaled_vars) > 0:
+    #     [print(i[0]) for i in badly_scaled_vars]
+    #
+    # m.fs.translator_adm1_asm2d.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
+    # propagate_state(m.fs.stream_translator_electroNP)
+    # m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
 
     solver = get_solver(options={"bound_push": 1e-3})
 
