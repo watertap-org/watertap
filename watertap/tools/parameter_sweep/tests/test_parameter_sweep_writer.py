@@ -60,7 +60,7 @@ class TestParallelWriterManager:
     def test_interp_nan_values(self):
         ps = ParameterSweep()
         ps_writer = ParameterSweepWriter(
-            ps.comm,
+            ps.parallel_manager,
             csv_results_file_name=None,
             h5_results_file_name=None,
             debugging_data_dir=None,
@@ -104,7 +104,7 @@ class TestParallelWriterManager:
         h5_fname = "h5_test_{0}.h5".format(ps.rank)
 
         ps_writer = ParameterSweepWriter(
-            ps.comm,
+            ps.parallel_manager,
             csv_results_file_name=None,
             h5_results_file_name=h5_fname,
             debugging_data_dir=None,
@@ -244,7 +244,7 @@ class TestParallelWriterManager:
         reference_dict = dict()
         for h5_parent_group in h5_parent_groups:
             ps_writer_dict[h5_parent_group] = ParameterSweepWriter(
-                ps.comm,
+                ps.parallel_manager,
                 csv_results_file_name=None,
                 h5_results_file_name=h5_fname,
                 h5_parent_group_name=h5_parent_group,
