@@ -271,7 +271,7 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     exports.add(
-        obj=fs.product.total_hardness,
+        obj=fs.product.properties[0].total_hardness,
         name="Product hardness",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -295,7 +295,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="System streams",
     )
     exports.add(
-        obj=fs.feed.total_hardness,
+        obj=fs.feed.properties[0].total_hardness,
         name="Feed hardness",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -308,7 +308,7 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     exports.add(
-        obj=fs.disposal.total_hardness,
+        obj=fs.disposal.properties[0].total_hardness,
         name="Disposal hardness",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
