@@ -160,14 +160,11 @@ def build_flowsheet():
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
     # Costing
-    iscale.set_scaling_factor(m.fs.electroNP.costing.capital_cost, 1e-1)
-    iscale.set_scaling_factor(m.fs.AD.costing.capital_cost, 1e-6)
+    # iscale.set_scaling_factor(m.fs.electroNP.costing.capital_cost, 1e-1)
+    # iscale.set_scaling_factor(m.fs.AD.costing.capital_cost, 1e-6)
 
     # iscale.constraint_scaling_transform(
     #     m.fs.electroNP.electricity_consumption[0], 1e0
-    # )
-    # iscale.constraint_scaling_transform(
-    #     m.fs.electroNP.MgCl2_demand[0], 1e-1
     # )
 
     # scaling
@@ -185,7 +182,7 @@ def build_flowsheet():
         if "conc_mass_comp[S_IN]" in var.name:
             iscale.set_scaling_factor(var, 1)
         if "conc_mass_comp[S_IP]" in var.name:
-            iscale.set_scaling_factor(var, 1)
+            iscale.set_scaling_factor(var, 1e-1)
         if "conc_mass_comp[S_PO4]" in var.name:
             iscale.set_scaling_factor(var, 1e-1)
         if "conc_mass_comp[S_NH4]" in var.name:
@@ -194,40 +191,48 @@ def build_flowsheet():
             iscale.set_scaling_factor(var, 1e-1)
         if "conc_mass_comp[X_I]" in var.name:
             iscale.set_scaling_factor(var, 1e-1)
-        # if "conc_mass_comp[S_O2]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[S_N2]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[S_NO3]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_H]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_PAO]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_AUT]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_MeOH]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_MeP]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
-        # if "conc_mass_comp[X_TSS]" in var.name:
-        #     iscale.set_scaling_factor(var, 1e3)
+        if "conc_mass_comp[S_O2]" in var.name:
+            iscale.set_scaling_factor(var, 1e4)
+        if "conc_mass_comp[S_N2]" in var.name:
+            iscale.set_scaling_factor(var, 1e4)
+        if "conc_mass_comp[S_NO3]" in var.name:
+            iscale.set_scaling_factor(var, 1e4)
+        if "conc_mass_comp[X_H]" in var.name:
+            iscale.set_scaling_factor(var, 1e4)
+        if "conc_mass_comp[X_PAO]" in var.name:
+            iscale.set_scaling_factor(var, 1e4)
+        if "conc_mass_comp[X_AUT]" in var.name:
+            iscale.set_scaling_factor(var, 1e4)
+        if "conc_mass_comp[X_MeOH]" in var.name:
+            iscale.set_scaling_factor(var, 1e4)
+        if "conc_mass_comp[X_MeP]" in var.name:
+            iscale.set_scaling_factor(var, 1e4)
+        if "conc_mass_comp[X_TSS]" in var.name:
+            iscale.set_scaling_factor(var, 1e4)
         if "conc_mass_comp[S_ch4]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
+            iscale.set_scaling_factor(var, 1e4)
         if "conc_mass_comp[X_su]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
+            iscale.set_scaling_factor(var, 1e4)
         if "conc_mass_comp[X_fa]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
+            iscale.set_scaling_factor(var, 1e4)
         if "conc_mass_comp[X_c4]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
+            iscale.set_scaling_factor(var, 1e4)
         if "conc_mass_comp[X_pro]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
+            iscale.set_scaling_factor(var, 1e4)
         if "conc_mass_comp[X_ac]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
+            iscale.set_scaling_factor(var, 1e4)
         if "conc_mass_comp[X_h2]" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
+            iscale.set_scaling_factor(var, 1e4)
 
     iscale.calculate_scaling_factors(m)
+
+    iscale.set_scaling_factor(m.fs.electroNP.properties_byproduct[0.0].flow_vol, 1e7)
+    # iscale.constraint_scaling_transform(
+    #     m.fs.stream_adm1_translator_expanded.conc_mass_comp_equality[0.0, "S_IP"], 1e-1
+    # )
+    # iscale.constraint_scaling_transform(
+    #     m.fs.translator_adm1_asm2d.eq_flow_vol_rule[0.0], 1e3
+    # )
 
     # iscale.set_scaling_factor(m.fs.electroNP.electricity[0], 1)
     # iscale.set_scaling_factor(m.fs.electroNP.MgCl2_flowrate[0], 1e-1)
@@ -334,9 +339,9 @@ if __name__ == "__main__":
         {
             "AD inlet": m.fs.AD.inlet,
             "AD liquid outlet": m.fs.AD.liquid_outlet,
-            "AD vapor outlet": m.fs.AD.vapor_outlet,
             "Translator outlet": m.fs.translator_adm1_asm2d.outlet,
-            "ElectroNP outlet": m.fs.electroNP.treated,
+            "ElectroNP treated": m.fs.electroNP.treated,
+            "ElectroNP byproduct": m.fs.electroNP.byproduct,
         },
         time_point=0,
     )

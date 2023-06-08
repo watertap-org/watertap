@@ -285,7 +285,7 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
             elif j == "S_NH4":
                 return b.removal_frac_mass_comp[t, j] == b.N_removal
             else:
-                return b.removal_frac_mass_comp[t, j] == 1e-9
+                return b.removal_frac_mass_comp[t, j] == 1e-7
 
         self._stream_table_dict = {
             "Inlet": self.inlet,
@@ -490,5 +490,5 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
         #     )
         #     iscale.set_scaling_factor(v, sf)
 
-        iscale.set_scaling_factor(self.electricity, 1)
+        iscale.set_scaling_factor(self.electricity, 1e0)
         iscale.set_scaling_factor(self.MgCl2_flowrate, 1e-1)
