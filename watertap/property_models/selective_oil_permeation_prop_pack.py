@@ -107,6 +107,7 @@ class SopParameterData(PhysicalParameterBlock):
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
                 "flow_vol_phase_comp": {"method": "_flow_vol_phase_comp"},
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
+                "flow_vol": {"method": "_flow_vol"},
                 "flow_mass_phase": {"method": "_flow_mass_phase"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
                 "vol_frac_phase_comp": {"method": "_vol_frac_phase_comp"},
@@ -344,7 +345,7 @@ class SopStateBlockData(StateBlockData):
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units.m**3 / units.s,
-            doc="Volumetric flow rate",
+            doc="Phase volumetric flow rate",
         )
 
         def rule_flow_vol_phase(b, p):
@@ -355,6 +356,20 @@ class SopStateBlockData(StateBlockData):
         self.eq_flow_vol_phase = Constraint(
             self.params.phase_list, rule=rule_flow_vol_phase
         )
+
+    def _flow_vol(self):
+        self.flow_vol = Var(
+            initialize=1e-3,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units.m**3 / units.s,
+            doc="Total volumetric flow rate",
+        )
+
+        def rule_flow_vol(b):
+            return b.flow_vol == sum(b.flow_vol_phase[p] for p in b.params.phase_list)
+
+        self.eq_flow_vol = Constraint(rule=rule_flow_vol)
 
     def _flow_mass_phase(self):
         self.flow_mass_phase = Var(
@@ -538,6 +553,13 @@ class SopStateBlockData(StateBlockData):
             for p in self.params.phase_list:
                 sf = sf_flow_mass_phase[p] / sf_dens_mass_phase[p]
                 iscale.set_scaling_factor(self.flow_vol_phase[p], sf)
+
+        if self.is_property_constructed("flow_vol"):
+            sf = sum(
+                sf_flow_mass_phase[p] / sf_dens_mass_phase[p]
+                for p in self.params.phase_list
+            )
+            iscale.set_scaling_factor(self.flow_vol, sf)
 
         if self.is_property_constructed("vol_frac_phase_comp"):
             for p in self.params.phase_list:

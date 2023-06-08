@@ -25,6 +25,7 @@ from idaes.core.base.costing_base import (
 from idaes.models.unit_models import Mixer
 
 from watertap.unit_models import (
+    AD,
     ReverseOsmosis0D,
     ReverseOsmosis1D,
     OsmoticallyAssistedReverseOsmosis0D,
@@ -43,6 +44,7 @@ from watertap.unit_models import (
     GAC,
 )
 
+from .units.anaerobic_digestor import cost_anaerobic_digestor
 from .units.crystallizer import cost_crystallizer
 from .units.electrodialysis import cost_electrodialysis
 from .units.electrolyzer import cost_electrolyzer
@@ -86,6 +88,7 @@ class _DefinedFlowsDict(MutableMapping, dict):
 class WaterTAPCostingData(FlowsheetCostingBlockData):
     # Define default mapping of costing methods to unit models
     unit_mapping = {
+        AD: cost_anaerobic_digestor,
         Mixer: cost_mixer,
         Pump: cost_pump,
         EnergyRecoveryDevice: cost_energy_recovery_device,

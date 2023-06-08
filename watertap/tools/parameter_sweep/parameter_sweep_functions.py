@@ -159,7 +159,11 @@ def parameter_sweep(
     ps = ParameterSweep(**kwargs)
 
     return ps.parameter_sweep(
-        model, sweep_params, outputs=outputs, num_samples=num_samples, seed=seed
+        model,
+        sweep_params,
+        combined_outputs=outputs,
+        num_samples=num_samples,
+        seed=seed,
     )
 
 
