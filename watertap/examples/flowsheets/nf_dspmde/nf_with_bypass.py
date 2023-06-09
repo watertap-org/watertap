@@ -148,7 +148,6 @@ def build():
     m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
     iscale.set_scaling_factor(m.fs.costing.aggregate_flow_costs["disposal cost"], 1)
-    iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1 / 1000)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     return m
