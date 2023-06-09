@@ -39,10 +39,11 @@ def transform_property_constraints(self):
                 for ind, c in con.items():
                     sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
                     iscale.constraint_scaling_transform(c, sf)
-            # TODO: add test to check that unindexed var that is fixed would not log warning
+            # in some cases, a variable could be fixed within the parameter block, and the logger warning shouldn't apply.
             elif not var.is_indexed() and var.is_fixed():
                 pass
-            # TODO: add test to check that indexed var that is fixed would not log warning
+            # in some cases, an indexed variable could be fixed within the parameter block, and the logger warning shouldn't apply
+            # to those indexed variables that are fixed.
             elif var.is_indexed():
                 for indexed_var in var.values():
                     if indexed_var.is_fixed():
