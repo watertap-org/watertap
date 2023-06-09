@@ -18,7 +18,7 @@ from idaes.core import (
 from pyomo.environ import (
     units as pyunits,
     Var,
-    Constraint,
+    assert_optimal_termination,
 )
 
 import idaes.core.util.scaling as iscale
@@ -49,7 +49,8 @@ def main():
     initialize(m, solver)
     unfix_opt_vars(m)
     nf.add_objective(m)
-    optimize(m, solver)
+    results = optimize(m, solver)
+    assert_optimal_termination(results)
     print("Optimal cost", m.fs.costing.LCOW.value)
     print("Optimal NF pressure (Bar)", m.fs.NF.pump.outlet.pressure[0].value / 1e5)
     print("Optimal area (m2)", m.fs.NF.nfUnit.area.value)
@@ -174,7 +175,8 @@ def initialize(m, solver=None):
     # solve box problem
     print("initialized, DOFs:", degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
-    solver.solve(m, tee=True)
+    results = solver.solve(m, tee=True)
+    assert_optimal_termination(results)
     print("Solved box problem")
 
 
@@ -211,7 +213,6 @@ def unfix_opt_vars(m):
 def optimize(m, solver=None):
     if solver is None:
         solver = get_solver()
-    result = nf.optimize(m, solver)
     result = nf.optimize(m, solver)
     return result
 

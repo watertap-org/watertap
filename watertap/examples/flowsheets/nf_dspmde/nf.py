@@ -16,7 +16,7 @@ from pyomo.environ import (
     Var,
     Constraint,
     NonNegativeReals,
-    value,
+    assert_optimal_termination,
 )
 
 
@@ -61,7 +61,8 @@ def main():
     initialize(m, solver)
     add_objective(m)
     unfix_opt_vars(m)
-    optimize(m, solver)
+    results = optimize(m, solver)
+    assert_optimal_termination(results)
     print("Optimal cost", m.fs.costing.LCOW.value)
     print("Optimal NF pressure (Bar)", m.fs.NF.pump.outlet.pressure[0].value / 1e5)
     print("Optimal area (m2)", m.fs.NF.nfUnit.area.value)
@@ -299,7 +300,8 @@ def initialize(m, solver=None, **kwargs):
     # solve box problem
     print("initalized, DOFs:", degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
-    solver.solve(m, tee=True)
+    results = solver.solve(m, tee=False)
+    assert_optimal_termination(results)
     print("Solved box problem")
 
 
