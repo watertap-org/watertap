@@ -401,17 +401,6 @@ class MCASParameterData(PhysicalParameterBlock):
         )
 
         if self.config.diffus_calculation == DiffusivityCalculation.none:
-            # Retrieve component string names from user-provided diffusivity_data configuration
-            diffus_data_indices = [i[1] for i in self.config.diffusivity_data.keys()]
-            # identify component string names that were not specified in diffusivity_data
-            missing_diffus_ind = [
-                i for i in self.solute_set if i not in diffus_data_indices
-            ]
-            # warning for components with no diffusivity_data entry
-            if not missing_diffus_ind == []:
-                _log.warning(
-                    f"Diffusivity data was not provided for {missing_diffus_ind}. "
-                )
 
             self.diffus_phase_comp = Var(
                 self.phase_list,
@@ -1265,20 +1254,19 @@ class MCASStateBlockData(StateBlockData):
         )
 
     def _diffus_phase_comp(self):
+        # Retrieve component string names from diffusivity_data configuration
+        diffus_data_indices = {i[1] for i in self.params.config.diffusivity_data.keys()}
+        # Retrieve component string names from molar_volume_data configuration
+        molar_volume_data_indices = {
+            i[1] for i in self.params.config.molar_volume_data.keys()
+        }
+        missing_diffus_ind = [
+            i
+            for i in self.params.solute_set
+            if i not in (molar_volume_data_indices | diffus_data_indices)
+        ]
+
         if self.params.config.diffus_calculation == DiffusivityCalculation.HaydukLaudie:
-            # Retrieve component string names from diffusivity_data configuration
-            diffus_data_indices = {
-                i[1] for i in self.params.config.diffusivity_data.keys()
-            }
-            # Retrieve component string names from molar_volume_data configuration
-            molar_volume_data_indices = {
-                i[1] for i in self.params.config.molar_volume_data.keys()
-            }
-            missing_diffus_ind = [
-                i
-                for i in self.params.solute_set
-                if i not in (molar_volume_data_indices | diffus_data_indices)
-            ]
             # warning for components with neither diffusivity_data nor molar_volume_data entry
             if not missing_diffus_ind == []:
                 _log.warning(
@@ -1364,6 +1352,12 @@ class MCASStateBlockData(StateBlockData):
             )
 
         elif self.params.config.diffus_calculation == DiffusivityCalculation.none:
+            # warning for components with no diffusivity_data entry
+            if not missing_diffus_ind == []:
+                _log.warning(
+                    f"Diffusivity data was not provided for {missing_diffus_ind}. "
+                )
+
             add_object_reference(
                 self, "diffus_phase_comp", self.params.diffus_phase_comp
             )
@@ -1925,13 +1919,14 @@ class MCASStateBlockData(StateBlockData):
         for j, v in self.mw_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.mw_comp[j], value(v) ** -1)
-        for ind, v in self.diffus_phase_comp.items():
-            if iscale.get_scaling_factor(v) is None:
-                if ind in self.params.config.diffusivity_data.keys():
-                    sf = self.params.config.diffusivity_data[ind] ** -1
-                else:
-                    sf = 1e10
-                iscale.set_scaling_factor(self.diffus_phase_comp[ind], sf)
+        if self.is_property_constructed("diffus_phase_comp"):
+            for ind, v in self.diffus_phase_comp.items():
+                if iscale.get_scaling_factor(v) is None:
+                    if ind in self.params.config.diffusivity_data.keys():
+                        sf = self.params.config.diffusivity_data[ind] ** -1
+                    else:
+                        sf = 1e10
+                    iscale.set_scaling_factor(self.diffus_phase_comp[ind], sf)
         if self.is_property_constructed("dens_mass_solvent"):
             if iscale.get_scaling_factor(self.dens_mass_solvent) is None:
                 iscale.set_scaling_factor(self.dens_mass_solvent, 1e-3)
