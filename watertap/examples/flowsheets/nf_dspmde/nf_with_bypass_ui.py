@@ -12,18 +12,14 @@
 from watertap.ui.fsapi import FlowsheetInterface
 from watertap.examples.flowsheets.nf_dspmde import nf_with_bypass
 from watertap.examples.flowsheets.nf_dspmde import nf
-from pyomo.environ import units as pyunits
 from idaes.core.solvers import get_solver
-
 
 from pyomo.environ import (
     units as pyunits,
-    Var,
-    Constraint,
 )
 
 
-def export_to_ui(flowsheet=None, exports=None):
+def export_to_ui():
     return FlowsheetInterface(
         name="NF-DSPM-DE with bypass",
         do_export=export_variables,
