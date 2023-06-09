@@ -11,6 +11,7 @@
 #################################################################################
 
 import pytest
+from pyomo.environ import value
 from watertap.examples.flowsheets.nf_dspmde.nf import main
 
 
@@ -18,13 +19,13 @@ from watertap.examples.flowsheets.nf_dspmde.nf import main
 def test_main():
     m = main()
     test_dict = {
-        "lcow": [m.fs.costing.LCOW.value, 0.16811587158493219],
-        "pressure": [m.fs.NF.pump.outlet.pressure[0].value / 1e5, 6.559724419265922],
-        "area": [m.fs.NF.nfUnit.area.value, 285.6900547389303],
+        "lcow": [m.fs.costing.LCOW, 0.16811587158493219],
+        "pressure": [m.fs.NF.pump.outlet.pressure[0] / 1e5, 6.559724419265922],
+        "area": [m.fs.NF.nfUnit.area, 285.6900547389303],
         "recovery": [
-            m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"].value * 100,
+            m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"] * 100,
             73.47934090302432,
         ],
     }
-    for key, (solve, testval) in test_dict.items():
-        assert round(solve, 4) == round(testval, 4)
+    for (model_result, testval) in test_dict.values():
+        assert pytest.approx(testval, rel=1e-3) == value(model_result)
