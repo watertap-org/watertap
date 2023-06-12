@@ -41,10 +41,10 @@ Properties
    "Component mole flowrate", ":math:`N_j`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mole/s}`"
    "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`" 
    "Molality", ":math:`Cm_{NaCl}`", "molality_comp", "['NaCl']", ":math:`\text{mole/kg}`"
-   "Solubility", ":math:`x_sat`", "solubility", "None", ":math:`\text{dimensionless}`"
-   "Vapor Pressure", ":math:`P_vap`", "vapor_pressure", "None", ":math:`\text{MPa}`"
+   "Solubility", ":math:`x_sat_{NaCl}`", "solubility_comp", "['NaCl']", ":math:`\text{dimensionless}`"
+   "Vapor Pressure", ":math:`P_sat`", "pressure_sat", "None", ":math:`\text{MPa}`"
    "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa/s}`"
-   "Thermal Conductivity", ":math:`k`", "th_cond_phase", "[p]", ":math:`\text{W/m*K}`"
+   "Thermal Conductivity", ":math:`k`", "therm_cond_phase", "[p]", ":math:`\text{W/m*K}`"
    "Specific Heat Capacity", ":math:`C_p`", "cp_mass_phase", "[p]", ":math:`\text{J/kg*K}`"
    "Solute diffusivity", ":math:`D`", "diffus_phase_comp", "[p,'NaCl']", ":math:`\text{m^2/s}`"
    "Osmotic coefficient", ":math:`\phi`", "osm_coeff", "None", ":math:`\text{dimensionless}`"
@@ -83,29 +83,6 @@ Scaling
 This NaCl property package includes support for scaling, such as providing default or calculating scaling factors for almost all variables. The only variables that do not have scaling factors are the component mass flowrate and the user must set them or the user will receive a warning.
 
 The user can specify the scaling factors for component mass flowrates with the following:
-
-.. testsetup::
-
-   from pyomo.environ import ConcreteModel
-   from idaes.core import FlowsheetBlock
-
-.. doctest::
-   
-   # relevant imports
-   import watertap.property_models.NaCl_prop_pack as props
-   from idaes.core.util.scaling import calculate_scaling_factors
-
-   # relevant assignments
-   m = ConcreteModel()
-   m.fs = FlowsheetBlock(dynamic=False)
-   m.fs.properties = props.NaClParameterBlock()
-
-   # set scaling for component mass flowrate
-   m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-   m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
-
-   # calculate scaling factors
-   calculate_scaling_factors(m.fs)
 
 The default scaling factors are as follows:
 
