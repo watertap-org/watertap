@@ -109,7 +109,7 @@ class NaClParameterData(PhysicalParameterBlock):
             domain=Reals,
             initialize=solubility_param_dict,
             units=pyunits.dimensionless,
-            doc="Mass density parameters",
+            doc="Solubility parameters",
         )
 
         # mass density parameters, 0-300 C
