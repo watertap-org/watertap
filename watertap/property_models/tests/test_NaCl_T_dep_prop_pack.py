@@ -62,9 +62,9 @@ class TestNaClProperty(PropertyTestHarness):
             ("visc_d_phase", "Liq"): 0.000967,
             ("enth_mass_phase", "Liq"): 101.09,
             ("cp_mass_phase", "Liq"): 4000,
-            ("solubility", None): 0.265,
-            ("th_cond_phase", "Liq"): 0.6015,
-            ("vapor_pressure", None): 0.00293,
+            ("solubility_comp", None): 0.265,
+            ("therm_cond_phase", "Liq"): 0.6015,
+            ("pressure_sat", None): 0.00293,
         }
 
 
@@ -105,9 +105,9 @@ class TestNaClPropertySolution_1(PropertyRegressionTest):
             ("pressure_osm_phase", "Liq"): 4.4579e6,
             ("enth_mass_phase", "Liq"): 197.9,
             ("cp_mass_phase", "Liq"): 3941.9,
-            ("solubility", None): 0.2686,
-            ("th_cond_phase", "Liq"): 0.6392,
-            ("vapor_pressure", None): 0.01224,
+            ("solubility_comp", None): 0.2686,
+            ("therm_cond_phase", "Liq"): 0.6392,
+            ("pressure_sat", None): 0.01224,
         }
 
 
@@ -148,9 +148,9 @@ class TestNaClPropertySolution_2(PropertyRegressionTest):
             ("pressure_osm_phase", "Liq"): 1.877e7,
             ("enth_mass_phase", "Liq"): 353.9,
             ("cp_mass_phase", "Liq"): 3603.7,
-            ("solubility", None): 0.2799,
-            ("th_cond_phase", "Liq"): 0.6648,
-            ("vapor_pressure", None): 0.09011,
+            ("solubility_comp", None): 0.2799,
+            ("therm_cond_phase", "Liq"): 0.6648,
+            ("pressure_sat", None): 0.09011,
         }
 
 
@@ -191,7 +191,7 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
             ("pressure_osm_phase", "Liq"): 4.399e7,
             ("enth_mass_phase", "Liq"): 475.3,
             ("cp_mass_phase", "Liq"): 3422.6,
-            ("solubility", None): 0.2966,
-            ("th_cond_phase", "Liq"): 0.6627,
-            ("vapor_pressure", None): 0.3688,
+            ("solubility_comp", None): 0.2966,
+            ("therm_cond_phase", "Liq"): 0.6627,
+            ("pressure_sat", None): 0.3688,
         }
