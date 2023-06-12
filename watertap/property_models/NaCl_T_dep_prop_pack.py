@@ -402,7 +402,9 @@ class NaClParameterData(PhysicalParameterBlock):
 
         # TODO: could add entropy if needed from Sparrow 2003, Eq. 9
 
-        # thermal conductivity, 0-200 C, 0-.26 NaCl
+        # thermal conductivity, 0-155 C
+        # Regressed from Zaytsev & Aseev (1992):
+        # th cond = A+BT+CT2+DT3, where A = ao + a1X + a2X2 + a3X3
         th_cond_A_param_dict = {
             "0": 0.5424026,
             "1": 0.01283929,
@@ -457,8 +459,9 @@ class NaClParameterData(PhysicalParameterBlock):
             doc="Thermal conductivity parameter D",
         )
 
-        # viscosity, 0-150 salinity (g/kg), 20-180 T (C)
-        # Qasuem et al. 2021 (IAPWS-2008 correlation)
+        # viscosity, 0-200 C,
+        # Regressed from Zaytsev & Aseev (1992):
+        # vis = A+BT+CT2+DT3+ET4, where A = ao + a1X + a2X2 + a3X3 + a4X4
         visc_A_param_dict = {
             "0": 1.740036,
             "1": 0.2437716,
@@ -531,7 +534,9 @@ class NaClParameterData(PhysicalParameterBlock):
             doc="Dynamic viscosity parameter E",
         )
 
-        # heat capacity, 0-200 C, 0-.26 NaCl
+        # heat capacity, 0-200 C
+        # Regressed from Zaytsev & Aseev (1992):
+        # cp = A+BT+CT2+DT3, where A = ao + a1X + a2X2 + a3X3
         cp_A_param_dict = {
             "0": 4174.74838,
             "1": -5533.00792,
@@ -575,7 +580,9 @@ class NaClParameterData(PhysicalParameterBlock):
             doc="Heat Capacity parameter D",
         )
 
-        # diffusivity parameters, 0-60 C, 0-0.26 NaCl
+        # diffusivity parameters, 0-60 C
+        # Regressed from Zaytsev & Aseev (1992):
+        # diffus = A+BT+CT2+DT3, where A = ao + a1X + a2X2 + a3X3
         diffus_aq_A_param_dict = {
             "0": 0.4131329195225919,
             "1": -7.742251927618488,
@@ -629,7 +636,9 @@ class NaClParameterData(PhysicalParameterBlock):
             doc="Diffusivity (solution) parameter D",
         )
 
-        # osmotic coefficient parameters, eq. 3b in Bartholomew
+        # osmotic coefficient parameters, 0-300 C
+        # Regressed from Pitzer et. al. (1984):
+        # osm coeff = A+BT+CT2+DT3, where A = ao + a1X + a2X2 + a3X3
         osm_coeff_A_param_dict = {
             "0": 0.9399062962108361,
             "1": -0.0189882837141575,
@@ -1077,7 +1086,7 @@ class NaClStateBlockData(StateBlockData):
         self.dens_mass_phase = Var(
             self.params.phase_list,
             initialize=1e3,
-            bounds=(5e2, 2e3),
+            bounds=(5e1, 5e6),
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density",
         )
@@ -1250,7 +1259,7 @@ class NaClStateBlockData(StateBlockData):
     def _vapor_pressure(self):
         self.vapor_pressure = Var(
             initialize=0.01,
-            bounds=(0.0, 1.1),
+            bounds=(0.0, 5),
             units=pyunits.MPa,
             doc="Vapor Pressure",
         )
@@ -1400,7 +1409,7 @@ class NaClStateBlockData(StateBlockData):
         self.cp_mass_phase = Var(
             self.params.phase_list,
             initialize=1,
-            bounds=(0.0, 10000),
+            bounds=(0.0, 100000),
             units=pyunits.J * pyunits.kg**-1 * pyunits.K**-1,
             doc="specific heat",
         )
@@ -1480,7 +1489,7 @@ class NaClStateBlockData(StateBlockData):
     def _osm_coeff(self):
         self.osm_coeff = Var(
             initialize=1,
-            bounds=(0.5, 2),
+            bounds=(0.001, 5),
             units=pyunits.dimensionless,
             doc="Osmotic coefficient",
         )
@@ -1518,7 +1527,7 @@ class NaClStateBlockData(StateBlockData):
         self.pressure_osm_phase = Var(
             self.params.phase_list,
             initialize=1e6,
-            bounds=(5e2, 5e7),
+            bounds=(5e2, 5e8),
             units=pyunits.Pa,
             doc="Osmotic pressure",
         )
@@ -1551,7 +1560,7 @@ class NaClStateBlockData(StateBlockData):
         self.enth_mass_phase = Var(
             self.params.phase_list,
             initialize=1e2,
-            bounds=(0, 10000),
+            bounds=(0, 100000),
             units=pyunits.kJ * pyunits.kg**-1,
             doc="Specific enthalpy",
         )
