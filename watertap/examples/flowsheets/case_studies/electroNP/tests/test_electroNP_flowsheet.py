@@ -114,3 +114,4 @@ class TestElectroNPFlowsheet:
         assert value(model.fs.electroNP.treated.alkalinity[0]) == pytest.approx(
             0.09373, rel=1e-4
         )
+        assert value(model.fs.costing.LCOW) == pytest.approx(6.01036, rel=1e-4)

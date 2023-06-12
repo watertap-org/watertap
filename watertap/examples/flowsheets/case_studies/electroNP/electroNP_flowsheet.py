@@ -14,8 +14,9 @@ __author__ = "Chenyu Wang"
 import pyomo.environ as pyo
 from pyomo.environ import (
     units,
+    value,
 )
-from pyomo.network import Arc, SequentialDecomposition
+from pyomo.network import Arc
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
@@ -44,7 +45,6 @@ from idaes.core.util.tables import (
 )
 from idaes.core.util.initialization import propagate_state
 from watertap.costing import WaterTAPCosting
-from watertap.core.util.model_diagnostics.infeasible import *
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -159,14 +159,6 @@ def build_flowsheet():
     m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * units.kWh / units.kg)
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
-    # Costing
-    # iscale.set_scaling_factor(m.fs.electroNP.costing.capital_cost, 1e-1)
-    # iscale.set_scaling_factor(m.fs.AD.costing.capital_cost, 1e-6)
-
-    # iscale.constraint_scaling_transform(
-    #     m.fs.electroNP.electricity_consumption[0], 1e0
-    # )
-
     # scaling
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
         if "flow_vol" in var.name:
@@ -180,7 +172,7 @@ def build_flowsheet():
         if "conc_mass_comp" in var.name:
             iscale.set_scaling_factor(var, 1e1)
         if "conc_mass_comp[S_IN]" in var.name:
-            iscale.set_scaling_factor(var, 1)
+            iscale.set_scaling_factor(var, 1e-1)
         if "conc_mass_comp[S_IP]" in var.name:
             iscale.set_scaling_factor(var, 1e-1)
         if "conc_mass_comp[S_PO4]" in var.name:
@@ -227,61 +219,19 @@ def build_flowsheet():
     iscale.calculate_scaling_factors(m)
 
     iscale.set_scaling_factor(m.fs.electroNP.properties_byproduct[0.0].flow_vol, 1e7)
-    # iscale.constraint_scaling_transform(
-    #     m.fs.stream_adm1_translator_expanded.conc_mass_comp_equality[0.0, "S_IP"], 1e-1
-    # )
-    # iscale.constraint_scaling_transform(
-    #     m.fs.translator_adm1_asm2d.eq_flow_vol_rule[0.0], 1e3
-    # )
 
-    # iscale.set_scaling_factor(m.fs.electroNP.electricity[0], 1)
-    # iscale.set_scaling_factor(m.fs.electroNP.MgCl2_flowrate[0], 1e-1)
-
-    print(
-        f"electricity scaling factor: {iscale.get_scaling_factor(m.fs.electroNP.electricity[0])}"
+    m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
+    propagate_state(m.fs.stream_adm1_translator)
+    m.fs.translator_adm1_asm2d.initialize(
+        outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2}
     )
-    print(
-        f"MgCl2 flowrate scaling factor: {iscale.get_scaling_factor(m.fs.electroNP.MgCl2_flowrate[0])}"
-    )
-
-    # Apply sequential decomposition - 1 iteration should suffice
-    seq = SequentialDecomposition()
-    seq.options.tear_set = []
-    seq.options.iterLim = 1
-
-    def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
-        badly_scaled_vars = list(iscale.badly_scaled_var_generator(unit))
-        if len(badly_scaled_vars) > 0:
-            [print(i[0]) for i in badly_scaled_vars]
-            automate_rescale_variables(unit)
-
-    seq.run(m, function)
-    print(
-        f"electricity scaling factor: {iscale.get_scaling_factor(m.fs.electroNP.electricity[0])}"
-    )
-    print(
-        f"MgCl2 flowrate scaling factor: {iscale.get_scaling_factor(m.fs.electroNP.MgCl2_flowrate[0])}"
-    )
-
-    # m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
-    # propagate_state(m.fs.stream_adm1_translator)
-    #
-    # badly_scaled_vars = list(iscale.badly_scaled_var_generator(m.fs))
-    # if len(badly_scaled_vars) > 0:
-    #     [print(i[0]) for i in badly_scaled_vars]
-    #
-    # m.fs.translator_adm1_asm2d.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
-    # propagate_state(m.fs.stream_translator_electroNP)
-    # m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
+    propagate_state(m.fs.stream_translator_electroNP)
+    m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
+    m.fs.costing.initialize()
 
     solver = get_solver(options={"bound_push": 1e-2})
 
     results = solver.solve(m, tee=True)
-    print_close_to_bounds(m)
-    print_infeasible_constraints(m)
-
-    pyo.assert_optimal_termination(results)
 
     return m, results
 
@@ -332,8 +282,6 @@ def display_costing(m):
 
 
 if __name__ == "__main__":
-    # This method builds and runs a steady state activated sludge
-    # flowsheet.
     m, results = build_flowsheet()
     stream_table = create_stream_table_dataframe(
         {
