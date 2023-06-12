@@ -400,7 +400,7 @@ class NaClParameterData(PhysicalParameterBlock):
             doc="Vapor pressure parameters E2",
         )
 
-        # could add entropy if needed from Sparrow 2003, Eq. 9
+        # TODO: could add entropy if needed from Sparrow 2003, Eq. 9
 
         # thermal conductivity, 0-200 C, 0-.26 NaCl
         th_cond_A_param_dict = {
