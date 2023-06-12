@@ -785,7 +785,6 @@ class NaClParameterData(PhysicalParameterBlock):
             }
         )
 
-
 class _NaClStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
