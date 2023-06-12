@@ -72,10 +72,6 @@ _log = idaeslog.getLogger(__name__)
 class NaClParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
-    def __init__(self, component):
-        super().__init__(component)
-        self.enth_param_A = None
-
     def build(self):
         """
         Callable method for Block construction.
