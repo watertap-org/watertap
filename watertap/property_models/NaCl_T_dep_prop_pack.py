@@ -101,15 +101,15 @@ class NaClParameterData(PhysicalParameterBlock):
             doc="Molecular weight kg/mol",
         )
 
-        # solubility, 0-450 C
+        # solubility_comp, 0-450 C
         # Sparrow 2003, Eq 5: Xsat = param_0 + param_1 * T + param_2 * T**2
-        solubility_param_dict = {"0": 0.2628, "1": 62.75e-6, "2": 1.084e-6}
-        self.solubility_param = Var(
-            solubility_param_dict.keys(),
+        solubility_comp_param_dict = {"0": 0.2628, "1": 62.75e-6, "2": 1.084e-6}
+        self.solubility_comp_param = Var(
+            solubility_comp_param_dict.keys(),
             domain=Reals,
-            initialize=solubility_param_dict,
+            initialize=solubility_comp_param_dict,
             units=pyunits.dimensionless,
-            doc="Solubility parameters",
+            doc="solubility_comp parameters",
         )
 
         # mass density parameters, 0-300 C
@@ -745,7 +745,7 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("cp_mass_phase", 1e-4, index="Liq")
         self.set_default_scaling("pressure_sat", 1e2)
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
-        self.set_default_scaling("solubility", 1e0)
+        self.set_default_scaling("solubility_comp", 1e0)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -1237,24 +1237,25 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list, ["NaCl"], rule=rule_molality_phase_comp
         )
 
-    def _solubility(self):
-        self.solubility = Var(
+    def _solubility_comp(self):
+        self.solubility_comp = Var(
+            ['NaCl'],
             initialize=0.5,
             bounds=(0.0, 1.01),
             units=pyunits.dimensionless,
-            doc="Solubility",
+            doc="solubility_comp",
         )
 
-        def rule_solubility(b):
+        def rule_solubility_comp(b,j):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             return (
-                self.solubility
-                == b.params.solubility_param["0"]
-                + b.params.solubility_param["1"] * t
-                + b.params.solubility_param["2"] * t**2
+                self.solubility_comp[j]
+                == b.params.solubility_comp_param["0"]
+                + b.params.solubility_comp_param["1"] * t
+                + b.params.solubility_comp_param["2"] * t**2
             )
 
-        self.eq_solubility = Constraint(rule=rule_solubility)
+        self.eq_solubility_comp = Constraint(["NaCl"],rule=rule_solubility_comp)
 
     def _pressure_sat(self):
         self.pressure_sat = Var(
