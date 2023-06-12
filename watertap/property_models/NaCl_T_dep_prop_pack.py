@@ -764,6 +764,7 @@ class NaClParameterData(PhysicalParameterBlock):
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
+                "pressure_sat": {"method": "_pressure_sat"},
             }
         )
         obj.define_custom_properties(
@@ -772,7 +773,6 @@ class NaClParameterData(PhysicalParameterBlock):
                 "enth_flow": {"method": "_enth_flow"},
                 "solubility_comp": {"method": "_solubility_comp"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
-                "pressure_sat": {"method": "_pressure_sat"},
             }
         )
         obj.add_default_units(
