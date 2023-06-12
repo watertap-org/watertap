@@ -405,56 +405,56 @@ class NaClParameterData(PhysicalParameterBlock):
         # thermal conductivity, 0-155 C
         # Regressed from Zaytsev & Aseev (1992):
         # th cond = A+BT+CT2+DT3, where A = ao + a1X + a2X2 + a3X3
-        th_cond_A_param_dict = {
+        therm_cond_A_param_dict = {
             "0": 0.5424026,
             "1": 0.01283929,
             "2": -0.587953,
             "3": 1.090895,
         }
-        th_cond_B_param_dict = {
+        therm_cond_B_param_dict = {
             "0": 0.002909031,
             "1": -0.001817648,
             "2": 0.007804725,
             "3": -0.01199839,
         }
-        th_cond_C_param_dict = {
+        therm_cond_C_param_dict = {
             "0": -0.00002129933,
             "1": 0.0000275758,
             "2": -0.0001439831,
             "3": 0.000237931,
         }
-        th_cond_D_param_dict = {
+        therm_cond_D_param_dict = {
             "0": 0.00000005486099,
             "1": -0.0000001044598,
             "2": 0.0000005747034,
             "3": -0.0000009645982,
         }
 
-        self.th_cond_param_A = Var(
-            th_cond_A_param_dict.keys(),
+        self.therm_cond_param_A = Var(
+            therm_cond_A_param_dict.keys(),
             domain=Reals,
-            initialize=th_cond_A_param_dict,
+            initialize=therm_cond_A_param_dict,
             units=pyunits.W / (pyunits.m * pyunits.K),
             doc="Thermal conductivity parameter A",
         )
-        self.th_cond_param_B = Var(
-            th_cond_B_param_dict.keys(),
+        self.therm_cond_param_B = Var(
+            therm_cond_B_param_dict.keys(),
             domain=Reals,
-            initialize=th_cond_B_param_dict,
+            initialize=therm_cond_B_param_dict,
             units=pyunits.W / (pyunits.m * pyunits.K),
             doc="Thermal conductivity parameter B",
         )
-        self.th_cond_param_C = Var(
-            th_cond_C_param_dict.keys(),
+        self.therm_cond_param_C = Var(
+            therm_cond_C_param_dict.keys(),
             domain=Reals,
-            initialize=th_cond_C_param_dict,
+            initialize=therm_cond_C_param_dict,
             units=pyunits.W / (pyunits.m * pyunits.K),
             doc="Thermal conductivity parameter C",
         )
-        self.th_cond_param_D = Var(
-            th_cond_D_param_dict.keys(),
+        self.therm_cond_param_D = Var(
+            therm_cond_D_param_dict.keys(),
             domain=Reals,
-            initialize=th_cond_D_param_dict,
+            initialize=therm_cond_D_param_dict,
             units=pyunits.W / (pyunits.m * pyunits.K),
             doc="Thermal conductivity parameter D",
         )
@@ -743,8 +743,8 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("osm_coeff", 1e0)
         self.set_default_scaling("enth_mass_phase", 1e-2, index="Liq")
         self.set_default_scaling("cp_mass_phase", 1e-4, index="Liq")
-        self.set_default_scaling("vapor_pressure", 1e2)
-        self.set_default_scaling("th_cond_phase", 1e0, index="Liq")
+        self.set_default_scaling("pressure_sat", 1e2)
+        self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
         self.set_default_scaling("solubility", 1e0)
 
     @classmethod
@@ -774,9 +774,9 @@ class NaClParameterData(PhysicalParameterBlock):
             {
                 "osm_coeff": {"method": "_osm_coeff"},
                 "enth_flow": {"method": "_enth_flow"},
-                "solubility": {"method": "_solubility"},
-                "th_cond_phase": {"method": "_th_cond_phase"},
-                "vapor_pressure": {"method": "_vapor_pressure"},
+                "solubility_comp": {"method": "_solubility_comp"},
+                "therm_cond_phase": {"method": "_therm_cond_phase"},
+                "pressure_sat": {"method": "_pressure_sat"},
             }
         )
         obj.add_default_units(
@@ -1256,15 +1256,15 @@ class NaClStateBlockData(StateBlockData):
 
         self.eq_solubility = Constraint(rule=rule_solubility)
 
-    def _vapor_pressure(self):
-        self.vapor_pressure = Var(
+    def _pressure_sat(self):
+        self.pressure_sat = Var(
             initialize=0.01,
             bounds=(0.0, 5),
             units=pyunits.MPa,
             doc="Vapor Pressure",
         )
 
-        def rule_vapor_pressure(b):  # vapor pressure, eq. 6 in Sparrow 2003
+        def rule_pressure_sat(b):  # vapor pressure, eq. 6 in Sparrow 2003
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             T = value(t)
             x = b.mass_frac_phase_comp["Liq", "NaCl"]
@@ -1288,7 +1288,7 @@ class NaClStateBlockData(StateBlockData):
                     )
                     k += 1
                 return (
-                    b.vapor_pressure
+                    b.pressure_sat
                     == iter_param["A"]
                     + iter_param["B"] * t
                     + iter_param["C"] * t**2
@@ -1315,7 +1315,7 @@ class NaClStateBlockData(StateBlockData):
                     )
                     k += 1
                 return (
-                    b.vapor_pressure
+                    b.pressure_sat
                     == iter_param["A"]
                     + iter_param["B"] * t
                     + iter_param["C"] * t**2
@@ -1323,7 +1323,7 @@ class NaClStateBlockData(StateBlockData):
                     + iter_param["E"] * t**4
                 )
 
-        self.eq_vapor_pressure = Constraint(rule=rule_vapor_pressure)
+        self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
 
     def _visc_d_phase(self):
         self.visc_d_phase = Var(
@@ -1366,8 +1366,8 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list, rule=rule_visc_d_phase
         )
 
-    def _th_cond_phase(self):
-        self.th_cond_phase = Var(
+    def _therm_cond_phase(self):
+        self.therm_cond_phase = Var(
             self.params.phase_list,
             initialize=0.1,
             bounds=(0.0, 10),
@@ -1375,13 +1375,13 @@ class NaClStateBlockData(StateBlockData):
             doc="Thermal Conductivity",
         )
 
-        def rule_th_cond_phase(b, p):
+        def rule_therm_cond_phase(b, p):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
-                b.params.th_cond_param_A,
-                b.params.th_cond_param_B,
-                b.params.th_cond_param_C,
-                b.params.th_cond_param_D,
+                b.params.therm_cond_param_A,
+                b.params.therm_cond_param_B,
+                b.params.therm_cond_param_C,
+                b.params.therm_cond_param_D,
             ]
             iter_param = {"A": 0, "B": 0, "C": 0, "D": 0}
             k = 0
@@ -1394,15 +1394,15 @@ class NaClStateBlockData(StateBlockData):
                 )
                 k += 1
             return (
-                b.th_cond_phase[p]
+                b.therm_cond_phase[p]
                 == iter_param["A"]
                 + iter_param["B"] * t
                 + iter_param["C"] * t**2
                 + iter_param["D"] * t**3
             )
 
-        self.eq_th_cond_phase = Constraint(
-            self.params.phase_list, rule=rule_th_cond_phase
+        self.eq_therm_cond_phase = Constraint(
+            self.params.phase_list, rule=rule_therm_cond_phase
         )
 
     def _cp_mass_phase(self):
