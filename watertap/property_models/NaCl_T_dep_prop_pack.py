@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Initial property package for H2O-NaCl system
+Initial property package for H2O-NaCl system with temperature dependence
 """
 
 # Import Python libraries
