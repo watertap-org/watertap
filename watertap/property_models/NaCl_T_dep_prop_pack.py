@@ -785,6 +785,7 @@ class NaClParameterData(PhysicalParameterBlock):
             }
         )
 
+
 class _NaClStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
@@ -1234,14 +1235,14 @@ class NaClStateBlockData(StateBlockData):
 
     def _solubility_comp(self):
         self.solubility_comp = Var(
-            ['NaCl'],
+            ["NaCl"],
             initialize=0.5,
             bounds=(0.0, 1.01),
             units=pyunits.dimensionless,
             doc="solubility_comp",
         )
 
-        def rule_solubility_comp(b,j):
+        def rule_solubility_comp(b, j):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             return (
                 self.solubility_comp[j]
@@ -1250,7 +1251,7 @@ class NaClStateBlockData(StateBlockData):
                 + b.params.solubility_comp_param["2"] * t**2
             )
 
-        self.eq_solubility_comp = Constraint(["NaCl"],rule=rule_solubility_comp)
+        self.eq_solubility_comp = Constraint(["NaCl"], rule=rule_solubility_comp)
 
     def _pressure_sat(self):
         self.pressure_sat = Var(
