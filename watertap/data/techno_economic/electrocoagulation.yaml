@@ -57,10 +57,10 @@ default:
       value: 0.5523
       units: dimensionless
       reference: Sharma (2010) - doi.org/10.1016/j.envadv.2020.100029 
-    ec_power_supply_base:
-      value: 260000
-      units: USD_2020
-      reference: Dubrawski et al., 2014 - dx.doi.org/10.1016/j.electacta.2014.02.089
+    ec_power_supply_base_slope:
+      value: 0.51972
+      units: USD_2020/ W
+      reference: https://magna-power.com/
     ec_admin_lab_op_base:
       value: 88589
       units: USD_2010 / year
@@ -85,4 +85,7 @@ default:
     electrode_material_cost:
       value: 2
       units: USD_2020 / kg
+    electrode_material_cost_coeff:
+      value: 2
+      units: dimensionless
 
