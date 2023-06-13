@@ -63,8 +63,7 @@ import yaml
 import numpy as np
 from copy import deepcopy
 
-# Some more information about this module;
-#
+
 __author__ = "Adam Atia, Adi Bannady"
 
 
