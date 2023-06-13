@@ -15,6 +15,7 @@ import pyomo.environ as pyo
 from pyomo.environ import (
     units,
     value,
+    assert_optimal_termination,
 )
 from pyomo.network import Arc
 from idaes.core import (
@@ -211,19 +212,16 @@ def build_flowsheet():
 
     iscale.set_scaling_factor(m.fs.electroNP.properties_byproduct[0.0].flow_vol, 1e7)
 
-    m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
+    m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH)
     propagate_state(m.fs.stream_adm1_translator)
-    m.fs.translator_adm1_asm2d.initialize(
-        outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2}
-    )
+    m.fs.translator_adm1_asm2d.initialize(outlvl=idaeslog.INFO_HIGH)
     propagate_state(m.fs.stream_translator_electroNP)
-    m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-2})
+    m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH)
     m.fs.costing.initialize()
 
-    solver = get_solver(options={"bound_push": 1e-2})
+    solver = get_solver()
 
     results = solver.solve(m, tee=True)
-
     return m, results
 
 
@@ -274,6 +272,7 @@ def display_costing(m):
 
 if __name__ == "__main__":
     m, results = build_flowsheet()
+    assert_optimal_termination(results)
     stream_table = create_stream_table_dataframe(
         {
             "AD inlet": m.fs.AD.inlet,
