@@ -60,7 +60,7 @@ class ElectroNPZOData(ZeroOrderBaseData):
             return b.electricity[t] == (
                 b.energy_electric_flow_mass
                 * pyunits.convert(
-                    b.properties_treated[t].flow_mass_comp["phosphorus"],
+                    b.properties_byproduct[t].flow_mass_comp["phosphorus"],
                     to_units=pyunits.kg / pyunits.hour,
                 )
             )
@@ -71,13 +71,13 @@ class ElectroNPZOData(ZeroOrderBaseData):
         self.magnesium_chloride_dosage = Var(
             units=pyunits.dimensionless,
             bounds=(0, None),
-            doc="Dosage of magnesium chloride per treated phosphorus",
+            doc="Dosage of magnesium chloride per phosphorus removal",
         )
 
         self._fixed_perf_vars.append(self.magnesium_chloride_dosage)
 
         self._perf_var_dict[
-            "Dosage of magnesium chloride per treated phosphorus"
+            "Dosage of magnesium chloride per phosphorus removal"
         ] = self.magnesium_chloride_dosage
 
         self.MgCl2_flowrate = Var(
@@ -97,7 +97,7 @@ class ElectroNPZOData(ZeroOrderBaseData):
             return b.MgCl2_flowrate[t] == (
                 b.magnesium_chloride_dosage
                 * pyunits.convert(
-                    b.properties_treated[t].flow_mass_comp["phosphorus"],
+                    b.properties_byproduct[t].flow_mass_comp["phosphorus"],
                     to_units=pyunits.kg / pyunits.hour,
                 )
             )
