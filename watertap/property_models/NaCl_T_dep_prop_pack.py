@@ -28,7 +28,6 @@ from pyomo.environ import (
     value,
     check_optimal_termination,
 )
-from pyomo.core.expr.current import Expr_if
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
