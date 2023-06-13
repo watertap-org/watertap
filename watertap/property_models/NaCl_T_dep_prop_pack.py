@@ -28,6 +28,7 @@ from pyomo.environ import (
     value,
     check_optimal_termination,
 )
+from pyomo.core.expr.current import Expr_if
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
@@ -1263,62 +1264,33 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_pressure_sat(b):  # vapor pressure, eq. 6 in Sparrow 2003
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
-            T = value(t)
             x = b.mass_frac_phase_comp["Liq", "NaCl"]
-            if (T >= 0) and (T <= 150):
-                param_vec = [
-                    b.params.vap_pressure_A1_param,
-                    b.params.vap_pressure_B1_param,
-                    b.params.vap_pressure_C1_param,
-                    b.params.vap_pressure_D1_param,
-                    b.params.vap_pressure_E1_param,
-                ]
-                iter_param = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0}
-                k = 0
-                for key in iter_param:
-                    iter_param[key] = (
-                        param_vec[k]["0"]
-                        + param_vec[k]["1"] * x
-                        + param_vec[k]["2"] * x**2
-                        + param_vec[k]["3"] * x**3
-                        + param_vec[k]["4"] * x**4
-                    )
-                    k += 1
-                return (
-                    b.pressure_sat
-                    == iter_param["A"]
-                    + iter_param["B"] * t
-                    + iter_param["C"] * t**2
-                    + iter_param["D"] * t**3
-                    + iter_param["E"] * t**4
+            param_vec = [
+                b.params.vap_pressure_A1_param,
+                b.params.vap_pressure_B1_param,
+                b.params.vap_pressure_C1_param,
+                b.params.vap_pressure_D1_param,
+                b.params.vap_pressure_E1_param,
+            ]
+            iter_param = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0}
+            k = 0
+            for key in iter_param:
+                iter_param[key] = (
+                    param_vec[k]["0"]
+                    + param_vec[k]["1"] * x
+                    + param_vec[k]["2"] * x**2
+                    + param_vec[k]["3"] * x**3
+                    + param_vec[k]["4"] * x**4
                 )
-            elif T > 150:
-                param_vec = [
-                    b.params.vap_pressure_A2_param,
-                    b.params.vap_pressure_B2_param,
-                    b.params.vap_pressure_C2_param,
-                    b.params.vap_pressure_D2_param,
-                    b.params.vap_pressure_E2_param,
-                ]
-                iter_param = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0}
-                k = 0
-                for key in iter_param:
-                    iter_param[key] = (
-                        param_vec[k]["0"]
-                        + param_vec[k]["1"] * x
-                        + param_vec[k]["2"] * x**2
-                        + param_vec[k]["3"] * x**3
-                        + param_vec[k]["4"] * x**4
-                    )
-                    k += 1
-                return (
-                    b.pressure_sat
-                    == iter_param["A"]
-                    + iter_param["B"] * t
-                    + iter_param["C"] * t**2
-                    + iter_param["D"] * t**3
-                    + iter_param["E"] * t**4
-                )
+                k += 1
+            return (
+                b.pressure_sat
+                == iter_param["A"]
+                + iter_param["B"] * t
+                + iter_param["C"] * t**2
+                + iter_param["D"] * t**3
+                + iter_param["E"] * t**4
+            )
 
         self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
 
