@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from pyomo.network import Arc
+from pyomo.network import Arc, SequentialDecomposition
 from idaes.core import (
     FlowsheetBlock,
 )
@@ -202,6 +202,16 @@ def init_system(m, solver):
     propagate_state(m.fs.mixer_to_product)
     m.fs.NF.product.initialize(optarg=solver.options)
     m.fs.NF.retentate.initialize(optarg=solver.options)
+
+    seq = SequentialDecomposition(tear_solver="cbc")
+    seq.options.iterLim = 10
+
+    def func_initialize(unit):
+        unit.initialize(optarg=solver.options)
+
+    seq.run(m, func_initialize)
+
+    m.fs.costing.initialize()
 
 
 def unfix_opt_vars(m):
