@@ -50,15 +50,6 @@ from watertap.costing import WaterTAPCosting
 _log = idaeslog.getLogger(__name__)
 
 
-def automate_rescale_variables(m):
-    for var, sv in iscale.badly_scaled_var_generator(m):
-        if iscale.get_scaling_factor(var) is None:
-            continue
-        sf = iscale.get_scaling_factor(var)
-        iscale.set_scaling_factor(var, sf / sv)
-        iscale.calculate_scaling_factors(m)
-
-
 def build_flowsheet():
     # flowsheet set up
     m = pyo.ConcreteModel()
