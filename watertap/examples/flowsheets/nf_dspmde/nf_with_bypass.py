@@ -174,8 +174,10 @@ def initialize(m, solver=None):
     # solve box problem
     print("initialized, DOFs:", degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
+    m.fs.product.max_hardness_constraint.deactivate()
     results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
+    m.fs.product.max_hardness_constraint.activate()
     print("Solved box problem")
 
 

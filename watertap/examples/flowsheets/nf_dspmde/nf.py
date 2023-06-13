@@ -287,7 +287,7 @@ def optimize(m, solver=None, **kwargs):
         solver = get_solver()
     # add_objective(m)
     print("Optimizing with {} DOFs".format(degrees_of_freedom(m)))
-    result = solver.solve(m, tee=False)
+    result = solver.solve(m, tee=True)
     return result
 
 
