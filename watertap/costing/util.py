@@ -102,9 +102,10 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
 
 def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
     """
-    Method to cost rectifiers required for electrified process units that use DC current. Note that if power is supplied
-    by solar or some other DC power generator, this method should not be used. Assumes the unit_model has an `power`
-    variable or parameter.
+    Method to cost rectifiers for electrified process units that require direct current which must be converted
+    from an alternating current source. Note that this should be used solely for units that require the conversion,
+    and should not be used universally for electricity requirements.
+    Assumes the unit_model has a `power` variable or parameter.
 
     Args:
         ac_dc_conversion_efficiency - Efficiency of the conversion from AC to DC current
@@ -112,7 +113,11 @@ def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
 
     # create variables on cost block
     make_capital_cost_var(blk)
-    blk.ac_dc_conversion_efficiency = pyo.Expression(expr=ac_dc_conversion_efficiency)
+    blk.ac_dc_conversion_efficiency = pyo.Expression(
+        expr=ac_dc_conversion_efficiency,
+        doc="fixing unit model vairable for upscaling required power considering "
+        "the efficiency of converting alternating to direct current",
+    )
     blk.ac_power = pyo.Var(
         initialize=100,
         domain=pyo.NonNegativeReals,
