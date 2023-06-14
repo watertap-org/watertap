@@ -22,12 +22,12 @@ def set_up_sensitivity(m):
     opt_function = electroNP_flowsheet.solve
 
     # create outputs
-    outputs["LCOW"] = m.fs.costing.LCOW
+    outputs["ElectroNP Capital Cost"] = m.fs.electroNP.costing.capital_cost
 
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=1, nx=1, interpolate_nan_outputs=True, results_path=None):
+def run_analysis(case_num=2, nx=11, interpolate_nan_outputs=True, results_path=None):
 
     if results_path is None:
         results_path = f"sensitivity_analysis{case_num}.csv"
@@ -39,9 +39,17 @@ def run_analysis(case_num=1, nx=1, interpolate_nan_outputs=True, results_path=No
     sweep_params = {}
     if case_num == 1:
         # sensitivity analysis
-        sweep_params["electricity_cost"] = LinearSample(
-            m.fs.costing.aggregate_flow_costs["electricity"], 0.07, 0.07, nx
+        m.fs.costing.electroNP.sizing_cost[None].unfix()
+        sweep_params["sizing_cost"] = LinearSample(
+            m.fs.costing.electroNP.sizing_cost[None], 0, 30, nx
         )
+    elif case_num == 2:
+        m.fs.costing.electroNP.sizing_cost[None].unfix()
+        sweep_params["sizing_cost"] = LinearSample(
+            m.fs.costing.electroNP.sizing_cost[None], 0, 30, nx
+        )
+        m.fs.costing.electroNP.HRT[None].unfix()
+        sweep_params["HRT"] = LinearSample(m.fs.costing.electroNP.HRT[None], 1, 5, nx)
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 
