@@ -110,6 +110,7 @@ def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
         ac_dc_conversion_efficiency - Efficiency of the conversion from AC to DC current
     """
 
+    # create variables on cost block
     make_capital_cost_var(blk)
     blk.ac_dc_conversion_efficiency = pyo.Expression(expr=ac_dc_conversion_efficiency)
     blk.ac_power = pyo.Var(
@@ -119,9 +120,10 @@ def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
         doc="Unit AC power",
     )
 
+    # use unit.power variable in conversion with efficiency
     blk.power_conversion = pyo.Constraint(
         expr=blk.ac_power * blk.ac_dc_conversion_efficiency
-        == pyo.units.convert(blk.power, to_units=pyo.units.kW)
+        == pyo.units.convert(blk.unit_model.power, to_units=pyo.units.kW)
     )
 
     # USD_2022 embedded in equation
@@ -133,13 +135,19 @@ def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
         doc="Rectifier cost coefficients",
     )
 
+    # refix variables to appropriate costing parameters
+    for index, var in blk.rectifier_cost_coeff.items():
+        var.fix(rectifier_cost_coeff[index])
+
+    # calculate capital cost
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == blk.rectifier_cost_coeff[1]
-        + (blk.rectifier_cost_coeff[0] * blk.power)
-        * (pyo.units.USD_2022 * pyo.units.kW**-1)
+        + (blk.rectifier_cost_coeff[0] * blk.ac_power)
+        * (pyo.units.USD_2020 * pyo.units.kW**-1)
     )
 
+    # cost electicity flow
     blk.costing_package.cost_flow(blk.ac_power, "electricity")
 
 
