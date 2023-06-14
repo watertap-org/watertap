@@ -45,6 +45,7 @@ from idaes.core.util.tables import (
     stream_table_dataframe_to_string,
 )
 from idaes.core.util.initialization import propagate_state
+from watertap.core.util.initialization import check_solve
 from watertap.costing import WaterTAPCosting
 
 # Set up logger
@@ -54,7 +55,6 @@ _log = idaeslog.getLogger(__name__)
 def build_flowsheet():
     # flowsheet set up
     m = pyo.ConcreteModel()
-
     m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
@@ -67,6 +67,7 @@ def build_flowsheet():
     )
     m.fs.costing = WaterTAPCosting()
 
+    # Unit models
     m.fs.AD = AD(
         liquid_property_package=m.fs.props_ADM1,
         vapor_property_package=m.fs.props_vap_ADM1,
@@ -219,10 +220,16 @@ def build_flowsheet():
     m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH)
     m.fs.costing.initialize()
 
-    solver = get_solver()
-
-    results = solver.solve(m, tee=True)
+    results = solve(m, tee=True)
     return m, results
+
+
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
+    if solver is None:
+        solver = get_solver()
+    results = solver.solve(blk, tee=tee)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
+    return results
 
 
 def display_costing(m):
