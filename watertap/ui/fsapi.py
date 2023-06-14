@@ -357,15 +357,7 @@ class FlowsheetInterface:
                 self.add_action(getattr(Actions, name), arg)
             else:
                 raise ValueError(f"'do_{name}' argument is required")
-            if isinstance(custom_do_param_sweep_kwargs, dict):
-                self.custom_do_param_sweep_kwargs = custom_do_param_sweep_kwargs
-                self._actions[
-                    "custom_do_param_sweep_kwargs"
-                ] = custom_do_param_sweep_kwargs
-            else:
-                self.custom_do_param_sweep_kwargs = None
-                self._actions["custom_do_param_sweep_kwargs"] = None
-            # print(self.custom_do_param_sweep_kwargs)
+        self._actions["custom_do_param_sweep_kwargs"] = custom_do_param_sweep_kwargs
 
     def build(self, **kwargs):
         """Build flowsheet
