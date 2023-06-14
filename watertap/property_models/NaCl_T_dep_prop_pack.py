@@ -1041,7 +1041,7 @@ class NaClStateBlockData(StateBlockData):
 
         self.temperature = Var(
             initialize=298.15,
-            bounds=(273.15, 423.15),
+            bounds=(273.15, 1000),
             domain=NonNegativeReals,
             units=pyunits.degK,
             doc="State temperature",
@@ -1083,7 +1083,7 @@ class NaClStateBlockData(StateBlockData):
         self.dens_mass_phase = Var(
             self.params.phase_list,
             initialize=1e3,
-            bounds=(5e1, 5e6),
+            bounds=(1, 1e6),
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density",
         )
@@ -1152,7 +1152,7 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=10,
-            bounds=(1e-3, 2e3),
+            bounds=(0.0, 1e6),
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass concentration",
         )
@@ -1217,7 +1217,7 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list,
             ["NaCl"],
             initialize=1,
-            bounds=(1e-4, 10),
+            bounds=(0.0, 1e6),
             units=pyunits.mole / pyunits.kg,
             doc="Molality",
         )
@@ -1257,7 +1257,7 @@ class NaClStateBlockData(StateBlockData):
     def _pressure_sat(self):
         self.pressure_sat = Var(
             initialize=0.01,
-            bounds=(0.0, 5),
+            bounds=(0.0, 2),
             units=pyunits.MPa,
             doc="Vapor Pressure",
         )
@@ -1338,8 +1338,8 @@ class NaClStateBlockData(StateBlockData):
     def _therm_cond_phase(self):
         self.therm_cond_phase = Var(
             self.params.phase_list,
-            initialize=0.1,
-            bounds=(0.0, 10),
+            initialize=0.6,
+            bounds=(0.0, 2),
             units=pyunits.W / (pyunits.m * pyunits.K),
             doc="Thermal Conductivity",
         )
@@ -1377,8 +1377,8 @@ class NaClStateBlockData(StateBlockData):
     def _cp_mass_phase(self):
         self.cp_mass_phase = Var(
             self.params.phase_list,
-            initialize=1,
-            bounds=(0.0, 100000),
+            initialize=4e3,
+            bounds=(0.0, 1e6),
             units=pyunits.J * pyunits.kg**-1 * pyunits.K**-1,
             doc="specific heat",
         )
@@ -1418,7 +1418,7 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list,
             ["NaCl"],
             initialize=1e-9,
-            bounds=(1e-15, 1e-3),
+            bounds=(1e-10, 1e-8),
             units=pyunits.m**2 * pyunits.s**-1,
             doc="Diffusivity",
         )
@@ -1458,7 +1458,7 @@ class NaClStateBlockData(StateBlockData):
     def _osm_coeff(self):
         self.osm_coeff = Var(
             initialize=1,
-            bounds=(0.001, 5),
+            bounds=(0.0, 10),
             units=pyunits.dimensionless,
             doc="Osmotic coefficient",
         )
@@ -1496,7 +1496,7 @@ class NaClStateBlockData(StateBlockData):
         self.pressure_osm_phase = Var(
             self.params.phase_list,
             initialize=1e6,
-            bounds=(5e2, 5e8),
+            bounds=(1, 1e8),
             units=pyunits.Pa,
             doc="Osmotic pressure",
         )
@@ -1529,7 +1529,7 @@ class NaClStateBlockData(StateBlockData):
         self.enth_mass_phase = Var(
             self.params.phase_list,
             initialize=1e2,
-            bounds=(0, 100000),
+            bounds=(0, 1e6),
             units=pyunits.kJ * pyunits.kg**-1,
             doc="Specific enthalpy",
         )
