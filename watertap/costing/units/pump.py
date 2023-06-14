@@ -96,6 +96,7 @@ def cost_high_pressure_pump(blk, cost_electricity_flow=True):
             "electricity",
         )
 
+
 def build_low_pressure_pump_cost_param_block(blk):
 
     blk.cost = pyo.Var(
