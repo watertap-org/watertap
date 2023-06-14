@@ -131,7 +131,7 @@ def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
         == pyo.units.convert(blk.unit_model.power, to_units=pyo.units.kW)
     )
 
-    # USD_2022 embedded in equation
+    # USD_2021 embedded in equation
     rectifier_cost_coeff = {0: 508.6, 1: 2810}
     blk.rectifier_cost_coeff = pyo.Var(
         rectifier_cost_coeff.keys(),
@@ -147,9 +147,14 @@ def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
     # calculate capital cost
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == blk.rectifier_cost_coeff[1]
-        + (blk.rectifier_cost_coeff[0] * blk.ac_power)
-        * (pyo.units.USD_2020 * pyo.units.kW**-1)
+        == pyo.units.convert(
+            pyo.units.USD_2021
+            * (
+                blk.rectifier_cost_coeff[1]
+                + (blk.rectifier_cost_coeff[0] * (blk.ac_power * pyo.units.kW**-1))
+            ),
+            to_units=blk.costing_package.base_currency,
+        )
     )
 
     # cost electicity flow
