@@ -210,6 +210,45 @@ Scaling
 -------
 A thorough scaling routine for the ASM2D property package has yet to be implemented.
 
+Class Documentation
+-------------------
+.. currentmodule:: watertap.property_models.activated_sludge.modified_asm2d_properties
+
+.. autoclass:: ModifiedASM2dParameterBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ModifiedASM2dParameterData
+    :members:
+    :noindex:
+
+.. autoclass:: _ModifiedASM2dStateBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ModifiedASM2dStateBlockData
+    :members:
+    :noindex:
+
+.. currentmodule:: watertap.property_models.activated_sludge.modified_asm2d_reactions
+
+.. autoclass:: ModifiedASM2dReactionParameterBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ModifiedASM2dReactionParameterData
+    :members:
+    :noindex:
+
+.. autoclass:: _ModifiedASM2dReactionBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ModifiedASM2dReactionBlockData
+    :members:
+    :noindex:
+
+
 References
 ----------
 [1] X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
