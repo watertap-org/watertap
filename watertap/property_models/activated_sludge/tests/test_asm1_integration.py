@@ -12,7 +12,7 @@
 """
 Tests for ASM1 property and reaction packages.
 
-Verified againts results from:
+Verified against results from:
 
 [1] J. Alex, L. Benedetti, J. Copp, K.V. Gernaey, U. Jeppsson, I. Nopens, M.N. Pons,
 J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 1 (BSM1)", 2018
