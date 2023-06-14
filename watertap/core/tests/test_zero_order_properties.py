@@ -210,9 +210,9 @@ def test_CV_integration(model):
 
     model.fs.cv.add_geometry()
 
-    model.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    model.fs.cv.add_state_blocks(has_phase_equilibrium=False)
 
-    model.fs.cv.add_material_balances(has_phase_equilibrium=True)
+    model.fs.cv.add_material_balances(has_phase_equilibrium=False)
 
     # No energy or momentum balances, as these are not supported.
 
