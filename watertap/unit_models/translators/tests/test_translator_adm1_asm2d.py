@@ -55,8 +55,8 @@ from watertap.property_models.anaerobic_digestion.modified_adm1_properties impor
     ModifiedADM1ParameterBlock,
 )
 
-from watertap.property_models.activated_sludge.modified_asm2d_properties import (
-    ModifiedASM2dParameterBlock,
+from watertap.property_models.activated_sludge.simple_modified_asm2d_properties import (
+    SimpleModifiedASM2dParameterBlock,
 )
 
 from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import (
@@ -77,7 +77,7 @@ def test_config():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.props_ASM2D = ModifiedASM2dParameterBlock(
+    m.fs.props_ASM2D = SimpleModifiedASM2dParameterBlock(
         additional_solute_list=["S_K", "S_Mg"]
     )
     m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
@@ -112,7 +112,7 @@ class TestAsm2dAdm1(object):
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props_ASM2D = ModifiedASM2dParameterBlock(
+        m.fs.props_ASM2D = SimpleModifiedASM2dParameterBlock(
             additional_solute_list=["S_K", "S_Mg"]
         )
         m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
