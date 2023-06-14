@@ -35,8 +35,8 @@ from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
 from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import (
     ModifiedADM1ReactionParameterBlock,
 )
-from watertap.property_models.activated_sludge.modified_asm2d_properties import (
-    ModifiedASM2dParameterBlock,
+from watertap.property_models.activated_sludge.simple_modified_asm2d_properties import (
+    SimpleModifiedASM2dParameterBlock,
 )
 from watertap.unit_models.translators.translator_adm1_asm2d import Translator_ADM1_ASM2D
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
@@ -62,7 +62,7 @@ def build_flowsheet():
     m.fs.rxn_props_ADM1 = ModifiedADM1ReactionParameterBlock(
         property_package=m.fs.props_ADM1
     )
-    m.fs.props_ASM2D = ModifiedASM2dParameterBlock(
+    m.fs.props_ASM2D = SimpleModifiedASM2dParameterBlock(
         additional_solute_list=["S_K", "S_Mg"]
     )
     m.fs.costing = WaterTAPCosting()
