@@ -14,6 +14,7 @@ from watertap.tools.parameter_sweep import (
     parameter_sweep,
 )
 import watertap.examples.flowsheets.case_studies.electroNP.electroNP_flowsheet as electroNP_flowsheet
+from pyomo.environ import units as pyunits
 
 
 def set_up_sensitivity(m):
@@ -22,12 +23,16 @@ def set_up_sensitivity(m):
     opt_function = electroNP_flowsheet.solve
 
     # create outputs
-    outputs["ElectroNP Capital Cost"] = m.fs.electroNP.costing.capital_cost
+    # outputs["ElectroNP Capital Cost"] = m.fs.electroNP.costing.capital_cost
+    outputs["Electricity"] = pyunits.convert(
+        m.fs.costing.aggregate_flow_costs["electricity"] / m.fs.AD.inlet.flow_vol[0],
+        to_units=pyunits.USD_2018 / pyunits.m**3,
+    )
 
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=2, nx=11, interpolate_nan_outputs=True, results_path=None):
+def run_analysis(case_num=3, nx=11, interpolate_nan_outputs=True, results_path=None):
 
     if results_path is None:
         results_path = f"sensitivity_analysis{case_num}.csv"
@@ -39,17 +44,36 @@ def run_analysis(case_num=2, nx=11, interpolate_nan_outputs=True, results_path=N
     sweep_params = {}
     if case_num == 1:
         # sensitivity analysis
-        m.fs.costing.electroNP.sizing_cost[None].unfix()
+        m.fs.costing.electroNP.sizing_cost.unfix()
         sweep_params["sizing_cost"] = LinearSample(
-            m.fs.costing.electroNP.sizing_cost[None], 0, 30, nx
+            m.fs.costing.electroNP.sizing_cost, 1, 30, nx
         )
     elif case_num == 2:
-        m.fs.costing.electroNP.sizing_cost[None].unfix()
+        m.fs.costing.electroNP.sizing_cost.unfix()
         sweep_params["sizing_cost"] = LinearSample(
-            m.fs.costing.electroNP.sizing_cost[None], 0, 30, nx
+            m.fs.costing.electroNP.sizing_cost, 1, 30, nx
         )
-        m.fs.costing.electroNP.HRT[None].unfix()
-        sweep_params["HRT"] = LinearSample(m.fs.costing.electroNP.HRT[None], 1, 5, nx)
+        m.fs.costing.electroNP.HRT.unfix()
+        sweep_params["HRT"] = LinearSample(m.fs.costing.electroNP.HRT, 1, 5, nx)
+    elif case_num == 3:
+        sweep_params["energy_consumption"] = LinearSample(
+            m.fs.electroNP.energy_electric_flow_mass, 0, 3, nx
+        )
+    elif case_num == 4:
+        sweep_params["energy_consumption"] = LinearSample(
+            m.fs.electroNP.energy_electric_flow_mass, 0, 3, nx
+        )
+        m.fs.costing.electricity_cost.unfix()
+        sweep_params["electricity_cost"] = LinearSample(
+            m.fs.costing.electricity_cost, 0.05, 0.1, nx
+        )
+    elif case_num == 5:
+        sweep_params["electricity_cost"] = LinearSample(
+            m.fs.costing.electricity_cost, 0.05, 0.1, nx
+        )
+        sweep_params["MgCl2_cost"] = LinearSample(
+            m.fs.costing.magnesium_chloride_cost, 0.07, 0.1, nx
+        )
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 

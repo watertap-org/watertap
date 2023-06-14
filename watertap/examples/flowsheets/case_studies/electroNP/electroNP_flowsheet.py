@@ -104,7 +104,7 @@ def build_flowsheet():
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     # Feed conditions based on mass balance in Flores-Alsina, where 0 terms are expressed as 1e-9
-    m.fs.AD.inlet.flow_vol.fix(
+    m.fs.AD.inlet.flow_vol[0].fix(
         170 * units.m**3 / units.day
     )  # Double check this value
     m.fs.AD.inlet.temperature.fix(308.15)
