@@ -6,7 +6,7 @@ Electrolyzer
 
 This is a simplified electrolyzer unit model used to approximate electrolysis performance.  With the current build, the model is simulated under the following assumptions:
    * simulation of this unit model is only supported with the Multi-Component Aqueous Solution (MCAS) property package
-   * supports liquid phase only, vapor components are modeled in the liquid phase
+   * supports liquid phase only, vapor-liquid phase equilibrium is not calculated
    * supports steady-state only
    * assumes isothermal conditions and performance is not temperature dependent
    * does not determine equilibrium of electrolysis products in solution
@@ -22,9 +22,9 @@ Introduction
 ------------
 This model was primarily motivated to simulate the chlor-alkali membrane electrolysis process, a conventional electrolyzer for the production of chlorine gas and hydroxide (Bommaraju, 2015) (Kent, 2007). The model has been demonstrated for the chlor-alkali configuration in the electrolyzer testing file and may be generalizable to other electrolysis mechanisms, but has not been validated for generalized processes.
 
-Given a membrane electrolyzer, the catholyte and anolyte are separated by an ion exchange membrane. This provides two distinct control volumes to perform model calculations. The basis for determining electrolyzer performance is accounting for the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. Faradaic conversion considers equating the supplied electrical current to the amount of electrons available for electrochemical reaction by Faraday's law. The calculation of Faradaic conversion is described in "electrons passed between anode and cathode contributing to reactions" found in the :ref:`Equations <electrolyzer_equations>`.
+Given a membrane electrolyzer, the catholyte and anolyte are separated by an ion exchange membrane. This provides two distinct control volumes to perform model calculations. The basis for determining electrolyzer performance is accounting for the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. Faradaic conversion considers equating the supplied electrical current to the amount of electrons available for electrochemical reaction by Faraday's law of electrolysis. The calculation of Faradaic conversion is described in "electrons passed between anode and cathode contributing to reactions" found in the :ref:`Equations <electrolyzer_equations>`.
 
-Given that Faraday's law with an applied current efficiency governs electrochemical conversion, inherently no reaction and mass transfer rate laws are considered. In this yield model, the surface area for electrochemical reaction on each electrode is the only relevant sizing variable required. This is used to validate that the current densities of each are tolerable by the material, and it is typically used as the fixed variable where the corresponding area is calculated as a degree of freedom. With no other sizing variables, effects in increased resistance through the electrolytes with further spaced electrodes and similar size dependent phenomena are not considered in the model.
+Given that Faraday's law of electrolysis with an applied current efficiency governs electrochemical conversion, inherently no reaction and mass transfer rate laws are considered. In this yield model, the surface area for electrochemical reaction on each electrode is the only relevant sizing variable required. This is used to validate that the current densities of each are tolerable by the material, and it is typically used as the fixed variable where the corresponding area is calculated as a degree of freedom. With no other sizing variables, effects in increased resistance through the electrolytes with further spaced electrodes and similar size dependent phenomena are not considered in the model.
 
 Degrees of Freedom
 ------------------
@@ -171,7 +171,7 @@ Equations
    "reversible voltage", ":math:`V_{rev} = E_{ano}-E_{cat}`"
    "cell voltage", ":math:`V_{cell} = V_{rev}+\eta_{ano}+\eta_{cat}+IR`"
    "power", ":math:`P = IV_{cell}`"
-   "electrons contributing to reactions :math:`^c`", ":math:`\dot{n}_{e^-} = \frac{I\theta_{current}}{F}`"
+   "electrons contributing to reactions by Faraday's law of electrolysis :math:`^c`", ":math:`\dot{n}_{e^-} = \frac{I\theta_{current}}{F}`"
    "voltage efficiency", ":math:`V_{rev} = V\theta_{voltage}`"
    "power efficiency", ":math:`\theta_{power} = \theta_{current}\theta_{voltage}`"
 
