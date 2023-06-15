@@ -22,7 +22,7 @@ from idaes.core.base.costing_base import (
     register_idaes_currency_units,
 )
 
-from idaes.models.unit_models import Mixer
+from idaes.models.unit_models import Mixer, HeatExchanger
 
 from watertap.unit_models import (
     AD,
@@ -43,6 +43,7 @@ from watertap.unit_models import (
     IonExchange0D,
     GAC,
 )
+from watertap.unit_models.mvc.components import Evaporator, Compressor
 
 from .units.anaerobic_digestor import cost_anaerobic_digestor
 from .units.crystallizer import cost_crystallizer
@@ -60,6 +61,9 @@ from .units.pressure_exchanger import cost_pressure_exchanger
 from .units.pump import cost_pump
 from .units.reverse_osmosis import cost_reverse_osmosis
 from .units.uv_aop import cost_uv_aop
+from .units.evaporator import cost_evaporator
+from .units.compressor import cost_compressor
+from .units.heat_exchanger import cost_heat_exchanger
 from .units.electroNP import cost_electroNP
 
 
@@ -106,6 +110,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         Electrolyzer: cost_electrolyzer,
         IonExchange0D: cost_ion_exchange,
         GAC: cost_gac,
+        Evaporator: cost_evaporator,
+        Compressor: cost_compressor,
+        HeatExchanger: cost_heat_exchanger,
     }
 
     def build(self):
