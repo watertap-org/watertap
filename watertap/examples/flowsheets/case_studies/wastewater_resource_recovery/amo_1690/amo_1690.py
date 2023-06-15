@@ -142,6 +142,8 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "acetic_acid"].fix(conc_mass_aa)
     m.fs.feed.conc_mass_comp[0, "ammonium_as_nitrogen"].fix(conc_mass_nh4)
 
+    m.fs.feed.initialize()
+
     solve(m.fs.feed, checkpoint="solve feed block")
 
     m.fs.cmf.load_parameters_from_database(use_default_removal=True)
@@ -159,7 +161,7 @@ def initialize_system(m):
 def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
-    results = solver.solve(blk, tee=tee)
+    results = solver.solve(blk, tee=True)
     check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
