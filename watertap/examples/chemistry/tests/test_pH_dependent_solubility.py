@@ -138,6 +138,9 @@ from watertap.examples.chemistry.chem_scaling_utils import (
 
 __author__ = "Austin Ladshaw"
 
+# Get default solver for testing
+solver = get_solver()
+
 # Case 1 Config
 case1_thermo_config = {
     "components": {
@@ -314,9 +317,6 @@ case1_log_rxn_config = {
     # End equilibrium_reactions
 }
 # End reaction_config definition
-
-# Get default solver for testing
-solver = get_solver()
 
 # Defaults to pH of 7 with no lime added
 def run_case1(
@@ -851,6 +851,8 @@ def run_case2(
     thermo_config=None,
     rxn_config=None,
     has_energy_balance=True,
+    scaling_ref=1e-3,
+    init_tol=1e-6
 ):
     print("==========================================================================")
     print("Case 2: Water softening via pH changes")
@@ -919,8 +921,8 @@ def run_case2(
 
     ## ==================== Start Scaling for this problem ===========================
     _set_eps_vals(model.fs.rxn_params, rxn_config, max_k_eq_ref=1e-12)
-    _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, rxn_config, min_k_eq_ref=1e-3)
-    _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=1e-2)
+    _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, rxn_config, min_k_eq_ref=scaling_ref)
+    _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=scaling_ref*10)
     if has_energy_balance == True:
         _set_ene_bal_scaling(model.fs.unit)
 
@@ -937,17 +939,12 @@ def run_case2(
 
     # for macOS
     init_options = {**solver.options}
-    init_options["tol"] = 1.0e-06
-    init_options["constr_viol_tol"] = 1.0e-06
+    init_options["tol"] = init_tol
+    init_options["constr_viol_tol"] = init_tol
     model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
-    for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
-        if hasattr(model.fs.rxn_params.component("reaction_" + i[1]), "eps"):
-            iscale.constraint_scaling_transform(
-                model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1
-            )
     iscale.calculate_scaling_factors(model.fs.unit)
     
     results = solver.solve(model, tee=True)
@@ -1102,6 +1099,8 @@ def test_case_2_low_pH_no_precip():
         thermo_config=case2_thermo_config,
         rxn_config=case2_log_rxn_config,
         has_energy_balance=True,
+        scaling_ref=1e-5,
+        init_tol=1e-8
     )
 
 
@@ -1554,19 +1553,24 @@ def run_case3(
     assert isinstance(
         model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix
     )
+    
+    model.fs.rxn_params.reaction_CaCO3_Ksp.s_norm.value = 1
+    model.fs.rxn_params.reaction_CaOH2_Ksp.s_norm.value = 1
 
     ## ==================== END Scaling for this problem ===========================
     #   Loosen the tolerances for initialization stage by passing a temporary
     #       config dict replacing default values (this does so without any
     #       changes to the global solver options in WaterTAP)
     temp_config = {
-        "linear_solver": "ma57",
-        "constr_viol_tol": 1e-5,
-        "tol": 1e-5,
+        "tol": 1e-6,
+        "constr_viol_tol": 1e-6     
     }
     model.fs.unit.initialize(optarg=temp_config, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
+    
+    model.fs.rxn_params.reaction_CaCO3_Ksp.s_norm.value = model.fs.rxn_params.reaction_CaCO3_Ksp.k_eq_ref.value
+    model.fs.rxn_params.reaction_CaOH2_Ksp.s_norm.value = model.fs.rxn_params.reaction_CaOH2_Ksp.k_eq_ref.value    
 
     results = solver.solve(model, tee=True)
 
