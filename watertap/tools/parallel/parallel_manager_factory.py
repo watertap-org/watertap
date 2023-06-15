@@ -1,3 +1,15 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
+
 from pyomo.common.dependencies import attempt_import
 from watertap.tools.parallel.mpi_parallel_manager import MPIParallelManager
 from watertap.tools.parallel.concurrent_futures_parallel_manager import (
