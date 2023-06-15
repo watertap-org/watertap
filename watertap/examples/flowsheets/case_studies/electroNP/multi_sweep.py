@@ -57,7 +57,7 @@ def run_analysis(case_num=3, nx=11, interpolate_nan_outputs=True, results_path=N
         sweep_params["HRT"] = LinearSample(m.fs.costing.electroNP.HRT, 1, 5, nx)
     elif case_num == 3:
         sweep_params["energy_consumption"] = LinearSample(
-            m.fs.electroNP.energy_electric_flow_mass, 0, 3, nx
+            m.fs.electroNP.energy_electric_flow_mass, 0.02, 0.08, nx
         )
     elif case_num == 4:
         sweep_params["energy_consumption"] = LinearSample(
