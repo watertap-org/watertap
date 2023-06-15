@@ -69,13 +69,12 @@ class ParameterSweepWriter:
 
     def __init__(
         self,
-        comm,
+        parallel_manager,
         **options,
     ):
 
-        self.comm = comm
-        self.rank = self.comm.Get_rank()
-        self.num_procs = self.comm.Get_size()
+        self.parallel_manager = parallel_manager
+        self.rank = self.parallel_manager.get_rank()
 
         self.config = self.CONFIG(options)
 
@@ -311,7 +310,7 @@ class ParameterSweepWriter:
                     parents=True, exist_ok=True
                 )
 
-        self.comm.Barrier()
+        self.parallel_manager.sync_point()
 
         # Handle values in the debugging data_directory
         if self.config["debugging_data_dir"] is not None:
