@@ -15,6 +15,9 @@ from watertap.tools.parameter_sweep import (
 )
 import watertap.examples.flowsheets.case_studies.electroNP.electroNP_flowsheet as electroNP_flowsheet
 from pyomo.environ import units as pyunits
+import os
+from watertap.tools.parameter_sweep.sweep_visualizer import line_plot, contour_plot
+import matplotlib.pyplot as plt
 
 
 def set_up_sensitivity(m):
@@ -23,7 +26,7 @@ def set_up_sensitivity(m):
     opt_function = electroNP_flowsheet.solve
 
     # create outputs
-    # outputs["ElectroNP Capital Cost"] = m.fs.electroNP.costing.capital_cost
+    outputs["ElectroNP Capital Cost"] = m.fs.electroNP.costing.capital_cost
     outputs["Electricity"] = pyunits.convert(
         m.fs.costing.aggregate_flow_costs["electricity"] / m.fs.AD.inlet.flow_vol[0],
         to_units=pyunits.USD_2018 / pyunits.m**3,
@@ -32,10 +35,10 @@ def set_up_sensitivity(m):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=3, nx=11, interpolate_nan_outputs=True, results_path=None):
+def run_analysis(case_num=2, nx=11, interpolate_nan_outputs=True, output_filename=None):
 
-    if results_path is None:
-        results_path = f"sensitivity_analysis{case_num}.csv"
+    if output_filename is None:
+        output_filename = "sensitivity_" + str(case_num) + ".csv"
 
     m = electroNP_flowsheet.build_flowsheet()[0]
 
@@ -51,7 +54,7 @@ def run_analysis(case_num=3, nx=11, interpolate_nan_outputs=True, results_path=N
     elif case_num == 2:
         m.fs.costing.electroNP.sizing_cost.unfix()
         sweep_params["sizing_cost"] = LinearSample(
-            m.fs.costing.electroNP.sizing_cost, 1, 30, nx
+            m.fs.costing.electroNP.sizing_cost, 0, 30, nx
         )
         m.fs.costing.electroNP.HRT.unfix()
         sweep_params["HRT"] = LinearSample(m.fs.costing.electroNP.HRT, 1, 5, nx)
@@ -77,11 +80,13 @@ def run_analysis(case_num=3, nx=11, interpolate_nan_outputs=True, results_path=N
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 
+    # output_filename = "sensitivity_" + str(case_num) + ".csv"
+
     global_results = parameter_sweep(
         m,
         sweep_params,
         outputs,
-        csv_results_file_name=results_path,
+        csv_results_file_name=output_filename,
         optimize_function=opt_function,
         optimize_kwargs=optimize_kwargs,
         interpolate_nan_outputs=interpolate_nan_outputs,
@@ -90,5 +95,145 @@ def run_analysis(case_num=3, nx=11, interpolate_nan_outputs=True, results_path=N
     return global_results, sweep_params, m
 
 
+def merge_path(filename):
+    source_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), filename)
+    return source_path
+
+
+def visualize_results(
+    case_num,
+    plot_type,
+    xlabel,
+    ylabel,
+    xunit=None,
+    yunit=None,
+    zlabel=None,
+    zunit=None,
+    levels=None,
+    cmap=None,
+    isolines=None,
+):
+    data_file = merge_path("interpolated_sensitivity_" + str(case_num) + ".csv")
+    if plot_type == "line":
+        fig, ax = line_plot(data_file, xlabel, ylabel, xunit, yunit)
+
+    elif plot_type == "contour":
+        fig, ax = contour_plot(
+            data_file,
+            xlabel,
+            ylabel,
+            zlabel,
+            xunit,
+            yunit,
+            zunit,
+            levels=levels,
+            cmap=cmap,
+            isolines=isolines,
+        )
+    else:
+        raise ValueError("Plot type not yet implemented")
+    return fig, ax
+
+
+def main(case_num=2, nx=11, interpolate_nan_outputs=True):
+    # when from the command line
+    case_num = int(case_num)
+    nx = int(nx)
+    interpolate_nan_outputs = bool(interpolate_nan_outputs)
+
+    # comm, rank, num_procs = _init_mpi()
+
+    global_results, sweep_params, m = run_analysis(
+        case_num, nx, interpolate_nan_outputs
+    )
+    # print(global_results)
+
+    # visualize results
+
+    # case 1
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="line",
+    #     xlabel="# sizing_cost",
+    #     ylabel="ElectroNP Capital Cost",
+    # )
+    # # ax.plot(1.25, 127.792, 'ro')
+    # ax.set_xlabel("Sizing Cost ($/m3)")
+    # ax.set_ylabel("ElectroNP Capital Cost ($/(m3/hr)")
+
+    # case 2
+    fig, ax = visualize_results(
+        case_num,
+        plot_type="contour",
+        xlabel="# sizing_cost",
+        ylabel="HRT",
+        zlabel="ElectroNP Capital Cost",
+        isolines=[2000, 5000],
+        cmap="GnBu",
+    )
+    ax.plot(1.25, 1.3333, "ko")
+    ax.set_xlabel("Sizing Cost ($/m3)")
+    ax.set_ylabel("HRT (h)")
+    ax.set_title("ElectroNP Capital Cost ($/(m3/hr)")
+
+    # case 5
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="line",
+    #     xlabel="# energy_consumption",
+    #     ylabel="Electricity",
+    # )
+    # ax.plot(0.044, 0.00249501, 'ro')
+    # # plt.axvline(0.044, ls='--')
+    # ax.set_xlabel("Electricity Intensity (kWh/kg P)")
+    # ax.set_ylabel("Normalized Electricity Cost($/m3)")
+
+    # case 6
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# energy_consumption",
+    #     ylabel="electricity_cost",
+    #     zlabel="Electricity",
+    #     isolines=[2000, 5000],
+    #     cmap="GnBu",
+    # )
+    # ax.plot(0.044, 0.08, 'ko')
+    # ax.set_xlabel("Electricity Intensity (kWh/kg P)")
+    # ax.set_ylabel("Electricity Cost ($/kWh)")
+    # ax.set_title("Normalized Electricity Cost ($/m3)")
+
+    # case 7
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# electricity_cost",
+    #     ylabel="MgCl2_cost",
+    #     zlabel="Total Operating Cost",
+    #     cmap="GnBu",
+    # )
+    # ax.plot(0.08, 0.0786, 'ko')
+    # ax.set_xlabel("Electricity Cost ($/kWh)")
+    # ax.set_ylabel("MgCl2 Cost ($/kg P)")
+    # ax.set_title("Total Operating Cost ($/year)")
+
+    # case 8
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# energy_consumption",
+    #     ylabel="MgCl2_dosage",
+    #     zlabel="Total Operating Cost",
+    #     cmap="GnBu",
+    # )
+    # ax.plot(0.044, 0.388, 'ko')
+    # ax.set_xlabel("Electricity Intensity (kWh/kg P)")
+    # ax.set_ylabel("MgCl2 Dosage (kg MgCl2/kg P)")
+    # ax.set_title("Total Operating Cost ($/year)")
+
+    return global_results, m
+
+
 if __name__ == "__main__":
-    results, sweep_params, m = run_analysis()
+    results, model = main()
+    # results, sweep_params, m = run_analysis()
