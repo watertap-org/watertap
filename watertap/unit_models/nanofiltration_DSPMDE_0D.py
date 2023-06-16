@@ -1718,9 +1718,9 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                     prop_feed.pressure
                     - self.permeate_side[time_point, x].pressure
                     - (
-                        self.feed_side.properties_interface[time_point, x].pressure_osm_phase[
-                            "Liq"
-                        ]
+                        self.feed_side.properties_interface[
+                            time_point, x
+                        ].pressure_osm_phase["Liq"]
                         - self.permeate_side[time_point, x].pressure_osm_phase["Liq"]
                     )
                 )
