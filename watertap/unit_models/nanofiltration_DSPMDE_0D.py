@@ -1484,7 +1484,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 self.flux_mol_phase_comp[0, 1, "Liq", j].set_value(
                     value(-self.feed_side.mass_transfer_term[0.0, "Liq", j] / self.area)
                 )
-        # self.report()
         # Double-check for poorly scaled variables after state block initialization
         # and rescale them so that scaled variable values = 1:
         if automate_rescale:
@@ -1549,15 +1548,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
         # Release Inlet state
         self.feed_side.release_state(flags_feed_side, outlvl)
-        # # Rescale any badly scaled vars
-        # if automate_rescale:
-        #     badly_scaled_vars = list(iscale.badly_scaled_var_generator(self))
-        #     if len(badly_scaled_vars) > 0:
-        #         init_log.warn(
-        #             f"After solve: {len(badly_scaled_vars)} poorly scaled "
-        #             f"variable(s) will be rescaled so that each scaled variable value = 1"
-        #         )
-        #     self._automate_rescale_variables()
+
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def _get_performance_contents(self, time_point=0):
@@ -1577,24 +1568,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             var_dict[
                 f"Volumetric flow rate @ feed inlet"
             ] = self.feed_side.properties_in[time_point].flow_vol_phase["Liq"]
-        # if self.feed_side.properties_interface[time_point, 0].is_property_constructed(
-        #     "flow_vol_phase"
-        # ):
-        #     var_dict[
-        #         f"Volumetric flow rate @ inlet interface"
-        #     ] = self.feed_side.properties_interface[time_point, 0].flow_vol_phase["Liq"]
-        # if self.pore_entrance[time_point, 0].is_property_constructed("flow_vol_phase"):
-        #     var_dict[
-        #         f"Volumetric flow rate @ inlet pore entrance"
-        #     ] = self.pore_entrance[time_point, 0].flow_vol_phase["Liq"]
-        # if self.pore_exit[time_point, 0].is_property_constructed("flow_vol_phase"):
-        #     var_dict[f"Volumetric flow rate @ inlet pore exit"] = self.pore_exit[
-        #         time_point, 0
-        #     ].flow_vol_phase["Liq"]
-        # if self.permeate_side[time_point, 0].is_property_constructed("flow_vol_phase"):
-        #     var_dict[f"Volumetric flow rate @ inlet permeate"] = self.permeate_side[
-        #         time_point, 0
-        #     ].flow_vol_phase["Liq"]
 
         if self.feed_side.properties_out[time_point].is_property_constructed(
             "flow_vol_phase"
@@ -1602,26 +1575,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             var_dict[
                 f"Volumetric flow rate @ feed outlet"
             ] = self.feed_side.properties_out[time_point].flow_vol_phase["Liq"]
-            # if self.feed_side.properties_interface[
-            #     time_point, 1
-            # ].is_property_constructed("flow_vol_phase"):
-            #     var_dict[
-            #         f"Volumetric flow rate @ outlet interface"
-            #     ] = self.feed_side.properties_interface[time_point, 1].flow_vol_phase[
-            #         "Liq"
-            #     ]
-        # if self.pore_entrance[time_point, 1].is_property_constructed("flow_vol_phase"):
-        #     var_dict[
-        #         f"Volumetric flow rate @ outlet pore entrance"
-        #     ] = self.pore_entrance[time_point, 1].flow_vol_phase["Liq"]
-        # if self.pore_exit[time_point, 1].is_property_constructed("flow_vol_phase"):
-        #     var_dict[f"Volumetric flow rate @ outlet pore exit"] = self.pore_exit[
-        #         time_point, 1
-        #     ].flow_vol_phase["Liq"]
-        # if self.permeate_side[time_point, 0].is_property_constructed("flow_vol_phase"):
-        #     var_dict[f"Volumetric flow rate @ outlet permeate"] = self.permeate_side[
-        #         time_point, 1
-        #     ].flow_vol_phase["Liq"]
+
         var_dict[f"Volumetric flow rate @ final permeate"] = self.mixed_permeate[
             time_point
         ].flow_vol_phase["Liq"]
@@ -1640,34 +1594,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             var_dict[
                 f"Molar flow rate of {j} @ feed outlet"
             ] = self.feed_side.properties_out[time_point].flow_mol_phase_comp["Liq", j]
-            # var_dict[
-            #     f"Molar flow rate of {j} @ membrane-interface inlet"
-            # ] = self.feed_side.properties_interface[time_point, 0].flow_mol_phase_comp[
-            #     "Liq", j
-            # ]
-            # var_dict[
-            #     f"Molar flow rate of {j} @ membrane-interface outlet"
-            # ] = self.feed_side.properties_interface[time_point, 1].flow_mol_phase_comp[
-            #     "Liq", j
-            # ]
-            # var_dict[
-            #     f"Molar flow rate of {j} @ pore entrance, inlet"
-            # ] = self.pore_entrance[time_point, 0].flow_mol_phase_comp["Liq", j]
-            # var_dict[
-            #     f"Molar flow rate of {j} @ pore entrance, outlet"
-            # ] = self.pore_entrance[time_point, 1].flow_mol_phase_comp["Liq", j]
-            # var_dict[f"Molar flow rate of {j} @ pore exit, inlet"] = self.pore_exit[
-            #     time_point, 0
-            # ].flow_mol_phase_comp["Liq", j]
-            # var_dict[f"Molar flow rate of {j} @ pore exit, outlet"] = self.pore_exit[
-            #     time_point, 1
-            # ].flow_mol_phase_comp["Liq", j]
-            # var_dict[f"Molar flow rate of {j} @ permeate, inlet"] = self.permeate_side[
-            #     time_point, 0
-            # ].flow_mol_phase_comp["Liq", j]
-            # var_dict[f"Molar flow rate of {j} @ permeate, outlet"] = self.permeate_side[
-            #     time_point, 1
-            # ].flow_mol_phase_comp["Liq", j]
+
             var_dict[f"Molar flow rate of {j} @ mixed permeate"] = self.mixed_permeate[
                 time_point
             ].flow_mol_phase_comp["Liq", j]
@@ -1685,10 +1612,10 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             for x in self.io_list:
                 if not x:
                     io = "Inlet"
-                    prop_feed = self.feed_side.properties_in[0]
+                    prop_feed = self.feed_side.properties_in[time_point]
                 elif x:
                     io = "Outlet"
-                    prop_feed = self.feed_side.properties_out[0]
+                    prop_feed = self.feed_side.properties_out[time_point]
 
                 var_dict[
                     f"Molar Concentration of {j} @ Membrane Interface, {io}"
@@ -1771,10 +1698,10 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             for x in self.io_list:
                 if not x:
                     io = "Inlet"
-                    prop_feed = self.feed_side.properties_in[0]
+                    prop_feed = self.feed_side.properties_in[time_point]
                 elif x:
                     io = "Outlet"
-                    prop_feed = self.feed_side.properties_out[0]
+                    prop_feed = self.feed_side.properties_out[time_point]
 
                 var_dict[
                     f"Osmotic Pressure @ Membrane Interface, {io} (Pa)"
@@ -1789,27 +1716,27 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 ] = self.permeate_side[time_point, x].pressure_osm_phase["Liq"]
                 expr_dict[f"Net Driving Pressure, {io} (Pa)"] = (
                     prop_feed.pressure
-                    - self.permeate_side[0, x].pressure
+                    - self.permeate_side[time_point, x].pressure
                     - (
-                        self.feed_side.properties_interface[0, x].pressure_osm_phase[
+                        self.feed_side.properties_interface[time_point, x].pressure_osm_phase[
                             "Liq"
                         ]
-                        - self.permeate_side[0, x].pressure_osm_phase["Liq"]
+                        - self.permeate_side[time_point, x].pressure_osm_phase["Liq"]
                     )
                 )
                 var_dict[
                     f"Electric Potential @ Pore Entrance, {io}"
-                ] = self.electric_potential[0, x, "pore_entrance"]
+                ] = self.electric_potential[time_point, x, "pore_entrance"]
                 var_dict[
                     f"Electric Potential @ Pore Exit, {io}"
-                ] = self.electric_potential[0, x, "pore_exit"]
+                ] = self.electric_potential[time_point, x, "pore_exit"]
                 var_dict[
                     f"Electric Potential @ Permeate, {io}"
-                ] = self.electric_potential[0, x, "permeate"]
+                ] = self.electric_potential[time_point, x, "permeate"]
                 if hasattr(self, "electric_potential_grad_feed_interface"):
                     var_dict[
                         f"Electric Potential Gradient @ Feed-Membrane Interface, {io}"
-                    ] = self.electric_potential_grad_feed_interface[0, x]
+                    ] = self.electric_potential_grad_feed_interface[time_point, x]
 
         return {"vars": var_dict, "exprs": expr_dict}
 
