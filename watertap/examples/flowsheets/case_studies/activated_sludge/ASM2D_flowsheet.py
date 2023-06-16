@@ -282,13 +282,13 @@ def build_flowsheet():
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-4)
+                iscale.set_scaling_factor(var, 1e-3)
             if "enth_mol" in var.name:
                 iscale.set_scaling_factor(var, 1e-3)
             if "alkalinity" in var.name:
                 iscale.set_scaling_factor(var, 1e3)
             if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e3)
+                iscale.set_scaling_factor(var, 1e2)
 
             if "conc_mass_comp[S_O2]" in var.name:
                 iscale.set_scaling_factor(var, 1e3)

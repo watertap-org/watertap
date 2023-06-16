@@ -1537,4 +1537,4 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
         for i, c in self.rate_expression.items():
             # TODO: Need to work out how to calculate good scaling factors
             # instead of a fixed 1e3.
-            iscale.constraint_scaling_transform(c, 1e3, overwrite=True)
+            iscale.constraint_scaling_transform(c, 1e5, overwrite=True)
