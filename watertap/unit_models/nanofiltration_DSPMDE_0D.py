@@ -1009,8 +1009,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 prop_io = b.feed_side.properties_out[t]
             return b.velocity[t, x] * b.area_cross == prop_io.flow_vol_phase["Liq"]
 
-        # TODO: seems stale since temperature unused at pore entrance/exit- confirm+remove;
-        #  1/17/22: after including temp variables for pore in interfacial equilib eqns, this is relevant
         @self.Constraint(
             self.flowsheet().config.time,
             io_list,
@@ -1024,7 +1022,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 prop = b.pore_exit[t, x]
             return b.feed_side.properties_in[t].temperature == prop.temperature
 
-        # Experimental Constraint with new density calculation in prop package-- temp equality in permeate
+        # Experimental Constraint
         @self.Constraint(
             self.flowsheet().config.time,
             doc="Isothermal assumption for mixed permeate",
@@ -1035,7 +1033,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 == b.mixed_permeate[t].temperature
             )
 
-        # Experimental constraint: noticed feed outlet temp didn't match inlet
+        # Experimental constraint
         @self.feed_side.Constraint(
             self.flowsheet().config.time, doc="Isothermal assumption for feed-outlet"
         )
