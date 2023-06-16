@@ -26,6 +26,7 @@ from pyomo.environ import (
     RangeSet,
     Set,
     check_optimal_termination,
+    assert_optimal_termination,
     SolverFactory,
     units as pyunits,
 )
@@ -60,6 +61,7 @@ from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
+from watertap.costing.units.pump import cost_low_pressure_pump, PumpType
 
 from watertap.core.util.model_diagnostics.infeasible import *
 from idaes.core.util.model_diagnostics import DegeneracyHunter
@@ -106,7 +108,9 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     )
     # model_debug(m)
     # check_jac(m)
-    solve(m, solver=solver)
+    results = solve(m, solver=solver)
+    assert_optimal_termination(results)
+
     print_close_to_bounds(m)
     print_infeasible_constraints(m)
 
@@ -158,7 +162,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     m.fs.RecyclePumps = Pump(m.fs.NonFirstStages, property_package=m.fs.properties)
     for pump in m.fs.RecyclePumps.values():
         pump.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
+            flowsheet_costing_block=m.fs.costing, costing_method=cost_low_pressure_pump
         )
 
     m.fs.total_pump_work = Expression(
@@ -257,7 +261,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         initialize=1e5, units=pyunits.Pa, mutable=True
     )
     m.fs.recycle_pump_max_pressure = Param(
-        initialize=5e5, units=pyunits.Pa, mutable=True
+        initialize=100e5, units=pyunits.Pa, mutable=True
     )
 
     # process costing and add system level metrics
@@ -670,7 +674,7 @@ def set_operating_conditions(
     #     feed_flow_mass * feed_mass_frac_H2O
     # )
 
-    Cin = 78 * pyunits.g / pyunits.L
+    Cin = 75000e-6
     Qin = 5.416667e-3
     # Qin = 1e-3
     # m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"] = Cin
@@ -678,7 +682,7 @@ def set_operating_conditions(
     # m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(Qin)
     m.fs.feed.properties.calculate_state(
         var_args={
-            ("conc_mass_phase_comp", ("Liq", "NaCl")): value(
+            ("mass_frac_phase_comp", ("Liq", "NaCl")): value(
                 Cin
             ),  # feed mass concentration
             ("flow_vol_phase", "Liq"): Qin,
@@ -999,12 +1003,12 @@ def optimize_set_up(
                     m.fs.oaro_max_pressure,
                 )
             )
-            iscale.constraint_scaling_transform(
-                pump.max_oaro_pressure_con,
-                iscale.get_scaling_factor(
-                    pump.control_volume.properties_out[0].pressure
-                ),
-            )
+            # iscale.constraint_scaling_transform(
+            #     pump.max_oaro_pressure_con,
+            #     iscale.get_scaling_factor(
+            #         pump.control_volume.properties_out[0].pressure
+            #     ),
+            # )
 
     # Recycle pumps
     for idx, pump in m.fs.RecyclePumps.items():
@@ -1034,6 +1038,10 @@ def optimize_set_up(
         stage.area.setlb(1)
         stage.area.setub(20000)
 
+        stage.width.unfix()
+        stage.width.setlb(0.1)
+        stage.width.setub(1000)
+
         stage.feed_side.velocity[0, 0].unfix()
         stage.feed_side.velocity[0, 0].setlb(0)
         stage.feed_side.velocity[0, 0].setub(1)
@@ -1054,6 +1062,10 @@ def optimize_set_up(
     m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(1)
     m.fs.RO.area.setub(20000)
+
+    m.fs.RO.width.unfix()
+    m.fs.RO.width.setlb(0.1)
+    m.fs.RO.width.setub(1000)
 
     m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"].setlb(0)
     # m.fs.RO.feed_side.friction_factor_darcy[0.0, 1.0].setub(None)
