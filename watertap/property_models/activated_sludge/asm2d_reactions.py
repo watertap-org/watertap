@@ -854,7 +854,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R16", "Liq", "X_PP"): -1,
             ("R16", "Liq", "X_S"): 0,
             ("R16", "Liq", "X_TSS"): -3.23,
-            # R17: Lysis of X_PAH
+            # R17: Lysis of X_PHA
             ("R17", "Liq", "H2O"): 0,
             ("R17", "Liq", "S_A"): 1,
             ("R17", "Liq", "S_F"): 0,
@@ -1455,7 +1455,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R17":
-                    # R17: Lysis of X_PAH
+                    # R17: Lysis of X_PHA
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.b_PHA
                         * b.conc_mass_comp_ref["X_PHA"]
