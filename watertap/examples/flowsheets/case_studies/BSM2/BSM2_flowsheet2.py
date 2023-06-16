@@ -18,8 +18,7 @@ from pyomo.environ import (
 
 from pyomo.network import Arc, SequentialDecomposition
 from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import degrees_of_freedom
-
+from idaes.core.util.model_diagnostics import DegeneracyHunter
 from watertap.unit_models.anaerobic_digestor import AD
 from watertap.unit_models.thickener import Thickener
 from watertap.unit_models.dewatering import DewateringUnit
@@ -80,7 +79,7 @@ from watertap.property_models.activated_sludge.asm1_reactions import (
 )
 
 from watertap.core.util.initialization import check_solve
-
+from idaes.core.util.exceptions import InitializationError
 
 def build_flowsheet():
     m = pyo.ConcreteModel()
@@ -94,7 +93,11 @@ def build_flowsheet():
     m.fs.ASM1_rxn_props = ASM1ReactionParameterBlock(property_package=m.fs.props_ASM1)
     # Feed water stream
     m.fs.FeedWater = Feed(property_package=m.fs.props_ASM1)
-    # Mixer for feed water and recycled sludge
+    
+    #==========================================================================
+    # Activated Sludge Process
+    #==========================================================================
+    # Mixer for inlet water and recycled sludge
     m.fs.MX1 = Mixer(
         property_package=m.fs.props_ASM1, inlet_list=["feed_water", "recycle"]
     )
@@ -223,7 +226,7 @@ def build_flowsheet():
     m.fs.R4.volume.fix(1333 * pyo.units.m**3)
     m.fs.R5.volume.fix(1333 * pyo.units.m**3)
 
-    # Injection rates to Reactions 3, 4 and 5
+    # Injection rates to Reactors 3, 4 and 5
     for j in m.fs.props_ASM1.component_list:
         if j != "S_O":
             # All components except S_O have no injection
@@ -261,6 +264,10 @@ def build_flowsheet():
     # Outlet pressure from recycle pump
     m.fs.P1.outlet.pressure.fix(101325)
 
+    print(degrees_of_freedom(m), " degrees of freedom before anaerobic digester built")
+
+    # ======================================================================
+    # Anaerobic digester section
     m.fs.asm_adm = Translator_ASM1_ADM1(
         inlet_property_package=m.fs.props_ASM1,
         outlet_property_package=m.fs.props_ADM1,
@@ -285,13 +292,19 @@ def build_flowsheet():
         outlet_state_defined=True,
     )
 
+    print(degrees_of_freedom(m), " degrees of freedom after anaerobic digester built")
+
+    # ====================================================================
+    # Primary Clarifier
     m.fs.CL = Separator(
         property_package=m.fs.props_ASM1,
         outlet_list=["underflow", "effluent"],
         split_basis=SplittingType.componentFlow,
     )
 
+    # Thickener
     m.fs.TU = Thickener(property_package=m.fs.props_ASM1)
+    # Dewaterer
     m.fs.DU = DewateringUnit(property_package=m.fs.props_ASM1)
 
     m.fs.MX2 = Mixer(
@@ -324,82 +337,134 @@ def build_flowsheet():
     m.fs.RADM.volume_vapor.fix(300)
     m.fs.RADM.liquid_outlet.temperature.fix(308.15)
 
+    print(degrees_of_freedom(m), " degrees of freedom after fixing all vars/before final arcs")
+
     # Apply scaling
 
     m.fs.stream2adm = Arc(
         source=m.fs.RADM.liquid_outlet, destination=m.fs.adm_asm.inlet
     )
+    print(degrees_of_freedom(m),"first arc")
     m.fs.stream6adm = Arc(source=m.fs.SP6.waste, destination=m.fs.TU.inlet)
+    print(degrees_of_freedom(m),"next arc")
     m.fs.stream3adm = Arc(source=m.fs.TU.underflow, destination=m.fs.MX4.thickener)
+    print(degrees_of_freedom(m),"next arc")
+   
     m.fs.stream7adm = Arc(source=m.fs.TU.overflow, destination=m.fs.MX3.recycle2)
+    print(degrees_of_freedom(m),"next arc")
+
     m.fs.stream9adm = Arc(source=m.fs.CL.underflow, destination=m.fs.MX4.clarifier)
+    print(degrees_of_freedom(m),"next arc")
+
     m.fs.stream4adm = Arc(source=m.fs.adm_asm.outlet, destination=m.fs.DU.inlet)
+    print(degrees_of_freedom(m),"next arc")
+
     m.fs.stream5adm = Arc(source=m.fs.DU.overflow, destination=m.fs.MX2.recycle1)
+    print(degrees_of_freedom(m),"next arc")
+
     m.fs.stream01 = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX2.feed_water1)
+    print(degrees_of_freedom(m),"next arc")
+
     m.fs.stream02 = Arc(source=m.fs.MX2.outlet, destination=m.fs.MX3.feed_water2)
+    print(degrees_of_freedom(m),"next arc")
+
     m.fs.stream03 = Arc(source=m.fs.MX3.outlet, destination=m.fs.CL.inlet)
+    print(degrees_of_freedom(m),"next arc")
+
     m.fs.stream04 = Arc(source=m.fs.CL.effluent, destination=m.fs.MX1.feed_water)
+    print(degrees_of_freedom(m),"next arc")
+
     m.fs.stream10adm = Arc(source=m.fs.MX4.outlet, destination=m.fs.asm_adm.inlet)
+    print(degrees_of_freedom(m),"next arc")
+
     m.fs.stream1adm = Arc(source=m.fs.asm_adm.outlet, destination=m.fs.RADM.inlet)
+    print(degrees_of_freedom(m),"final arc")
+
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
+    print(degrees_of_freedom(m),"transform arcs")
 
     iscale.calculate_scaling_factors(m.fs)
     m.fs.set_default_scaling("conc_mass_comp", 1)
 
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
-    seq = SequentialDecomposition()
-    seq.options.select_tear_method = "heuristic"
-    seq.options.tear_method = "Wegstein"
-    seq.options.iterLim = 1
+    # seq = SequentialDecomposition()
+    # seq.options.select_tear_method = "heuristic"
+    # seq.options.tear_method = "Wegstein"
+    # seq.options.iterLim = 1
 
-    G = seq.create_graph(m)
+    # G = seq.create_graph(m)
 
-    # # Uncomment this code to see tear set and initialization order
-    heuristic_tear_set = seq.tear_set_arcs(G, method="heuristic")
-    order = seq.calculation_order(G)
-    for o in heuristic_tear_set:
-        print(o.name)
-    for o in order:
-        print(o[0].name)
+    # # # Uncomment this code to see tear set and initialization order
+    # heuristic_tear_set = seq.tear_set_arcs(G, method="heuristic")
+    # order = seq.calculation_order(G)
+    # for o in heuristic_tear_set:
+    #     print(o.name)
+    # for o in order:
+    #     print(o[0].name)
 
-    # Initial guesses for flow into first reactor
-    tear_guesses = {
-        "flow_vol": {0: 0.26},
-        "conc_mass_comp": {
-            (0, "S_I"): 0.028,
-            (0, "S_S"): 0.059,
-            (0, "X_I"): 0.094,
-            (0, "X_S"): 0.356,
-            (0, "X_BH"): 0.05,
-            (0, "X_BA"): 0.0009,
-            (0, "X_P"): 0.0006,
-            (0, "S_O"): 0.000017,
-            (0, "S_NO"): 0.000117,
-            (0, "S_NH"): 0.034,
-            (0, "S_ND"): 0.005,
-            (0, "X_ND"): 0.015,
-        },
-        "alkalinity": {0: 7.69},
-        "temperature": {0: 298.15},
-        "pressure": {0: 101325},
-    }
+    # # Initial guesses for flow into first reactor
+    # tear_guesses = {
+    #     "flow_vol": {0: 0.26},
+    #     "conc_mass_comp": {
+    #         (0, "S_I"): 0.028,
+    #         (0, "S_S"): 0.059,
+    #         (0, "X_I"): 0.094,
+    #         (0, "X_S"): 0.356,
+    #         (0, "X_BH"): 0.05,
+    #         (0, "X_BA"): 0.0009,
+    #         (0, "X_P"): 0.0006,
+    #         (0, "S_O"): 0.000017,
+    #         (0, "S_NO"): 0.000117,
+    #         (0, "S_NH"): 0.034,
+    #         (0, "S_ND"): 0.005,
+    #         (0, "X_ND"): 0.015,
+    #     },
+    #     "alkalinity": {0: 7.69},
+    #     "temperature": {0: 298.15},
+    #     "pressure": {0: 101325},
+    # }
 
-    # Pass the tear_guess to the SD tool
-    seq.set_guesses_for(m.fs.R1.inlet, tear_guesses)
+    # # Pass the tear_guess to the SD tool
+    # seq.set_guesses_for(m.fs.R1.inlet, tear_guesses)
 
-    def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO_HIGH)
+    # def function(unit):
+    #     unit.initialize(outlvl=idaeslog.INFO_HIGH)
 
-    seq.run(m, function)
+    # try:
+    #     seq.run(m, function)
+    # except InitializationError:
+    #     pass
 
     # solver = get_solver(options={"bound_push": 1e-8,"max_iter":0})
+    m.fs.obj = pyo.Objective(expr=0)
     solver = get_solver()
-    results = solver.solve(m, tee=True)
+
+    # initial point
+    solver.options["max_iter"] = 0
+    solver.solve(m, tee=False)
+    dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    dh.check_residuals(tol=1e-8)
+    dh.check_variable_bounds(tol=1e-8)
+
+    # solved model
+    solver.options["max_iter"] = 100
+    
+    
+
     print(degrees_of_freedom(m))
+    results = solver.solve(m, tee=True)
+
     # pyo.assert_optimal_termination(results)
     # m.display()
 
-    print(large_residuals_set(m))
-
+    print("residual set:",large_residuals_set(m))
+    dh.check_residuals(tol=1e-8)
     return m, results
+
+
+if __name__ == "__main__":
+    m, results = build_flowsheet()
+    m.fs.visualize("My Flowsheet", loop_forever=True)
+    [print(i[0]) for i in large_residuals_set(m)]
+    print("residual set:",large_residuals_set(m))
