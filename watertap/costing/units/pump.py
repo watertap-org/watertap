@@ -90,12 +90,6 @@ def cost_high_pressure_pump(blk, cost_electricity_flow=True):
             ),
             "electricity",
         )
-    else:
-        blk.costing_package.cost_flow(
-            0 * pyo.units.kW,
-            "electricity",
-        )
-
 
 def build_low_pressure_pump_cost_param_block(blk):
 
@@ -135,11 +129,5 @@ def cost_low_pressure_pump(blk, cost_electricity_flow=True):
             pyo.units.convert(
                 blk.unit_model.work_mechanical[t0], to_units=pyo.units.kW
             ),
-            "electricity",
-        )
-
-    else:
-        blk.costing_package.cost_flow(
-            0 * pyo.units.kW,
             "electricity",
         )
