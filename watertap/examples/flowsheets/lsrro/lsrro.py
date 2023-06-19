@@ -406,7 +406,7 @@ def build(
             + (
                 m.fs.costing.booster_pump_capex_lcow
                 if number_of_stages > 1
-                else 0 * m.fs.costing.base_currency
+                else 0 * m.fs.costing.base_currency / pyunits.m**3
             )
             + m.fs.costing.erd_capex_lcow
         )
