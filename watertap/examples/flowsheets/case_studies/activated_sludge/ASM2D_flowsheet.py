@@ -411,7 +411,7 @@ def build_flowsheet():
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
     # Resolve with controls in place
-    results = solver.solve(m, tee=True)
+    results = solver.solve(m, tee=False)
 
     pyo.assert_optimal_termination(results)
     check_solve(
@@ -421,8 +421,6 @@ def build_flowsheet():
         fail_flag=True,
     )
 
-    m.fs.Treated.display()
-    m.fs.Sludge.display()
     return m, results
 
 
