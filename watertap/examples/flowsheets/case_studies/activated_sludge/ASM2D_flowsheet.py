@@ -330,7 +330,7 @@ def build_flowsheet():
     for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
         block = getattr(m.fs, unit)
         iscale.set_scaling_factor(
-            block.control_volume.reactions[0.0].rate_expression, 1e3
+            block.control_volume.reactions[0.0].rate_expression, 1e5
         )
         iscale.set_scaling_factor(block.cstr_performance_eqn, 1e3)
         iscale.set_scaling_factor(
@@ -421,6 +421,8 @@ def build_flowsheet():
         fail_flag=True,
     )
 
+    m.fs.Treated.display()
+    m.fs.Sludge.display()
     return m, results
 
 
