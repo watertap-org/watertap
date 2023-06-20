@@ -282,7 +282,7 @@ def build_flowsheet():
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-3)
+                iscale.set_scaling_factor(var, 1e-4)
             if "enth_mol" in var.name:
                 iscale.set_scaling_factor(var, 1e-3)
             if "alkalinity" in var.name:
@@ -411,7 +411,7 @@ def build_flowsheet():
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
     # Resolve with controls in place
-    results = solver.solve(m, tee=False)
+    results = solver.solve(m, tee=True)
 
     pyo.assert_optimal_termination(results)
     check_solve(
