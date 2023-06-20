@@ -48,7 +48,7 @@ Sets
    "Phases", ":math:`p`", "['Liq']"
    "Inlet Components", ":math:`j`", "['H2O', 'S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac', 'S_h2', 'S_ch4', 'S_IC', 'S_IN', 'S_IP', 'S_I', 'X_ch', 'X_pr', 'X_li', 'X_su', 'X_aa', 'X_fa', 'X_c4', 'X_pro', 'X_ac', 'X_h2', 'X_I', 'X_PHA', 'X_PP', 'X_PAO', 'S_K', 'S_Mg']"
    "Ion", ":math:`j`", "['S_cat', 'S_an'] \  :sup:`1`"
-   "Outlet Components", ":math:`j`", "['H2O', 'S_A', 'S_F', 'S_I', 'S_N2', 'S_NH4', 'S_NO3', 'S_O2', 'S_PO4', 'S_K', 'S_Mg', 'S_IC', 'X_AUT', 'X_H', 'X_I', 'X_PAO', 'X_PHA', 'X_PP', 'X_S']
+   "Outlet Components", ":math:`j`", "['H2O', 'S_A', 'S_F', 'S_I', 'S_N2', 'S_NH4', 'S_NO3', 'S_O2', 'S_PO4', 'S_K', 'S_Mg', 'S_IC', 'X_AUT', 'X_H', 'X_I', 'X_PAO', 'X_PHA', 'X_PP', 'X_S']"
    "Readily Biodegradable COD", ":math:`k`", "['S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac']"
    "Slowly Biodegradable COD", ":math:`m`", "['X_ch', 'X_pr', 'X_li']"
    "Unchanged Components", ":math:`j`", "['S_I', 'X_I', 'X_PP', 'X_PHA', 'S_K', 'S_Mg', 'S_IC']"
