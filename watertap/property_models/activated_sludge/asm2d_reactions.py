@@ -1531,10 +1531,10 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
     def get_reaction_rate_basis(self):
         return MaterialFlowBasis.mass
 
-    def calculate_scaling_factors(self):
-        super().calculate_scaling_factors()
+    # def calculate_scaling_factors(self):
+    #     super().calculate_scaling_factors()
 
-        for i, c in self.rate_expression.items():
-            # TODO: Need to work out how to calculate good scaling factors
-            # instead of a fixed 1e3.
-            iscale.constraint_scaling_transform(c, 1e5, overwrite=True)
+    #     for i, c in self.rate_expression.items():
+    #         # TODO: Need to work out how to calculate good scaling factors
+    #         # instead of a fixed 1e3.
+    #         iscale.constraint_scaling_transform(c, 1e3, overwrite=True)

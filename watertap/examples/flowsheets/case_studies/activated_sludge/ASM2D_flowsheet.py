@@ -282,7 +282,7 @@ def build_flowsheet():
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-3)
+                iscale.set_scaling_factor(var, 1e-4)
             if "enth_mol" in var.name:
                 iscale.set_scaling_factor(var, 1e-3)
             if "alkalinity" in var.name:
@@ -421,6 +421,8 @@ def build_flowsheet():
         fail_flag=True,
     )
 
+    m.fs.Treated.display()
+    m.fs.Sludge.display()
     return m, results
 
 
