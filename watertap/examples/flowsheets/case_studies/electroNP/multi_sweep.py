@@ -22,10 +22,12 @@ import matplotlib.pyplot as plt
 
 def set_up_sensitivity(m):
     outputs = {}
-    optimize_kwargs = {"fail_flag": False}
+    # optimize_kwargs = {"fail_flag": False}
+    optimize_kwargs = {}
     opt_function = electroNP_flowsheet.solve
 
     # create outputs
+    outputs["LCOW"] = m.fs.costing.LCOW
     outputs["ElectroNP Capital Cost"] = m.fs.electroNP.costing.capital_cost
     outputs["Electricity"] = pyunits.convert(
         m.fs.costing.aggregate_flow_costs["electricity"] / m.fs.AD.inlet.flow_vol[0],
@@ -35,7 +37,7 @@ def set_up_sensitivity(m):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=2, nx=11, interpolate_nan_outputs=True, output_filename=None):
+def run_analysis(case_num, nx, interpolate_nan_outputs=True, output_filename=None):
 
     if output_filename is None:
         output_filename = "sensitivity_" + str(case_num) + ".csv"
@@ -60,7 +62,7 @@ def run_analysis(case_num=2, nx=11, interpolate_nan_outputs=True, output_filenam
         sweep_params["HRT"] = LinearSample(m.fs.costing.electroNP.HRT, 1, 5, nx)
     elif case_num == 3:
         sweep_params["energy_consumption"] = LinearSample(
-            m.fs.electroNP.energy_electric_flow_mass, 0.02, 0.08, nx
+            m.fs.electroNP.energy_electric_flow_mass, 0.04, 2.5, nx
         )
     elif case_num == 4:
         sweep_params["energy_consumption"] = LinearSample(
@@ -135,7 +137,7 @@ def visualize_results(
     return fig, ax
 
 
-def main(case_num=2, nx=11, interpolate_nan_outputs=True):
+def main(case_num, nx=11, interpolate_nan_outputs=True):
     # when from the command line
     case_num = int(case_num)
     nx = int(nx)
@@ -162,31 +164,31 @@ def main(case_num=2, nx=11, interpolate_nan_outputs=True):
     # ax.set_ylabel("ElectroNP Capital Cost ($/(m3/hr)")
 
     # case 2
-    fig, ax = visualize_results(
-        case_num,
-        plot_type="contour",
-        xlabel="# sizing_cost",
-        ylabel="HRT",
-        zlabel="ElectroNP Capital Cost",
-        isolines=[2000, 5000],
-        cmap="GnBu",
-    )
-    ax.plot(1.25, 1.3333, "ko")
-    ax.set_xlabel("Sizing Cost ($/m3)")
-    ax.set_ylabel("HRT (h)")
-    ax.set_title("ElectroNP Capital Cost ($/(m3/hr)")
-
-    # case 5
     # fig, ax = visualize_results(
     #     case_num,
-    #     plot_type="line",
-    #     xlabel="# energy_consumption",
-    #     ylabel="Electricity",
+    #     plot_type="contour",
+    #     xlabel="# sizing_cost",
+    #     ylabel="HRT",
+    #     zlabel="ElectroNP Capital Cost",
+    #     isolines=[2000, 5000],
+    #     cmap="GnBu",
     # )
+    # ax.plot(1.25, 1.3333, "ko")
+    # ax.set_xlabel("Sizing Cost ($/m3)")
+    # ax.set_ylabel("HRT (h)")
+    # ax.set_title("ElectroNP Capital Cost ($/(m3/hr)")
+
+    # case 3
+    fig, ax = visualize_results(
+        case_num,
+        plot_type="line",
+        xlabel="# energy_consumption",
+        ylabel="Electricity",
+    )
     # ax.plot(0.044, 0.00249501, 'ro')
-    # # plt.axvline(0.044, ls='--')
-    # ax.set_xlabel("Electricity Intensity (kWh/kg P)")
-    # ax.set_ylabel("Normalized Electricity Cost($/m3)")
+    # plt.axvline(0.044, ls='--')
+    ax.set_xlabel("Electricity Intensity (kWh/kg P)")
+    ax.set_ylabel("Normalized Electricity Cost($/m3)")
 
     # case 6
     # fig, ax = visualize_results(
@@ -235,5 +237,5 @@ def main(case_num=2, nx=11, interpolate_nan_outputs=True):
 
 
 if __name__ == "__main__":
-    results, model = main()
+    results, model = main(case_num=3, nx=15)
     # results, sweep_params, m = run_analysis()
