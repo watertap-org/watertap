@@ -46,17 +46,16 @@ Sets
    "Time", ":math:`t`", "[0]"
    "Inlet/outlet", ":math:`x`", "['in', 'out']"
    "Phases", ":math:`p`", "['Liq']"
-   "Inlet Components", ":math:`j`", "['H2O', 'S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac','S_h2','S_ch4','S_IC','S_IN','S_IP','S_I','X_ch','X_pr','X_li','X_su','X_aa','X_fa','X_c4','X_pro','X_ac','X_h2','X_I','X_PHA','X_PP','X_PAO','S_K','S_Mg']"
+   "Inlet Components", ":math:`j`", "['H2O', 'S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac', 'S_h2', 'S_ch4', 'S_IC', 'S_IN', 'S_IP', 'S_I', 'X_ch', 'X_pr', 'X_li', 'X_su', 'X_aa', 'X_fa', 'X_c4', 'X_pro', 'X_ac', 'X_h2', 'X_I', 'X_PHA', 'X_PP', 'X_PAO', 'S_K', 'S_Mg']"
    "Ion", ":math:`j`", "['S_cat', 'S_an'] \  :sup:`1`"
-   "Outlet Components", ":math:`j`", "['H2O', 'S_A','S_F','S_I','S_N2','S_NH4','S_NO3','S_O2','S_PO4','S_ALK','X_AUT','X_H','X_I','X_MeOH','X_MeP','X_PAO','X_PHA','X_PP','X_S','X_TSS'] \  :sup:`2`"
+   "Outlet Components", ":math:`j`", "['H2O', 'S_A', 'S_F', 'S_I', 'S_N2', 'S_NH4', 'S_NO3', 'S_O2', 'S_PO4', 'S_K', 'S_Mg', 'S_IC', 'X_AUT', 'X_H', 'X_I', 'X_PAO', 'X_PHA', 'X_PP', 'X_S']
    "Readily Biodegradable COD", ":math:`k`", "['S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac']"
    "Slowly Biodegradable COD", ":math:`m`", "['X_ch', 'X_pr', 'X_li']"
-   "Unchanged Components", ":math:`j`", "['S_I','X_I','X_PP','X_PHA']"
-   "Zero Flow Components", ":math:`j`", "['S_N2','S_NO3','S_O2','X_AUT','X_H','X_PAO','X_TSS','X_MeOH','X_MeP']"
+   "Unchanged Components", ":math:`j`", "['S_I', 'X_I', 'X_PP', 'X_PHA', 'S_K', 'S_Mg', 'S_IC']"
+   "Zero Flow Components", ":math:`j`", "['S_N2', 'S_NO3', 'S_O2', 'X_AUT', 'X_H', 'X_PAO']"
 
 **Notes**
  :sup:`1` Ion" is a subset of "Inlet Components" and uses the same symbol j.
- :sup:`2` "Outlet Components" also includes any additional solutes that the user specifies for Modified ASM2d.
 
 .. _Translator_ADM1_ASM2d_equations:
 
@@ -75,9 +74,11 @@ Equations and Relationships
    "Inert particulate COD conversion", ":math:`X_{I, out} = X_{I, in}`"
    "Polyphosphate conversion", ":math:`X_{PP, out} = X_{PP, in}`"
    "Polyhydroxyalkanoates conversion", ":math:`X_{PHA, out} = X_{PHA, in}`"
+   "Potassium conversion", ":math:`S_{K, out} = S_{K, in}`"
+   "Magnesium conversion", ":math:`S_{Mg, out} = S_{Mg, in}`"
+   "Inorganic carbon conversion", ":math:`S_{IC, out} = S_{IC, in}`"
    "Ammonium conversion", ":math:`S_{NH4, out} = S_{IN, in}`"
    "Phosphate conversion", ":math:`S_{PO4, out} = S_{IP, in}`"
-   "Alkalinity conversion", ":math:`S_{ALK, out} = \frac{S_{IC, in}}{12}`"
    "Biodegradable particulate organics conversion", ":math:`X_{S, out} = X_{ch, in} + X_{pr, in} + X_{li, in}`"
 
 
