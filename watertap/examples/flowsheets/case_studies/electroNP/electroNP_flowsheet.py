@@ -219,59 +219,59 @@ def build_flowsheet():
     # m.fs.electroNP.solute_removal_equation[0.0,"Liq","S_NH4"].deactivate()
     # m.fs.electroNP.solute_treated_equation[0.0,"Liq","S_NH4"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","S_O2"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","S_O2"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "S_O2"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "S_O2"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","S_N2"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","S_N2"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "S_N2"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "S_N2"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","X_AUT"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","X_AUT"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "X_AUT"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "X_AUT"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","X_PHA"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","X_PHA"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "X_PHA"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "X_PHA"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","S_I"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","S_I"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "S_I"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "S_I"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","S_NO3"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","S_NO3"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "S_NO3"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "S_NO3"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","S_Mg"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","S_Mg"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "S_Mg"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "S_Mg"].deactivate()
 
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","X_MeP"].deactivate()
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","X_MeP"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "X_MeP"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "X_MeP"].deactivate()
 
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","X_MeOH"].deactivate()
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","X_MeOH"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "X_MeOH"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "X_MeOH"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","X_PAO"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","X_PAO"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "X_PAO"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "X_PAO"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","X_TSS"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","X_TSS"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "X_TSS"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "X_TSS"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","S_F"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","S_F"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "S_F"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "S_F"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","S_K"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","S_K"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "S_K"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "S_K"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","S_A"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","S_A"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "S_A"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "S_A"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","X_I"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","X_I"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "X_I"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "X_I"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","X_H"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","X_H"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "X_H"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "X_H"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","X_PP"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","X_PP"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "X_PP"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "X_PP"].deactivate()
 
-    m.fs.electroNP.solute_removal_equation[0.0,"Liq","X_S"].deactivate()
-    m.fs.electroNP.solute_treated_equation[0.0,"Liq","X_S"].deactivate()
+    m.fs.electroNP.solute_removal_equation[0.0, "Liq", "X_S"].deactivate()
+    m.fs.electroNP.solute_treated_equation[0.0, "Liq", "X_S"].deactivate()
 
     m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH)
     propagate_state(m.fs.stream_adm1_translator)
