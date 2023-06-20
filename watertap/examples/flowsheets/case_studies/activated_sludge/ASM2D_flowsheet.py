@@ -282,9 +282,9 @@ def build_flowsheet():
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-4)
+                iscale.set_scaling_factor(var, 1e-3)
             if "enth_mol" in var.name:
-                iscale.set_scaling_factor(var, 1e-4)
+                iscale.set_scaling_factor(var, 1e-3)
             if "alkalinity" in var.name:
                 iscale.set_scaling_factor(var, 1e3)
             # if "conc_mass_comp" in var.name:
@@ -330,7 +330,7 @@ def build_flowsheet():
     for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
         block = getattr(m.fs, unit)
         iscale.set_scaling_factor(
-            block.control_volume.reactions[0.0].rate_expression, 1e5
+            block.control_volume.reactions[0.0].rate_expression, 1e3
         )
         iscale.set_scaling_factor(block.cstr_performance_eqn, 1e3)
         iscale.set_scaling_factor(
@@ -398,7 +398,7 @@ def build_flowsheet():
 
     seq.run(m, function)
 
-    solver = get_solver(options={"bound_push": 1e-8})
+    solver = get_solver()
     results = solver.solve(m, tee=False)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
 
@@ -411,7 +411,7 @@ def build_flowsheet():
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
     # Resolve with controls in place
-    results = solver.solve(m, tee=False)
+    results = solver.solve(m, tee=True)
 
     pyo.assert_optimal_termination(results)
     check_solve(
@@ -421,8 +421,6 @@ def build_flowsheet():
         fail_flag=True,
     )
 
-    m.fs.Treated.display()
-    m.fs.Sludge.display()
     return m, results
 
 
