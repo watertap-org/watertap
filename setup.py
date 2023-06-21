@@ -103,6 +103,7 @@ setup(
             "mongomock",
             "pandas",
             "nbmake",
+            "nbconvert",
         ],
         "dev": [
             "nbsphinx",  # jupyter notebook support for sphinx
