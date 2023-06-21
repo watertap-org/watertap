@@ -721,6 +721,31 @@ class ParameterSweep(_ParameterSweepBase):
 
         return np.asarray(combined_outputs)
 
+    """
+    Use the embedded ParallelManager to fan out and then back in the results.
+    Args:
+    - common_params: a list of parameters that should be passed into every run
+    - all_parameter_combinations: a list where each element represents the parameters
+    for a single local run
+    Returns:
+    - a list of LocalResults representing the results of the simulation runs 
+    """
+
+    def run_scatter_gather(self, common_params, all_parameter_combinations):
+        # save a reference to the parallel manager since it will be removed
+        # along with the other unpicklable state
+        parallel_manager = self.parallel_manager
+        saved_state = ParallelManager.remove_unpicklable_state(self)
+
+        # scatter out the computation
+        parallel_manager.scatter(self, common_params, all_parameter_combinations)
+
+        # gather the results and combine them into the format we want
+        all_results = parallel_manager.gather()
+        ParallelManager.restore_unpicklable_state(self, saved_state)
+
+        return all_results
+
     def parameter_sweep(
         self,
         model,
@@ -745,27 +770,15 @@ class ParameterSweep(_ParameterSweepBase):
         if combined_outputs is not None:
             self._assign_variable_names(model, combined_outputs)
 
-        # save a reference to the parallel manager since it will be removed
-        # along with the other unpicklable state
-        parallel_manager = self.parallel_manager
-        saved_state = ParallelManager.remove_unpicklable_state(self)
-
-        # scatter out the computation
-        parallel_manager.scatter(
-            self,
-            [model, sweep_params, combined_outputs],
-            all_parameter_combinations,
+        all_results = self.run_scatter_gather(
+            [model, sweep_params, combined_outputs], all_parameter_combinations
         )
-
-        # gather the results and combine them into the format we want
-        all_results = parallel_manager.gather()
-        ParallelManager.restore_unpicklable_state(self, saved_state)
 
         global_sweep_results = self._combine_gather_results(all_results)
         combined_outputs = self._combine_outputs(global_sweep_results)
 
         # save the results for all simulations run by this process and its children
-        for results in parallel_manager.results_from_local_tree(all_results):
+        for results in self.parallel_manager.results_from_local_tree(all_results):
             self.writer.save_results(
                 sweep_params,
                 results.parameters,

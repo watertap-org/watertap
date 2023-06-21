@@ -22,7 +22,7 @@ from watertap.tools.parallel.single_process_parallel_manager import (
 mpi4py, mpi4py_available = attempt_import("mpi4py")
 
 
-def create_parallel_manager(parallel_manager_class=None, number_of_subprocesses=1):
+def create_parallel_manager(parallel_manager_class=None, **kwargs):
     """
     Create and return an instance of a ParallelManager, based on the libraries available in the
     runtime environment.
@@ -31,11 +31,12 @@ def create_parallel_manager(parallel_manager_class=None, number_of_subprocesses=
     is instantiated and returned rather than checking the local environment.
     """
     if parallel_manager_class is not None:
-        return parallel_manager_class()
+        return parallel_manager_class(**kwargs)
 
     if has_mpi_peer_processes():
         return MPIParallelManager(mpi4py)
 
+    number_of_subprocesses = kwargs.get("number_of_subprocesses", 1)
     if should_fan_out(number_of_subprocesses):
         return ConcurrentFuturesParallelManager(number_of_subprocesses)
 

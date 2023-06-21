@@ -27,7 +27,7 @@ import watertap.tools.MPI as MPI
 # -----------------------------------------------------------------------------
 
 
-class TestParallelManager:
+class TestParameterSweep:
     @pytest.fixture(scope="class")
     def model(self):
         m = pyo.ConcreteModel()

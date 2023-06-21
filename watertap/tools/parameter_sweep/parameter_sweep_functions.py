@@ -37,6 +37,7 @@ def parameter_sweep(
     interpolate_nan_outputs=False,
     num_samples=None,
     seed=None,
+    number_of_subprocesses=None,
 ):
 
     """
@@ -124,6 +125,9 @@ def parameter_sweep(
 
         seed (optional) : If the user is using a random sampling technique, this sets the seed
 
+        number_of_subprocesses (optional) : Directive for fanning out subprocesses to perform
+                                            parallel computation.
+
     Returns:
 
         save_data : A list were the first N columns are the values of the parameters passed
@@ -155,6 +159,8 @@ def parameter_sweep(
         kwargs["debugging_data_dir"] = debugging_data_dir
     if interpolate_nan_outputs is not None:
         kwargs["interpolate_nan_outputs"] = interpolate_nan_outputs
+    if number_of_subprocesses is not None:
+        kwargs["number_of_subprocesses"] = number_of_subprocesses
 
     ps = ParameterSweep(**kwargs)
 

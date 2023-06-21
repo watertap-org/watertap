@@ -17,7 +17,7 @@ from watertap.tools.parallel.parallel_manager import ParallelManager, run_sweep
 
 
 class MPIParallelManager(ParallelManager):
-    def __init__(self, mpi4py_lib):
+    def __init__(self, mpi4py_lib, **kwargs):
         self.mpi4py = mpi4py_lib
         self.comm = self.mpi4py.MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()

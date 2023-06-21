@@ -15,7 +15,7 @@ from watertap.tools.parallel.results import LocalResults
 
 
 class SingleProcessParallelManager(ParallelManager):
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.results = None
 
     def is_root_process(self):

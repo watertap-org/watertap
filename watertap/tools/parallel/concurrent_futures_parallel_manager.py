@@ -19,11 +19,11 @@ from watertap.tools.parallel.parallel_manager import ParallelManager, run_sweep
 
 
 class ConcurrentFuturesParallelManager(ParallelManager):
-    def __init__(self, number_of_child_processes):
-        self.max_number_of_child_processes = number_of_child_processes
+    def __init__(self, number_of_subprocesses=1, **kwargs):
+        self.max_number_of_subprocesses = number_of_subprocesses
 
         # this will be updated when child processes are kicked off
-        self.actual_number_of_child_processes = None
+        self.actual_number_of_subprocesses = None
 
         # Future -> (process number, parameters). Used to keep track of the process number and parameters for
         # all in-progress futures
@@ -36,9 +36,9 @@ class ConcurrentFuturesParallelManager(ParallelManager):
         return self.ROOT_PROCESS_RANK
 
     def number_of_worker_processes(self):
-        if self.actual_number_of_child_processes is None:
-            return self.max_number_of_child_processes
-        return self.actual_number_of_child_processes
+        if self.actual_number_of_subprocesses is None:
+            return self.max_number_of_subprocesses
+        return self.actual_number_of_subprocesses
 
     def sync_with_peers(self):
         pass
@@ -48,21 +48,21 @@ class ConcurrentFuturesParallelManager(ParallelManager):
 
     def scatter(self, param_sweep_instance, common_params, all_parameter_combos):
         # constrain the number of child processes to the number of unique parameter combinations to be run
-        self.actual_number_of_child_processes = min(
-            self.max_number_of_child_processes, len(all_parameter_combos)
+        self.actual_number_of_subprocesses = min(
+            self.max_number_of_subprocesses, len(all_parameter_combos)
         )
 
         # split the parameters into chunks, one for each child process
         divided_combo_array = numpy.array_split(
-            all_parameter_combos, self.actual_number_of_child_processes
+            all_parameter_combos, self.actual_number_of_subprocesses
         )
 
         # create an executor and kick off the child processes that will perform the computation
         self.executor = futures.ProcessPoolExecutor(
-            max_workers=self.actual_number_of_child_processes
+            max_workers=self.actual_number_of_subprocesses
         )
 
-        for i in range(self.actual_number_of_child_processes):
+        for i in range(self.actual_number_of_subprocesses):
             local_params = divided_combo_array[i]
             # save the mapping of future -> (process number, params that it's running)
             self.running_futures[
