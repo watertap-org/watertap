@@ -62,15 +62,14 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True, output_filename=Non
         sweep_params["HRT"] = LinearSample(m.fs.costing.electroNP.HRT, 1, 5, nx)
     elif case_num == 3:
         sweep_params["energy_consumption"] = LinearSample(
-            m.fs.electroNP.energy_electric_flow_mass, 0.04, 2.5, nx
+            m.fs.electroNP.energy_electric_flow_mass, 0.04, 2.2, nx
         )
     elif case_num == 4:
         sweep_params["energy_consumption"] = LinearSample(
-            m.fs.electroNP.energy_electric_flow_mass, 0, 3, nx
+            m.fs.electroNP.energy_electric_flow_mass, 0.02, 2.2, nx
         )
-        m.fs.costing.electricity_cost.unfix()
         sweep_params["electricity_cost"] = LinearSample(
-            m.fs.costing.electricity_cost, 0.05, 0.1, nx
+            m.fs.costing.electricity_cost, 0.06, 0.1, nx
         )
     elif case_num == 5:
         sweep_params["electricity_cost"] = LinearSample(
@@ -78,6 +77,13 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True, output_filename=Non
         )
         sweep_params["MgCl2_cost"] = LinearSample(
             m.fs.costing.magnesium_chloride_cost, 0.07, 0.1, nx
+        )
+    elif case_num == 6:
+        sweep_params["energy_consumption"] = LinearSample(
+            m.fs.electroNP.energy_electric_flow_mass, 0, 2, nx
+        )
+        sweep_params["MgCl2_dosage"] = LinearSample(
+            m.fs.electroNP.magnesium_chloride_dosage, 0.1, 0.5, nx
         )
     else:
         raise ValueError(f"{case_num} is not yet implemented")
@@ -179,63 +185,67 @@ def main(case_num, nx=11, interpolate_nan_outputs=True):
     # ax.set_title("ElectroNP Capital Cost ($/(m3/hr)")
 
     # case 3
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="line",
+    #     xlabel="# energy_consumption",
+    #     ylabel="LCOW",
+    # )
+    # # ax.plot(0.044, 6.0104, 'ro')
+    # # plt.axvline(0.044, ls='--')
+    # ax.set_xlabel("Electricity Intensity (kWh/kg P)")
+    # ax.set_ylabel("LCOW ($/m3)")
+
+    # case 4
     fig, ax = visualize_results(
         case_num,
-        plot_type="line",
+        plot_type="contour",
         xlabel="# energy_consumption",
-        ylabel="Electricity",
+        ylabel="electricity_cost",
+        zlabel="LCOW",
+        isolines=[2000, 5000],
+        cmap="GnBu",
     )
-    # ax.plot(0.044, 0.00249501, 'ro')
-    # plt.axvline(0.044, ls='--')
+    ax.plot(0.044, 0.08, "ko")
+    ax.set_ylim([0.07, 0.09])
     ax.set_xlabel("Electricity Intensity (kWh/kg P)")
-    ax.set_ylabel("Normalized Electricity Cost($/m3)")
+    ax.set_ylabel("Electricity Cost ($/kWh)")
+    ax.set_title("LCOW ($/m3)")
+
+    # case 5
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# electricity_cost",
+    #     ylabel="MgCl2_cost",
+    #     zlabel="LCOW",
+    #     cmap="GnBu",
+    # )
+    # ax.plot(0.08, 0.0786, 'ko')
+    # ax.set_ylim([0.07, 0.1])
+    # ax.set_xlim([0.06, 0.1])
+    # ax.set_xlabel("Electricity Cost ($/kWh)")
+    # ax.set_ylabel("MgCl2 Cost ($/kg P)")
+    # ax.set_title("LCOW ($/m3)")
 
     # case 6
     # fig, ax = visualize_results(
     #     case_num,
     #     plot_type="contour",
     #     xlabel="# energy_consumption",
-    #     ylabel="electricity_cost",
-    #     zlabel="Electricity",
-    #     isolines=[2000, 5000],
-    #     cmap="GnBu",
-    # )
-    # ax.plot(0.044, 0.08, 'ko')
-    # ax.set_xlabel("Electricity Intensity (kWh/kg P)")
-    # ax.set_ylabel("Electricity Cost ($/kWh)")
-    # ax.set_title("Normalized Electricity Cost ($/m3)")
-
-    # case 7
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="contour",
-    #     xlabel="# electricity_cost",
-    #     ylabel="MgCl2_cost",
-    #     zlabel="Total Operating Cost",
-    #     cmap="GnBu",
-    # )
-    # ax.plot(0.08, 0.0786, 'ko')
-    # ax.set_xlabel("Electricity Cost ($/kWh)")
-    # ax.set_ylabel("MgCl2 Cost ($/kg P)")
-    # ax.set_title("Total Operating Cost ($/year)")
-
-    # case 8
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="contour",
-    #     xlabel="# energy_consumption",
     #     ylabel="MgCl2_dosage",
-    #     zlabel="Total Operating Cost",
+    #     zlabel="LCOW",
     #     cmap="GnBu",
     # )
     # ax.plot(0.044, 0.388, 'ko')
+    # ax.set_ylim([0.2, 0.5])
     # ax.set_xlabel("Electricity Intensity (kWh/kg P)")
     # ax.set_ylabel("MgCl2 Dosage (kg MgCl2/kg P)")
-    # ax.set_title("Total Operating Cost ($/year)")
+    # ax.set_title("LCOW ($/m3)")
 
     return global_results, m
 
 
 if __name__ == "__main__":
-    results, model = main(case_num=3, nx=15)
+    results, model = main(case_num=4, nx=15)
     # results, sweep_params, m = run_analysis()
