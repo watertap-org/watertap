@@ -16,7 +16,7 @@ This package is an extension of the `base Activated Sludge Model no.2d (ASM2d) <
 
 Throughout this documentation, text in :red:`red` has been removed in the Modified ASM2d model, text in :lime:`lime` has been added, and text in :blue:`blue` has been modified from its base ASM2d implementation.
 
-The following modifications have been made to the base ASM2d model as provided in:
+The following modifications have been made to the base ASM2d model as provided in [1]:
    * adds inorganic carbon (S_IC), potassium (S_K), and magnesium (S_Mg) as solutes
    * removes total suspended solids (X_TSS), metal-hydroxides (X_MeOH), metal-phosphate (X_MeP), alkalinity (S_ALK), and any variables or parameters associated with alkalinity
    * removes the precipitation reaction (R20) and the re-dissolution reaction (R21)
