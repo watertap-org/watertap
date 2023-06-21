@@ -481,6 +481,7 @@ def test_case_1_no_dissolution():
         has_energy_balance=True,
     )
 
+
 @pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case_1_high_dissolution():
@@ -504,6 +505,7 @@ def test_case_1_mid_dissolution():
         rxn_config=case1_log_rxn_config,
         has_energy_balance=True,
     )
+
 
 @pytest.mark.requires_idaes_solver
 @pytest.mark.component
