@@ -495,6 +495,7 @@ def test_case_1_high_dissolution():
     )
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case_1_mid_dissolution():
     model = run_case1(
