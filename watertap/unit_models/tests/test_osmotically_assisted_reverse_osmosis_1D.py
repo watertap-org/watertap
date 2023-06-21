@@ -54,6 +54,7 @@ from watertap.core import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
+    FrictionFactor,
 )
 
 # -----------------------------------------------------------------------------
@@ -68,7 +69,7 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(property_package=m.fs.properties)
 
-    assert len(m.fs.unit.config) == 17
+    assert len(m.fs.unit.config) == 18
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -87,6 +88,7 @@ def test_config():
     assert m.fs.unit.config.pressure_change_type == PressureChangeType.fixed_per_stage
     assert m.fs.unit.feed_side._flow_direction == FlowDirection.forward
     assert m.fs.unit.permeate_side._flow_direction == FlowDirection.backward
+    assert m.fs.unit.config.friction_factor == FrictionFactor.flat_sheet
     assert not m.fs.unit.config.has_full_reporting
 
 
@@ -300,9 +302,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert isinstance(m.fs.unit.permeate_side, MembraneChannel1DBlock)
 
         # test statistics
-        assert number_variables(m) == 757
-        assert number_total_constraints(m) == 684
-        assert number_unused_variables(m) == 35
+        assert number_variables(m) == 752
+        assert number_total_constraints(m) == 683
+        assert number_unused_variables(m) == 30
 
     @pytest.mark.unit
     def test_dof(self, RO_frame):
