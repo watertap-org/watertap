@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """
     This file is to run the example of running a phase change for the dissolution
@@ -52,7 +51,6 @@ from idaes.models.properties.modular_properties.base.generic_reaction import (
 
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    gibbs_energy,
     van_t_hoff,
 )
 
@@ -88,10 +86,8 @@ import idaes.logger as idaeslog
 
 # Import scaling helper functions
 from watertap.examples.chemistry.chem_scaling_utils import (
-    _set_eps_vals,
     _set_equ_rxn_scaling,
     _set_mat_bal_scaling_FpcTP,
-    _set_mat_bal_scaling_FTPx,
     _set_ene_bal_scaling,
 )
 

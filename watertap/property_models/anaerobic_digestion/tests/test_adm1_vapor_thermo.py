@@ -1,14 +1,13 @@
 #################################################################################
-# The Institute for the Design of Advanced Energy Systems Integrated Platform
-# Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
 Tests for ADM1 vapor phase thermo property package.
@@ -20,7 +19,6 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     Param,
-    units,
     value,
     Var,
     check_optimal_termination,
@@ -195,7 +193,7 @@ class TestStateBlock(object):
                 "Pressure",
             ]
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, model):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
@@ -229,7 +227,7 @@ class TestStateBlock(object):
         results = solver.solve(model, tee=True)
         assert check_optimal_termination(results)
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_pressures(self, model):
 
         assert value(model.props[1].conc_mass_comp["S_h2"]) == pytest.approx(
@@ -242,16 +240,20 @@ class TestStateBlock(object):
             0.1692, rel=1e-4
         )
 
-        assert value(model.props[1].p_sat["S_h2"]) == pytest.approx(1.6397, rel=1e-4)
-        assert value(model.props[1].p_sat["S_ch4"]) == pytest.approx(
+        assert value(model.props[1].pressure_sat["S_h2"]) == pytest.approx(
+            1.6397, rel=1e-4
+        )
+        assert value(model.props[1].pressure_sat["S_ch4"]) == pytest.approx(
             65077.382, rel=1e-4
         )
-        assert value(model.props[1].p_sat["S_co2"]) == pytest.approx(
+        assert value(model.props[1].pressure_sat["S_co2"]) == pytest.approx(
             36125.633, rel=1e-4
         )
 
-        assert value(model.props[1].p_w_sat) == pytest.approx(5643.802, rel=1e-4)
+        assert value(model.props[1].pressure_sat["H2O"]) == pytest.approx(
+            5640.5342, rel=1e-4
+        )
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def check_units(self, model):
         assert_units_consistent(model)

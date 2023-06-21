@@ -1,0 +1,91 @@
+default:
+  electrode_thick:
+    value: 0.001
+    units: m
+  current_density:
+    value: 100
+    units: A / m^2
+  electrolysis_time:
+    value: 30
+    units: min
+  metal_loading:
+    value: 0.0001
+    units: kg/L
+  number_electrode_pairs:
+    value: 10
+    units: dimensionless
+  electrode_gap:
+    value: 0.005
+    units: m
+  current_efficiency:
+    value: 1.
+    units: dimensionless
+  overpotential:
+    value: 1.5
+    units: volt
+  recovery_frac_mass_H2O:
+    value: 0.99
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0.7
+    units: dimensionless
+  removal_frac_mass_comp:
+    tds:
+      value: 0.7
+      units: dimensionless
+  capital_cost:
+    ec_reactor_cap_base:
+      value: 11500
+      units: USD_2020
+      reference: Saad et al., 2022 - doi.org/10.1016/j.jksus.2022.102015; Smith, 2005 - doi.org/10.1205/cherd.br.0509
+    ec_reactor_cap_exp:
+      value: 0.45
+      units: dimensionless
+      reference: Saad et al., 2022 - doi.org/10.1016/j.jksus.2022.102015; Smith, 2005 - doi.org/10.1205/cherd.br.0509
+    ec_reactor_cap_material_coeff:
+      value: 0.062 # default is for PVC
+      units: dimensionless
+      reference: Uludag-Demirer et al., 2020 - doi.org/10.3390/su12072697
+    ec_reactor_cap_safety_factor:
+      value: 2.5
+      units: dimensionless
+    ec_admin_lab_cap_base:
+      value: 69195
+      units: USD_2010
+      reference: Sharma (2010) - doi.org/10.1016/j.envadv.2020.100029 
+    ec_admin_lab_cap_exp:
+      value: 0.5523
+      units: dimensionless
+      reference: Sharma (2010) - doi.org/10.1016/j.envadv.2020.100029 
+    ec_power_supply_base_slope:
+      value: 0.51972
+      units: USD_2020/ W
+      reference: https://magna-power.com/
+    ec_admin_lab_op_base:
+      value: 88589
+      units: USD_2010 / year
+      reference: Sharma (2010) - doi.org/10.1016/j.envadv.2020.100029 
+    ec_admin_lab_op_exp:
+      value: 0.4589
+      units: dimensionless
+      reference: Sharma (2010) - doi.org/10.1016/j.envadv.2020.100029 
+    sludge_handling_cost:
+      value: 0
+      units: USD_2020 / kg
+    ec_labor_maint_factor:
+      value: 0.063
+      units: USD_2020 / m^3
+      reference: Sharma (2010) - doi.org/10.1016/j.envadv.2020.100029 
+    current_per_reactor:
+      value: 3000
+      units: ampere
+    number_redundant_reactors:
+      value: 2
+      units: dimensionless
+    electrode_material_cost:
+      value: 2
+      units: USD_2020 / kg
+    electrode_material_cost_coeff:
+      value: 2
+      units: dimensionless
+

@@ -1,39 +1,35 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import pytest
-from watertap.property_models.tests.property_test_harness import (
-    PropertyTestHarness,
-    PropertyRegressionTest,
-)
+from watertap.property_models.tests.property_test_harness import PropertyTestHarness
 from pyomo.environ import ConcreteModel, value
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
 from pyomo.util.check_units import assert_units_consistent
+from watertap.property_models import seawater_ion_prop_pack
 from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )
-import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as property_seawater_ions
 import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_salt_prop_pack as property_seawater_salts
 
-# -----------------------------------------------------------------------------
+
 @pytest.mark.component
 def test_property_seawater_ions():
     m = ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = property_seawater_ions.PropParameterBlock()
+    m.fs.properties = seawater_ion_prop_pack.PropParameterBlock()
     m.fs.stream = m.fs.properties.build_state_block([0])
 
     # specify
@@ -101,7 +97,7 @@ def test_property_seawater_ions():
 
 class TestPropertySeawaterIons(PropertyTestHarness):
     def configure(self):
-        self.prop_pack = property_seawater_ions.PropParameterBlock
+        self.prop_pack = seawater_ion_prop_pack.PropParameterBlock
         self.param_args = {}
         self.scaling_args = {
             ("flow_mass_phase_comp", ("Liq", "H2O")): 1,

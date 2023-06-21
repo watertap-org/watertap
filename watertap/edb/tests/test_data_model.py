@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for data_model module
 """
@@ -188,7 +187,7 @@ def test_base(starting_value):
     # also required: elements, parameter_data
     c = Component({"name": "a", "elements": ["H +"], "parameter_data": {}})
     b.add(c)
-    assert b.idaes_config[mk0]["foo"] == starting[mk0]["foo"]
+    assert b.idaes_config[mk0]["foo"] == foo_value
     # Add a non-empty component
     name = "baz"
     component_data = {

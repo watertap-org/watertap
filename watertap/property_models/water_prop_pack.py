@@ -1,3 +1,14 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 """
 Initial property package for pure water system (vapor or liquid)
 """
@@ -16,10 +27,8 @@ from pyomo.environ import (
     Suffix,
     value,
     log,
-    log10,
     exp,
     check_optimal_termination,
-    Set,
 )
 from pyomo.environ import units as pyunits
 
@@ -33,16 +42,18 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.components import Component
 from idaes.core.base.phases import LiquidPhase, VaporPhase
-from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
     solve_indexed_blocks,
 )
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_unfixed_variables,
+)
 from idaes.core.util.exceptions import (
     ConfigurationError,
     InitializationError,
@@ -236,7 +247,6 @@ class WaterParameterData(PhysicalParameterBlock):
             units=enth_mass_units * t_inv_units**3,
             doc="Specific enthalpy parameter C4",
         )
-
         # specific heat parameters from eq (9) in Sharqawy et al. (2010)
         cp_units = pyunits.J / (pyunits.kg * pyunits.K)
         self.cp_phase_param_A1 = Var(
@@ -245,48 +255,24 @@ class WaterParameterData(PhysicalParameterBlock):
             units=cp_units,
             doc="Specific heat of seawater parameter A1",
         )
-        # self.cp_phase_param_A2 = Var(
-        #     within=Reals, initialize=-9.76e-2, units=cp_units * s_inv_units,
-        #     doc='Specific heat of seawater parameter A2')
-        # self.cp_phase_param_A3 = Var(
-        #     within=Reals, initialize=4.04e-4, units=cp_units * s_inv_units**2,
-        #     doc='Specific heat of seawater parameter A3')
         self.cp_phase_param_B1 = Var(
             within=Reals,
             initialize=-6.913e-3,
             units=cp_units * t_inv_units,
             doc="Specific heat of seawater parameter B1",
         )
-        # self.cp_phase_param_B2 = Var(
-        #     within=Reals, initialize=7.351e-4, units=cp_units * s_inv_units * t_inv_units,
-        #     doc='Specific heat of seawater parameter B2')
-        # self.cp_phase_param_B3 = Var(
-        #     within=Reals, initialize=-3.15e-6, units=cp_units * s_inv_units**2 * t_inv_units,
-        #     doc='Specific heat of seawater parameter B3')
         self.cp_phase_param_C1 = Var(
             within=Reals,
             initialize=9.6e-6,
             units=cp_units * t_inv_units**2,
             doc="Specific heat of seawater parameter C1",
         )
-        # self.cp_phase_param_C2 = Var(
-        #     within=Reals, initialize=-1.927e-6, units=cp_units * s_inv_units * t_inv_units**2,
-        #     doc='Specific heat of seawater parameter C2')
-        # self.cp_phase_param_C3 = Var(
-        #     within=Reals, initialize=8.23e-9, units=cp_units * s_inv_units**2 * t_inv_units**2,
-        #     doc='Specific heat of seawater parameter C3')
         self.cp_phase_param_D1 = Var(
             within=Reals,
             initialize=2.5e-9,
             units=cp_units * t_inv_units**3,
             doc="Specific heat of seawater parameter D1",
         )
-        # self.cp_phase_param_D2 = Var(
-        #     within=Reals, initialize=1.666e-9, units=cp_units * s_inv_units * t_inv_units**3,
-        #     doc='Specific heat of seawater parameter D2')
-        # self.cp_phase_param_D3 = Var(
-        #     within=Reals, initialize=-7.125e-12, units=cp_units * s_inv_units**2 * t_inv_units**3,
-        #     doc='Specific heat of seawater parameter D3')
 
         # Specific heat parameters for Cp vapor from NIST Webbook
         # Chase, M.W., Jr., NIST-JANAF Themochemical Tables, Fourth Edition, J. Phys. Chem. Ref. Data, Monograph 9, 1998, 1-1951
@@ -362,7 +348,6 @@ class WaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("pressure", 1e-5)
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("dens_mass_phase", 1, index="Vap")
-        # self.set_default_scaling('dens_mass_solvent', 1e-3)
         self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
         self.set_default_scaling("enth_mass_phase", 1e-6, index="Vap")
         self.set_default_scaling("pressure_sat", 1e-5)
@@ -387,6 +372,11 @@ class WaterParameterData(PhysicalParameterBlock):
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
                 "enth_flow_phase": {"method": "_enth_flow_phase"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
                 "dh_vap_mass": {"method": "_dh_vap_mass"},
             }
         )
@@ -477,26 +467,31 @@ class _WaterStateBlock(StateBlock):
                 )
 
         # ---------------------------------------------------------------------
-        # Initialize properties
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solve_indexed_blocks(opt, [self], tee=slc.tee)
-        init_log.info(
-            "Property initialization: {}.".format(idaeslog.condition(results))
-        )
+        skip_solve = True  # skip solve if only state variables are present
+        for k in self.keys():
+            if number_unfixed_variables(self[k]) != 0:
+                skip_solve = False
 
-        if not check_optimal_termination(results):
-            raise InitializationError(
-                f"{self.name} failed to initialize successfully. Please check "
-                f"the output logs for more information."
+        if not skip_solve:
+            # Initialize properties
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                results = solve_indexed_blocks(opt, [self], tee=slc.tee)
+            init_log.info_high(
+                "Property initialization: {}.".format(idaeslog.condition(results))
             )
 
-        # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
                 self.release_state(flags)
+
+        if (not skip_solve) and (not check_optimal_termination(results)):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please "
+                f"check the output logs for more information."
+            )
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
@@ -814,9 +809,8 @@ class WaterStateBlockData(StateBlockData):
             doc="Saturation vapor pressure",
         )
 
-        def rule_pressure_sat(
-            b,
-        ):  # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
+        # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
+        def rule_pressure_sat(b):
             t = b.temperature
             psatw = (
                 exp(
@@ -843,7 +837,8 @@ class WaterStateBlockData(StateBlockData):
             doc="Enthalpy flow",
         )
 
-        def rule_enth_flow_phase(b, p):  # enthalpy flow [J/s]
+        # enthalpy flow [J/s]
+        def rule_enth_flow_phase(b, p):
             return (
                 b.enth_flow_phase[p]
                 == b.flow_mass_phase_comp[p, "H2O"] * b.enth_mass_phase[p]
@@ -884,7 +879,8 @@ class WaterStateBlockData(StateBlockData):
                     b.cp_mass_phase[phase]
                     == (A + B * t + C * t**2 + D * t**3) * 1000
                 )
-            else:  # phase == 'Vap'
+            # phase == 'Vap'
+            else:
                 t = b.temperature / 1000
                 return (
                     b.cp_mass_phase[phase]
@@ -907,9 +903,8 @@ class WaterStateBlockData(StateBlockData):
             doc="Latent heat of vaporization",
         )
 
-        def rule_dh_vap_mass(
-            b,
-        ):  # latent heat of seawater from eq. 37 and eq. 55 in Sharqawy et al. (2010)
+        # latent heat of seawater from eq. 37 and eq. 55 in Sharqawy et al. (2010)
+        def rule_dh_vap_mass(b):
             t = b.temperature - 273.15 * pyunits.K
             return (
                 b.dh_vap_mass
@@ -947,7 +942,7 @@ class WaterStateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def define_state_vars(self):

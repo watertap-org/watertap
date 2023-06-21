@@ -1,26 +1,21 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
-
-import os, sys
-
+#################################################################################
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
-
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.groundwater_treatment.groundwater_treatment as groundwater_treatment
 
 
 def set_up_sensitivity(m):
     outputs = {}
-    optimize_kwargs = {"check_termination": False}
+    optimize_kwargs = {"fail_flag": False}
     opt_function = groundwater_treatment.solve
 
     # create outputs
@@ -46,16 +41,12 @@ def run_analysis(case_num=1, nx=2, interpolate_nan_outputs=True):
         raise ValueError(f"{case_num} is not yet implemented")
 
     output_filename = "sensitivity_" + str(case_num) + ".csv"
-    output_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        output_filename,
-    )
 
     global_results = parameter_sweep(
         m,
         sweep_params,
         outputs,
-        csv_results_file_name=output_path,
+        csv_results_file_name=output_filename,
         optimize_function=opt_function,
         optimize_kwargs=optimize_kwargs,
         interpolate_nan_outputs=interpolate_nan_outputs,
@@ -67,4 +58,4 @@ def run_analysis(case_num=1, nx=2, interpolate_nan_outputs=True):
 
 
 if __name__ == "__main__":
-    results, sweep_params, m = run_analysis(*sys.argv[1:])
+    results, sweep_params, m = run_analysis()

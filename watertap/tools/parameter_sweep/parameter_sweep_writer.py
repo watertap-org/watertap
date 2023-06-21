@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 import os, pathlib, warnings
 import h5py
@@ -70,13 +69,12 @@ class ParameterSweepWriter:
 
     def __init__(
         self,
-        comm,
+        parallel_manager,
         **options,
     ):
 
-        self.comm = comm
-        self.rank = self.comm.Get_rank()
-        self.num_procs = self.comm.Get_size()
+        self.parallel_manager = parallel_manager
+        self.rank = self.parallel_manager.get_rank()
 
         self.config = self.CONFIG(options)
 
@@ -312,7 +310,7 @@ class ParameterSweepWriter:
                     parents=True, exist_ok=True
                 )
 
-        self.comm.Barrier()
+        self.parallel_manager.sync_point()
 
         # Handle values in the debugging data_directory
         if self.config["debugging_data_dir"] is not None:

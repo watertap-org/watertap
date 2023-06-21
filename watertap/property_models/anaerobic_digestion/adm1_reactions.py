@@ -1,14 +1,13 @@
 #################################################################################
-# The Institute for the Design of Advanced Energy Systems Integrated Platform
-# Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
 ADM1 reaction package.
@@ -36,6 +35,7 @@ from idaes.core import (
     ReactionBlockDataBase,
     ReactionBlockBase,
 )
+from idaes.core.util.constants import Constants
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
@@ -520,13 +520,6 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="First-order decay rate for X_h2",
         )
-        # Todo: calculate these from expression
-        self.KW = pyo.Var(
-            initialize=2.08e-14,
-            units=(pyo.units.kmol / pyo.units.m**3) ** 2,
-            domain=pyo.PositiveReals,
-            doc="Dissociation constant ",
-        )
         self.K_a_va = pyo.Var(
             initialize=1.38e-5,
             units=pyo.units.kmol / pyo.units.m**3,
@@ -551,17 +544,12 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Acetate acid-base equilibrium constant",
         )
-        self.K_a_co2 = pyo.Var(
-            initialize=4.94e-7,
-            units=pyo.units.kmol / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Carbon dioxide acid-base equilibrium constant",
-        )
-        self.K_a_IN = pyo.Var(
-            initialize=1.11e-9,
-            units=pyo.units.kmol / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Inorganic nitrogen acid-base equilibrium constant",
+        self.temperature_ref = pyo.Param(
+            within=pyo.PositiveReals,
+            mutable=True,
+            default=298.15,
+            doc="Reference temperature",
+            units=pyo.units.K,
         )
 
         # Reaction Stoichiometry
@@ -597,7 +585,6 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
                 - self.f_pr_xc * self.N_aa
             )
             * mw_n,
-            # ("R1", "Liq", "S_IN"): 0,
             ("R1", "Liq", "S_I"): self.f_sI_xc,
             ("R1", "Liq", "X_c"): -1,
             ("R1", "Liq", "X_ch"): self.f_ch_xc,
@@ -1144,8 +1131,12 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
     def define_metadata(cls, obj):
         obj.add_properties(
             {
-                "conc_mol_co2": {"method": "_rxn_rate"},
                 "reaction_rate": {"method": "_rxn_rate"},
+            }
+        )
+        obj.define_custom_properties(
+            {
+                "conc_mol_co2": {"method": "_rxn_rate"},
                 "I": {"method": "_I"},
             }
         )
@@ -1166,7 +1157,7 @@ class _ADM1ReactionBlock(ReactionBlockBase):
     whole, rather than individual elements of indexed Reaction Blocks.
     """
 
-    def initialize(blk, outlvl=idaeslog.NOTSET, **kwargs):
+    def initialize(self, outlvl=idaeslog.NOTSET, **kwargs):
         """
         Initialization routine for reaction package.
 
@@ -1176,7 +1167,7 @@ class _ADM1ReactionBlock(ReactionBlockBase):
         Returns:
             None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
         init_log.info("Initialization Complete.")
 
 
@@ -1195,7 +1186,9 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         # Create references to state vars
         # Concentration
         add_object_reference(self, "conc_mass_comp_ref", self.state_ref.conc_mass_comp)
+        add_object_reference(self, "temperature", self.state_ref.temperature)
 
+        # Initial values of rates of reaction [2]
         self.rates = {
             "R1": 1.786e-06,
             "R2": 3.235e-06,
@@ -1227,30 +1220,46 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             doc="Rate of reaction",
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
         )
-
+        self.KW = pyo.Var(
+            initialize=2.08e-14,
+            units=(pyo.units.kmol / pyo.units.m**3) ** 2,
+            domain=pyo.PositiveReals,
+            doc="Water dissociation constant",
+        )
+        self.K_a_co2 = pyo.Var(
+            initialize=4.94e-7,
+            units=pyo.units.kmol / pyo.units.m**3,
+            domain=pyo.PositiveReals,
+            doc="Carbon dioxide acid-base equilibrium constant",
+        )
+        self.K_a_IN = pyo.Var(
+            initialize=1.11e-9,
+            units=pyo.units.kmol / pyo.units.m**3,
+            domain=pyo.PositiveReals,
+            doc="Inorganic nitrogen acid-base equilibrium constant",
+        )
         self.conc_mass_va = pyo.Var(
             initialize=0.01159624,
             domain=pyo.NonNegativeReals,
-            doc="molar concentration of va-",
+            doc="mass concentration of va-",
             units=pyo.units.kg / pyo.units.m**3,
         )
-
         self.conc_mass_bu = pyo.Var(
             initialize=0.0132208,
             domain=pyo.NonNegativeReals,
-            doc="molar concentration of bu-",
+            doc="mass concentration of bu-",
             units=pyo.units.kg / pyo.units.m**3,
         )
         self.conc_mass_pro = pyo.Var(
             initialize=0.015742,
             domain=pyo.NonNegativeReals,
-            doc="molar concentration of pro-",
+            doc="mass concentration of pro-",
             units=pyo.units.kg / pyo.units.m**3,
         )
         self.conc_mass_ac = pyo.Var(
             initialize=0.1972,
             domain=pyo.NonNegativeReals,
-            doc="molar concentration of ac-",
+            doc="mass concentration of ac-",
             units=pyo.units.kg / pyo.units.m**3,
         )
         self.conc_mol_hco3 = pyo.Var(
@@ -1288,6 +1297,75 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             domain=pyo.NonNegativeReals,
             doc="molar concentration of OH",
             units=pyo.units.kmol / pyo.units.m**3,
+        )
+
+        # Equation from [2]
+        def Dissociation_rule(self, t):
+            return (
+                self.KW
+                == (
+                    1e-14
+                    * pyo.exp(
+                        55900
+                        / pyo.units.mole
+                        * pyo.units.joule
+                        / (Constants.gas_constant)
+                        * ((1 / self.params.temperature_ref) - (1 / self.temperature))
+                    )
+                )
+                * pyo.units.kilomole**2
+                / pyo.units.meter**6
+            )
+
+        self.Dissociation = pyo.Constraint(
+            rule=Dissociation_rule,
+            doc="Water dissociation constant constraint",
+        )
+
+        # Equation from [2]
+        def CO2_acid_base_equilibrium_rule(self, t):
+            return (
+                self.K_a_co2
+                == (
+                    4.46684e-07
+                    * pyo.exp(
+                        7646
+                        / pyo.units.mole
+                        * pyo.units.joule
+                        / (Constants.gas_constant)
+                        * ((1 / self.params.temperature_ref) - (1 / self.temperature))
+                    )
+                )
+                * pyo.units.kilomole
+                / pyo.units.meter**3
+            )
+
+        self.CO2_acid_base_equilibrium = pyo.Constraint(
+            rule=CO2_acid_base_equilibrium_rule,
+            doc="Carbon dioxide acid-base equilibrium constraint",
+        )
+
+        # Equation from [2]
+        def IN_acid_base_equilibrium_rule(self, t):
+            return (
+                self.K_a_IN
+                == (
+                    5.62341e-10
+                    * pyo.exp(
+                        51965
+                        / pyo.units.mole
+                        * pyo.units.joule
+                        / (Constants.gas_constant)
+                        * ((1 / self.params.temperature_ref) - (1 / self.temperature))
+                    )
+                )
+                * pyo.units.kilomole
+                / pyo.units.meter**3
+            )
+
+        self.IN_acid_base_equilibrium = pyo.Constraint(
+            rule=IN_acid_base_equilibrium_rule,
+            doc="Nitrogen acid-base equilibrium constraint",
         )
 
         mw_n = 14 * pyo.units.kg / pyo.units.kmol
@@ -1333,9 +1411,9 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         )
 
         def concentration_of_hco3_rule(self):
-            return self.conc_mol_hco3 == self.params.K_a_co2 * (
+            return self.conc_mol_hco3 == self.K_a_co2 * (
                 self.conc_mass_comp_ref["S_IC"] / (12 * pyo.units.kg / pyo.units.kmol)
-            ) / (self.params.K_a_co2 + self.S_H)
+            ) / (self.K_a_co2 + self.S_H)
 
         self.concentration_of_hco3 = pyo.Constraint(
             rule=concentration_of_hco3_rule,
@@ -1343,9 +1421,9 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         )
 
         def concentration_of_nh3_rule(self):
-            return self.conc_mol_nh3 == self.params.K_a_IN * (
+            return self.conc_mol_nh3 == self.K_a_IN * (
                 self.conc_mass_comp_ref["S_IN"] / (14 * pyo.units.kg / pyo.units.kmol)
-            ) / (self.params.K_a_IN + self.S_H)
+            ) / (self.K_a_IN + self.S_H)
 
         self.concentration_of_nh3 = pyo.Constraint(
             rule=concentration_of_nh3_rule,
@@ -1376,11 +1454,11 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
 
         self.concentration_of_nh4 = pyo.Constraint(
             rule=concentration_of_nh4_rule,
-            doc="constraint concentration of pro-",
+            doc="constraint concentration of nh4",
         )
 
         def S_OH_rule(self):
-            return self.S_OH == self.params.KW / self.S_H
+            return self.S_OH == self.KW / self.S_H
 
         self.S_OH_cons = pyo.Constraint(
             rule=S_OH_rule,
@@ -1404,7 +1482,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
 
         self.S_H_cons = pyo.Constraint(
             rule=S_H_rule,
-            doc="constraint concentration of pro-",
+            doc="constraint concentration of H",
         )
 
         def rule_pH(self):
@@ -1508,8 +1586,6 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             rule=rule_I_pH_h2, doc="pH inhibition of hydrogen-utilizing microorganisms"
         )
 
-        # @classmethod
-        # def _I(self):
         def rule_I(self, r):
             if r == "R5" or r == "R6":
                 return self.I_pH_aa * self.I_IN_lim
@@ -1721,8 +1797,11 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         iscale.set_scaling_factor(self.conc_mol_nh4, 1e1)
         iscale.set_scaling_factor(self.S_H, 1e7)
         iscale.set_scaling_factor(self.S_OH, 1e8)
+        iscale.set_scaling_factor(self.KW, 1e14)
+        iscale.set_scaling_factor(self.K_a_co2, 1e7)
+        iscale.set_scaling_factor(self.K_a_IN, 1e9)
 
-    def get_reaction_rate_basis(b):
+    def get_reaction_rate_basis(self):
         return MaterialFlowBasis.mass
 
     def calculate_scaling_factors(self):

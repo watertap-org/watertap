@@ -23,9 +23,9 @@ Additional Variables
    :header: "Description", "Variable Name", "Units"
 
    "Initial chlorine demand", "initial_chlorine_demand", ":math:`mg/l`"
-   "Chlorine contact time", "contact_time", ":math:`hr`"
+   "Chlorine contact time", "contact_time", ":math:`h`"
    "CT value for chlorination", "concentration_time", ":math:`mg*min/l`"
-   "Chlorine decay rate", "chlorine_decay_rate", ":math:`mg/hr/l`"
+   "Chlorine decay rate", "chlorine_decay_rate", ":math:`mg/h/l`"
    "Chlorine dose", "chlorine_dose", ":math:`mg/l`"
 
 Additional Constraints

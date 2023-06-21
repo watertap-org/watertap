@@ -1,14 +1,13 @@
 #################################################################################
-# The Institute for the Design of Advanced Energy Systems Integrated Platform
-# Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
 Thermophysical property package to be used in conjunction with ASM1 reactions.
@@ -118,6 +117,10 @@ class ASM1ParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "temperature": {"method": None},
                 "conc_mass_comp": {"method": None},
+            }
+        )
+        obj.define_custom_properties(
+            {
                 "alkalinity": {"method": None},
             }
         )
@@ -139,7 +142,7 @@ class _ASM1StateBlock(StateBlock):
     """
 
     def initialize(
-        blk,
+        self,
         state_args=None,
         state_vars_fixed=False,
         hold_state=False,
@@ -151,27 +154,24 @@ class _ASM1StateBlock(StateBlock):
         Initialization routine for property package.
 
         Keyword Arguments:
-        state_args : Dictionary with initial guesses for the state vars
-                     chosen. Note that if this method is triggered
-                     through the control volume, and if initial guesses
-                     were not provied at the unit model level, the
-                     control volume passes the inlet values as initial
-                     guess.The keys for the state_args dictionary are:
-
-                     flow_mol_comp : value at which to initialize component
-                                     flows (default=None)
-                     pressure : value at which to initialize pressure
-                                (default=None)
-                     temperature : value at which to initialize temperature
-                                  (default=None)
+            state_args : Dictionary with initial guesses for the state vars
+                         chosen. Note that if this method is triggered
+                         through the control volume, and if initial guesses
+                         were not provided at the unit model level, the
+                         control volume passes the inlet values as initial
+                         guess.The keys for the state_args dictionary are:
+            flow_vol : value at which to initialize total volumetric flow (default=None)
+            alkalinity: value of alkalinity expressed as molar concentration
+            conc_mass_comp : value at which to initialize component concentrations (default=None)
+            pressure : value at which to initialize pressure (default=None)
+            temperature : value at which to initialize temperature (default=None)
             outlvl : sets output level of initialization routine
-            state_vars_fixed: Flag to denote if state vars have already been
-                              fixed.
-                              - True - states have already been fixed and
-                                       initialization does not need to worry
-                                       about fixing and unfixing variables.
-                             - False - states have not been fixed. The state
-                                       block will deal with fixing/unfixing.
+            state_vars_fixed: Flag to denote if state vars have already been fixed.
+                              True - states have already been fixed and
+                              initialization does not need to worry
+                              about fixing and unfixing variables.
+                              False - states have not been fixed. The state
+                              block will deal with fixing/unfixing.
             optarg : solver options dictionary object (default=None, use
                      default solver options)
             solver : str indicating which solver to use during
@@ -179,28 +179,26 @@ class _ASM1StateBlock(StateBlock):
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
-                                 a dict of returned containing flags for
-                                 which states were fixed during
-                                 initialization.
-                        - False - state variables are unfixed after
-                                 initialization by calling the
-                                 relase_state method
+                         True - states variables are not unfixed, and
+                         a dict of returned containing flags for
+                         which states were fixed during initialization.
+                         False - state variables are unfixed after
+                         initialization by calling the release_state method.
 
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         if state_vars_fixed is False:
             # Fix state variables if not already fixed
-            flags = fix_state_vars(blk, state_args)
+            flags = fix_state_vars(self, state_args)
 
         else:
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+            for k in self.keys():
+                if degrees_of_freedom(self[k]) != 0:
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -211,11 +209,11 @@ class _ASM1StateBlock(StateBlock):
             if hold_state is True:
                 return flags
             else:
-                blk.release_state(flags)
+                self.release_state(flags)
 
         init_log.info("Initialization Complete.")
 
-    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
+    def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
         Method to relase state variables fixed during initialization.
 
@@ -226,12 +224,12 @@ class _ASM1StateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         if flags is None:
             return
         # Unfix state variables
-        revert_state_vars(blk, flags)
+        revert_state_vars(self, flags)
         init_log.info("State Released.")
 
 
@@ -359,25 +357,25 @@ class ASM1StateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
 
-    def define_state_vars(b):
+    def define_state_vars(self):
         return {
-            "flow_vol": b.flow_vol,
-            "alkalinity": b.alkalinity,
-            "conc_mass_comp": b.conc_mass_comp,
-            "temperature": b.temperature,
-            "pressure": b.pressure,
+            "flow_vol": self.flow_vol,
+            "alkalinity": self.alkalinity,
+            "conc_mass_comp": self.conc_mass_comp,
+            "temperature": self.temperature,
+            "pressure": self.pressure,
         }
 
-    def define_display_vars(b):
+    def define_display_vars(self):
         return {
-            "Volumetric Flowrate": b.flow_vol,
-            "Molar Alkalinity": b.alkalinity,
-            "Mass Concentration": b.conc_mass_comp,
-            "Temperature": b.temperature,
-            "Pressure": b.pressure,
+            "Volumetric Flowrate": self.flow_vol,
+            "Molar Alkalinity": self.alkalinity,
+            "Mass Concentration": self.conc_mass_comp,
+            "Temperature": self.temperature,
+            "Pressure": self.pressure,
         }
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def calculate_scaling_factors(self):

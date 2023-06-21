@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from pyomo.environ import (
     ConcreteModel,
@@ -19,11 +18,9 @@ from pyomo.environ import (
     TransformationFactory,
     value,
     Param,
-    Block,
 )
 from pyomo.environ import units as pyunits
 from pyomo.network import Arc
-from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.util.initialization import propagate_state
@@ -31,7 +28,6 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components impo
     pretreatment_NF,
     desalination,
     translator_block,
-    feed_block,
     gypsum_saturation_index,
     costing,
 )
@@ -41,8 +37,6 @@ from watertap.examples.flowsheets.full_treatment_train.model_components import (
 from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
-    check_build,
-    check_scaling,
 )
 
 """Flowsheet example that satisfy minimum viable product requirements"""

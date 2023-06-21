@@ -1,43 +1,37 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
-import os
+#################################################################################
+
 from pyomo.environ import (
     ConcreteModel,
     value,
     Constraint,
-    Expression,
     Objective,
     Var,
     Param,
     NonNegativeReals,
     TransformationFactory,
     units as pyunits,
-    assert_optimal_termination,
     check_optimal_termination,
 )
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (
-    solve_indexed_blocks,
     propagate_state,
 )
-from idaes.models.unit_models import Mixer, Separator, Product, Feed
+from idaes.models.unit_models import Product, Feed
 from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
 
 import watertap.property_models.NaCl_prop_pack as props
@@ -49,8 +43,6 @@ from watertap.unit_models.reverse_osmosis_0D import (
 )
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
     OsmoticallyAssistedReverseOsmosis0D,
-    MassTransferCoefficient,
-    PressureChangeType,
 )
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
@@ -317,13 +309,12 @@ def set_operating_conditions(
 
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:
-        print(
+        raise RuntimeError(
             "The set_operating_conditions function resulted in {} "
             "degrees of freedom rather than 0. This error suggests "
             "that too many or not enough variables are fixed for a "
             "simulation.".format(degrees_of_freedom(m))
         )
-        raise
 
 
 def solve(blk, solver=None, tee=True):
@@ -432,9 +423,9 @@ def optimize_set_up(m):
     assert_degrees_of_freedom(m, 2)
 
 
-def optimize(m, solver=None, check_termination=True):
+def optimize(m, solver=None):
     # --solve---
-    return solve(m, solver=solver, check_termination=check_termination)
+    return solve(m, solver=solver)
 
 
 def display_system(m):

@@ -1,14 +1,13 @@
 #################################################################################
-# The Institute for the Design of Advanced Energy Systems Integrated Platform
-# Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
 Thermophysical property package to be used in conjunction with ADM1 reactions.
@@ -29,7 +28,6 @@ from idaes.core import (
     VaporPhase,
     Component,
     Solute,
-    Solvent,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants
@@ -68,7 +66,7 @@ class ADM1_vaporParameterData(PhysicalParameterBlock):
         # All soluble components on kg COD/m^3 basis
         self.S_h2 = Solute(doc="Hydrogen gas")
         self.S_ch4 = Solute(doc="Methane gas")
-        self.S_co2 = Solute(doc="Carbon dioxide carbon")
+        self.S_co2 = Solute(doc="Carbon dioxide")
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(
@@ -110,7 +108,7 @@ class ADM1_vaporParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "temperature": {"method": None},
                 "conc_mass_comp": {"method": None},
-                "p_sat": {"method": None},
+                "pressure_sat": {"method": None},
             }
         )
         obj.add_default_units(
@@ -131,7 +129,7 @@ class _ADM1_vaporStateBlock(StateBlock):
     """
 
     def initialize(
-        blk,
+        self,
         state_args=None,
         state_vars_fixed=False,
         hold_state=False,
@@ -177,16 +175,16 @@ class _ADM1_vaporStateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         if state_vars_fixed is False:
             # Fix state variables if not already fixed
-            flags = fix_state_vars(blk, state_args)
+            flags = fix_state_vars(self, state_args)
 
         else:
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+            for k in self.keys():
+                if degrees_of_freedom(self[k]) != 0:
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -197,11 +195,11 @@ class _ADM1_vaporStateBlock(StateBlock):
             if hold_state is True:
                 return flags
             else:
-                blk.release_state(flags)
+                self.release_state(flags)
 
         init_log.info("Initialization Complete.")
 
-    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
+    def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialization.
 
@@ -212,12 +210,12 @@ class _ADM1_vaporStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of logging
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         if flags is None:
             return
         # Unfix state variables
-        revert_state_vars(blk, flags)
+        revert_state_vars(self, flags)
         init_log.info("State Released.")
 
 
@@ -263,26 +261,19 @@ class ADM1_vaporStateBlockData(StateBlockData):
             units=pyo.units.kg / pyo.units.m**3,
         )
 
-        self.p_w_sat = pyo.Var(
-            domain=pyo.NonNegativeReals,
-            initialize=5643.8025,
-            doc="Water pressure",
-            units=pyo.units.Pa,
-        )
+        init = {"S_ch4": 65077, "S_co2": 36255, "S_h2": 1.639, "H2O": 5643.8025}
 
-        init = {"S_ch4": 65077, "S_co2": 36255, "S_h2": 1.639}
-
-        self.p_sat = pyo.Var(
-            self.params.solute_set,
+        self.pressure_sat = pyo.Var(
+            self.params.component_list,
             domain=pyo.NonNegativeReals,
             initialize=init,
             doc="Component pressure",
             units=pyo.units.Pa,
         )
 
-        def p_sat_rule(b, j):
+        def pressure_sat_rule(b, j):
             if j == "S_h2":
-                return self.p_sat[j] == pyo.units.convert(
+                return b.pressure_sat[j] == pyo.units.convert(
                     b.conc_mass_comp[j]
                     * (1000 * pyo.units.g / pyo.units.kg)
                     * Constants.gas_constant
@@ -291,7 +282,7 @@ class ADM1_vaporStateBlockData(StateBlockData):
                     to_units=pyo.units.Pa,
                 )
             elif j == "S_ch4":
-                return self.p_sat[j] == pyo.units.convert(
+                return b.pressure_sat[j] == pyo.units.convert(
                     b.conc_mass_comp[j]
                     * (1000 * pyo.units.g / pyo.units.kg)
                     * Constants.gas_constant
@@ -299,8 +290,19 @@ class ADM1_vaporStateBlockData(StateBlockData):
                     / (64 * pyo.units.g / pyo.units.mole),
                     to_units=pyo.units.Pa,
                 )
+            elif j == "H2O":
+                return b.pressure_sat[j] == (
+                    0.0313
+                    * pyo.exp(
+                        5290
+                        * pyo.units.K
+                        * ((1 / b.params.temperature_ref) - (1 / b.temperature))
+                    )
+                    * 101325
+                    * pyo.units.Pa
+                )
             else:
-                return self.p_sat[j] == pyo.units.convert(
+                return b.pressure_sat[j] == pyo.units.convert(
                     b.conc_mass_comp[j]
                     * (1000 * pyo.units.g / pyo.units.kg)
                     * Constants.gas_constant
@@ -309,14 +311,11 @@ class ADM1_vaporStateBlockData(StateBlockData):
                     to_units=pyo.units.Pa,
                 )
 
-        self._p_sat = pyo.Constraint(
-            self.params.solute_set, rule=p_sat_rule, doc="P for not solutes"
+        self._pressure_sat = pyo.Constraint(
+            self.params.component_list,
+            rule=pressure_sat_rule,
+            doc="Saturation pressure for components",
         )
-
-        def p_w_sat_rule(b):
-            return self.p_w_sat == 0.0557 * 101325 * pyo.units.Pa
-
-        self._p_w_sat = pyo.Constraint(rule=p_w_sat_rule, doc="P for not solutes")
 
         def material_flow_expression(self, j):
             if j == "H2O":
@@ -369,10 +368,10 @@ class ADM1_vaporStateBlockData(StateBlockData):
         iscale.set_scaling_factor(self.temperature, 1e-2)
         iscale.set_scaling_factor(self.pressure, 1e-4)
         iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
-        iscale.set_scaling_factor(self.p_sat["S_ch4"], 1e-4)
-        iscale.set_scaling_factor(self.p_sat["S_co2"], 1e-4)
-        iscale.set_scaling_factor(self.p_sat["S_h2"], 1e-1)
-        iscale.set_scaling_factor(self.p_w_sat, 1e-3)
+        iscale.set_scaling_factor(self.pressure_sat["S_ch4"], 1e-4)
+        iscale.set_scaling_factor(self.pressure_sat["S_co2"], 1e-4)
+        iscale.set_scaling_factor(self.pressure_sat["S_h2"], 1e-1)
+        iscale.set_scaling_factor(self.pressure_sat["H2O"], 1e-3)
 
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]
@@ -392,23 +391,23 @@ class ADM1_vaporStateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
 
-    def define_state_vars(b):
+    def define_state_vars(self):
         return {
-            "flow_vol": b.flow_vol,
-            "conc_mass_comp": b.conc_mass_comp,
-            "temperature": b.temperature,
-            "pressure": b.pressure,
+            "flow_vol": self.flow_vol,
+            "conc_mass_comp": self.conc_mass_comp,
+            "temperature": self.temperature,
+            "pressure": self.pressure,
         }
 
-    def define_display_vars(b):
+    def define_display_vars(self):
         return {
-            "Volumetric Flowrate": b.flow_vol,
-            "Mass Concentration": b.conc_mass_comp,
-            "Temperature": b.temperature,
-            "Pressure": b.pressure,
+            "Volumetric Flowrate": self.flow_vol,
+            "Mass Concentration": self.conc_mass_comp,
+            "Temperature": self.temperature,
+            "Pressure": self.pressure,
         }
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def calculate_scaling_factors(self):
@@ -439,21 +438,11 @@ class ADM1_vaporStateBlockData(StateBlockData):
         )
         iscale.set_scaling_factor(self.energy_density_expression, sf_rho_cp * sf_T)
 
-        for t, v in self._p_sat.items():
+        for t, v in self._pressure_sat.items():
             iscale.constraint_scaling_transform(
                 v,
                 iscale.get_scaling_factor(
-                    self.p_sat,
-                    default=1,
-                    warning=True,
-                ),
-            )
-
-        for t, v in self._p_w_sat.items():
-            iscale.constraint_scaling_transform(
-                v,
-                iscale.get_scaling_factor(
-                    self.p_w_sat,
+                    self.pressure_sat,
                     default=1,
                     warning=True,
                 ),

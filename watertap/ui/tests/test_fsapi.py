@@ -1,3 +1,14 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 """
 Tests for fsapi module
 """
@@ -26,6 +37,11 @@ ERD_TYPE = "pressure_exchanger"
 # Fake status=OK solver result
 
 
+class FAKE_FLOWSHEET:
+    fs = "fs"
+    trash = "true"
+
+
 class SOLVE_RESULT_OK:
     class SOLVE_STATUS:
         status = SolverStatus.ok
@@ -36,7 +52,7 @@ class SOLVE_RESULT_OK:
 
 def build_ro(**kwargs):
     model = RO.build_flowsheet(erd_type=ERD_TYPE)
-    return model.fs
+    return model
 
 
 def solve_ro(flowsheet=None):
@@ -138,7 +154,9 @@ def test_build():
 def test_actions(add_variant: str):
     fsi = flowsheet_interface()
     built = False
-    garbage = {"trash": True}
+    # garbage = {"trash": True}
+    garbage = FAKE_FLOWSHEET
+    m = FAKE_FLOWSHEET
     v1 = Var(name="variable1")
     v1.construct()
     v1.value = 1
@@ -147,11 +165,13 @@ def test_actions(add_variant: str):
     def fake_build():
         nonlocal built
         built = True
-        return garbage
+        nonlocal m
+        m = build_ro()
+        return m
 
     def fake_solve(flowsheet=None):
         # flowsheet passed in here should be what fake_build() returns
-        assert flowsheet == garbage
+        assert flowsheet == m.fs
         return SOLVE_RESULT_OK
 
     def fake_export(flowsheet=None, exports=None):
@@ -278,8 +298,8 @@ def test_export_values_build():
 def test_empty_solve():
     # try a fake solve
     fsi = flowsheet_interface()
-    fsi.build()
     with pytest.raises(RuntimeError) as excinfo:
+        fsi.build()
         fsi.solve()
     print(f"* RuntimeError: {excinfo.value}")
 

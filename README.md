@@ -1,4 +1,5 @@
 # WaterTAP
+
 This is the WaterTAP development repository.
 
 WaterTAP is developed as part of the [National Alliance for Water Innovation](https://nawihub.org/) project.
@@ -14,14 +15,16 @@ WaterTAP is developed as part of the [National Alliance for Water Innovation](ht
 
 ## Getting started
 
-To quickly install and start using WaterTAP, head over to the [Getting Started](https://watertap.readthedocs.io/en/stable/getting_started/install.html#general-installation) section of the documentation.
+To quickly install and start using WaterTAP, head over to the [Getting Started](https://watertap.readthedocs.io/en/stable/getting_started.html) section of the documentation.
+
+If you wish to use the **WaterTAP UI**, you can [download and install](https://watertap-org.github.io) it from this page: https://watertap-org.github.io.
 
 ## Documentation
 
 The WaterTAP documentation is available online at <https://watertap.readthedocs.io>.
 ## Developer notes
 
-Refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en/stable/getting_started/install.html#for-watertap-developers) section of the documentation.
+Refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en/stable/getting_started.html#for-watertap-developers) section of the documentation.
 
 ## Cite this work
 

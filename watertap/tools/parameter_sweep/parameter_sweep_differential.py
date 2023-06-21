@@ -1,3 +1,14 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 import numpy as np
 from pyomo.common.config import ConfigValue
 
@@ -7,6 +18,7 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
     ParameterSweep,
 )
 from watertap.tools.MPI.dummy_mpi import DummyCOMM
+from watertap.tools.parallel.parallel_manager import SingleProcessParallelManager
 
 
 class DifferentialParameterSweep(_ParameterSweepBase):
@@ -147,20 +159,27 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                     local_output_dict["solve_successful"].extend(item)
                 else:
                     for subkey, subitem in item.items():
-                        if subkey in local_output_dict["sweep_params"].keys():
+                        local_output_dict[key][subkey]["value"] = np.concatenate(
+                            (
+                                local_output_dict[key][subkey]["value"],
+                                subitem["value"],
+                            )
+                        )
+
+                    # We also need to capture sweep_params variables that are not a part of differential_sweep_specs
+                    if key == "sweep_params":
+                        missing_sub_keys = set(item.keys()) ^ set(
+                            local_output_dict[key].keys()
+                        )
+                        # This loop shouldn't run if the above set is empty
+                        for subkey in missing_sub_keys:
+                            # We are picking the unchanged sweep_params from the outputs. In the ideal world, they would be the same.
                             local_output_dict["sweep_params"][subkey][
                                 "value"
                             ] = np.concatenate(
                                 (
                                     local_output_dict["sweep_params"][subkey]["value"],
-                                    subitem["value"],
-                                )
-                            )
-                        else:
-                            local_output_dict[key][subkey]["value"] = np.concatenate(
-                                (
-                                    local_output_dict[key][subkey]["value"],
-                                    subitem["value"],
+                                    diff_sol["outputs"][subkey]["value"],
                                 )
                             )
 
@@ -228,13 +247,14 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             reinitialize_function=self.config.reinitialize_function,
             reinitialize_kwargs=self.config.reinitialize_kwargs,
             reinitialize_before_sweep=self.config.reinitialize_before_sweep,
+            parallel_manager_class=SingleProcessParallelManager,
             comm=DummyCOMM,
         )
 
         _, differential_sweep_output_dict = diff_ps.parameter_sweep(
             model,
             diff_sweep_param_dict,
-            outputs=self.differential_outputs,
+            combined_outputs=self.differential_outputs,
             num_samples=self.config.num_diff_samples,
             seed=self.seed,
         )
@@ -310,16 +330,29 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         # divide the workload between processors
         local_values = self._divide_combinations(global_values)
 
+        # Check if the outputs have the name attribute. If not, assign one.
+        if outputs is not None:
+            self._assign_variable_names(model, outputs)
+
         # Create a dictionary to store all the differential ps_objects
         self.diff_ps_dict = {}
 
         # Do the Loop
-        local_results_dict = self._do_param_sweep(
-            model,
-            sweep_params,
-            outputs,
-            local_values,
-        )
+        if self.config.custom_do_param_sweep is None:
+            local_results_dict = self._do_param_sweep(
+                model,
+                sweep_params,
+                outputs,
+                local_values,
+            )
+        else:
+            local_results_dict = self.config.custom_do_param_sweep(
+                model,
+                sweep_params,
+                outputs,
+                local_values,
+                **self.config.custom_do_param_sweep_kwargs,
+            )
 
         # re-writing local_values
         local_values = self._collect_local_inputs(local_results_dict)

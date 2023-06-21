@@ -1,14 +1,13 @@
 #################################################################################
-# The Institute for the Design of Advanced Energy Systems Integrated Platform
-# Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
 Modified CSTR model which includes vapor and liquid phase outlets.
@@ -21,6 +20,12 @@ Assumptions:
      * Liquid phase property package has a single phase named Liq
      * Vapor phase property package has a single phase named Vap
      * Liquid and vapor phase properties need not have the same component lists
+
+Model formulated from:
+
+Rosen, C. and Jeppsson, U., 2006.
+Aspects on ADM1 Implementation within the BSM2 Framework.
+Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
 """
 
 # Import Pyomo libraries
@@ -33,6 +38,8 @@ from pyomo.environ import (
     Param,
     units as pyunits,
     check_optimal_termination,
+    exp,
+    Suffix,
 )
 
 
@@ -56,7 +63,9 @@ import idaes.logger as idaeslog
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Alejandro Garciadiego, Andrew Lee"
 
@@ -279,6 +288,8 @@ see reaction package for documentation.}""",
         # Call UnitModel.build to setup dynamics
         super(ADData, self).build()
 
+        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
+
         # Check phase lists match assumptions
         if self.config.vapor_property_package.phase_list != ["Vap"]:
             raise ConfigurationError(
@@ -427,22 +438,22 @@ see reaction package for documentation.}""",
             doc="friction parameter",
         )
 
-        self.KH_co2 = Param(
+        self.KH_co2 = Var(
+            self.flowsheet().time,
             initialize=0.02715,
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
-            mutable=True,
             doc="CO2 Henry's law coefficient",
         )
-        self.KH_ch4 = Param(
+        self.KH_ch4 = Var(
+            self.flowsheet().time,
             initialize=0.00116,
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
-            mutable=True,
             doc="CH4 Henry's law coefficient",
         )
-        self.KH_h2 = Param(
+        self.KH_h2 = Var(
+            self.flowsheet().time,
             initialize=7.38e-4,
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
-            mutable=True,
             doc="H2 Henry's law coefficient",
         )
         self.K_La = Param(
@@ -451,13 +462,106 @@ see reaction package for documentation.}""",
             mutable=True,
             doc="Gas-liquid transfer coefficient",
         )
+        self.electricity_consumption = Var(
+            self.flowsheet().time,
+            units=pyunits.kW,
+            bounds=(0, None),
+            doc="Electricity consumption of unit",
+        )
+        # The value is taken from Maravelias' data
+        self.energy_electric_flow_vol_inlet = Param(
+            initialize=0.029,
+            units=pyunits.kWh / pyunits.m**3,
+            mutable=True,
+            doc="Electricity intensity with respect to inlet flow",
+        )
+
+        def CO2_Henrys_law_rule(self, t):
+            return (
+                self.KH_co2[t]
+                == (
+                    0.035
+                    * exp(
+                        -19410
+                        / pyunits.mole
+                        * pyunits.joule
+                        / (Constants.gas_constant)
+                        * (
+                            (1 / self.config.vapor_property_package.temperature_ref)
+                            - (1 / self.vapor_phase[t].temperature)
+                        )
+                    )
+                )
+                * pyunits.kilomole
+                / pyunits.bar
+                / pyunits.meter**3
+            )
+
+        self.CO2_Henrys_law = Constraint(
+            self.flowsheet().time,
+            rule=CO2_Henrys_law_rule,
+            doc="CO2 Henry's law coefficient constraint",
+        )
+
+        def Ch4_Henrys_law_rule(self, t):
+            return (
+                self.KH_ch4[t]
+                == (
+                    0.0014
+                    * exp(
+                        -14240
+                        / pyunits.mole
+                        * pyunits.joule
+                        / (Constants.gas_constant)
+                        * (
+                            (1 / self.config.vapor_property_package.temperature_ref)
+                            - (1 / self.vapor_phase[t].temperature)
+                        )
+                    )
+                )
+                * pyunits.kilomole
+                / pyunits.bar
+                / pyunits.meter**3
+            )
+
+        self.Ch4_Henrys_law = Constraint(
+            self.flowsheet().time,
+            rule=Ch4_Henrys_law_rule,
+            doc="Ch4 Henry's law coefficient constraint",
+        )
+
+        def H2_Henrys_law_rule(self, t):
+            return (
+                self.KH_h2[t]
+                == (
+                    7.8e-4
+                    * exp(
+                        -4180
+                        / pyunits.mole
+                        * pyunits.joule
+                        / (Constants.gas_constant)
+                        * (
+                            (1 / self.config.vapor_property_package.temperature_ref)
+                            - (1 / self.vapor_phase[t].temperature)
+                        )
+                    )
+                )
+                * pyunits.kilomole
+                / pyunits.bar
+                / pyunits.meter**3
+            )
+
+        self.H2_Henrys_law = Constraint(
+            self.flowsheet().time,
+            rule=H2_Henrys_law_rule,
+            doc="H2 Henry's law coefficient constraint",
+        )
 
         def outlet_P_rule(self, t):
             return self.vapor_phase[t].pressure == (
-                self.vapor_phase[t].p_w_sat
-                + sum(
-                    self.vapor_phase[t].p_sat[j]
-                    for j in self.config.vapor_property_package.solute_set
+                sum(
+                    self.vapor_phase[t].pressure_sat[j]
+                    for j in self.config.vapor_property_package.component_list
                 )
             )
 
@@ -505,10 +609,10 @@ see reaction package for documentation.}""",
                     * pyunits.kg
                     / pyunits.kmol
                     * pyunits.convert(
-                        self.KH_h2,
+                        self.KH_h2[t],
                         to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
                     )
-                    * self.vapor_phase[t].p_sat["S_h2"]
+                    * self.vapor_phase[t].pressure_sat["S_h2"]
                 )
                 * self.volume_liquid[t]
             )
@@ -528,10 +632,10 @@ see reaction package for documentation.}""",
                     * pyunits.kg
                     / pyunits.kmol
                     * pyunits.convert(
-                        self.KH_ch4,
+                        self.KH_ch4[t],
                         to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
                     )
-                    * self.vapor_phase[t].p_sat["S_ch4"]
+                    * self.vapor_phase[t].pressure_sat["S_ch4"]
                 )
                 * self.volume_liquid[t]
             )
@@ -545,13 +649,13 @@ see reaction package for documentation.}""",
         def Sco2_conc_rule(self, t):
             return self.liquid_phase.mass_transfer_term[t, "Liq", "S_IC"] == -1 * (
                 pyunits.convert(self.K_La, to_units=1 / pyunits.s)
-                * (  # 0.0099 * pyunits.kmol / pyunits.m**3
+                * (
                     self.liquid_phase.reactions[t].conc_mol_co2
                     - pyunits.convert(
-                        self.KH_co2,
+                        self.KH_co2[t],
                         to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
                     )
-                    * self.vapor_phase[t].p_sat["S_co2"]
+                    * self.vapor_phase[t].pressure_sat["S_co2"]
                 )
                 * self.volume_liquid[t]
             ) * (1 * pyunits.kg / pyunits.kmole)
@@ -652,6 +756,22 @@ see reaction package for documentation.}""",
             doc="Unit level enthalpy_balance",
         )
 
+        # Electricity constraint
+        def rule_electricity_consumption(self, t):
+            return self.electricity_consumption[t] == (
+                self.energy_electric_flow_vol_inlet
+                * pyunits.convert(
+                    self.liquid_phase.properties_in[t].flow_vol,
+                    to_units=pyunits.m**3 / pyunits.hr,
+                )
+            )
+
+        self.unit_electricity_consumption = Constraint(
+            self.flowsheet().time,
+            rule=rule_electricity_consumption,
+            doc="Unit level electricity consumption",
+        )
+
         # Set references to balance terms at unit level
         self.heat_duty = Reference(self.liquid_phase.heat[:])
 
@@ -663,8 +783,23 @@ see reaction package for documentation.}""",
         iscale.set_scaling_factor(self.liquid_phase.rate_reaction_extent, 1e2)
         iscale.set_scaling_factor(self.liquid_phase.enthalpy_transfer, 1e-4)
         iscale.set_scaling_factor(self.liquid_phase.volume, 1e-2)
+        iscale.set_scaling_factor(self.KH_co2, 1e2)
+        iscale.set_scaling_factor(self.KH_ch4, 1e3)
+        iscale.set_scaling_factor(self.KH_h2, 1e4)
+        iscale.set_scaling_factor(self.electricity_consumption, 1e0)
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Liquid Inlet": self.inlet,
+                "Liquid Outlet": self.liquid_outlet,
+                "Vapor Outlet": self.vapor_outlet,
+            },
+            time_point=time_point,
+        )
 
     def _get_performance_contents(self, time_point=0):
+        # TODO: add aggregated quantities/key metrics
         var_dict = {"Volume": self.volume_AD[time_point]}
         if hasattr(self, "heat_duty"):
             var_dict["Heat Duty"] = self.heat_duty[time_point]
@@ -680,6 +815,16 @@ see reaction package for documentation.}""",
             self.vapor_phase.component_list
             & self.liquid_phase.properties_out.component_list
         )
+
+        # TODO: improve this later; for now, this resolved some scaling issues for modified adm1 test file
+        if "S_IP" in self.config.liquid_property_package.component_list:
+            iscale.set_scaling_factor(self.liquid_phase.heat, 1e-6)
+            iscale.set_scaling_factor(
+                self.liquid_phase.properties_out[0].conc_mass_comp["S_IP"], 1e-5
+            )
+            iscale.set_scaling_factor(
+                self.liquid_phase.properties_out[0].conc_mass_comp["S_IN"], 1e-5
+            )
 
         for t, v in self.flow_vol_vap.items():
             iscale.constraint_scaling_transform(
@@ -857,10 +1002,14 @@ see reaction package for documentation.}""",
         init_log.info_high("Initialization Step 2 Complete.")
 
         # ---------------------------------------------------------------------
-        # Solve unit model
+        # # Solve unit model
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solverobj.solve(self)
-
+            results = solverobj.solve(self, tee=slc.tee)
+            if not check_optimal_termination(results):
+                init_log.warning(
+                    f"Trouble solving unit model {self.name}, trying one more time"
+                )
+                results = solverobj.solve(self, tee=slc.tee)
         init_log.info_high(
             "Initialization Step 3 {}.".format(idaeslog.condition(results))
         )

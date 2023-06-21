@@ -1,33 +1,23 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 from pyomo.environ import (
     ConcreteModel,
-    SolverFactory,
     TerminationCondition,
-    value,
-    Constraint,
-    Var,
-    Objective,
-    Expression,
 )
-from pyomo.environ import units as pyunits
-from pyomo.util.check_units import (
-    assert_units_consistent,
-    assert_units_equivalent,
-    check_units_equivalent,
-)
-import pyomo.util.infeasible as infeas
-from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    number_variables,
-    number_total_constraints,
-    number_activated_constraints,
-    number_unfixed_variables_in_activated_equalities,
-    number_activated_equalities,
-    number_unused_variables,
-)
+from pyomo.util.check_units import assert_units_consistent
 
-import idaes.core.util.model_statistics as stats
-from idaes.core.util.constants import Constants
+from idaes.core import FlowsheetBlock
+from idaes.core.util.model_statistics import degrees_of_freedom
+
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
@@ -39,9 +29,6 @@ from watertap.costing import WaterTAPCosting, CrystallizerCostType
 
 from io import StringIO
 from pyomo.util.infeasible import (
-    log_active_constraints,
-    log_close_to_bounds,
-    log_infeasible_bounds,
     log_infeasible_constraints,
 )
 from pyomo.common.log import LoggingIntercept

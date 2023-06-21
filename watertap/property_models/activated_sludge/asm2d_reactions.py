@@ -1,14 +1,13 @@
 #################################################################################
-# The Institute for the Design of Advanced Energy Systems Integrated Platform
-# Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
 ASM2d reaction package.
@@ -855,7 +854,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R16", "Liq", "X_PP"): -1,
             ("R16", "Liq", "X_S"): 0,
             ("R16", "Liq", "X_TSS"): -3.23,
-            # R17: Lysis of X_PAH
+            # R17: Lysis of X_PHA
             ("R17", "Liq", "H2O"): 0,
             ("R17", "Liq", "S_A"): 1,
             ("R17", "Liq", "S_F"): 0,
@@ -1006,7 +1005,7 @@ class _ASM2dReactionBlock(ReactionBlockBase):
     whole, rather than individual elements of indexed Reaction Blocks.
     """
 
-    def initialize(blk, outlvl=idaeslog.NOTSET, **kwargs):
+    def initialize(self, outlvl=idaeslog.NOTSET, **kwargs):
         """
         Initialization routine for reaction package.
 
@@ -1016,7 +1015,7 @@ class _ASM2dReactionBlock(ReactionBlockBase):
         Returns:
             None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
         init_log.info("Initialization Complete.")
 
 
@@ -1456,7 +1455,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R17":
-                    # R17: Lysis of X_PAH
+                    # R17: Lysis of X_PHA
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.b_PHA
                         * b.conc_mass_comp_ref["X_PHA"]
@@ -1529,7 +1528,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.rate_expression)
             raise
 
-    def get_reaction_rate_basis(b):
+    def get_reaction_rate_basis(self):
         return MaterialFlowBasis.mass
 
     def calculate_scaling_factors(self):

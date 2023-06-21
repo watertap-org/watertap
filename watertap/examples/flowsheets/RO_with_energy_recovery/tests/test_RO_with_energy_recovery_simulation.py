@@ -1,41 +1,29 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 from pyomo.environ import (
     ConcreteModel,
     Block,
     Var,
     Constraint,
-    TerminationCondition,
-    SolverStatus,
     value,
-    SolverFactory,
     Expression,
-    TransformationFactory,
-    units as pyunits,
 )
-from pyomo.network import Arc, Port
+from pyomo.network import Port
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom, number_total_objectives
-from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
-from idaes.models.unit_models.mixer import MomentumMixingType
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core.util.scaling import (
-    unscaled_variables_generator,
-    unscaled_constraints_generator,
-)
 
 import watertap.property_models.NaCl_prop_pack as props
 from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D

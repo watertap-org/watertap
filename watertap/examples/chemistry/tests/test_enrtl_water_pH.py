@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """
     This test is to establish that the core chemistry packages in IDAES solve
@@ -76,14 +75,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 # Import idaes methods to check the model during construction
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    fixed_variables_set,
-    activated_constraints_set,
-    number_variables,
-    number_total_constraints,
-    number_unused_variables,
-)
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import the idaes objects for Generic Properties and Reactions
 from idaes.models.properties.modular_properties.base.generic_property import (

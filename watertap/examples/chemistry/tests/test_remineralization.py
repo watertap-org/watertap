@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """
     This test is to establish: (i) that IDAES can solve dilute system associated
@@ -52,7 +51,7 @@ from pyomo.environ import log10
 from pyomo.util.check_units import assert_units_consistent
 
 # Imports from idaes core
-from idaes.core import AqueousPhase, VaporPhase, FlowsheetBlock, EnergyBalanceType
+from idaes.core import AqueousPhase, FlowsheetBlock, EnergyBalanceType
 from idaes.core.base.components import Solvent, Solute, Cation, Anion, Apparent
 from idaes.core.base.phases import PhaseType as PT
 
@@ -62,10 +61,7 @@ from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
 from idaes.models.properties.modular_properties.base.generic_property import StateIndex
-from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
-    IdealBubbleDew,
-)
+
 from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
 
 # Importing the generic model information and objects
@@ -80,7 +76,6 @@ from idaes.models.properties.modular_properties.reactions.rate_forms import (
     power_law_rate,
 )
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    gibbs_energy,
     van_t_hoff,
 )
 from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
@@ -104,8 +99,6 @@ from pyomo.environ import (
 
 # Import idaes methods to check the model during construction
 from idaes.core.util import scaling as iscale
-from idaes.core.util.initialization import fix_state_vars, revert_state_vars
-from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -116,7 +109,6 @@ from watertap.examples.chemistry.chem_scaling_utils import (
     _set_inherent_rxn_scaling,
     _set_rate_rxn_scaling,
     _set_mat_bal_scaling_FTPx,
-    _set_ene_bal_scaling,
 )
 
 __author__ = "Austin Ladshaw"

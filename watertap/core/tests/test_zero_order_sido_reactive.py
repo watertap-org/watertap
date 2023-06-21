@@ -1,20 +1,20 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for general zero-order property package
 """
 import pytest
 import os
+from types import MethodType
 
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -87,9 +87,11 @@ class TestSIDOR:
     def test_private_attributes(self, model):
         assert model.fs.unit._has_recovery_removal is True
         assert model.fs.unit._fixed_perf_vars == []
-        assert model.fs.unit._initialize is initialize_sidor
-        assert model.fs.unit._scaling is calculate_scaling_factors_sidor
-        assert model.fs.unit._get_Q is _get_Q_sidor
+        assert model.fs.unit._initialize == MethodType(initialize_sidor, model.fs.unit)
+        assert model.fs.unit._scaling == MethodType(
+            calculate_scaling_factors_sidor, model.fs.unit
+        )
+        assert model.fs.unit._get_Q == MethodType(_get_Q_sidor, model.fs.unit)
         assert model.fs.unit._stream_table_dict == {
             "Inlet": model.fs.unit.inlet,
             "Treated": model.fs.unit.treated,

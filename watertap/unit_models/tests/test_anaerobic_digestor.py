@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for anaerobic digestor example.
 
@@ -65,6 +64,8 @@ from watertap.property_models.anaerobic_digestion.adm1_reactions import (
 )
 
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+from idaes.core import UnitModelCostingBlock
+from watertap.costing import WaterTAPCosting
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -198,8 +199,8 @@ class TestAdm(object):
         assert hasattr(adm.fs.unit, "volume_vapor")
         assert hasattr(adm.fs.unit, "heat_duty")
 
-        assert number_variables(adm) == 262
-        assert number_total_constraints(adm) == 143
+        assert number_variables(adm) == 266
+        assert number_total_constraints(adm) == 150
         assert number_unused_variables(adm) == 0
 
     @pytest.mark.component
@@ -271,6 +272,12 @@ class TestAdm(object):
         assert pytest.approx(0.174485, abs=1e-2) == value(
             adm.fs.unit.vapor_outlet.conc_mass_comp[0, "S_co2"]
         )
+        assert pytest.approx(0.0271, abs=1e-2) == value(adm.fs.unit.KH_co2[0])
+        assert pytest.approx(0.00116, abs=1e-2) == value(adm.fs.unit.KH_ch4[0])
+        assert pytest.approx(7.8e-4, abs=1e-2) == value(adm.fs.unit.KH_h2[0])
+        assert pytest.approx(0.2054, rel=1e-2) == value(
+            adm.fs.unit.electricity_consumption[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -317,6 +324,28 @@ class TestAdm(object):
             <= 1e-2
         )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_costing(self, adm):
+        m = adm
+
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.costing.cost_process()
+        m.fs.costing.add_LCOW(m.fs.unit.liquid_phase.properties_out[0].flow_vol)
+        solver = get_solver(options={"bound_push": 1e-8})
+        results = solver.solve(m)
+
+        assert_optimal_termination(results)
+
+        # Check solutions
+        assert pytest.approx(1083290.8, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
+        assert pytest.approx(5.04295, rel=1e-5) == value(m.fs.costing.LCOW)
+
     @pytest.mark.unit
     def test_get_performance_contents(self, adm):
         perf_dict = adm.fs.unit._get_performance_contents()
@@ -327,3 +356,7 @@ class TestAdm(object):
                 "Heat Duty": adm.fs.unit.heat_duty[0],
             }
         }
+
+    @pytest.mark.unit
+    def test_report(self, adm):
+        adm.fs.unit.report()

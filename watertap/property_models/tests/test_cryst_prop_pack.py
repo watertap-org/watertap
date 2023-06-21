@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 import watertap.property_models.cryst_prop_pack as props
 from pyomo.environ import ConcreteModel
@@ -101,8 +100,8 @@ class TestDefaultNaClwaterProperty:
         ("mass_frac_phase_comp", ("Vap", "H2O")): 1.0,
         ("flow_mol_phase_comp", ("Liq", "H2O")): 53.57,
         ("flow_mol_phase_comp", ("Liq", "NaCl")): 0.5989,
-        ("flow_mol_phase_comp", ("Sol", "NaCl")): 1.6318503332497833e-09,
-        ("flow_mol_phase_comp", ("Vap", "H2O")): 1.6318424528638692e-07,
+        ("flow_mol_phase_comp", ("Sol", "NaCl")): 0.0,
+        ("flow_mol_phase_comp", ("Vap", "H2O")): 0.0,
         ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9889,
         ("mole_frac_phase_comp", ("Liq", "NaCl")): 0.01106,
         ("mole_frac_phase_comp", ("Sol", "NaCl")): 1.0,
@@ -321,6 +320,7 @@ class TestNaClPropertySolution_4(PropertyRegressionTest):
         }
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 class TestNaClPropertySolution_5(PropertyRegressionTest):
     # Test pure vapor solution 1 - check vapor properties

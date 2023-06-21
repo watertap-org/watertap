@@ -1,47 +1,24 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 import pytest
 from pyomo.environ import (
-    ConcreteModel,
-    Block,
-    Var,
-    Constraint,
-    TerminationCondition,
-    SolverStatus,
     value,
     assert_optimal_termination,
-    SolverFactory,
-    Expression,
-    TransformationFactory,
-    units as pyunits,
 )
-from pyomo.network import Arc, Port
-from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
-from idaes.models.unit_models import Mixer, Separator, Product, Feed
-from idaes.models.unit_models.mixer import MomentumMixingType
 from pyomo.util.check_units import assert_units_consistent
-
-from idaes.core.util.scaling import (
-    unscaled_variables_generator,
-    unscaled_constraints_generator,
-)
 
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab import (
-    main,
     build,
     set_operating_conditions,
     initialize_system,
@@ -52,10 +29,9 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.meta
     display_additional_results,
 )
 
-
 solver = get_solver()
 
-# -----------------------------------------------------------------------------
+
 class TestMetabFlowsheet:
     @pytest.fixture(scope="class")
     def system_frame(self):

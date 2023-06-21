@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from pyomo.environ import (
     Set,
@@ -1530,7 +1529,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     Constants.faraday_constant
                     * (
                         sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
+                            self.diluate.properties[t, x].diffus_phase_comp["Liq", j]
                             ** -1
                             for j in self.ion_set
                         )
@@ -1580,7 +1579,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     -Constants.faraday_constant
                     * (
                         sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
+                            self.diluate.properties[t, x].diffus_phase_comp["Liq", j]
                             ** -1
                             for j in self.ion_set
                         )
@@ -1639,7 +1638,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     Constants.faraday_constant
                     * (
                         sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
+                            self.diluate.properties[t, x].diffus_phase_comp["Liq", j]
                             ** -1
                             for j in self.ion_set
                         )
@@ -1670,7 +1669,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     Constants.faraday_constant
                     * (
                         sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
+                            self.diluate.properties[t, x].diffus_phase_comp["Liq", j]
                             ** -1
                             for j in self.ion_set
                         )
@@ -1701,7 +1700,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     -Constants.faraday_constant
                     * (
                         sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
+                            self.diluate.properties[t, x].diffus_phase_comp["Liq", j]
                             ** -1
                             for j in self.ion_set
                         )
@@ -1732,7 +1731,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     -Constants.faraday_constant
                     * (
                         sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
+                            self.diluate.properties[t, x].diffus_phase_comp["Liq", j]
                             ** -1
                             for j in self.ion_set
                         )
@@ -1936,7 +1935,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
 
     # Intialization routines
     def initialize_build(
-        blk,
+        self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -1961,14 +1960,14 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
         # Set the intial conditions over the 1D length from the state vars
-        for k in blk.keys():
-            for set in blk[k].diluate.properties:
-                if ("flow_mol_phase_comp" or "flow_mass_phase_comp") not in blk[
+        for k in self.keys():
+            for set in self[k].diluate.properties:
+                if ("flow_mol_phase_comp" or "flow_mass_phase_comp") not in self[
                     k
                 ].diluate.properties[set].define_state_vars():
                     raise ConfigurationError(
@@ -1976,48 +1975,52 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                         "either a 'flow_mol_phase_comp' or 'flow_mass_phase_comp' "
                         "state variable basis to apply the 'propogate_initial_state' method"
                     )
-                if "temperature" in blk[k].diluate.properties[set].define_state_vars():
-                    blk[k].diluate.properties[set].temperature = value(
-                        blk[k].diluate.properties[(0.0, 0.0)].temperature
+                if "temperature" in self[k].diluate.properties[set].define_state_vars():
+                    self[k].diluate.properties[set].temperature = value(
+                        self[k].diluate.properties[(0.0, 0.0)].temperature
                     )
-                if "pressure" in blk[k].diluate.properties[set].define_state_vars():
-                    blk[k].diluate.properties[set].pressure = value(
-                        blk[k].diluate.properties[(0.0, 0.0)].pressure
+                if "pressure" in self[k].diluate.properties[set].define_state_vars():
+                    self[k].diluate.properties[set].pressure = value(
+                        self[k].diluate.properties[(0.0, 0.0)].pressure
                     )
                 if (
                     "flow_mol_phase_comp"
-                    in blk[k].diluate.properties[set].define_state_vars()
+                    in self[k].diluate.properties[set].define_state_vars()
                 ):
-                    for ind in blk[k].diluate.properties[set].flow_mol_phase_comp:
-                        blk[k].diluate.properties[set].flow_mol_phase_comp[ind] = value(
-                            blk[k]
+                    for ind in self[k].diluate.properties[set].flow_mol_phase_comp:
+                        self[k].diluate.properties[set].flow_mol_phase_comp[
+                            ind
+                        ] = value(
+                            self[k]
                             .diluate.properties[(0.0, 0.0)]
                             .flow_mol_phase_comp[ind]
                         )
                 if (
                     "flow_mass_phase_comp"
-                    in blk[k].diluate.properties[set].define_state_vars()
+                    in self[k].diluate.properties[set].define_state_vars()
                 ):
-                    for ind in blk[k].diluate.properties[set].flow_mass_phase_comp:
-                        blk[k].diluate.properties[set].flow_mass_phase_comp[
+                    for ind in self[k].diluate.properties[set].flow_mass_phase_comp:
+                        self[k].diluate.properties[set].flow_mass_phase_comp[
                             ind
                         ] = value(
-                            blk[k]
+                            self[k]
                             .diluate.properties[(0.0, 0.0)]
                             .flow_mass_phase_comp[ind]
                         )
-                if hasattr(blk[k], "conc_mem_surf_mol_x"):
-                    for mem in blk[k].membrane_set:
-                        for side in blk[k].electrode_side_set:
-                            for j in blk[k].ion_set:
-                                blk[k].conc_mem_surf_mol_x[mem, side, set, j].set_value(
-                                    blk[k]
+                if hasattr(self[k], "conc_mem_surf_mol_x"):
+                    for mem in self[k].membrane_set:
+                        for side in self[k].electrode_side_set:
+                            for j in self[k].ion_set:
+                                self[k].conc_mem_surf_mol_x[
+                                    mem, side, set, j
+                                ].set_value(
+                                    self[k]
                                     .diluate.properties[set]
                                     .conc_mol_phase_comp["Liq", j]
                                 )
 
-            for set in blk[k].concentrate.properties:
-                if ("flow_mol_phase_comp" or "flow_mass_phase_comp") not in blk[
+            for set in self[k].concentrate.properties:
+                if ("flow_mol_phase_comp" or "flow_mass_phase_comp") not in self[
                     k
                 ].concentrate.properties[set].define_state_vars():
                     raise ConfigurationError(
@@ -2027,67 +2030,72 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     )
                 if (
                     "temperature"
-                    in blk[k].concentrate.properties[set].define_state_vars()
+                    in self[k].concentrate.properties[set].define_state_vars()
                 ):
-                    blk[k].concentrate.properties[set].temperature = value(
-                        blk[k].concentrate.properties[(0.0, 0.0)].temperature
+                    self[k].concentrate.properties[set].temperature = value(
+                        self[k].concentrate.properties[(0.0, 0.0)].temperature
                     )
-                if "pressure" in blk[k].concentrate.properties[set].define_state_vars():
-                    blk[k].concentrate.properties[set].pressure = value(
-                        blk[k].concentrate.properties[(0.0, 0.0)].pressure
+                if (
+                    "pressure"
+                    in self[k].concentrate.properties[set].define_state_vars()
+                ):
+                    self[k].concentrate.properties[set].pressure = value(
+                        self[k].concentrate.properties[(0.0, 0.0)].pressure
                     )
                 if (
                     "flow_mol_phase_comp"
-                    in blk[k].concentrate.properties[set].define_state_vars()
+                    in self[k].concentrate.properties[set].define_state_vars()
                 ):
-                    for ind in blk[k].concentrate.properties[set].flow_mol_phase_comp:
-                        blk[k].concentrate.properties[set].flow_mol_phase_comp[
+                    for ind in self[k].concentrate.properties[set].flow_mol_phase_comp:
+                        self[k].concentrate.properties[set].flow_mol_phase_comp[
                             ind
                         ] = value(
-                            blk[k]
+                            self[k]
                             .concentrate.properties[(0.0, 0.0)]
                             .flow_mol_phase_comp[ind]
                         )
                 if (
                     "flow_mass_phase_comp"
-                    in blk[k].concentrate.properties[set].define_state_vars()
+                    in self[k].concentrate.properties[set].define_state_vars()
                 ):
-                    for ind in blk[k].concentrate.properties[set].flow_mass_phase_comp:
-                        blk[k].concentrate.properties[set].flow_mass_phase_comp[
+                    for ind in self[k].concentrate.properties[set].flow_mass_phase_comp:
+                        self[k].concentrate.properties[set].flow_mass_phase_comp[
                             ind
                         ] = value(
-                            blk[k]
+                            self[k]
                             .concentrate.properties[(0.0, 0.0)]
                             .flow_mass_phase_comp[ind]
                         )
-                if hasattr(blk[k], "conc_mem_surf_mol_x"):
-                    for mem in blk[k].membrane_set:
-                        for side in blk[k].electrode_side_set:
-                            for j in blk[k].ion_set:
-                                blk[k].conc_mem_surf_mol_x[mem, side, set, j].set_value(
-                                    blk[k]
+                if hasattr(self[k], "conc_mem_surf_mol_x"):
+                    for mem in self[k].membrane_set:
+                        for side in self[k].electrode_side_set:
+                            for j in self[k].ion_set:
+                                self[k].conc_mem_surf_mol_x[
+                                    mem, side, set, j
+                                ].set_value(
+                                    self[k]
                                     .concentrate.properties[set]
                                     .conc_mol_phase_comp["Liq", j]
                                 )
-                blk[k].total_areal_resistance_x[set].set_value(
+                self[k].total_areal_resistance_x[set].set_value(
                     (
-                        blk[k].membrane_areal_resistance["aem"]
-                        + blk[k].membrane_areal_resistance["cem"]
-                        + blk[k].channel_height
+                        self[k].membrane_areal_resistance["aem"]
+                        + self[k].membrane_areal_resistance["cem"]
+                        + self[k].channel_height
                         * (
-                            blk[k].concentrate.properties[set].elec_cond_phase["Liq"]
+                            self[k].concentrate.properties[set].elec_cond_phase["Liq"]
                             ** -1
-                            + blk[k].diluate.properties[set].elec_cond_phase["Liq"]
+                            + self[k].diluate.properties[set].elec_cond_phase["Liq"]
                             ** -1
                         )
                     )
-                    * blk[k].cell_pair_num
-                    + blk[k].electrodes_resistance
+                    * self[k].cell_pair_num
+                    + self[k].electrodes_resistance
                 )
 
         # ---------------------------------------------------------------------
         # Initialize diluate block
-        flags_diluate = blk.diluate.initialize(
+        flags_diluate = self.diluate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -2097,10 +2105,10 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
         if not ignore_dof:
-            check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
+            check_dof(self, fail_flag=fail_on_warning, logger=init_log)
 
         # Initialize concentrate block
-        flags_concentrate = blk.concentrate.initialize(
+        flags_concentrate = self.concentrate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -2111,7 +2119,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         check_solve(
             res,
@@ -2121,12 +2129,12 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         )
         # ---------------------------------------------------------------------
         # Release state
-        blk.diluate.release_state(flags_diluate, outlvl)
-        blk.concentrate.release_state(flags_concentrate, outlvl)
+        self.diluate.release_state(flags_diluate, outlvl)
+        self.concentrate.release_state(flags_concentrate, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -2443,7 +2451,9 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                         96485**-1
                         * sum(
                             iscale.get_scaling_factor(
-                                self.config.property_package.diffus_phase_comp["Liq", j]
+                                self.diluate.properties[0, 0].diffus_phase_comp[
+                                    "Liq", j
+                                ]
                             )
                             ** -2
                             for j in self.ion_set
@@ -2459,7 +2469,9 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                         96485**-1
                         * sum(
                             iscale.get_scaling_factor(
-                                self.config.property_package.diffus_phase_comp["Liq", j]
+                                self.diluate.properties[0, 0].diffus_phase_comp[
+                                    "Liq", j
+                                ]
                             )
                             ** -2
                             for j in self.ion_set

@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from collections.abc import MutableMapping
 
@@ -23,9 +22,10 @@ from idaes.core.base.costing_base import (
     register_idaes_currency_units,
 )
 
-from idaes.models.unit_models import Mixer
+from idaes.models.unit_models import Mixer, HeatExchanger
 
 from watertap.unit_models import (
+    AD,
     ReverseOsmosis0D,
     ReverseOsmosis1D,
     OsmoticallyAssistedReverseOsmosis0D,
@@ -38,10 +38,13 @@ from watertap.unit_models import (
     EnergyRecoveryDevice,
     Electrodialysis0D,
     Electrodialysis1D,
+    ElectroNPZO,
     IonExchange0D,
     GAC,
 )
+from watertap.unit_models.mvc.components import Evaporator, Compressor
 
+from .units.anaerobic_digestor import cost_anaerobic_digestor
 from .units.crystallizer import cost_crystallizer
 from .units.electrodialysis import cost_electrodialysis
 from .units.energy_recovery_device import cost_energy_recovery_device
@@ -56,6 +59,10 @@ from .units.pressure_exchanger import cost_pressure_exchanger
 from .units.pump import cost_pump
 from .units.reverse_osmosis import cost_reverse_osmosis
 from .units.uv_aop import cost_uv_aop
+from .units.evaporator import cost_evaporator
+from .units.compressor import cost_compressor
+from .units.heat_exchanger import cost_heat_exchanger
+from .units.electroNP import cost_electroNP
 
 
 class _DefinedFlowsDict(MutableMapping, dict):
@@ -83,6 +90,7 @@ class _DefinedFlowsDict(MutableMapping, dict):
 class WaterTAPCostingData(FlowsheetCostingBlockData):
     # Define default mapping of costing methods to unit models
     unit_mapping = {
+        AD: cost_anaerobic_digestor,
         Mixer: cost_mixer,
         Pump: cost_pump,
         EnergyRecoveryDevice: cost_energy_recovery_device,
@@ -96,8 +104,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         Ultraviolet0D: cost_uv_aop,
         Electrodialysis0D: cost_electrodialysis,
         Electrodialysis1D: cost_electrodialysis,
+        ElectroNPZO: cost_electroNP,
         IonExchange0D: cost_ion_exchange,
         GAC: cost_gac,
+        Evaporator: cost_evaporator,
+        Compressor: cost_compressor,
+        HeatExchanger: cost_heat_exchanger,
     }
 
     def build(self):
@@ -159,6 +171,14 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Grid carbon intensity [kgCO2_eq/kWh]",
             units=pyo.units.kg / pyo.units.kWh,
         )
+
+        self.magnesium_chloride_cost = pyo.Param(
+            mutable=True,
+            initialize=0.0786,
+            doc="Magnesium chloride cost",
+            units=pyo.units.USD_2020 / pyo.units.kg,
+        )
+        self.add_defined_flow("magnesium chloride", self.magnesium_chloride_cost)
 
         # fix the parameters
         self.fix_all_vars()

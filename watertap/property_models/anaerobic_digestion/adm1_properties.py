@@ -1,14 +1,13 @@
 #################################################################################
-# The Institute for the Design of Advanced Energy Systems Integrated Platform
-# Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
 Thermophysical property package to be used in conjunction with ADM1 reactions.
@@ -135,6 +134,10 @@ class ADM1ParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "temperature": {"method": None},
                 "conc_mass_comp": {"method": None},
+            }
+        )
+        obj.define_custom_properties(
+            {
                 "anions": {"method": None},
                 "cations": {"method": None},
             }
@@ -157,7 +160,7 @@ class _ADM1StateBlock(StateBlock):
     """
 
     def initialize(
-        blk,
+        self,
         state_args=None,
         state_vars_fixed=False,
         hold_state=False,
@@ -202,16 +205,16 @@ class _ADM1StateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         if state_vars_fixed is False:
             # Fix state variables if not already fixed
-            flags = fix_state_vars(blk, state_args)
+            flags = fix_state_vars(self, state_args)
 
         else:
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+            for k in self.keys():
+                if degrees_of_freedom(self[k]) != 0:
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -222,11 +225,11 @@ class _ADM1StateBlock(StateBlock):
             if hold_state is True:
                 return flags
             else:
-                blk.release_state(flags)
+                self.release_state(flags)
 
         init_log.info("Initialization Complete.")
 
-    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
+    def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialization.
 
@@ -237,12 +240,12 @@ class _ADM1StateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of logging
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         if flags is None:
             return
         # Unfix state variables
-        revert_state_vars(blk, flags)
+        revert_state_vars(self, flags)
         init_log.info("State Released.")
 
 
@@ -290,13 +293,13 @@ class ADM1StateBlockData(StateBlockData):
         self.anions = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=0.02,
-            doc="Ions in molar concentration",
+            doc="Anions in molar concentration",
             units=pyo.units.kmol / pyo.units.m**3,
         )
         self.cations = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=0.04,
-            doc="Ions in molar concentration",
+            doc="Cations in molar concentration",
             units=pyo.units.kmol / pyo.units.m**3,
         )
 
@@ -388,27 +391,27 @@ class ADM1StateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
 
-    def define_state_vars(b):
+    def define_state_vars(self):
         return {
-            "flow_vol": b.flow_vol,
-            "anions": b.anions,
-            "cations": b.cations,
-            "conc_mass_comp": b.conc_mass_comp,
-            "temperature": b.temperature,
-            "pressure": b.pressure,
+            "flow_vol": self.flow_vol,
+            "anions": self.anions,
+            "cations": self.cations,
+            "conc_mass_comp": self.conc_mass_comp,
+            "temperature": self.temperature,
+            "pressure": self.pressure,
         }
 
-    def define_display_vars(b):
+    def define_display_vars(self):
         return {
-            "Volumetric Flowrate": b.flow_vol,
-            "Molar anions": b.anions,
-            "Molar cations": b.cations,
-            "Mass Concentration": b.conc_mass_comp,
-            "Temperature": b.temperature,
-            "Pressure": b.pressure,
+            "Volumetric Flowrate": self.flow_vol,
+            "Molar anions": self.anions,
+            "Molar cations": self.cations,
+            "Mass Concentration": self.conc_mass_comp,
+            "Temperature": self.temperature,
+            "Pressure": self.pressure,
         }
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def calculate_scaling_factors(self):

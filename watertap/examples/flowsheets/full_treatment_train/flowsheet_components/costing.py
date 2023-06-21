@@ -1,26 +1,22 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 from pyomo.environ import (
     Block,
-    ConcreteModel,
     Constraint,
     Expression,
     Var,
     Param,
     value,
-    TransformationFactory,
-    units as pyunits,
 )
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import (
@@ -29,24 +25,6 @@ from watertap.costing import (
     EnergyRecoveryDeviceType,
     MixerType,
     ROType,
-)
-
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
-    feed_block,
-)
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
-    unit_separator,
-    unit_0DRO,
-    unit_1DRO,
-    property_models,
-)
-
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.desalination import (
-    build_desalination,
-    solve_desalination,
-    scale_desalination,
-    initialize_desalination,
-    display_desalination,
 )
 
 import idaes.core.util.scaling as iscale

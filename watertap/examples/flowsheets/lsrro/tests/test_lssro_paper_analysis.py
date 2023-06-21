@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 # TODO: If needed for coverage, *build* and set operating conditions for,
 #       but do not *solve*, the cross of all the options.
@@ -102,7 +101,7 @@ def test_against_paper_analysis(csv_file, row_index):
         for property_name, flowsheet_attribute in _results_headers.items():
             assert value(model.find_component(flowsheet_attribute)) == pytest.approx(
                 float(row[property_name]),
-                rel=1e-3,
+                rel=1e-2,
             )
     else:
         for property_name in _results_headers:

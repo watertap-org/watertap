@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 """
     Ideal NaOCl Chlorination posttreatment process
@@ -61,31 +60,19 @@ from pyomo.environ import (
     ConcreteModel,
     Var,
     Constraint,
-    SolverStatus,
-    TerminationCondition,
     TransformationFactory,
     value,
-    Suffix,
     Expression,
 )
 
 from pyomo.network import Arc
 
 from idaes.core.util import scaling as iscale
-from idaes.core.util.initialization import fix_state_vars, revert_state_vars
-
-# Import pyomo methods to check the system units
-from pyomo.util.check_units import assert_units_consistent
-
 
 from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
-    property_models,
-)
-from idaes.core.solvers import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
 from idaes.models.properties.modular_properties.base.generic_property import (
@@ -118,7 +105,6 @@ import idaes.logger as idaeslog
 from watertap.examples.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
     approximate_chemical_state_args,
     calculate_chemical_scaling_factors,
-    calculate_chemical_scaling_factors_for_energy_balances,
 )
 
 from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util import (
@@ -129,10 +115,6 @@ from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util i
     seq_decomp_initializer,
 )
 
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
-    desalination,
-)
-from idaes.core.util.initialization import propagate_state
 
 __author__ = "Austin Ladshaw"
 

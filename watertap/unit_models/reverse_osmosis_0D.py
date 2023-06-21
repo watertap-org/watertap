@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -21,7 +20,7 @@ from pyomo.environ import (
 from idaes.core import declare_process_block_class
 from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
-from watertap.core import (
+from watertap.core import (  # noqa # pylint: disable=unused-import
     ConcentrationPolarizationType,
     MembraneChannel0DBlock,
     MassTransferCoefficient,
@@ -32,7 +31,6 @@ from watertap.unit_models.reverse_osmosis_base import (
     ReverseOsmosisBaseData,
     _add_has_full_reporting,
 )
-
 
 __author__ = "Tim Bartholomew, Adam Atia"
 
@@ -73,7 +71,6 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
         add_object_reference(self, "deltaP", self.feed_side.deltaP)
 
     def _add_mass_transfer(self):
-
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # not in 1DRO
