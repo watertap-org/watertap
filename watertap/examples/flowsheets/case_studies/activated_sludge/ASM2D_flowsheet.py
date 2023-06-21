@@ -287,8 +287,6 @@ def build_flowsheet():
                 iscale.set_scaling_factor(var, 1e-3)
             if "alkalinity" in var.name:
                 iscale.set_scaling_factor(var, 1e3)
-            # if "conc_mass_comp" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
 
             if "conc_mass_comp[S_O2]" in var.name:
                 iscale.set_scaling_factor(var, 1e3)
