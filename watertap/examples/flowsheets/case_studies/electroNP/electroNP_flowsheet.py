@@ -38,7 +38,9 @@ from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import
 from watertap.property_models.activated_sludge.simple_modified_asm2d_properties import (
     SimpleModifiedASM2dParameterBlock,
 )
-from watertap.unit_models.translators.translator_adm1_asm2d import Translator_ADM1_ASM2D
+from watertap.unit_models.translators.translator_adm1_simple_asm2d import (
+    Translator_ADM1_Simple_ASM2D,
+)
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
 from idaes.core.util.tables import (
     create_stream_table_dataframe,
@@ -76,7 +78,7 @@ def build_flowsheet():
     )
     m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
-    m.fs.translator_adm1_asm2d = Translator_ADM1_ASM2D(
+    m.fs.translator_adm1_asm2d = Translator_ADM1_Simple_ASM2D(
         inlet_property_package=m.fs.props_ADM1,
         outlet_property_package=m.fs.props_ASM2D,
         reaction_package=m.fs.rxn_props_ADM1,
