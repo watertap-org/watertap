@@ -207,7 +207,7 @@ The following variables are constructed when applying the electrolyzer costing m
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Capital costs are contributing to the majority of material costs for the anode cathode and membrane. Each material cost is calculated individually then summed (O’Brien, 2005).
+Capital costs contribute to the majority of material costs for the anode cathode and membrane. Each material cost is calculated individually then summed (O’Brien, 2005).
 
     .. math::
 
