@@ -294,106 +294,40 @@ class NaClParameterData(PhysicalParameterBlock):
             "4": 14.61e-9,
         }
 
-        # vapor pressure parameters, (150)-300 C
-        vap_pressure_A2_param_dict = {
-            "0": -3.248,
-            "1": 7.081,
-            "2": -49.93,
-            "3": 219.6,
-            "4": -308.5,
-        }
-        vap_pressure_B2_param_dict = {
-            "0": 0.0610,
-            "1": -0.1185,
-            "2": 0.7916,
-            "3": -3.474,
-            "4": 4.882,
-        }
-        vap_pressure_C2_param_dict = {
-            "0": -0.4109e-3,
-            "1": 0.6789e-3,
-            "2": -4.155e-3,
-            "3": 18.34e-3,
-            "4": -25.89e-3,
-        }
-        vap_pressure_D2_param_dict = {
-            "0": 1.13e-6,
-            "1": -1.432e-6,
-            "2": 7.169e-6,
-            "3": -33.17e-6,
-            "4": 47.45e-6,
-        }
-        vap_pressure_E2_param_dict = {"0": 0, "1": 0, "2": 0, "3": 0, "4": 0}
-
         self.vap_pressure_A1_param = Var(
             vap_pressure_A1_param_dict.keys(),
             domain=Reals,
             initialize=vap_pressure_A1_param_dict,
-            units=pyunits.MPa,
+            units=pyunits.Pa,
             doc="Vapor pressure parameters A1",
-        )
-        self.vap_pressure_A2_param = Var(
-            vap_pressure_A2_param_dict.keys(),
-            domain=Reals,
-            initialize=vap_pressure_A2_param_dict,
-            units=pyunits.MPa,
-            doc="Vapor pressure parameters A2",
         )
         self.vap_pressure_B1_param = Var(
             vap_pressure_B1_param_dict.keys(),
             domain=Reals,
             initialize=vap_pressure_B1_param_dict,
-            units=pyunits.MPa,
+            units=pyunits.Pa,
             doc="Vapor pressure parameters B1",
-        )
-        self.vap_pressure_B2_param = Var(
-            vap_pressure_B2_param_dict.keys(),
-            domain=Reals,
-            initialize=vap_pressure_B2_param_dict,
-            units=pyunits.MPa,
-            doc="Vapor pressure parameters B2",
         )
         self.vap_pressure_C1_param = Var(
             vap_pressure_C1_param_dict.keys(),
             domain=Reals,
             initialize=vap_pressure_C1_param_dict,
-            units=pyunits.MPa,
+            units=pyunits.Pa,
             doc="Vapor pressure parameters C1",
-        )
-        self.vap_pressure_C2_param = Var(
-            vap_pressure_C2_param_dict.keys(),
-            domain=Reals,
-            initialize=vap_pressure_C2_param_dict,
-            units=pyunits.MPa,
-            doc="Vapor pressure parameters C2",
         )
         self.vap_pressure_D1_param = Var(
             vap_pressure_D1_param_dict.keys(),
             domain=Reals,
             initialize=vap_pressure_D1_param_dict,
-            units=pyunits.MPa,
+            units=pyunits.Pa,
             doc="Vapor pressure parameters D1",
-        )
-        self.vap_pressure_D2_param = Var(
-            vap_pressure_D2_param_dict.keys(),
-            domain=Reals,
-            initialize=vap_pressure_D1_param_dict,
-            units=pyunits.MPa,
-            doc="Vapor pressure parameters D2",
         )
         self.vap_pressure_E1_param = Var(
             vap_pressure_E1_param_dict.keys(),
             domain=Reals,
             initialize=vap_pressure_E1_param_dict,
-            units=pyunits.MPa,
+            units=pyunits.Pa,
             doc="Vapor pressure parameters E1",
-        )
-        self.vap_pressure_E2_param = Var(
-            vap_pressure_E2_param_dict.keys(),
-            domain=Reals,
-            initialize=vap_pressure_E2_param_dict,
-            units=pyunits.MPa,
-            doc="Vapor pressure parameters E2",
         )
 
         # TODO: could add entropy if needed from Sparrow 2003, Eq. 9
@@ -739,7 +673,7 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("osm_coeff", 1e0)
         self.set_default_scaling("enth_mass_phase", 1e-2, index="Liq")
         self.set_default_scaling("cp_mass_phase", 1e-4, index="Liq")
-        self.set_default_scaling("pressure_sat", 1e2)
+        self.set_default_scaling("pressure_sat", 1e-5)
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
         self.set_default_scaling("solubility_comp", 1e0)
 
@@ -1255,9 +1189,9 @@ class NaClStateBlockData(StateBlockData):
 
     def _pressure_sat(self):
         self.pressure_sat = Var(
-            initialize=0.01,
-            bounds=(0.0, 2),
-            units=pyunits.MPa,
+            initialize=1e3,
+            bounds=(1, 1e8),
+            units=pyunits.Pa,
             doc="Vapor Pressure",
         )
 
@@ -1284,11 +1218,14 @@ class NaClStateBlockData(StateBlockData):
                 k += 1
             return (
                 b.pressure_sat
-                == iter_param["A"]
-                + iter_param["B"] * t
-                + iter_param["C"] * t**2
-                + iter_param["D"] * t**3
-                + iter_param["E"] * t**4
+                == (
+                    iter_param["A"]
+                    + iter_param["B"] * t
+                    + iter_param["C"] * t**2
+                    + iter_param["D"] * t**3
+                    + iter_param["E"] * t**4
+                )
+                * 1e6  # convert MPa to Pa
             )
 
         self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
