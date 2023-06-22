@@ -106,8 +106,7 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     optimize_set_up(
         m, number_of_stages=number_of_stages, water_recovery=system_recovery
     )
-    # model_debug(m)
-    # check_jac(m)
+
     results = solve(m, solver=solver)
     assert_optimal_termination(results)
 
@@ -261,7 +260,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         initialize=1e5, units=pyunits.Pa, mutable=True
     )
     m.fs.recycle_pump_max_pressure = Param(
-        initialize=100e5, units=pyunits.Pa, mutable=True
+        initialize=85e5, units=pyunits.Pa, mutable=True
     )
 
     # process costing and add system level metrics
@@ -283,9 +282,6 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     m.fs.costing.add_LCOW(product_flow_vol_total)
     m.fs.costing.add_specific_energy_consumption(product_flow_vol_total)
     m.fs.costing.add_specific_electrical_carbon_intensity(product_flow_vol_total)
-
-    # objective
-    # m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     # Expressions for parameter sweep -----------------------------------------
     # Final permeate concentration as mass fraction
@@ -325,22 +321,6 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     m.fs.costing.add_specific_energy_consumption(
         m.fs.feed.properties[0].flow_vol, name="specific_energy_consumption_feed"
     )
-
-    # @m.fs.Expression(m.fs.NonFinalStages)
-    # def stage_recovery_vol(fs, stage):
-    #     return (
-    #             fs.OAROUnits[stage].mixed_permeate[0].flow_vol
-    #             / fs.PrimaryPumps[stage].control_volume.properties_in[0].flow_vol
-    #     )
-    #
-    # @m.fs.Expression(m.fs.NonFinalStages)
-    # def stage_recovery_mass_H2O(fs, stage):
-    #     return (
-    #             fs.OAROUnits[stage].mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
-    #             / m.fs.PrimaryPumps[stage]
-    #             .control_volume.properties_in[0]
-    #             .flow_mass_phase_comp["Liq", "H2O"]
-    #     )
 
     m.fs.costing.primary_pump_capex_lcow = Expression(
         expr=m.fs.costing.factor_capital_annualization
@@ -448,19 +428,6 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         == m.fs.product.properties[0].flow_vol_phase["Liq"]
     )
 
-    # m.fs.mass_water_recovery = Var(
-    #     initialize=0.5,
-    #     bounds=(0, 1),
-    #     domain=NonNegativeReals,
-    #     units=pyunits.dimensionless,
-    #     doc="System Water Recovery",
-    # )
-    # m.fs.eq_mass_water_recovery = Constraint(
-    #     expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-    #     * m.fs.mass_water_recovery
-    #     == m.fs.product.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-    # )
-
     # connections
     if erd_type == ERDtype.pump_as_turbine:
         last_stage = m.fs.LastStage
@@ -470,10 +437,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
             source=m.fs.feed.outlet, destination=m.fs.PrimaryPumps[1].inlet
         )
 
-        # Connect first EnergyRecoveryDevice to disposal
-        # m.fs.ERD_to_disposal = Arc(
-        #     source=m.fs.EnergyRecoveryDevices[1].outlet, destination=m.fs.disposal.inlet
-        # )
+        # Connect first EnergyRecoveryDevice to Mixer
         m.fs.ERD_to_mixer = Arc(
             source=m.fs.EnergyRecoveryDevices[1].outlet,
             destination=m.fs.WasteMixer.purge1,
@@ -506,14 +470,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
             },
         )
 
-        # Connect EnergyRecoveryDevice n to RecyclePumps n
-        # m.fs.ERD_to_recyclepump = Arc(
-        #     m.fs.NonFirstStages,
-        #     rule=lambda fs, n: {
-        #         "source": fs.EnergyRecoveryDevices[n].outlet,
-        #         "destination": fs.RecyclePumps[n].inlet,
-        #     },
-        # )
+        # Connect EnergyRecoveryDevice n to Separator n
         m.fs.ERD_to_separator = Arc(
             m.fs.NonFirstStages,
             rule=lambda fs, n: {
@@ -539,6 +496,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
                 },
             )
 
+        # Connect last Separator to last RecyclePump
         m.fs.separator_to_recyclepump = Arc(
             source=m.fs.Separators[last_stage].treat,
             destination=m.fs.RecyclePumps[last_stage].inlet,
@@ -663,23 +621,8 @@ def set_operating_conditions(
     m.fs.feed.properties[0].pressure.fix(pressure_atmospheric)  # feed pressure [Pa]
     m.fs.feed.properties[0].temperature.fix(feed_temperature)  # feed temperature [K]
 
-    # properties (cannot be fixed for initialization routines, must calculate the state variables)
-    # feed_flow_mass = 1
-    # feed_mass_frac_NaCl = 0.07
-    # feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-    # m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"].fix(
-    #     feed_flow_mass * feed_mass_frac_NaCl
-    # )
-    # m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(
-    #     feed_flow_mass * feed_mass_frac_H2O
-    # )
-
     Cin = 75000e-6
     Qin = 5.416667e-3
-    # Qin = 1e-3
-    # m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"] = Cin
-    # m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(Cin)
-    # m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(Qin)
     m.fs.feed.properties.calculate_state(
         var_args={
             ("mass_frac_phase_comp", ("Liq", "NaCl")): value(
@@ -707,14 +650,10 @@ def set_operating_conditions(
         pump.control_volume.properties_out[0].pressure.fix()
 
     # Initialize OARO
-    # membrane_area = 100 * pyunits.m ** 2 * (Qin/(3.6 * pyunits.m**3 / pyunits.hr))
-    # width = 5 * pyunits.m * (Qin/(3.6 * pyunits.m**3 / pyunits.hr))
     width = 5 * Qin / 1e-3  # effective membrane width [m]
     area = 100 * Qin / 1e-3  # membrane area [m^2]
     A_OARO = 1.0e-12
     B_OARO = 8.0e-8
-    # A_OARO = 4.2e-12
-    # B_OARO = 3.5e-8
     spacer_porosity = 0.75
 
     for idx, stage in m.fs.OAROUnits.items():
@@ -784,34 +723,6 @@ def set_operating_conditions(
 
 
 def recycle_pump_initializer(pump, oaro, solvent_multiplier, solute_multiplier):
-    # for vname in pump.control_volume.properties_in[0].vars:
-    #     if vname == "flow_mass_phase_comp":
-    #         for phase, comp in pump.control_volume.properties_in[0].vars[vname]:
-    #             if comp in pump.config.property_package.solute_set:
-    #                 pump.control_volume.properties_out[0].vars[vname][
-    #                     phase, comp
-    #                 ].value = (
-    #                     solute_multiplier
-    #                     * pump.control_volume.properties_out[0]
-    #                     .vars[vname][phase, comp]
-    #                     .value
-    #                 )
-    #             elif comp in pump.config.property_package.solvent_set:
-    #                 pump.control_volume.properties_out[0].vars[vname][
-    #                     phase, comp
-    #                 ].value = (
-    #                     solvent_multiplier
-    #                     * pump.control_volume.properties_in[0]
-    #                     .vars[vname][phase, comp]
-    #                     .value
-    #                 )
-    #             else:
-    #                 raise RuntimeError(f"Unknown component {comp}")
-    #     else:  # copy the state
-    #         for idx in pump.control_volume.properties_in[0].vars[vname]:
-    #             pump.control_volume.properties_out[0].vars[vname][idx].value = (
-    #                 pump.control_volume.properties_in[0].vars[vname][idx].value
-    #             )
 
     feed_temperature = 273.15 + 25
     pump.control_volume.properties_out[0].temperature.value = feed_temperature
@@ -870,9 +781,6 @@ def initialize_loop(m, solver):
         propagate_state(m.fs.OARO_to_ERD[stage])
         m.fs.EnergyRecoveryDevices[stage].initialize()
 
-        # propagate_state(m.fs.ERD_to_recyclepump[stage])
-        # m.fs.RecyclePumps[stage].initialize()
-
         propagate_state(m.fs.ERD_to_separator[stage])
         m.fs.Separators[stage].initialize()
         propagate_state(m.fs.separator_to_intermediatemixer[stage])
@@ -907,8 +815,6 @@ def initialize_system(m, number_of_stages=None, solver=None, verbose=True):
             solvent_multiplier=0.8,
             solute_multiplier=0.5,
         )
-        # print(m.fs.recyclepump_to_OARO[first_stage + 1].destination.name)
-        # m.fs.recyclepump_to_OARO[first_stage + 1].destination.display()
         propagate_state(m.fs.recyclepump_to_OARO[first_stage + 1])
         m.fs.OAROUnits[first_stage].initialize()
 
@@ -922,19 +828,12 @@ def initialize_system(m, number_of_stages=None, solver=None, verbose=True):
         m.fs.PrimaryPumps[last_stage].initialize()
 
     propagate_state(m.fs.pump_to_ro)
-    # print(f"DOF after prop_state to RO: {degrees_of_freedom(m)}")
-    # print(f"fixed variables set after prop_state to RO: {fixed_variables_set(m.fs.RO)}")
-    # m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
     m.fs.RO.initialize()
-    # print(f"fixed variables set after RO: {fixed_variables_set(m.fs.RO)}")
-    # print(f"DOF after RO: {degrees_of_freedom(m)}")
 
     propagate_state(m.fs.ro_to_ERD)
     m.fs.EnergyRecoveryDevices[last_stage].initialize()
 
     if number_of_stages > int(1):
-        # propagate_state(m.fs.ERD_to_recyclepump[last_stage])
-        # m.fs.RecyclePumps[last_stage].initialize()
 
         propagate_state(m.fs.ERD_to_separator[last_stage])
         m.fs.Separators[last_stage].initialize()
@@ -948,21 +847,6 @@ def initialize_system(m, number_of_stages=None, solver=None, verbose=True):
         # ---initialize first ERD---
         propagate_state(m.fs.OARO_to_ERD[first_stage])
         m.fs.EnergyRecoveryDevices[first_stage].initialize()
-
-    print(f"DOF: {degrees_of_freedom(m)}")
-
-    # Now that the units are initialized, we can fix the
-    # permeate side outlet pressure and unfix the RO pump
-    # (which allows for control over the flow mass composition
-    # into the OARO permeate_side).
-
-    # for stage in m.fs.NonFinalStages:
-    #     m.fs.OAROUnits[stage].permeate_side.properties_out[0].pressure.fix(101325)
-    #     m.fs.PrimaryPumps[stage + 1].control_volume.properties_out[0].pressure.unfix()
-    #
-    # if water_recovery is not None:
-    #     m.fs.water_recovery.fix(water_recovery)
-    #     m.fs.PrimaryPumps[1].control_volume.properties_out[0].pressure.unfix()
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
@@ -1046,14 +930,6 @@ def optimize_set_up(
         stage.feed_side.velocity[0, 0].setlb(0)
         stage.feed_side.velocity[0, 0].setub(1)
 
-        stage.permeate_side.properties_out[0].pressure.setlb(101325)
-
-        # stage.permeate_side.cp_modulus[0.0, 0.0, "NaCl"].setlb(0.01)
-        # stage.feed_side.friction_factor_darcy[0.0, 0.0].setub(None)
-        # stage.feed_side.friction_factor_darcy[0.0, 1.0].setub(None)
-        # stage.permeate_side.friction_factor_darcy[0.0, 1.0].setub(None)
-        # stage.feed_side.K[0.0, 0.0, "NaCl"].setub(1e-2)
-
         # stage.A_comp.unfix()
         # stage.A_comp.setlb(2.78e-12)
         # stage.A_comp.setub(4.2e-11)
@@ -1068,9 +944,6 @@ def optimize_set_up(
     m.fs.RO.width.setub(1000)
 
     m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"].setlb(0)
-    # m.fs.RO.feed_side.friction_factor_darcy[0.0, 1.0].setub(None)
-    # m.fs.RO.feed_side.K[0.0, 0.0, "NaCl"].setub(0.1)
-    # m.fs.RO.feed_side.K[0.0, 1.0, "NaCl"].setlb(0)
 
     # m.fs.RO.A_comp.unfix()
     # m.fs.RO.A_comp.setlb(2.78e-12)
@@ -1097,9 +970,9 @@ def optimize_set_up(
     m.fs.product_salinity = Param(
         initialize=500e-6, mutable=True
     )  # product NaCl mass fraction [-]
-    m.fs.minimum_water_flux = Param(
-        initialize=1.0 / 3600.0, mutable=True
-    )  # minimum water flux [kg/m2-s]
+    # m.fs.minimum_water_flux = Param(
+    #     initialize=1.0 / 3600.0, mutable=True
+    # )  # minimum water flux [kg/m2-s]
 
     # additional constraints
     if water_recovery is not None:
@@ -1282,70 +1155,6 @@ def display_state(m):
 
     print_state(f"Disposal", m.fs.disposal.inlet)
     print_state(f"Product", m.fs.product.inlet)
-
-
-# def model_debug(model):
-#
-#     check_jac(model)
-#
-#     model.fs.obj = Objective(expr=0)
-#     solver = get_solver()
-#
-#     # initial point
-#     solver.options["max_iter"] = 0
-#     solver.solve(model, tee=False)
-#     dh = DegeneracyHunter(model, solver=SolverFactory("cbc"))
-#     dh.check_residuals(tol=1e-8)
-#     dh.check_variable_bounds(tol=1e-8)
-#
-#     # solved model
-#     solver.options["max_iter"] = 10000
-#     solver.solve(model, tee=False)
-#     badly_scaled_var_list = iscale.badly_scaled_var_generator(
-#         model, large=1e1, small=1e-1
-#     )
-#     for x in badly_scaled_var_list:
-#         print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-#     dh.check_residuals(tol=1e-8)
-#     dh.check_variable_bounds(tol=1e-8)
-#     dh.check_rank_equality_constraints(dense=True)
-#     ds = dh.find_candidate_equations(verbose=True, tee=True)
-#     ids = dh.find_irreducible_degenerate_sets(verbose=True)
-#
-#     """
-#     variables_near_bounds_list = variables_near_bounds_generator(model)
-#     for x in variables_near_bounds_list:
-#         print(x, x.value)
-#     """
-#
-#     return model
-#
-#
-# def check_jac(model):
-#     jac, jac_scaled, nlp = iscale.constraint_autoscale_large_jac(model, min_scale=1e-8)
-#     # cond_number = iscale.jacobian_cond(model, jac=jac_scaled)  # / 1e10
-#     # print("--------------------------")
-#     print("Extreme Jacobian entries:")
-#     extreme_entries = iscale.extreme_jacobian_entries(
-#         model, jac=jac_scaled, zero=1e-20, large=10
-#     )
-#     extreme_entries = sorted(extreme_entries, key=lambda x: x[0], reverse=True)
-#
-#     print("EXTREME_ENTRIES")
-#     print(f"\nThere are {len(extreme_entries)} extreme Jacobian entries")
-#     for i in extreme_entries:
-#         print(i[0], i[1], i[2])
-#
-#     print("--------------------------")
-#     print("Extreme Jacobian columns:")
-#     extreme_cols = iscale.extreme_jacobian_columns(model, jac=jac_scaled)
-#     for val, var in extreme_cols:
-#         print(val, var.name)
-#     print("------------------------")
-#     print("Extreme Jacobian rows:")
-#     extreme_rows = iscale.extreme_jacobian_rows(model, jac=jac_scaled)
-#     for val, con in extreme_rows:
-#         print(val, con.name)
 
 
 if __name__ == "__main__":
