@@ -274,6 +274,7 @@ def unfix_opt_vars(m):
     # Touch total_hardness (on-demand property) at feed and disposal for reporting
     m.fs.feed.properties[0].total_hardness
     m.fs.disposal.properties[0].total_hardness
+    iscale.calculate_scaling_factors(m)
 
 
 def add_objective(m):
