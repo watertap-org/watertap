@@ -72,7 +72,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             domain=In([False]),
             description="Holdup construction flag - must be False",
             doc="""Indicates whether holdup terms should be constructed or not.
-    **default** - False. The filtration unit does not have defined volume, thus
+    **default** - False. The electrolyzer unit does not have defined volume, thus
     this must be False.""",
         ),
     )
