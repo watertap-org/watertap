@@ -88,6 +88,7 @@ class ModelExport(BaseModel):
     fixed: bool = True
     lb: Union[None, float] = 0.0
     ub: Union[None, float] = 0.0
+    num_samples: int = 2
     has_bounds: bool = True
     is_sweep: bool = False
 
@@ -319,6 +320,7 @@ class FlowsheetInterface:
         do_build: Callable = None,
         do_export: Callable = None,
         do_solve: Callable = None,
+        custom_do_param_sweep_kwargs: Dict = None,
         **kwargs,
     ):
         """Constructor.
@@ -335,6 +337,8 @@ class FlowsheetInterface:
                 This will be called automatically by :meth:`build()`. **Required**
             do_solve: Function to solve the model. It should return the result
                 that the solver itself returns. **Required**
+            custom_do_param_sweep_kwargs: Option for setting up parallel solver using
+                custom solve function.
             **kwargs: See `fs` arg. If the `fs` arg *is* provided, these are ignored.
         """
         if fs is None:
@@ -353,6 +357,7 @@ class FlowsheetInterface:
                 self.add_action(getattr(Actions, name), arg)
             else:
                 raise ValueError(f"'do_{name}' argument is required")
+        self._actions["custom_do_param_sweep_kwargs"] = custom_do_param_sweep_kwargs
 
     def build(self, **kwargs):
         """Build flowsheet
@@ -431,7 +436,7 @@ class FlowsheetInterface:
                 dst.obj.fixed = src.fixed
                 dst.fixed = src.fixed
                 dst.is_sweep = src.is_sweep
-
+                dst.num_samples = src.num_samples
                 # update bounds
                 if src.lb is None or src.lb == "":
                     dst.obj.lb = None
