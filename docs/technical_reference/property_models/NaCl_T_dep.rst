@@ -42,7 +42,7 @@ Properties
    "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`" 
    "Molality", ":math:`Cm_{NaCl}`", "molality_comp", "['NaCl']", ":math:`\text{mole/kg}`"
    "Solubility", ":math:`x_sat_{NaCl}`", "solubility_comp", "['NaCl']", ":math:`\text{dimensionless}`"
-   "Vapor Pressure", ":math:`P_sat`", "pressure_sat", "None", ":math:`\text{MPa}`"
+   "Vapor Pressure", ":math:`P_sat`", "pressure_sat", "None", ":math:`\text{Pa}`"
    "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa/s}`"
    "Thermal Conductivity", ":math:`k`", "therm_cond_phase", "[p]", ":math:`\text{W/m*K}`"
    "Specific Heat Capacity", ":math:`C_p`", "cp_mass_phase", "[p]", ":math:`\text{J/kg*K}`"
@@ -94,7 +94,7 @@ The default scaling factors are as follows:
    * 1 for the osmotic coefficient
    * 1e-2 for the specific enthalpy
    * 1e-4 for the specific heat capacity
-   * 1e2 for vapor pressure
+   * 1e-5 for vapor pressure
    * 1 for thermal conductivity
    * 1 for solubility
 
