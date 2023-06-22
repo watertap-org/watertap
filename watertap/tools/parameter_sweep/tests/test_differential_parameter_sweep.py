@@ -16,8 +16,6 @@ import copy
 import numpy as np
 import pyomo.environ as pyo
 
-from pyomo.environ import value
-
 from watertap.tools.parameter_sweep.sampling_types import (
     NormalSample,
     GeomSample,
@@ -667,7 +665,7 @@ def test_differential_parameter_sweep(model, tmp_path):
         read_dict = _read_output_h5(h5_results_file_name)
         _assert_h5_csv_agreement(csv_results_file_name, read_dict)
         _assert_dictionary_correctness(global_results_dict, read_dict)
-        if ps.num_procs > 1:
+        if ps.parallel_manager.number_of_processes() > 1:
             # Compare the sorted dictionary. We need to work with a sorted dictionary
             # because the differential parameter sweep produces a global dictionary
             # that is jumbled by the number of procs.
@@ -1167,7 +1165,7 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
         read_dict = _read_output_h5(h5_results_file_name)
         _assert_h5_csv_agreement(csv_results_file_name, read_dict)
         _assert_dictionary_correctness(global_results_dict, read_dict)
-        if ps.num_procs > 1:
+        if ps.parallel_manager.number_of_processes() > 1:
             # Compare the sorted dictionary. We need to work with a sorted dictionary
             # because the differential parameter sweep produces a global dictionary
             # that is jumbled by the number of procs.

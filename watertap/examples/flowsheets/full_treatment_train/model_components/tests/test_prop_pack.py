@@ -11,10 +11,7 @@
 #################################################################################
 
 import pytest
-from watertap.property_models.tests.property_test_harness import (
-    PropertyTestHarness,
-    PropertyRegressionTest,
-)
+from watertap.property_models.tests.property_test_harness import PropertyTestHarness
 from pyomo.environ import ConcreteModel, value
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
