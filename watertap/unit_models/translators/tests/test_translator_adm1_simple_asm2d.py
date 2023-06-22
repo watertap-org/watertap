@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for Translator ADM1-ASM2D unit model.
+Tests for Translator ADM1-Simple ASM2D unit model.
 Verified against approximated results from:
 Flores-Alsina, X., Solon, K., Mbamba, C.K., Tait, S., Gernaey, K.V., Jeppsson, U. and Batstone, D.J., 2016.
 Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes.
@@ -40,17 +40,18 @@ from idaes.core.util.model_statistics import (
     number_unused_variables,
 )
 
+
 from idaes.core.util.testing import initialization_tester
 
-from watertap.unit_models.translators.translator_adm1_asm2d import (
-    Translator_ADM1_ASM2D,
+from watertap.unit_models.translators.translator_adm1_simple_asm2d import (
+    Translator_ADM1_Simple_ASM2D,
 )
 from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
 )
 
-from watertap.property_models.activated_sludge.modified_asm2d_properties import (
-    ModifiedASM2dParameterBlock,
+from watertap.property_models.activated_sludge.simple_modified_asm2d_properties import (
+    SimpleModifiedASM2dParameterBlock,
 )
 
 from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import (
@@ -58,7 +59,7 @@ from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import
 )
 
 
-from pyomo.util.check_units import assert_units_consistent
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -71,13 +72,15 @@ def test_config():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.props_ASM2D = ModifiedASM2dParameterBlock()
+    m.fs.props_ASM2D = SimpleModifiedASM2dParameterBlock(
+        additional_solute_list=["S_K", "S_Mg"]
+    )
     m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
     m.fs.ADM1_rxn_props = ModifiedADM1ReactionParameterBlock(
         property_package=m.fs.props_ADM1
     )
 
-    m.fs.unit = Translator_ADM1_ASM2D(
+    m.fs.unit = Translator_ADM1_Simple_ASM2D(
         inlet_property_package=m.fs.props_ADM1,
         outlet_property_package=m.fs.props_ASM2D,
         reaction_package=m.fs.ADM1_rxn_props,
@@ -104,13 +107,15 @@ class TestAsm2dAdm1(object):
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props_ASM2D = ModifiedASM2dParameterBlock()
+        m.fs.props_ASM2D = SimpleModifiedASM2dParameterBlock(
+            additional_solute_list=["S_K", "S_Mg"]
+        )
         m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
         m.fs.ADM1_rxn_props = ModifiedADM1ReactionParameterBlock(
             property_package=m.fs.props_ADM1
         )
 
-        m.fs.unit = Translator_ADM1_ASM2D(
+        m.fs.unit = Translator_ADM1_Simple_ASM2D(
             inlet_property_package=m.fs.props_ADM1,
             outlet_property_package=m.fs.props_ASM2D,
             reaction_package=m.fs.ADM1_rxn_props,
@@ -172,14 +177,15 @@ class TestAsm2dAdm1(object):
         assert hasattr(asmadm.fs.unit.inlet, "cations")
 
         assert hasattr(asmadm.fs.unit, "outlet")
-        assert len(asmadm.fs.unit.outlet.vars) == 4
+        assert len(asmadm.fs.unit.outlet.vars) == 5
         assert hasattr(asmadm.fs.unit.outlet, "flow_vol")
         assert hasattr(asmadm.fs.unit.outlet, "conc_mass_comp")
         assert hasattr(asmadm.fs.unit.outlet, "temperature")
         assert hasattr(asmadm.fs.unit.outlet, "pressure")
+        assert hasattr(asmadm.fs.unit.outlet, "alkalinity")
 
-        assert number_variables(asmadm) == 180
-        assert number_total_constraints(asmadm) == 21
+        assert number_variables(asmadm) == 183
+        assert number_total_constraints(asmadm) == 24
 
         assert number_unused_variables(asmadm.fs.unit) == 12
 
@@ -249,6 +255,12 @@ class TestAsm2dAdm1(object):
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_I"]
         )
         assert pytest.approx(1e-6, rel=1e-3) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_MeOH"]
+        )
+        assert pytest.approx(1e-6, rel=1e-3) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_MeP"]
+        )
+        assert pytest.approx(1e-6, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PAO"]
         )
         assert pytest.approx(0.0022493, rel=1e-3) == value(
@@ -260,14 +272,17 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(25.4283, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_S"]
         )
+        assert pytest.approx(1e-6, rel=1e-3) == value(
+            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_TSS"]
+        )
         assert pytest.approx(0.02268, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_K"]
         )
         assert pytest.approx(0.02893, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_Mg"]
         )
-        assert pytest.approx(0.34628, rel=1e-3) == value(
-            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_IC"]
+        assert pytest.approx(0.028857, rel=1e-3) == value(
+            asmadm.fs.unit.outlet.alkalinity[0]
         )
 
     @pytest.mark.solver
