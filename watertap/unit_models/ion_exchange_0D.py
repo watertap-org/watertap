@@ -39,14 +39,53 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import StrEnum
+from idaes.core.util.exceptions import InitializationError, ConfigurationError
 
-from idaes.core.util.exceptions import InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 __author__ = "Kurban Sitterley"
+
+
+"""
+REFERENCES
+
+LeVan, M. D., Carta, G., & Yon, C. M. (2019).
+Section 16: Adsorption and Ion Exchange.
+Perry's Chemical Engineers' Handbook, 9th Edition.
+
+Crittenden, J. C., Trussell, R. R., Hand, D. W., Howe, K. J., & Tchobanoglous, G. (2012).
+Chapter 16: Ion Exchange.
+MWH's Water Treatment (pp. 1263-1334): John Wiley & Sons, Inc.
+
+DOWEX Ion Exchange Resins Water Conditioning Manual
+https://www.lenntech.com/Data-sheets/Dowex-Ion-Exchange-Resins-Water-Conditioning-Manual-L.pdf
+
+Inamuddin, & Luqman, M. (2012).
+Ion Exchange Technology I: Theory and Materials.
+
+Vassilis J. Inglezakis and Stavros G. Poulopoulos
+Adsorption, Ion Exchange and Catalysis: Design of Operations and Environmental Applications (2006).
+doi.org/10.1016/B978-0-444-52783-7.X5000-9
+
+Michaud, C.F. (2013)
+Hydrodynamic Design, Part 8: Flow Through Ion Exchange Beds
+Water Conditioning & Purification Magazine (WC&P)
+https://wcponline.com/2013/08/06/hydrodynamic-design-part-8-flow-ion-exchange-beds/
+
+Clark, R. M. (1987). 
+Evaluating the cost and performance of field-scale granular activated carbon systems. 
+Environ Sci Technol, 21(6), 573-580. doi:10.1021/es00160a008
+
+Croll, H. C., Adelman, M. J., Chow, S. J., Schwab, K. J., Capelle, R., Oppenheimer, J., & Jacangelo, J. G. (2023). 
+Fundamental kinetic constants for breakthrough of per- and polyfluoroalkyl substances at varying empty bed contact times: 
+Theoretical analysis and pilot scale demonstration. 
+Chemical Engineering Journal, 464. doi:10.1016/j.cej.2023.142587
+
+"""
+
 
 _log = idaeslog.getLogger(__name__)
 
@@ -182,7 +221,11 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
     CONFIG.declare(
         "target_ion",
-        ConfigValue(default="Ca_2+", domain=str, description="Target ion"),
+        ConfigValue(
+            default="Ca_2+",
+            domain=str,
+            description="Designates targeted species for removal",
+        ),
     )
 
     CONFIG.declare(
@@ -215,43 +258,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
     def build(self):
         super().build()
 
-        """
-        REFERENCES
-
-        LeVan, M. D., Carta, G., & Yon, C. M. (2019).
-        Section 16: Adsorption and Ion Exchange.
-        Perry's Chemical Engineers' Handbook, 9th Edition.
-
-        Crittenden, J. C., Trussell, R. R., Hand, D. W., Howe, K. J., & Tchobanoglous, G. (2012).
-        Chapter 16: Ion Exchange.
-        MWH's Water Treatment (pp. 1263-1334): John Wiley & Sons, Inc.
-
-        DOWEX Ion Exchange Resins Water Conditioning Manual
-        https://www.lenntech.com/Data-sheets/Dowex-Ion-Exchange-Resins-Water-Conditioning-Manual-L.pdf
-
-        Inamuddin, & Luqman, M. (2012).
-        Ion Exchange Technology I: Theory and Materials.
-
-        Vassilis J. Inglezakis and Stavros G. Poulopoulos
-        Adsorption, Ion Exchange and Catalysis: Design of Operations and Environmental Applications (2006).
-        doi.org/10.1016/B978-0-444-52783-7.X5000-9
-
-        Michaud, C.F. (2013)
-        Hydrodynamic Design, Part 8: Flow Through Ion Exchange Beds
-        Water Conditioning & Purification Magazine (WC&P)
-        https://wcponline.com/2013/08/06/hydrodynamic-design-part-8-flow-ion-exchange-beds/
-
-        Clark, R. M. (1987). 
-        Evaluating the cost and performance of field-scale granular activated carbon systems. 
-        Environ Sci Technol, 21(6), 573-580. doi:10.1021/es00160a008
-
-        Croll, H. C., Adelman, M. J., Chow, S. J., Schwab, K. J., Capelle, R., Oppenheimer, J., & Jacangelo, J. G. (2023). 
-        Fundamental kinetic constants for breakthrough of per- and polyfluoroalkyl substances at varying empty bed contact times: 
-        Theoretical analysis and pilot scale demonstration. 
-        Chemical Engineering Journal, 464. doi:10.1016/j.cej.2023.142587
-
-        """
-
         comps = self.config.property_package.component_list
         target_ion = self.config.target_ion
 
@@ -260,10 +266,16 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )  # create set for future development of multi-component model
         inerts = comps - self.target_ion_set
 
-        if "+" in target_ion:
+        if len(self.target_ion_set) > 1:
+            raise ConfigurationError(
+                f"IonExchange0D can only accept a single target ion but {len(self.target_ion_set)} were provided."
+            )
+        if self.config.property_package.charge_comp[target_ion] > 0:
             self.ion_exchange_type = IonExchangeType.cation
-        if "-" in target_ion:
-            self.ion_exchange_type = IonExchangeType.anion
+        elif self.config.property_package.charge_comp[target_ion] < 0:
+            self.ion_exchange_type == IonExchangeType.anion
+        else:
+            raise ConfigurationError("Target ion must have non-zero charge.")
 
         if self.config.regenerant is not RegenerantChem.none:
             self.regen_chem = RegenerantChem(self.config["regenerant"])
@@ -293,7 +305,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )
 
         prop_in = self.process_flow.properties_in[0]
-        prop_out = self.process_flow.properties_out[0]
 
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
@@ -1280,11 +1291,10 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 )
 
             @self.Constraint(
-                self.target_ion_set,
                 self.trap_index,
                 doc="Breakthru time calc for trapezoids",
             )
-            def eq_tb_traps(b, j, k):
+            def eq_tb_traps(b, k):
                 x = 1 / b.c_traps[k]
                 return b.tb_traps[k] == (
                     b.vel_bed / (-b.kinetic_param * b.bed_depth)
@@ -1306,9 +1316,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
             @self.Constraint(
                 self.target_ion_set,
-                doc="Mass transfer term for target ion",
+                doc="CV mass transfer term",
             )
-            def eq_mass_transfer_target_fr(b, j, doc="CV mass transfer term"):
+            def eq_mass_transfer_target_fr(b, j):
                 return (1 - b.c_norm_avg[j]) * prop_in.get_material_flow_terms(
                     "Liq", j
                 ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
