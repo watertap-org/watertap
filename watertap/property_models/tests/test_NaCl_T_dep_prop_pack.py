@@ -64,7 +64,7 @@ class TestNaClProperty(PropertyTestHarness):
             ("cp_mass_phase", "Liq"): 4000,
             ("solubility_comp", "NaCl"): 0.265,
             ("therm_cond_phase", "Liq"): 0.6015,
-            ("pressure_sat", None): 1767.56,
+            ("pressure_sat", None): 0.00293,
         }
 
 
@@ -107,7 +107,7 @@ class TestNaClPropertySolution_1(PropertyRegressionTest):
             ("cp_mass_phase", "Liq"): 3941.9,
             ("solubility_comp", "NaCl"): 0.2686,
             ("therm_cond_phase", "Liq"): 0.6392,
-            ("pressure_sat", None): 12465.62,
+            ("pressure_sat", None): 0.01224,
         }
 
 
@@ -150,7 +150,7 @@ class TestNaClPropertySolution_2(PropertyRegressionTest):
             ("cp_mass_phase", "Liq"): 3603.7,
             ("solubility_comp", "NaCl"): 0.2799,
             ("therm_cond_phase", "Liq"): 0.6648,
-            ("pressure_sat", None): 90092.87,
+            ("pressure_sat", None): 0.09011,
         }
 
 
@@ -193,5 +193,5 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
             ("cp_mass_phase", "Liq"): 3422.6,
             ("solubility_comp", "NaCl"): 0.2966,
             ("therm_cond_phase", "Liq"): 0.6627,
-            ("pressure_sat", None): 369376.27,
+            ("pressure_sat", None): 0.3688,
         }
