@@ -42,6 +42,8 @@ from watertap.examples.flowsheets.nf_dspmde import nf
 
 from watertap.costing import WaterTAPCosting
 
+# from analysisWaterTAP.utils import flowsheet_utils as fsTools
+
 
 def main():
     solver = get_solver()
@@ -49,6 +51,28 @@ def main():
     initialize(m, solver)
     unfix_opt_vars(m)
     nf.add_objective(m)
+    # fsTools.check_jac(m)
+    # assert False
+    results = optimize(m, solver)
+    assert_optimal_termination(results)
+    print("Optimal cost", m.fs.costing.LCOW.value)
+    print("Optimal NF pressure (Bar)", m.fs.NF.pump.outlet.pressure[0].value / 1e5)
+    print("Optimal area (m2)", m.fs.NF.nfUnit.area.value)
+    print(
+        "Optimal nf recovery (%)",
+        m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"].value * 100,
+    )
+    print("bypass (%)", m.fs.by_pass_splitter.split_fraction[0, "bypass"].value * 100)
+
+    print("Feed hardness (mg/L as CaCO3)", m.fs.feed.properties[0].total_hardness.value)
+    print(
+        "Product hardness (mg/L as CaCO3)",
+        m.fs.product.properties[0].total_hardness.value,
+    )
+    print(
+        "Disposal hardness (mg/L as CaCO3)",
+        m.fs.disposal.properties[0].total_hardness.value,
+    )
     results = optimize(m, solver)
     assert_optimal_termination(results)
     print("Optimal cost", m.fs.costing.LCOW.value)

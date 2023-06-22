@@ -169,6 +169,7 @@ def build():
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
     m.fs.feed.properties[0].conc_mol_phase_comp[...]
     m.fs.feed.properties[0].flow_mass_phase_comp[...]
+    m.fs.feed.properties[0].flow_vol_phase[...]
 
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
@@ -386,7 +387,7 @@ def set_NF_feed(
         blk.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
         blk.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix()
     blk.feed.properties[0].display()
-    set_NF_feed_scaling(blk)
+
     blk.feed.properties[0].assert_electroneutrality(
         defined_state=True,
         adjust_by_ion="Cl_-",
@@ -394,6 +395,7 @@ def set_NF_feed(
     )
 
     blk.feed.properties[0].temperature.fix(298.15)
+    set_NF_feed_scaling(blk)
     iscale.calculate_scaling_factors(blk)
 
     # switching to concentration for ease of adjusting in UI
@@ -414,6 +416,14 @@ def set_NF_feed_scaling(blk):
         blk.properties.set_default_scaling(
             "flow_mol_phase_comp", 10 ** (scale + 0), index=index
         )
+        # scale = calc_scale(blk.feed.properties[0].flow_mass_phase_comp[index].value)
+        # print(f"{index} flow_mass_phase_comp scaling factor = {10**(scale+_add)}")
+        # blk.properties.set_default_scaling(
+        #     "flow_mass_phase_comp", 10 ** (scale + 0), index=index
+        # )
+
+    scale = calc_scale(blk.feed.properties[0].flow_vol_phase["Liq"].value)
+    blk.properties.set_default_scaling("flow_vol_phase", 10 ** (scale + 0), index=index)
 
 
 def add_hardness_constraint(stream):
