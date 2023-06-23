@@ -85,9 +85,7 @@ def build():
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
 
-    # nf.add_hardness_constraint(m.fs.feed)
     nf.add_hardness_constraint(m.fs.product)
-    # nf.add_hardness_constraint(m.fs.disposal)
 
     m.fs.by_pass_splitter = Separator(
         property_package=m.fs.properties,
@@ -131,6 +129,7 @@ def build():
     )
     m.fs.costing.disposal_cost = Var(
         initialize=0.1,
+        bounds=(0, None),
         doc="disposal cost",
         units=pyunits.USD_2020 / pyunits.m**3,
     )
@@ -154,12 +153,12 @@ def build():
 
 
 def fix_init_vars(m):
-    # fix initial guess for splitter
-    m.fs.by_pass_splitter.split_fraction[0, "bypass"].fix(0.5)
-    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setlb(None)
-    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setub(None)
     # apply defaults for normal NF init
     nf.fix_init_vars(m)
+    # fix initial guess for splitter
+    m.fs.by_pass_splitter.split_fraction[0, "bypass"].fix(0.5)
+    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setlb(0)
+    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setub(None)
 
 
 def initialize(m, solver=None):
@@ -174,10 +173,8 @@ def initialize(m, solver=None):
     # solve box problem
     print("initialized, DOFs:", degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
-    m.fs.product.max_hardness_constraint.deactivate()
     results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
-    m.fs.product.max_hardness_constraint.activate()
     print("Solved box problem")
 
 
@@ -205,13 +202,13 @@ def init_system(m, solver):
     m.fs.NF.product.initialize(optarg=solver.options)
     m.fs.NF.retentate.initialize(optarg=solver.options)
 
-    seq = SequentialDecomposition(tear_solver="cbc")
-    seq.options.iterLim = 10
-
-    def func_initialize(unit):
-        unit.initialize(optarg=solver.options)
-
-    seq.run(m, func_initialize)
+    # seq = SequentialDecomposition(tear_solver="cbc")
+    # seq.options.iterLim = 10
+    #
+    # def func_initialize(unit):
+    #     unit.initialize(optarg=solver.options)
+    #
+    # seq.run(m, func_initialize)
 
     m.fs.costing.initialize()
 

@@ -190,6 +190,7 @@ def build():
     )
     m.fs.costing.disposal_cost = Var(
         initialize=0.1,
+        bounds= (0, None),
         doc="disposal cost",
         units=pyunits.USD_2020 / pyunits.m**3,
     )
@@ -269,6 +270,8 @@ def unfix_opt_vars(m):
     m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].unfix()
     m.fs.NF.pump.outlet.pressure[0].unfix()
     m.fs.NF.nfUnit.area.unfix()
+    m.fs.NF.nfUnit.velocity.unfix()
+    m.fs.NF.nfUnit.velocity.setub(0.25)
     m.fs.product.max_hardness.fix(200)
 
     # Touch total_hardness (on-demand property) at feed and disposal for reporting
@@ -385,7 +388,6 @@ def set_NF_feed(
         blk.feed.properties[0].conc_mass_phase_comp["Liq", "H2O"].unfix()
         blk.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
         blk.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix()
-    blk.feed.properties[0].display()
     set_NF_feed_scaling(blk)
     blk.feed.properties[0].assert_electroneutrality(
         defined_state=True,
