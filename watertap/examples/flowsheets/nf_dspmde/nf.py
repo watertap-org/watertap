@@ -195,6 +195,7 @@ def build():
         units=pyunits.USD_2020 / pyunits.m**3,
     )
     m.fs.costing.disposal_cost.fix()
+    iscale.set_scaling_factor(m.fs.costing.disposal_cost, 1)
     m.fs.costing.add_defined_flow("disposal cost", m.fs.costing.disposal_cost)
     m.fs.costing.cost_flow(
         pyunits.convert(
@@ -231,6 +232,7 @@ def build_nf_block(m, blk):
         source=blk.nfUnit.retentate, destination=blk.retentate.inlet
     )
     blk.nf_flux = Var(initialize=1, units=pyunits.dimensionless)
+    iscale.set_scaling_factor(blk.nf_flux, 1)
     blk.nf_flux_eq = Constraint(
         expr=blk.nf_flux == blk.nfUnit.flux_vol_water_avg[0.0] * 3600 * 1000
     )
@@ -247,6 +249,7 @@ def fix_init_vars(m):
     # NF unit operation init values
     m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"].setub(0.95)
     m.fs.NF.nfUnit.area.fix(50)
+    iscale.set_scaling_factor(m.fs.NF.nfUnit.area, 1e-4)
     m.fs.NF.nfUnit.spacer_porosity.fix(0.85)
     m.fs.NF.nfUnit.spacer_mixing_efficiency.fix()
     m.fs.NF.nfUnit.spacer_mixing_length.fix()
@@ -396,6 +399,7 @@ def set_NF_feed(
 
     blk.feed.properties[0].temperature.fix(298.15)
     set_NF_feed_scaling(blk)
+
     iscale.calculate_scaling_factors(blk)
 
     # switching to concentration for ease of adjusting in UI
@@ -405,7 +409,7 @@ def set_NF_feed(
 
 
 def calc_scale(value):
-    return -1 * math.floor(math.log(value, 10))
+    return -1 * math.log(value, 10)
 
 
 def set_NF_feed_scaling(blk):
@@ -416,14 +420,6 @@ def set_NF_feed_scaling(blk):
         blk.properties.set_default_scaling(
             "flow_mol_phase_comp", 10 ** (scale + 0), index=index
         )
-        # scale = calc_scale(blk.feed.properties[0].flow_mass_phase_comp[index].value)
-        # print(f"{index} flow_mass_phase_comp scaling factor = {10**(scale+_add)}")
-        # blk.properties.set_default_scaling(
-        #     "flow_mass_phase_comp", 10 ** (scale + 0), index=index
-        # )
-
-    scale = calc_scale(blk.feed.properties[0].flow_vol_phase["Liq"].value)
-    blk.properties.set_default_scaling("flow_vol_phase", 10 ** (scale + 0), index=index)
 
 
 def add_hardness_constraint(stream):
