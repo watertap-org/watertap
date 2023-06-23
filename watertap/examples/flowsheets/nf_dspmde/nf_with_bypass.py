@@ -161,6 +161,7 @@ def fix_init_vars(m):
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].setub(None)
 
 
+
 def initialize(m, solver=None):
     if solver is None:
         solver = get_solver()

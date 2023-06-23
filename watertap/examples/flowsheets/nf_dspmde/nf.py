@@ -389,6 +389,7 @@ def set_NF_feed(
         blk.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
         blk.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix()
     set_NF_feed_scaling(blk)
+
     blk.feed.properties[0].assert_electroneutrality(
         defined_state=True,
         adjust_by_ion="Cl_-",
