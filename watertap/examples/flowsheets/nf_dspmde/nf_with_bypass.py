@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from pyomo.network import Arc, SequentialDecomposition
+from pyomo.network import Arc
 from idaes.core import (
     FlowsheetBlock,
 )
