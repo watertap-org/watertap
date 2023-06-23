@@ -59,28 +59,28 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True, output_filename=Non
             m.fs.costing.electroNP.sizing_cost, 0, 30, nx
         )
         m.fs.costing.electroNP.HRT.unfix()
-        sweep_params["HRT"] = LinearSample(m.fs.costing.electroNP.HRT, 1, 5, nx)
+        sweep_params["HRT"] = LinearSample(m.fs.costing.electroNP.HRT, 0.1, 5, nx)
     elif case_num == 3:
         sweep_params["energy_consumption"] = LinearSample(
-            m.fs.electroNP.energy_electric_flow_mass, 0.04, 2.2, nx
+            m.fs.electroNP.energy_electric_flow_mass, 0.04, 2.5, nx
         )
     elif case_num == 4:
         sweep_params["energy_consumption"] = LinearSample(
             m.fs.electroNP.energy_electric_flow_mass, 0.02, 2.2, nx
         )
         sweep_params["electricity_cost"] = LinearSample(
-            m.fs.costing.electricity_cost, 0.06, 0.1, nx
+            m.fs.costing.electricity_cost, 0.02, 0.3, nx
         )
     elif case_num == 5:
         sweep_params["electricity_cost"] = LinearSample(
-            m.fs.costing.electricity_cost, 0.05, 0.1, nx
+            m.fs.costing.electricity_cost, 0.06, 0.1, nx
         )
         sweep_params["MgCl2_cost"] = LinearSample(
-            m.fs.costing.magnesium_chloride_cost, 0.07, 0.1, nx
+            m.fs.costing.magnesium_chloride_cost, 0.06, 0.1, nx
         )
     elif case_num == 6:
         sweep_params["energy_consumption"] = LinearSample(
-            m.fs.electroNP.energy_electric_flow_mass, 0, 2, nx
+            m.fs.electroNP.energy_electric_flow_mass, 0, 2.5, nx
         )
         sweep_params["MgCl2_dosage"] = LinearSample(
             m.fs.electroNP.magnesium_chloride_dosage, 0.1, 0.5, nx
@@ -207,7 +207,8 @@ def main(case_num, nx=11, interpolate_nan_outputs=True):
         cmap="GnBu",
     )
     ax.plot(0.044, 0.08, "ko")
-    ax.set_ylim([0.07, 0.09])
+    ax.set_xlim([0, 2])
+    ax.set_ylim([0.02, 0.2])
     ax.set_xlabel("Electricity Intensity (kWh/kg P)")
     ax.set_ylabel("Electricity Cost ($/kWh)")
     ax.set_title("LCOW ($/m3)")
@@ -247,5 +248,5 @@ def main(case_num, nx=11, interpolate_nan_outputs=True):
 
 
 if __name__ == "__main__":
-    results, model = main(case_num=4, nx=15)
+    results, model = main(case_num=4, nx=17)
     # results, sweep_params, m = run_analysis()
