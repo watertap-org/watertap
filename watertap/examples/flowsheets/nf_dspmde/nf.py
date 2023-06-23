@@ -190,7 +190,7 @@ def build():
     )
     m.fs.costing.disposal_cost = Var(
         initialize=0.1,
-        bounds= (0, None),
+        bounds=(0, None),
         doc="disposal cost",
         units=pyunits.USD_2020 / pyunits.m**3,
     )

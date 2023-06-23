@@ -98,6 +98,7 @@ def cost_high_pressure_pump(blk, cost_electricity_flow=True):
         # set lower bound back to its original value that was assigned to lb
         blk.unit_model.work_mechanical.setlb(lb)
 
+
 def build_low_pressure_pump_cost_param_block(blk):
 
     blk.cost = pyo.Var(

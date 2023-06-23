@@ -148,7 +148,6 @@ def build():
     m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
     iscale.set_scaling_factor(m.fs.costing.aggregate_flow_costs["disposal cost"], 1)
     TransformationFactory("network.expand_arcs").apply_to(m)
-
     return m
 
 
@@ -159,7 +158,6 @@ def fix_init_vars(m):
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].fix(0.5)
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].setlb(0)
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].setub(None)
-
 
 
 def initialize(m, solver=None):
