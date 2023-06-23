@@ -53,6 +53,7 @@ def build_high_pressure_pump_cost_param_block(blk):
 
     blk.cost = pyo.Var(
         initialize=53 / 1e5 * 3600,
+        bounds=(0, None),
         doc="High pressure pump cost",
         units=pyo.units.USD_2018 / pyo.units.watt,
     )
