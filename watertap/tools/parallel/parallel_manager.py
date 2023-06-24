@@ -83,7 +83,14 @@ class ParallelManager(ABC):
         """
         raise NotImplementedError
 
-    def scatter(self, param_sweep_instance, common_params, all_parameter_combos):
+    def scatter(
+        self,
+        param_sweep_instance,
+        common_sweep_args,
+        rebuild_common_sweep_args_fn,
+        rebuild_common_sweep_args_kwargs,
+        all_parameter_combos,
+    ):
         """
         Scatter a function out to a set of child processes, to be run for a list of parameters.
         - param_sweep_instance: a reference to the ParameterSweep object
@@ -108,17 +115,38 @@ class ParallelManager(ABC):
         raise NotImplementedError
 
 
-def run_sweep(param_sweep_instance, common_params, local_combo_array):
+def return_arguments_as_list(*args):
+    return args
+
+
+def run_sweep(
+    param_sweep_instance,
+    common_sweep_args,
+    rebuild_common_sweep_args_fn,
+    rebuild_common_sweep_args_kwargs,
+    local_combo_array,
+):
     """
     Run the parameter sweep object's sweep function. Implemented as a top-level function in
     this module so that it is picklable for the ConcurrentFuturesParallelManager.
     Parameters are:
-    - common_params: the parameters that all processes' invocations of the sweep function need
+    - common_sweep_args: the parameters that all processes' invocations of the sweep function need
+    - rebuild_common_sweep_args_fn: an optional function that will be used to rebuild the common sweep args.
+    - rebuild_common_sweep_args_kwargs: kwargs for the rebuild_common_sweep_args_fn.
     - local_combo_array: the list of combinations to be run on the current processes
     """
-    if param_sweep_instance.config.custom_do_param_sweep is not None:
-        return param_sweep_instance.custom_do_param_sweep(
-            *common_params, local_combo_array
+
+    # if we've been directed to rebuild the sweep args, do so
+    if rebuild_common_sweep_args_fn is not None:
+        if rebuild_common_sweep_args_kwargs is None:
+            rebuild_common_sweep_args_kwargs = dict()
+        common_sweep_args = rebuild_common_sweep_args_fn(
+            **rebuild_common_sweep_args_kwargs
         )
 
-    return param_sweep_instance._do_param_sweep(*common_params, local_combo_array)
+    if param_sweep_instance.config.custom_do_param_sweep is not None:
+        return param_sweep_instance.custom_do_param_sweep(
+            *common_sweep_args, local_combo_array
+        )
+
+    return param_sweep_instance._do_param_sweep(*common_sweep_args, local_combo_array)

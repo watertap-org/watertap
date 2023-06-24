@@ -152,3 +152,6 @@ auto-save-list
 
 # MAC File System
 .DS_Store
+
+# Example outputs
+output/

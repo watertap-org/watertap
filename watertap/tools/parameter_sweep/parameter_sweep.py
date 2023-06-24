@@ -31,7 +31,10 @@ from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweep
 from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
 
 import watertap.tools.MPI as MPI
-from watertap.tools.parallel.parallel_manager import ParallelManager
+from watertap.tools.parallel.parallel_manager import (
+    ParallelManager,
+    return_arguments_as_list,
+)
 from watertap.tools.parallel.parallel_manager_factory import create_parallel_manager
 
 
@@ -724,21 +727,37 @@ class ParameterSweep(_ParameterSweepBase):
     """
     Use the embedded ParallelManager to fan out and then back in the results.
     Args:
-    - common_params: a list of parameters that should be passed into every run
+    - common_sweep_args: a list of parameters that should be passed into every run
+    - rebuild_common_sweep_args_fn: an optional function that will be used by each
+    subprocess to rebuild the common sweep args.
+    - rebuild_common_sweep_args_kwargs: kwargs for the rebuild_common_sweep_args_fn.
     - all_parameter_combinations: a list where each element represents the parameters
     for a single local run
     Returns:
     - a list of LocalResults representing the results of the simulation runs 
     """
 
-    def run_scatter_gather(self, common_params, all_parameter_combinations):
+    def run_scatter_gather(
+        self,
+        common_sweep_args,
+        rebuild_common_sweep_args_fn,
+        rebuild_common_sweep_args_kwargs,
+        all_parameter_combinations,
+    ):
+
         # save a reference to the parallel manager since it will be removed
         # along with the other unpicklable state
         parallel_manager = self.parallel_manager
         saved_state = ParallelManager.remove_unpicklable_state(self)
 
         # scatter out the computation
-        parallel_manager.scatter(self, common_params, all_parameter_combinations)
+        parallel_manager.scatter(
+            self,
+            common_sweep_args,
+            rebuild_common_sweep_args_fn,
+            rebuild_common_sweep_args_kwargs,
+            all_parameter_combinations,
+        )
 
         # gather the results and combine them into the format we want
         all_results = parallel_manager.gather()
@@ -753,6 +772,8 @@ class ParameterSweep(_ParameterSweepBase):
         combined_outputs=None,
         num_samples=None,
         seed=None,
+        rebuild_common_sweep_args_fn=None,
+        rebuild_common_sweep_args_kwargs=None,
     ):
 
         # Convert sweep_params to LinearSamples
@@ -770,8 +791,20 @@ class ParameterSweep(_ParameterSweepBase):
         if combined_outputs is not None:
             self._assign_variable_names(model, combined_outputs)
 
+        # the common arguments that each process will use when running the sweep function
+        common_sweep_fn_args = [model, sweep_params, combined_outputs]
+
+        # we were provided a function for rebuilding the common sweep args; remove
+        # our existing ones, since each process will recreate them on the fly using
+        # the function
+        if rebuild_common_sweep_args_fn is not None:
+            common_sweep_fn_args = []
+
         all_results = self.run_scatter_gather(
-            [model, sweep_params, combined_outputs], all_parameter_combinations
+            common_sweep_fn_args,
+            rebuild_common_sweep_args_fn,
+            rebuild_common_sweep_args_kwargs,
+            all_parameter_combinations,
         )
 
         global_sweep_results = self._combine_gather_results(all_results)
@@ -790,6 +823,7 @@ class ParameterSweep(_ParameterSweepBase):
             )
 
         global_save_data = np.hstack((all_parameter_combinations, combined_outputs))
+
         return global_save_data, global_sweep_results
 
 

@@ -38,6 +38,8 @@ def parameter_sweep(
     num_samples=None,
     seed=None,
     number_of_subprocesses=None,
+    rebuild_sweep_args_fn=None,
+    rebuild_sweep_args_kwargs=None,
 ):
 
     """
@@ -128,6 +130,11 @@ def parameter_sweep(
         number_of_subprocesses (optional) : Directive for fanning out subprocesses to perform
                                             parallel computation.
 
+        rebuild_common_sweep_args_fn (optional): A function to pass into the parameter sweep to
+                                                 rebuild common sweep args on the fly.
+
+        rebuild_common_sweep_args_kwargs (optional): A set of kwargs for the rebuild_common_sweep_args_fn.
+
     Returns:
 
         save_data : A list were the first N columns are the values of the parameters passed
@@ -170,6 +177,8 @@ def parameter_sweep(
         combined_outputs=outputs,
         num_samples=num_samples,
         seed=seed,
+        rebuild_common_sweep_args_fn=rebuild_sweep_args_fn,
+        rebuild_common_sweep_args_kwargs=rebuild_sweep_args_kwargs,
     )
 
 

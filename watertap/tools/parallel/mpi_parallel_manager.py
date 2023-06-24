@@ -45,7 +45,14 @@ class MPIParallelManager(ParallelManager):
         if self.num_procs > 1:
             self.comm.Bcast(data, root=self.ROOT_PROCESS_RANK)
 
-    def scatter(self, param_sweep_instance, common_params, all_parameter_combos):
+    def scatter(
+        self,
+        param_sweep_instance,
+        common_sweep_args,
+        rebuild_common_sweep_args_fn,
+        rebuild_common_sweep_args_kwargs,
+        all_parameter_combos,
+    ):
         # Split the total list of combinations into NUM_PROCS chunks,
         # one per each of the MPI ranks
         divided_combo_array = numpy.array_split(all_parameter_combos, self.num_procs)
@@ -56,7 +63,13 @@ class MPIParallelManager(ParallelManager):
         self.results = LocalResults(
             self.get_rank(),
             local_combo_array,
-            run_sweep(param_sweep_instance, common_params, local_combo_array),
+            run_sweep(
+                param_sweep_instance,
+                common_sweep_args,
+                rebuild_common_sweep_args_fn,
+                rebuild_common_sweep_args_kwargs,
+                local_combo_array,
+            ),
         )
 
     def gather(self):

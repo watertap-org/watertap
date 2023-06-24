@@ -10,12 +10,15 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import os
+
 from idaes.core.solvers import get_solver
 from watertap.tools.parameter_sweep import (
     UniformSample,
     NormalSample,
     LatinHypercubeSample,
     parameter_sweep,
+    ParameterSweep,
 )
 
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
@@ -61,17 +64,13 @@ def get_sweep_params(m, num_samples, use_LHS=False):
     return sweep_params
 
 
-def run_parameter_sweep(
-    csv_results_file_name=None,
-    h5_results_file_name=None,
-    seed=None,
+def build_sweep_args_and_solver(
     use_LHS=False,
     read_sweep_params_from_file=False,
     sweep_params_fname="mc_sweep_params.yaml",
     read_model_defauls_from_file=False,
     defaults_fname="default_configuration.yaml",
 ):
-
     # Set up the solver
     solver = get_solver()
 
@@ -101,6 +100,56 @@ def run_parameter_sweep(
     outputs["EC"] = m.fs.costing.specific_energy_consumption
     outputs["LCOW"] = m.fs.costing.LCOW
 
+    ParameterSweep._assign_variable_names(m, outputs)
+
+    return (m, sweep_params, outputs, solver)
+
+
+# used as the rebuild_common_sweep_args_fn for the multiprocess parameter sweep
+def build_sweep_args_minus_solver(**kwargs):
+    m, sweep_params, outputs, solver = build_sweep_args_and_solver(**kwargs)
+    return (m, sweep_params, outputs)
+
+
+def run_parameter_sweep(
+    csv_results_file_name=None,
+    h5_results_file_name=None,
+    seed=None,
+    use_LHS=False,
+    read_sweep_params_from_file=False,
+    sweep_params_fname="mc_sweep_params.yaml",
+    read_model_defauls_from_file=False,
+    defaults_fname="default_configuration.yaml",
+):
+
+    m, sweep_params, outputs, solver = build_sweep_args_and_solver(
+        use_LHS=use_LHS,
+        read_model_defauls_from_file=read_model_defauls_from_file,
+        read_sweep_params_from_file=read_sweep_params_from_file,
+        sweep_params_fname=sweep_params_fname,
+        defaults_fname=defaults_fname,
+    )
+
+    num_samples = 10
+
+    # Define the outputs to be saved
+    outputs = {}
+    outputs["EC"] = m.fs.costing.specific_energy_consumption
+    outputs["LCOW"] = m.fs.costing.LCOW
+
+    additional_kwargs = dict()
+    number_of_subprocesses = int(os.getenv("NUMBER_OF_SUBPROCESSES", "1"))
+    if number_of_subprocesses > 1:
+        additional_kwargs["number_of_subprocesses"] = number_of_subprocesses
+        additional_kwargs["rebuild_sweep_args_fn"] = build_sweep_args_minus_solver
+        additional_kwargs["rebuild_sweep_args_kwargs"] = {
+            "use_LHS": use_LHS,
+            "read_model_defauls_from_file": read_model_defauls_from_file,
+            "read_sweep_params_from_file": read_sweep_params_from_file,
+            "sweep_params_fname": sweep_params_fname,
+            "defaults_fname": defaults_fname,
+        }
+
     # Run the parameter sweep
     global_results_arr, _ = parameter_sweep(
         m,
@@ -112,6 +161,7 @@ def run_parameter_sweep(
         optimize_kwargs={"solver": solver, "check_termination": False},
         num_samples=num_samples,
         seed=seed,
+        **additional_kwargs,
     )
 
     return global_results_arr

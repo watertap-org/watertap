@@ -33,11 +33,24 @@ class SingleProcessParallelManager(ParallelManager):
     def sync_data_with_peers(self, data):
         pass
 
-    def scatter(self, param_sweep_obj, common_params, all_parameter_combos):
+    def scatter(
+        self,
+        param_sweep_obj,
+        common_sweep_args,
+        rebuild_common_sweep_args_fn,
+        rebuild_common_sweep_args_kwargs,
+        all_parameter_combos,
+    ):
         self.results = LocalResults(
             self.ROOT_PROCESS_RANK,
             all_parameter_combos,
-            run_sweep(param_sweep_obj, common_params, all_parameter_combos),
+            run_sweep(
+                param_sweep_obj,
+                common_sweep_args,
+                rebuild_common_sweep_args_fn,
+                rebuild_common_sweep_args_kwargs,
+                all_parameter_combos,
+            ),
         )
 
     def gather(self):

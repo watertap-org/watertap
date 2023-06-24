@@ -46,7 +46,15 @@ class ConcurrentFuturesParallelManager(ParallelManager):
     def sync_data_with_peers(self, data):
         pass
 
-    def scatter(self, param_sweep_instance, common_params, all_parameter_combos):
+    def scatter(
+        self,
+        param_sweep_instance,
+        common_sweep_args,
+        rebuild_common_sweep_args_fn,
+        rebuild_common_sweep_args_kwargs,
+        all_parameter_combos,
+    ):
+
         # constrain the number of child processes to the number of unique parameter combinations to be run
         self.actual_number_of_subprocesses = min(
             self.max_number_of_subprocesses, len(all_parameter_combos)
@@ -67,7 +75,12 @@ class ConcurrentFuturesParallelManager(ParallelManager):
             # save the mapping of future -> (process number, params that it's running)
             self.running_futures[
                 self.executor.submit(
-                    run_sweep, param_sweep_instance, common_params, local_params
+                    run_sweep,
+                    param_sweep_instance,
+                    common_sweep_args,
+                    rebuild_common_sweep_args_fn,
+                    rebuild_common_sweep_args_kwargs,
+                    local_params,
                 )
             ] = (i, local_params)
 
