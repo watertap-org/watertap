@@ -8,7 +8,7 @@ This is a simplified electrolyzer unit model used to approximate electrolysis pe
    * simulation of this unit model is only supported with the Multi-Component Aqueous Solution (MCAS) property package
    * supports liquid phase only, vapor-liquid phase equilibrium is not calculated
    * supports steady-state only
-   * assumes isothermal conditions and performance is not temperature dependent
+   * assumes isothermal conditions and performance is not temperature-dependent
    * does not determine equilibrium of electrolysis products in solution
    * does not consider undesired reactions
    * conversion of reactants is predicted by a yield model, therefore rate laws and limitations of reaction and mass transfer are not evaluated
@@ -207,7 +207,7 @@ The following variables are constructed when applying the electrolyzer costing m
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Capital costs are contributing to the majority of material costs for the anode cathode and membrane. Each material cost is calculated individually then summed (O’Brien, 2005).
+Capital costs contribute to the majority of material costs for the anode cathode and membrane. Each material cost is calculated individually then summed (O’Brien, 2005).
 
     .. math::
 

@@ -61,7 +61,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             default=False,
             description="Dynamic model flag - must be False",
             doc="""Indicates whether this model will be dynamic or not,
-    **default** = False. The filtration unit does not support dynamic
+    **default** = False. The electrolyzer unit does not support dynamic
     behavior, thus this must be False.""",
         ),
     )
@@ -72,7 +72,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             domain=In([False]),
             description="Holdup construction flag - must be False",
             doc="""Indicates whether holdup terms should be constructed or not.
-    **default** - False. The filtration unit does not have defined volume, thus
+    **default** - False. The electrolyzer unit does not have defined volume, thus
     this must be False.""",
         ),
     )
