@@ -77,11 +77,5 @@ class MPIParallelManager(ParallelManager):
 
     def results_from_local_tree(self, results):
         return [
-            next(
-                (
-                    result
-                    for result in results
-                    if result.process_number == self.get_rank()
-                )
-            )
+            result for result in results if result.process_number == self.get_rank()
         ]
