@@ -109,6 +109,7 @@ Additional documentation on the ADM1 property model can be found here: `Anaerobi
   "Carbon dioxide, S_co2", ":math:`S_{co2}`", "S_co2"
 
 **NOTE: S_h2 and S_ch4 have vapor phase and liquid phase, S_co2 only has vapor phase, and the other components only have liquid phase. The amount of CO2 dissolved in the liquid phase is equivalent to S_IC - S_HCO3-.**
+
 Parameters
 ----------
 
@@ -127,7 +128,7 @@ Equations and Relationships
    "Pressure balance", ":math:`P_{out} = P_{in}`"
    "Temperature balance", ":math:`T_{out} = T_{in}`"
    "Volumetric flow equality", ":math:`F_{out} = F_{in}`"
-   "Total Kjeldahl nitrogen", ":math:`TKN = S_{NH} + S_{ND} + X_{ND} + i_{xb}(X_{BH} + X_{BA}) + i_{xe}(X_{I} + X_{P})`"
+
 
 COD Equations
 -------------
@@ -146,6 +147,15 @@ Ss present, then :math:`S_s` is reduced to zero and the remaining demand is subt
    "Soluble COD", ":math:`COD_{s} = S_{I} + S_{S, inter}`"
    "Particulate COD", ":math:`COD_{p} = X_{I} + X_{S, inter} + X_{BH, inter} + X_{BA, inter} + X_{P}`"
    "Total COD", ":math:`COD_{t} = COD_{s} + COD_{p}`"
+
+TKN Equation
+------------
+The Total incoming Kjeldahl nitrogen is calcultated with components updated in the anaerobic environment.
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Total Kjeldahl nitrogen", ":math:`TKN = S_{NH} + S_{ND} + X_{ND} + i_{xb}(X_{BH, inter} + X_{BA, inter}) + i_{xe}(X_{I} + X_{P})`"
 
 S_nd and S_s Mapping Equations
 ------------------------------
