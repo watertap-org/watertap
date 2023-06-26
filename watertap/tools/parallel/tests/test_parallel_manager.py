@@ -12,7 +12,6 @@
 
 import pytest
 
-from watertap.tools.parallel.parallel_manager import return_arguments_as_list
 from watertap.tools.parallel.concurrent_futures_parallel_manager import (
     ConcurrentFuturesParallelManager,
 )

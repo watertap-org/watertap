@@ -33,7 +33,6 @@ from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSa
 import watertap.tools.MPI as MPI
 from watertap.tools.parallel.parallel_manager import (
     ParallelManager,
-    return_arguments_as_list,
 )
 from watertap.tools.parallel.parallel_manager_factory import create_parallel_manager
 

@@ -115,10 +115,6 @@ class ParallelManager(ABC):
         raise NotImplementedError
 
 
-def return_arguments_as_list(*args):
-    return args
-
-
 def run_sweep(
     param_sweep_instance,
     common_sweep_args,
