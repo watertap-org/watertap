@@ -5,13 +5,14 @@ Electrolyzer
   The development of the electrolyzer model is ongoing.
 
 This is a simplified electrolyzer unit model used to approximate electrolysis performance.  With the current build, the model is simulated under the following assumptions:
-   * simulation of this unit model is only supported with the Multi-Component Aqueous Solution (MCAS) property package
+   * simulation of this unit model is only supported with the :ref:`Multi-Component Aqueous Solution (MCAS) <watertap.property_models.multicomp_aq_sol_prop_pack>` property package
    * supports liquid phase only, vapor-liquid phase equilibrium is not calculated
    * supports steady-state only
    * assumes isothermal conditions and performance is not temperature-dependent
    * does not determine equilibrium of electrolysis products in solution
    * does not consider undesired reactions
    * conversion of reactants is predicted by a yield model, therefore rate laws and limitations of reaction and mass transfer are not evaluated
+   * the input for the electrochemical potential of the half-cell reactions is assumed to be provided at the proper conditions, there is no Nernst equation to calculate the potential as a function of the standard potential
 
 .. index::
    pair: watertap.unit_models.electrolyzer;electrolyzer
