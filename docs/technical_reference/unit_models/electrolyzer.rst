@@ -10,9 +10,9 @@ This is a simplified electrolyzer unit model used to approximate electrolysis pe
    * supports steady-state only
    * assumes isothermal conditions and performance is not temperature-dependent
    * does not determine equilibrium of electrolysis products in solution
-   * does not consider undesired reactions
+   * does not consider the conversion of undesired reactions
    * conversion of reactants is predicted by a yield model, therefore rate laws and limitations of reaction and mass transfer are not evaluated
-   * the input for the electrochemical potential of the half-cell reactions is assumed to be provided at the proper conditions, there is no Nernst equation to calculate the potential as a function of the standard potential
+   * the input for the electrochemical potential of the half-cell reactions is assumed to be provided at the operating conditions, there is no Nernst equation to calculate the potential as a function of the standard potential
 
 .. index::
    pair: watertap.unit_models.electrolyzer;electrolyzer
@@ -173,7 +173,7 @@ Equations
    "cell voltage", ":math:`V_{cell} = V_{rev}+\eta_{ano}+\eta_{cat}+IR`"
    "power", ":math:`P = IV_{cell}`"
    "electrons contributing to reactions by Faraday's law of electrolysis :math:`^c`", ":math:`\dot{n}_{e^-} = \frac{I\theta_{current}}{F}`"
-   "voltage efficiency", ":math:`V_{rev} = V\theta_{voltage}`"
+   "voltage efficiency", ":math:`theta_{voltage} = \frac{V_{rev}}{\V_{cell}} = \frac{V_{rev}}{V_{rev}+\eta_{ano}+\eta_{cat}+IR}`"
    "power efficiency", ":math:`\theta_{power} = \theta_{current}\theta_{voltage}`"
 
 \ :math:`^c` is Faraday's constant from ``idaes.core.util.constants``, 96,485 C/mol
