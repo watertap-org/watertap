@@ -177,7 +177,7 @@ Equations
    "cell voltage", ":math:`V_{cell} = V_{rev}+\eta_{ano}+\eta_{cat}+IR`"
    "power", ":math:`P = IV_{cell}`"
    "electrons contributing to reactions by Faraday's law of electrolysis :math:`^c`", ":math:`\dot{n}_{e^-} = \frac{I\theta_{current}}{F}`"
-   "voltage efficiency", ":math:`\theta_{voltage} = frac{V_{rev}}{\V_{cell}} = \frac{V_{rev}}{V_{rev}+\eta_{ano}+\eta_{cat}+IR}`"
+   "voltage efficiency", ":math:`\theta_{voltage} = \frac{V_{rev}}{V_{cell}} = \frac{V_{rev}}{V_{rev}+\eta_{ano}+\eta_{cat}+IR}`"
    "power efficiency", ":math:`\theta_{power} = \theta_{current}\theta_{voltage}`"
 
 \ :math:`^c` is Faraday's constant from ``idaes.core.util.constants``, 96,485 C/mol
