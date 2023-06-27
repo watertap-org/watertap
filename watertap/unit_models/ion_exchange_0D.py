@@ -609,7 +609,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         self.ebct = Var(
             initialize=520,
-            bounds=(120, None),
+            bounds=(90, None),
             units=pyunits.s,
             doc="Empty bed contact time",
         )
@@ -626,7 +626,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         self.vel_inter = Var(
             initialize=0.01,
             units=pyunits.m / pyunits.s,
-            doc="Interstitial velocityv through bed",
+            doc="Interstitial velocity through bed",
         )
 
         self.service_flow_rate = Var(
@@ -638,35 +638,35 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         # ====== Dimensionless variables ====== #
 
-        self.Re = Var(
+        self.N_Re = Var(
             initialize=4.3,
-            bounds=(0.001, 60),  # Perry's - bounds relevant to Sh regression
+            bounds=(0.001, 60),  # Perry's - bounds relevant to N_Sh regression
             units=pyunits.dimensionless,
             doc="Reynolds number",
         )
 
-        self.Sc = Var(
+        self.N_Sc = Var(
             self.target_ion_set,
             initialize=700,
             units=pyunits.dimensionless,
             doc="Schmidt number",
         )
 
-        self.Sh = Var(
+        self.N_Sh = Var(
             self.target_ion_set,
             initialize=30,
             units=pyunits.dimensionless,
             doc="Sherwood number",
         )
 
-        self.Pe_p = Var(
+        self.N_Pe_particle = Var(
             initialize=0.1,
             units=pyunits.dimensionless,
             doc="Peclet particle number",
         )
 
-        self.Pe_bed = Var(
-            initialize=1000,  # Inamuddin/Luqman - Pe_bed > ~100 considered to be plug flow
+        self.N_Pe_bed = Var(
+            initialize=1000,  # Inamuddin/Luqman - N_Pe_bed > ~100 considered to be plug flow
             units=pyunits.dimensionless,
             doc="Peclet bed number",
         )
@@ -1063,32 +1063,32 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Reynolds number")
         def eq_Re(b):  # Eq. 3.358, Inglezakis + Poulopoulos
-            return b.Re == (b.vel_bed * b.resin_diam) / prop_in.visc_k_phase["Liq"]
+            return b.N_Re == (b.vel_bed * b.resin_diam) / prop_in.visc_k_phase["Liq"]
 
         @self.Constraint(self.target_ion_set, doc="Schmidt number")
         def eq_Sc(b, j):  # Eq. 3.359, Inglezakis + Poulopoulos
             return (
-                b.Sc[j]
+                b.N_Sc[j]
                 == prop_in.visc_k_phase["Liq"] / prop_in.diffus_phase_comp["Liq", j]
             )
 
         @self.Constraint(self.target_ion_set, doc="Sherwood number")
         def eq_Sh(b, j):  # Eq. 3.346, Inglezakis + Poulopoulos
             return (
-                b.Sh[j]
+                b.N_Sh[j]
                 == b.Sh_A
                 * b.bed_porosity**b.Sh_exp_A
-                * b.Re**b.Sh_exp_B
-                * b.Sc[j] ** b.Sh_exp_C
+                * b.N_Re**b.Sh_exp_B
+                * b.N_Sc[j] ** b.Sh_exp_C
             )
 
         @self.Constraint(doc="Bed Peclet number")
         def eq_Pe_bed(b):
-            return b.Pe_bed == b.Pe_p * (b.bed_depth / b.resin_diam)
+            return b.N_Pe_bed == b.N_Pe_particle * (b.bed_depth / b.resin_diam)
 
         @self.Constraint(doc="Particle Peclet number")
         def eq_Pe_p(b):  # Eq. 3.313, Inglezakis + Poulopoulos, for downflow
-            return b.Pe_p == b.Pe_p_A * b.Re**b.Pe_p_exp
+            return b.N_Pe_particle == b.Pe_p_A * b.N_Re**b.Pe_p_exp
 
         # =========== RESIN & COLUMN ===========
 
@@ -1163,7 +1163,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             def eq_fluid_mass_transfer_coeff(b, j):
                 return (
                     b.fluid_mass_transfer_coeff[j] * b.resin_diam
-                    == prop_in.diffus_phase_comp["Liq", j] * b.Sh[j]
+                    == prop_in.diffus_phase_comp["Liq", j] * b.N_Sh[j]
                 )
 
             @self.Constraint(doc="Partition ratio")
@@ -1430,20 +1430,20 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.t_breakthru) is None:
             iscale.set_scaling_factor(self.t_breakthru, 1e-6)
 
-        if iscale.get_scaling_factor(self.Re) is None:
-            iscale.set_scaling_factor(self.Re, 1)
+        if iscale.get_scaling_factor(self.N_Re) is None:
+            iscale.set_scaling_factor(self.N_Re, 1)
 
-        if iscale.get_scaling_factor(self.Sc) is None:
-            iscale.set_scaling_factor(self.Sc, 1e-2)
+        if iscale.get_scaling_factor(self.N_Sc) is None:
+            iscale.set_scaling_factor(self.N_Sc, 1e-2)
 
-        if iscale.get_scaling_factor(self.Sh) is None:
-            iscale.set_scaling_factor(self.Sh, 0.1)
+        if iscale.get_scaling_factor(self.N_Sh) is None:
+            iscale.set_scaling_factor(self.N_Sh, 0.1)
 
-        if iscale.get_scaling_factor(self.Pe_p) is None:
-            iscale.set_scaling_factor(self.Pe_p, 1e2)
+        if iscale.get_scaling_factor(self.N_Pe_particle) is None:
+            iscale.set_scaling_factor(self.N_Pe_particle, 1e2)
 
-        if iscale.get_scaling_factor(self.Pe_bed) is None:
-            iscale.set_scaling_factor(self.Pe_bed, 1e-3)
+        if iscale.get_scaling_factor(self.N_Pe_bed) is None:
+            iscale.set_scaling_factor(self.N_Pe_bed, 1e-3)
 
         if iscale.get_scaling_factor(self.number_columns) is None:
             iscale.set_scaling_factor(self.number_columns, 1)
@@ -1624,11 +1624,11 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         var_dict["Bed Velocity"] = self.vel_bed
         var_dict["Resin Particle Diameter"] = self.resin_diam
         var_dict["Resin Bulk Density"] = self.resin_bulk_dens
-        var_dict[f"Schmidt Number [{target_ion}]"] = self.Sc[target_ion]
-        var_dict[f"Sherwood Number [{target_ion}]"] = self.Sh[target_ion]
-        var_dict["Reynolds Number"] = self.Re
-        var_dict["Peclet Number (bed)"] = self.Pe_bed
-        var_dict["Peclet Number (particle)"] = self.Pe_p
+        var_dict[f"Schmidt Number [{target_ion}]"] = self.N_Sc[target_ion]
+        var_dict[f"Sherwood Number [{target_ion}]"] = self.N_Sh[target_ion]
+        var_dict["Reynolds Number"] = self.N_Re
+        var_dict["Peclet Number (bed)"] = self.N_Pe_bed
+        var_dict["Peclet Number (particle)"] = self.N_Pe_particle
         if self.config.isotherm == IsothermType.langmuir:
             var_dict["Total Resin Capacity [eq/L]"] = self.resin_max_capacity
             var_dict["Usable Resin Capacity [eq/L]"] = self.resin_eq_capacity
