@@ -60,15 +60,15 @@ Additional documentation on the ASM1 property model can be found here: `Activate
   :header: "Description", "Symbol", "Variable"
 
   "Soluble inert organic matter, S_I", ":math:`S_I`", "S_I"
-  "Readily biodegradable substrate S_S", ":math:`S_S`", "S_S"
+  "Readily biodegradable substrate, S_S", ":math:`S_S`", "S_S"
   "Particulate inert organic matter, X_I", ":math:`X_I`", "X_I"
-  "Slowly biodegradable substrate X_S", ":math:`X_S`", "X_S"
-  "Active heterotrophic biomass X_B,H", ":math:`X_{B,H}`", "X_BH"
-  "Active autotrophic biomass X_B,A", ":math:`X_{B,A}`", "X_BA"
+  "Slowly biodegradable substrate, X_S", ":math:`X_S`", "X_S"
+  "Active heterotrophic biomass, X_BH", ":math:`X_{BH}`", "X_BH"
+  "Active autotrophic biomass, X_BA", ":math:`X_{BA}`", "X_BA"
   "Particulate products arising from biomass decay, X_P", ":math:`X_P`", "X_P"
   "Oxygen, S_O", ":math:`S_O`", "S_O"
   "Nitrate and nitrite nitrogen, S_NO", ":math:`S_{NO}`", "S_NO"
-  "NH4 :math:`^{+}` + NH :math:`_{3}` Nitrogen, S_NH", ":math:`S_{NH}`", "S_NH"
+  ":math:`{NH_{4}}^{+}` + :math:`NH_{3}` Nitrogen, S_NH", ":math:`S_{NH}`", "S_NH"
   "Soluble biodegradable organic nitrogen, S_ND", ":math:`S_{ND}`", "S_ND"
   "Particulate biodegradable organic nitrogen, X_ND", ":math:`X_{ND}`", "X_ND"
   "Alkalinity, S_ALK", ":math:`S_{ALK}`", "S_ALK"
@@ -108,7 +108,7 @@ Additional documentation on the ADM1 property model can be found here: `Anaerobi
   "Total anion equivalents concentration, S_an", ":math:`S_{an}`", "S_an"
   "Carbon dioxide, S_co2", ":math:`S_{co2}`", "S_co2"
 
-**NOTE: S_h2 and S_ch4 have vapor phase and liquid phase, S_co2 only has vapor phase, and the other components only have liquid phase. The amount of CO2 dissolved in the liquid phase is equivalent to S_IC - S_HCO3-.**
+**NOTE:** :math:`S_{h2}` **and** :math:`S_{ch4}` **have vapor phase and liquid phase,** :math:`S_{co2}` **only has vapor phase, and the other components only have liquid phase. The amount of** :math:`CO_2` **dissolved in the liquid phase is equivalent to** :math:`S_{IC} - S_{HCO3^{-}}` **.**
 
 Parameters
 ----------
@@ -118,7 +118,7 @@ Parameters
 
    "Nitrogen fraction in particulate products", ":math:`i_{xe}`", "i_xe", 0.06, ":math:`\text{dimensionless}`"
    "Nitrogen fraction in biomass", ":math:`i_{xb}`", "i_xb", 0.08, ":math:`\text{dimensionless}`"
-   "Anaerobic degradable fraction of X_I and X_P", ":math:`f_{xI}`", "f_xI", 0.05, ":math:`\text{dimensionless}`"
+   "Anaerobic degradable fraction of :math:`X_I` and:math:`X_P`", ":math:`f_{xI}`", "f_xI", 0.05, ":math:`\text{dimensionless}`"
 
 Equations and Relationships
 ---------------------------
@@ -134,7 +134,7 @@ COD Equations
 -------------
 The total incoming COD is reduced in a step-wise manner until the COD demand has been satisfied. The reduction is based on a
 hierarchy of ASM1 state variables such that :math:`S_s` is reduced by the COD demand first. If there is insufficient
-Ss present, then :math:`S_s` is reduced to zero and the remaining demand is subtracted from :math:`X_s`. If necessary, :math:`X_BH` and :math:`X_BA` may also need to be reduced.
+:math:`S_s` present, then :math:`S_s` is reduced to zero and the remaining demand is subtracted from :math:`X_s`. If necessary, :math:`X_{BH}` and :math:`X_{BA}` may also need to be reduced.
 
 .. csv-table::
    :header: "Description", "Equation"
@@ -157,19 +157,19 @@ The Total incoming Kjeldahl nitrogen is calcultated with components updated in t
 
    "Total Kjeldahl nitrogen", ":math:`TKN = S_{NH} + S_{ND} + X_{ND} + i_{xb}(X_{BH, inter} + X_{BA, inter}) + i_{xe}(X_{I} + X_{P})`"
 
-S_nd and S_s Mapping Equations
+:math:`S_{nd}` and :math:`S_s` Mapping Equations
 ------------------------------
 
 .. figure:: ../../../_static/unit_models/translators/mapping_step_a.jpg
     :width: 800
     :align: center
 
-    Figure 1. Schematic illustration of Snd and Ss mapping (Copp et al. 2006)
+    Figure 1. Schematic illustration of :math:`S_{nd}` and :math:`S_s` mapping (Copp et al. 2006)
 
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Required soluble COD", ":math:`ReqCOD_{s} = \frac{S_{ND}}{N_{aa}/14}`"
+   "Required soluble COD", ":math:`ReqCOD_{s} = \frac{S_{ND}}{N_{aa} * 14}`"
    "Amino acids mapping (if :math:`S_{S,inter} > ReqCOD_{s}`)", ":math:`S_{aa} = ReqCOD_{s}`"
    "Amino acids mapping (if :math:`S_{S,inter} ≤ ReqCOD_{s}`)", ":math:`S_{aa} = S_{S, inter}`"
    "Monosaccharides mapping step A (if :math:`S_{S,inter} > ReqCOD_{s}`)", ":math:`S_{su, A} = S_{S, inter} - ReqCOD_{s}`"
@@ -191,7 +191,7 @@ Soluble Inert COD Mapping Equations
 
    "Required soluble inert organic nitrogen", ":math:`OrgN_{s, req} = S_{I} * N_{I} * 14`"
    "Soluble inert mapping step B (if :math:`OrgN_{remain, A} > OrgN_{s, req}`)", ":math:`S_{I, ADM1} = S_{I}`"
-   "Soluble inert mapping step B (if :math:`OrgN_{remain, A} ≤ OrgN_{s, req}`)", ":math:`S_{I, ADM1} = \frac{OrgN_{remain, A}}{N_{I}/14}`"
+   "Soluble inert mapping step B (if :math:`OrgN_{remain, A} ≤ OrgN_{s, req}`)", ":math:`S_{I, ADM1} = \frac{OrgN_{remain, A}}{N_{I} * 14}`"
    "Monosaccharides mapping step B (if :math:`OrgN_{remain, A} > OrgN_{s, req}`)", ":math:`S_{su} = S_{su, A}`"
    "Monosaccharides mapping step B (if :math:`OrgN_{remain, A} ≤ OrgN_{s, req}`)", ":math:`S_{su} = S_{su, A} + S_{I} - S_{I, ADM1}`"
    "COD remaining from step B", ":math:`COD_{remain, B} = COD_{remain, A} - S_{I}`"
@@ -211,8 +211,8 @@ Particulate Inert COD Mapping Equations
    :header: "Description", "Equation"
 
    "Required particulate inert material", ":math:`OrgN_{x, req} = f_{xi} * (X_{P} + X_{I}) * N_{I} * 14`"
-   "Particulate inert mapping step B (if :math:`OrgN_{remain, B} > OrgN_{x, req}`)", ":math:`X_{I, ADM1} = f_{xi} * (X_{P} + X_{I})`"
-   "Particulate inert mapping step B (if :math:`OrgN_{remain, B} ≤ OrgN_{x, req}`)", ":math:`X_{I, ADM1} = \frac{OrgN_{remain, B}}{N_{I}/14}`"
+   "Particulate inert mapping step C (if :math:`OrgN_{remain, B} > OrgN_{x, req}`)", ":math:`X_{I, ADM1} = f_{xi} * (X_{P} + X_{I})`"
+   "Particulate inert mapping step C (if :math:`OrgN_{remain, B} ≤ OrgN_{x, req}`)", ":math:`X_{I, ADM1} = \frac{OrgN_{remain, B}}{N_{I} * 14}`"
    "COD remaining from step C", ":math:`COD_{remain, C} = COD_{remain, B} - X_{I, ADM1}`"
    "Organic nitrogen pool remaining from step C", ":math:`OrgN_{remain, C} = OrgN_{remain, B} - (X_{I_ADM1} * N_{I} * 14)`"
 
@@ -228,12 +228,12 @@ Final COD and TKN Mapping Equations
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Required soluble COD", ":math:`COD_{Xc, req} = \frac{OrgN_{remain, C}}{N_{xc}/14}`"
+   "Required soluble COD", ":math:`COD_{Xc, req} = \frac{OrgN_{remain, C}}{N_{xc} * 14}`"
    "Composites mapping (if :math:`COD_{remain, C} > COD_{Xc, req}`)", ":math:`X_{C} = COD_{Xc, req}`"
    "Composites mapping (if :math:`COD_{remain, C} ≤ COD_{Xc, req}`)", ":math:`X_{C} = COD_{remain, C}`"
-   "Carbohydrates mapping (if :math:`COD_{remain, C} > COD_{Xc, req}`)", ":math:`X_{ch} = \frac{f_{ch, xc} * (COD_{remain, C} - X_{C})}{f_{ch, xc} - f_{li, xc}}`"
+   "Carbohydrates mapping (if :math:`COD_{remain, C} > COD_{Xc, req}`)", ":math:`X_{ch} = \frac{f_{ch, xc} (COD_{remain, C} - X_{C})}{f_{ch, xc} - f_{li, xc}}`"
    "Carbohydrates mapping (if :math:`COD_{remain, C} ≤ COD_{Xc, req}`)", ":math:`X_{ch} = 0`"
-   "Lipids mapping (if :math:`COD_{remain, C} > COD_{Xc, req}`)", ":math:`X_{li} = \frac{f_{li, xc} * (COD_{remain, C} - X_{C})}{f_{ch, xc} - f_{li, xc}}`"
+   "Lipids mapping (if :math:`COD_{remain, C} > COD_{Xc, req}`)", ":math:`X_{li} = \frac{f_{li, xc} (COD_{remain, C} - X_{C})}{f_{ch, xc} - f_{li, xc}}`"
    "Lipdis mapping (if :math:`COD_{remain, C} ≤ COD_{Xc, req}`)", ":math:`X_{li} = 0`"
    "Inorganic nitrogen mapping (if :math:`COD_{remain, C} > COD_{Xc, req}`)", ":math:`S_{IN} = S_{NH, in}`"
    "Inorganic nitrogen mapping (if :math:`COD_{remain, C} ≤ COD_{Xc, req}`)", ":math:`S_{IN} = S_{NH, in} + (OrgN_{remain, C} - X_{C} * N_{xc} * 14)`"
