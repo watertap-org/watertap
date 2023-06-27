@@ -78,7 +78,7 @@ The following variables should then be fixed:
    m.fs.electrolyzer.cathode_stoich["Liq", "H2-v"].fix(0.5)
    m.fs.electrolyzer.cathode_stoich["Liq", "OH-"].fix(1)
 
-Here, the flux of ions across the ion exchange membrane flux is handled by defining the membrane transport number. The sum of membrane transport numbers should correspond to satisfying the charge balance in both the anolyte and catholyte.The direction of membrane flow is calculated from anode to cathode in the unit model. Therefore a positive membrane transport number denotes flow of the corresponding ion (cation or anion depending on the ion exchange membrane) from the anolyte to catholyte.
+Here, the flux of ions across the ion exchange membrane flux is handled by defining the membrane transport number. The sum of membrane transport numbers should correspond to satisfying the charge balance in both the anolyte and catholyte. The direction of membrane flow is calculated from anode to cathode in the unit model. Therefore a positive membrane transport number denotes flow of the corresponding ion (cation or anion depending on the ion exchange membrane) from the anolyte to catholyte.
 
 Model Structure
 ------------------
