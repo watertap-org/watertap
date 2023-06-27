@@ -150,7 +150,7 @@ hierarchy of ASM1 state variables such that :math:`S_s` is reduced by the COD de
 
 TKN Equation
 ------------
-The Total incoming Kjeldahl nitrogen is calcultated with components updated in the anaerobic environment.
+The Total incoming Kjeldahl nitrogen is calculated with components updated in the anaerobic environment.
 
 .. csv-table::
    :header: "Description", "Equation"
