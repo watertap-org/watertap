@@ -224,35 +224,35 @@ class NaClParameterData(PhysicalParameterBlock):
             enth_A_param_dict.keys(),
             domain=Reals,
             initialize=enth_A_param_dict,
-            units=pyunits.kJ / pyunits.kg,
+            units=pyunits.J / pyunits.kg,
             doc="Specific enthalpy parameter A",
         )
         self.enth_param_B = Var(
             enth_B_param_dict.keys(),
             domain=Reals,
             initialize=enth_B_param_dict,
-            units=pyunits.kJ / pyunits.kg,
+            units=pyunits.J / pyunits.kg,
             doc="Specific enthalpy parameter B",
         )
         self.enth_param_C = Var(
             enth_C_param_dict.keys(),
             domain=Reals,
             initialize=enth_C_param_dict,
-            units=pyunits.kJ / pyunits.kg,
+            units=pyunits.J / pyunits.kg,
             doc="Specific enthalpy parameter C",
         )
         self.enth_param_D = Var(
             enth_D_param_dict.keys(),
             domain=Reals,
             initialize=enth_D_param_dict,
-            units=pyunits.kJ / pyunits.kg,
+            units=pyunits.J / pyunits.kg,
             doc="Specific enthalpy parameter D",
         )
         self.enth_param_E = Var(
             enth_E_param_dict.keys(),
             domain=Reals,
             initialize=enth_E_param_dict,
-            units=pyunits.kJ / pyunits.kg,
+            units=pyunits.J / pyunits.kg,
             doc="Specific enthalpy parameter E",
         )
 
@@ -671,7 +671,7 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
         self.set_default_scaling("diffus_phase_comp", 1e9, index=("Liq", "NaCl"))
         self.set_default_scaling("osm_coeff", 1e0)
-        self.set_default_scaling("enth_mass_phase", 1e-2, index="Liq")
+        self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
         self.set_default_scaling("cp_mass_phase", 1e-4, index="Liq")
         self.set_default_scaling("pressure_sat", 1e-5)
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
@@ -1465,8 +1465,8 @@ class NaClStateBlockData(StateBlockData):
         self.enth_mass_phase = Var(
             self.params.phase_list,
             initialize=1e2,
-            bounds=(0, 1e6),
-            units=pyunits.kJ * pyunits.kg**-1,
+            bounds=(0, 1e8),
+            units=pyunits.J * pyunits.kg**-1,
             doc="Specific enthalpy",
         )
 
@@ -1491,11 +1491,14 @@ class NaClStateBlockData(StateBlockData):
                 )
                 k += 1
             return b.enth_mass_phase[p] == (
-                iter_param["A"]
-                + iter_param["B"] * t
-                + iter_param["C"] * t**2
-                + iter_param["D"] * t**3
-                + iter_param["E"] * t**4
+                (
+                    iter_param["A"]
+                    + iter_param["B"] * t
+                    + iter_param["C"] * t**2
+                    + iter_param["D"] * t**3
+                    + iter_param["E"] * t**4
+                )
+                * 1000
             )
 
         self.eq_enth_mass_phase = Constraint(
