@@ -122,7 +122,7 @@ see reaction package for documentation.}""",
             mutable=True,
             doc="Anaerobic degradable fraction of X_I and X_P",
         )
-        
+
         self.eps = Param(
             initialize=1e-10,
             units=pyunits.kg / pyunits.m**3,
@@ -174,9 +174,8 @@ see reaction package for documentation.}""",
             doc="COD demand minus readily biodegradable substrate",
         )
         def CODd_step1(blk, t):
-            return (
-                blk.inter_S_S[t]
-                == smooth_max(0, blk.properties_in[t].conc_mass_comp["S_S"] - blk.CODd[t], blk.eps)
+            return blk.inter_S_S[t] == smooth_max(
+                0, blk.properties_in[t].conc_mass_comp["S_S"] - blk.CODd[t], blk.eps
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after S_S")
@@ -184,7 +183,9 @@ see reaction package for documentation.}""",
         # formulation included in all subsequent values for COD requirements and
         # COD remains
         def CODd2(blk, t):
-            return smooth_max(0, blk.CODd[t] - blk.properties_in[t].conc_mass_comp["S_S"], blk.eps)
+            return smooth_max(
+                0, blk.CODd[t] - blk.properties_in[t].conc_mass_comp["S_S"], blk.eps
+            )
 
         self.inter_X_S = Var(
             self.flowsheet().time,
@@ -199,15 +200,16 @@ see reaction package for documentation.}""",
             doc="COD demand minus slowly biodegradable substrate",
         )
         def CODd_step2(blk, t):
-            return (
-                blk.inter_X_S[t]
-                == smooth_max(0, blk.properties_in[t].conc_mass_comp["X_S"] - blk.CODd2[t], blk.eps)
+            return blk.inter_X_S[t] == smooth_max(
+                0, blk.properties_in[t].conc_mass_comp["X_S"] - blk.CODd2[t], blk.eps
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after X_S")
         def CODd3(blk, t):
-            return smooth_max(0, blk.CODd2[t] - blk.properties_in[t].conc_mass_comp["X_S"], blk.eps)
-        
+            return smooth_max(
+                0, blk.CODd2[t] - blk.properties_in[t].conc_mass_comp["X_S"], blk.eps
+            )
+
         self.inter_X_BH = Var(
             self.flowsheet().time,
             initialize=self.properties_in[0].conc_mass_comp["X_BH"],
@@ -221,14 +223,15 @@ see reaction package for documentation.}""",
             doc="COD demand minus active heterotrophic biomass",
         )
         def CODd_step3(blk, t):
-            return (
-                blk.inter_X_BH[t]
-                == smooth_max(0, blk.properties_in[t].conc_mass_comp["X_BH"] - blk.CODd3[t], blk.eps)
+            return blk.inter_X_BH[t] == smooth_max(
+                0, blk.properties_in[t].conc_mass_comp["X_BH"] - blk.CODd3[t], blk.eps
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after X_BH")
         def CODd4(blk, t):
-            return smooth_max(0, blk.CODd3[t] - blk.properties_in[t].conc_mass_comp["X_BH"], blk.eps)
+            return smooth_max(
+                0, blk.CODd3[t] - blk.properties_in[t].conc_mass_comp["X_BH"], blk.eps
+            )
 
         self.inter_X_BA = Var(
             self.flowsheet().time,
@@ -243,14 +246,15 @@ see reaction package for documentation.}""",
             doc="COD demand minus active autotrophic biomass",
         )
         def CODd_step4(blk, t):
-            return (
-                blk.inter_X_BA[t]
-                == smooth_max(0, blk.properties_in[t].conc_mass_comp["X_BA"] - blk.CODd4[t], blk.eps)
+            return blk.inter_X_BA[t] == smooth_max(
+                0, blk.properties_in[t].conc_mass_comp["X_BA"] - blk.CODd4[t], blk.eps
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after X_BA")
         def CODd5(blk, t):
-            return smooth_max(0, blk.CODd4[t] - blk.properties_in[t].conc_mass_comp["X_BA"], blk.eps)
+            return smooth_max(
+                0, blk.CODd4[t] - blk.properties_in[t].conc_mass_comp["X_BA"], blk.eps
+            )
 
         @self.Expression(self.flowsheet().time, doc="Soluble COD")
         def CODs(blk, t):
@@ -269,47 +273,45 @@ see reaction package for documentation.}""",
         @self.Expression(self.flowsheet().time, doc="Total COD")
         def CODt(blk, t):
             return blk.CODs[t] + blk.CODp[t]
-        
+
         self.TKN_in = Var(
             self.flowsheet().time,
-            initialize= self.properties_in[0].conc_mass_comp["S_NH"]
-                            + self.properties_in[0].conc_mass_comp["S_ND"]
-                            + self.properties_in[0].conc_mass_comp["X_ND"]
-                            + self.i_xb
-                            * (
-                                self.properties_in[0].conc_mass_comp["X_BH"]
-                                + self.properties_in[0].conc_mass_comp["X_BA"]
-                            )
-                            + self.i_xe
-                            * (
-                                self.properties_in[0].conc_mass_comp["X_I"]
-                                + self.properties_in[0].conc_mass_comp["X_P"]
-                            ),
+            initialize=self.properties_in[0].conc_mass_comp["S_NH"]
+            + self.properties_in[0].conc_mass_comp["S_ND"]
+            + self.properties_in[0].conc_mass_comp["X_ND"]
+            + self.i_xb
+            * (
+                self.properties_in[0].conc_mass_comp["X_BH"]
+                + self.properties_in[0].conc_mass_comp["X_BA"]
+            )
+            + self.i_xe
+            * (
+                self.properties_in[0].conc_mass_comp["X_I"]
+                + self.properties_in[0].conc_mass_comp["X_P"]
+            ),
             units=pyunits.kg / pyunits.m**3,
             domain=NonNegativeReals,
             doc="Total Kjeldahl nitrogen",
         )
+
         @self.Constraint(
             self.flowsheet().time,
             doc="Total Kjeldahl nitrogen",
         )
         def TKNin(blk, t):
-            return ( blk.TKN_in[t] ==
-                blk.properties_in[t].conc_mass_comp["S_NH"]
-                + blk.properties_in[t].conc_mass_comp["S_ND"]
-                + blk.properties_in[t].conc_mass_comp["X_ND"]
-                + self.i_xb
-                * (
-                    blk.inter_X_BH[t]
-                    + blk.inter_X_BA[t]
-                )
-                + self.i_xe
-                * (
-                    blk.properties_in[t].conc_mass_comp["X_I"]
-                    + blk.properties_in[t].conc_mass_comp["X_P"]
-                )
+            return blk.TKN_in[t] == blk.properties_in[t].conc_mass_comp[
+                "S_NH"
+            ] + blk.properties_in[t].conc_mass_comp["S_ND"] + blk.properties_in[
+                t
+            ].conc_mass_comp[
+                "X_ND"
+            ] + self.i_xb * (
+                blk.inter_X_BH[t] + blk.inter_X_BA[t]
+            ) + self.i_xe * (
+                blk.properties_in[t].conc_mass_comp["X_I"]
+                + blk.properties_in[t].conc_mass_comp["X_P"]
             )
-        
+
         @self.Expression(self.flowsheet().time, doc="Required soluble COD")
         def ReqCODs(blk, t):
             return (
@@ -317,7 +319,7 @@ see reaction package for documentation.}""",
                 / blk.config.reaction_package.N_aa
                 / mw_n
             )
-        
+
         @self.Expression(self.flowsheet().time, doc="Amino acids mapping")
         def saa_mapping(blk, t):
             return Expr_if(
@@ -344,7 +346,7 @@ see reaction package for documentation.}""",
         @self.Expression(self.flowsheet().time, doc="COD remaining from step A")
         def COD_remain_a(blk, t):
             return smooth_max(0, blk.CODt[t] - blk.inter_S_S[t], blk.eps)
-        
+
         @self.Expression(self.flowsheet().time, doc="Organic nitrogen pool from step A")
         def ORGN_remain_a(blk, t):
             return (
@@ -401,7 +403,11 @@ see reaction package for documentation.}""",
 
         @self.Expression(self.flowsheet().time, doc="COD remaining from step B")
         def COD_remain_b(blk, t):
-            return smooth_max(0, blk.COD_remain_a[t] - blk.properties_in[t].conc_mass_comp["S_I"], blk.eps)
+            return smooth_max(
+                0,
+                blk.COD_remain_a[t] - blk.properties_in[t].conc_mass_comp["S_I"],
+                blk.eps,
+            )
 
         @self.Expression(self.flowsheet().time, doc="Organic nitrogen pool from step B")
         def ORGN_remain_b(blk, t):
@@ -451,7 +457,11 @@ see reaction package for documentation.}""",
 
         @self.Expression(self.flowsheet().time, doc="COD remaining from step C")
         def COD_remain_c(blk, t):
-            return smooth_max(0, blk.COD_remain_b[t] - blk.properties_out[t].conc_mass_comp["X_I"], blk.eps)
+            return smooth_max(
+                0,
+                blk.COD_remain_b[t] - blk.properties_out[t].conc_mass_comp["X_I"],
+                blk.eps,
+            )
 
         @self.Expression(self.flowsheet().time, doc="Organic nitrogen pool from step C")
         def ORGN_remain_c(blk, t):
