@@ -326,3 +326,4 @@ if __name__ == "__main__":
     )
     print(stream_table_dataframe_to_string(stream_table))
     display_costing(m)
+    model_debug(m)
