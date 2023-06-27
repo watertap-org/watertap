@@ -35,7 +35,7 @@ Properties
 
    "Component mass fraction", ":math:`x_j`", "mass_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
    "Mass density", ":math:`\rho`", "dens_mass_phase", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Phase volumetric flowrate", ":math:`Q_p`", "flow_vol_phase", "[p]", ":math:`\text{m^3/s}`"
+   "Phase volumetric flowrate", ":math:`Q_p`", "flow_vol_phase", "[p]", ":math:`\text{m}^3\text{/s}`"
    "Volumetric flowrate", ":math:`Q`", "flow_vol", "None", ":math:`\text{m}^3\text{/s}`"
    "Mass concentration", ":math:`C_j`", "conc_mass_phase_comp", "[p, j]", ":math:`\text{kg/}\text{m}^3`"
    "Component mole flowrate", ":math:`N_j`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mole/s}`"
@@ -105,7 +105,7 @@ References
 ----------
 .. _Pitzer:
 
-    Pitzer, Kenneth S., J. Christopher Peiper, and R. H. Busey. (1984). Thermodynamic Properties of Aqueous Sodium Chloride Solutions, Journal of Physical and Chemical Reference Data 13, no. 1 , 1–102. 'DOI: https://doi.org/10.1063/1.555709>'_
+    Pitzer, Kenneth S., J. Christopher Peiper, and R. H. Busey. (1984). Thermodynamic Properties of Aqueous Sodium Chloride Solutions, Journal of Physical and Chemical Reference Data 13, no. 1 , 1–102. `DOI: 10.1063/1.555709 <https://doi.org/10.1063/1.555709>`_
 
 .. _Sharqawy:
 
@@ -113,7 +113,7 @@ References
 
 .. _Sparrow:
 
-    Sparrow, Benjamin S. (2003). Empirical Equations for the Thermodynamic Properties of Aqueous Sodium Chloride, Desalination 159, no. 2, 161–70. 'DOI: https://doi.org/10.1016/S0011-9164(03)90068-3>'_
+    Sparrow, Benjamin S. (2003). Empirical Equations for the Thermodynamic Properties of Aqueous Sodium Chloride, Desalination 159, no. 2, 161–70. `DOI: 10.1016/S0011-9164(03)90068-3 <https://doi.org/10.1016/S0011-9164(03)90068-3>`_
 
 .. _Zaytsev:
 
