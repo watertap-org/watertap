@@ -1,18 +1,16 @@
 Electrolyzer
 ============
-.. note::
-
-  The development of the electrolyzer model is ongoing.
-
-This is a simplified electrolyzer unit model used to approximate electrolysis performance.  With the current build, the model is simulated under the following assumptions:
+This is a simplified model used to approximate electrolyzer performance. With the current build, the model is simulated under the following assumptions:
    * simulation of this unit model is only supported with the :mod:`Multi-Component Aqueous Solution (MCAS) <watertap.property_models.multicomp_aq_sol_prop_pack>` property package
    * supports liquid phase only, vapor-liquid phase equilibrium is not calculated
    * supports steady-state only
    * assumes isothermal conditions and performance is not temperature-dependent
+   * assumes isobaric conditions and performance is not pressure-dependent
    * does not determine equilibrium of electrolysis products in solution
    * does not consider the conversion of undesired reactions
+   * does not incorporate the Nernst equation to calculate the potential as a function of the standard potential, the input of the electrochemical potential for the half-cell reactions is assumed to be provided at the operating conditions
    * conversion of reactants is predicted by a yield model, therefore rate laws and limitations of reaction and mass transfer are not evaluated
-   * the input for the electrochemical potential of the half-cell reactions is assumed to be provided at the operating conditions, there is no Nernst equation to calculate the potential as a function of the standard potential
+
 
 .. index::
    pair: watertap.unit_models.electrolyzer;electrolyzer
@@ -21,11 +19,17 @@ This is a simplified electrolyzer unit model used to approximate electrolysis pe
 
 Introduction
 ------------
-This model was primarily motivated to simulate the chlor-alkali membrane electrolysis process, a conventional electrolyzer for the production of chlorine gas and hydroxide (Bommaraju, 2015) (Kent, 2007). The model has been demonstrated for the chlor-alkali configuration in the electrolyzer testing file and may be generalizable to other electrolysis mechanisms, but has not been validated for generalized processes.
+This model was developed for the simulation of a chlor-alkali membrane electrolyzer, a conventional electrolyzer for the production of chlorine gas and hydroxide (Bommaraju & O’Brien, 2015) (Kent, 2007). This model has been demonstrated for the chlor-alkali configuration in the electrolyzer testing file. Though, it is structured such that it may be generalizable to other membrane electrolysis mechanisms, but it has not been validated for other processes.
 
-Given a membrane electrolyzer, the catholyte and anolyte are separated by an ion exchange membrane. This provides two distinct control volumes to perform model calculations. The basis for determining electrolyzer performance is accounting for the Faradaic conversion of species with respect to the electrolysis reactions at the cathode and anode. Faradaic conversion considers equating the supplied electrical current to the amount of electrons available for electrochemical reaction by Faraday's law of electrolysis. The calculation of Faradaic conversion is described in "electrons passed between anode and cathode contributing to reactions" found in the :ref:`Equations <electrolyzer_equations>`.
+With a membrane electrolyzer, the anolyte and catholyte are separated by an ion exchange membrane. The electrolyzers purpose is dependent on the materials for the anode, cathode, and membrane. The anode and cathode are chosen to promote desired electrolysis reactions at the surface of the material. The membrane is chosen to selectively permeate ions between the electrolytes. Electrolyzer performance is largely quantified by the energy consumption, conversion of desired electrolysis products, and quality of the exiting anolyte and catholyte (Kumar et al., 2021). Faraday's law of electrolysis governs the relationship between electrical current supplied to the electrolytic cell and moles of electrons contributing to desired electrolysis reactions. The equation for Faradaic conversion is later established in "electrons contributing to reactions by Faraday's law of electrolysis" found in :ref:`Equations <electrolyzer_equations>`.
 
-Given that Faraday's law of electrolysis with an applied current efficiency governs electrochemical conversion, inherently no reaction and mass transfer rate laws are considered. In this yield model, the surface area for electrochemical reaction on each electrode is the only relevant sizing variable required. This is used to validate that the current densities of each are tolerable by the material, and it is typically used as the fixed variable where the corresponding area is calculated as a degree of freedom. With no other sizing variables, effects in increased resistance through the electrolytes with further spaced electrodes and similar size dependent phenomena are not considered in the model.
+In this simplified model, the extent electrolysis reactions proceed is determined with respect to the ideal (or perfect) Faradaic conversion, resulting in a yield reaction model. As such, rate laws and limitations of reaction and mass transfer are not evaluated. For the efficiency of the reaction itself, the model defines a current efficiency variable (:math:`\theta_{current}`). Current efficiency describes the additional current required above the amount dictated by Faraday's law of electrolysis that contribute electrons to the desired electrolysis reaction. These hindrances are primarily the electrons that are supplied to the electrolyzer but contribute to undesired reactions. Since side reactions are not modeled in this simplified model, they may be treated as unreacted. Additionally, this may also include generic loss of current (shunt currents) or neutralization of desired electrolysis products (back-migration across the ion exchange membrane or other) (Kumar et al., 2021). Nevertheless, the current efficiency describes electrons that are provided by a power supply, but do not contribute to the desired reaction. The model is structured that current efficiency is traditionally supplied as a fixed variable.
+
+The second governing efficiency is the voltage efficiency (:math:`\theta_{voltage}`). Voltage efficiency describes the additional voltage above the thermodynamic minimum voltage (:math:`V_{rev}`) for the reaction to proceed (Kumar et al., 2021). This model directly defines these inefficiencies within the cell voltage equation. The voltage efficiency is then the contribution of anode overpotential, cathode overpotential, and ohmic resistance (related to voltage drop by Ohm's law) (Phillips, 2017). As these overpotentials and resistance relationship is commonly known, these components of additional voltage are traditionally provided as the fixed variables. In this case, voltage efficiency is then calculated by constraints as a result of these components. However, if the intricacies of the electrolysis process are lesser known, this variable may be directly fixed and the model reworked to function given a fixed voltage efficiency.
+
+Given that the power supplied in the product of voltage and current, a power efficiency may be defined that is the product of voltage efficiency and current efficiency. This power efficiency is then the ratio of the theoretical minimum power, under no inefficiencies, to the actual power supplied. In the unit model, the theoretical minimum power is not explicitly calculated. Where current efficiency and voltage efficiency are decoupled efficiencies that describe independent hindrances, power efficiency is the combined effect that directly related to energy demand and cost.
+
+In this yield model, the surface area for electrochemical reaction on each electrode is the only relevant sizing variable required. This is used to validate that the current densities of each are tolerable by the material, and it is typically used as the fixed variable where the corresponding area is calculated as a degree of freedom. With no other sizing variables, effects in increased resistance through the electrolytes with further spaced electrodes and similar size dependent phenomena are not considered in the model.
 
 Degrees of Freedom
 ------------------
@@ -38,9 +42,9 @@ For a given electrolyzer design, there are 8 degrees of freedom in addition to t
    * cathode overpotential, :math:`\eta_{cat}`
    * current, :math:`I`
    * current efficiency, :math:`\theta_{current}`
-   * voltage efficiency, :math:`\theta_{voltage}` *or* resistance, :math:`R`
+   * resistance, :math:`R`
 
-Additionally, the electrolysis reactions at the anode and cathode must be specified with stoichiometry and electrochemical potential (Phillips, 2017). By default, the following stoichiometric variables will be fixed to 0 when the electrolyzer model block is constructed. Therefore, only the nonzero stoichiometry must be additionally specified. As an example for the chlor-alkali process, the following reactions occur with sodium ions permeating from the anolyte to catholyte. The stoichiometry is normalized to 1 mole of electrons as intended in the model framework.
+Additionally, the electrolysis reactions at the anode and cathode must be specified for their stoichiometry and electrochemical potential (Phillips, 2017). By default, the following stoichiometric variables will be fixed to 0 when the electrolyzer model block is constructed. Therefore, only the nonzero stoichiometry must be additionally specified. As an example for the chlor-alkali process, the following reactions occur with sodium ions permeating from the anolyte to catholyte. The stoichiometry is normalized to 1 mole of electrons as intended in the model framework.
 
 Anode:
 
@@ -173,7 +177,7 @@ Equations
    "cell voltage", ":math:`V_{cell} = V_{rev}+\eta_{ano}+\eta_{cat}+IR`"
    "power", ":math:`P = IV_{cell}`"
    "electrons contributing to reactions by Faraday's law of electrolysis :math:`^c`", ":math:`\dot{n}_{e^-} = \frac{I\theta_{current}}{F}`"
-   "voltage efficiency", ":math:`theta_{voltage} = \frac{V_{rev}}{\V_{cell}} = \frac{V_{rev}}{V_{rev}+\eta_{ano}+\eta_{cat}+IR}`"
+   "voltage efficiency", ":math:`\theta_{voltage} = frac{V_{rev}}{\V_{cell}} = \frac{V_{rev}}{V_{rev}+\eta_{ano}+\eta_{cat}+IR}`"
    "power efficiency", ":math:`\theta_{power} = \theta_{current}\theta_{voltage}`"
 
 \ :math:`^c` is Faraday's constant from ``idaes.core.util.constants``, 96,485 C/mol
@@ -236,9 +240,9 @@ References
 -----------
 Bommaraju, T. V., & O’Brien, T. F. (2015). Brine electrolysis. Electrochemistry Encyclopedia. https://knowledge.electrochem.org/encycl/art-b01-brine.htm
 
-
 Kent, J. A. (Ed.). (2007). Kent and Riegel’s Handbook of Industrial Chemistry and Biotechnology. Springer US. https://doi.org/10.1007/978-0-387-27843-8
 
+Kumar, A., Du, F., & Lienhard, J. H. (2021). Caustic Soda Production, Energy Efficiency, and Electrolyzers. ACS Energy Letters, 6(10), 3563–3566. https://doi.org/10.1021/acsenergylett.1c01827
 
 O’Brien, T., Bommaraju, T. V., & Hine, F. (2005). Handbook of chlor-alkali technology. Springer.
 
