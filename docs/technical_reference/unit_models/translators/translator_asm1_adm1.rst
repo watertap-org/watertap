@@ -158,7 +158,7 @@ The Total incoming Kjeldahl nitrogen is calculated with components updated in th
    "Total Kjeldahl nitrogen", ":math:`TKN = S_{NH} + S_{ND} + X_{ND} + i_{xb}(X_{BH, inter} + X_{BA, inter}) + i_{xe}(X_{I} + X_{P})`"
 
 :math:`S_{nd}` and :math:`S_s` Mapping Equations
-------------------------------
+------------------------------------------------
 
 .. figure:: ../../../_static/unit_models/translators/mapping_step_a.jpg
     :width: 800
