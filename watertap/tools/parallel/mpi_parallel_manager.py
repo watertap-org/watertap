@@ -17,9 +17,9 @@ from watertap.tools.parallel.parallel_manager import ParallelManager, run_sweep
 
 
 class MPIParallelManager(ParallelManager):
-    def __init__(self, mpi4py_lib, **kwargs):
-        self.mpi4py = mpi4py_lib
-        self.comm = self.mpi4py.MPI.COMM_WORLD
+    def __init__(self, MPI, **kwargs):
+        self.MPI = MPI
+        self.comm = self.MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.num_procs = self.comm.Get_size()
 
@@ -53,6 +53,7 @@ class MPIParallelManager(ParallelManager):
         rebuild_common_sweep_args_kwargs,
         all_parameter_combos,
     ):
+
         # Split the total list of combinations into NUM_PROCS chunks,
         # one per each of the MPI ranks
         divided_combo_array = numpy.array_split(all_parameter_combos, self.num_procs)

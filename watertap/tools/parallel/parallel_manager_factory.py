@@ -19,7 +19,7 @@ from watertap.tools.parallel.single_process_parallel_manager import (
     SingleProcessParallelManager,
 )
 
-mpi4py, mpi4py_available = attempt_import("mpi4py")
+MPI, mpi4py_available = attempt_import("mpi4py.MPI", defer_check=False)
 
 
 def create_parallel_manager(parallel_manager_class=None, **kwargs):
@@ -34,7 +34,7 @@ def create_parallel_manager(parallel_manager_class=None, **kwargs):
         return parallel_manager_class(**kwargs)
 
     if has_mpi_peer_processes():
-        return MPIParallelManager(mpi4py)
+        return MPIParallelManager(MPI)
 
     number_of_subprocesses = kwargs.get("number_of_subprocesses", 1)
     if should_fan_out(number_of_subprocesses):
@@ -47,7 +47,7 @@ def has_mpi_peer_processes():
     """
     Returns whether the process was run as part of an MPI group with > 1 processes.
     """
-    return mpi4py_available and mpi4py.MPI.COMM_WORLD.Get_size() > 1
+    return mpi4py_available and MPI.COMM_WORLD.Get_size() > 1
 
 
 def should_fan_out(number_of_subprocesses):
