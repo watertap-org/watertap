@@ -294,6 +294,7 @@ if __name__ == "__main__":
         {
             "AD inlet": m.fs.AD.inlet,
             "AD liquid outlet": m.fs.AD.liquid_outlet,
+            "AD vapor outlet": m.fs.AD.vapor_outlet,
             "Translator outlet": m.fs.translator_adm1_asm2d.outlet,
             "ElectroNP treated": m.fs.electroNP.treated,
             "ElectroNP byproduct": m.fs.electroNP.byproduct,

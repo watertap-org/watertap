@@ -33,6 +33,7 @@ def set_up_sensitivity(m):
         m.fs.costing.aggregate_flow_costs["electricity"] / m.fs.AD.inlet.flow_vol[0],
         to_units=pyunits.USD_2018 / pyunits.m**3,
     )
+    outputs["S_PO4 Concentration"] = m.fs.electroNP.treated.conc_mass_comp[0, "S_PO4"]
 
     return outputs, optimize_kwargs, opt_function
 
@@ -66,14 +67,14 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True, output_filename=Non
         )
     elif case_num == 4:
         sweep_params["energy_consumption"] = LinearSample(
-            m.fs.electroNP.energy_electric_flow_mass, 0.02, 2.2, nx
+            m.fs.electroNP.energy_electric_flow_mass, 0, 2.5, nx
         )
         sweep_params["electricity_cost"] = LinearSample(
             m.fs.costing.electricity_cost, 0.02, 0.3, nx
         )
     elif case_num == 5:
         sweep_params["electricity_cost"] = LinearSample(
-            m.fs.costing.electricity_cost, 0.06, 0.1, nx
+            m.fs.costing.electricity_cost, 0.02, 0.3, nx
         )
         sweep_params["MgCl2_cost"] = LinearSample(
             m.fs.costing.magnesium_chloride_cost, 0.06, 0.1, nx
@@ -84,6 +85,31 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True, output_filename=Non
         )
         sweep_params["MgCl2_dosage"] = LinearSample(
             m.fs.electroNP.magnesium_chloride_dosage, 0.1, 0.5, nx
+        )
+    elif case_num == 7:
+        sweep_params["S_IP_concentration"] = LinearSample(
+            m.fs.AD.inlet.conc_mass_comp[0, "S_IP"], 0.01, 0.5, nx
+        )
+    elif case_num == 8:
+        sweep_params["S_IP_concentration"] = LinearSample(
+            m.fs.AD.inlet.conc_mass_comp[0, "S_IP"], 0.01, 0.5, nx
+        )
+        sweep_params["X_PHA_concentration"] = LinearSample(
+            m.fs.AD.inlet.conc_mass_comp[0, "X_PHA"], 0, 0.5, nx
+        )
+    elif case_num == 9:
+        sweep_params["X_PAO_concentration"] = LinearSample(
+            m.fs.AD.inlet.conc_mass_comp[0, "X_PAO"], 3.2, 3.8, nx
+        )
+        sweep_params["X_PHA_concentration"] = LinearSample(
+            m.fs.AD.inlet.conc_mass_comp[0, "X_PHA"], 1e-6, 0.5, nx
+        )
+    elif case_num == 10:
+        sweep_params["X_PAO_concentration"] = LinearSample(
+            m.fs.AD.inlet.conc_mass_comp[0, "X_PHA"], 0, 0.5, nx
+        )
+        sweep_params["X_PP_concentration"] = LinearSample(
+            m.fs.AD.inlet.conc_mass_comp[0, "X_PP"], 0.8, 1.2, nx
         )
     else:
         raise ValueError(f"{case_num} is not yet implemented")
@@ -197,21 +223,21 @@ def main(case_num, nx=11, interpolate_nan_outputs=True):
     # ax.set_ylabel("LCOW ($/m3)")
 
     # case 4
-    fig, ax = visualize_results(
-        case_num,
-        plot_type="contour",
-        xlabel="# energy_consumption",
-        ylabel="electricity_cost",
-        zlabel="LCOW",
-        isolines=[2000, 5000],
-        cmap="GnBu",
-    )
-    ax.plot(0.044, 0.08, "ko")
-    ax.set_xlim([0, 2])
-    ax.set_ylim([0.02, 0.2])
-    ax.set_xlabel("Electricity Intensity (kWh/kg P)")
-    ax.set_ylabel("Electricity Cost ($/kWh)")
-    ax.set_title("LCOW ($/m3)")
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# energy_consumption",
+    #     ylabel="electricity_cost",
+    #     zlabel="LCOW",
+    #     isolines=[2000, 5000],
+    #     cmap="GnBu",
+    # )
+    # ax.plot(0.044, 0.08, "ko")
+    # ax.set_xlim([0, 2])
+    # ax.set_ylim([0.03, 0.2])
+    # ax.set_xlabel("Electricity Intensity (kWh/kg P)")
+    # ax.set_ylabel("Electricity Cost ($/kWh)")
+    # ax.set_title("LCOW ($/m3)")
 
     # case 5
     # fig, ax = visualize_results(
@@ -224,7 +250,7 @@ def main(case_num, nx=11, interpolate_nan_outputs=True):
     # )
     # ax.plot(0.08, 0.0786, 'ko')
     # ax.set_ylim([0.07, 0.1])
-    # ax.set_xlim([0.06, 0.1])
+    # ax.set_xlim([0.02, 0.2])
     # ax.set_xlabel("Electricity Cost ($/kWh)")
     # ax.set_ylabel("MgCl2 Cost ($/kg P)")
     # ax.set_title("LCOW ($/m3)")
@@ -244,9 +270,60 @@ def main(case_num, nx=11, interpolate_nan_outputs=True):
     # ax.set_ylabel("MgCl2 Dosage (kg MgCl2/kg P)")
     # ax.set_title("LCOW ($/m3)")
 
+    # case 7
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="line",
+    #     xlabel="# S_IP_concentration",
+    #     ylabel="S_PO4 Concentration",
+    # )
+    # # ax.plot(1.25, 127.792, 'ro')
+    # ax.set_xlabel("S_IP Concentration (mg/L)")
+    # ax.set_ylabel("S_PO4 Concentration (mg/L)")
+
+    # case 8
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# S_IP_concentration",
+    #     ylabel="X_PHA_concentration",
+    #     zlabel="S_PO4 Concentration",
+    #     cmap="GnBu",
+    # )
+    # # ax.plot(1.25, 127.792, 'ro')
+    # ax.set_xlabel("S_IP Concentration (mg/L)")
+    # ax.set_ylabel("X_PHA Concentration (mg/L)")
+    # ax.set_title("S_PO4 Concentration (mg/L)")
+
+    # case 9
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# X_PAO_concentration",
+    #     ylabel="X_PHA_concentration",
+    #     zlabel="S_PO4 Concentration",
+    #     cmap="GnBu",
+    # )
+    # ax.set_xlabel("X_PAO Concentration (mg/L)")
+    # ax.set_ylabel("X_PHA Concentration (mg/L)")
+    # ax.set_title("S_PO4 Concentration (mg/L)")
+
+    # case 10
+    fig, ax = visualize_results(
+        case_num,
+        plot_type="contour",
+        xlabel="# X_PAO_concentration",
+        ylabel="X_PP_concentration",
+        zlabel="S_PO4 Concentration",
+        cmap="GnBu",
+    )
+    ax.set_xlabel("X_PAO Concentration (mg/L)")
+    ax.set_ylabel("X_PP Concentration (mg/L)")
+    ax.set_title("S_PO4 Concentration (mg/L)")
+
     return global_results, m
 
 
 if __name__ == "__main__":
-    results, model = main(case_num=4, nx=17)
+    results, model = main(case_num=10, nx=11)
     # results, sweep_params, m = run_analysis()
