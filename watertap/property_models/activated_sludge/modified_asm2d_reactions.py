@@ -257,6 +257,12 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Magnesium coefficient for polyphosphates",
         )
+        self.i_NOx_N2 = pyo.Var(
+            initialize=2.8571,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Nitrogen oxide coefficient for N2",
+        )
 
         # Kinetic Parameters
         self.K_H = pyo.Var(
@@ -657,8 +663,8 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R6", "Liq", "S_A"): 0,
             ("R6", "Liq", "S_I"): 0,
             ("R6", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / self.Y_H),
-            ("R6", "Liq", "S_N2"): (1 - self.Y_H) / (2.86 * self.Y_H),
-            ("R6", "Liq", "S_NO3"): -(1 - self.Y_H) / (2.86 * self.Y_H),
+            ("R6", "Liq", "S_N2"): (1 - self.Y_H) / (self.i_NOx_N2 * self.Y_H),
+            ("R6", "Liq", "S_NO3"): -(1 - self.Y_H) / (self.i_NOx_N2 * self.Y_H),
             ("R6", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / self.Y_H),
             ("R6", "Liq", "S_IC"): -(self.i_CXB - self.i_CSF / self.Y_H),
             ("R6", "Liq", "X_I"): 0,
@@ -677,8 +683,8 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R7", "Liq", "S_A"): -1 / self.Y_H,
             ("R7", "Liq", "S_I"): 0,
             ("R7", "Liq", "S_NH4"): -self.i_NBM,
-            ("R7", "Liq", "S_N2"): (1 - self.Y_H) / (2.86 * self.Y_H),
-            ("R7", "Liq", "S_NO3"): -(1 - self.Y_H) / (2.86 * self.Y_H),
+            ("R7", "Liq", "S_N2"): (1 - self.Y_H) / (self.i_NOx_N2 * self.Y_H),
+            ("R7", "Liq", "S_NO3"): -(1 - self.Y_H) / (self.i_NOx_N2 * self.Y_H),
             ("R7", "Liq", "S_PO4"): -self.i_PBM,
             ("R7", "Liq", "S_IC"): -(self.i_CXB - self.i_CSA / self.Y_H),
             ("R7", "Liq", "X_I"): 0,
@@ -783,7 +789,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R12", "Liq", "S_A"): 0,
             ("R12", "Liq", "S_I"): 0,
             ("R12", "Liq", "S_NH4"): 0,
-            ("R12", "Liq", "S_N2"): self.Y_PHA / 2.86,
+            ("R12", "Liq", "S_N2"): self.Y_PHA / self.i_NOx_N2,
             ("R12", "Liq", "S_NO3"): -0.07,
             ("R12", "Liq", "S_PO4"): -1,
             ("R12", "Liq", "S_IC"): -(-self.Y_PHA * 0.3),
@@ -823,8 +829,8 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R14", "Liq", "S_A"): 0,
             ("R14", "Liq", "S_I"): 0,
             ("R14", "Liq", "S_NH4"): -self.i_NBM,
-            ("R14", "Liq", "S_N2"): (1 - self.Y_H) / (2.86 * self.Y_H),
-            ("R14", "Liq", "S_NO3"): -(1 - self.Y_H) / (2.86 * self.Y_H),
+            ("R14", "Liq", "S_N2"): (1 - self.Y_H) / (self.i_NOx_N2 * self.Y_H),
+            ("R14", "Liq", "S_NO3"): -(1 - self.Y_H) / (self.i_NOx_N2 * self.Y_H),
             ("R14", "Liq", "S_PO4"): -self.i_PBM,
             ("R14", "Liq", "S_IC"): -(self.i_CXB - 0.3 / self.Y_PAO),
             ("R14", "Liq", "X_I"): 0,
