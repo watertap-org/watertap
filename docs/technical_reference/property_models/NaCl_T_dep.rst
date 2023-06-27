@@ -49,7 +49,7 @@ Properties
    "Solute diffusivity", ":math:`D`", "diffus_phase_comp", "[p,'NaCl']", ":math:`\text{m^2/s}`"
    "Osmotic coefficient", ":math:`\phi`", "osm_coeff", "None", ":math:`\text{dimensionless}`"
    "Osmotic pressure", ":math:`\pi`", "pressure_osm", "None", ":math:`\text{Pa}`"
-   "Specific enthalpy", ":math:`\widehat{H}`", "enth_mass_phase", "[p]", ":math:`\text{kJ/kg}`"
+   "Specific enthalpy", ":math:`\widehat{H}`", "enth_mass_phase", "[p]", ":math:`\text{J/kg}`"
    "Enthalpy flow", ":math:`H`", "enth_flow", "None", ":math:`\text{J/s}`"
 
 Relationships
@@ -92,7 +92,7 @@ The default scaling factors are as follows:
    * 1e3 for dynamic viscosity
    * 1e9 for solute diffusivity
    * 1 for the osmotic coefficient
-   * 1e-2 for the specific enthalpy
+   * 1e-5 for the specific enthalpy
    * 1e-4 for the specific heat capacity
    * 1e-5 for vapor pressure
    * 1 for thermal conductivity
