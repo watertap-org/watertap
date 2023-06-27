@@ -40,6 +40,7 @@ from watertap.unit_models import (
     Electrodialysis0D,
     Electrodialysis1D,
     ElectroNPZO,
+    Electrolyzer,
     IonExchange0D,
     GAC,
 )
@@ -48,6 +49,7 @@ from watertap.unit_models.mvc.components import Evaporator, Compressor
 from .units.anaerobic_digestor import cost_anaerobic_digestor
 from .units.crystallizer import cost_crystallizer
 from .units.electrodialysis import cost_electrodialysis
+from .units.electrolyzer import cost_electrolyzer
 from .units.energy_recovery_device import cost_energy_recovery_device
 from .units.gac import cost_gac
 from .units.ion_exchange import cost_ion_exchange
@@ -107,6 +109,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         Electrodialysis0D: cost_electrodialysis,
         Electrodialysis1D: cost_electrodialysis,
         ElectroNPZO: cost_electroNP,
+        Electrolyzer: cost_electrolyzer,
         IonExchange0D: cost_ion_exchange,
         GAC: cost_gac,
         Evaporator: cost_evaporator,
