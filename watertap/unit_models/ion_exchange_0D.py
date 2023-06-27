@@ -270,10 +270,10 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             raise ConfigurationError(
                 f"IonExchange0D can only accept a single target ion but {len(self.target_ion_set)} were provided."
             )
-        if self.config.property_package.charge_comp[target_ion] > 0:
+        if self.config.property_package.charge_comp[target_ion].value > 0:
             self.ion_exchange_type = IonExchangeType.cation
-        elif self.config.property_package.charge_comp[target_ion] < 0:
-            self.ion_exchange_type == IonExchangeType.anion
+        elif self.config.property_package.charge_comp[target_ion].value < 0:
+            self.ion_exchange_type = IonExchangeType.anion
         else:
             raise ConfigurationError("Target ion must have non-zero charge.")
 
