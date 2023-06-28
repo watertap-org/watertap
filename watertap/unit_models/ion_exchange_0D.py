@@ -345,25 +345,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Conversion for pressure drop in psi to m",
         )
 
-        # Liquid holdup correlation
-        # Eq. 4.101 in Inamuddin/Luqman
-
-        self.holdup_A = Param(
-            initialize=21,
-            units=pyunits.dimensionless,
-            doc="Holdup equation A parameter",
-        )
-
-        self.holdup_B = Param(
-            initialize=99.72,
-            units=pyunits.dimensionless,
-            doc="Holdup equation B parameter",
-        )
-
-        self.holdup_exp = Param(
-            initialize=0.28, units=pyunits.dimensionless, doc="Holdup equation exponent"
-        )
-
         # Particle Peclet number correlation
         # Eq. 4.100 in Inamuddin/Luqman
 
@@ -837,15 +818,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             )
 
         # ==========EXPRESSIONS==========
-
-        @self.Expression(doc="Column holdup")
-        def holdup(b):  # Eq. 3.332, Inglezakis + Poulopoulos
-            vel_bed_dimensionless = pyunits.convert(
-                pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s)
-                * (pyunits.s / pyunits.cm),
-                to_units=pyunits.dimensionless,
-            )
-            return b.holdup_A + b.holdup_B * vel_bed_dimensionless**b.holdup_exp
 
         @self.Expression(doc="Bed expansion fraction from backwashing")
         def bed_expansion_frac(b):
