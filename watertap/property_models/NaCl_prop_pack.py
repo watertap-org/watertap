@@ -310,10 +310,11 @@ class _NaClStateBlock(StateBlock):
                 self.release_state(flags)
 
         if (not skip_solve) and (not check_optimal_termination(results)):
-            raise InitializationError(
-                f"{self.name} failed to initialize successfully. Please "
-                f"check the output logs for more information."
+            raise PropertyPackageError(
+                f"{self.name} failed to initialize successfully. Please check the output logs for more information."
             )
+            # TODO: why can't InitializationError raise?
+            # raise InitializationError(f"{self.name} failed to initialize successfully. Please check the output logs for more information.")
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
