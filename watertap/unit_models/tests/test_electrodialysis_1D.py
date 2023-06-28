@@ -271,7 +271,7 @@ class TestElectrodialysisVoltageConst:
     @pytest.mark.component
     def test_costing(self, electrodialysis_1d_cell1):
         m = electrodialysis_1d_cell1
-        blk = m.fs.unit
+        # blk = m.fs.unit
 
         m.fs.costing = WaterTAPCosting()
 
@@ -295,6 +295,39 @@ class TestElectrodialysisVoltageConst:
             m.fs.costing.total_operating_cost
         )
         assert pytest.approx(777.3600, rel=1e-3) == value(
+            m.fs.costing.total_capital_cost
+        )
+
+    @pytest.mark.component
+    def test_costing_with_rectifier(self, electrodialysis_1d_cell1):
+        m = electrodialysis_1d_cell1
+        # blk = m.fs.unit
+
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={
+                "cost_electricity_flow": True,
+                "has_rectifier": True,
+            },
+        )
+        m.fs.costing.cost_process()
+
+        assert_units_consistent(m)
+
+        assert degrees_of_freedom(m) == 0
+
+        results = solver.solve(m, tee=True)
+        assert_optimal_termination(results)
+
+        assert pytest.approx(2395.0988, rel=1e-3) == value(
+            m.fs.costing.aggregate_capital_cost
+        )
+        assert pytest.approx(168.2311, rel=1e-3) == value(
+            m.fs.costing.total_operating_cost
+        )
+        assert pytest.approx(4790.1977, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
 

@@ -94,12 +94,12 @@ def main():
     m.fs.EDstack.voltage_applied[0].setlb(0.1)
     m.fs.EDstack.voltage_applied[0].setub(ulim)
     m.fs.EDstack.cell_pair_num.unfix()
-    m.fs.EDstack.cell_pair_num.setlb(1)
+    m.fs.EDstack.cell_pair_num.setlb(10)
     m.fs.EDstack.cell_pair_num.setub(1000)
     m.fs.EDstack.cell_length.unfix()
     m.fs.prod.properties[0].conc_mol_phase_comp["Liq", "Na_+"].fix(
         1.7094
-    )  # Corresponding to C_product = 100 ppb
+    )  # Corresponding to C_product = 100 ppm
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
     solve(m, solver=solver, tee=True)
     m.fs.EDstack.cell_pair_num.fix(round(m.fs.EDstack.cell_pair_num.value))
@@ -165,7 +165,10 @@ def build():
     m.fs.disp.properties[0].flow_vol_phase[...]
 
     # costing
-    m.fs.EDstack.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.EDstack.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method_arguments={"cost_electricity_flow": True, "has_rectifier": True},
+    )
     m.fs.pump0.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.pump1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.costing.cost_process()

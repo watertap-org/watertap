@@ -13,6 +13,7 @@
 import pyomo.environ as pyo
 from ..util import (
     register_costing_parameter_block,
+    cost_rectifier,
     make_capital_cost_var,
     make_fixed_operating_cost_var,
 )
@@ -56,7 +57,7 @@ def build_electrodialysis_cost_param_block(blk):
     build_rule=build_electrodialysis_cost_param_block,
     parameter_block_name="electrodialysis",
 )
-def cost_electrodialysis(blk, cost_electricity_flow=True):
+def cost_electrodialysis(blk, cost_electricity_flow=True, has_rectifier=False):
     """
     Function for costing the Electrodialysis unit
 
@@ -84,13 +85,26 @@ def cost_electrodialysis(blk, cost_electricity_flow=True):
     # Changed this to grab power from performance table which is identified
     # by same key regardless of whether the Electrodialysis unit is 0D or 1D
     if cost_electricity_flow:
-        blk.costing_package.cost_flow(
-            pyo.units.convert(
-                blk.unit_model.get_power_electrical(t0),
-                to_units=pyo.units.kW,
-            ),
-            "electricity",
-        )
+        if not has_rectifier:
+            blk.costing_package.cost_flow(
+                pyo.units.convert(
+                    blk.unit_model.get_power_electrical(t0),
+                    to_units=pyo.units.kW,
+                ),
+                "electricity",
+            )
+        else:
+            blk.unit_model.power = blk.unit_model.get_power_electrical(
+                blk.flowsheet().time.first()
+            )
+            cost_rectifier(blk, ac_dc_conversion_efficiency=0.9)
+            blk.costing_package.cost_flow(
+                pyo.units.convert(
+                    blk.ac_power,
+                    to_units=pyo.units.kW,
+                ),
+                "electricity",
+            )
 
 
 def cost_electrodialysis_stack(
