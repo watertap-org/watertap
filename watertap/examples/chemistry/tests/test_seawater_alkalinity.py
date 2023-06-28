@@ -177,7 +177,10 @@ thermo_config = {
                     pyunits.J / pyunits.K / pyunits.mol,
                 ),
                 "pressure_sat_comp_coeff": {
-                    "A": (4.6543, pyunits.dimensionless),  # [1], temperature range 255.9 K - 373 K
+                    "A": (
+                        4.6543,
+                        pyunits.dimensionless,
+                    ),  # [1], temperature range 255.9 K - 373 K
                     "B": (1435.264, pyunits.K),
                     "C": (-64.848, pyunits.K),
                 },

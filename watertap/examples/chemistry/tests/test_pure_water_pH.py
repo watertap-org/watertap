@@ -132,7 +132,7 @@ def base_units():
 def solver():
     s = get_solver()
     s.options["max_iter"] = 200
-    #s.options["halt_on_ampl_error"] = "yes"
+    # s.options["halt_on_ampl_error"] = "yes"
     return s
 
 
@@ -210,7 +210,10 @@ def thermo_config(base_units):
                         pyunits.J / pyunits.K / pyunits.mol,
                     ),
                     "pressure_sat_comp_coeff": {
-                        "A": (4.6543, pyunits.dimensionless),  # [1], temperature range 255.9 K - 373 K
+                        "A": (
+                            4.6543,
+                            pyunits.dimensionless,
+                        ),  # [1], temperature range 255.9 K - 373 K
                         "B": (1435.264, pyunits.K),
                         "C": (-64.848, pyunits.K),
                     },
@@ -523,22 +526,32 @@ class TestPureWater:
             iscale.constraint_scaling_transform(
                 model.fs.unit.control_volume.material_balances[0.0, i[1]], 10 / scale
             )
-            
+
         max_enth_mol_phase = 1
         min_scale = 1
         for phase in model.fs.unit.control_volume.properties_in[0.0].enth_mol_phase:
             val = max(
                 min_scale,
                 abs(
-                    value(model.fs.unit.control_volume.properties_in[0.0].enth_mol_phase[phase].expr)
+                    value(
+                        model.fs.unit.control_volume.properties_in[0.0]
+                        .enth_mol_phase[phase]
+                        .expr
+                    )
                 ),
             )
             max_enth_mol_phase = max(val, max_enth_mol_phase)
             iscale.set_scaling_factor(
-                model.fs.unit.control_volume.properties_in[0.0]._enthalpy_flow_term[phase], 1 / val
+                model.fs.unit.control_volume.properties_in[0.0]._enthalpy_flow_term[
+                    phase
+                ],
+                1 / val,
             )
             iscale.set_scaling_factor(
-                model.fs.unit.control_volume.properties_out[0.0]._enthalpy_flow_term[phase], 1 / val
+                model.fs.unit.control_volume.properties_out[0.0]._enthalpy_flow_term[
+                    phase
+                ],
+                1 / val,
             )
 
         iscale.constraint_scaling_transform(
@@ -607,7 +620,7 @@ class TestPureWater:
 
     @pytest.fixture
     def model_solve(self, model, solver):
-        model.write("bah.nl", io_options={"symbolic_solver_labels":True})
+        model.write("bah.nl", io_options={"symbolic_solver_labels": True})
         results = solver.solve(model, symbolic_solver_labels=True, tee=True)
         return model, results
 

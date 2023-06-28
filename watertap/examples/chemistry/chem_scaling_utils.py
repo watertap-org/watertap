@@ -57,34 +57,43 @@ def _set_equ_rxn_scaling(unit, rxn_params, rxn_config, min_k_eq_ref=1e-3):
         iscale.set_scaling_factor(
             unit.control_volume.equilibrium_reaction_extent[0.0, i[1]], 10 / scale
         )
-        
+
         # Add scale for constraints in log form
         log_scale = min(min_k_eq_ref, 1e-3)
         # Scale keq calculation from keq_ref
         iscale.constraint_scaling_transform(
-            unit.control_volume.reactions[0.0].log_k_eq_constraint[i[1]], 1*scale/log_scale
+            unit.control_volume.reactions[0.0].log_k_eq_constraint[i[1]],
+            1 * scale / log_scale,
         )
-    
-        if rxn_config["equilibrium_reactions"][i[1]]["equilibrium_form"] is solubility_product \
-            or rxn_config["equilibrium_reactions"][i[1]]["equilibrium_form"] is power_law_equil:
+
+        if (
+            rxn_config["equilibrium_reactions"][i[1]]["equilibrium_form"]
+            is solubility_product
+            or rxn_config["equilibrium_reactions"][i[1]]["equilibrium_form"]
+            is power_law_equil
+        ):
             if hasattr(rxn_params.component("reaction_" + i[1]), "eps"):
                 iscale.constraint_scaling_transform(
-                    unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 10 / scale
-                )                
+                    unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]],
+                    10 / scale,
+                )
             else:
                 iscale.constraint_scaling_transform(
-                    unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 1 / scale
+                    unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]],
+                    1 / scale,
                 )
-                
+
         else:
             # Solubility_product with eps has different order of magnitude compare to other equilibrium constraints
             if hasattr(rxn_params.component("reaction_" + i[1]), "eps"):
                 iscale.constraint_scaling_transform(
-                    unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 1*scale/log_scale
-                )                
+                    unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]],
+                    1 * scale / log_scale,
+                )
             else:
                 iscale.constraint_scaling_transform(
-                    unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1*scale/log_scale
+                    unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]],
+                    0.1 * scale / log_scale,
                 )
 
 
