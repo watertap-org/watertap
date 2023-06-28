@@ -143,9 +143,6 @@ class TestIonExchangeLangmuir:
             "underdrain_h",
             "distributor_h",
             "p_drop_psi_to_m",
-            "holdup_A",
-            "holdup_B",
-            "holdup_exp",
             "Pe_p_A",
             "Pe_p_exp",
             "Sh_A",
@@ -350,6 +347,7 @@ class TestIonExchangeFreundlich:
             "target_ion": target_ion,
             "isotherm": "freundlich",
             "regenerant": "NaOH",
+            "hazardous_waste": True,
         }
         m.fs.ix = ix = IonExchange0D(**ix_config)
 
@@ -387,7 +385,7 @@ class TestIonExchangeFreundlich:
         assert not m.fs.ix.config.dynamic
         assert not m.fs.ix.config.has_holdup
         assert m.fs.ix.config.property_package is m.fs.properties
-        assert not m.fs.ix.config.hazardous_waste
+        assert m.fs.ix.config.hazardous_waste
         assert isinstance(m.fs.ix.regen_chem, RegenerantChem)
         assert m.fs.ix.regen_chem is RegenerantChem.NaOH
         assert isinstance(m.fs.ix.ion_exchange_type, IonExchangeType)
@@ -422,9 +420,6 @@ class TestIonExchangeFreundlich:
             "underdrain_h",
             "distributor_h",
             "p_drop_psi_to_m",
-            "holdup_A",
-            "holdup_B",
-            "holdup_exp",
             "Pe_p_A",
             "Pe_p_exp",
             "Sh_A",
@@ -622,13 +617,13 @@ class TestIonExchangeFreundlich:
         assert pytest.approx(9701947.4187, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(1172241.976, rel=1e-3) == value(
+        assert pytest.approx(1448862.0602, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
         assert pytest.approx(19403894.837, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
-        assert pytest.approx(0.21918, rel=1e-3) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.238664, rel=1e-3) == value(m.fs.costing.LCOW)
         assert pytest.approx(0.04382530, rel=1e-3) == value(
             m.fs.costing.specific_energy_consumption
         )
@@ -728,9 +723,6 @@ class TestIonExchangeInert:
             "underdrain_h",
             "distributor_h",
             "p_drop_psi_to_m",
-            "holdup_A",
-            "holdup_B",
-            "holdup_exp",
             "Pe_p_A",
             "Pe_p_exp",
             "Sh_A",
