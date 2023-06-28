@@ -20,6 +20,9 @@ Department of Industrial Electrical Engineering and Automation, Lund University,
 # Some more information about this module
 __author__ = "Alejandro Garciadiego"
 
+from idaes.core.solvers import get_solver
+import idaes.logger as idaeslog
+
 import pytest
 
 from pyomo.environ import assert_optimal_termination, value, units
@@ -36,17 +39,20 @@ from watertap.examples.flowsheets.case_studies.electroNP.electroNP_flowsheet imp
     build_flowsheet,
 )
 
+# Set up logger
+_log = idaeslog.getLogger(__name__)
+
 
 def model():
     m, res = build_flowsheet()
 
-    N = 100  # number of samples
-    x_s = 3.4655
-    st_dev_x = 0.05
+    N = 1000  # number of samples
+    x_s = 0.22
+    st_dev_x = x_s * 0.1
 
     m.results = res
 
-    solver = get_solver(options={"bound_push": 1e-2})
+    solver = get_solver()
 
     Feed = []
     S_A = []
@@ -64,6 +70,7 @@ def model():
     X_PHA = []
     X_PP = []
     X_S = []
+    bX_SPO4 = []
 
     c_cost = []
     o_cost = []
@@ -72,10 +79,9 @@ def model():
 
     for i in range(N):
         noise_x = np.random.normal(loc=0, scale=st_dev_x)
-        # print(value(m.fs.FeedWater.conc_mass_comp[0, "S_su"]))
-        m.fs.AD.inlet.conc_mass_comp[0, "X_PAO"].fix(x_s + noise_x)
+        m.fs.AD.inlet.conc_mass_comp[0, "S_IP"].fix(x_s + noise_x)
         print(i)
-        print(value(m.fs.AD.inlet.conc_mass_comp[0, "X_PAO"]))
+        print(value(m.fs.AD.inlet.conc_mass_comp[0, "S_IP"]))
 
         try:
 
@@ -87,7 +93,7 @@ def model():
             ):
                 print("yes")
 
-                Feed.append(value(m.fs.AD.inlet.conc_mass_comp[0, "X_PAO"]))
+                Feed.append(value(m.fs.AD.inlet.conc_mass_comp[0, "S_IP"]))
                 S_A.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "S_A"]))
                 S_F.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "S_F"]))
                 S_I.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "S_I"]))
@@ -103,6 +109,9 @@ def model():
                 X_PHA.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "X_PHA"]))
                 X_PP.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "X_PP"]))
                 X_S.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "X_S"]))
+                bX_SPO4.append(
+                    value(m.fs.electroNP.byproduct.conc_mass_comp[0, "S_PO4"])
+                )
 
                 c_cost.append(
                     value(
@@ -181,9 +190,10 @@ def model():
             "o_cost": o_cost,
             "lcow": lcow,
             "e_cost": e_cost,
+            "byS_PO4": bX_SPO4,
         }
     )
-    df.to_csv("results.csv")
+    df.to_csv("resultsS_IP.csv")
 
     return m
 
