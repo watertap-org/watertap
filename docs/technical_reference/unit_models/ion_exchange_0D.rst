@@ -32,6 +32,7 @@ Isotherm Configurations
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 The model requires the user has either Langmuir or Freundlich isotherm equilibrium parameters for their specific system.
+Variables in the following equations and their corollary in the WaterTAP model are defined in a following section.
 
 Langmuir
 ++++++++
@@ -47,19 +48,26 @@ Where :math:`K` is an equilibrium constant derived from experimental data, and :
 .. math::
     La = \frac{X (1 - Y)}{Y (1 - X)}
 
-Where :math:`X` is the relative breakthrough concentration :math:`\frac{C_b}{C_0}` (``c_norm`` in the WaterTAP model)
+:math:`X` is the relative breakthrough concentration :math:`\frac{C_b}{C_0}` (``c_norm`` in the WaterTAP model)
 and :math:`Y` is the ratio of equilibrium to total resin capacity (``resin_eq_capacity`` and ``resin_max_capacity``, respectively in the WaterTAP model).
-For a favorable isotherm (a core assumption of the model), :math:`La` is less than one. 
-Given a :math:`X`, as the isotherm becomes more favorable (:math:`La` gets smaller), :math:`Y` becomes larger.
+For a favorable isotherm (a core assumption of the model), :math:`La` is less than one.
 
 Freundlich
 ++++++++++
 
-For the Freundlich isotherm, the model requires the user has fit breakthrough data to the Clark Model:
+For the Freundlich isotherm, the model requires the user has fit breakthrough data to the Clark model. 
+The Clark model accounts for mass transfer and changes in adsorption capacity. 
+The general solution evaluated at 50% breakthrough is:
 
 .. math::
     \frac{C_b}{C_0} = \frac{1}{\bigg(1 + (2^{n - 1} - 1)\text{exp}\bigg[\frac{k_T Z (n - 1)}{BV_{50} u_{bed}} (BV_{50} - BV)\bigg]\bigg)^{\frac{1}{n-1}}}
 
+The form often fit to breakthrough data is:
+
+.. math::
+    \frac{C_b}{C_0} = \frac{1}{A \text{exp}\big[\frac{-r Z}{u_{bed}} BV\big]^{\frac{1}{n-1}}}
+
+The full derivation for both equations is provided in Croll et al. (2023).
 
 Ports
 -----
@@ -84,8 +92,8 @@ The current model implementation is only for a single component, but ``target_io
 
    "Time", ":math:`t`", "``[0]``"
    "Phases", ":math:`p`", "``['Liq']``"
-   "Components", ":math:`j`", "``['H2O', 'Cation_+', '\Anion_-', 'Inert']``"
-   "Ions", ":math:`j`", "``['Cation_+', '\Anion_-']``"
+   "Components", ":math:`j`", "``['H2O', 'Cation_+', 'Anion_-', 'Inert']``"
+   "Ions", ":math:`j`", "``['Cation_+', 'Anion_-']``"
    "Target Ion", ":math:`j`", "``['Cation_+']``"
 
 In this example, the influent stream contains ``H2O`` (always included), ``Cation_+``, ``Anion_-``, and an uncharged component ``Inert``. 
@@ -139,7 +147,7 @@ The ion exchange model includes many variables, parameters, and expressions that
    "Pressure drop equation intercept", ":math:`p_{drop,A}`", "``p_drop_A``", "None", ":math:`\text{dimensionless}`" 
    "Pressure drop equation B", ":math:`p_{drop,B}`", "``p_drop_B``", "None", ":math:`\text{dimensionless}`" 
    "Pressure drop equation C", ":math:`p_{drop,C}`", "``p_drop_C``", "None", ":math:`\text{dimensionless}`" 
-   "Bed expansion fraction eq intercept", ":math:`H_{expan,A}`", "``bed_expansion_frac_A``", "None", ":math:`\text{dimensionless}`" 
+   "Bed expansion fraction equation intercept", ":math:`H_{expan,A}`", "``bed_expansion_frac_A``", "None", ":math:`\text{dimensionless}`" 
    "Bed expansion fraction equation B parameter", ":math:`H_{expan,B}`", "``bed_expansion_frac_B``", "None", ":math:`\text{dimensionless}`" 
    "Bed expansion fraction equation C parameter", ":math:`H_{expan,C}`", "``bed_expansion_frac_C``", "None", ":math:`\text{dimensionless}`" 
 
@@ -187,9 +195,11 @@ If ``isotherm`` is set to ``freundlich``, the model includes the following compo
 
    **Variables**
    "Freundlich isotherm exponent for resin/ion system", ":math:`Fr`", "``freundlich_n``", "None", ":math:`\text{dimensionless}`"
-   "Bed capacity parameter", ":math:`r`", "``bed_capacity_param``", None, ":math:`\text{dimensionless}`"
+   "Bed capacity parameter", ":math:`A`", "``bed_capacity_param``", None, ":math:`\text{dimensionless}`"
    "Bed volumes at breakthrough", ":math:`BV`", "``bv``", "None", ":math:`\text{dimensionless}`"
    "Bed volumes at 50% influent conc.", ":math:`BV_{50}`", "``bv_50``", "None", ":math:`\text{dimensionless}`"
+   "Kinetic fitting parameter", ":math:`r`", "``kinetic_param``", "None", ":math:`\text{dimensionless}`"
+   "Mass transfer coefficient", ":math:`k_T`", "``mass_transfer_coeff``", "None", ":math:`\text{s}^{-1}`"
    "Concentration at breakthrough", ":math:`C_{b}`", "``c_breakthru``", "``target_ion_set``", ":math:`\text{kg/}\text{m}^3`"
    "Average relative breakthrough concentration at breakthrough time", ":math:`X_{avg}`", "``c_norm_avg``", "None", ":math:`\text{dimensionless}`"
    "Relative breakthrough conc. for trapezoids", ":math:`X_{trap,k}`", "``c_traps``", "``k``", ":math:`\text{dimensionless}`"
