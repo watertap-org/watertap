@@ -131,8 +131,8 @@ def build_ion_exhange_cost_param_block(blk):
         units=pyo.units.USD_2020 / pyo.units.gal,
         doc="Ion exchange pressure vessel cost equation - C coeff., Carbon steel w/ plastic internals",
     )
-    # Ion exchange pressure vessels costed with 3rd order polynomial:
-    #   pv_cost = A * col_vol^3 + B * col_vol^2 + C * col_vol + intercept
+    # Ion exchange backwash/rinse tank costed with 3rd order polynomial:
+    #   pv_cost = A * tank_vol^3 + B * tank_vol^2 + C * tank_vol + intercept
 
     blk.backwash_tank_A_coeff = pyo.Var(
         initialize=1e-9,
@@ -152,7 +152,7 @@ def build_ion_exhange_cost_param_block(blk):
     blk.backwash_tank_intercept = pyo.Var(
         initialize=4717.255,
         units=pyo.units.USD_2020,
-        doc="Ion exchange backwash tank cost equation - exponent, Fiberglass tank",
+        doc="Ion exchange backwash tank cost equation - intercept, Fiberglass tank",
     )
     # Ion exchange regeneration solution tank costed with 2nd order polynomial:
     #   regen_tank_cost = A * tank_vol^2 + B * tank_vol + intercept
@@ -160,7 +160,7 @@ def build_ion_exhange_cost_param_block(blk):
     blk.regen_tank_intercept = pyo.Var(
         initialize=4408.327,
         units=pyo.units.USD_2020,
-        doc="Ion exchange regen tank cost equation - C coeff. Stainless steel",
+        doc="Ion exchange regen tank cost equation - intercept. Stainless steel",
     )
     blk.regen_tank_A_coeff = pyo.Var(
         initialize=-3.258e-5,
@@ -282,6 +282,18 @@ def cost_ion_exchange(blk):
         units=blk.costing_package.base_currency / blk.costing_package.base_period,
         doc="Operating cost for hazardous waste disposal",
     )
+    blk.regen_soln_flow = pyo.Var(
+        initialize=1,
+        bounds=(0, None),
+        units=pyo.units.kg / pyo.units.year,
+        doc="Regeneration solution flow",
+    )
+    blk.total_pumping_power = pyo.Var(
+        initialize=1,
+        bounds=(0, None),
+        units=pyo.units.kilowatt,
+        doc="Total pumping power required",
+    )
 
     if ix_type == "cation":
         resin_cost = ion_exchange_params.cation_exchange_resin_cost
@@ -328,8 +340,7 @@ def cost_ion_exchange(blk):
         expr=blk.capital_cost
         == pyo.units.convert(
             (
-                (blk.capital_cost_vessel + blk.capital_cost_resin)
-                * (blk.unit_model.number_columns + blk.unit_model.number_columns_redund)
+                ((blk.capital_cost_vessel + blk.capital_cost_resin) * tot_num_col)
                 + blk.capital_cost_backwash_tank
                 + blk.capital_cost_regen_tank
             )
@@ -338,16 +349,21 @@ def cost_ion_exchange(blk):
         )
     )
     if blk.unit_model.config.hazardous_waste:
+        blk.regen_dens = 1000 * pyo.units.kg / pyo.units.m**3
+        blk.regen_soln_vol_flow = pyo.units.convert(
+            blk.regen_soln_flow / blk.regen_dens,
+            to_units=pyo.units.gal / pyo.units.year,
+        )
         blk.operating_cost_hazardous_constraint = pyo.Constraint(
             expr=blk.operating_cost_hazardous
             == pyo.units.convert(
                 (
-                    bw_tank_vol * ion_exchange_params.hazardous_regen_disposal
-                    + bed_mass_ton
+                    +bed_mass_ton
                     * tot_num_col
                     * ion_exchange_params.hazardous_resin_disposal
                 )
                 * ion_exchange_params.annual_resin_replacement_factor
+                + blk.regen_soln_vol_flow * ion_exchange_params.hazardous_regen_disposal
                 + ion_exchange_params.hazardous_min_cost,
                 to_units=blk.costing_package.base_currency
                 / blk.costing_package.base_period,
@@ -372,24 +388,11 @@ def cost_ion_exchange(blk):
         + blk.operating_cost_hazardous
     )
 
-    blk.regen_soln_flow = pyo.Var(
-        initialize=1,
-        bounds=(0, None),
-        units=pyo.units.kg / pyo.units.year,
-        doc="Regeneration solution flow",
-    )
     blk.regen_soln_flow_constr = pyo.Constraint(
         expr=blk.regen_soln_flow
         == pyo.units.convert(
             (
-                (
-                    blk.unit_model.regen_dose
-                    * blk.unit_model.bed_vol
-                    * (
-                        blk.unit_model.number_columns
-                        + blk.unit_model.number_columns_redund
-                    )
-                )
+                (blk.unit_model.regen_dose * blk.unit_model.bed_vol * tot_num_col)
                 / (blk.unit_model.t_cycle)
             )
             / ion_exchange_params.regen_recycle,
@@ -397,12 +400,6 @@ def cost_ion_exchange(blk):
         )
     )
 
-    blk.total_pumping_power = pyo.Var(
-        initialize=1,
-        bounds=(0, None),
-        units=pyo.units.kilowatt,
-        doc="Total pumping power required",
-    )
     blk.total_pumping_power_constr = pyo.Constraint(
         expr=blk.total_pumping_power
         == (
