@@ -130,13 +130,6 @@ see reaction package for documentation.}""",
             doc="Smoothing factor",
         )
 
-        self.eps = Param(
-            initialize=1e-10,
-            units=pyunits.kg / pyunits.m**3,
-            mutable=True,
-            doc="Smoothing factor",
-        )
-
         mw_n = 14 * pyunits.kg / pyunits.kmol
         mw_c = 12 * pyunits.kg / pyunits.kmol
 
