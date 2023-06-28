@@ -46,7 +46,7 @@ def model():
 
     m.results = res
 
-    solver = get_solver(options={"bound_push": 1e-8})
+    solver = get_solver(options={"bound_push": 1e-2})
 
     Feed = []
     S_A = []
