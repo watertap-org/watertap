@@ -60,8 +60,7 @@ For a favorable isotherm (a core assumption of the model), :math:`La` is less th
 Freundlich
 ++++++++++
 
-For the Freundlich isotherm, the model requires the user has fit breakthrough data to the Clark model. 
-The Clark model accounts for mass transfer and changes in adsorption capacity. 
+For the Freundlich isotherm, the model assumes the user has fit breakthrough data to the Clark model.  
 The general solution evaluated at 50% breakthrough is:
 
 .. math::
@@ -163,7 +162,6 @@ The ion exchange model includes many variables, parameters, and expressions that
    "Bed expansion fraction equation C parameter", ":math:`H_{expan,C}`", "``bed_expansion_frac_C``", "None", ":math:`\text{dimensionless}`" 
 
     **Expressions**
-   "Holdup percent", ":math:`holdup`", "``holdup``", "None", ":math:`\text{dimensionless}`" 
    "Fraction of bed depth increase during backwashing", ":math:`X_{expan}`", "``bed_expansion_frac``", "None", ":math:`\text{dimensionless}`" 
    "Additional column sidewall height required for bed expansion", ":math:`H_{expan}`", "``bed_expansion_h``", "None", ":math:`\text{dimensionless}`" 
    "Backwashing volumetric flow rate", ":math:`Q_{bw}`", "``bw_flow``", "None", ":math:`\text{m}^{3}\text{/s}`" 
@@ -175,7 +173,7 @@ The ion exchange model includes many variables, parameters, and expressions that
    "Column volume of one unit", ":math:`V_{col}`", "``col_vol_per``", "None", ":math:`\text{m}^{3}`" 
    "Total column volume", ":math:`V_{col, tot}`", "``col_vol_tot``", "None", ":math:`\text{m}^{3}`" 
    "Bed volumes of throughput at breakthrough", ":math:`BV`", "``bv_calc``", "None", ":math:`\text{dimensionless}`" 
-   "Regeneration solution tank volume", ":math:`V_{regen,tot}`", "``regen_tank_vol``", "None", ":math:`\text{m}^{3}`" 
+   "Regeneration solution tank volume", ":math:`V_{regen}`", "``regen_tank_vol``", "None", ":math:`\text{m}^{3}`" 
    "Pressure drop through resin bed", ":math:`p_{drop}`", "``pressure_drop``", "None", ":math:`\text{psi}`" 
    "Power of main booster pump", ":math:`P_{main}`", "``main_pump_power``", "None", ":math:`\text{kW}`" 
    "Regen pump power", ":math:`P_{regen}`", "``regen_pump_power``", "None", ":math:`\text{kW}`" 
@@ -321,7 +319,7 @@ Equations and Relationships
    "Interstitial velocity", ":math:`u_{inter} = \frac{u_{bed}}{\epsilon}`"
    "Contact time", ":math:`t_{contact} = EBCT \epsilon`"
    "Empty bed contact time", ":math:`EBCT = \frac{Z}{u_{bed}}`"
-   "Regeneration tank volume", ":math:`V_{regen,tot} = t_{regen} (Q_{p, in} / R)`"
+   "Regeneration tank volume", ":math:`V_{regen} = t_{regen} (Q_{p, in} / R)`"
    "Bed expansion fraction from backwashing (T = 20C)", ":math:`X_{expan} = H_{expan,A} + H_{expan,B}u_{bw} + H_{expan,C}u_{bw}^{2}`"
    "Bed expansion from backwashing", ":math:`H_{expan} = X_{expan}Z`"
    "Regen volumetric flow rate", ":math:`Q_{regen} = \frac{Q_{p, in}N_{regen}}{R}`"
@@ -353,10 +351,9 @@ Equations and Relationships
    "Height of transfer unit", ":math:`HTU = \frac{u_{bed}}{\rho_{b}k}`"
    "Rate coefficient", ":math:`k = 6 \frac{(1-\epsilon)k_{f}}{\rho_{b}d}`"
    "Mass removed", ":math:`M_{rem,j} = V_{res,tot}q_{eq} \rho_{b}`"
-   "Mass transfer term", ":math:`\dot{m}_j = M_{rem,j} / t_{break}`"
+   "Mass transfer term", ":math:`\dot{m}_j = -M_{rem,j} / t_{break}`"
 
     **Freundlich**
-
    "Breakthrough concentration", ":math:`X = \frac{C_b}{C_0}`"
    "Bed volumes at breakthrough concentration", ":math:`BV = \frac{t_{break} u_{bed}}{Z}`"
    "Clark equation with fundamental constants", ":math:`X = \frac{1}{\bigg(1 + (2^{n - 1} - 1)\text{exp}\bigg[\frac{k_T Z (n - 1)}{BV_{50} u_{bed}} (BV_{50} - BV)\bigg]\bigg)^{\frac{1}{n-1}}}`"
@@ -369,22 +366,151 @@ Equations and Relationships
    "Mass transfer term", ":math:`\dot{m}_j = -(1 - X_{avg}) N_j`"
 
 
+Costing Method
+--------------
+
+The following is a list of variables and/or parameters that are created when applying the ion exchange costing method in the ``watertap_costing_package``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units", "Notes"
+
+   "Anion exchange resin cost", ":math:`c_{res}`", "``anion_exchange_resin_cost``", "205", ":math:`\text{\$/}\text{ft}^{3}`", "Assumes strong base polystyrenic gel-type Type II. From EPA-WBS cost model."
+   "Cation exchange resin cost", ":math:`c_{res}`", "``cation_exchange_resin_cost``", "205", ":math:`\text{\$/}\text{ft}^{3}`", "Assumes strong acid polystyrenic gel-type. From EPA-WBS cost model."
+   "Ion exchange column cost equation intercept", ":math:`C_{col,int}`", "``vessel_intercept``", "10010.86", ":math:`\text{\$}`", "Carbon steel w/ plastic internals. From EPA-WBS cost model."
+   "Ion exchange column cost equation A coeff", ":math:`C_{col,A}`", "``vessel_A_coeff``", "6e-9", ":math:`\text{\$/}\text{gal}^{3}`", "Carbon steel w/ plastic internals. From EPA-WBS cost model."
+   "Ion exchange column cost equation B coeff", ":math:`C_{col,B}`", "``vessel_B_coeff``", "-2.284e-4", ":math:`\text{\$/}\text{gal}^{2}`", "Carbon steel w/ plastic internals. From EPA-WBS cost model."
+   "Ion exchange column cost equation C coeff", ":math:`C_{col,C}`", "``vessel_C_coeff``", "8.3472", ":math:`\text{\$/}\text{gal}`", "Carbon steel w/ plastic internals. From EPA-WBS cost model."
+   "Backwash/rinse tank cost equation intercept", ":math:`C_{bw,int}`", "``backwash_tank_intercept``", "4717.255", ":math:`\text{\$}`", "Fiberglass tank. From EPA-WBS cost model."
+   "Backwash/rinse tank cost equation A coeff", ":math:`C_{bw,A}`", "``backwash_tank_A_coeff``", "1e-9", ":math:`\text{\$/}\text{gal}^{3}`", "Fiberglass tank. From EPA-WBS cost model."
+   "Backwash/rinse tank cost equation B coeff", ":math:`C_{bw,B}`", "``backwash_tank_B_coeff``", "-5.8587e-05", ":math:`\text{\$/}\text{gal}^{2}`", "Fiberglass tank. From EPA-WBS cost model."
+   "Backwash/rinse tank cost equation C coeff", ":math:`C_{bw,C}`", "``backwash_tank_C_coeff``", "2.2911", ":math:`\text{\$/}\text{gal}`", "Fiberglass tank. From EPA-WBS cost model."
+   "Regeneration solution tank cost equation intercept", ":math:`C_{regen,int}`", "``regen_tank_intercept``", "4408.327", ":math:`\text{\$}`", "Stainless steel tank. From EPA-WBS cost model."
+   "Regeneration solution tank cost equation A coeff", ":math:`C_{regen,A}`", "``regen_tank_A_coeff``", "-3.258e-5", ":math:`\text{\$/}\text{gal}^{2}`", "Stainless steel tank. From EPA-WBS cost model."
+   "Regeneration solution tank cost equation B coeff", ":math:`C_{regen,B}`", "``regen_tank_B_coeff``", "3.846", ":math:`\text{\$/}\text{gal}`", "Stainless steel tank. From EPA-WBS cost model."
+   "Fraction of resin replaced per year", ":math:`f_{res}`", "``annual_resin_replacement_factor``", "0.05", ":math:`\text{yr}^{-1}`", "Estimated 4-5% per year. From EPA-WBS cost model."
+   "Minimum hazardous waste disposal cost", ":math:`f_{haz,min}`", "``hazardous_min_cost``", "3240", ":math:`\text{\$/}\text{yr}`", "Minimum cost per hazardous waste shipment. From EPA-WBS cost model."
+   "Unit cost for hazardous waste resin disposal", ":math:`f_{haz,res}`", "``hazardous_resin_disposal``", "347.10", ":math:`\text{\$/}\text{ton}`", "From EPA-WBS cost model."
+   "Unit cost for hazardous waste regeneration solution disposal", ":math:`f_{haz,regen}`", "``hazardous_regen_disposal``", "3.64", ":math:`\text{\$/}\text{gal}`", "From EPA-WBS cost model."
+   "Number of cycles the regenerant can be reused before disposal", ":math:`f_{recycle}`", "``regen_recycle``", "1", ":math:`\text{dimensionless}`", "Can optionally be set by the user to investigate more efficient regen regimes."
+   "Costing factor to account for total installed cost installation of equipment", ":math:`f_{TIC}`", "``total_installed_cost_factor``", "1.65", ":math:`\text{dimensionless}`", ""
+   "Unit cost of NaCl", ":math:`c_{regen}`", "``costing.nacl``", "0.09", ":math:`\text{\$/}\text{kg}`", "Assumes solid NaCl. From CatCost v 1.0.4"
+   "Unit cost of HCl", ":math:`c_{regen}`", "``costing.hcl``", "0.17", ":math:`\text{\$/}\text{kg}`", "Assumes 37% solution HCl. From CatCost v 1.0.4"
+   "Unit cost of NaOH", ":math:`c_{regen}`", "``costing.naoh``", "0.59", ":math:`\text{\$/}\text{kg}`", "Assumes 30% solution NaOH. From iDST"
+   "Unit cost of Methanol (MeOH)", ":math:`c_{regen}`", "``costing.meoh``", "3.395", ":math:`\text{\$/}\text{kg}`", "Assumes 100% pure MeOH. From ICIS"
    
-   
-   
+Capital Cost Calculations
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Capital costs for ion exchange in the ``watertap_costing_package`` are the summation of the total cost of the resin, columns, backwashing tank, and regeneration solution tank:
+
+Resin is costed based on the total volume of resin required for the system, where :math:`c_{res}` is the cost per volume of resin (either cation or anion exchange resin):
+
+.. math::
+    C_{resin} = V_{res,tot} c_{res}
+
+Vessel cost as a function of volume was fit to a polynomial regression of the following form to determine capital cost of each column:
+
+.. math::
+    C_{col} = C_{col,A} V_{col}^3 + C_{col,B} V_{col}^2 + C_{col,C} V_{col} + C_{col,int}
    
 
-   
+The backwashing tank is assumed to include backwash and rinsing volumes. The total volume of this tank is:
 
+.. math::
+    V_{bw} = Q_{bw} t_{bw} + Q_{rinse} t_{rinse}
+
+Backwashing tank cost as a function of volume was fit to a polynomial regression of the following form to determine capital cost of the backwashing tank:
+
+.. math::
+    C_{bw} = C_{bw,A} V_{bw}^3 + C_{bw,B} V_{bw}^2 + C_{bw,C} V_{bw} + C_{bw,int}
+   
+Regeneration tank cost as a function of volume was fit to a polynomial regression of the following form the determine capital cost of the regeneration tank:
+
+.. math::
+    C_{regen} = C_{regen,A} V_{regen}^2 + C_{regen,B} V_{regen} + C_{regen,int}
+
+And the total capital cost for the ion exchange system is the summation of these:
+
+.. math::
+    C_{tot} = ((C_{resin} + C_{col}) (n_{op} + n_{red}) + C_{bw} + C_{regen}) f_{TIC}
+
+A total installed cost (:math:`f_{TIC}`) factor of 1.65 is applied to account for installation costs.
+
+Operating Cost Calculations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The operating costs for ion exchange includes the annual resin replacement cost, regeneration solution flow, energy consumption for booster pumps, 
+and any hazardous waste handling costs.
+
+Generally, the largest operating cost is the cost of the regeneration solution. The type of regeneration solution used is set via the 
+optional model configuration keyword ``regenerant``. Costing data is available for the following regenerant chemicals:
+
+* NaCl
+* HCl
+* NaOH
+* MeOH
+
+If the user does not provide a value for this option, the model defaults to a NaCl regeneration solution. The dose of regenerant needed
+is set by the model variable ``regen_dose`` in kg regenerant per cubic meter of resin volume. The mass flow of regenerant solution [kg/yr] is:
+
+.. math::
+    \dot{m}_{regen} = \frac{C_{regen} V_{res} (n_{op} + n_{red})}{t_{cycle} f_{recycle}}
+
+Annual resin replacement cost is:
+
+.. math::
+    C_{op,res} = V_{res} (n_{op} + n_{red}) f_{res} c_{res}
+
+If the spent resin and regenerant contains hazardous material, the user designates this by the model configuration keyword ``hazardous_waste``. If set to ``True``, hazardous
+disposal costs are calculated as a function of the annual mass of resin replaced and regenerant consumed:
+
+.. math::
+    C_{op,haz} = f_{haz,min} + M_{res} (n_{op} + n_{red}) f_{haz,res} + \dot{v}_{regen} f_{haz,regen}
+
+Where :math:`M_{res}` is the resin mass for a single bed and :math:`\dot{v}_{regen}` is the volumetric flow of regenerant solution. If ``hazardous_waste`` is set to ``False``,
+:math:`C_{op,haz} = 0`
+
+The total energy consumed by the unit is the summation of the power required for each of the booster pump, backwashing pump, regeneration pump, and rinsing pump:
+
+.. math::
+    P_{tot} = P_{main} + P_{bw} + P_{regen} + P_{rinse}
 
 References
 ----------
-Hand, D. W., Crittenden, J. C., & Thacker, W. E. (1984). Simplified models for design of fixed-bed adsorption systems.
-Journal of Environmental Engineering, 110(2), 440-456.
 
-Crittenden, J., Rhodes, R., Hand, D., Howe, K., & Tchobanoglous, G. (2012). MWHs Water Treatment. Principles and Design.
-EditorialJohn Wiley & Sons.
+| LeVan, M. D., Carta, G., & Yon, C. M. (2019).
+| Section 16: Adsorption and Ion Exchange.
+| Perry's Chemical Engineers' Handbook, 9th Edition.
 
-LeVan, M. D., Carta, G., & Yon, C. M. (2019). Section 16: Adsorption and Ion Exchange. Perry's Chemical Engineers' Handbook, 9th Edition.
+| Crittenden, J. C., Trussell, R. R., Hand, D. W., Howe, K. J., & Tchobanoglous, G. (2012).
+| Chapter 16: Ion Exchange.
+| MWH's Water Treatment (pp. 1263-1334): John Wiley & Sons, Inc.
 
-Inamuddin, & Luqman, M. (2012). Ion Exchange Technology I: Theory and Materials.
+| DOWEX Ion Exchange Resins Water Conditioning Manual
+| https://www.lenntech.com/Data-sheets/Dowex-Ion-Exchange-Resins-Water-Conditioning-Manual-L.pdf
+
+| Inamuddin, & Luqman, M. (2012).
+| Ion Exchange Technology I: Theory and Materials.
+
+| Vassilis J. Inglezakis and Stavros G. Poulopoulos
+| Adsorption, Ion Exchange and Catalysis: Design of Operations and Environmental Applications (2006).
+| doi.org/10.1016/B978-0-444-52783-7.X5000-9
+
+| Michaud, C.F. (2013)
+| Hydrodynamic Design, Part 8: Flow Through Ion Exchange Beds
+| Water Conditioning & Purification Magazine (WC&P)
+| https://wcponline.com/2013/08/06/hydrodynamic-design-part-8-flow-ion-exchange-beds/
+
+| Clark, R. M. (1987). 
+| Evaluating the cost and performance of field-scale granular activated carbon systems. 
+| Environ Sci Technol, 21(6), 573-580. 
+| doi:10.1021/es00160a008
+
+| Croll, H. C., Adelman, M. J., Chow, S. J., Schwab, K. J., Capelle, R., Oppenheimer, J., & Jacangelo, J. G. (2023). 
+| Fundamental kinetic constants for breakthrough of per- and polyfluoroalkyl substances at varying empty bed contact times: 
+| Theoretical analysis and pilot scale demonstration. 
+| Chemical Engineering Journal, 464. 
+| doi:10.1016/j.cej.2023.142587
+
+| United States Environmental Protection Agency. (2021). Work Breakdown Structure-Based Cost Models
+| https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models
