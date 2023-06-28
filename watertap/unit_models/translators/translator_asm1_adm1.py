@@ -122,6 +122,13 @@ see reaction package for documentation.}""",
             mutable=True,
             doc="Anaerobic degradable fraction of X_I and X_P",
         )
+        
+        self.eps = Param(
+            initialize=1e-10,
+            units=pyunits.kg / pyunits.m**3,
+            mutable=True,
+            doc="Smoothing factor",
+        )
 
         self.eps = Param(
             initialize=1e-10,
@@ -319,7 +326,7 @@ see reaction package for documentation.}""",
                 / blk.config.reaction_package.N_aa
                 / mw_n
             )
-
+        
         @self.Expression(self.flowsheet().time, doc="Amino acids mapping")
         def saa_mapping(blk, t):
             return Expr_if(

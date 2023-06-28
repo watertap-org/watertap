@@ -260,7 +260,7 @@ reaction_log_solubility = {
 solver = get_solver()
 
 
-def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
+def run_case1(xA, xB, xAB=1e-25, scaling=True, scaling_ref=1e-3, rxn_config=None):
     print("==========================================================================")
     print("Case 1: A and B are aqueous, AB is solid that forms from reaction")
     print("xA = " + str(xA))
@@ -307,11 +307,11 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     assert_units_consistent(model)
 
     # Scaling
-    _set_eps_vals(model.fs.rxn_params, rxn_config)
-    # NOTE: We skip reaction scaling because we are NOT using the log_solubility_product form in this test
-    _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, rxn_config)
-    _set_mat_bal_scaling_FpcTP(model.fs.unit)
-
+    _set_eps_vals(model.fs.rxn_params, rxn_config, max_k_eq_ref=1e-12)
+    _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, rxn_config, min_k_eq_ref=scaling_ref)
+    _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=scaling_ref*10)
+    model.fs.rxn_params.reaction_AB_Ksp.s_scale.value = 10
+    
     iscale.calculate_scaling_factors(model.fs.unit)
     assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
     assert isinstance(
@@ -465,7 +465,7 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, scaling_ref=1e-3, rxn_config=None
     if case1_thermo_config["state_definition"] == FpcTP:
         _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=scaling_ref)
     if case1_thermo_config["state_definition"] == FTPx:
-        _set_mat_bal_scaling_FTPx(model.fs.unit)
+        _set_mat_bal_scaling_FTPx(model.fs.unit, min_flow_mol_phase_comp=scaling_ref)
 
     iscale.calculate_scaling_factors(model.fs.unit)
     assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
@@ -576,14 +576,14 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, scaling_ref=1e-3, rxn_config=None
 @pytest.mark.component
 def test_case1_low_conc_no_precipitation():
     model = run_case1(
-        xA=1e-9, xB=1e-9, xAB=1e-25, scaling=True, rxn_config=reaction_solubility
+        xA=1e-9, xB=1e-9, xAB=1e-25, scaling=True, scaling_ref=1e-6, rxn_config=reaction_solubility
     )
 
 
 @pytest.mark.component
 def test_case1_mid_conc_no_precipitation():
     model = run_case1(
-        xA=1e-9, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_solubility
+        xA=1e-9, xB=1e-2, xAB=1e-25, scaling=True, scaling_ref=1e-4, rxn_config=reaction_solubility
     )
 
 
@@ -633,7 +633,7 @@ def test_case2_mid_conc_no_precipitation():
 @pytest.mark.component
 def test_case2_high_conc_with_precipitation():
     model = run_case2(
-        xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_log_solubility
+        xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True, scaling_ref=1e-5, rxn_config=reaction_log_solubility
     )
 
 
