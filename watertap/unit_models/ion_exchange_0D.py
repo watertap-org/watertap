@@ -1012,15 +1012,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 )
 
             @self.Expression(
-                self.target_ion_set,
-                doc="Clark equation bed capacity fitting parameter A",
-            )  # Croll et al (2023), Eq.19
-            def clark_A_expr(b, j):
-                n = b.freundlich_n
-                x = 1 / b.c_norm[j]
-                return (x ** (n - 1) - 1) * exp(b.kinetic_param * b.t_breakthru)
-
-            @self.Expression(
                 self.target_ion_set, doc="Freundlich base coeff estimation"
             )
             def freundlich_k(b, j):
@@ -1214,7 +1205,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
             @self.Constraint(
                 self.target_ion_set,
-                doc="Constant pattern solution for fluid-film diffuion controlling",
+                doc="Constant pattern solution for Langmuir isotherm",
             )
             def eq_constant_pattern_soln(
                 b, j
@@ -1236,10 +1227,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 )
 
             @self.Constraint(
-                self.target_ion_set,
-                doc="Mass transfer coefficient [A] from Clark equation",
+                doc="Mass transfer coefficient from Clark equation (kT)",
             )  # Croll et al (2023), Eq.19
-            def eq_mass_transfer_coeff(b, j):
+            def eq_mass_transfer_coeff(b):
                 return b.mass_transfer_coeff * (b.freundlich_n - 1) == (
                     b.kinetic_param * b.bv_50
                 )
@@ -1290,16 +1280,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     (b.c_norm[j] - b.c_trap_min) / (b.num_traps - 1)
                 )
 
+            # b.ebct == b.bed_depth / b.vel_bed
             @self.Constraint(
                 self.trap_index,
                 doc="Breakthru time calc for trapezoids",
             )
             def eq_tb_traps(b, k):
                 x = 1 / b.c_traps[k]
-                return b.tb_traps[k] == (
-                    b.vel_bed / (-b.kinetic_param * b.bed_depth)
-                ) * log((x ** (b.freundlich_n - 1) - 1) / b.bed_capacity_param) * (
-                    b.ebct
+                return b.tb_traps[k] == (1 / -b.kinetic_param) * log(
+                    (x ** (b.freundlich_n - 1) - 1) / b.bed_capacity_param
                 )
 
             @self.Constraint(self.trap_index, doc="Area of trapezoids")
@@ -1309,7 +1298,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 ] * ((b.c_traps[k] + b.c_traps[k - 1]) / 2)
 
             @self.Constraint(
-                self.target_ion_set, doc="Average relative effluent calculation"
+                self.target_ion_set, doc="Average relative effluent concentration"
             )
             def eq_c_norm_avg(b, j):
                 return b.c_norm_avg[j] == sum(b.traps[k] for k in b.trap_index)
