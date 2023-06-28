@@ -154,27 +154,24 @@ class _ASM1StateBlock(StateBlock):
         Initialization routine for property package.
 
         Keyword Arguments:
-        state_args : Dictionary with initial guesses for the state vars
-                     chosen. Note that if this method is triggered
-                     through the control volume, and if initial guesses
-                     were not provied at the unit model level, the
-                     control volume passes the inlet values as initial
-                     guess.The keys for the state_args dictionary are:
-
-                     flow_mol_comp : value at which to initialize component
-                                     flows (default=None)
-                     pressure : value at which to initialize pressure
-                                (default=None)
-                     temperature : value at which to initialize temperature
-                                  (default=None)
+            state_args : Dictionary with initial guesses for the state vars
+                         chosen. Note that if this method is triggered
+                         through the control volume, and if initial guesses
+                         were not provided at the unit model level, the
+                         control volume passes the inlet values as initial
+                         guess.The keys for the state_args dictionary are:
+            flow_vol : value at which to initialize total volumetric flow (default=None)
+            alkalinity: value of alkalinity expressed as molar concentration
+            conc_mass_comp : value at which to initialize component concentrations (default=None)
+            pressure : value at which to initialize pressure (default=None)
+            temperature : value at which to initialize temperature (default=None)
             outlvl : sets output level of initialization routine
-            state_vars_fixed: Flag to denote if state vars have already been
-                              fixed.
-                              - True - states have already been fixed and
-                                       initialization does not need to worry
-                                       about fixing and unfixing variables.
-                             - False - states have not been fixed. The state
-                                       block will deal with fixing/unfixing.
+            state_vars_fixed: Flag to denote if state vars have already been fixed.
+                              True - states have already been fixed and
+                              initialization does not need to worry
+                              about fixing and unfixing variables.
+                              False - states have not been fixed. The state
+                              block will deal with fixing/unfixing.
             optarg : solver options dictionary object (default=None, use
                      default solver options)
             solver : str indicating which solver to use during
@@ -182,13 +179,11 @@ class _ASM1StateBlock(StateBlock):
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
-                                 a dict of returned containing flags for
-                                 which states were fixed during
-                                 initialization.
-                        - False - state variables are unfixed after
-                                 initialization by calling the
-                                 relase_state method
+                         True - states variables are not unfixed, and
+                         a dict of returned containing flags for
+                         which states were fixed during initialization.
+                         False - state variables are unfixed after
+                         initialization by calling the release_state method.
 
         Returns:
             If hold_states is True, returns a dict containing flags for

@@ -13,6 +13,7 @@
 import pytest
 import os
 import numpy as np
+import requests
 import pyomo.environ as pyo
 
 from pyomo.environ import value
@@ -180,6 +181,15 @@ class TestParallelManager:
         assert global_combo_array[-1, 1] == pytest.approx(range_B[1])
         assert global_combo_array[-1, 2] == pytest.approx(range_C[1])
 
+    @pytest.mark.component
+    def test_status_publishing(self):
+        ps = ParameterSweep(
+            publish_progress=True, publish_address="http://localhost:8888"
+        )
+
+        with pytest.raises(requests.exceptions.ConnectionError):
+            r = ps._publish_updates(1, True, 5.0)
+
     def test_random_build_combinations(self):
         ps = ParameterSweep()
 
@@ -264,7 +274,7 @@ class TestParallelManager:
             param_dict, SamplingType.FIXED, None
         )
 
-        num_procs = ps.num_procs
+        num_procs = ps.parallel_manager.number_of_processes()
         rank = ps.rank
         test = np.array_split(global_combo_array, num_procs, axis=0)[rank]
 
@@ -468,7 +478,7 @@ class TestParallelManager:
         m.fs.slack_penalty = 1000.0
         m.fs.slack.setub(0)
 
-        global_num_cases = 2 * ps.num_procs
+        global_num_cases = 2 * ps.parallel_manager.number_of_processes()
         sweep_params = {
             "input_a": NormalSample(m.fs.input["a"], 0.1, 0.9, global_num_cases),
             "input_b": NormalSample(m.fs.input["b"], 0.0, 0.5, global_num_cases),
@@ -510,7 +520,9 @@ class TestParallelManager:
         if ps.rank > 0:
             assert global_output_dict == local_output_dict
         else:
-            test_array = np.repeat(np.arange(0, ps.num_procs, dtype=float), 2)
+            test_array = np.repeat(
+                np.arange(0, ps.parallel_manager.number_of_processes(), dtype=float), 2
+            )
             test_list = [True] * global_num_cases
             for key, value in global_output_dict.items():
                 if key != "solve_successful":
@@ -557,7 +569,7 @@ class TestParallelManager:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            outputs=outputs,
+            combined_outputs=outputs,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -572,7 +584,7 @@ class TestParallelManager:
             )
 
             # Check that all local output files have been created
-            for k in range(ps.num_procs):
+            for k in range(ps.parallel_manager.number_of_processes()):
                 assert os.path.isfile(
                     os.path.join(tmp_path, f"local_results_{k:03}.h5")
                 )
@@ -724,7 +736,7 @@ class TestParallelManager:
         ps.parameter_sweep(
             m,
             sweep_params,
-            outputs=outputs,
+            combined_outputs=outputs,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -857,7 +869,7 @@ class TestParallelManager:
             _ = ps.parameter_sweep(
                 m,
                 sweep_params,
-                outputs=None,
+                combined_outputs=None,
             )
 
     @pytest.mark.component
@@ -891,7 +903,7 @@ class TestParallelManager:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            outputs=None,
+            combined_outputs=None,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1114,7 +1126,7 @@ class TestParallelManager:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            outputs=None,
+            combined_outputs=None,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1302,7 +1314,7 @@ class TestParallelManager:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            outputs=None,
+            combined_outputs=None,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1517,7 +1529,7 @@ class TestParallelManager:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                outputs=None,
+                combined_outputs=None,
             )
 
     @pytest.mark.component
@@ -1541,7 +1553,7 @@ class TestParallelManager:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                outputs=None,
+                combined_outputs=None,
             )
 
     @pytest.mark.component
@@ -1569,7 +1581,7 @@ class TestParallelManager:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                outputs=None,
+                combined_outputs=None,
             )
 
     @pytest.mark.component
@@ -1613,7 +1625,7 @@ class TestParallelManager:
         ps.parameter_sweep(
             m,
             sweep_params,
-            outputs=outputs,
+            combined_outputs=outputs,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be

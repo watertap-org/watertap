@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from .anaerobic_digestor import AD
 from .reverse_osmosis_0D import ReverseOsmosis0D
 from .reverse_osmosis_1D import ReverseOsmosis1D
 from .osmotically_assisted_reverse_osmosis_0D import OsmoticallyAssistedReverseOsmosis0D
@@ -22,6 +23,7 @@ from .crystallizer import Crystallization
 from .uv_aop import Ultraviolet0D
 from .electrodialysis_0D import Electrodialysis0D
 from .electrodialysis_1D import Electrodialysis1D
+from .electrolyzer import Electrolyzer
 from .gac import GAC
 from .ion_exchange_0D import IonExchange0D
 from .thickener import Thickener

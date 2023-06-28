@@ -80,7 +80,7 @@ setup(
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
         *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
-        "pyomo>=6.2",  # (also needed for units in electrolyte database (edb))
+        "pyomo>=6.2,<6.6",  # (also needed for units in electrolyte database (edb))
         # the following requirements are for the electrolyte database (edb)
         "pymongo>3",  # database interface
         "fastjsonschema",  # schema validation
@@ -136,6 +136,8 @@ setup(
             "edb = watertap.edb.commands:command_base",
         ],
         "watertap.flowsheets": [
+            "nf = watertap.examples.flowsheets.nf_dspmde.nf_ui",
+            "nf_with_bypass = watertap.examples.flowsheets.nf_dspmde.nf_with_bypass_ui",
             "metab = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab_ui",
             "suboxic_ASM = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_ASM_ui",
             "Magprex = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex_ui",

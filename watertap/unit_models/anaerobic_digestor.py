@@ -462,6 +462,19 @@ see reaction package for documentation.}""",
             mutable=True,
             doc="Gas-liquid transfer coefficient",
         )
+        self.electricity_consumption = Var(
+            self.flowsheet().time,
+            units=pyunits.kW,
+            bounds=(0, None),
+            doc="Electricity consumption of unit",
+        )
+        # The value is taken from Maravelias' data
+        self.energy_electric_flow_vol_inlet = Param(
+            initialize=0.029,
+            units=pyunits.kWh / pyunits.m**3,
+            mutable=True,
+            doc="Electricity intensity with respect to inlet flow",
+        )
 
         def CO2_Henrys_law_rule(self, t):
             return (
@@ -743,6 +756,22 @@ see reaction package for documentation.}""",
             doc="Unit level enthalpy_balance",
         )
 
+        # Electricity constraint
+        def rule_electricity_consumption(self, t):
+            return self.electricity_consumption[t] == (
+                self.energy_electric_flow_vol_inlet
+                * pyunits.convert(
+                    self.liquid_phase.properties_in[t].flow_vol,
+                    to_units=pyunits.m**3 / pyunits.hr,
+                )
+            )
+
+        self.unit_electricity_consumption = Constraint(
+            self.flowsheet().time,
+            rule=rule_electricity_consumption,
+            doc="Unit level electricity consumption",
+        )
+
         # Set references to balance terms at unit level
         self.heat_duty = Reference(self.liquid_phase.heat[:])
 
@@ -757,6 +786,7 @@ see reaction package for documentation.}""",
         iscale.set_scaling_factor(self.KH_co2, 1e2)
         iscale.set_scaling_factor(self.KH_ch4, 1e3)
         iscale.set_scaling_factor(self.KH_h2, 1e4)
+        iscale.set_scaling_factor(self.electricity_consumption, 1e0)
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(

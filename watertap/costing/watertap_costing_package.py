@@ -22,14 +22,16 @@ from idaes.core.base.costing_base import (
     register_idaes_currency_units,
 )
 
-from idaes.models.unit_models import Mixer
+from idaes.models.unit_models import Mixer, HeatExchanger
 
 from watertap.unit_models import (
+    AD,
     ReverseOsmosis0D,
     ReverseOsmosis1D,
     OsmoticallyAssistedReverseOsmosis0D,
     NanoFiltration0D,
     NanofiltrationZO,
+    NanofiltrationDSPMDE0D,
     PressureExchanger,
     Crystallization,
     Ultraviolet0D,
@@ -38,12 +40,16 @@ from watertap.unit_models import (
     Electrodialysis0D,
     Electrodialysis1D,
     ElectroNPZO,
+    Electrolyzer,
     IonExchange0D,
     GAC,
 )
+from watertap.unit_models.mvc.components import Evaporator, Compressor
 
+from .units.anaerobic_digestor import cost_anaerobic_digestor
 from .units.crystallizer import cost_crystallizer
 from .units.electrodialysis import cost_electrodialysis
+from .units.electrolyzer import cost_electrolyzer
 from .units.energy_recovery_device import cost_energy_recovery_device
 from .units.gac import cost_gac
 from .units.ion_exchange import cost_ion_exchange
@@ -56,6 +62,9 @@ from .units.pressure_exchanger import cost_pressure_exchanger
 from .units.pump import cost_pump
 from .units.reverse_osmosis import cost_reverse_osmosis
 from .units.uv_aop import cost_uv_aop
+from .units.evaporator import cost_evaporator
+from .units.compressor import cost_compressor
+from .units.heat_exchanger import cost_heat_exchanger
 from .units.electroNP import cost_electroNP
 
 
@@ -84,6 +93,7 @@ class _DefinedFlowsDict(MutableMapping, dict):
 class WaterTAPCostingData(FlowsheetCostingBlockData):
     # Define default mapping of costing methods to unit models
     unit_mapping = {
+        AD: cost_anaerobic_digestor,
         Mixer: cost_mixer,
         Pump: cost_pump,
         EnergyRecoveryDevice: cost_energy_recovery_device,
@@ -93,13 +103,18 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         OsmoticallyAssistedReverseOsmosis0D: cost_osmotically_assisted_reverse_osmosis,
         NanoFiltration0D: cost_nanofiltration,
         NanofiltrationZO: cost_nanofiltration,
+        NanofiltrationDSPMDE0D: cost_nanofiltration,
         Crystallization: cost_crystallizer,
         Ultraviolet0D: cost_uv_aop,
         Electrodialysis0D: cost_electrodialysis,
         Electrodialysis1D: cost_electrodialysis,
         ElectroNPZO: cost_electroNP,
+        Electrolyzer: cost_electrolyzer,
         IonExchange0D: cost_ion_exchange,
         GAC: cost_gac,
+        Evaporator: cost_evaporator,
+        Compressor: cost_compressor,
+        HeatExchanger: cost_heat_exchanger,
     }
 
     def build(self):
@@ -107,7 +122,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self._registered_LCOWs = {}
 
     def build_global_params(self):
-
         # Register currency and conversion rates based on CE Index
         register_idaes_currency_units()
 
