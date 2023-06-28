@@ -39,7 +39,6 @@ from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
 )
-from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
