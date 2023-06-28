@@ -471,7 +471,7 @@ def run_case2(
     if case1_thermo_config["state_definition"] == FpcTP:
         _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=scaling_ref)
     if case1_thermo_config["state_definition"] == FTPx:
-        _set_mat_bal_scaling_FTPx(model.fs.unit, min_flow_mol_phase_comp=scaling_ref)
+        _set_mat_bal_scaling_FTPx(model.fs.unit, min_mole_frac_comp=scaling_ref)
 
     iscale.calculate_scaling_factors(model.fs.unit)
     assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
