@@ -25,6 +25,7 @@ def export_to_ui():
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
+        requires_idaes_solver=True,
     )
 
 
