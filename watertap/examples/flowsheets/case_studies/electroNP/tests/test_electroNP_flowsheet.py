@@ -103,3 +103,28 @@ class TestElectroNPFlowsheet:
             model.fs.electroNP.treated.conc_mass_comp[0, "X_S"]
         ) == pytest.approx(0.13979, rel=1e-4)
         assert value(model.fs.costing.LCOW) == pytest.approx(6.01036, rel=1e-4)
+
+
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.integration
+    def test_mass_balance(self, model):
+        assert (
+            abs(
+                value(
+                    model.fs.electroNP.inlet.flow_vol[0] *model.fs.props_ASM2D.dens_mass
+                    - model.fs.electroNP.treated.flow_vol[0] * model.fs.props_ASM2D.dens_mass
+                    - model.fs.electroNP.byproduct.flow_vol[0] * model.fs.props_ASM2D.dens_mass
+                )
+            )
+            <= 1e-6
+        )
+        for j in model.fs.props_ASM2D.solute_set:
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.electroNP.inlet.flow_vol[0] * model.fs.electroNP.inlet.conc_mass_comp[0, j]
+                    - model.fs.electroNP.treated.flow_vol[0]
+                    * model.fs.electroNP.treated.conc_mass_comp[0, j]
+                    - model.fs.electroNP.byproduct.flow_vol[0]
+                    * model.fs.electroNP.byproduct.conc_mass_comp[0, j]
+                )
+            )
