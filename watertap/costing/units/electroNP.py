@@ -25,7 +25,7 @@ def build_electroNP_cost_param_block(blk):
         units=pyo.units.hr,
     )
     blk.sizing_cost = pyo.Var(
-        initialize=1.25,
+        initialize=1000,
         doc="Reactor sizing cost",
         units=pyo.units.USD_2020 / pyo.units.m**3,
     )
@@ -35,7 +35,9 @@ def build_electroNP_cost_param_block(blk):
     build_rule=build_electroNP_cost_param_block,
     parameter_block_name="electroNP",
 )
-def cost_electroNP(blk, cost_electricity_flow=True, cost_MgCl2_flow=True):
+def cost_electroNP(
+    blk, cost_electricity_flow=True, cost_MgCl2_flow=True, cost_product_flow=True
+):
     """
     ElectroNP costing method
     """
@@ -62,6 +64,16 @@ def cost_electroNP(blk, cost_electricity_flow=True, cost_MgCl2_flow=True):
                 to_units=pyo.units.kg / pyo.units.hr,
             ),
             "magnesium chloride",
+        )
+
+    if cost_product_flow:
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                blk.unit_model.byproduct.flow_vol[t0]
+                * blk.unit_model.byproduct.conc_mass_comp[t0, "S_PO4"],
+                to_units=pyo.units.kg / pyo.units.hr,
+            ),
+            "phosphorus salt product",
         )
 
 

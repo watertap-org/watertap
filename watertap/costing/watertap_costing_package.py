@@ -181,6 +181,16 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
         self.add_defined_flow("magnesium chloride", self.magnesium_chloride_cost)
 
+        self.phosphorus_recovery_revenue = pyo.Param(
+            mutable=True,
+            initialize=-0.07,
+            doc="Phosphorus recovery revenue",
+            units=pyo.units.USD_2020 / pyo.units.kg,
+        )
+        self.add_defined_flow(
+            "phosphorus salt product", self.phosphorus_recovery_revenue
+        )
+
         # fix the parameters
         self.fix_all_vars()
 
