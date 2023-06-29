@@ -11,16 +11,16 @@
 #
 ###############################################################################
 """
-Translator block representing the ASM1/ADM1 interface.
+Translator block representing the ASM2d/ADM1 interface.
 
 Assumptions:
      * Steady-state only
 
 Model formulated from:
 
-Copp J. and Jeppsson, U., Rosen, C., 2006.
-Towards an ASM1 - ADM1 State Variable Interface for Plant-Wide Wastewater Treatment Modeling.
-Proceedings of the Water Environment Federation, 2003, pp 498-510.
+Flores-Alsina, X., Solon, K., Mbamba, C.K., Tait, S., Gernaey, K.V., Jeppsson, U. and Batstone, D.J., 2016.
+Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes.
+Water Research, 95, pp.370-382. https://github.com/wwtmodels/Plant-Wide-Models
 """
 
 # Import Pyomo libraries
@@ -49,17 +49,27 @@ from pyomo.environ import (
 
 from idaes.core.util.exceptions import InitializationError
 
-__author__ = "Alejandro Garciadiego"
+from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
+    ModifiedASM2dReactionParameterBlock as ASM2d,
+)
+from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
+    DecaySwitch,
+)
+from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import (
+    ModifiedADM1ReactionParameterBlock as ADM1,
+)
+
+__author__ = "Marcus Holly"
 
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("Translator_ASM1_ADM1")
-class TranslatorDataASM1ADM1(TranslatorData):
+@declare_process_block_class("Translator_ASM2d_ADM1")
+class TranslatorDataASM2dADM1(TranslatorData):
     """
-    Translator block representing the ASM1/ADM1 interface
+    Translator block representing the ASM2d/ADM1 interface
     """
 
     CONFIG = TranslatorData.CONFIG()
@@ -98,30 +108,9 @@ see reaction package for documentation.}""",
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(TranslatorDataASM1ADM1, self).build()
+        super(TranslatorDataASM2dADM1, self).build()
 
-        self.i_xe = Param(
-            initialize=0.06,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Fraction nitrogen in particulate products",
-        )
-
-        self.i_xb = Param(
-            initialize=0.08,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Fraction nitrogen in biomass",
-        )
-
-        self.f_xI = Param(
-            initialize=0.05,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Anaerobic degradable fraction of X_I and X_P",
-        )
-
-        eps = 1e-10 * pyunits.kg**2 / pyunits.m**6
+        mw_p = 31 * pyunits.kg / pyunits.kmol
         mw_n = 14 * pyunits.kg / pyunits.kmol
         mw_c = 12 * pyunits.kg / pyunits.kmol
 
@@ -146,442 +135,737 @@ see reaction package for documentation.}""",
         def eq_pressure_rule(blk, t):
             return blk.properties_out[t].pressure == blk.properties_in[t].pressure
 
-        @self.Expression(self.flowsheet().time, doc="Total Kjeldahl nitrogen")
-        def TKN(blk, t):
-            return (
-                blk.properties_in[t].conc_mass_comp["S_NH"]
-                + blk.properties_in[t].conc_mass_comp["S_ND"]
-                + blk.properties_in[t].conc_mass_comp["X_ND"]
-                + self.i_xb
-                * (
-                    blk.properties_in[t].conc_mass_comp["X_BH"]
-                    + blk.properties_in[t].conc_mass_comp["X_BA"]
-                )
-                + self.i_xe
-                * (
-                    blk.properties_in[t].conc_mass_comp["X_I"]
-                    + blk.properties_in[t].conc_mass_comp["X_P"]
-                )
-            )
-
-        @self.Expression(self.flowsheet().time, doc="COD demand")
-        def CODd(blk, t):
-            return (
-                blk.properties_in[t].conc_mass_comp["S_O"]
-                + blk.properties_in[t].conc_mass_comp["S_NO"] * 2.86
-            )
-
-        self.inter_S_S = Var(
+        # -------------------------------------------Step 1----------------------------------------------------------------#
+        self.COD_SO2 = Var(
             self.flowsheet().time,
-            initialize=self.properties_in[0].conc_mass_comp["S_S"] - self.CODd[0],
+            initialize=self.properties_in[0].conc_mass_comp["S_O2"]
+            / ((1 - ASM2d.Y_H) / ASM2d.Y_H),
             units=pyunits.kg / pyunits.m**3,
             domain=PositiveReals,
-            doc="Readily biodegradable substrate remaining",
+            doc="Concentration of COD demanding compounds in S_O2",
+        )
+
+        @self.Expression(self.flowsheet().time, doc="S_O2 concentration at step 1")
+        def SO2_AS1(blk, t):
+            return (
+                blk.properties_in[t].conc_mass_comp["S_O2"]
+                - (1 - ASM2d.Y_H) / ASM2d.Y_H * self.COD_SO2
+            )
+
+        @self.Expression(self.flowsheet().time, doc="S_A concentration at step 1")
+        def SA_AS1(blk, t):
+            return (
+                blk.properties_in[t].conc_mass_comp["S_A"]
+                - (1 - ASM2d.Y_H) * self.COD_SO2
+            )
+
+        @self.Expression(self.flowsheet().time, doc="S_NH4 concentration at step 1")
+        def SNH4_AS1(blk, t):
+            return (
+                blk.properties_in[t].conc_mass_comp["S_NH4"]
+                - ASM2d.i_NBM * self.COD_SO2
+            )
+
+        @self.Expression(self.flowsheet().time, doc="S_PO4 concentration at step 1")
+        def SPO4_AS1(blk, t):
+            return (
+                blk.properties_in[t].conc_mass_comp["S_PO4"]
+                - ASM2d.i_PBM * self.COD_SO2
+            )
+
+        @self.Expression(self.flowsheet().time, doc="S_IC concentration at step 1")
+        def SIC_AS1(blk, t):
+            return (
+                blk.properties_in[t].conc_mass_comp["S_IC"]
+                - (-1 / ASM2d.Y_H) * self.COD_SO2 * ASM2d.i_CSA
+                + self.COD_SO2 * ASM2d.i_CXB
+            )
+
+        @self.Expression(self.flowsheet().time, doc="X_H concentration at step 1")
+        def XH_AS1(blk, t):
+            return blk.properties_in[t].conc_mass_comp["X_H"] + self.COD_SO2
+
+        # -------------------------------------------Step 2----------------------------------------------------------------#
+        self.COD_SNO3 = Var(
+            self.flowsheet().time,
+            initialize=self.properties_in[0].conc_mass_comp["S_NO3"]
+            / ((1 - ASM2d.Y_H) / (ASM2d.i_NOx_N2 * ASM2d.Y_H)),
+            units=pyunits.kg / pyunits.m**3,
+            domain=PositiveReals,
+            doc="Concentration of COD demanding compounds in S_NO3",
+        )
+
+        @self.Expression(self.flowsheet().time, doc="S_A concentration at step 2")
+        def SA_AS2(blk, t):
+            return blk.SA_AS1[t] - (1 / ASM2d.Y_H) * self.COD_SNO3
+
+        @self.Expression(self.flowsheet().time, doc="S_NH4 concentration at step 2")
+        def SNH4_AS2(blk, t):
+            return blk.SNH4_AS1[t] - self.COD_SNO3 * ASM2d.i_NBM
+
+        @self.Expression(self.flowsheet().time, doc="S_NH4 concentration at step 2")
+        def SNH4_AS2(blk, t):
+            return blk.SNH4_AS1[t] - self.COD_SNO3 * ASM2d.i_NBM
+
+        @self.Expression(self.flowsheet().time, doc="S_N2 concentration at step 2")
+        def SN2_AS2(blk, t):
+            return (
+                blk.properties_in[t].conc_mass_comp["S_N2"]
+                + ((1 - ASM2d.Y_H) / (ASM2d.i_NOx_N2 * ASM2d.Y_H)) * self.COD_SNO3
+            )
+
+        @self.Expression(self.flowsheet().time, doc="S_NO3 concentration at step 2")
+        def SNO3_AS2(blk, t):
+            return (
+                blk.properties_in[t].conc_mass_comp["S_NO3"]
+                - ((1 - ASM2d.Y_H) / (ASM2d.i_NOx_N2 * ASM2d.Y_H)) * self.COD_SNO3
+            )
+
+        @self.Expression(self.flowsheet().time, doc="S_PO4 concentration at step 2")
+        def SPO4_AS2(blk, t):
+            return blk.SPO4_AS1[t] - self.COD_SNO3 * ASM2d.i_PBM
+
+        @self.Expression(self.flowsheet().time, doc="S_IC concentration at step 2")
+        def SIC_AS2(blk, t):
+            return (
+                blk.SIC_AS1[t]
+                - (-1 / ASM2d.Y_H) * self.COD_SO2 * ASM2d.i_CSA
+                + self.COD_SNO3 * ASM2d.i_CXB
+            )
+
+        @self.Expression(self.flowsheet().time, doc="X_H concentration at step 2")
+        def XH_AS2(blk, t):
+            return blk.XH_AS1[t] + self.COD_SNO3
+
+        # -------------------------------------------Step 3----------------------------------------------------------------#
+        self.S_ND = Var(
+            self.flowsheet().time,
+            initialize=self.properties_in[0].conc_mass_comp["S_F"] * ASM2d.i_NSF,
+            units=pyunits.kg / pyunits.m**3,
+            domain=PositiveReals,
+            doc="Nitrogen demand for soluble inerts",
+        )
+        self.S_PD = Var(
+            self.flowsheet().time,
+            initialize=self.properties_in[0].conc_mass_comp["S_F"] * ASM2d.i_PSF,
+            units=pyunits.kg / pyunits.m**3,
+            domain=PositiveReals,
+            doc="Phosphorus demand for soluble inerts",
+        )
+        self.SN_org = Var(
+            self.flowsheet().time,
+            initialize=self.S_ND / (ADM1.Ni["S_aa"] * mw_n),
+            units=pyunits.kg / pyunits.m**3,
+            domain=PositiveReals,
+            doc="Organic nitrogen from soluble inerts",
         )
 
         @self.Constraint(
             self.flowsheet().time,
-            doc="COD demand minus readily biodegradable substrate",
+            doc="Nitrogen demand for soluble inerts divided by nitrogen content in amino acids",
         )
-        def CODd_step1(blk, t):
-            return (
-                blk.inter_S_S[t]
-                == blk.properties_in[t].conc_mass_comp["S_S"] - blk.CODd[t]
-            )
+        def ReqCOD_S(blk, t):
+            return blk.SN_org[t] == self.S_ND - (ADM1.Ni["S_aa"] * mw_n)
 
-        @self.Expression(self.flowsheet().time, doc="COD demand after S_S")
-        # Includes smooth formulation for max(x, 0) to avoid having negative values
-        # formulation included in all subsequent values for COD requirements and
-        # COD remains
-        def CODd2(blk, t):
-            return 0.5 * (
-                (blk.CODd[t] - blk.properties_in[t].conc_mass_comp["S_S"])
-                + sqrt(
-                    (blk.CODd[t] - blk.properties_in[t].conc_mass_comp["S_S"]) ** 2
-                    + eps
-                )
-            )
-
-        self.inter_X_S = Var(
-            self.flowsheet().time,
-            initialize=self.properties_in[0].conc_mass_comp["X_S"],
-            units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
-            doc="Slowly biodegradable substrate remaining",
-        )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="COD demand minus slowly biodegradable substrate",
-        )
-        def CODd_step2(blk, t):
-            return (
-                blk.inter_X_S[t]
-                == blk.properties_in[t].conc_mass_comp["X_S"] - blk.CODd2[t]
-            )
-
-        @self.Expression(self.flowsheet().time, doc="COD demand after X_S")
-        def CODd3(blk, t):
-            return 0.5 * (
-                (blk.CODd2[t] - blk.properties_in[t].conc_mass_comp["X_S"])
-                + sqrt(
-                    (blk.CODd2[t] - blk.properties_in[t].conc_mass_comp["X_S"]) ** 2
-                    + eps
-                )
-            )
-
-        self.inter_X_BH = Var(
-            self.flowsheet().time,
-            initialize=self.properties_in[0].conc_mass_comp["X_BH"],
-            units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
-            doc="Active heterotrophic biomass remaining",
-        )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="COD demand minus active heterotrophic biomass",
-        )
-        def CODd_step3(blk, t):
-            return (
-                blk.inter_X_BH[t]
-                == blk.properties_in[t].conc_mass_comp["X_BH"] - blk.CODd3[t]
-            )
-
-        @self.Expression(self.flowsheet().time, doc="COD demand after X_BH")
-        def CODd4(blk, t):
-            return 0.5 * (
-                (blk.CODd3[t] - blk.properties_in[t].conc_mass_comp["X_BH"])
-                + sqrt(
-                    (blk.CODd3[t] - blk.properties_in[t].conc_mass_comp["X_BH"]) ** 2
-                    + eps
-                )
-            )
-
-        self.inter_X_BA = Var(
-            self.flowsheet().time,
-            initialize=self.properties_in[0].conc_mass_comp["X_BA"],
-            units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
-            doc="Active autotrophic biomass remaining",
-        )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="COD demand minus active autotrophic biomass",
-        )
-        def CODd_step4(blk, t):
-            return (
-                blk.inter_X_BA[t]
-                == blk.properties_in[t].conc_mass_comp["X_BA"] - blk.CODd4[t]
-            )
-
-        @self.Expression(self.flowsheet().time, doc="COD demand after X_BA")
-        def CODd5(blk, t):
-            return 0.5 * (
-                (blk.CODd4[t] - blk.properties_in[t].conc_mass_comp["X_BA"])
-                + sqrt(
-                    (blk.CODd4[t] - blk.properties_in[t].conc_mass_comp["X_BA"]) ** 2
-                    + eps
-                )
-            )
-
-        @self.Expression(self.flowsheet().time, doc="Soluble COD")
-        def CODs(blk, t):
-            return blk.properties_in[t].conc_mass_comp["S_I"] + blk.inter_S_S[t]
-
-        @self.Expression(self.flowsheet().time, doc="Particulate COD")
-        def CODp(blk, t):
-            return (
-                blk.properties_in[t].conc_mass_comp["X_I"]
-                + blk.inter_X_S[t]
-                + blk.inter_X_BH[t]
-                + blk.inter_X_BA[t]
-                + blk.properties_in[t].conc_mass_comp["X_P"]
-            )
-
-        @self.Expression(self.flowsheet().time, doc="Total COD")
-        def CODt(blk, t):
-            return blk.CODs[t] + blk.CODp[t]
-
-        @self.Expression(self.flowsheet().time, doc="Required soluble COD")
-        def ReqCODs(blk, t):
-            return (
-                blk.properties_in[t].conc_mass_comp["S_ND"]
-                / blk.config.reaction_package.N_aa
-                / mw_n
+        # TODO: Double check if 1000 should be here and throughout the rest (just them going from g/m3 to kg/m3?)
+        @self.Expression(self.flowsheet().time, doc="Monosaccharides mapping")
+        def Ssu_mapping(blk, t):
+            return Expr_if(
+                blk.SN_org[t] >= self.properties_in[0].conc_mass_comp["S_F"],
+                1e-9 * pyunits.kg / pyunits.m**3,
+                (self.properties_in[0].conc_mass_comp["S_F"] - self.SN_org) / 1000,
             )
 
         @self.Expression(self.flowsheet().time, doc="Amino acids mapping")
-        def saa_mapping(blk, t):
+        def Saa_mapping(blk, t):
             return Expr_if(
-                blk.inter_S_S[t] > blk.ReqCODs[t],
-                blk.ReqCODs[t],
-                blk.inter_S_S[t],
+                blk.SN_org[t] >= self.properties_in[0].conc_mass_comp["S_F"],
+                self.properties_in[0].conc_mass_comp["S_F"] / 1000,
+                self.SN_org / 1000,
             )
 
-        @self.Expression(self.flowsheet().time, doc="Monosaccharides mapping step A")
-        def ssu_mapping_A(blk, t):
-            return Expr_if(
-                blk.inter_S_S[t] > blk.ReqCODs[t],
-                blk.inter_S_S[t] - blk.ReqCODs[t],
-                1e-6 * pyunits.kg / pyunits.m**3,
-            )
+        # TODO: Double check that these are the final transformations of S_su and S_aa
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Monosaccharides balance",
+        )
+        def Ssu_balance(blk, t):
+            return blk.properties_out[t].conc_mass_comp["S_su"] == blk.Ssu_mapping[t]
 
         @self.Constraint(
             self.flowsheet().time,
             doc="Amino acids balance",
         )
         def Saa_balance(blk, t):
-            return blk.properties_out[t].conc_mass_comp["S_aa"] == blk.saa_mapping[t]
+            return blk.properties_out[t].conc_mass_comp["S_aa"] == blk.Saa_mapping[t]
 
-        @self.Expression(self.flowsheet().time, doc="COD remaining from step A")
-        def COD_remain_a(blk, t):
-            return 0.5 * (
-                (blk.CODt[t] - blk.inter_S_S[t])
-                + sqrt((blk.CODt[t] - blk.inter_S_S[t]) ** 2 + eps)
-            )
-
-        @self.Expression(self.flowsheet().time, doc="Organic nitrogen pool from step A")
-        def ORGN_remain_a(blk, t):
+        @self.Expression(self.flowsheet().time, doc="S_F concentration at step 3")
+        def SF_AS3(blk, t):
             return (
-                blk.TKN[t]
-                - (
-                    blk.properties_out[t].conc_mass_comp["S_aa"]
-                    * blk.config.reaction_package.N_aa
-                    * mw_n
-                )
-                - blk.properties_in[t].conc_mass_comp["S_NH"]
+                self.properties_in[0].conc_mass_comp["S_F"]
+                - blk.Ssu_mapping[t] * 1000
+                - blk.Saa_mapping[t] * 1000
             )
 
-        @self.Expression(
-            self.flowsheet().time, doc="Required soluble inert organic nitrogen"
-        )
-        def ReqOrgNS(blk, t):
+        @self.Expression(self.flowsheet().time, doc="S_NH4 concentration at step 3")
+        def SNH4_AS3(blk, t):
             return (
-                blk.properties_in[t].conc_mass_comp["S_I"]
-                * blk.config.reaction_package.N_I
-                * mw_n
+                blk.SNH4_AS2[t]
+                + self.properties_in[0].conc_mass_comp["S_F"] * ASM2d.i_NSF
+                - blk.Saa_mapping[t] * ADM1.Ni["S_aa"] * 1000 * mw_n
             )
 
-        @self.Expression(self.flowsheet().time, doc="Soluble inert mapping step B")
-        def si_mapping_B(blk, t):
-            return Expr_if(
-                blk.ORGN_remain_a[t] > blk.ReqOrgNS[t],
-                blk.properties_in[t].conc_mass_comp["S_I"],
-                blk.ORGN_remain_a[t] / blk.config.reaction_package.N_I / mw_n,
-            )
-
-        @self.Expression(self.flowsheet().time, doc="Monosaccharides mapping step B")
-        def ssu_mapping_B(blk, t):
-            return Expr_if(
-                blk.ORGN_remain_a[t] > blk.ReqOrgNS[t],
-                blk.ssu_mapping_A[t],
-                blk.ssu_mapping_A[t]
-                + blk.properties_in[t].conc_mass_comp["S_I"]
-                - blk.si_mapping_B[t],
-            )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Inert organic balance",
-        )
-        def Si_balance(blk, t):
-            return blk.properties_out[t].conc_mass_comp["S_I"] == blk.si_mapping_B[t]
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Monosacharides balance",
-        )
-        def Ssu_balance(blk, t):
-            return blk.properties_out[t].conc_mass_comp["S_su"] == blk.ssu_mapping_B[t]
-
-        @self.Expression(self.flowsheet().time, doc="COD remaining from step B")
-        def COD_remain_b(blk, t):
-            return 0.5 * (
-                (blk.COD_remain_a[t] - blk.properties_in[t].conc_mass_comp["S_I"])
-                + sqrt(
-                    (blk.COD_remain_a[t] - blk.properties_in[t].conc_mass_comp["S_I"])
-                    ** 2
-                    + eps
-                )
-            )
-
-        @self.Expression(self.flowsheet().time, doc="Organic nitrogen pool from step B")
-        def ORGN_remain_b(blk, t):
-            return blk.ORGN_remain_a[t] - (
-                blk.properties_out[t].conc_mass_comp["S_I"]
-                * blk.config.reaction_package.N_I
-                * mw_n
-            )
-
-        @self.Expression(
-            self.flowsheet().time, doc="Required particulate inert material"
-        )
-        def ReqOrgNx(blk, t):
+        @self.Expression(self.flowsheet().time, doc="S_PO4 concentration at step 3")
+        def SPO4_AS3(blk, t):
             return (
-                blk.f_xI
-                * (
-                    blk.properties_in[t].conc_mass_comp["X_P"]
-                    + blk.properties_in[t].conc_mass_comp["X_I"]
-                )
-                * blk.config.reaction_package.N_I
-                * mw_n
+                blk.SPO4_AS2[t]
+                + self.properties_in[0].conc_mass_comp["S_F"] * ASM2d.i_PSF
             )
 
-        @self.Expression(
-            self.flowsheet().time,
-            doc="Inert particulate organic material mapping step C",
-        )
-        def xi_mapping(blk, t):
-            return Expr_if(
-                blk.ORGN_remain_b[t] > blk.ReqOrgNx[t],
-                (
-                    blk.f_xI
-                    * (
-                        blk.properties_in[t].conc_mass_comp["X_P"]
-                        + blk.properties_in[t].conc_mass_comp["X_I"]
-                    )
-                ),
-                blk.ORGN_remain_b[t] / blk.config.reaction_package.N_I / mw_n,
+        @self.Expression(self.flowsheet().time, doc="S_IC concentration at step 3")
+        def SIC_AS3(blk, t):
+            return (
+                blk.SIC_AS2[t]
+                + self.properties_in[0].conc_mass_comp["S_F"] * ASM2d.i_CSF
+                - blk.Ssu_mapping[t] * ADM1.Ci["S_su"] * 1000 * mw_c
+                - blk.Saa_mapping[t] * ADM1.Ci["S_aa"] * 1000 * mw_c
             )
+
+        # -------------------------------------------Step 4----------------------------------------------------------------#
+        self.f_sI_xc = Var(
+            self.flowsheet().time,
+            initialize=1e-9,
+            units=pyunits.dimensionless,
+            domain=PositiveReals,
+            doc="Soluble inerts from composites",
+        )
+        self.f_xI_xc = Var(
+            self.flowsheet().time,
+            initialize=0.1,
+            units=pyunits.dimensionless,
+            domain=PositiveReals,
+            doc="Particulate inerts from composites",
+        )
+        self.f_ch_xc = Var(
+            self.flowsheet().time,
+            initialize=0.275,
+            units=pyunits.dimensionless,
+            domain=PositiveReals,
+            doc="Carbohydrates from composites",
+        )
+        self.f_pr_xc = Var(
+            self.flowsheet().time,
+            initialize=0.275,
+            units=pyunits.dimensionless,
+            domain=PositiveReals,
+            doc="Proteins from composites",
+        )
+        self.f_li_xc = Var(
+            self.flowsheet().time,
+            initialize=0.35,
+            units=pyunits.dimensionless,
+            domain=PositiveReals,
+            doc="Proteins from composites",
+        )
+        if self.config.property_package.config.decay_switch == DecaySwitch.on:
+
+            @self.Expression(
+                self.flowsheet().time, doc="Biomass concentration at step 4"
+            )
+            # TODO: include sulfur (X_SO) in this expression after implementing sulfur-extension
+            def biomass(blk, t):
+                return (
+                    blk.XH_AS2[t]
+                    + self.properties_in[0].conc_mass_comp["X_PAO"]
+                    + self.properties_in[0].conc_mass_comp["X_AUT"]
+                )
+
+            @self.Expression(self.flowsheet().time, doc="S_I concentration at step 4")
+            def SI_AS4(blk, t):
+                return (
+                    self.properties_in[0].conc_mass_comp["S_I"]
+                    + blk.biomass[t] * self.f_sI_xc
+                )
+
+            # TODO: Why are they multiplying by mw's in some places? Would result in units not matching
+            @self.Expression(self.flowsheet().time, doc="S_NH4 concentration at step 4")
+            def SNH4_AS4(blk, t):
+                return (
+                    blk.SNH4_AS3[t]
+                    + blk.biomass[t] * ADM1.Ni["X_su"]
+                    - blk.biomass[t] * self.f_sI_xc * ADM1.Ni["S_I"]
+                    - blk.biomass[t] * self.f_xI_xc * ADM1.Ni["S_I"]
+                    - blk.biomass[t] * self.f_pr_xc * ADM1.Ni["X_pr"] * 14
+                )
+
+            @self.Expression(self.flowsheet().time, doc="S_PO4 concentration at step 4")
+            def SPO4_AS4(blk, t):
+                return (
+                    blk.SPO4_AS3[t]
+                    + blk.biomass[t] * ADM1.Pi["X_su"]
+                    - blk.biomass[t] * self.f_sI_xc * ADM1.Pi["S_I"]
+                    - blk.biomass[t] * self.f_xI_xc * ADM1.Pi["X_I"]
+                    - blk.biomass[t]
+                    * self.f_ch_xc
+                    * 1e-9
+                    * pyunits.kmol
+                    / pyunits.kg
+                    * 31
+                    - blk.biomass[t] * self.f_li_xc * ADM1.Pi["X_li"] * 31
+                )
+
+            @self.Expression(self.flowsheet().time, doc="S_PO4 concentration at step 4")
+            def SIC_AS4(blk, t):
+                return (
+                    blk.SIC_AS3[t]
+                    + blk.biomass[t] * ADM1.Ci["X_su"]
+                    - blk.biomass[t] * self.f_sI_xc * ADM1.Ci["S_I"]
+                    - blk.biomass[t] * self.f_xI_xc * ADM1.Ci["X_I"]
+                    - blk.biomass[t] * self.f_pr_xc * ADM1.Ci["X_pr"] * 12
+                    - blk.biomass[t] * self.f_ch_xc * ADM1.Ci["X_ch"] * 12
+                    - blk.biomass[t] * self.f_li_xc * ADM1.Ci["X_li"] * 12
+                )
+
+            @self.Expression(self.flowsheet().time, doc="X_I concentration at step 4")
+            def XI_AS4(blk, t):
+                return (
+                    self.properties_in[0].conc_mass_comp["X_I"]
+                    + blk.biomass[t] * self.f_xI_xc
+                )
+
+            @self.Expression(self.flowsheet().time, doc="X_H concentration at step 4")
+            def XH_AS4():
+                return 1e-9 * pyunits.kg / pyunits.m**3
+
+            @self.Expression(self.flowsheet().time, doc="X_PAO concentration at step 4")
+            def XPAO_AS4():
+                return 1e-9 * pyunits.kg / pyunits.m**3
+
+            @self.Expression(self.flowsheet().time, doc="X_AUT concentration at step 4")
+            def XAUT_AS4():
+                return 1e-9 * pyunits.kg / pyunits.m**3
+
+        elif self.config.property_package.config.decay_switch == DecaySwitch.off:
+
+            @self.Expression(
+                self.flowsheet().time, doc="Biomass concentration at step 4"
+            )
+            # TODO: include sulfur (X_SO) in this expression after implementing sulfur-extension
+            def biomass(blk, t):
+                return blk.XH_AS2[t] + self.properties_in[0].conc_mass_comp["X_AUT"]
+
+            @self.Expression(self.flowsheet().time, doc="S_I concentration at step 4")
+            def SI_AS4(blk, t):
+                return (
+                    self.properties_in[0].conc_mass_comp["S_I"]
+                    + blk.biomass[t] * self.f_sI_xc
+                )
+
+            # TODO: Why are they multiplying by mw's in some places? Would result in units not matching
+            @self.Expression(self.flowsheet().time, doc="S_NH4 concentration at step 4")
+            def SNH4_AS4(blk, t):
+                return (
+                    blk.SNH4_AS3[t]
+                    + blk.biomass[t] * ADM1.Ni["X_su"]
+                    - blk.biomass[t] * self.f_sI_xc * ADM1.Ni["S_I"]
+                    - blk.biomass[t] * self.f_xI_xc * ADM1.Ni["S_I"]
+                    - blk.biomass[t] * self.f_pr_xc * ADM1.Ni["X_pr"] * 14
+                )
+
+            @self.Expression(self.flowsheet().time, doc="S_PO4 concentration at step 4")
+            def SPO4_AS4(blk, t):
+                return (
+                    blk.SPO4_AS3[t]
+                    + blk.biomass[t] * ADM1.Pi["X_su"]
+                    - blk.biomass[t] * self.f_sI_xc * ADM1.Pi["S_I"]
+                    - blk.biomass[t] * self.f_xI_xc * ADM1.Pi["X_I"]
+                    - blk.biomass[t]
+                    * self.f_ch_xc
+                    * 1e-9
+                    * pyunits.kmol
+                    / pyunits.kg
+                    * 31
+                    - blk.biomass[t] * self.f_li_xc * ADM1.Pi["X_li"] * 31
+                )
+
+            @self.Expression(self.flowsheet().time, doc="S_PO4 concentration at step 4")
+            def SIC_AS4(blk, t):
+                return (
+                    blk.SIC_AS3[t]
+                    + blk.biomass[t] * ADM1.Ci["X_su"]
+                    - blk.biomass[t] * self.f_sI_xc * ADM1.Ci["S_I"]
+                    - blk.biomass[t] * self.f_xI_xc * ADM1.Ci["X_I"]
+                    - blk.biomass[t] * self.f_pr_xc * ADM1.Ci["X_pr"] * 12
+                    - blk.biomass[t] * self.f_ch_xc * ADM1.Ci["X_ch"] * 12
+                    - blk.biomass[t] * self.f_li_xc * ADM1.Ci["X_li"] * 12
+                )
+
+            @self.Expression(self.flowsheet().time, doc="X_I concentration at step 4")
+            def XI_AS4(blk, t):
+                return (
+                    self.properties_in[0].conc_mass_comp["X_I"]
+                    + blk.biomass[t] * self.f_xI_xc
+                )
+
+            @self.Expression(self.flowsheet().time, doc="X_H concentration at step 4")
+            def XH_AS4():
+                return 1e-9 * pyunits.kg / pyunits.m**3
+
+            @self.Expression(self.flowsheet().time, doc="X_PAO concentration at step 4")
+            def XPAO_AS4():
+                return self.properties_in[0].conc_mass_comp["X_PAO"]
+
+            @self.Expression(self.flowsheet().time, doc="X_PP concentration at step 4")
+            def XPP_AS4():
+                return self.properties_in[0].conc_mass_comp["X_PP"]
+
+            @self.Expression(self.flowsheet().time, doc="X_PHA concentration at step 4")
+            def XPHA_AS4():
+                return self.properties_in[0].conc_mass_comp["X_PHA"]
+
+            @self.Expression(self.flowsheet().time, doc="X_AUT concentration at step 4")
+            def XAUT_AS4():
+                return 1e-9 * pyunits.kg / pyunits.m**3
+
+        # -------------------------------------------Step 5----------------------------------------------------------------#
+        self.X_ND = Var(
+            self.flowsheet().time,
+            initialize=self.properties_in[0].conc_mass_comp["X_S"] * ASM2d.i_NXS,
+            units=pyunits.kg / pyunits.m**3,
+            domain=PositiveReals,
+            doc="Nitrogen demand for particulate inerts",
+        )
+        self.X_PD = Var(
+            self.flowsheet().time,
+            initialize=self.properties_in[0].conc_mass_comp["X_S"] * ASM2d.i_PXS,
+            units=pyunits.kg / pyunits.m**3,
+            domain=PositiveReals,
+            doc="Phosphorus demand for particulate inerts",
+        )
+        self.XN_org = Var(
+            self.flowsheet().time,
+            initialize=self.X_ND / (ADM1.Ni["X_pr"] * mw_n),
+            units=pyunits.kg / pyunits.m**3,
+            domain=PositiveReals,
+            doc="Organic nitrogen from particulate inerts",
+        )
 
         @self.Constraint(
             self.flowsheet().time,
-            doc="Organic nitrogen balance",
+            doc="Nitrogen demand for soluble inerts divided by nitrogen content in amino acids",
         )
-        def Xi_balance(blk, t):
-            return blk.properties_out[t].conc_mass_comp["X_I"] == blk.xi_mapping[t]
+        def ReqCOD_X(blk, t):
+            return blk.XN_org[t] == self.X_ND - (ADM1.Ni["X_pr"] * mw_n)
 
-        @self.Expression(self.flowsheet().time, doc="COD remaining from step C")
-        def COD_remain_c(blk, t):
-            return 0.5 * (
-                (blk.COD_remain_b[t] - blk.properties_out[t].conc_mass_comp["X_I"])
-                + sqrt(
-                    (blk.COD_remain_b[t] - blk.properties_out[t].conc_mass_comp["X_I"])
-                    ** 2
-                    + eps
-                )
-            )
-
-        @self.Expression(self.flowsheet().time, doc="Organic nitrogen pool from step C")
-        def ORGN_remain_c(blk, t):
-            return blk.ORGN_remain_b[t] - (
-                blk.properties_out[t].conc_mass_comp["X_I"]
-                * blk.config.reaction_package.N_I
-                * mw_n
-            )
-
-        @self.Expression(self.flowsheet().time, doc="Required Composites")
-        def ReqCODXc(blk, t):
-            return blk.ORGN_remain_c[t] / blk.config.reaction_package.N_xc / mw_n
-
-        @self.Expression(self.flowsheet().time, doc="Composites mapping")
-        def xc_mapping(blk, t):
-            return Expr_if(
-                blk.COD_remain_c[t] > blk.ReqCODXc[t],
-                blk.ReqCODXc[t],
-                blk.COD_remain_c[t],
-            )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Composites balance",
-        )
-        def Xc_balance(blk, t):
-            return blk.properties_out[t].conc_mass_comp["X_c"] == blk.xc_mapping[t]
-
+        # TODO: Double check if 1000 should be here and throughout the rest (just them going from g/m3 to kg/m3?)
         @self.Expression(self.flowsheet().time, doc="Carbohydrates mapping")
-        def xch_mapping(blk, t):
+        def Xch_mapping(blk, t):
             return Expr_if(
-                blk.COD_remain_c[t] > blk.ReqCODXc[t],
-                blk.config.reaction_package.f_ch_xc
-                / (
-                    blk.config.reaction_package.f_ch_xc
-                    + blk.config.reaction_package.f_li_xc
-                )
-                * (blk.COD_remain_c[t] - blk.properties_out[t].conc_mass_comp["X_c"]),
-                1e-6 * pyunits.kg / pyunits.m**3,
+                blk.XN_org[t] >= self.properties_in[0].conc_mass_comp["X_S"],
+                1e-9 * pyunits.kg / pyunits.m**3,
+                (self.properties_in[0].conc_mass_comp["X_S"] - self.XN_org)
+                * 0.4
+                / 1000,
             )
 
+        @self.Expression(self.flowsheet().time, doc="Protein mapping")
+        def Xpr_mapping(blk, t):
+            return Expr_if(
+                blk.XN_org[t] >= self.properties_in[0].conc_mass_comp["X_S"],
+                blk.SF_AS3[t] / 1000,
+                self.XN_org / 1000,
+            )
+
+        @self.Expression(self.flowsheet().time, doc="Lipids mapping")
+        def Xli_mapping(blk, t):
+            return Expr_if(
+                blk.XN_org[t] >= self.properties_in[0].conc_mass_comp["X_S"],
+                1e-9 * pyunits.kg / pyunits.m**3,
+                (self.properties_in[0].conc_mass_comp["X_S"] - self.XN_org)
+                * 0.6
+                / 1000,
+            )
+
+        # TODO: Double check that these are the final transformations of S_su and S_aa
         @self.Constraint(
             self.flowsheet().time,
             doc="Carbohydrates balance",
         )
-        def xch_balance(blk, t):
-            return blk.properties_out[t].conc_mass_comp["X_ch"] == blk.xch_mapping[t]
+        def Xch_balance(blk, t):
+            return blk.properties_out[t].conc_mass_comp["X_ch"] == blk.Xch_mapping[t]
 
-        @self.Expression(self.flowsheet().time, doc="Lipids mapping")
-        def xli_mapping(blk, t):
-            return Expr_if(
-                blk.COD_remain_c[t] > blk.ReqCODXc[t],
-                blk.config.reaction_package.f_li_xc
-                / (
-                    blk.config.reaction_package.f_ch_xc
-                    + blk.config.reaction_package.f_li_xc
-                )
-                * (blk.COD_remain_c[t] - blk.properties_out[t].conc_mass_comp["X_c"]),
-                1e-6 * pyunits.kg / pyunits.m**3,
-            )
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Protein balance",
+        )
+        def Xpr_balance(blk, t):
+            return blk.properties_out[t].conc_mass_comp["X_pr"] == blk.Xpr_mapping[t]
 
         @self.Constraint(
             self.flowsheet().time,
             doc="Lipids balance",
         )
-        def xli_balance(blk, t):
-            return blk.properties_out[t].conc_mass_comp["X_li"] == blk.xli_mapping[t]
+        def Xli_balance(blk, t):
+            return blk.properties_out[t].conc_mass_comp["X_li"] == blk.Xli_mapping[t]
 
-        @self.Expression(self.flowsheet().time, doc="Inorganic nitrogen mapping")
-        def sin_mapping(blk, t):
-            return Expr_if(
-                blk.COD_remain_c[t] > blk.ReqCODXc[t],
-                blk.properties_in[t].conc_mass_comp["S_NH"],
-                blk.properties_in[t].conc_mass_comp["S_NH"]
-                + (
-                    blk.ORGN_remain_c[t]
-                    - blk.properties_out[t].conc_mass_comp["X_c"]
-                    * blk.config.reaction_package.N_xc
-                    * mw_n
-                ),
-            )
+        if self.config.property_package.config.decay_switch == DecaySwitch.on:
 
-        @self.Constraint(
+            @self.Expression(self.flowsheet().time, doc="S_NH4 concentration at step 5")
+            def SNH4_AS5(blk, t):
+                return (
+                    blk.SNH4_AS4[t]
+                    + self.properties_in[0].conc_mass_comp["X_S"] * ASM2d.i_NXS
+                    - blk.Xpr_mapping[t] * ADM1.Ni["X_pr"] * 1000 * mw_n
+                )
+
+            @self.Expression(self.flowsheet().time, doc="S_PO4 concentration at step 5")
+            def SPO4_AS5(blk, t):
+                return (
+                    blk.SPO4_AS4[t]
+                    + self.properties_in[0].conc_mass_comp["X_S"] * ASM2d.i_PXS
+                    - blk.Xch_mapping[t] * 1e-9 * pyunits.kmol / pyunits.kg * 1000 * 31
+                    - blk.Xli_mapping[t] * ADM1.Pi["X_li"] * 1000 * 31
+                )
+
+            @self.Expression(self.flowsheet().time, doc="S_IC concentration at step 5")
+            def SIC_AS5(blk, t):
+                return (
+                    blk.SIC_AS4[t]
+                    + self.properties_in[0].conc_mass_comp["S_F"] * ASM2d.i_CXS
+                    - blk.Xch_mapping[t] * ADM1.Ci["X_ch"] * 1000 * 12
+                    - blk.Xpr_mapping[t] * ADM1.Ci["X_pr"] * 1000 * 12
+                    - blk.Xli_mapping[t] * ADM1.Ci["X_li"] * 1000 * 12
+                )
+
+            @self.Expression(self.flowsheet().time, doc="X_S concentration at step 5")
+            def XS_AS5():
+                return 1e-9 * pyunits.kg / pyunits.m**3
+
+        elif self.config.property_package.config.decay_switch == DecaySwitch.off:
+
+            @self.Expression(self.flowsheet().time, doc="S_NH4 concentration at step 5")
+            def SNH4_AS5(blk, t):
+                return (
+                    blk.SNH4_AS4[t]
+                    + self.properties_in[0].conc_mass_comp["X_S"] * ASM2d.i_NXS
+                    - blk.Xpr_mapping[t] * ADM1.Ni["X_pr"] * 1000 * 14
+                )
+
+            @self.Expression(self.flowsheet().time, doc="S_PO4 concentration at step 5")
+            def SPO4_AS5(blk, t):
+                return (
+                    blk.SPO4_AS4[t]
+                    + self.properties_in[0].conc_mass_comp["X_S"] * ASM2d.i_PXS
+                    - blk.Xch_mapping[t] * 1e-9 * pyunits.kmol / pyunits.kg * 1000 * 31
+                    - blk.Xli_mapping[t] * ADM1.Pi["X_li"] * 1000 * 31
+                )
+
+            @self.Constraint(self.flowsheet().time, doc="S_IC concentration at step 5")
+            # TODO: follow this notation for other constraints, which arent syntaxed correctly (ctrl+f for constraints)
+            def SIC_AS5(blk, t):
+                return (
+                    blk.properties_out[t].conc_mass_comp["S_IC"]
+                    == blk.SIC_AS4[t]
+                    + self.properties_in[0].conc_mass_comp["S_F"] * ASM2d.i_CXS
+                    - blk.Xch_mapping[t] * ADM1.Ci["X_ch"] * 1000 * mw_c
+                    - blk.Xpr_mapping[t] * ADM1.Ci["X_pr"] * 1000 * mw_c
+                    - blk.Xli_mapping[t] * ADM1.Ci["X_li"] * 1000 * mw_c
+                )
+
+            @self.Expression(self.flowsheet().time, doc="X_S concentration at step 5")
+            def XS_AS5():
+                return 1e-9
+
+            @self.Expression(self.flowsheet().time, doc="X_PAO concentration at step 5")
+            def XPAO_AS5():
+                return self.properties_in[0].conc_mass_comp["X_PAO"]
+
+            @self.Expression(self.flowsheet().time, doc="X_PP concentration at step 4")
+            def XPP_AS5():
+                return self.properties_in[0].conc_mass_comp["X_PP"]
+
+            @self.Expression(self.flowsheet().time, doc="X_PHA concentration at step 4")
+            def XPHA_AS5():
+                return self.properties_in[0].conc_mass_comp["X_PHA"]
+
+        # -------------------------------------------Step 6----------------------------------------------------------------#
+        self.f_XPHA_Sva = Var(
             self.flowsheet().time,
-            doc="Inorganic nitrogen balance",
+            initialize=0.1,
+            units=pyunits.dimensionless,
+            domain=PositiveReals,
+            doc="Valerate from Polyhydroxyalkanoates",
         )
-        def SIN_balance(blk, t):
-            return blk.properties_out[t].conc_mass_comp["S_IN"] == blk.sin_mapping[t]
 
-        @self.Constraint(
+        self.f_XPHA_Sbu = Var(
             self.flowsheet().time,
-            doc="Anions balance",
+            initialize=0.1,
+            units=pyunits.dimensionless,
+            domain=PositiveReals,
+            doc="Butyrate from Polyhydroxyalkanoates",
         )
-        def return_an(blk, t):
-            return (
-                blk.properties_out[t].anions
-                == blk.properties_out[t].conc_mass_comp["S_IN"] / mw_n
-            )
 
-        @self.Constraint(
+        self.f_XPHA_Spro = Var(
             self.flowsheet().time,
-            doc="Cations balance",
+            initialize=0.4,
+            units=pyunits.dimensionless,
+            domain=PositiveReals,
+            doc="Propionate from Polyhydroxyalkanoates",
         )
-        def return_cat(blk, t):
-            return (
-                blk.properties_out[t].cations
-                == blk.properties_out[t].conc_mass_comp["S_IC"] / mw_c
+
+        self.f_XPHA_Sac = Var(
+            self.flowsheet().time,
+            initialize=0.4,
+            units=pyunits.dimensionless,
+            domain=PositiveReals,
+            doc="Acetate from Polyhydroxyalkanoates",
+        )
+
+        if self.config.property_package.config.decay_switch == DecaySwitch.on:
+
+            @self.Expression(self.flowsheet().time, doc="X_PP concentration at step 6")
+            def XPP_AS6():
+                return 1e-9
+
+            @self.Expression(self.flowsheet().time, doc="X_PP concentration at step 6")
+            def XPHA_AS6():
+                return 1e-9
+
+            @self.Constraint(
+                self.flowsheet().time,
+                doc="Total valerate concentration",
             )
+            def Sva_balance(blk, t):
+                return (
+                    blk.properties_out[t].conc_mass_comp["S_va"]
+                    == blk.XPHA_AS6[t] * self.f_XPHA_Sva / 1000
+                )
+
+            @self.Constraint(
+                self.flowsheet().time,
+                doc="Total butyrate concentration",
+            )
+            def Sbu_balance(blk, t):
+                return (
+                    blk.properties_out[t].conc_mass_comp["S_bu"]
+                    == blk.XPHA_AS6[t] * self.f_XPHA_Sbu / 1000
+                )
+
+            @self.Constraint(
+                self.flowsheet().time,
+                doc="Total propionate concentration",
+            )
+            def Spro_balance(blk, t):
+                return (
+                    blk.properties_out[t].conc_mass_comp["S_pro"]
+                    == blk.XPHA_AS6[t] * self.f_XPHA_Spro / 1000
+                )
+
+            @self.Constraint(
+                self.flowsheet().time,
+                doc="Total acetate concentration",
+            )
+            def Sac_balance(blk, t):
+                return (
+                    blk.properties_out[t].conc_mass_comp["S_ac"]
+                    == blk.XPHA_AS6[t] * self.f_XPHA_Sac / 1000
+                )
+
+            @self.Expression(self.flowsheet().time, doc="S_PO4 concentration at step 6")
+            def SPO4_AS6(blk, t):
+                return blk.SPO4_AS5[t] + self.properties_in[0].conc_mass_comp["X_PP"]
+
+            @self.Constraint(self.flowsheet().time, doc="S_IC concentration at step 6")
+            def SIC_AS6(blk, t):
+                return blk.properties_out[t].conc_mass_comp["S_IC"] == blk.SIC_AS5[t]
+                +self.properties_in[0].conc_mass_comp["X_PHA"] * 0.3
+                -blk.Sva_balance[t] * ADM1.Ci["S_va"] * mw_c * 1000
+                -blk.Sbu_balance[t] * ADM1.Ci["S_bu"] * mw_c * 1000
+                -blk.Spro_balance[t] * ADM1.Ci["S_pro"] * mw_c * 1000
+                -blk.Sac_balance[t] * ADM1.Ci["S_ac"] * mw_c * 1000
+
+            @self.Expression(self.flowsheet().time, doc="S_K concentration at step 6")
+            def SK_AS6():
+                return (
+                    self.properties_in[0].conc_mass_comp["S_K"]
+                    + ADM1.K_XPP * self.properties_in[0].conc_mass_comp["X_PP"]
+                )
+
+            @self.Expression(self.flowsheet().time, doc="S_Mg concentration at step 6")
+            def SMg_AS6():
+                return (
+                    self.properties_in[0].conc_mass_comp["S_Mg"]
+                    + ADM1.Mg_XPP * self.properties_in[0].conc_mass_comp["X_PP"]
+                )
+
+        elif self.config.property_package.config.decay_switch == DecaySwitch.off:
+
+            @self.Constraint(
+                self.flowsheet().time,
+                doc="Total valerate concentration",
+            )
+            def Sva_balance():
+                return 1e-9
+
+            @self.Constraint(
+                self.flowsheet().time,
+                doc="Total butyrate concentration",
+            )
+            def Sbu_balance():
+                return 1e-9
+
+            @self.Constraint(
+                self.flowsheet().time,
+                doc="Total propionate concentration",
+            )
+            def Spro_balance():
+                return 1e-9
+
+            @self.Constraint(
+                self.flowsheet().time,
+                doc="Total acetate concentration",
+            )
+            def Sac_balance():
+                return 1e-9
+
+            @self.Expression(self.flowsheet().time, doc="X_PAO concentration at step 6")
+            def XPAO_AS6():
+                return self.properties_in[0].conc_mass_comp["X_PAO"]
+
+            @self.Expression(self.flowsheet().time, doc="X_PP concentration at step 6")
+            def XPP_AS6():
+                return self.properties_in[0].conc_mass_comp["X_PP"]
+
+            @self.Expression(self.flowsheet().time, doc="X_PHA concentration at step 6")
+            def XPHA_AS6():
+                return self.properties_in[0].conc_mass_comp["X_PHA"]
+
+        # -------------------------------------------Step 7----------------------------------------------------------------#
+        @self.Expression(self.flowsheet().time, doc="S_A concentration at step 7")
+        def SA_AS7():
+            return 1e-9
+
+        @self.Expression(self.flowsheet().time, doc="S_I concentration at step 7")
+        def SI_AS7():
+            return 1e-9
+
+        @self.Expression(self.flowsheet().time, doc="S_NO3 concentration at step 7")
+        def SNO3_AS7():
+            return 1e-9
+
+        @self.Expression(self.flowsheet().time, doc="X_I concentration at step 7")
+        def XI_AS7():
+            return 1e-9
+
+        @self.Expression(self.flowsheet().time, doc="X_S concentration at step 7")
+        def XS_AS7():
+            return 1e-9
 
         self.zero_flow_components = Set(
             initialize=[
                 "S_fa",
-                "S_va",
-                "S_bu",
-                "S_pro",
-                "S_ac",
                 "S_h2",
                 "S_ch4",
-                "X_pr",
                 "X_su",
                 "X_aa",
                 "X_fa",
@@ -600,18 +884,28 @@ see reaction package for documentation.}""",
         def return_zero_flow_comp(blk, t, i):
             return (
                 blk.properties_out[t].conc_mass_comp[i]
-                == 1e-6 * pyunits.kg / pyunits.m**3
+                == 1e-9 * pyunits.kg / pyunits.m**3
             )
 
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Equality alkalinity equation",
-        )
-        def return_Salk(blk, t):
-            return (
-                blk.properties_in[t].alkalinity
-                == blk.properties_out[t].conc_mass_comp["S_IC"] / mw_c
-            )
+        # @self.Constraint(
+        #     self.flowsheet().time,
+        #     doc="Anions balance",
+        # )
+        # def return_an(blk, t):
+        #     return (
+        #         blk.properties_out[t].anions
+        #         == blk.properties_out[t].conc_mass_comp["S_IN"] / mw_n
+        #     )
+        #
+        # @self.Constraint(
+        #     self.flowsheet().time,
+        #     doc="Cations balance",
+        # )
+        # def return_cat(blk, t):
+        #     return (
+        #         blk.properties_out[t].cations
+        #         == blk.properties_out[t].conc_mass_comp["S_IC"] / mw_c
+        #     )
 
     def initialize_build(
         self,
