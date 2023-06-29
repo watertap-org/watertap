@@ -11,7 +11,6 @@
 #################################################################################
 
 import pytest
-import re
 from pyomo.environ import (
     ConcreteModel,
     value,
