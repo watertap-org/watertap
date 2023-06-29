@@ -231,7 +231,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
     CONFIG.declare(
         "regenerant",
         ConfigValue(
-            default=RegenerantChem.none,
+            default=RegenerantChem.NaCl,
             domain=In(RegenerantChem),
             description="Chemical used for regeneration of fixed bed",
         ),
@@ -276,11 +276,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             self.ion_exchange_type = IonExchangeType.anion
         else:
             raise ConfigurationError("Target ion must have non-zero charge.")
-
-        if self.config.regenerant is not RegenerantChem.none:
-            self.regen_chem = RegenerantChem(self.config["regenerant"])
-        else:  # default to NaCl as regenerant for both anion and cation exchange
-            self.regen_chem = RegenerantChem.NaCl
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
@@ -337,12 +332,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             mutable=True,
             units=pyunits.m,
             doc="Distributor height",  # Perry's
-        )
-
-        self.p_drop_psi_to_m = Param(
-            initialize=0.70325,
-            units=(pyunits.m / pyunits.psi),
-            doc="Conversion for pressure drop in psi to m",
         )
 
         # Particle Peclet number correlation
@@ -888,40 +877,23 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Expression(doc="Backwash pump power")
         def bw_pump_power(b):
-            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
             return pyunits.convert(
-                (
-                    prop_in.dens_mass_phase["Liq"]
-                    * Constants.acceleration_gravity
-                    * p_drop_m
-                    * b.bw_flow
-                )
-                / b.pump_efficiency,
+                (b.pressure_drop * b.bw_flow) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
             )
 
         @self.Expression(doc="Rinse pump power")
         def rinse_pump_power(b):
-            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
             return pyunits.convert(
-                (
-                    prop_in.dens_mass_phase["Liq"]
-                    * Constants.acceleration_gravity
-                    * p_drop_m
-                    * b.rinse_flow
-                )
-                / b.pump_efficiency,
+                (b.pressure_drop * b.rinse_flow) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
             )
 
         @self.Expression(doc="Rinse pump power")
         def regen_pump_power(b):
-            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
             return pyunits.convert(
                 (
-                    prop_in.dens_mass_phase["Liq"]
-                    * Constants.acceleration_gravity
-                    * p_drop_m
+                    b.pressure_drop
                     * (prop_in.flow_vol_phase["Liq"] / b.service_to_regen_flow_ratio)
                 )
                 / b.pump_efficiency,
@@ -930,15 +902,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Expression(doc="Main pump power")
         def main_pump_power(b):
-            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
             return pyunits.convert(
-                (
-                    prop_in.dens_mass_phase["Liq"]
-                    * Constants.acceleration_gravity
-                    * p_drop_m
-                    * prop_in.flow_vol_phase["Liq"]
-                )
-                / b.pump_efficiency,
+                (b.pressure_drop * prop_in.flow_vol_phase["Liq"]) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
             )
 

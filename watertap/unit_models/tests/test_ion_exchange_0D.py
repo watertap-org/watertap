@@ -108,8 +108,7 @@ class TestIonExchangeLangmuir:
         assert not m.fs.ix.config.has_holdup
         assert m.fs.ix.config.property_package is m.fs.properties
         assert not m.fs.ix.config.hazardous_waste
-        assert isinstance(m.fs.ix.regen_chem, RegenerantChem)
-        assert m.fs.ix.regen_chem is RegenerantChem.NaCl
+        assert m.fs.ix.config.regenerant is RegenerantChem.NaCl
         assert isinstance(m.fs.ix.ion_exchange_type, IonExchangeType)
         assert m.fs.ix.ion_exchange_type is IonExchangeType.cation
         assert isinstance(m.fs.ix.config.isotherm, IsothermType)
@@ -140,7 +139,6 @@ class TestIonExchangeLangmuir:
         ix_params = [
             "underdrain_h",
             "distributor_h",
-            "p_drop_psi_to_m",
             "Pe_p_A",
             "Pe_p_exp",
             "Sh_A",
@@ -384,8 +382,7 @@ class TestIonExchangeFreundlich:
         assert not m.fs.ix.config.has_holdup
         assert m.fs.ix.config.property_package is m.fs.properties
         assert m.fs.ix.config.hazardous_waste
-        assert isinstance(m.fs.ix.regen_chem, RegenerantChem)
-        assert m.fs.ix.regen_chem is RegenerantChem.NaOH
+        assert m.fs.ix.config.regenerant is RegenerantChem.NaOH
         assert isinstance(m.fs.ix.ion_exchange_type, IonExchangeType)
         assert m.fs.ix.ion_exchange_type is IonExchangeType.anion
         assert isinstance(m.fs.ix.config.isotherm, IsothermType)
@@ -417,7 +414,6 @@ class TestIonExchangeFreundlich:
         ix_params = [
             "underdrain_h",
             "distributor_h",
-            "p_drop_psi_to_m",
             "Pe_p_A",
             "Pe_p_exp",
             "Sh_A",
@@ -687,8 +683,7 @@ class TestIonExchangeInert:
         assert not m.fs.ix.config.has_holdup
         assert m.fs.ix.config.property_package is m.fs.properties
         assert not m.fs.ix.config.hazardous_waste
-        assert isinstance(m.fs.ix.regen_chem, RegenerantChem)
-        assert m.fs.ix.regen_chem is RegenerantChem.NaCl
+        assert m.fs.ix.config.regenerant is RegenerantChem.NaCl
         assert isinstance(m.fs.ix.ion_exchange_type, IonExchangeType)
         assert m.fs.ix.ion_exchange_type is IonExchangeType.anion
         assert isinstance(m.fs.ix.config.isotherm, IsothermType)
@@ -720,7 +715,6 @@ class TestIonExchangeInert:
         ix_params = [
             "underdrain_h",
             "distributor_h",
-            "p_drop_psi_to_m",
             "Pe_p_A",
             "Pe_p_exp",
             "Sh_A",

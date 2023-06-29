@@ -410,5 +410,5 @@ def cost_ion_exchange(blk):
         )
     )
 
-    blk.costing_package.cost_flow(blk.regen_soln_flow, blk.unit_model.regen_chem)
+    blk.costing_package.cost_flow(blk.regen_soln_flow, blk.unit_model.config.regenerant)
     blk.costing_package.cost_flow(blk.total_pumping_power, "electricity")
