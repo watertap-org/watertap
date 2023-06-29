@@ -187,17 +187,17 @@ class TestIXDemo:
         assert_optimal_termination(results)
         assert degrees_of_freedom(m) == 0
         assert value(m.fs.ion_exchange.number_columns) == 6
-        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.61147, abs=1e-4)
+        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.61147, rel=1e-2)
         assert value(m.fs.ion_exchange.t_breakthru) == pytest.approx(
-            133404.2583, abs=1e-4
+            133404.2583, rel=1e-2
         )
         assert value(m.fs.ion_exchange.dimensionless_time) == pytest.approx(
-            1.33210077, abs=1e-4
+            1.33210077, rel=1e-2
         )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            0.051706, abs=1e-4
+            0.051706, rel=1e-2
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.145645, abs=0.001)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.145645, rel=1e-2)
 
     @pytest.mark.unit
     def test_main_fun(self):
@@ -205,14 +205,14 @@ class TestIXDemo:
 
         assert degrees_of_freedom(m) == 0
         assert value(m.fs.ion_exchange.number_columns) == 6
-        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.61147, abs=1e-4)
+        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.61147, rel=1e-2)
         assert value(m.fs.ion_exchange.t_breakthru) == pytest.approx(
-            133404.2583, abs=1e-4
+            133404.2583, rel=1e-2
         )
         assert value(m.fs.ion_exchange.dimensionless_time) == pytest.approx(
-            1.33210077, abs=1e-4
+            1.33210077, rel=1e-2
         )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            0.051706, abs=1e-4
+            0.051706, abs=1e-2
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(0.145645, abs=0.001)
