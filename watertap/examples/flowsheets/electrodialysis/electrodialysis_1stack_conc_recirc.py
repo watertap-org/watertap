@@ -186,7 +186,9 @@ def build():
     # costing
     m.fs.EDstack.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing,
-        costing_method_arguments={"cost_electricity_flow": True, "has_rectifier": True},
+        costing_method_arguments={
+            "cost_electricity_flow": False
+        },  # costed by rectifier
     )
     m.fs.pump0.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.pump1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
