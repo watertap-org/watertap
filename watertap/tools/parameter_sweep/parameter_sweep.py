@@ -363,11 +363,11 @@ class _ParameterSweepBase(ABC):
         sweep_param_objs = ComponentSet()
 
         # Store the inputs
-        for sweep_param in sweep_params.values():
+        for param_name, sweep_param in sweep_params.items():
             var = sweep_param.pyomo_object
             sweep_param_objs.add(var)
             output_dict["sweep_params"][
-                var.name
+                param_name
             ] = self._create_component_output_skeleton(var, num_samples)
 
         if outputs is None:
@@ -416,8 +416,7 @@ class _ParameterSweepBase(ABC):
         # Get the inputs
         op_ps_dict = output_dict["sweep_params"]
         for key, item in sweep_params.items():
-            var_name = item.pyomo_object.name
-            op_ps_dict[var_name]["value"][case_number] = item.pyomo_object.value
+            op_ps_dict[key]["value"][case_number] = item.pyomo_object.value
 
         # Get the outputs from model
         if run_successful:
