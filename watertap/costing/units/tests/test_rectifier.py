@@ -66,3 +66,5 @@ def test_rectifier_costing():
     assert pytest.approx(80040, rel=1e-3) == pyo.value(
         m.fs.costing.aggregate_flow_costs["electricity"]
     )
+
+    m.fs.display()

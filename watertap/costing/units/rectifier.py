@@ -18,14 +18,21 @@ from ..util import (
 
 
 def build_rectifier_cost_param_block(blk):
-    pass
+
+    blk.ac_dc_conversion_efficiency = pyo.Var(
+        initialize=0.9,
+        bounds=(0, 1),
+        doc="fixing unit model vairable for upscaling required power considering "
+        "the efficiency of converting alternating to direct current",
+        units=pyo.units.dimensionless,
+    )
 
 
 @register_costing_parameter_block(
     build_rule=build_rectifier_cost_param_block,
     parameter_block_name="rectifier",
 )
-def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
+def cost_rectifier(blk):
     """
     Method to cost rectifiers for electrified process units that require direct current which must be converted
     from an alternating current source. Note that this should be used solely for units that require the conversion,
@@ -38,11 +45,7 @@ def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
 
     # create variables on cost block
     make_capital_cost_var(blk)
-    blk.ac_dc_conversion_efficiency = pyo.Expression(
-        expr=ac_dc_conversion_efficiency,
-        doc="fixing unit model vairable for upscaling required power considering "
-        "the efficiency of converting alternating to direct current",
-    )
+
     blk.ac_power = pyo.Var(
         initialize=100,
         domain=pyo.NonNegativeReals,
@@ -52,7 +55,7 @@ def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
 
     # use unit.power variable in conversion with efficiency
     blk.power_conversion = pyo.Constraint(
-        expr=blk.ac_power * blk.ac_dc_conversion_efficiency
+        expr=blk.ac_power * blk.costing_package.rectifier.ac_dc_conversion_efficiency
         == pyo.units.convert(blk.unit_model.power, to_units=pyo.units.kW)
     )
 
