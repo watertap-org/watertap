@@ -56,7 +56,7 @@ def build_electrodialysis_cost_param_block(blk):
     build_rule=build_electrodialysis_cost_param_block,
     parameter_block_name="electrodialysis",
 )
-def cost_electrodialysis(blk, cost_electricity_flow=True, has_rectifier=False):
+def cost_electrodialysis(blk, cost_electricity_flow=True):
     """
     Function for costing the Electrodialysis unit
 
@@ -84,19 +84,13 @@ def cost_electrodialysis(blk, cost_electricity_flow=True, has_rectifier=False):
     # Changed this to grab power from performance table which is identified
     # by same key regardless of whether the Electrodialysis unit is 0D or 1D
     if cost_electricity_flow:
-        if not has_rectifier:
-            blk.costing_package.cost_flow(
-                pyo.units.convert(
-                    blk.unit_model.get_power_electrical(t0),
-                    to_units=pyo.units.kW,
-                ),
-                "electricity",
-            )
-        else:
-            blk.unit_model.power = blk.unit_model.get_power_electrical(
-                blk.flowsheet().time.first()
-            )
-            # cost_rectifier(blk, ac_dc_conversion_efficiency=0.9)
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                blk.unit_model.get_power_electrical(t0),
+                to_units=pyo.units.kW,
+            ),
+            "electricity",
+        )
 
 
 def cost_electrodialysis_stack(

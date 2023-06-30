@@ -23,7 +23,7 @@ from pyomo.environ import (
 )
 from pyomo.network import Arc
 
-from idaes.core import FlowsheetBlock, UnitModelCostingBlock
+from idaes.core import FlowsheetBlock, UnitModelBlock, UnitModelCostingBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 import idaes.core.util.model_statistics as mstat
@@ -42,6 +42,7 @@ from watertap.unit_models.electrodialysis_1D import (
 )
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 from watertap.costing.watertap_costing_package import WaterTAPCosting
+from watertap.costing.units.rectifier import cost_rectifier
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
 __author__ = "Xiangyu Bi"
@@ -163,6 +164,24 @@ def build():
     # touch necessary variables to ensure they are constructed and solved
     m.fs.prod.properties[0].flow_vol_phase[...]
     m.fs.disp.properties[0].flow_vol_phase[...]
+
+    # build and cost rectifier
+    m.fs.rectifier = UnitModelBlock()
+    m.fs.rectifier.power = Var(
+        initialize=100,
+        domain=NonNegativeReals,
+        units=pyunits.kW,
+    )
+    m.fs.rectifier.electricity_supply_port = Constraint(
+        expr=m.fs.rectifier.power
+        == pyunits.convert(
+            m.fs.EDstack.get_power_electrical(m.fs.time.first()), to_units=pyunits.kW
+        )
+    )
+    m.fs.rectifier.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=cost_rectifier,
+    )
 
     # costing
     m.fs.EDstack.costing = UnitModelCostingBlock(
