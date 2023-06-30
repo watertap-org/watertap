@@ -13,7 +13,6 @@
 import pyomo.environ as pyo
 from ..util import (
     register_costing_parameter_block,
-    cost_rectifier,
     make_capital_cost_var,
     make_fixed_operating_cost_var,
 )
@@ -97,14 +96,7 @@ def cost_electrodialysis(blk, cost_electricity_flow=True, has_rectifier=False):
             blk.unit_model.power = blk.unit_model.get_power_electrical(
                 blk.flowsheet().time.first()
             )
-            cost_rectifier(blk, ac_dc_conversion_efficiency=0.9)
-            blk.costing_package.cost_flow(
-                pyo.units.convert(
-                    blk.ac_power,
-                    to_units=pyo.units.kW,
-                ),
-                "electricity",
-            )
+            # cost_rectifier(blk, ac_dc_conversion_efficiency=0.9)
 
 
 def cost_electrodialysis_stack(

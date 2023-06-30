@@ -18,7 +18,6 @@ from .util import (
     make_fixed_operating_cost_var,
     cost_by_flow_volume,
     cost_membrane,
-    cost_rectifier,
 )
 
 from .units.crystallizer import CrystallizerCostType
