@@ -269,7 +269,7 @@ class ModifiedASM2dStateBlockData(StateBlockData):
         self.flow_vol = pyo.Var(
             initialize=1.0,
             domain=pyo.NonNegativeReals,
-            doc="Total volumentric flowrate",
+            doc="Total volumetric flowrate",
             units=pyo.units.m**3 / pyo.units.s,
         )
         self.pressure = pyo.Var(

@@ -87,22 +87,38 @@ def model():
             ):
                 print("yes")
 
-                Feed.append(value(m.fs.AD.inlet.conc_mass_comp[0, "X_PAO"]))
-                S_A.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "S_A"]))
-                S_F.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "S_F"]))
-                S_I.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "S_I"]))
-                S_N2.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "S_N2"]))
-                S_NH4.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "S_NH4"]))
-                S_NO3.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "S_NO3"]))
-                S_O2.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "S_O2"]))
-                S_PO4.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "S_PO4"]))
-                X_AUT.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "X_AUT"]))
-                X_H.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "X_H"]))
-                X_I.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "X_I"]))
-                X_PAO.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "X_PAO"]))
-                X_PHA.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "X_PHA"]))
-                X_PP.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "X_PP"]))
-                X_S.append(value(m.fs.electroNP.treated.conc_mass_comp[0, "X_S"]))
+                Feed.append(value(m.fs.AD.liquid_phase.properties_in[0].get_material_flow_terms('Liq', xvar)))
+                S_A.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "S_A")))
+                S_F.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "S_F")))
+                S_I.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "S_I")))
+                S_N2.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "S_N2")))
+                S_NH4.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "S_NH4")))
+                S_NO3.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "S_NO3")))
+                S_O2.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "S_O2")))
+                S_PO4.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "S_PO4")))
+                X_AUT.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "X_AUT")))
+                X_H.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "X_H")))
+                X_I.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "X_I")))
+                X_PAO.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "X_PAO")))
+                X_PHA.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "X_PHA")))
+                X_PP.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "X_PP")))
+                X_S.append(value(m.fs.electroNP.properties_byproduct[0].get_material_flow_terms('Liq', "X_S")))
+
+                # S_A.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "S_A"]))
+                # S_F.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "S_F"]))
+                # S_I.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "S_I"]))
+                # S_N2.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "S_N2"]))
+                # S_NH4.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "S_NH4"]))
+                # S_NO3.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "S_NO3"]))
+                # S_O2.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "S_O2"]))
+                # S_PO4.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "S_PO4"]))
+                # X_AUT.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "X_AUT"]))
+                # X_H.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "X_H"]))
+                # X_I.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "X_I"]))
+                # X_PAO.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "X_PAO"]))
+                # X_PHA.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "X_PHA"]))
+                # X_PP.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "X_PP"]))
+                # X_S.append(value(m.fs.electroNP.byproduct.conc_mass_comp[0, "X_S"]))
 
                 c_cost.append(
                     value(
@@ -161,7 +177,7 @@ def model():
 
     df = pd.DataFrame(
         {
-            "Feed": Feed,
+            f"Feed_{xvar}": Feed,
             "S_A": S_A,
             "S_F": S_F,
             "S_I": S_I,
@@ -185,7 +201,12 @@ def model():
     )
     df.to_csv("results.csv")
 
-    return m
+    return m, df
 
+myx="S_IP"
+x, df = model(xvar=myx)
+print("Run complete. Check results.csv.")
 
-x = model()
+plt.scatter(df[f'Feed_{myx}'], df['S_PO4']*3600*24)
+plt.xlabel(f'{myx}')
+plt.ylabel("S_PO4 mass flow (kg/s)")
