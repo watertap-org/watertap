@@ -94,10 +94,28 @@ def cost_electrodialysis(blk, cost_electricity_flow=True, has_rectifier=False):
                 "electricity",
             )
         else:
-            blk.unit_model.power = blk.unit_model.get_power_electrical(
-                blk.flowsheet().time.first()
+            power = blk.unit_model.get_power_electrical(blk.flowsheet().time.first())
+            cost_rectifier(blk, power=power, ac_dc_conversion_efficiency=0.9)
+            blk.capital_cost_constraint = pyo.Constraint(
+                expr=blk.capital_cost
+                == pyo.units.convert(
+                    (blk.membrane_cost + blk.spacer_cost)
+                    * (
+                        blk.unit_model.cell_pair_num
+                        * blk.unit_model.cell_width
+                        * blk.unit_model.cell_length
+                    )
+                    + blk.electrode_cost
+                    * (blk.unit_model.cell_width * blk.unit_model.cell_length),
+                    to_units=blk.costing_package.base_currency,
+                )
+                + blk.capital_cost_rectifier
             )
-            cost_rectifier(blk, ac_dc_conversion_efficiency=0.9)
+
+            # blk.unit_model.power = blk.unit_model.#get_power_electrical(
+            #    blk.flowsheet().time.first()
+            # )
+            """
             blk.costing_package.cost_flow(
                 pyo.units.convert(
                     blk.ac_power,
@@ -105,6 +123,7 @@ def cost_electrodialysis(blk, cost_electricity_flow=True, has_rectifier=False):
                 ),
                 "electricity",
             )
+            """
 
 
 def cost_electrodialysis_stack(

@@ -100,7 +100,7 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
     )
 
 
-def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
+def cost_rectifier(blk, power=100, ac_dc_conversion_efficiency=0.90):
     """
     Method to cost rectifiers for electrified process units that require direct current which must be converted
     from an alternating current source. Note that this should be used solely for units that require the conversion,
@@ -128,7 +128,7 @@ def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
     # use unit.power variable in conversion with efficiency
     blk.power_conversion = pyo.Constraint(
         expr=blk.ac_power * blk.ac_dc_conversion_efficiency
-        == pyo.units.convert(blk.unit_model.power, to_units=pyo.units.kW)
+        == pyo.units.convert(power, to_units=pyo.units.kW)
     )
 
     # USD_2021 embedded in equation
@@ -139,14 +139,17 @@ def cost_rectifier(blk, ac_dc_conversion_efficiency=0.90):
         units=pyo.units.dimensionless,
         doc="Rectifier cost coefficients",
     )
+    blk.capital_cost_rectifier = pyo.Var(
+        initialize=100, units=blk.costing_package.base_currency
+    )
 
     # refix variables to appropriate costing parameters
     for index, var in blk.rectifier_cost_coeff.items():
         var.fix(rectifier_cost_coeff[index])
 
     # calculate capital cost
-    blk.capital_cost_constraint = pyo.Constraint(
-        expr=blk.capital_cost
+    blk.capital_cost_rectifier_constraint = pyo.Constraint(
+        expr=blk.capital_cost_rectifier
         == pyo.units.convert(
             pyo.units.USD_2021
             * (
