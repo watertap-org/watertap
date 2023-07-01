@@ -80,7 +80,7 @@ def main():
     display_model_metrics(m)
 
     # Perform an optimization over cell_length, cell_pair_mum, and voltage_applied
-    """
+
     ed = m.fs.EDstack
     ulim = (
         ed.voltage_x[0, 0].value
@@ -107,7 +107,7 @@ def main():
     solve(m, solver=solver, tee=True)
     print("\n***---Optimization results, Product conc = 100 ppb---***")
     display_model_metrics(m)
-"""
+
     return m
 
 
