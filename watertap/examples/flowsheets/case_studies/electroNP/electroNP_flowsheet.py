@@ -213,6 +213,32 @@ def build_flowsheet():
     iscale.calculate_scaling_factors(m)
 
     iscale.set_scaling_factor(m.fs.electroNP.properties_byproduct[0.0].flow_vol, 1e7)
+    iscale.set_scaling_factor(m.fs.AD.vapor_phase[0].pressure_sat, 1e-3)
+
+    skip_constraint = [
+        "S_O2",
+        "S_N2",
+        "X_AUT",
+        "X_PHA",
+        "S_I",
+        "S_NO3",
+        "S_Mg",
+        "X_MeP",
+        "X_MeOH",
+        "X_PAO",
+        "X_TSS",
+        "S_F",
+        "S_K",
+        "S_A",
+        "X_I",
+        "X_H",
+        "X_PP",
+        "X_S",
+    ]
+
+    for i in skip_constraint:
+        m.fs.electroNP.solute_removal_equation[0.0, "Liq", i].deactivate()
+        m.fs.electroNP.solute_treated_equation[0.0, "Liq", i].deactivate()
 
     m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH)
     propagate_state(m.fs.stream_adm1_translator)

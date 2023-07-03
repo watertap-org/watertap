@@ -453,13 +453,13 @@ class TestParallelManager:
                 },
             },
             "sweep_params": {
-                "fs.input[a]": {
+                "input_a": {
                     "lower bound": 0,
                     "units": "None",
                     "upper bound": 1,
                     "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
                 },
-                "fs.input[b]": {
+                "input_b": {
                     "lower bound": 0,
                     "units": "None",
                     "upper bound": 1,
