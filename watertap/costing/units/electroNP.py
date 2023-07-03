@@ -20,7 +20,7 @@ from ..util import (
 def build_electroNP_cost_param_block(blk):
 
     blk.HRT = pyo.Var(
-        initialize=1.3333,
+        initialize=1.25,
         doc="Hydraulic retention time",
         units=pyo.units.hr,
     )
