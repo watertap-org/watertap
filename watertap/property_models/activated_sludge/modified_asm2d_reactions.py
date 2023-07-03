@@ -191,6 +191,12 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="P content of inert particulate COD X_I, [kg P/kg COD]",
         )
+        self.i_PSI = pyo.Var(
+            initialize=0.00649,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="P content of inert soluble COD S_I, [kg P/kg COD]",
+        )
         self.i_PXS = pyo.Var(
             initialize=0.00559,
             units=pyo.units.dimensionless,
