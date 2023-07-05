@@ -10,19 +10,23 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from .watertap_costing_package import WaterTAPCosting
+import pytest
+from pyomo.environ import value
+from watertap.examples.flowsheets.nf_dspmde.nf import main
 
-from .util import (
-    register_costing_parameter_block,
-    make_capital_cost_var,
-    make_fixed_operating_cost_var,
-    cost_by_flow_volume,
-    cost_membrane,
-    cost_rectifier,
-)
 
-from .units.crystallizer import CrystallizerCostType
-from .units.energy_recovery_device import EnergyRecoveryDeviceType
-from .units.mixer import MixerType
-from .units.pump import PumpType
-from .units.reverse_osmosis import ROType
+@pytest.mark.requires_idaes_solver
+@pytest.mark.component
+def test_main():
+    m = main()
+    test_dict = {
+        "lcow": [m.fs.costing.LCOW, 0.16811587158493219],
+        "pressure": [m.fs.NF.pump.outlet.pressure[0] / 1e5, 6.56],
+        "area": [m.fs.NF.nfUnit.area, 285.6900547389303],
+        "recovery": [
+            m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"] * 100,
+            73.47934090302432,
+        ],
+    }
+    for (model_result, testval) in test_dict.values():
+        assert pytest.approx(testval, rel=1e-3) == value(model_result)

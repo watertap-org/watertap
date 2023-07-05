@@ -164,8 +164,8 @@ class TestAsm1Adm1(object):
         assert hasattr(asmadm.fs.unit.outlet, "anions")
         assert hasattr(asmadm.fs.unit.outlet, "cations")
 
-        assert number_variables(asmadm) == 133
-        assert number_total_constraints(asmadm) == 33
+        assert number_variables(asmadm) == 134
+        assert number_total_constraints(asmadm) == 34
 
         assert number_unused_variables(asmadm.fs.unit) == 0
 
@@ -359,6 +359,7 @@ class TestAsm1Adm1(object):
                         + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_fa"]
                         + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_c4"]
                         + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_pro"]
+                        + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_ac"]
                         + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_h2"]
                         + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_c"]
                         + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_ch"]
@@ -373,7 +374,7 @@ class TestAsm1Adm1(object):
         assert (
             abs(
                 value(
-                    asmadm.fs.unit.TKN[0]
+                    asmadm.fs.unit.TKN_in[0]
                     - (
                         asmadm.fs.unit.outlet.conc_mass_comp[0, "S_IN"]
                         + asmadm.fs.unit.config.reaction_package.N_xc
