@@ -157,13 +157,12 @@ class _ParameterSweepBase(ABC):
 
         self.comm = options.pop("comm", MPI.COMM_WORLD)
         self.rank = self.comm.Get_rank()
-        self.num_procs = self.comm.Get_size()
 
         self.config = self.CONFIG(options)
 
         # Initialize the writer
         self.writer = ParameterSweepWriter(
-            self.comm,
+            self.parallel_manager,
             csv_results_file_name=self.config.csv_results_file_name,
             h5_results_file_name=self.config.h5_results_file_name,
             debugging_data_dir=self.config.debugging_data_dir,
@@ -189,7 +188,7 @@ class _ParameterSweepBase(ABC):
 
         if self.config.publish_progress:
             publish_dict = {
-                "worker_number": self.comm.Get_rank(),
+                "worker_number": self.parallel_manager.get_rank(),
                 "iteration": iteration,
                 "solve_status": solve_status,
                 "solve_time": solve_time,
@@ -293,10 +292,12 @@ class _ParameterSweepBase(ABC):
         # Split the total list of combinations into NUM_PROCS chunks,
         # one per each of the MPI ranks
         # divided_combo_array = np.array_split(global_combo_array, num_procs, axis=0)
-        divided_combo_array = np.array_split(global_combo_array, self.num_procs)
+        divided_combo_array = np.array_split(
+            global_combo_array, self.parallel_manager.number_of_processes()
+        )
 
         # Return only this rank's portion of the total workload
-        local_combo_array = divided_combo_array[self.rank]
+        local_combo_array = divided_combo_array[self.parallel_manager.get_rank()]
 
         return local_combo_array
 
@@ -323,12 +324,11 @@ class _ParameterSweepBase(ABC):
             (num_cases, len(global_results_dict["outputs"])), dtype=float
         )
 
-        if self.rank == 0:
+        if self.parallel_manager.is_root_process():
             for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
                 global_results[:, i] = item["value"][:num_cases]
 
-        if self.num_procs > 1:  # pragma: no cover
-            self.comm.Bcast(global_results, root=0)
+        self.parallel_manager.sync_data(global_results)
 
         return global_results
 
@@ -363,11 +363,11 @@ class _ParameterSweepBase(ABC):
         sweep_param_objs = ComponentSet()
 
         # Store the inputs
-        for sweep_param in sweep_params.values():
+        for param_name, sweep_param in sweep_params.items():
             var = sweep_param.pyomo_object
             sweep_param_objs.add(var)
             output_dict["sweep_params"][
-                var.name
+                param_name
             ] = self._create_component_output_skeleton(var, num_samples)
 
         if outputs is None:
@@ -416,8 +416,7 @@ class _ParameterSweepBase(ABC):
         # Get the inputs
         op_ps_dict = output_dict["sweep_params"]
         for key, item in sweep_params.items():
-            var_name = item.pyomo_object.name
-            op_ps_dict[var_name]["value"][case_number] = item.pyomo_object.value
+            op_ps_dict[key]["value"][case_number] = item.pyomo_object.value
 
         # Get the outputs from model
         if run_successful:
@@ -451,7 +450,7 @@ class _ParameterSweepBase(ABC):
             req_num_samples = num_total_samples
 
         # Create the global value array on rank 0
-        if self.rank == 0:
+        if self.parallel_manager.is_root_process():
             global_output_dict = copy.deepcopy(local_output_dict)
             # Create a global value array of inputs in the dictionary
             for key, item in global_output_dict.items():
@@ -483,7 +482,7 @@ class _ParameterSweepBase(ABC):
             elif key == "solve_successful":
                 local_solve_successful = np.fromiter(item, dtype=bool, count=len(item))
 
-                if self.rank == 0:
+                if self.parallel_manager.is_root_process():
                     global_solve_successful = np.empty(num_total_samples, dtype=bool)
                 else:
                     global_solve_successful = None
@@ -494,7 +493,7 @@ class _ParameterSweepBase(ABC):
                     root=0,
                 )
 
-                if self.rank == 0:
+                if self.parallel_manager.is_root_process():
                     # Trim to the exact number
                     global_output_dict[key] = list(
                         global_solve_successful[0:req_num_samples]
@@ -825,14 +824,13 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             dtype=float,
         )
 
-        if self.rank == 0:
+        if self.parallel_manager.is_root_process():
             for i, (key, item) in enumerate(
                 global_filtered_dict["sweep_params"].items()
             ):
                 global_filtered_values[:, i] = item["value"][:req_num_samples]
 
-        if self.num_procs > 1:  # pragma: no cover
-            self.comm.Bcast(global_filtered_values, root=0)
+        self.parallel_manager.sync_data(global_filtered_values)
 
         return global_filtered_values
 
@@ -921,7 +919,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             failure_count = local_num_cases - success_count
 
             # Get the global number of successful solves and update the number of remaining samples
-            if self.num_procs > 1:  # pragma: no cover
+            if self.parallel_manager.number_of_processes() > 1:  # pragma: no cover
                 global_success_count = np.zeros(1, dtype=float)
                 global_failure_count = np.zeros(1, dtype=float)
                 self.comm.Allreduce(

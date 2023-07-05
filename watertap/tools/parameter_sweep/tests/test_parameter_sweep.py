@@ -274,7 +274,7 @@ class TestParallelManager:
             param_dict, SamplingType.FIXED, None
         )
 
-        num_procs = ps.num_procs
+        num_procs = ps.parallel_manager.number_of_processes()
         rank = ps.rank
         test = np.array_split(global_combo_array, num_procs, axis=0)[rank]
 
@@ -453,13 +453,13 @@ class TestParallelManager:
                 },
             },
             "sweep_params": {
-                "fs.input[a]": {
+                "input_a": {
                     "lower bound": 0,
                     "units": "None",
                     "upper bound": 1,
                     "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
                 },
-                "fs.input[b]": {
+                "input_b": {
                     "lower bound": 0,
                     "units": "None",
                     "upper bound": 1,
@@ -478,7 +478,7 @@ class TestParallelManager:
         m.fs.slack_penalty = 1000.0
         m.fs.slack.setub(0)
 
-        global_num_cases = 2 * ps.num_procs
+        global_num_cases = 2 * ps.parallel_manager.number_of_processes()
         sweep_params = {
             "input_a": NormalSample(m.fs.input["a"], 0.1, 0.9, global_num_cases),
             "input_b": NormalSample(m.fs.input["b"], 0.0, 0.5, global_num_cases),
@@ -520,7 +520,9 @@ class TestParallelManager:
         if ps.rank > 0:
             assert global_output_dict == local_output_dict
         else:
-            test_array = np.repeat(np.arange(0, ps.num_procs, dtype=float), 2)
+            test_array = np.repeat(
+                np.arange(0, ps.parallel_manager.number_of_processes(), dtype=float), 2
+            )
             test_list = [True] * global_num_cases
             for key, value in global_output_dict.items():
                 if key != "solve_successful":
@@ -582,7 +584,7 @@ class TestParallelManager:
             )
 
             # Check that all local output files have been created
-            for k in range(ps.num_procs):
+            for k in range(ps.parallel_manager.number_of_processes()):
                 assert os.path.isfile(
                     os.path.join(tmp_path, f"local_results_{k:03}.h5")
                 )

@@ -160,7 +160,9 @@ class _ASM1StateBlock(StateBlock):
                          were not provided at the unit model level, the
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
-            flow_mol_comp : value at which to initialize component flows (default=None)
+            flow_vol : value at which to initialize total volumetric flow (default=None)
+            alkalinity: value of alkalinity expressed as molar concentration
+            conc_mass_comp : value at which to initialize component concentrations (default=None)
             pressure : value at which to initialize pressure (default=None)
             temperature : value at which to initialize temperature (default=None)
             outlvl : sets output level of initialization routine

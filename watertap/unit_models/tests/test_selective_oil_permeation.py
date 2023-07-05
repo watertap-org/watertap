@@ -90,6 +90,11 @@ class TestSelectiveOilPermeation:
         )  # oil flow in kg/s
         m.fs.unit.feed_side.properties_out[0].pressure.fix(2.24 * units.bar)
         m.fs.unit.area.fix(1.4)  # membrane area in m^2
+        m.fs.unit.pore_diameter.fix(4.7e-8)
+        m.fs.unit.porosity.fix(0.4)
+        m.fs.unit.membrane_thickness.fix(4e-5)
+        m.fs.unit.permeability_constant.fix(150)
+        m.fs.unit.module_diameter.fix(0.064)
         m.fs.unit.properties_permeate[0].pressure.fix(1 * units.bar)
 
         return m
@@ -107,7 +112,7 @@ class TestSelectiveOilPermeation:
             )  # number of state variables for SOP property package
             assert isinstance(port, Port)
 
-        assert number_variables(m) == 30
+        assert number_variables(m) == 35
         assert number_total_constraints(m) == 22
         assert number_unused_variables(m) == 0
         assert_units_consistent(m)

@@ -9,6 +9,9 @@ mpi4py, mpi4py_available = attempt_import("mpi4py")
 
 
 class ParallelManager(ABC):
+
+    ROOT_PROCESS_RANK = 0
+
     @classmethod
     def create_parallel_manager(cls, parallel_manager_class=None):
         """
@@ -38,6 +41,27 @@ class ParallelManager(ABC):
         """
         Return whether the current process should be considered as the root of the parallel group it
         is a part of.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_rank(self):
+        """
+        Get the process's rank number in its parallel peer group.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def number_of_processes(self):
+        """
+        Return how many processes are part of the parallel peer group.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def sync_point(self):
+        """
+        Implement a synchronization point. All processes must reach this point before any continue.
         """
         raise NotImplementedError
 
@@ -101,6 +125,15 @@ class SingleProcessParallelManager(ParallelManager):
     def is_root_process(self):
         return True
 
+    def get_rank(self):
+        return self.ROOT_PROCESS_RANK
+
+    def number_of_processes(self):
+        return 1
+
+    def sync_point(self):
+        pass
+
     def sync_data(self, data):
         pass
 
@@ -112,8 +145,6 @@ class SingleProcessParallelManager(ParallelManager):
 
 
 class MPIParallelManager(ParallelManager):
-    ROOT = 0
-
     def __init__(self, mpi4py_lib):
         self.mpi4py = mpi4py_lib
         self.comm = self.mpi4py.MPI.COMM_WORLD
@@ -123,7 +154,16 @@ class MPIParallelManager(ParallelManager):
         self.results = None
 
     def is_root_process(self):
-        return self.rank == self.ROOT
+        return self.rank == self.ROOT_PROCESS_RANK
+
+    def get_rank(self):
+        return self.comm.Get_rank()
+
+    def number_of_processes(self):
+        return self.num_procs
+
+    def sync_point(self):
+        self.comm.Barrier()
 
     def sync_data(self, data):
         """
@@ -131,7 +171,7 @@ class MPIParallelManager(ParallelManager):
         when run by multiple peer mpi processes.
         """
         if self.num_procs > 1:
-            self.comm.Bcast(data, root=self.ROOT)
+            self.comm.Bcast(data, root=self.ROOT_PROCESS_RANK)
 
     def scatter(self, all_parameter_combos, fn):
         # Split the total list of combinations into NUM_PROCS chunks,
