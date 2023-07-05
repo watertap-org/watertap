@@ -1735,6 +1735,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                     var_dict[
                         f"Electric Potential Gradient @ Feed-Membrane Interface, {io}"
                     ] = self.electric_potential_grad_feed_interface[time_point, x]
+                var_dict[f"Velocity @ {io}"] = self.velocity[time_point, x]
 
         return {"vars": var_dict, "exprs": expr_dict}
 
