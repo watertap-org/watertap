@@ -129,18 +129,13 @@ see reaction package for documentation.}""",
         # Call UnitModel.build to setup dynamics
         super(TranslatorDataASM2dADM1, self).build()
 
+        eps = 1e-9
         mw_p = 31 * pyunits.kg / pyunits.kmol
         mw_n = 14 * pyunits.kg / pyunits.kmol
         mw_c = 12 * pyunits.kg / pyunits.kmol
         mw_k = 39 * pyunits.kg / pyunits.kmol
         mw_mg = 24.3 * pyunits.kg / pyunits.kmol
 
-        self.eps = Param(
-            initialize=1e-9,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Smoothing factor",
-        )
         self.Y_H = Var(
             initialize=0.625,
             units=pyunits.dimensionless,
@@ -444,7 +439,7 @@ see reaction package for documentation.}""",
         def Ssu_mapping(blk, t):
             return Expr_if(
                 blk.SN_org[t] >= self.properties_in[0].conc_mass_comp["S_F"],
-                1e-9 * pyunits.kg / pyunits.m**3,
+                eps * pyunits.kg / pyunits.m**3,
                 (self.properties_in[0].conc_mass_comp["S_F"] - self.SN_org[t]) / 1000,
             )
 
@@ -570,7 +565,7 @@ see reaction package for documentation.}""",
                     * blk.config.inlet_reaction_package.i_PXI
                     - blk.biomass[t]
                     * self.f_ch_xc
-                    * 1e-9
+                    * eps
                     * pyunits.kmol
                     / pyunits.kg
                     * mw_p
@@ -620,11 +615,11 @@ see reaction package for documentation.}""",
 
             # @self.Expression(doc="X_H concentration at step 4")
             # def XH_AS4():
-            #     return 1e-9 * pyunits.kg / pyunits.m**3
+            #     return eps * pyunits.kg / pyunits.m**3
             # TODO: Consider removing these cases where vars set conc to 0 since they are usually unused
             # TODO: These were left b/c this first draft follows Flores-Alsina as close as possible
             self.XH_AS4 = Var(
-                initialize=1e-9,
+                initialize=eps,
                 units=pyunits.kg / pyunits.m**3,
                 domain=PositiveReals,
                 doc="X_H concentration at step 4",
@@ -632,9 +627,9 @@ see reaction package for documentation.}""",
 
             # @self.Expression(self.flowsheet().time, doc="X_PAO concentration at step 4")
             # def XPAO_AS4():
-            #     return 1e-9 * pyunits.kg / pyunits.m**3
+            #     return eps * pyunits.kg / pyunits.m**3
             self.XPAO_AS4 = Var(
-                initialize=1e-9,
+                initialize=eps,
                 units=pyunits.kg / pyunits.m**3,
                 domain=PositiveReals,
                 doc="X_PAO concentration at step 4",
@@ -649,9 +644,9 @@ see reaction package for documentation.}""",
 
             # @self.Expression(self.flowsheet().time, doc="X_AUT concentration at step 4")
             # def XAUT_AS4():
-            #     return 1e-9 * pyunits.kg / pyunits.m**3
+            #     return eps * pyunits.kg / pyunits.m**3
             self.XAUT_AS4 = Var(
-                initialize=1e-9,
+                initialize=eps,
                 units=pyunits.kg / pyunits.m**3,
                 domain=PositiveReals,
                 doc="X_AUT concentration at step 4",
@@ -672,7 +667,7 @@ see reaction package for documentation.}""",
             def Xch_mapping(blk, t):
                 return Expr_if(
                     blk.XN_org[t] >= self.properties_in[0].conc_mass_comp["X_S"],
-                    1e-9 * pyunits.kg / pyunits.m**3,
+                    eps * pyunits.kg / pyunits.m**3,
                     (self.properties_in[0].conc_mass_comp["X_S"] - self.XN_org[t])
                     * 0.4
                     / 1000,
@@ -690,7 +685,7 @@ see reaction package for documentation.}""",
             def Xli_mapping(blk, t):
                 return Expr_if(
                     blk.XN_org[t] >= self.properties_in[0].conc_mass_comp["X_S"],
-                    1e-9 * pyunits.kg / pyunits.m**3,
+                    eps * pyunits.kg / pyunits.m**3,
                     (self.properties_in[0].conc_mass_comp["X_S"] - self.XN_org[t])
                     * 0.6
                     / 1000,
@@ -754,12 +749,7 @@ see reaction package for documentation.}""",
                     blk.SPO4_AS4[t]
                     + self.properties_in[0].conc_mass_comp["X_S"]
                     * blk.config.inlet_reaction_package.i_PXS
-                    - blk.Xch_mapping[t]
-                    * 1e-9
-                    * pyunits.kmol
-                    / pyunits.kg
-                    * 1000
-                    * mw_p
+                    - blk.Xch_mapping[t] * eps * pyunits.kmol / pyunits.kg * 1000 * mw_p
                     - blk.Xli_mapping[t]
                     * blk.config.outlet_reaction_package.Pi["X_li"]
                     * 1000
@@ -788,9 +778,9 @@ see reaction package for documentation.}""",
 
             # @self.Expression(self.flowsheet().time, doc="X_S concentration at step 5")
             # def XS_AS5():
-            #     return 1e-9 * pyunits.kg / pyunits.m**3
+            #     return eps * pyunits.kg / pyunits.m**3
             self.XS_AS5 = Var(
-                initialize=1e-9,
+                initialize=eps,
                 units=pyunits.kg / pyunits.m**3,
                 domain=PositiveReals,
                 doc="X_S concentration at step 5",
@@ -799,9 +789,9 @@ see reaction package for documentation.}""",
             # -------------------------------------------Step 6----------------------------------------------------------------#
             # @self.Expression(self.flowsheet().time, doc="X_PP concentration at step 6")
             # def XPP_AS6():
-            #     return 1e-9 * pyunits.kg / pyunits.m**3
+            #     return eps * pyunits.kg / pyunits.m**3
             self.XPP_AS6 = Var(
-                initialize=1e-9,
+                initialize=eps,
                 units=pyunits.kg / pyunits.m**3,
                 domain=PositiveReals,
                 doc="X_PP concentration at step 6",
@@ -817,9 +807,9 @@ see reaction package for documentation.}""",
 
             # @self.Expression(self.flowsheet().time, doc="X_PP concentration at step 6")
             # def XPHA_AS6():
-            #     return 1e-9 * pyunits.kg / pyunits.m**3
+            #     return eps * pyunits.kg / pyunits.m**3
             self.XPHA_AS6 = Var(
-                initialize=1e-9,
+                initialize=eps,
                 units=pyunits.kg / pyunits.m**3,
                 domain=PositiveReals,
                 doc="X_PHA concentration at step 6",
@@ -1063,7 +1053,7 @@ see reaction package for documentation.}""",
                     * blk.config.inlet_reaction_package.i_PXI
                     - blk.biomass[t]
                     * self.f_ch_xc
-                    * 1e-9
+                    * eps
                     * pyunits.kmol
                     / pyunits.kg
                     * mw_p
@@ -1113,9 +1103,9 @@ see reaction package for documentation.}""",
 
             # @self.Expression(doc="X_H concentration at step 4")
             # def XH_AS4():
-            #     return 1e-9 * pyunits.kg / pyunits.m**3
+            #     return eps * pyunits.kg / pyunits.m**3
             self.XH_AS4 = Var(
-                initialize=1e-9,
+                initialize=eps,
                 units=pyunits.kg / pyunits.m**3,
                 domain=PositiveReals,
                 doc="X_H concentration at step 4",
@@ -1135,9 +1125,9 @@ see reaction package for documentation.}""",
 
             # @self.Expression(self.flowsheet().time, doc="X_AUT concentration at step 4")
             # def XAUT_AS4():
-            #     return 1e-9 * pyunits.kg / pyunits.m**3
+            #     return eps * pyunits.kg / pyunits.m**3
             self.XAUT_AS4 = Var(
-                initialize=1e-9,
+                initialize=eps,
                 units=pyunits.kg / pyunits.m**3,
                 domain=PositiveReals,
                 doc="X_AUT concentration at step 4",
@@ -1158,7 +1148,7 @@ see reaction package for documentation.}""",
             def Xch_mapping(blk, t):
                 return Expr_if(
                     blk.XN_org[t] >= self.properties_in[0].conc_mass_comp["X_S"],
-                    1e-9 * pyunits.kg / pyunits.m**3,
+                    eps * pyunits.kg / pyunits.m**3,
                     (self.properties_in[0].conc_mass_comp["X_S"] - self.XN_org[t])
                     * 0.4
                     / 1000,
@@ -1176,7 +1166,7 @@ see reaction package for documentation.}""",
             def Xli_mapping(blk, t):
                 return Expr_if(
                     blk.XN_org[t] >= self.properties_in[0].conc_mass_comp["X_S"],
-                    1e-9 * pyunits.kg / pyunits.m**3,
+                    eps * pyunits.kg / pyunits.m**3,
                     (self.properties_in[0].conc_mass_comp["X_S"] - self.XN_org[t])
                     * 0.6
                     / 1000,
@@ -1240,12 +1230,7 @@ see reaction package for documentation.}""",
                     blk.SPO4_AS4[t]
                     + self.properties_in[0].conc_mass_comp["X_S"]
                     * blk.config.inlet_reaction_package.i_PXS
-                    - blk.Xch_mapping[t]
-                    * 1e-9
-                    * pyunits.kmol
-                    / pyunits.kg
-                    * 1000
-                    * mw_p
+                    - blk.Xch_mapping[t] * eps * pyunits.kmol / pyunits.kg * 1000 * mw_p
                     - blk.Xli_mapping[t]
                     * blk.config.outlet_reaction_package.Pi["X_li"]
                     * 1000
@@ -1294,9 +1279,9 @@ see reaction package for documentation.}""",
 
             # @self.Expression(self.flowsheet().time, doc="X_S concentration at step 5")
             # def XS_AS5():
-            #     return 1e-9 * pyunits.kg / pyunits.m**3
+            #     return eps * pyunits.kg / pyunits.m**3
             self.XS_AS5 = Var(
-                initialize=1e-9,
+                initialize=eps,
                 units=pyunits.kg / pyunits.m**3,
                 domain=PositiveReals,
                 doc="X_S concentration at step 5",
@@ -1306,7 +1291,7 @@ see reaction package for documentation.}""",
             # def XPAO_AS5():
             #     return self.properties_in[0].conc_mass_comp["X_PAO"]
             self.XPAO_AS5 = Var(
-                initialize=1e-9,
+                initialize=eps,
                 units=pyunits.kg / pyunits.m**3,
                 domain=PositiveReals,
                 doc="X_PAO concentration at step 5",
@@ -1316,7 +1301,7 @@ see reaction package for documentation.}""",
             # def XPP_AS5():
             #     return self.properties_in[0].conc_mass_comp["X_PP"]
             self.XPP_AS5 = Var(
-                initialize=1e-9,
+                initialize=eps,
                 units=pyunits.kg / pyunits.m**3,
                 domain=PositiveReals,
                 doc="X_PP concentration at step 5",
@@ -1326,7 +1311,7 @@ see reaction package for documentation.}""",
             # def XPHA_AS5():
             #     return self.properties_in[0].conc_mass_comp["X_PHA"]
             self.XPHA_AS5 = Var(
-                initialize=1e-9,
+                initialize=eps,
                 units=pyunits.kg / pyunits.m**3,
                 domain=PositiveReals,
                 doc="X_PHA concentration at step 5",
@@ -1340,7 +1325,7 @@ see reaction package for documentation.}""",
             def Sva_output(blk, t):
                 return (
                     blk.properties_out[t].conc_mass_comp["S_va"]
-                    == 1e-9 * pyunits.kg / pyunits.m**3
+                    == eps * pyunits.kg / pyunits.m**3
                 )
 
             @self.Constraint(
@@ -1350,7 +1335,7 @@ see reaction package for documentation.}""",
             def Sbu_output(blk, t):
                 return (
                     blk.properties_out[t].conc_mass_comp["S_bu"]
-                    == 1e-9 * pyunits.kg / pyunits.m**3
+                    == eps * pyunits.kg / pyunits.m**3
                 )
 
             @self.Constraint(
@@ -1360,7 +1345,7 @@ see reaction package for documentation.}""",
             def Spro_output(blk, t):
                 return (
                     blk.properties_out[t].conc_mass_comp["S_pro"]
-                    == 1e-9 * pyunits.kg / pyunits.m**3
+                    == eps * pyunits.kg / pyunits.m**3
                 )
 
             @self.Constraint(
@@ -1370,7 +1355,7 @@ see reaction package for documentation.}""",
             def Sac_output(blk, t):
                 return (
                     blk.properties_out[t].conc_mass_comp["S_ac"]
-                    == 1e-9 * pyunits.kg / pyunits.m**3
+                    == eps * pyunits.kg / pyunits.m**3
                 )
 
             # @self.Expression(self.flowsheet().time, doc="X_PAO concentration at step 6")
@@ -1476,7 +1461,7 @@ see reaction package for documentation.}""",
         def return_zero_flow_comp(blk, t, i):
             return (
                 blk.properties_out[t].conc_mass_comp[i]
-                == 1e-9 * pyunits.kg / pyunits.m**3
+                == eps * pyunits.kg / pyunits.m**3
             )
 
         # TODO: Relationship carried over from ASM1/ADM1 - see perf_plant_AD_ss.m for Flores-Alsina interpretation (Scat = S_K + S_Mg)
