@@ -258,10 +258,6 @@ jobs:
         echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --verbose
         echo '::endgroup::'
-    - name: Exclude notebooks that cause errors on Windows
-      if: startswith(matrix.os, 'win')
-      run: |
-        rm tutorials/nawi_spring_meeting2023.ipynb
     - name: Run pytest with nbmake
       run:
         pytest --nbmake **/*.ipynb
