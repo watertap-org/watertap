@@ -51,6 +51,9 @@ from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import
     ModifiedADM1ReactionParameterBlock,
 )
 
+from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
+    ModifiedASM2dReactionParameterBlock,
+)
 
 from pyomo.util.check_units import assert_units_consistent
 
@@ -70,11 +73,15 @@ def test_config():
     m.fs.ADM1_rxn_props = ModifiedADM1ReactionParameterBlock(
         property_package=m.fs.props_ADM1
     )
+    m.fs.ASM2d_rxn_props = ModifiedASM2dReactionParameterBlock(
+        property_package=m.fs.props_ASM2d
+    )
 
     m.fs.unit = Translator_ASM2d_ADM1(
         inlet_property_package=m.fs.props_ASM2d,
         outlet_property_package=m.fs.props_ADM1,
-        reaction_package=m.fs.ADM1_rxn_props,
+        inlet_reaction_package=m.fs.ASM2d_rxn_props,
+        outlet_reaction_package=m.fs.ADM1_rxn_props,
         has_phase_equilibrium=False,
         outlet_state_defined=True,
     )

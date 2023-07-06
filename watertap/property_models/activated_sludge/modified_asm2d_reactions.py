@@ -59,6 +59,28 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
     Property Parameter Block Class
     """
 
+    CONFIG = ReactionParameterBlock.CONFIG()
+
+    CONFIG.declare(
+        "decay_switch",
+        ConfigValue(
+            default=DecaySwitch.on,
+            domain=In(DecaySwitch),
+            description="Switching function for decay",
+            doc="""
+           Switching function for handling decay in reaction rate expressions.
+
+           **default** - `DecaySwitch.on``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``DecaySwitch.on``", "The decay of heterotrophs and autotrophs is dependent on the electron acceptor present"
+           "``DecaySwitch.off``", "The decay of heterotrophs and autotrophs does not change"
+       """,
+        ),
+    )
+
     def build(self):
         """
         Callable method for Block construction.
@@ -1010,28 +1032,6 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
     """
     Reaction Block for ASM2d.
     """
-
-    CONFIG = ReactionBlockDataBase.CONFIG()
-
-    CONFIG.declare(
-        "decay_switch",
-        ConfigValue(
-            default=DecaySwitch.on,
-            domain=In(DecaySwitch),
-            description="Switching function for decay",
-            doc="""
-           Switching function for handling decay in reaction rate expressions.
-
-           **default** - `DecaySwitch.on``
-
-       .. csv-table::
-           :header: "Configuration Options", "Description"
-
-           "``DecaySwitch.on``", "The decay of heterotrophs and autotrophs is dependent on the electron acceptor present"
-           "``DecaySwitch.off``", "The decay of heterotrophs and autotrophs does not change"
-       """,
-        ),
-    )
 
     def build(self):
         """
