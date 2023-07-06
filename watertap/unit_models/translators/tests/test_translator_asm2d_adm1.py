@@ -195,7 +195,7 @@ class TestAsm2dAdm1(object):
         assert number_variables(asmadm) == 286
         assert number_total_constraints(asmadm) == 36
 
-        # TODO: Remove unused variables?
+        # TODO: Remove unused variables or keep since they are present in C-code?
         assert number_unused_variables(asmadm.fs.unit) == 19
 
     @pytest.mark.component
