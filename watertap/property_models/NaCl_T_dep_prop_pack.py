@@ -1036,7 +1036,7 @@ class NaClStateBlockData(StateBlockData):
             doc="Mass density",
         )
 
-        def rule_dens_mass_phase(b, p):  # density, eq. 7 in Sparrow 2003
+        def rule_dens_mass_phase(b, p):  # density, eq. 7 in Sparrow 2003, 0-300 C
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
                 b.params.dens_mass_param_A,
@@ -1191,7 +1191,7 @@ class NaClStateBlockData(StateBlockData):
             doc="solubility_comp",
         )
 
-        def rule_solubility_comp(b, j):
+        def rule_solubility_comp(b, j):  # Sparrow 2003, Eq 5,  0-450 C
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             return (
                 self.solubility_comp[j]
@@ -1210,7 +1210,7 @@ class NaClStateBlockData(StateBlockData):
             doc="Vapor Pressure",
         )
 
-        def rule_pressure_sat(b):  # vapor pressure, eq. 6 in Sparrow 2003
+        def rule_pressure_sat(b):  # Sparrow 2003, Eq. 6, 0-150 C
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             x = b.mass_frac_phase_comp["Liq", "NaCl"]
             param_vec = [
@@ -1254,7 +1254,7 @@ class NaClStateBlockData(StateBlockData):
             doc="Viscosity",
         )
 
-        def rule_visc_d_phase(b, p):  # dynamic viscosity, IAPWS-2008 correlation
+        def rule_visc_d_phase(b, p):  # Regressed from Zaytsev & Aseev (1992), 0-200 C
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
                 b.params.visc_param_A,
@@ -1295,7 +1295,9 @@ class NaClStateBlockData(StateBlockData):
             doc="Thermal Conductivity",
         )
 
-        def rule_therm_cond_phase(b, p):
+        def rule_therm_cond_phase(
+            b, p
+        ):  # Regressed from Zaytsev & Aseev (1992), 0-155 C
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
                 b.params.therm_cond_param_A,
@@ -1334,7 +1336,7 @@ class NaClStateBlockData(StateBlockData):
             doc="specific heat",
         )
 
-        def rule_cp_mass_phase(b, p):
+        def rule_cp_mass_phase(b, p):  # Regressed from Zaytsev & Aseev (1992), 0-200 C
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
                 b.params.cp_param_A,
@@ -1374,7 +1376,9 @@ class NaClStateBlockData(StateBlockData):
             doc="Diffusivity",
         )
 
-        def rule_diffus_phase_comp(b, p, j):  # diffusivity, eq 6 in Bartholomew
+        def rule_diffus_phase_comp(
+            b, p, j
+        ):  # Regressed from Zaytsev & Aseev (1992), 0-60 C
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
                 b.params.diffus_aq_param_A,
@@ -1414,7 +1418,7 @@ class NaClStateBlockData(StateBlockData):
             doc="Osmotic coefficient",
         )
 
-        def rule_osm_coeff(b):
+        def rule_osm_coeff(b):  # Regressed from Pitzer et. al. (1984), 0-300 C
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             m = (b.molality_phase_comp["Liq", "NaCl"]) / (pyunits.mole / pyunits.kg)
             param_vec = [
@@ -1485,7 +1489,7 @@ class NaClStateBlockData(StateBlockData):
             doc="Specific enthalpy",
         )
 
-        def rule_enth_mass_phase(b, p):
+        def rule_enth_mass_phase(b, p):  # Sparrow 2003, Eq 8, 0-300 C
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
                 b.params.enth_param_A,
