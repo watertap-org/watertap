@@ -100,7 +100,7 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
     )
 
 
-def cost_rectifier(blk, power=100, ac_dc_conversion_efficiency=0.90):
+def cost_rectifier(blk, power=100 * pyo.units.kW, ac_dc_conversion_efficiency=0.90):
     """
     Method to cost rectifiers for electrified process units that require direct current which must be converted
     from an alternating current source. Note that this should be used solely for units that require the conversion,
