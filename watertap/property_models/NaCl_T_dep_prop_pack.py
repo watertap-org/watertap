@@ -1035,8 +1035,8 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density",
         )
-
-        def rule_dens_mass_phase(b, p):  # Sparrow 2003, Eq. 7, 0-300 C
+        # Sparrow 2003, Eq. 7, 0-300 C
+        def rule_dens_mass_phase(b, p):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
                 b.params.dens_mass_param_A,
@@ -1190,8 +1190,8 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.dimensionless,
             doc="solubility_comp",
         )
-
-        def rule_solubility_comp(b, j):  # Sparrow 2003, Eq 5,  0-450 C
+        # Sparrow 2003, Eq 5,  0-450 C
+        def rule_solubility_comp(b, j):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             return (
                 self.solubility_comp[j]
@@ -1209,8 +1209,8 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.Pa,
             doc="Vapor Pressure",
         )
-
-        def rule_pressure_sat(b):  # Sparrow 2003, Eq. 6, 0-150 C
+        # Sparrow 2003, Eq. 6, 0-150 C
+        def rule_pressure_sat(b):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             x = b.mass_frac_phase_comp["Liq", "NaCl"]
             param_vec = [
@@ -1253,8 +1253,8 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.Pa * pyunits.s,
             doc="Viscosity",
         )
-
-        def rule_visc_d_phase(b, p):  # Regressed from Zaytsev & Aseev (1992), 0-200 C
+        # Regressed from Zaytsev & Aseev (1992), 0-200 C
+        def rule_visc_d_phase(b, p):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
                 b.params.visc_param_A,
@@ -1294,10 +1294,8 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.W / (pyunits.m * pyunits.K),
             doc="Thermal Conductivity",
         )
-
-        def rule_therm_cond_phase(
-            b, p
-        ):  # Regressed from Zaytsev & Aseev (1992), 0-155 C
+        # Regressed from Zaytsev & Aseev (1992), 0-155 C
+        def rule_therm_cond_phase(b, p):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
                 b.params.therm_cond_param_A,
@@ -1335,8 +1333,8 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.J * pyunits.kg**-1 * pyunits.K**-1,
             doc="specific heat",
         )
-
-        def rule_cp_mass_phase(b, p):  # Regressed from Zaytsev & Aseev (1992), 0-200 C
+        # Regressed from Zaytsev & Aseev (1992), 0-200 C
+        def rule_cp_mass_phase(b, p):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
                 b.params.cp_param_A,
@@ -1375,10 +1373,8 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.m**2 * pyunits.s**-1,
             doc="Diffusivity",
         )
-
-        def rule_diffus_phase_comp(
-            b, p, j
-        ):  # Regressed from Zaytsev & Aseev (1992), 0-60 C
+        # Regressed from Zaytsev & Aseev (1992), 0-60 C
+        def rule_diffus_phase_comp(b, p, j):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
                 b.params.diffus_aq_param_A,
@@ -1417,8 +1413,8 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.dimensionless,
             doc="Osmotic coefficient",
         )
-
-        def rule_osm_coeff(b):  # Regressed from Pitzer et. al. (1984), 0-300 C
+        # Regressed from Pitzer et. al. (1984), 0-300 C
+        def rule_osm_coeff(b):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             m = (b.molality_phase_comp["Liq", "NaCl"]) / (pyunits.mole / pyunits.kg)
             param_vec = [
@@ -1488,8 +1484,8 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.J * pyunits.kg**-1,
             doc="Specific enthalpy",
         )
-
-        def rule_enth_mass_phase(b, p):  # Sparrow 2003, Eq 8, 0-300 C
+        # Sparrow 2003, Eq 8, 0-300 C
+        def rule_enth_mass_phase(b, p):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
                 b.params.enth_param_A,
