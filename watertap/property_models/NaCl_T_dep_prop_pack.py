@@ -1036,7 +1036,7 @@ class NaClStateBlockData(StateBlockData):
             doc="Mass density",
         )
 
-        def rule_dens_mass_phase(b, p):  # density, eq. 7 in Sparrow 2003, 0-300 C
+        def rule_dens_mass_phase(b, p):  # Sparrow 2003, Eq. 7, 0-300 C
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
             param_vec = [
                 b.params.dens_mass_param_A,
