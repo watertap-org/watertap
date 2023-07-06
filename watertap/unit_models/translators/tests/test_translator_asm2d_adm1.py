@@ -17,7 +17,7 @@ Verified against approximated results results from:
 
 Flores-Alsina, X., Solon, K., Mbamba, C.K., Tait, S., Gernaey, K.V., Jeppsson, U. and Batstone, D.J., 2016.
 Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes.
-Water Research, 95, pp.370-382. https://github.com/wwtmodels/Plant-Wide-Models
+Water Research, 95, pp.370-382.
 """
 
 import pytest
@@ -86,7 +86,7 @@ def test_config():
         outlet_state_defined=True,
     )
 
-    assert len(m.fs.unit.config) == 10
+    assert len(m.fs.unit.config) == 12
 
     assert m.fs.unit.config.outlet_state_defined == True
     assert not m.fs.unit.config.dynamic
@@ -94,102 +94,125 @@ def test_config():
     assert not m.fs.unit.config.has_phase_equilibrium
     assert m.fs.unit.config.inlet_property_package is m.fs.props_ASM2d
     assert m.fs.unit.config.outlet_property_package is m.fs.props_ADM1
-    assert m.fs.unit.config.reaction_package is m.fs.ADM1_rxn_props
+    assert m.fs.unit.config.inlet_reaction_package is m.fs.ASM2d_rxn_props
+    assert m.fs.unit.config.outlet_reaction_package is m.fs.ADM1_rxn_props
 
 
 # -----------------------------------------------------------------------------
-# class TestAsm2dAdm1(object):
-#     @pytest.fixture(scope="class")
-#     def asmadm(self):
-#         m = ConcreteModel()
-#
-#         m.fs = FlowsheetBlock(dynamic=False)
-#
-#         m.fs.props_ASM2d = ModifiedASM2dParameterBlock()
-#         m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
-#         m.fs.ADM1_rxn_props = ModifiedADM1ReactionParameterBlock(property_package=m.fs.props_ADM1)
-#
-#         m.fs.unit = Translator_ASM2d_ADM1(
-#             inlet_property_package=m.fs.props_ASM2d,
-#             outlet_property_package=m.fs.props_ADM1,
-#             reaction_package=m.fs.ADM1_rxn_props,
-#             has_phase_equilibrium=False,
-#             outlet_state_defined=True,
-#         )
-#
-#         m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
-#         m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-#         m.fs.unit.inlet.pressure.fix(1 * units.atm)
-#
-#         m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(28.0665 * units.mg / units.liter)
-#         m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(48.9526 * units.mg / units.liter)
-#         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
-#             10361.7101 * units.mg / units.liter
-#         )
-#         m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(
-#             20375.0176 * units.mg / units.liter
-#         )
-#         m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(
-#             10210.0698 * units.mg / units.liter
-#         )
-#         m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(553.2808 * units.mg / units.liter)
-#         m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(3204.6601 * units.mg / units.liter)
-#         m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(0.25225 * units.mg / units.liter)
-#         m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1.6871 * units.mg / units.liter)
-#         m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(28.9098 * units.mg / units.liter)
-#         m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(4.6834 * units.mg / units.liter)
-#         m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(906.0933 * units.mg / units.liter)
-#         m.fs.unit.inlet.alkalinity.fix(7.1549 * units.mol / units.m**3)
-#
-#         return m
-#
-#     @pytest.mark.build
-#     @pytest.mark.unit
-#     def test_build(self, asmadm):
-#
-#         assert isinstance(asmadm.fs.unit.i_xe, Param)
-#         assert value(asmadm.fs.unit.i_xe) == 0.06
-#         assert isinstance(asmadm.fs.unit.i_xb, Param)
-#         assert value(asmadm.fs.unit.i_xb) == 0.08
-#         assert isinstance(asmadm.fs.unit.f_xI, Param)
-#         assert value(asmadm.fs.unit.f_xI) == 0.05
-#
-#         assert hasattr(asmadm.fs.unit, "inlet")
-#         assert len(asmadm.fs.unit.inlet.vars) == 5
-#         assert hasattr(asmadm.fs.unit.inlet, "flow_vol")
-#         assert hasattr(asmadm.fs.unit.inlet, "conc_mass_comp")
-#         assert hasattr(asmadm.fs.unit.inlet, "temperature")
-#         assert hasattr(asmadm.fs.unit.inlet, "pressure")
-#         assert hasattr(asmadm.fs.unit.inlet, "alkalinity")
-#
-#         assert hasattr(asmadm.fs.unit, "outlet")
-#         assert len(asmadm.fs.unit.outlet.vars) == 6
-#         assert hasattr(asmadm.fs.unit.outlet, "flow_vol")
-#         assert hasattr(asmadm.fs.unit.outlet, "conc_mass_comp")
-#         assert hasattr(asmadm.fs.unit.outlet, "temperature")
-#         assert hasattr(asmadm.fs.unit.outlet, "pressure")
-#         assert hasattr(asmadm.fs.unit.outlet, "anions")
-#         assert hasattr(asmadm.fs.unit.outlet, "cations")
-#
-#         assert number_variables(asmadm) == 133
-#         assert number_total_constraints(asmadm) == 33
-#
-#         assert number_unused_variables(asmadm.fs.unit) == 0
-#
-#     @pytest.mark.component
-#     def test_units(self, asmadm):
-#         assert_units_consistent(asmadm)
-#
-#     @pytest.mark.unit
-#     def test_dof(self, asmadm):
-#         assert degrees_of_freedom(asmadm) == 0
-#
-#     @pytest.mark.solver
-#     @pytest.mark.skipif(solver is None, reason="Solver not available")
-#     @pytest.mark.component
-#     def test_initialize(self, asmadm):
-#         initialization_tester(asmadm)
-#
+class TestAsm2dAdm1(object):
+    @pytest.fixture(scope="class")
+    def asmadm(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props_ASM2d = ModifiedASM2dParameterBlock()
+        m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
+        m.fs.ADM1_rxn_props = ModifiedADM1ReactionParameterBlock(
+            property_package=m.fs.props_ADM1
+        )
+        m.fs.ASM2d_rxn_props = ModifiedASM2dReactionParameterBlock(
+            property_package=m.fs.props_ASM2d
+        )
+
+        m.fs.unit = Translator_ASM2d_ADM1(
+            inlet_property_package=m.fs.props_ASM2d,
+            outlet_property_package=m.fs.props_ADM1,
+            inlet_reaction_package=m.fs.ASM2d_rxn_props,
+            outlet_reaction_package=m.fs.ADM1_rxn_props,
+            has_phase_equilibrium=False,
+            outlet_state_defined=True,
+        )
+
+        # TODO: Check influent flow_vol
+        m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
+        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
+        m.fs.unit.inlet.pressure.fix(1 * units.atm)
+        eps = 1e-9 * units.g / units.m**3
+
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O2"].fix(eps)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(26.44 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(17.66 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(27.23 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(18.58 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(5.07 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(0.02 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(4.69 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(78.99 * units.g / units.m**3)
+
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(10964.41 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(19084.76 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(9479.39 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(3862.2 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(450.87 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(24.64 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(333.79 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(19.79 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(189.87 * units.g / units.m**3)
+
+        # TODO: Is this ok? These correspond to outlet ADM1 components due to specifying an outlet rxn package & make dof=0
+        m.fs.unit.outlet.conc_mass_comp[0, "S_su"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "S_aa"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "S_fa"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "S_va"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "S_bu"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "S_pro"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "S_ac"].fix(eps)
+
+        m.fs.unit.outlet.conc_mass_comp[0, "X_ch"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "X_pr"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "X_li"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "X_su"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "X_aa"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "X_fa"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "X_c4"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "X_pro"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "X_ac"].fix(eps)
+        m.fs.unit.outlet.conc_mass_comp[0, "X_h2"].fix(eps)
+
+        return m
+
+    @pytest.mark.build
+    @pytest.mark.unit
+    def test_build(self, asmadm):
+
+        assert hasattr(asmadm.fs.unit, "inlet")
+        assert len(asmadm.fs.unit.inlet.vars) == 4
+        assert hasattr(asmadm.fs.unit.inlet, "flow_vol")
+        assert hasattr(asmadm.fs.unit.inlet, "conc_mass_comp")
+        assert hasattr(asmadm.fs.unit.inlet, "temperature")
+        assert hasattr(asmadm.fs.unit.inlet, "pressure")
+
+        assert hasattr(asmadm.fs.unit, "outlet")
+        assert len(asmadm.fs.unit.outlet.vars) == 6
+        assert hasattr(asmadm.fs.unit.outlet, "flow_vol")
+        assert hasattr(asmadm.fs.unit.outlet, "conc_mass_comp")
+        assert hasattr(asmadm.fs.unit.outlet, "temperature")
+        assert hasattr(asmadm.fs.unit.outlet, "pressure")
+        assert hasattr(asmadm.fs.unit.outlet, "anions")
+        assert hasattr(asmadm.fs.unit.outlet, "cations")
+
+        assert number_variables(asmadm) == 286
+        assert number_total_constraints(asmadm) == 36
+
+        # TODO: Remove unused variables?
+        assert number_unused_variables(asmadm.fs.unit) == 19
+
+    @pytest.mark.component
+    def test_units(self, asmadm):
+        assert_units_consistent(asmadm)
+
+    @pytest.mark.unit
+    def test_dof(self, asmadm):
+        assert degrees_of_freedom(asmadm) == 0
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, asmadm):
+        initialization_tester(asmadm)
+
+
 #     @pytest.mark.solver
 #     @pytest.mark.skipif(solver is None, reason="Solver not available")
 #     @pytest.mark.component

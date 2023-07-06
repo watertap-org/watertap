@@ -770,7 +770,7 @@ see reaction package for documentation.}""",
             doc="Nitrogen demand for soluble inerts divided by nitrogen content in amino acids",
         )
         def ReqCOD_X(blk, t):
-            return blk.XN_org[t] == self.X_ND - (
+            return blk.XN_org[t] == self.X_ND / (
                 blk.config.outlet_reaction_package.Ni["X_pr"] * mw_n
             )
 
