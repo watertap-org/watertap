@@ -298,7 +298,7 @@ class ADM1_vaporStateBlockData(StateBlockData):
                         * pyo.units.K
                         * ((1 / b.params.temperature_ref) - (1 / b.temperature))
                     )
-                    * 101325
+                    * 1e5
                     * pyo.units.Pa
                 )
             else:
