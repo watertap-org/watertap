@@ -283,7 +283,7 @@ def test_differential_sweep_outputs(model):
 def test_differential_parameter_sweep(model, tmp_path):
 
     comm = MPI.COMM_WORLD
-    tmp_path = "./output/" # _get_rank0_path(comm, tmp_path)
+    tmp_path = "./output/"  # _get_rank0_path(comm, tmp_path)
 
     results_fname = os.path.join(tmp_path, "global_results")
     csv_results_file_name = str(results_fname) + ".csv"
@@ -717,7 +717,9 @@ def test_differential_parameter_sweep(model, tmp_path):
                 sorted_read_dict = sort_output_dict(read_dict)
                 sorted_global_results_dict = sort_output_dict(global_results_dict)
                 _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
-                _assert_dictionary_correctness(sorted_truth_dict, sorted_global_results_dict)
+                _assert_dictionary_correctness(
+                    sorted_truth_dict, sorted_global_results_dict
+                )
         else:
             _assert_dictionary_correctness(truth_dict, global_results_dict)
             _assert_dictionary_correctness(truth_dict, read_dict)
@@ -1282,7 +1284,9 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
                 sorted_read_dict = sort_output_dict(read_dict)
                 sorted_global_results_dict = sort_output_dict(global_results_dict)
                 _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
-                _assert_dictionary_correctness(sorted_truth_dict, sorted_global_results_dict)
+                _assert_dictionary_correctness(
+                    sorted_truth_dict, sorted_global_results_dict
+                )
         else:
             _assert_dictionary_correctness(truth_dict, global_results_dict)
             _assert_dictionary_correctness(truth_dict, read_dict)
@@ -1723,7 +1727,9 @@ def test_differential_parameter_sweep_function(model, tmp_path):
                 sorted_read_dict = sort_output_dict(read_dict)
                 sorted_global_results_dict = sort_output_dict(global_results_dict)
                 _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
-                _assert_dictionary_correctness(sorted_truth_dict, sorted_global_results_dict)
+                _assert_dictionary_correctness(
+                    sorted_truth_dict, sorted_global_results_dict
+                )
         else:
             _assert_dictionary_correctness(truth_dict, global_results_dict)
             _assert_dictionary_correctness(truth_dict, read_dict)
@@ -1734,7 +1740,7 @@ def sort_output_dict(input_dict):
 
     sorted_dict = copy.deepcopy(input_dict)
     for key, item in input_dict.items():
-        if key in ["sweep_params", "outputs"]: # != "solve_successful":
+        if key in ["sweep_params", "outputs"]:  # != "solve_successful":
             for subkey, subitem in item.items():
                 sorted_dict[key][subkey]["value"] = np.sort(subitem["value"])
         elif key == "solve_successful":
