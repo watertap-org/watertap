@@ -95,7 +95,7 @@ def build_flowsheet():
     m.fs.costing.add_annual_water_production(
         m.fs.electroNP.properties_treated[0].flow_vol
     )
-    m.fs.costing.add_LCOW(m.fs.electroNP.properties_treated[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
 
     # connections
     m.fs.stream_adm1_translator = Arc(
@@ -156,7 +156,7 @@ def build_flowsheet():
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
     # Costing
-    m.fs.costing.phosphorus_recovery_revenue = 0
+    m.fs.costing.electroNP.phosphorus_recovery_revenue = 0
 
     # scaling
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
@@ -233,10 +233,16 @@ def display_costing(m):
     )
     print(f"Total Operating Cost: {total_operating_cost:.3f} $/year")
 
-    opex_fraction = total_operating_cost / (
-        total_operating_cost + value(m.fs.costing.total_capital_cost)
+    opex_fraction = value(
+        pyunits.convert(
+            m.fs.costing.total_operating_cost, to_units=pyunits.USD_2018 / pyunits.year
+        )
+        / pyunits.convert(
+            m.fs.AD.inlet.flow_vol[0], to_units=pyunits.m**3 / pyunits.year
+        )
+        / m.fs.costing.LCOW
     )
-    print(f"Operating cost fraction: {opex_fraction:.3f} $ opex / $ annual")
+    print(f"Operating cost fraction: {opex_fraction:.3f} $ opex / $ LCOW")
 
     print("Operating Cost Breakdown")
     for f in m.fs.costing.used_flows:
