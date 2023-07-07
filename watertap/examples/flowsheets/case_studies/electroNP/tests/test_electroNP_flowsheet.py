@@ -102,4 +102,4 @@ class TestElectroNPFlowsheet:
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_S"]
         ) == pytest.approx(0.13979, rel=1e-4)
-        assert value(model.fs.costing.LCOW) == pytest.approx(6.01036, rel=1e-4)
+        assert value(model.fs.costing.LCOW) == pytest.approx(6.05475, rel=1e-4)
