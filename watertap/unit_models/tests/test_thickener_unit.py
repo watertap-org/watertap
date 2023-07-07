@@ -52,6 +52,12 @@ from watertap.property_models.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
 )
 
+from watertap.property_models.activated_sludge.asm2d_properties import (
+    ASM2dParameterBlock,
+)
+from watertap.property_models.activated_sludge.modified_asm2d_properties import (
+    ModifiedASM2dParameterBlock,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 
@@ -109,7 +115,7 @@ def test_list_error():
 
 
 # -----------------------------------------------------------------------------
-class TestThick(object):
+class TestThickASM1(object):
     @pytest.fixture(scope="class")
     def tu(self):
         m = ConcreteModel()
@@ -282,3 +288,79 @@ class TestThick(object):
     @pytest.mark.unit
     def test_report(self, tu):
         tu.fs.unit.report()
+
+
+class TestThickASM2d(object):
+    @pytest.fixture(scope="class")
+    def tu_asm2d(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props = ASM2dParameterBlock()
+
+        m.fs.unit = Thickener(property_package=m.fs.props)
+
+        m.fs.unit.inlet.flow_vol.fix(300 * units.m**3 / units.day)
+        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
+        m.fs.unit.inlet.pressure.fix(1 * units.atm)
+       
+        # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
+        EPS = 1e-8
+        
+        m.fs.unit.inlet.flow_vol.fix(92230 * units.m**3 / units.day)
+        m.fs.unit.inlet.temperature.fix(298.15 * units.K)
+        m.fs.unit.inlet.pressure.fix(1 * units.atm)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O2"].fix(7.9707 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(29.0603 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(8.0209 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(6.6395 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(7.8953 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(0.4748 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(0.0336 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1695.7695 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(68.2975 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(1855.5067 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(214.5319 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(63.5316 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(2.7381 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(118.3582 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
+
+        m.fs.unit.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
+
+        return m
+    
+    
+    @pytest.mark.build
+    @pytest.mark.unit
+    def test_build(self, tu_asm2d):
+
+        assert hasattr(tu_asm2d.fs.unit, "inlet")
+        assert len(tu_asm2d.fs.unit.inlet.vars) == 5
+        assert hasattr(tu_asm2d.fs.unit.inlet, "flow_vol")
+        assert hasattr(tu_asm2d.fs.unit.inlet, "conc_mass_comp")
+        assert hasattr(tu_asm2d.fs.unit.inlet, "temperature")
+        assert hasattr(tu_asm2d.fs.unit.inlet, "pressure")
+        assert hasattr(tu_asm2d.fs.unit.inlet, "alkalinity")
+
+        assert hasattr(tu_asm2d.fs.unit, "underflow")
+        assert len(tu_asm2d.fs.unit.underflow.vars) == 5
+        assert hasattr(tu_asm2d.fs.unit.underflow, "flow_vol")
+        assert hasattr(tu_asm2d.fs.unit.underflow, "conc_mass_comp")
+        assert hasattr(tu_asm2d.fs.unit.underflow, "temperature")
+        assert hasattr(tu_asm2d.fs.unit.underflow, "pressure")
+        assert hasattr(tu_asm2d.fs.unit.underflow, "alkalinity")
+
+        assert hasattr(tu_asm2d.fs.unit, "overflow")
+        assert len(tu_asm2d.fs.unit.overflow.vars) == 5
+        assert hasattr(tu_asm2d.fs.unit.overflow, "flow_vol")
+        assert hasattr(tu_asm2d.fs.unit.overflow, "conc_mass_comp")
+        assert hasattr(tu_asm2d.fs.unit.overflow, "temperature")
+        assert hasattr(tu_asm2d.fs.unit.overflow, "pressure")
+        assert hasattr(tu_asm2d.fs.unit.overflow, "alkalinity")
+
+        assert number_variables(tu_asm2d) == 76
+        assert number_total_constraints(tu_asm2d) == 60
+        assert number_unused_variables(tu_asm2d) == 0
