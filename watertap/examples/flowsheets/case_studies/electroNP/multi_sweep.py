@@ -15,9 +15,6 @@ from watertap.tools.parameter_sweep import (
 )
 import watertap.examples.flowsheets.case_studies.electroNP.electroNP_flowsheet as electroNP_flowsheet
 from pyomo.environ import units as pyunits
-import os
-from watertap.tools.parameter_sweep.sweep_visualizer import line_plot, contour_plot
-import matplotlib.pyplot as plt
 
 
 def set_up_sensitivity(m):
@@ -38,7 +35,7 @@ def set_up_sensitivity(m):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num, nx, interpolate_nan_outputs=True, output_filename=None):
+def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, output_filename=None):
 
     if output_filename is None:
         output_filename = "sensitivity_" + str(case_num) + ".csv"
@@ -114,8 +111,6 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True, output_filename=Non
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 
-    # output_filename = "sensitivity_" + str(case_num) + ".csv"
-
     global_results = parameter_sweep(
         m,
         sweep_params,
@@ -129,201 +124,5 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True, output_filename=Non
     return global_results, sweep_params, m
 
 
-def merge_path(filename):
-    source_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), filename)
-    return source_path
-
-
-def visualize_results(
-    case_num,
-    plot_type,
-    xlabel,
-    ylabel,
-    xunit=None,
-    yunit=None,
-    zlabel=None,
-    zunit=None,
-    levels=None,
-    cmap=None,
-    isolines=None,
-):
-    data_file = merge_path("interpolated_sensitivity_" + str(case_num) + ".csv")
-    if plot_type == "line":
-        fig, ax = line_plot(data_file, xlabel, ylabel, xunit, yunit)
-
-    elif plot_type == "contour":
-        fig, ax = contour_plot(
-            data_file,
-            xlabel,
-            ylabel,
-            zlabel,
-            xunit,
-            yunit,
-            zunit,
-            levels=levels,
-            cmap=cmap,
-            isolines=isolines,
-        )
-    else:
-        raise ValueError("Plot type not yet implemented")
-    return fig, ax
-
-
-def main(case_num, nx=11, interpolate_nan_outputs=True):
-    # when from the command line
-    case_num = int(case_num)
-    nx = int(nx)
-    interpolate_nan_outputs = bool(interpolate_nan_outputs)
-
-    # comm, rank, num_procs = _init_mpi()
-
-    global_results, sweep_params, m = run_analysis(
-        case_num, nx, interpolate_nan_outputs
-    )
-    # print(global_results)
-
-    # visualize results
-
-    # case 1
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="line",
-    #     xlabel="# sizing_cost",
-    #     ylabel="ElectroNP Capital Cost",
-    # )
-    # # ax.plot(1.25, 127.792, 'ro')
-    # ax.set_xlabel("Sizing Cost ($/m3)")
-    # ax.set_ylabel("ElectroNP Capital Cost ($/(m3/hr)")
-
-    # case 2
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="contour",
-    #     xlabel="# sizing_cost",
-    #     ylabel="HRT",
-    #     zlabel="ElectroNP Capital Cost",
-    #     isolines=[2000, 5000],
-    #     cmap="GnBu",
-    # )
-    # ax.plot(1.25, 1.3333, "ko")
-    # ax.set_xlabel("Sizing Cost ($/m3)")
-    # ax.set_ylabel("HRT (h)")
-    # ax.set_title("ElectroNP Capital Cost ($/(m3/hr)")
-
-    # case 3
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="line",
-    #     xlabel="# energy_consumption",
-    #     ylabel="LCOW",
-    # )
-    # # ax.plot(0.044, 6.0104, 'ro')
-    # # plt.axvline(0.044, ls='--')
-    # ax.set_xlabel("Electricity Intensity (kWh/kg P)")
-    # ax.set_ylabel("LCOW ($/m3)")
-
-    # case 4
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="contour",
-    #     xlabel="# energy_consumption",
-    #     ylabel="electricity_cost",
-    #     zlabel="LCOW",
-    #     isolines=[2000, 5000],
-    #     cmap="GnBu",
-    # )
-    # ax.plot(0.044, 0.08, "ko")
-    # ax.set_xlim([0, 2])
-    # ax.set_ylim([0.03, 0.2])
-    # ax.set_xlabel("Electricity Intensity (kWh/kg P)")
-    # ax.set_ylabel("Electricity Cost ($/kWh)")
-    # ax.set_title("LCOW ($/m3)")
-
-    # case 5
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="contour",
-    #     xlabel="# electricity_cost",
-    #     ylabel="MgCl2_cost",
-    #     zlabel="LCOW",
-    #     cmap="GnBu",
-    # )
-    # ax.plot(0.08, 0.0786, 'ko')
-    # ax.set_ylim([0.07, 0.1])
-    # ax.set_xlim([0.02, 0.2])
-    # ax.set_xlabel("Electricity Cost ($/kWh)")
-    # ax.set_ylabel("MgCl2 Cost ($/kg P)")
-    # ax.set_title("LCOW ($/m3)")
-
-    # case 6
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="contour",
-    #     xlabel="# energy_consumption",
-    #     ylabel="MgCl2_dosage",
-    #     zlabel="LCOW",
-    #     cmap="GnBu",
-    # )
-    # ax.plot(0.044, 0.388, 'ko')
-    # ax.set_ylim([0.2, 0.5])
-    # ax.set_xlabel("Electricity Intensity (kWh/kg P)")
-    # ax.set_ylabel("MgCl2 Dosage (kg MgCl2/kg P)")
-    # ax.set_title("LCOW ($/m3)")
-
-    # case 7
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="line",
-    #     xlabel="# S_IP_concentration",
-    #     ylabel="S_PO4 Concentration",
-    # )
-    # # ax.plot(1.25, 127.792, 'ro')
-    # ax.set_xlabel("S_IP Concentration (mg/L)")
-    # ax.set_ylabel("S_PO4 Concentration (mg/L)")
-
-    # case 8
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="contour",
-    #     xlabel="# S_IP_concentration",
-    #     ylabel="X_PHA_concentration",
-    #     zlabel="S_PO4 Concentration",
-    #     cmap="GnBu",
-    # )
-    # # ax.plot(1.25, 127.792, 'ro')
-    # ax.set_xlabel("S_IP Concentration (mg/L)")
-    # ax.set_ylabel("X_PHA Concentration (mg/L)")
-    # ax.set_title("S_PO4 Concentration (mg/L)")
-
-    # case 9
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="contour",
-    #     xlabel="# X_PAO_concentration",
-    #     ylabel="X_PHA_concentration",
-    #     zlabel="S_PO4 Concentration",
-    #     cmap="GnBu",
-    # )
-    # ax.set_xlabel("X_PAO Concentration (mg/L)")
-    # ax.set_ylabel("X_PHA Concentration (mg/L)")
-    # ax.set_title("S_PO4 Concentration (mg/L)")
-
-    # case 10
-    fig, ax = visualize_results(
-        case_num,
-        plot_type="contour",
-        xlabel="# X_PAO_concentration",
-        ylabel="X_PP_concentration",
-        zlabel="S_PO4 Concentration",
-        cmap="GnBu",
-    )
-    ax.set_xlabel("X_PAO Concentration (mg/L)")
-    ax.set_ylabel("X_PP Concentration (mg/L)")
-    ax.set_title("S_PO4 Concentration (mg/L)")
-
-    return global_results, m
-
-
 if __name__ == "__main__":
-    results, model = main(case_num=10, nx=11)
-    # results, sweep_params, m = run_analysis()
+    results, sweep_params, m = run_analysis()
