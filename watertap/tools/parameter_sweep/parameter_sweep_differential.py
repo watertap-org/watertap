@@ -451,8 +451,4 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             global_results_arr,
         )
 
-        # import pprint
-        # print("global_output_dict")
-        # pprint.pprint(global_results_dict)
-
         return global_results_dict, global_save_data

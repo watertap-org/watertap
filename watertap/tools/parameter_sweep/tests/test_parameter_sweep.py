@@ -2012,7 +2012,6 @@ def _read_output_h5(filevar):
         elif key == "solve_successful":
             output_dict[key] = list(f[key]["solve_successful"][()])
         elif key in ["nominal_idx", "differential_idx"]:
-            # print("f[key] = ", f[key])
             output_dict[key] = f[key][key][()]
 
     if isinstance(filevar, str):
