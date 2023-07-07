@@ -34,6 +34,7 @@ from pyomo.environ import (
     units as pyunits,
     Set,
 )
+from pyomo.common.config import ConfigValue
 
 from idaes.core.util.exceptions import (
     ConfigurationError,
@@ -55,6 +56,42 @@ class DewateringData(SeparatorData):
     CONFIG = SeparatorData.CONFIG()
     CONFIG.outlet_list = ["underflow", "overflow"]
     CONFIG.split_basis = SplittingType.componentFlow
+
+    CONFIG.declare(
+        "non_particulate_components_list",
+        ConfigValue(
+            default=[
+                "S_I",
+                "S_S",
+                "S_O",
+                "S_NO",
+                "S_NH",
+                "S_ND",
+                "H2O",
+                "S_ALK",
+            ],
+            domain=list,
+            doc="List of non particulate component list.",
+        ),
+    )
+
+    CONFIG.declare(
+        "particulate_components_list",
+        ConfigValue(
+            default=["X_I", "X_S", "X_P", "X_BH", "X_BA", "X_ND"],
+            domain=list,
+            doc="List of particulate component list.",
+        ),
+    )
+
+    CONFIG.declare(
+        "tss_components",
+        ConfigValue(
+            default=["X_I", "X_S", "X_P", "X_BH", "X_BA"],
+            domain=list,
+            doc="List of TSS components.",
+        ),
+    )       
 
     def build(self):
         """
@@ -92,13 +129,7 @@ class DewateringData(SeparatorData):
 
         @self.Expression(self.flowsheet().time, doc="Suspended solid concentration")
         def TSS(blk, t):
-            return 0.75 * (
-                blk.inlet.conc_mass_comp[t, "X_I"]
-                + blk.inlet.conc_mass_comp[t, "X_P"]
-                + blk.inlet.conc_mass_comp[t, "X_BH"]
-                + blk.inlet.conc_mass_comp[t, "X_BA"]
-                + blk.inlet.conc_mass_comp[t, "X_S"]
-            )
+            return 0.75 * (sum(blk.inlet.conc_mass_comp[t, i] for i in self.config.tss_components))
 
         @self.Expression(self.flowsheet().time, doc="Dewatering factor")
         def f_dewat(blk, t):
@@ -109,20 +140,11 @@ class DewateringData(SeparatorData):
             return blk.TSS_rem / (pyunits.kg / pyunits.m**3) / 100 / blk.f_dewat[t]
 
         self.non_particulate_components = Set(
-            initialize=[
-                "S_I",
-                "S_S",
-                "S_O",
-                "S_NO",
-                "S_NH",
-                "S_ND",
-                "H2O",
-                "S_ALK",
-            ]
+            initialize=self.config.non_particulate_components_list
         )
 
         self.particulate_components = Set(
-            initialize=["X_I", "X_S", "X_P", "X_BH", "X_BA", "X_ND"]
+            initialize=self.config.particulate_components_list
         )
 
         @self.Constraint(
