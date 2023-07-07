@@ -264,20 +264,27 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         global_output_dict = super()._create_global_output(local_output_dict)
         
         # We now need to get the mapping array. This only needs to happen on root
-        local_num_cases = len(local_output_dict["solve_successful"])
-        # Re-gather the size of the value array on each MPI rank
-        sample_split_arr = self.comm.allgather(local_num_cases)
+        local_num_cases_all = len(local_output_dict["solve_successful"])
+        # AllGather the total size of the value array on each MPI rank
+        sample_split_arr = self.comm.allgather(local_num_cases_all)
         num_total_samples = sum(sample_split_arr)
+        # AllGather nominal values for creating the parallel offset
+        nominal_sample_split_arr = self.comm.allgather(self.n_nominal_local)
 
         # We need to create a global index and offset items accordingly. This
         # needs to happen on all ranks/workers.
         my_rank = self.parallel_manager.get_rank()
         offset = 0
         if my_rank > 0:
-            offset = sum(sample_split_arr[:my_rank])
+            offset = sum(nominal_sample_split_arr[:my_rank])
         local_output_dict["nominal_idx"] = local_output_dict["nominal_idx"] + offset
         local_output_dict["differential_idx"] = local_output_dict["differential_idx"] + offset
         
+        # Resize global index array
+        if self.parallel_manager.is_root_process():
+            global_output_dict["nominal_idx"] = np.zeros(num_total_samples, dtype=float)
+            global_output_dict["differential_idx"] = np.zeros(num_total_samples, dtype=float)
+
         # Now we need to collect it on global_output_dict
         self.comm.Gatherv(
             sendbuf=local_output_dict["nominal_idx"],
@@ -391,6 +398,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         # divide the workload between processors
         local_values = self._divide_combinations(global_values)
+        self.n_nominal_local = np.shape(local_values)[0]
 
         # Check if the outputs have the name attribute. If not, assign one.
         if outputs is not None:
