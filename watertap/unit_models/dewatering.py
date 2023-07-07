@@ -91,7 +91,7 @@ class DewateringData(SeparatorData):
             domain=list,
             doc="List of TSS components.",
         ),
-    )       
+    )
 
     def build(self):
         """
@@ -129,7 +129,9 @@ class DewateringData(SeparatorData):
 
         @self.Expression(self.flowsheet().time, doc="Suspended solid concentration")
         def TSS(blk, t):
-            return 0.75 * (sum(blk.inlet.conc_mass_comp[t, i] for i in self.config.tss_components))
+            return 0.75 * (
+                sum(blk.inlet.conc_mass_comp[t, i] for i in self.config.tss_components)
+            )
 
         @self.Expression(self.flowsheet().time, doc="Dewatering factor")
         def f_dewat(blk, t):

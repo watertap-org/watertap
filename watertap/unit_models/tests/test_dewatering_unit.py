@@ -86,6 +86,7 @@ def test_config():
     for k in ["X_I", "X_S", "X_P", "X_BH", "X_BA"]:
         assert k in m.fs.unit.config.tss_components
 
+
 @pytest.mark.unit
 def test_list_error():
     m = ConcreteModel()
