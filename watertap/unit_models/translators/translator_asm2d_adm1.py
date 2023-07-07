@@ -37,10 +37,9 @@ from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 from pyomo.environ import (
-    Param,
     PositiveReals,
     Var,
-    sqrt,
+    Param,
     units as pyunits,
     check_optimal_termination,
     Set,
@@ -136,163 +135,61 @@ see reaction package for documentation.}""",
         mw_k = 39 * pyunits.kg / pyunits.kmol
         mw_mg = 24.3 * pyunits.kg / pyunits.kmol
 
-        self.Y_H = Var(
-            initialize=0.625,
-            units=pyunits.dimensionless,
-            domain=PositiveReals,
-            doc="Yield coefficient for heterotrophic biomass, [kg COD/kg COD]",
-        )
-        self.COD_SO2 = Var(
-            self.flowsheet().time,
-            initialize=self.properties_in[0].conc_mass_comp["S_O2"]
-            / ((1 - self.Y_H) / self.Y_H),
-            units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
-            doc="Concentration of COD demanding compounds in S_O2",
-        )
-        self.i_NOx_N2 = Var(
-            initialize=2.8571,
-            units=pyunits.dimensionless,
-            domain=PositiveReals,
-            doc="Nitrogen oxide coefficient for N2",
-        )
-        self.COD_SNO3 = Var(
-            self.flowsheet().time,
-            initialize=self.properties_in[0].conc_mass_comp["S_NO3"]
-            / ((1 - self.Y_H) / (self.i_NOx_N2 * self.Y_H)),
-            units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
-            doc="Concentration of COD demanding compounds in S_NO3",
-        )
-        self.i_NSF = Var(
-            initialize=0.03352,
-            units=pyunits.dimensionless,
-            domain=PositiveReals,
-            doc="N content of fermentable substrate, S_F, [kg N/kg COD]",
-        )
-        self.i_PSF = Var(
-            initialize=0.00559,
-            units=pyunits.dimensionless,
-            domain=PositiveReals,
-            doc="P content of fermentable substrate, S_F, [kg P/kg COD]",
-        )
-        self.N_aa = Var(
-            initialize=0.0079034,
-            units=pyunits.kmol / pyunits.kg,
-            domain=PositiveReals,
-            doc="Nitrogen content of S_aa",
-        )
-        self.S_ND = Var(
-            initialize=self.properties_in[0].conc_mass_comp["S_F"] * self.i_NSF,
-            units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
-            doc="Nitrogen demand for soluble inerts",
-        )
-        self.S_PD = Var(
-            initialize=self.properties_in[0].conc_mass_comp["S_F"] * self.i_PSF,
-            units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
-            doc="Phosphorus demand for soluble inerts",
-        )
-        self.SN_org = Var(
-            self.flowsheet().time,
-            initialize=self.S_ND / (self.N_aa * mw_n),
-            units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
-            doc="Organic nitrogen from soluble inerts",
-        )
-        self.f_sI_xc = Var(
+        self.f_sI_xc = Param(
             initialize=1e-9,
             units=pyunits.dimensionless,
-            domain=PositiveReals,
+            mutable=True,
             doc="Soluble inerts from composites",
         )
-        self.f_xI_xc = Var(
+        self.f_xI_xc = Param(
             initialize=0.1,
             units=pyunits.dimensionless,
-            domain=PositiveReals,
+            mutable=True,
             doc="Particulate inerts from composites",
         )
-        self.f_ch_xc = Var(
+        self.f_ch_xc = Param(
             initialize=0.275,
             units=pyunits.dimensionless,
-            domain=PositiveReals,
+            mutable=True,
             doc="Carbohydrates from composites",
         )
-        self.f_pr_xc = Var(
+        self.f_pr_xc = Param(
             initialize=0.275,
             units=pyunits.dimensionless,
-            domain=PositiveReals,
+            mutable=True,
             doc="Proteins from composites",
         )
-        self.f_li_xc = Var(
+        self.f_li_xc = Param(
             initialize=0.35,
             units=pyunits.dimensionless,
-            domain=PositiveReals,
+            mutable=True,
             doc="Proteins from composites",
         )
-        self.i_NXS = Var(
-            initialize=0.03352,
-            units=pyunits.dimensionless,
-            domain=PositiveReals,
-            doc="N content of slowly biodegradable substrate X_S, [kg N/kg COD]",
-        )
-        self.i_PXS = Var(
-            initialize=0.00559,
-            units=pyunits.dimensionless,
-            domain=PositiveReals,
-            doc="P content of slowly biodegradable substrate X_S, [kg P/kg COD]",
-        )
-        self.N_pr = Var(
-            initialize=0.0079034,
-            units=pyunits.kmol / pyunits.kg,
-            domain=PositiveReals,
-            doc="Nitrogen content of X_pr",
-        )
-        self.X_ND = Var(
-            initialize=self.properties_in[0].conc_mass_comp["X_S"] * self.i_NXS,
-            units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
-            doc="Nitrogen demand for particulate inerts",
-        )
-        self.X_PD = Var(
-            initialize=self.properties_in[0].conc_mass_comp["X_S"] * self.i_PXS,
-            units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
-            doc="Phosphorus demand for particulate inerts",
-        )
-        self.XN_org = Var(
-            self.flowsheet().time,
-            initialize=self.X_ND / (self.N_pr * mw_n),
-            units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
-            doc="Organic nitrogen from particulate inerts",
-        )
-        self.f_XPHA_Sva = Var(
+        self.f_XPHA_Sva = Param(
             initialize=0.1,
             units=pyunits.dimensionless,
-            domain=PositiveReals,
+            mutable=True,
             doc="Valerate from Polyhydroxyalkanoates",
         )
 
-        self.f_XPHA_Sbu = Var(
+        self.f_XPHA_Sbu = Param(
             initialize=0.1,
             units=pyunits.dimensionless,
-            domain=PositiveReals,
+            mutable=True,
             doc="Butyrate from Polyhydroxyalkanoates",
         )
 
-        self.f_XPHA_Spro = Var(
+        self.f_XPHA_Spro = Param(
             initialize=0.4,
             units=pyunits.dimensionless,
-            domain=PositiveReals,
+            mutable=True,
             doc="Propionate from Polyhydroxyalkanoates",
         )
 
-        self.f_XPHA_Sac = Var(
+        self.f_XPHA_Sac = Param(
             initialize=0.4,
             units=pyunits.dimensionless,
-            domain=PositiveReals,
+            mutable=True,
             doc="Acetate from Polyhydroxyalkanoates",
         )
 
@@ -318,6 +215,16 @@ see reaction package for documentation.}""",
             return blk.properties_out[t].pressure == blk.properties_in[t].pressure
 
         # -------------------------------------------Step 1----------------------------------------------------------------#
+        @self.Expression(
+            self.flowsheet().time,
+            doc="Concentration of COD demanding compounds in S_O2",
+        )
+        def COD_SO2(blk, t):
+            return blk.properties_in[t].conc_mass_comp["S_O2"] / (
+                (1 - blk.config.inlet_reaction_package.Y_H)
+                / blk.config.inlet_reaction_package.Y_H
+            )
+
         @self.Expression(self.flowsheet().time, doc="S_O2 concentration at step 1")
         def SO2_AS1(blk, t):
             return (
@@ -363,6 +270,19 @@ see reaction package for documentation.}""",
             return blk.properties_in[t].conc_mass_comp["X_H"] + self.COD_SO2[t]
 
         # -------------------------------------------Step 2----------------------------------------------------------------#
+        @self.Expression(
+            self.flowsheet().time,
+            doc="Concentration of COD demanding compounds in S_NO3",
+        )
+        def COD_SNO3(blk, t):
+            return blk.properties_in[t].conc_mass_comp["S_NO3"] / (
+                (1 - blk.config.inlet_reaction_package.Y_H)
+                / (
+                    blk.config.inlet_reaction_package.i_NOx_N2
+                    * blk.config.inlet_reaction_package.Y_H
+                )
+            )
+
         @self.Expression(self.flowsheet().time, doc="S_A concentration at step 2")
         def SA_AS2(blk, t):
             return (
@@ -427,12 +347,29 @@ see reaction package for documentation.}""",
             return blk.XH_AS1[t] + self.COD_SNO3[t]
 
         # -------------------------------------------Step 3----------------------------------------------------------------#
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Nitrogen demand for soluble inerts divided by nitrogen content in amino acids",
+        @self.Expression(
+            self.flowsheet().time, doc="Nitrogen demand for soluble inerts"
         )
-        def ReqCOD_S(blk, t):
-            return blk.SN_org[t] == self.S_ND / (self.N_aa * mw_n)
+        def S_ND(blk, t):
+            return (
+                blk.properties_in[t].conc_mass_comp["S_F"]
+                * blk.config.inlet_reaction_package.i_NSF
+            )
+
+        @self.Expression(
+            self.flowsheet().time, doc="Phosphorus demand for soluble inerts"
+        )
+        def S_PD(blk, t):
+            return (
+                blk.properties_in[t].conc_mass_comp["S_F"]
+                * blk.config.inlet_reaction_package.i_PSF
+            )
+
+        @self.Expression(
+            self.flowsheet().time, doc="Organic nitrogen from soluble inerts"
+        )
+        def SN_org(blk, t):
+            return blk.S_ND[t] / (blk.config.outlet_reaction_package.Ni["S_aa"] * mw_n)
 
         # TODO: Double check if 1000 should be here and throughout the rest (just them going from g/m3 to kg/m3?)
         @self.Expression(self.flowsheet().time, doc="Monosaccharides mapping")
@@ -440,7 +377,7 @@ see reaction package for documentation.}""",
             return Expr_if(
                 blk.SN_org[t] >= self.properties_in[0].conc_mass_comp["S_F"],
                 eps * pyunits.kg / pyunits.m**3,
-                (self.properties_in[0].conc_mass_comp["S_F"] - self.SN_org[t]) / 1000,
+                (self.properties_in[0].conc_mass_comp["S_F"] - blk.SN_org[t]) / 1000,
             )
 
         @self.Expression(self.flowsheet().time, doc="Amino acids mapping")
@@ -448,7 +385,7 @@ see reaction package for documentation.}""",
             return Expr_if(
                 blk.SN_org[t] >= self.properties_in[0].conc_mass_comp["S_F"],
                 self.properties_in[0].conc_mass_comp["S_F"] / 1000,
-                self.SN_org[t] / 1000,
+                blk.SN_org[t] / 1000,
             )
 
         @self.Constraint(
@@ -479,7 +416,10 @@ see reaction package for documentation.}""",
                 blk.SNH4_AS2[t]
                 + self.properties_in[0].conc_mass_comp["S_F"]
                 * blk.config.inlet_reaction_package.i_NSF
-                - blk.Saa_mapping[t] * self.N_aa * 1000 * mw_n
+                - blk.Saa_mapping[t]
+                * blk.config.outlet_reaction_package.Ni["S_aa"]
+                * 1000
+                * mw_n
             )
 
         @self.Expression(self.flowsheet().time, doc="S_PO4 concentration at step 3")
@@ -506,7 +446,7 @@ see reaction package for documentation.}""",
                 * mw_c
             )
 
-        # ---------------------------------------DecaySwitch.on--------------------------------------------------------#
+        # -----------------------------------------DecaySwitch.on----------------------------------------------------------#
 
         # -------------------------------------------Step 4----------------------------------------------------------------#
         if self.config.inlet_reaction_package.config.decay_switch == DecaySwitch.on:
@@ -617,48 +557,65 @@ see reaction package for documentation.}""",
             # def XH_AS4():
             #     return eps * pyunits.kg / pyunits.m**3
             # TODO: Consider removing these cases where vars set conc to 0 since they are usually unused
-            # TODO: These were left b/c this first draft follows Flores-Alsina as close as possible
-            self.XH_AS4 = Var(
-                initialize=eps,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_H concentration at step 4",
-            )
+            # TODO: These were left in b/c this first draft follows Flores-Alsina as close as possible
+            # self.XH_AS4 = Var(
+            #     initialize=eps,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_H concentration at step 4",
+            # )
+            XH_AS4 = eps * pyunits.kg / pyunits.m**3
 
             # @self.Expression(self.flowsheet().time, doc="X_PAO concentration at step 4")
             # def XPAO_AS4():
             #     return eps * pyunits.kg / pyunits.m**3
-            self.XPAO_AS4 = Var(
-                initialize=eps,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_PAO concentration at step 4",
-            )
+            # self.XPAO_AS4 = Var(
+            #     initialize=eps,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_PAO concentration at step 4",
+            # )
+            XPAO_AS4 = eps * pyunits.kg / pyunits.m**3
 
             @self.Constraint(self.flowsheet().time, doc="X_PAO concentration output")
             def XPAO_output(blk, t):
-                return (
-                    blk.properties_out[t].conc_mass_comp["X_PAO"]
-                    == self.XPAO_AS4 / 1000
-                )
+                return blk.properties_out[t].conc_mass_comp["X_PAO"] == XPAO_AS4 / 1000
 
             # @self.Expression(self.flowsheet().time, doc="X_AUT concentration at step 4")
             # def XAUT_AS4():
             #     return eps * pyunits.kg / pyunits.m**3
-            self.XAUT_AS4 = Var(
-                initialize=eps,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_AUT concentration at step 4",
-            )
+            # self.XAUT_AS4 = Var(
+            #     initialize=eps,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_AUT concentration at step 4",
+            # )
+            XAUT_AS4 = eps * pyunits.kg / pyunits.m**3
 
-            # -------------------------------------------Step 5----------------------------------------------------------------#
-            @self.Constraint(
-                self.flowsheet().time,
-                doc="Nitrogen demand for soluble inerts divided by nitrogen content in amino acids",
+            # -----------------------------------------Step 5--------------------------------------------------------------#
+            @self.Expression(
+                self.flowsheet().time, doc="Nitrogen demand for particulate inerts"
             )
-            def ReqCOD_X(blk, t):
-                return blk.XN_org[t] == self.X_ND / (
+            def X_ND(blk, t):
+                return (
+                    blk.properties_in[t].conc_mass_comp["X_S"]
+                    * blk.config.inlet_reaction_package.i_NXS
+                )
+
+            @self.Expression(
+                self.flowsheet().time, doc="Phosphorus demand for particulate inerts"
+            )
+            def X_PD(blk, t):
+                return (
+                    blk.properties_in[t].conc_mass_comp["X_S"]
+                    * blk.config.inlet_reaction_package.i_PXS
+                )
+
+            @self.Expression(
+                self.flowsheet().time, doc="Organic nitrogen from particulate inerts"
+            )
+            def XN_org(blk, t):
+                return blk.X_ND[t] / (
                     blk.config.outlet_reaction_package.Ni["X_pr"] * mw_n
                 )
 
@@ -668,7 +625,7 @@ see reaction package for documentation.}""",
                 return Expr_if(
                     blk.XN_org[t] >= self.properties_in[0].conc_mass_comp["X_S"],
                     eps * pyunits.kg / pyunits.m**3,
-                    (self.properties_in[0].conc_mass_comp["X_S"] - self.XN_org[t])
+                    (self.properties_in[0].conc_mass_comp["X_S"] - blk.XN_org[t])
                     * 0.4
                     / 1000,
                 )
@@ -678,7 +635,7 @@ see reaction package for documentation.}""",
                 return Expr_if(
                     blk.XN_org[t] >= self.properties_in[0].conc_mass_comp["X_S"],
                     blk.SF_AS3[t] / 1000,
-                    self.XN_org[t] / 1000,
+                    blk.XN_org[t] / 1000,
                 )
 
             @self.Expression(self.flowsheet().time, doc="Lipids mapping")
@@ -686,7 +643,7 @@ see reaction package for documentation.}""",
                 return Expr_if(
                     blk.XN_org[t] >= self.properties_in[0].conc_mass_comp["X_S"],
                     eps * pyunits.kg / pyunits.m**3,
-                    (self.properties_in[0].conc_mass_comp["X_S"] - self.XN_org[t])
+                    (self.properties_in[0].conc_mass_comp["X_S"] - blk.XN_org[t])
                     * 0.6
                     / 1000,
                 )
@@ -779,125 +736,127 @@ see reaction package for documentation.}""",
             # @self.Expression(self.flowsheet().time, doc="X_S concentration at step 5")
             # def XS_AS5():
             #     return eps * pyunits.kg / pyunits.m**3
-            self.XS_AS5 = Var(
-                initialize=eps,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_S concentration at step 5",
-            )
+            # self.XS_AS5 = Var(
+            #     initialize=eps,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_S concentration at step 5",
+            # )
+            XS_AS5 = eps * pyunits.kg / pyunits.m**3
 
-            # -------------------------------------------Step 6----------------------------------------------------------------#
+            # -----------------------------------------Step 6--------------------------------------------------------------#
             # @self.Expression(self.flowsheet().time, doc="X_PP concentration at step 6")
             # def XPP_AS6():
             #     return eps * pyunits.kg / pyunits.m**3
-            self.XPP_AS6 = Var(
-                initialize=eps,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_PP concentration at step 6",
-            )
+            # self.XPP_AS6 = Var(
+            #     initialize=eps,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_PP concentration at step 6",
+            # )
+            XPP_AS6 = eps * pyunits.kg / pyunits.m**3
 
             # TODO: Default implementation outputs this as kmol/m3 - I assume we want kg/m3?
             @self.Constraint(self.flowsheet().time, doc="X_PP concentration output")
             def XPP_output(blk, t):
-                # return blk.properties_out[t].conc_mol_comp["X_PP"] == self.XPP_AS6 / (1000 * mw_p)
-                return (
-                    blk.properties_out[t].conc_mass_comp["X_PP"] == self.XPP_AS6 / 1000
-                )
+                # return blk.properties_out[t].conc_mol_comp["X_PP"] == XPP_AS6 / (1000 * mw_p)
+                return blk.properties_out[t].conc_mass_comp["X_PP"] == XPP_AS6 / 1000
 
             # @self.Expression(self.flowsheet().time, doc="X_PP concentration at step 6")
             # def XPHA_AS6():
             #     return eps * pyunits.kg / pyunits.m**3
-            self.XPHA_AS6 = Var(
-                initialize=eps,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_PHA concentration at step 6",
-            )
+            # self.XPHA_AS6 = Var(
+            #     initialize=eps,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_PHA concentration at step 6",
+            # )
+            XPHA_AS6 = eps * pyunits.kg / pyunits.m**3
 
             @self.Constraint(self.flowsheet().time, doc="X_PHA concentration output")
             def XPHA_output(blk, t):
-                return (
-                    blk.properties_out[t].conc_mass_comp["X_PHA"]
-                    == self.XPHA_AS6 / 1000
-                )
+                return blk.properties_out[t].conc_mass_comp["X_PHA"] == XPHA_AS6 / 1000
 
             # @self.Expression(
             #     self.flowsheet().time,
             #     doc="Total valerate concentration",
             # )
             # def Sva_AS6(blk):
-            #     return blk.XPHA_AS6 * self.f_XPHA_Sva / 1000
+            #     return XPHA_AS6 * self.f_XPHA_Sva / 1000
 
-            self.Sva_AS6 = Var(
-                initialize=self.XPHA_AS6 * self.f_XPHA_Sva / 1000,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="S_va concentration at step 6",
-            )
+            # self.Sva_AS6 = Var(
+            #     initialize=XPHA_AS6 * self.f_XPHA_Sva / 1000,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="S_va concentration at step 6",
+            # )
+            Sva_AS6 = XPHA_AS6 * self.f_XPHA_Sva / 1000
 
             @self.Constraint(
                 self.flowsheet().time,
                 doc="Total valerate concentration output",
             )
             def Sva_output(blk, t):
-                return blk.properties_out[t].conc_mass_comp["S_va"] == self.Sva_AS6
+                return blk.properties_out[t].conc_mass_comp["S_va"] == Sva_AS6
 
             # @self.Expression(
             #     self.flowsheet().time,
             #     doc="Total butyrate concentration",
             # )
             # def Sbu_AS6(blk):
-            #     return blk.XPHA_AS6 * self.f_XPHA_Sbu / 1000
+            #     return XPHA_AS6 * self.f_XPHA_Sbu / 1000
 
-            self.Sbu_AS6 = Var(
-                initialize=self.XPHA_AS6 * self.f_XPHA_Sbu / 1000,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="S_bu concentration at step 6",
-            )
+            # self.Sbu_AS6 = Var(
+            #     initialize=XPHA_AS6 * self.f_XPHA_Sbu / 1000,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="S_bu concentration at step 6",
+            # )
+            Sbu_AS6 = XPHA_AS6 * self.f_XPHA_Sbu / 1000
 
             @self.Constraint(
                 self.flowsheet().time,
                 doc="Total butyrate concentration output",
             )
             def Sbu_output(blk, t):
-                return blk.properties_out[t].conc_mass_comp["S_bu"] == self.Sbu_AS6
+                return blk.properties_out[t].conc_mass_comp["S_bu"] == Sbu_AS6
 
             # @self.Expression(
             #     self.flowsheet().time,
             #     doc="Total propionate concentration",
             # )
             # def Spro_AS6(blk):
-            #     return blk.XPHA_AS6 * self.f_XPHA_Spro / 1000
+            #     return XPHA_AS6 * self.f_XPHA_Spro / 1000
 
-            self.Spro_AS6 = Var(
-                initialize=self.XPHA_AS6 * self.f_XPHA_Spro / 1000,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="S_pro concentration at step 6",
-            )
+            # self.Spro_AS6 = Var(
+            #     initialize=XPHA_AS6 * self.f_XPHA_Spro / 1000,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="S_pro concentration at step 6",
+            # )
+            Spro_AS6 = XPHA_AS6 * self.f_XPHA_Spro / 1000
 
             @self.Constraint(
                 self.flowsheet().time,
                 doc="Total propionate concentration output",
             )
             def Spro_output(blk, t):
-                return blk.properties_out[t].conc_mass_comp["S_pro"] == self.Spro_AS6
+                return blk.properties_out[t].conc_mass_comp["S_pro"] == Spro_AS6
 
             # @self.Expression(
             #     self.flowsheet().time,
             #     doc="Total acetate concentration",
             # )
             # def Sac_AS6(blk):
-            #     return blk.XPHA_AS6 * self.f_XPHA_Sac / 1000
+            #     return XPHA_AS6 * self.f_XPHA_Sac / 1000
 
-            self.Sac_AS6 = Var(
-                initialize=self.XPHA_AS6 * self.f_XPHA_Sac / 1000,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="S_ac concentration at step 6",
-            )
+            # self.Sac_AS6 = Var(
+            #     initialize=XPHA_AS6 * self.f_XPHA_Sac / 1000,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="S_ac concentration at step 6",
+            # )
+            Sac_AS6 = XPHA_AS6 * self.f_XPHA_Sac / 1000
 
             @self.Constraint(
                 self.flowsheet().time,
@@ -906,7 +865,7 @@ see reaction package for documentation.}""",
             def Sac_output(blk, t):
                 return (
                     blk.properties_out[t].conc_mass_comp["S_ac"]
-                    == self.Sac_AS6 + blk.SA_AS2[t] / 1000
+                    == Sac_AS6 + blk.SA_AS2[t] / 1000
                 )
 
             @self.Expression(self.flowsheet().time, doc="S_PO4 concentration at step 6")
@@ -928,19 +887,19 @@ see reaction package for documentation.}""",
                 return (
                     blk.SIC_AS5[t]
                     + self.properties_in[0].conc_mass_comp["X_PHA"] * 0.3
-                    - self.Sva_AS6
+                    - Sva_AS6
                     * blk.config.outlet_reaction_package.Ci["S_va"]
                     * mw_c
                     * 1000
-                    - self.Sbu_AS6
+                    - Sbu_AS6
                     * blk.config.outlet_reaction_package.Ci["S_bu"]
                     * mw_c
                     * 1000
-                    - self.Spro_AS6
+                    - Spro_AS6
                     * blk.config.outlet_reaction_package.Ci["S_pro"]
                     * mw_c
                     * 1000
-                    - self.Sac_AS6
+                    - Sac_AS6
                     * blk.config.outlet_reaction_package.Ci["S_ac"]
                     * mw_c
                     * 1000
@@ -998,9 +957,9 @@ see reaction package for documentation.}""",
                     == blk.SMg_AS6[t] / 1000
                 )
 
-        # ---------------------------------------DecaySwitch.off--------------------------------------------------------#
+        # ---------------------------------------DecaySwitch.off-------------------------------------------------------#
 
-        # -------------------------------------------Step 4----------------------------------------------------------------#
+        # -----------------------------------------Step 4--------------------------------------------------------------#
         elif self.config.inlet_reaction_package.config.decay_switch == DecaySwitch.off:
 
             @self.Expression(
@@ -1104,12 +1063,13 @@ see reaction package for documentation.}""",
             # @self.Expression(doc="X_H concentration at step 4")
             # def XH_AS4():
             #     return eps * pyunits.kg / pyunits.m**3
-            self.XH_AS4 = Var(
-                initialize=eps,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_H concentration at step 4",
-            )
+            # self.XH_AS4 = Var(
+            #     initialize=eps,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_H concentration at step 4",
+            # )
+            XH_AS4 = eps * pyunits.kg / pyunits.m**3
 
             @self.Expression(self.flowsheet().time, doc="X_PAO concentration at step 4")
             def XPAO_AS4():
@@ -1126,20 +1086,38 @@ see reaction package for documentation.}""",
             # @self.Expression(self.flowsheet().time, doc="X_AUT concentration at step 4")
             # def XAUT_AS4():
             #     return eps * pyunits.kg / pyunits.m**3
-            self.XAUT_AS4 = Var(
-                initialize=eps,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_AUT concentration at step 4",
-            )
+            # self.XAUT_AS4 = Var(
+            #     initialize=eps,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_AUT concentration at step 4",
+            # )
+            XAUT_AS4 = eps * pyunits.kg / pyunits.m**3
 
-            # -------------------------------------------Step 5----------------------------------------------------------------#
-            @self.Constraint(
-                self.flowsheet().time,
-                doc="Nitrogen demand for soluble inerts divided by nitrogen content in amino acids",
+            # -----------------------------------------Step 5--------------------------------------------------------------#
+            @self.Expression(
+                self.flowsheet().time, doc="Nitrogen demand for particulate inerts"
             )
-            def ReqCOD_X(blk, t):
-                return blk.XN_org[t] == self.X_ND / (
+            def X_ND(blk, t):
+                return (
+                    blk.properties_in[t].conc_mass_comp["X_S"]
+                    * blk.config.inlet_reaction_package.i_NXS
+                )
+
+            @self.Expression(
+                self.flowsheet().time, doc="Phosphorus demand for particulate inerts"
+            )
+            def X_PD(blk, t):
+                return (
+                    blk.properties_in[t].conc_mass_comp["X_S"]
+                    * blk.config.inlet_reaction_package.i_PXS
+                )
+
+            @self.Expression(
+                self.flowsheet().time, doc="Organic nitrogen from particulate inerts"
+            )
+            def XN_org(blk, t):
+                return blk.X_ND[t] / (
                     blk.config.outlet_reaction_package.Ni["X_pr"] * mw_n
                 )
 
@@ -1149,7 +1127,7 @@ see reaction package for documentation.}""",
                 return Expr_if(
                     blk.XN_org[t] >= self.properties_in[0].conc_mass_comp["X_S"],
                     eps * pyunits.kg / pyunits.m**3,
-                    (self.properties_in[0].conc_mass_comp["X_S"] - self.XN_org[t])
+                    (self.properties_in[0].conc_mass_comp["X_S"] - blk.XN_org[t])
                     * 0.4
                     / 1000,
                 )
@@ -1159,7 +1137,7 @@ see reaction package for documentation.}""",
                 return Expr_if(
                     blk.XN_org[t] >= self.properties_in[0].conc_mass_comp["X_S"],
                     blk.SF_AS3[t] / 1000,
-                    self.XN_org[t] / 1000,
+                    blk.XN_org[t] / 1000,
                 )
 
             @self.Expression(self.flowsheet().time, doc="Lipids mapping")
@@ -1167,7 +1145,7 @@ see reaction package for documentation.}""",
                 return Expr_if(
                     blk.XN_org[t] >= self.properties_in[0].conc_mass_comp["X_S"],
                     eps * pyunits.kg / pyunits.m**3,
-                    (self.properties_in[0].conc_mass_comp["X_S"] - self.XN_org[t])
+                    (self.properties_in[0].conc_mass_comp["X_S"] - blk.XN_org[t])
                     * 0.6
                     / 1000,
                 )
@@ -1280,44 +1258,48 @@ see reaction package for documentation.}""",
             # @self.Expression(self.flowsheet().time, doc="X_S concentration at step 5")
             # def XS_AS5():
             #     return eps * pyunits.kg / pyunits.m**3
-            self.XS_AS5 = Var(
-                initialize=eps,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_S concentration at step 5",
-            )
+            # self.XS_AS5 = Var(
+            #     initialize=eps,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_S concentration at step 5",
+            # )
+            XS_AS5 = eps * pyunits.kg / pyunits.m**3
 
             # @self.Expression(self.flowsheet().time, doc="X_PAO concentration at step 5")
             # def XPAO_AS5():
             #     return self.properties_in[0].conc_mass_comp["X_PAO"]
-            self.XPAO_AS5 = Var(
-                initialize=eps,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_PAO concentration at step 5",
-            )
+            # self.XPAO_AS5 = Var(
+            #     initialize=eps,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_PAO concentration at step 5",
+            # )
+            XPAO_AS5 = eps * pyunits.kg / pyunits.m**3
 
             # @self.Expression(self.flowsheet().time, doc="X_PP concentration at step 4")
             # def XPP_AS5():
             #     return self.properties_in[0].conc_mass_comp["X_PP"]
-            self.XPP_AS5 = Var(
-                initialize=eps,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_PP concentration at step 5",
-            )
+            # self.XPP_AS5 = Var(
+            #     initialize=eps,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_PP concentration at step 5",
+            # )
+            XPP_AS5 = eps * pyunits.kg / pyunits.m**3
 
             # @self.Expression(self.flowsheet().time, doc="X_PHA concentration at step 4")
             # def XPHA_AS5():
             #     return self.properties_in[0].conc_mass_comp["X_PHA"]
-            self.XPHA_AS5 = Var(
-                initialize=eps,
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_PHA concentration at step 5",
-            )
+            # self.XPHA_AS5 = Var(
+            #     initialize=eps,
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_PHA concentration at step 5",
+            # )
+            XPHA_AS5 = eps * pyunits.kg / pyunits.m**3
 
-            # -------------------------------------------Step 6----------------------------------------------------------------#
+            # -----------------------------------------Step 6--------------------------------------------------------------#
             @self.Constraint(
                 self.flowsheet().time,
                 doc="Total valerate concentration",
@@ -1361,56 +1343,51 @@ see reaction package for documentation.}""",
             # @self.Expression(self.flowsheet().time, doc="X_PAO concentration at step 6")
             # def XPAO_AS6():
             #     return self.properties_in[0].conc_mass_comp["X_PAO"]
-            self.XPAO_AS6 = Var(
-                initialize=self.properties_in[0].conc_mass_comp["X_PAO"],
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_PAO concentration at step 6",
-            )
+            # self.XPAO_AS6 = Var(
+            #     initialize=self.properties_in[0].conc_mass_comp["X_PAO"],
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_PAO concentration at step 6",
+            # )
+            XPAO_AS6 = self.properties_in[0].conc_mass_comp["X_PAO"]
 
             @self.Constraint(self.flowsheet().time, doc="X_PAO concentration output")
             def XPAO_output(blk, t):
-                return (
-                    blk.properties_out[t].conc_mass_comp["X_PAO"]
-                    == self.XPAO_AS6 / 1000
-                )
+                return blk.properties_out[t].conc_mass_comp["X_PAO"] == XPAO_AS6 / 1000
 
             # @self.Expression(self.flowsheet().time, doc="X_PP concentration at step 6")
             # def XPP_AS6():
             #     return self.properties_in[0].conc_mass_comp["X_PP"]
-            self.XPP_AS6 = Var(
-                initialize=self.properties_in[0].conc_mass_comp["X_PP"],
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_PP concentration at step 6",
-            )
+            # self.XPP_AS6 = Var(
+            #     initialize=self.properties_in[0].conc_mass_comp["X_PP"],
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_PP concentration at step 6",
+            # )
+            XPP_AS6 = self.properties_in[0].conc_mass_comp["X_PP"]
 
             # TODO: Default implementation outputs this as kmol/m3 - I assume we want kg/m3?
             @self.Constraint(self.flowsheet().time, doc="X_PP concentration output")
             def XPP_output(blk, t):
-                # return blk.properties_out[t].conc_mol_comp["X_PP"] == blk.XPP_AS6[
+                # return blk.properties_out[t].conc_mol_comp["X_PP"] == XPP_AS6[
                 #     t
                 # ] / (1000 * mw_p)
-                return (
-                    blk.properties_out[t].conc_mass_comp["X_PP"] == self.XPP_AS6 / 1000
-                )
+                return blk.properties_out[t].conc_mass_comp["X_PP"] == XPP_AS6 / 1000
 
             # @self.Expression(self.flowsheet().time, doc="X_PHA concentration at step 6")
             # def XPHA_AS6():
             #     return self.properties_in[0].conc_mass_comp["X_PHA"]
-            self.XPHA_AS6 = Var(
-                initialize=self.properties_in[0].conc_mass_comp["X_PHA"],
-                units=pyunits.kg / pyunits.m**3,
-                domain=PositiveReals,
-                doc="X_PHA concentration at step 6",
-            )
+            # self.XPHA_AS6 = Var(
+            #     initialize=self.properties_in[0].conc_mass_comp["X_PHA"],
+            #     units=pyunits.kg / pyunits.m**3,
+            #     domain=PositiveReals,
+            #     doc="X_PHA concentration at step 6",
+            # )
+            XPHA_AS6 = self.properties_in[0].conc_mass_comp["X_PHA"]
 
             @self.Constraint(self.flowsheet().time, doc="X_PHA concentration output")
             def XPHA_output(blk, t):
-                return (
-                    blk.properties_out[t].conc_mass_comp["X_PHA"]
-                    == self.XPHA_AS6 / 1000
-                )
+                return blk.properties_out[t].conc_mass_comp["X_PHA"] == XPHA_AS6 / 1000
 
             # TODO: Default implementation outputs this as kmol/m3 - I assume we want kg/m3?
             @self.Constraint(
@@ -1464,7 +1441,7 @@ see reaction package for documentation.}""",
                 == eps * pyunits.kg / pyunits.m**3
             )
 
-        # TODO: Relationship carried over from ASM1/ADM1 - see perf_plant_AD_ss.m for Flores-Alsina interpretation (Scat = S_K + S_Mg)
+        # TODO: Relationship carried over from ASM1/ADM1 - not clear how Flores-Alsina does it (see perf_plant_AD_ss.m?)
         @self.Constraint(
             self.flowsheet().time,
             doc="Anions balance",
