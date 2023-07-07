@@ -260,17 +260,6 @@ If ``isotherm`` is set to ``freundlich``, the additional variables to fix are:
 
 
 
-Costing Variables
-^^^^^^^^^^^^^^^^^
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units", "Type"
-
-   "Langmuir equilibrium parameter for resin/ion system", ":math:`La`", "``langmuir``", "``target_ion_set``", ":math:`\text{dimensionless}`"
-   "Maximum resin capacity", ":math:`q_{max}`", "``resin_max_capacity``", "None", ":math:`\text{mol/kg}`"
-   "Dimensionless time", ":math:`\tau`", "``dimensionless_time``", None, ":math:`\text{dimensionless}`"
-
-
 Solution Component Information
 ------------------------------
 The IonExchange0D model is designed to work with WaterTAP's 
