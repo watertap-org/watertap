@@ -1932,7 +1932,7 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
     assert truth_dict.keys() == test_dict.keys()
 
     for key, item in truth_dict.items():
-        if key != "solve_successful":
+        if key in ["sweep_params", "outputs"]:
             for subkey, subitem in item.items():
                 for subsubkey, subsubitem in subitem.items():
                     if subsubkey == "value":
@@ -1945,6 +1945,11 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
                         assert subsubitem == test_dict[key][subkey][subsubkey]
         elif key == "solve_successful":
             assert item == test_dict[key]
+        elif key in ["nominal_idx", "differential_idx"]:
+            assert np.allclose(
+                test_dict[key], item, equal_nan=True
+            )
+
 
 
 def _assert_h5_csv_agreement(csv_filename, h5_dict):
@@ -1994,7 +1999,7 @@ def _read_output_h5(filevar):
     l1_keys = list(f.keys())
     output_dict = {}
     for key in l1_keys:  # Input or Output
-        if key != "solve_successful":
+        if key in ["sweep_params", "outputs"]: #  "solve_successful":
             output_dict[key] = {}
             l2_keys = list(f[key].keys())
             for subkey in l2_keys:  # Variable name
@@ -2009,6 +2014,13 @@ def _read_output_h5(filevar):
                         ].decode("utf-8")
         elif key == "solve_successful":
             output_dict[key] = list(f[key]["solve_successful"][()])
+        elif key in ["nominal_idx", "differential_idx"]:
+            # print("f[key] = ", f[key])
+            output_dict[key] = f[key][key][()]
+
+    import pprint
+    print("\noutput_dict")
+    pprint.pprint(output_dict)
 
     if isinstance(filevar, str):
         f.close()

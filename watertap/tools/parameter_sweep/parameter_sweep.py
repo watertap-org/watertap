@@ -454,7 +454,7 @@ class _ParameterSweepBase(ABC):
             global_output_dict = copy.deepcopy(local_output_dict)
             # Create a global value array of inputs in the dictionary
             for key, item in global_output_dict.items():
-                if key != "solve_successful":
+                if key in ["sweep_params", "outputs"]:
                     for subkey, subitem in item.items():
                         subitem["value"] = np.zeros(num_total_samples, dtype=float)
 
@@ -463,7 +463,7 @@ class _ParameterSweepBase(ABC):
 
         # Finally collect the values
         for key, item in local_output_dict.items():
-            if key != "solve_successful":
+            if key in ["sweep_params", "outputs"]:
                 for subkey, subitem in item.items():
                     self.comm.Gatherv(
                         sendbuf=subitem["value"],

@@ -336,6 +336,50 @@ def test_differential_parameter_sweep(model, tmp_path):
     if ps.rank == 0:
 
         truth_dict = {
+            "differential_idx": np.array(
+                [
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    0.0,
+                    1.0,
+                    2.0,
+                    3.0,
+                    4.0,
+                    5.0,
+                    6.0,
+                    7.0,
+                    8.0,
+                ]
+            ),
+            "nominal_idx": np.array(
+                [
+                    0.0,
+                    1.0,
+                    2.0,
+                    3.0,
+                    4.0,
+                    5.0,
+                    6.0,
+                    7.0,
+                    8.0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                ]
+            ),
             "outputs": {
                 "fs.input[a]": {
                     "full_name": "fs.input[a]",
@@ -728,6 +772,50 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
     if ps.rank == 0:
 
         truth_dict = {
+            "differential_idx": np.array(
+                [
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    0.0,
+                    1.0,
+                    2.0,
+                    3.0,
+                    4.0,
+                    5.0,
+                    6.0,
+                    7.0,
+                    8.0,
+                ]
+            ),
+            "nominal_idx": np.array(
+                [
+                    0.0,
+                    1.0,
+                    2.0,
+                    3.0,
+                    4.0,
+                    5.0,
+                    6.0,
+                    7.0,
+                    8.0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                ]
+            ),
             "outputs": {
                 "fs.input[a]": {
                     "full_name": "fs.input[a]",
@@ -1230,6 +1318,50 @@ def test_differential_parameter_sweep_function(model, tmp_path):
     if comm.rank == 0:
 
         truth_dict = {
+            "differential_idx": np.array(
+                [
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    0.0,
+                    1.0,
+                    2.0,
+                    3.0,
+                    4.0,
+                    5.0,
+                    6.0,
+                    7.0,
+                    8.0,
+                ]
+            ),
+            "nominal_idx": np.array(
+                [
+                    0.0,
+                    1.0,
+                    2.0,
+                    3.0,
+                    4.0,
+                    5.0,
+                    6.0,
+                    7.0,
+                    8.0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                ]
+            ),
             "outputs": {
                 "fs.input[a]": {
                     "full_name": "fs.input[a]",

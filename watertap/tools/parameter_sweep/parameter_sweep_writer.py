@@ -194,7 +194,7 @@ class ParameterSweepWriter:
             elif txt_options == "keys":
                 my_dict = {}
                 for key, value in output_dict.items():
-                    if key != "solve_successful":
+                    if key in ["sweep_params", "outputs"]:
                         my_dict[key] = list(value.keys())
             else:
                 my_dict = output_dict
@@ -220,7 +220,7 @@ class ParameterSweepWriter:
 
         for key, item in output_dict.items():
             grp = parent_grp.create_group(key)
-            if key != "solve_successful":
+            if key in ["sweep_params", "outputs"]:
                 for subkey, subitem in item.items():
                     subgrp = grp.create_group(subkey)
                     for subsubkey, subsubitem in subitem.items():
@@ -231,7 +231,7 @@ class ParameterSweepWriter:
                                 subgrp.create_dataset(subsubkey, data=np.finfo("d").max)
                             else:
                                 subgrp.create_dataset(subsubkey, data=subsubitem)
-            elif key == "solve_successful":
+            elif key in ["solve_successful", "nominal_idx", "differential_idx"]:
                 grp.create_dataset(key, data=output_dict[key])
 
         f.close()
