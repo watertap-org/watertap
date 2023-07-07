@@ -70,7 +70,7 @@ def test_config():
 
     m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
-    assert len(m.fs.unit.config) == 18
+    assert len(m.fs.unit.config) == 15
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -79,12 +79,7 @@ def test_config():
     assert "underflow" in m.fs.unit.config.outlet_list
     assert "overflow" in m.fs.unit.config.outlet_list
     assert SplittingType.componentFlow is m.fs.unit.config.split_basis
-    for k in ["S_I", "S_S", "S_O", "S_NO", "S_NH", "S_ND", "H2O", "S_ALK"]:
-        assert k in m.fs.unit.config.non_particulate_components_list
-    for k in ["X_I", "X_S", "X_P", "X_BH", "X_BA", "X_ND"]:
-        assert k in m.fs.unit.config.particulate_components_list
-    for k in ["X_I", "X_S", "X_P", "X_BH", "X_BA"]:
-        assert k in m.fs.unit.config.tss_components
+
 
 
 @pytest.mark.unit
