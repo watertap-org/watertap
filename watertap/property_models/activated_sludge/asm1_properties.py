@@ -78,6 +78,20 @@ class ASM1ParameterData(PhysicalParameterBlock):
 
         self.S_ALK = Component(doc="Alkalinity, S_ALK")
 
+        # Create sets for use across ASM models and associated unit models (e.g., thickener, dewaterer)
+        self.non_particulate_component_set = pyo.Set(initialize=[
+                "S_I",
+                "S_S",
+                "S_O",
+                "S_NO",
+                "S_NH",
+                "S_ND",
+                "H2O",
+                "S_ALK",
+            ])
+        self.particulate_component_set = pyo.Set(initialize=["X_I", "X_S", "X_P", "X_BH", "X_BA", "X_ND"])
+        self.tss_component_set = pyo.Set(initialize=["X_I", "X_S", "X_P", "X_BH", "X_BA"])
+
         # Heat capacity of water
         self.cp_mass = pyo.Param(
             mutable=False,

@@ -47,7 +47,7 @@ from idaes.core.util.testing import (
 from idaes.core.util.exceptions import (
     ConfigurationError,
 )
-from watertap.unit_models.thickener import Thickener
+from watertap.unit_models.thickener import Thickener, ActivatedSludgeModelType
 from watertap.property_models.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
 )
@@ -77,12 +77,13 @@ def test_config():
 
     m.fs.unit = Thickener(property_package=m.fs.props)
 
-    assert len(m.fs.unit.config) == 15
+    assert len(m.fs.unit.config) == 16
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
+    assert m.fs.unit.config.activated_sludge_model == ActivatedSludgeModelType.ASM1
     assert "underflow" in m.fs.unit.config.outlet_list
     assert "overflow" in m.fs.unit.config.outlet_list
     assert SplittingType.componentFlow is m.fs.unit.config.split_basis
@@ -356,6 +357,30 @@ class TestThickASM2d(object):
         assert hasattr(tu_asm2d.fs.unit.overflow, "pressure")
         assert hasattr(tu_asm2d.fs.unit.overflow, "alkalinity")
 
-        assert number_variables(tu_asm2d) == 76
-        assert number_total_constraints(tu_asm2d) == 60
+        assert number_variables(tu_asm2d) == 106
+        assert number_total_constraints(tu_asm2d) == 83
         assert number_unused_variables(tu_asm2d) == 0
+
+    @pytest.mark.unit
+    def test_dof(self, tu_asm2d):
+        assert degrees_of_freedom(tu_asm2d) == 0
+
+    @pytest.mark.unit
+    def test_units(self, tu_asm2d):
+        assert_units_consistent(tu_asm2d)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, tu_asm2d):
+
+        iscale.calculate_scaling_factors(tu_asm2d)
+        initialization_tester(tu_asm2d)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, tu_asm2d):
+        solver = get_solver()
+        results = solver.solve(tu_asm2d)
+        assert_optimal_termination(results)
