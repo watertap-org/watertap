@@ -42,7 +42,7 @@ from idaes.core.util.exceptions import (
     ConfigurationError,
 )
 
-__author__ = "Alejandro Garciadiego"
+__author__ = "Alejandro Garciadiego, Adam Atia"
 
 
 # Set up logger

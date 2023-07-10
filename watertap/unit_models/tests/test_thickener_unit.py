@@ -60,6 +60,7 @@ from watertap.property_models.activated_sludge.modified_asm2d_properties import 
 )
 from pyomo.util.check_units import assert_units_consistent
 
+__author__ = "Alejandro Garciadiego, Adam Atia"
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
