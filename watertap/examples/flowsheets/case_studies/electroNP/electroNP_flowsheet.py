@@ -17,8 +17,6 @@ from pyomo.environ import (
     value,
     assert_optimal_termination,
     units as pyunits,
-    Objective,
-    SolverFactory,
 )
 from pyomo.network import Arc
 from idaes.core import (
