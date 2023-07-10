@@ -21,9 +21,18 @@ Water Research, 95, pp.370-382.
 """
 
 import pytest
-from pyomo.environ import ConcreteModel, value, assert_optimal_termination, Param
+from pyomo.environ import (
+    ConcreteModel,
+    value,
+    assert_optimal_termination,
+    Param,
+    Objective,
+    SolverFactory,
+)
 
 from idaes.core import FlowsheetBlock
+from idaes.core.util.model_diagnostics import DegeneracyHunter
+import idaes.core.util.scaling as iscale
 
 from pyomo.environ import units
 
@@ -161,7 +170,28 @@ class TestAsm2dAdm1(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, asmadm):
-        # TODO: Add test ensuring param values here
+        assert isinstance(asmadm.fs.unit.f_sI_xc, Param)
+        assert value(asmadm.fs.unit.f_sI_xc) == 1e-9
+        assert isinstance(asmadm.fs.unit.f_xI_xc, Param)
+        assert value(asmadm.fs.unit.f_xI_xc) == 0.1
+        assert isinstance(asmadm.fs.unit.f_ch_xc, Param)
+        assert value(asmadm.fs.unit.f_ch_xc) == 0.275
+        assert isinstance(asmadm.fs.unit.f_pr_xc, Param)
+        assert value(asmadm.fs.unit.f_pr_xc) == 0.275
+        assert isinstance(asmadm.fs.unit.f_li_xc, Param)
+        assert value(asmadm.fs.unit.f_li_xc) == 0.35
+
+        assert isinstance(asmadm.fs.unit.f_XPHA_Sva, Param)
+        assert value(asmadm.fs.unit.f_XPHA_Sva) == 0.1
+        assert isinstance(asmadm.fs.unit.f_XPHA_Sbu, Param)
+        assert value(asmadm.fs.unit.f_XPHA_Sbu) == 0.1
+        assert isinstance(asmadm.fs.unit.f_XPHA_Spro, Param)
+        assert value(asmadm.fs.unit.f_XPHA_Spro) == 0.4
+        assert isinstance(asmadm.fs.unit.f_XPHA_Sac, Param)
+        assert value(asmadm.fs.unit.f_XPHA_Sac) == 0.4
+
+        assert isinstance(asmadm.fs.unit.C_PHA, Param)
+        assert value(asmadm.fs.unit.C_PHA) == 0.3 / 12
 
         assert hasattr(asmadm.fs.unit, "inlet")
         assert len(asmadm.fs.unit.inlet.vars) == 4
@@ -182,7 +212,7 @@ class TestAsm2dAdm1(object):
         assert number_variables(asmadm) == 251
         assert number_total_constraints(asmadm) == 34
 
-        # TODO: Result of SN2_AS2 being unused - remove?
+        # TODO: Result of SN2_AS2 being unused. Remove? It's also unused in the c-code
         assert number_unused_variables(asmadm.fs.unit) == 1
 
     @pytest.mark.component
@@ -191,14 +221,66 @@ class TestAsm2dAdm1(object):
 
     @pytest.mark.unit
     def test_dof(self, asmadm):
-        print(f"Unused variable set: {unused_variables_set(asmadm.fs.unit)}")
-        assert degrees_of_freedom(asmadm) == 17
+        assert degrees_of_freedom(asmadm) == 0
 
-    # @pytest.mark.solver
-    # @pytest.mark.skipif(solver is None, reason="Solver not available")
-    # @pytest.mark.component
-    # def test_initialize(self, asmadm):
-    #     initialization_tester(asmadm)
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, asmadm):
+        def check_jac(model):
+            jac, jac_scaled, nlp = iscale.constraint_autoscale_large_jac(
+                model, min_scale=1e-8
+            )
+            # cond_number = iscale.jacobian_cond(model, jac=jac_scaled)  # / 1e10
+            # print("--------------------------")
+            print("Extreme Jacobian entries:")
+            extreme_entries = iscale.extreme_jacobian_entries(
+                model, jac=jac_scaled, zero=1e-20, large=10
+            )
+            extreme_entries = sorted(extreme_entries, key=lambda x: x[0], reverse=True)
+
+            print("EXTREME_ENTRIES")
+            print(f"\nThere are {len(extreme_entries)} extreme Jacobian entries")
+            for i in extreme_entries:
+                print(i[0], i[1], i[2])
+
+            print("--------------------------")
+            print("Extreme Jacobian columns:")
+            extreme_cols = iscale.extreme_jacobian_columns(model, jac=jac_scaled)
+            for val, var in extreme_cols:
+                print(val, var.name)
+            print("------------------------")
+            print("Extreme Jacobian rows:")
+            extreme_rows = iscale.extreme_jacobian_rows(model, jac=jac_scaled)
+            for val, con in extreme_rows:
+                print(val, con.name)
+
+        check_jac(asmadm)
+
+        asmadm.obj = Objective(expr=0)
+
+        # initial point
+        solver.options["max_iter"] = 0
+        solver.solve(asmadm, tee=False)
+        dh = DegeneracyHunter(asmadm, solver=SolverFactory("cbc"))
+        dh.check_residuals(tol=1e-8)
+        dh.check_variable_bounds(tol=1e-8)
+
+        # solved model
+        solver.options["max_iter"] = 10000
+        solver.solve(asmadm, tee=False)
+        badly_scaled_var_list = iscale.badly_scaled_var_generator(
+            asmadm, large=1e1, small=1e-1
+        )
+        for x in badly_scaled_var_list:
+            print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+        dh.check_residuals(tol=1e-8)
+        dh.check_variable_bounds(tol=1e-8)
+        dh.check_rank_equality_constraints(dense=True)
+        ds = dh.find_candidate_equations(verbose=False, tee=False)
+        ids = dh.find_irreducible_degenerate_sets(verbose=False)
+
+        initialization_tester(asmadm)
 
 
 #     @pytest.mark.solver
