@@ -15,7 +15,7 @@ import numpy
 from concurrent import futures
 
 from watertap.tools.parallel.results import LocalResults
-from watertap.tools.parallel.parallel_manager import ParallelManager, run_sweep
+from watertap.tools.parallel.parallel_manager import build_and_execute, ParallelManager
 
 
 class ConcurrentFuturesParallelManager(ParallelManager):
@@ -48,21 +48,20 @@ class ConcurrentFuturesParallelManager(ParallelManager):
 
     def scatter(
         self,
-        param_sweep_instance,
-        common_sweep_args,
-        rebuild_common_sweep_args_fn,
-        rebuild_common_sweep_args_kwargs,
-        all_parameter_combos,
+        do_build,
+        do_build_kwargs,
+        do_execute,
+        all_parameters,
     ):
 
-        # constrain the number of child processes to the number of unique parameter combinations to be run
+        # constrain the number of child processes to the number of unique values to be run
         self.actual_number_of_subprocesses = min(
-            self.max_number_of_subprocesses, len(all_parameter_combos)
+            self.max_number_of_subprocesses, len(all_parameters)
         )
 
         # split the parameters into chunks, one for each child process
-        divided_combo_array = numpy.array_split(
-            all_parameter_combos, self.actual_number_of_subprocesses
+        divided_parameters = numpy.array_split(
+            all_parameters, self.actual_number_of_subprocesses
         )
 
         # create an executor and kick off the child processes that will perform the computation
@@ -71,26 +70,25 @@ class ConcurrentFuturesParallelManager(ParallelManager):
         )
 
         for i in range(self.actual_number_of_subprocesses):
-            local_params = divided_combo_array[i]
+            local_parameters = divided_parameters[i]
             # save the mapping of future -> (process number, params that it's running)
             self.running_futures[
                 self.executor.submit(
-                    run_sweep,
-                    param_sweep_instance,
-                    common_sweep_args,
-                    rebuild_common_sweep_args_fn,
-                    rebuild_common_sweep_args_kwargs,
-                    local_params,
+                    build_and_execute,
+                    do_build,
+                    do_build_kwargs,
+                    do_execute,
+                    local_parameters,
                 )
-            ] = (i, local_params)
+            ] = (i, local_parameters)
 
     def gather(self):
         results = []
         try:
             execution_results = futures.wait(self.running_futures.keys())
             for future in execution_results.done:
-                process_number, params = self.running_futures[future]
-                results.append(LocalResults(process_number, params, future.result()))
+                process_number, values = self.running_futures[future]
+                results.append(LocalResults(process_number, values, future.result()))
 
             if len(execution_results.not_done) > 0:
                 print(

@@ -13,7 +13,7 @@
 import numpy
 
 from watertap.tools.parallel.results import LocalResults
-from watertap.tools.parallel.parallel_manager import ParallelManager, run_sweep
+from watertap.tools.parallel.parallel_manager import build_and_execute, ParallelManager
 
 
 class MPIParallelManager(ParallelManager):
@@ -47,30 +47,26 @@ class MPIParallelManager(ParallelManager):
 
     def scatter(
         self,
-        param_sweep_instance,
-        common_sweep_args,
-        rebuild_common_sweep_args_fn,
-        rebuild_common_sweep_args_kwargs,
-        all_parameter_combos,
+        do_build,
+        do_build_kwargs,
+        do_execute,
+        all_parameters,
     ):
 
-        # Split the total list of combinations into NUM_PROCS chunks,
+        # Split the total list of values into NUM_PROCS chunks,
         # one per each of the MPI ranks
-        divided_combo_array = numpy.array_split(all_parameter_combos, self.num_procs)
+        divided_parameters = numpy.array_split(all_parameters, self.num_procs)
 
         # The current process's portion of the total workload
-        local_combo_array = divided_combo_array[self.rank]
+        local_parameters = divided_parameters[self.rank]
 
+        results = build_and_execute(
+            do_build, do_build_kwargs, do_execute, local_parameters
+        )
         self.results = LocalResults(
             self.get_rank(),
-            local_combo_array,
-            run_sweep(
-                param_sweep_instance,
-                common_sweep_args,
-                rebuild_common_sweep_args_fn,
-                rebuild_common_sweep_args_kwargs,
-                local_combo_array,
-            ),
+            local_parameters,
+            results,
         )
 
     def gather(self):

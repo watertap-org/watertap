@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from watertap.tools.parallel.parallel_manager import ParallelManager, run_sweep
+from watertap.tools.parallel.parallel_manager import build_and_execute, ParallelManager
 from watertap.tools.parallel.results import LocalResults
 
 
@@ -35,22 +35,16 @@ class SingleProcessParallelManager(ParallelManager):
 
     def scatter(
         self,
-        param_sweep_obj,
-        common_sweep_args,
-        rebuild_common_sweep_args_fn,
-        rebuild_common_sweep_args_kwargs,
-        all_parameter_combos,
+        do_build,
+        do_build_kwargs,
+        do_execute,
+        all_parameters,
     ):
+
         self.results = LocalResults(
             self.ROOT_PROCESS_RANK,
-            all_parameter_combos,
-            run_sweep(
-                param_sweep_obj,
-                common_sweep_args,
-                rebuild_common_sweep_args_fn,
-                rebuild_common_sweep_args_kwargs,
-                all_parameter_combos,
-            ),
+            all_parameters,
+            build_and_execute(do_build, do_build_kwargs, do_execute, all_parameters),
         )
 
     def gather(self):

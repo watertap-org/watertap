@@ -256,7 +256,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         _, differential_sweep_output_dict = diff_ps.parameter_sweep(
             model,
             diff_sweep_param_dict,
-            combined_outputs=self.differential_outputs,
+            build_outputs=self.differential_outputs,
             num_samples=self.config.num_diff_samples,
             seed=self.seed,
         )
@@ -334,7 +334,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         # Check if the outputs have the name attribute. If not, assign one.
         if outputs is not None:
-            self._assign_variable_names(model, outputs)
+            self.assign_variable_names(model, outputs)
 
         # Create a dictionary to store all the differential ps_objects
         self.diff_ps_dict = {}

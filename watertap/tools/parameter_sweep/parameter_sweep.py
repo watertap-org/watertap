@@ -21,6 +21,7 @@ from idaes.core.solvers import get_solver
 
 from idaes.core.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet, ComponentMap
+from pyomo.common.deprecation import deprecation_warning
 from pyomo.common.tee import capture_output
 from pyomo.common.config import ConfigValue
 from pyomo.common.modeling import unique_component_name
@@ -185,7 +186,7 @@ class _ParameterSweepBase(ABC):
         )
 
     @staticmethod
-    def _assign_variable_names(model, outputs):
+    def assign_variable_names(model, outputs):
 
         # Only assign output variable names to unassigned outputs
         exprs = pyo.Expression(pyo.Any)
@@ -657,6 +658,34 @@ class ParameterSweep(_ParameterSweepBase):
 
     CONFIG = _ParameterSweepBase.CONFIG()
 
+    @classmethod
+    def remove_unpicklable_state(cls, parameter_sweep_instance):
+        """
+        Remove and return any state from the ParameterSweep object that cannot be
+        pickled, to make the instance picklable. Needed in order to use the
+        ConcurrentFuturesParallelManager.
+        """
+        saved_state = {
+            "parallel_manager": parameter_sweep_instance.parallel_manager,
+            "comm": parameter_sweep_instance.comm,
+            "writer": parameter_sweep_instance.writer,
+        }
+
+        parameter_sweep_instance.parallel_manager = None
+        parameter_sweep_instance.comm = None
+        parameter_sweep_instance.writer = None
+        return saved_state
+
+    @classmethod
+    def restore_unpicklable_state(cls, parameter_sweep_instance, state):
+        """
+        Restore a collection of saved state that was removed in order to pickle
+        the ParameterSweep object.
+        """
+        parameter_sweep_instance.parallel_manager = state.get("parallel_manager", None)
+        parameter_sweep_instance.comm = state.get("comm", None)
+        parameter_sweep_instance.writer = state.get("writer", None)
+
     """
     Combine all of the results retrieved from calling gather().
     - all_results is a list of Result objects, each representing the 
@@ -725,10 +754,12 @@ class ParameterSweep(_ParameterSweepBase):
     """
     Use the embedded ParallelManager to fan out and then back in the results.
     Args:
-    - common_sweep_args: a list of parameters that should be passed into every run
-    - rebuild_common_sweep_args_fn: an optional function that will be used by each
-    subprocess to rebuild the common sweep args.
-    - rebuild_common_sweep_args_kwargs: kwargs for the rebuild_common_sweep_args_fn.
+    - build_model: a function for building the flowsheet model
+    - build_model_kwargs: any keyword args necessary for the build_model function
+    - build_sweep_params: a function for building the sweep parameters
+    - build_sweep_params_kwargs: any keyword args necessary for the build_sweep_params
+    function
+    - build_outputs: a function for building the outputs dictionary
     - all_parameter_combinations: a list where each element represents the parameters
     for a single local run
     Returns:
@@ -737,71 +768,103 @@ class ParameterSweep(_ParameterSweepBase):
 
     def run_scatter_gather(
         self,
-        common_sweep_args,
-        rebuild_common_sweep_args_fn,
-        rebuild_common_sweep_args_kwargs,
+        build_model,
+        build_model_kwargs,
+        build_sweep_params,
+        build_sweep_params_kwargs,
+        build_outputs,
         all_parameter_combinations,
     ):
 
         # save a reference to the parallel manager since it will be removed
         # along with the other unpicklable state
         parallel_manager = self.parallel_manager
-        saved_state = ParallelManager.remove_unpicklable_state(self)
+        saved_state = ParameterSweep.remove_unpicklable_state(self)
 
-        # scatter out the computation
+        do_build_kwargs = {
+            "param_sweep_instance": self,
+            "build_model": build_model,
+            "build_model_kwargs": build_model_kwargs,
+            "build_sweep_params": build_sweep_params,
+            "build_sweep_params_kwargs": build_sweep_params_kwargs,
+            "build_outputs": build_outputs,
+        }
+
         parallel_manager.scatter(
-            self,
-            common_sweep_args,
-            rebuild_common_sweep_args_fn,
-            rebuild_common_sweep_args_kwargs,
+            do_build,
+            do_build_kwargs,
+            do_execute,
             all_parameter_combinations,
         )
 
         # gather the results and combine them into the format we want
         all_results = parallel_manager.gather()
-        ParallelManager.restore_unpicklable_state(self, saved_state)
+        ParameterSweep.restore_unpicklable_state(self, saved_state)
 
         return all_results
 
     def parameter_sweep(
         self,
-        model,
-        sweep_params,
-        combined_outputs=None,
+        build_model,
+        build_sweep_params,
+        build_outputs=None,
         num_samples=None,
         seed=None,
-        rebuild_common_sweep_args_fn=None,
-        rebuild_common_sweep_args_kwargs=None,
+        build_model_kwargs=None,
+        build_sweep_params_kwargs=None,
     ):
 
-        # Convert sweep_params to LinearSamples
+        build_model_kwargs = (
+            build_model_kwargs if build_model_kwargs is not None else dict()
+        )
+        build_sweep_params_kwargs = (
+            build_sweep_params_kwargs
+            if build_sweep_params_kwargs is not None
+            else dict()
+        )
+
+        if not callable(build_model):
+            _model = build_model
+            build_model = lambda: _model
+            deprecation_warning(
+                "Passing a model directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+
+        if not callable(build_sweep_params):
+            _sweep_params = build_sweep_params
+            build_sweep_params = lambda model: _sweep_params
+            deprecation_warning(
+                "Passing sweep params directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+
+        if not callable(build_outputs):
+            _combined_outputs = build_outputs
+            build_outputs = lambda model, sweep_params: _combined_outputs
+            deprecation_warning(
+                "Passing the output dict directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+
+        # create the list of all combinations - needed for some aspects of scattering
+        model = build_model(**build_model_kwargs)
+        sweep_params = build_sweep_params(model, **build_sweep_params_kwargs)
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
-
-        # Set the seed before sampling
         np.random.seed(seed)
-
-        # build the list of all parameters that need to be run as part of the sweep
         all_parameter_combinations = self._build_combinations(
             sweep_params, sampling_type, num_samples
         )
 
-        # Check if the outputs have the name attribute. If not, assign one.
-        if combined_outputs is not None:
-            self._assign_variable_names(model, combined_outputs)
-
-        # the common arguments that each process will use when running the sweep function
-        common_sweep_fn_args = [model, sweep_params, combined_outputs]
-
-        # we were provided a function for rebuilding the common sweep args; remove
-        # our existing ones, since each process will recreate them on the fly using
-        # the function
-        if rebuild_common_sweep_args_fn is not None:
-            common_sweep_fn_args = []
-
         all_results = self.run_scatter_gather(
-            common_sweep_fn_args,
-            rebuild_common_sweep_args_fn,
-            rebuild_common_sweep_args_kwargs,
+            build_model,
+            build_model_kwargs,
+            build_sweep_params,
+            build_sweep_params_kwargs,
+            build_outputs,
             all_parameter_combinations,
         )
 
@@ -926,7 +989,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         # Check if the outputs have the name attribute. If not, assign one.
         if outputs is not None:
-            self._assign_variable_names(model, outputs)
+            self.assign_variable_names(model, outputs)
 
         n_samples_remaining = req_num_samples
         num_total_samples = req_num_samples
@@ -1047,3 +1110,52 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         )
 
         return global_save_data
+
+
+def do_build(
+    param_sweep_instance,
+    build_model,
+    build_model_kwargs,
+    build_sweep_params,
+    build_sweep_params_kwargs,
+    build_outputs,
+):
+    """
+    Used to pass into the parallel manager to build the parameters necessary
+    for the sweep function. Defined at the top level so it's picklable.
+    """
+
+    model = build_model(**build_model_kwargs)
+    sweep_params = build_sweep_params(model, **build_sweep_params_kwargs)
+    outputs = build_outputs(model, sweep_params)
+
+    sweep_params, sampling_type = param_sweep_instance._process_sweep_params(
+        sweep_params
+    )
+
+    if outputs is not None:
+        param_sweep_instance.assign_variable_names(model, outputs)
+
+    return [param_sweep_instance, model, sweep_params, outputs]
+
+
+def do_execute(
+    local_combo_array,
+    param_sweep_instance,
+    model,
+    sweep_params,
+    outputs,
+):
+    """
+    Used to pass into the parallel manager in order to execute the sweep
+    for a set of local values. Defined at the top level so it's picklable.
+    """
+
+    if param_sweep_instance.config.custom_do_param_sweep is not None:
+        return param_sweep_instance.custom_do_param_sweep(
+            model, sweep_params, outputs, local_combo_array
+        )
+
+    return param_sweep_instance._do_param_sweep(
+        model, sweep_params, outputs, local_combo_array
+    )

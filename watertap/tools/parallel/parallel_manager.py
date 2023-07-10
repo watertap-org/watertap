@@ -17,34 +17,6 @@ class ParallelManager(ABC):
 
     ROOT_PROCESS_RANK = 0
 
-    @classmethod
-    def remove_unpicklable_state(cls, parameter_sweep_instance):
-        """
-        Remove and return any state from the ParameterSweep object that cannot be
-        pickled, to make the instance picklable. Needed in order to use the
-        ConcurrentFuturesParallelManager.
-        """
-        saved_state = {
-            "parallel_manager": parameter_sweep_instance.parallel_manager,
-            "comm": parameter_sweep_instance.comm,
-            "writer": parameter_sweep_instance.writer,
-        }
-
-        parameter_sweep_instance.parallel_manager = None
-        parameter_sweep_instance.comm = None
-        parameter_sweep_instance.writer = None
-        return saved_state
-
-    @classmethod
-    def restore_unpicklable_state(cls, parameter_sweep_instance, state):
-        """
-        Restore a collection of saved state that was removed in order to pickle
-        the ParameterSweep object.
-        """
-        parameter_sweep_instance.parallel_manager = state.get("parallel_manager", None)
-        parameter_sweep_instance.comm = state.get("comm", None)
-        parameter_sweep_instance.writer = state.get("writer", None)
-
     @abstractmethod
     def is_root_process(self):
         """
@@ -85,17 +57,24 @@ class ParallelManager(ABC):
 
     def scatter(
         self,
-        param_sweep_instance,
-        common_sweep_args,
-        rebuild_common_sweep_args_fn,
-        rebuild_common_sweep_args_kwargs,
-        all_parameter_combos,
+        do_build,
+        do_build_kwargs,
+        do_execute,
+        all_parameters,
     ):
         """
-        Scatter a function out to a set of child processes, to be run for a list of parameters.
-        - param_sweep_instance: a reference to the ParameterSweep object
-        - common_params: a list of the parameters that every processes' invocation of the sweep should receive.
-        - all_parameter_combos: a list, where each item represents the parameters for a single run.
+        Scatter the specified execution out, as defined by the implementation's parallelism, for
+        a list of parameters.
+        Args:
+        - do_build: a function that builds the arguments necessary for the execution function. expected to
+        return a list that will be exploded and passed into the do_execute function as arguments.
+        - do_build_kwargs: a dictionary of keyword arguments for the do_build function
+        - do_execute: the execution function. expected to take in the list of local parameters
+        as its first argument. any arguments after that should match the list returned by the
+        do_build function.
+        - all_parameters: a list of all parameters to be run. included so that
+        different implementations of the parallel manager can make decisions about splitting and
+        parallelization.
         """
         raise NotImplementedError
 
@@ -103,7 +82,8 @@ class ParallelManager(ABC):
         """
         Gather the results of the computation that was kicked off via a previous scatter.
         Returns:
-        - a list of LocalResults, representing the results for each process
+        - a list of LocalResults, representing the results for each process. each result will
+        be the return value of the do_execute function from scatter() for one process.
         """
         raise NotImplementedError
 
@@ -115,34 +95,14 @@ class ParallelManager(ABC):
         raise NotImplementedError
 
 
-def run_sweep(
-    param_sweep_instance,
-    common_sweep_args,
-    rebuild_common_sweep_args_fn,
-    rebuild_common_sweep_args_kwargs,
-    local_combo_array,
-):
+def build_and_execute(do_build, do_build_kwargs, do_execute, local_parameters):
     """
-    Run the parameter sweep object's sweep function. Implemented as a top-level function in
-    this module so that it is picklable for the ConcurrentFuturesParallelManager.
-    Parameters are:
-    - common_sweep_args: the parameters that all processes' invocations of the sweep function need
-    - rebuild_common_sweep_args_fn: an optional function that will be used to rebuild the common sweep args.
-    - rebuild_common_sweep_args_kwargs: kwargs for the rebuild_common_sweep_args_fn.
-    - local_combo_array: the list of combinations to be run on the current processes
+    Entrypoint for implementations of the parallel manager to use for running the
+    build and execute functions. Defined at the top level so that it's picklable.
+
+    For a description of the first three arguments, see the scatter() function above.
+    The fourth argument is the list of local parameters that should be run by this process.
     """
-
-    # if we've been directed to rebuild the sweep args, do so
-    if rebuild_common_sweep_args_fn is not None:
-        if rebuild_common_sweep_args_kwargs is None:
-            rebuild_common_sweep_args_kwargs = dict()
-        common_sweep_args = rebuild_common_sweep_args_fn(
-            **rebuild_common_sweep_args_kwargs
-        )
-
-    if param_sweep_instance.config.custom_do_param_sweep is not None:
-        return param_sweep_instance.custom_do_param_sweep(
-            *common_sweep_args, local_combo_array
-        )
-
-    return param_sweep_instance._do_param_sweep(*common_sweep_args, local_combo_array)
+    execute_args = do_build(**do_build_kwargs)
+    results = do_execute(local_parameters, *execute_args)
+    return results

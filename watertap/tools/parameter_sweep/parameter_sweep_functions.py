@@ -38,8 +38,8 @@ def parameter_sweep(
     num_samples=None,
     seed=None,
     number_of_subprocesses=None,
-    rebuild_sweep_args_fn=None,
-    rebuild_sweep_args_kwargs=None,
+    build_model_kwargs=None,
+    build_sweep_params_kwargs=None,
 ):
 
     """
@@ -174,11 +174,11 @@ def parameter_sweep(
     return ps.parameter_sweep(
         model,
         sweep_params,
-        combined_outputs=outputs,
+        build_outputs=outputs,
         num_samples=num_samples,
         seed=seed,
-        rebuild_common_sweep_args_fn=rebuild_sweep_args_fn,
-        rebuild_common_sweep_args_kwargs=rebuild_sweep_args_kwargs,
+        build_model_kwargs=build_model_kwargs,
+        build_sweep_params_kwargs=build_sweep_params_kwargs,
     )
 
 

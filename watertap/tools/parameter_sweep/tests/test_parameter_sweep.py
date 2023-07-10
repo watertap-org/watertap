@@ -27,34 +27,59 @@ import watertap.tools.MPI as MPI
 # -----------------------------------------------------------------------------
 
 
+def build_model():
+    m = pyo.ConcreteModel()
+    m.fs = fs = pyo.Block()
+
+    fs.input = pyo.Var(["a", "b"], within=pyo.UnitInterval, initialize=0.5)
+    fs.output = pyo.Var(["c", "d"], within=pyo.UnitInterval, initialize=0.5)
+
+    fs.slack = pyo.Var(["ab_slack", "cd_slack"], bounds=(0, 0), initialize=0.0)
+    fs.slack_penalty = pyo.Param(default=1000.0, mutable=True, within=pyo.PositiveReals)
+
+    fs.ab_constr = pyo.Constraint(
+        expr=(fs.output["c"] + fs.slack["ab_slack"] == 2 * fs.input["a"])
+    )
+    fs.cd_constr = pyo.Constraint(
+        expr=(fs.output["d"] + fs.slack["cd_slack"] == 3 * fs.input["b"])
+    )
+
+    fs.performance = pyo.Expression(expr=pyo.summation(fs.output))
+
+    m.objective = pyo.Objective(
+        expr=m.fs.performance - m.fs.slack_penalty * pyo.summation(m.fs.slack),
+        sense=pyo.maximize,
+    )
+    return m
+
+
+def build_model_for_tps():
+    model = build_model()
+    model.fs.slack_penalty = 1000.0
+    model.fs.slack.setub(0)
+    return model
+
+
+def build_sweep_params_for_tps(model):
+    A = model.fs.input["a"]
+    B = model.fs.input["b"]
+    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+    return sweep_params
+
+
+def build_outputs_for_tps(model, sweep_params):
+    outputs = {
+        "output_c": model.fs.output["c"],
+        "output_d": model.fs.output["d"],
+        "performance": model.fs.performance,
+    }
+    return outputs
+
+
 class TestParameterSweep:
     @pytest.fixture(scope="class")
     def model(self):
-        m = pyo.ConcreteModel()
-        m.fs = fs = pyo.Block()
-
-        fs.input = pyo.Var(["a", "b"], within=pyo.UnitInterval, initialize=0.5)
-        fs.output = pyo.Var(["c", "d"], within=pyo.UnitInterval, initialize=0.5)
-
-        fs.slack = pyo.Var(["ab_slack", "cd_slack"], bounds=(0, 0), initialize=0.0)
-        fs.slack_penalty = pyo.Param(
-            default=1000.0, mutable=True, within=pyo.PositiveReals
-        )
-
-        fs.ab_constr = pyo.Constraint(
-            expr=(fs.output["c"] + fs.slack["ab_slack"] == 2 * fs.input["a"])
-        )
-        fs.cd_constr = pyo.Constraint(
-            expr=(fs.output["d"] + fs.slack["cd_slack"] == 3 * fs.input["b"])
-        )
-
-        fs.performance = pyo.Expression(expr=pyo.summation(fs.output))
-
-        m.objective = pyo.Objective(
-            expr=m.fs.performance - m.fs.slack_penalty * pyo.summation(m.fs.slack),
-            sense=pyo.maximize,
-        )
-        return m
+        return build_model()
 
     @pytest.mark.unit
     def test_single_index_unrolled(self):
@@ -557,24 +582,11 @@ class TestParameterSweep:
             number_of_subprocesses=number_of_subprocesses,
         )
 
-        m = model
-        m.fs.slack_penalty = 1000.0
-        m.fs.slack.setub(0)
-
-        A = m.fs.input["a"]
-        B = m.fs.input["b"]
-        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-        outputs = {
-            "output_c": m.fs.output["c"],
-            "output_d": m.fs.output["d"],
-            "performance": m.fs.performance,
-        }
-
         # Call the parameter_sweep function
         _ = ps.parameter_sweep(
-            m,
-            sweep_params,
-            combined_outputs=outputs,
+            build_model_for_tps,
+            build_sweep_params_for_tps,
+            build_outputs=build_outputs_for_tps,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -741,7 +753,7 @@ class TestParameterSweep:
         ps.parameter_sweep(
             m,
             sweep_params,
-            combined_outputs=outputs,
+            build_outputs=outputs,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -874,7 +886,7 @@ class TestParameterSweep:
             _ = ps.parameter_sweep(
                 m,
                 sweep_params,
-                combined_outputs=None,
+                build_outputs=None,
             )
 
     @pytest.mark.component
@@ -908,7 +920,7 @@ class TestParameterSweep:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            combined_outputs=None,
+            build_outputs=None,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1131,7 +1143,7 @@ class TestParameterSweep:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            combined_outputs=None,
+            build_outputs=None,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1319,7 +1331,7 @@ class TestParameterSweep:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            combined_outputs=None,
+            build_outputs=None,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1534,7 +1546,7 @@ class TestParameterSweep:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                combined_outputs=None,
+                build_outputs=None,
             )
 
     @pytest.mark.component
@@ -1558,7 +1570,7 @@ class TestParameterSweep:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                combined_outputs=None,
+                build_outputs=None,
             )
 
     @pytest.mark.component
@@ -1586,7 +1598,7 @@ class TestParameterSweep:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                combined_outputs=None,
+                build_outputs=None,
             )
 
     @pytest.mark.component
@@ -1630,7 +1642,7 @@ class TestParameterSweep:
         ps.parameter_sweep(
             m,
             sweep_params,
-            combined_outputs=outputs,
+            build_outputs=outputs,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be

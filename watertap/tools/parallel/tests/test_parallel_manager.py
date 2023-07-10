@@ -18,72 +18,58 @@ from watertap.tools.parallel.concurrent_futures_parallel_manager import (
 from watertap.tools.parallel.single_process_parallel_manager import (
     SingleProcessParallelManager,
 )
-from watertap.tools.parameter_sweep import ParameterSweep
 
 
-# top-level so it's picklable - used as the common arg rebuilding function in
-# test_rebuilding_common_sweep_args
-def build_common_args(base=100):
-    return [base]
+def do_build(base=10):
+    return [base, -1]
 
 
-class MockParamSweep(ParameterSweep):
-    """
-    Mock implementation of the ParameterSweep class, used for testing.
-    """
-
-    SWEEP_COMMON_PARAMS = [100]
-    SWEEP_PARAMS = [1, 2, 3, 4, 5, 6]
-    EXPECTED_SWEEP_RESULTS = [101, 104, 109, 116, 125, 136]
-
-    def _do_param_sweep(self, common_param, local_parameters):
-        """
-        Simple implementation intended to be run for each local worker. Goal is to
-        remove the bookkeeping complexity and dependencies of the real class but
-        still return a result that can be verified.
-        """
-        return [common_param + param**2 for param in local_parameters]
+def do_execute(local_parameters, base, multiplier):
+    return [(base + p) * multiplier for p in local_parameters]
 
 
 class TestParallelManager:
     @pytest.mark.component
-    def test_single_process_scatter_gather(self):
+    def test_single_process(self):
 
-        param_sweep_instance = MockParamSweep(
-            parallel_manager_class=SingleProcessParallelManager
-        )
+        all_parameters = [1, 2, 3, 4]
 
-        execution_results = param_sweep_instance.run_scatter_gather(
-            MockParamSweep.SWEEP_COMMON_PARAMS,
-            None,
-            None,
-            MockParamSweep.SWEEP_PARAMS,
-        )
+        parallel_manager = SingleProcessParallelManager()
+        parallel_manager.scatter(do_build, dict(), do_execute, all_parameters)
+        execution_results = parallel_manager.gather()
 
         # there should be no fan-out; all results should come back from a single node
         assert len(execution_results) == 1
-        assert execution_results[0].parameters == MockParamSweep.SWEEP_PARAMS
-        assert execution_results[0].results == MockParamSweep.EXPECTED_SWEEP_RESULTS
+        assert execution_results[0].parameters == all_parameters
+        assert execution_results[0].results == [-11, -12, -13, -14]
+
+    @pytest.mark.component
+    def test_single_process_with_build_kwargs(self):
+
+        all_parameters = [1, 2, 3, 4]
+
+        parallel_manager = SingleProcessParallelManager()
+        parallel_manager.scatter(do_build, {"base": 100}, do_execute, all_parameters)
+        execution_results = parallel_manager.gather()
+
+        # there should be no fan-out; all results should come back from a single node
+        assert len(execution_results) == 1
+        assert execution_results[0].parameters == all_parameters
+        assert execution_results[0].results == [-101, -102, -103, -104]
 
     @pytest.mark.component
     @pytest.mark.parametrize("number_of_subprocesses", [1, 2, 3, 4, 8, 16])
-    def test_concurrent_futures_scatter_gather(self, number_of_subprocesses):
-        param_sweep_instance = MockParamSweep(
-            parallel_manager_class=ConcurrentFuturesParallelManager,
-            number_of_subprocesses=number_of_subprocesses,
-        )
+    def test_multiple_subprocesses(self, number_of_subprocesses):
 
-        execution_results = param_sweep_instance.run_scatter_gather(
-            MockParamSweep.SWEEP_COMMON_PARAMS,
-            None,
-            None,
-            MockParamSweep.SWEEP_PARAMS,
-        )
+        all_parameters = [1, 2, 3, 4, 5]
+
+        parallel_manager = ConcurrentFuturesParallelManager(number_of_subprocesses)
 
         # the parallel manager shouldn't kick off more subprocesses than can do work
-        number_of_subprocesses_used = min(
-            number_of_subprocesses, len(MockParamSweep.SWEEP_PARAMS)
-        )
+        number_of_subprocesses_used = min(number_of_subprocesses, len(all_parameters))
+
+        parallel_manager.scatter(do_build, {"base": 100}, do_execute, all_parameters)
+        execution_results = parallel_manager.gather()
 
         # there should be a set of local results for each subprocess
         assert len(execution_results) == number_of_subprocesses_used
@@ -97,39 +83,4 @@ class TestParallelManager:
 
         # verify that the full list of results matches the expected
         all_results = [r for result in execution_results for r in result.results]
-        assert all_results == MockParamSweep.EXPECTED_SWEEP_RESULTS
-
-    @pytest.mark.component
-    @pytest.mark.parametrize("number_of_subprocesses", [1, 2])
-    @pytest.mark.parametrize(
-        "parallel_manager_class",
-        [SingleProcessParallelManager, ConcurrentFuturesParallelManager],
-    )
-    def test_rebuilding_common_sweep_args(
-        self, number_of_subprocesses, parallel_manager_class
-    ):
-
-        # don't run unnecessary tests
-        if (
-            number_of_subprocesses > 1
-            and parallel_manager_class is SingleProcessParallelManager
-        ):
-            return
-
-        # number_of_subprocesses will be ignored when the class is the SingleProcessParallelManager
-        param_sweep_instance = MockParamSweep(
-            parallel_manager_class=parallel_manager_class,
-            number_of_subprocesses=number_of_subprocesses,
-        )
-
-        execution_results = param_sweep_instance.run_scatter_gather(
-            MockParamSweep.SWEEP_COMMON_PARAMS,
-            build_common_args,
-            {"base": 20},
-            MockParamSweep.SWEEP_PARAMS,
-        )
-
-        # verify that the full list of results matches the expected
-        all_results = [r for result in execution_results for r in result.results]
-        expected_results = [21, 24, 29, 36, 45, 56]
-        assert all_results == expected_results
+        assert all_results == [-101, -102, -103, -104, -105]
