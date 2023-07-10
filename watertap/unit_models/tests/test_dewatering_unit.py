@@ -81,7 +81,6 @@ def test_config():
     assert SplittingType.componentFlow is m.fs.unit.config.split_basis
 
 
-
 @pytest.mark.unit
 def test_list_error():
     m = ConcreteModel()

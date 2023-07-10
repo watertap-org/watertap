@@ -89,7 +89,6 @@ def test_config():
     assert SplittingType.componentFlow is m.fs.unit.config.split_basis
 
 
-
 @pytest.mark.unit
 def test_list_error():
     m = ConcreteModel()
@@ -294,13 +293,14 @@ class TestThickASM2d(object):
 
         m.fs.props = ASM2dParameterBlock()
 
-        m.fs.unit = Thickener(property_package=m.fs.props,
-                              activated_sludge_model=ActivatedSludgeModelType.ASM2D)
-
+        m.fs.unit = Thickener(
+            property_package=m.fs.props,
+            activated_sludge_model=ActivatedSludgeModelType.ASM2D,
+        )
 
         # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
         EPS = 1e-8
-        
+
         m.fs.unit.inlet.flow_vol.fix(300 * units.m**3 / units.day)
         m.fs.unit.inlet.temperature.fix(308.15 * units.K)
         m.fs.unit.inlet.pressure.fix(1 * units.atm)
@@ -315,18 +315,23 @@ class TestThickASM2d(object):
         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1695.7695 * units.mg / units.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(68.2975 * units.mg / units.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(1855.5067 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(214.5319 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(
+            214.5319 * units.mg / units.liter
+        )
         m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(63.5316 * units.mg / units.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(2.7381 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(118.3582 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(
+            118.3582 * units.mg / units.liter
+        )
         m.fs.unit.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_TSS"].fix(
+            3525.429 * units.mg / units.liter
+        )
         m.fs.unit.inlet.alkalinity[0].fix(4.6663 * units.mmol / units.liter)
 
         return m
-    
-    
+
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, tu_asm2d):
@@ -418,7 +423,7 @@ class TestThickASM2d(object):
         assert pytest.approx(0.007970701359416384, rel=1e-3) == value(
             tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "S_O2"]
         )
-        assert pytest.approx(0.007895301409926407 , rel=1e-3) == value(
+        assert pytest.approx(0.007895301409926407, rel=1e-3) == value(
             tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "S_PO4"]
         )
         assert pytest.approx(0.0024900686245326892, rel=1e-3) == value(
@@ -463,8 +468,10 @@ class TestThickASM2d(object):
             abs(
                 value(
                     tu_asm2d.fs.unit.inlet.flow_vol[0] * tu_asm2d.fs.props.dens_mass
-                    - tu_asm2d.fs.unit.overflow.flow_vol[0] * tu_asm2d.fs.props.dens_mass
-                    - tu_asm2d.fs.unit.underflow.flow_vol[0] * tu_asm2d.fs.props.dens_mass
+                    - tu_asm2d.fs.unit.overflow.flow_vol[0]
+                    * tu_asm2d.fs.props.dens_mass
+                    - tu_asm2d.fs.unit.underflow.flow_vol[0]
+                    * tu_asm2d.fs.props.dens_mass
                 )
             )
             <= 1e-6

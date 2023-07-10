@@ -95,7 +95,7 @@ class TestParamBlock(object):
                 "X_P",
                 "X_ND",
             ]
-        
+
         for i in model.params.tss_component_set:
             assert i in [
                 "X_I",
@@ -116,6 +116,7 @@ class TestParamBlock(object):
                 "S_ND",
                 "S_ALK",
             ]
+
 
 class TestStateBlock(object):
     @pytest.fixture(scope="class")

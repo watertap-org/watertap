@@ -21,6 +21,7 @@ P. A. Vanrolleghem
 Benchmark Simulation Model no. 2 (BSM2)
 """
 from enum import Enum, auto
+
 # Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
@@ -59,6 +60,7 @@ class ActivatedSludgeModelType(Enum):
     ASM2D = auto()
     modified_ASM2D = auto()
 
+
 @declare_process_block_class("Thickener")
 class ThickenerData(SeparatorData):
     """
@@ -68,13 +70,14 @@ class ThickenerData(SeparatorData):
     CONFIG = SeparatorData.CONFIG()
     CONFIG.outlet_list = ["underflow", "overflow"]
     CONFIG.split_basis = SplittingType.componentFlow
-    
-    CONFIG.declare("activated_sludge_model",
-    ConfigValue(
-        default=ActivatedSludgeModelType.ASM1,
-        domain=In(ActivatedSludgeModelType),
-        description="Activated Sludge Model used with unit",
-        doc="""
+
+    CONFIG.declare(
+        "activated_sludge_model",
+        ConfigValue(
+            default=ActivatedSludgeModelType.ASM1,
+            domain=In(ActivatedSludgeModelType),
+            description="Activated Sludge Model used with unit",
+            doc="""
         Options to account for version of activated sludge model property package.
 
         **default** - ``ActivatedSludgeModelType.ASM1``
@@ -86,8 +89,8 @@ class ThickenerData(SeparatorData):
         "``ActivatedSludgeModelType.ASM2D``", "ASM2D model"
         "``ActivatedSludgeModelType.modified_ASM2D``", "modified ASM2D model for ADM1 compatibility"
     """,
-    ),
-    )   
+        ),
+    )
 
     def build(self):
         """
@@ -127,12 +130,24 @@ class ThickenerData(SeparatorData):
         def TSS(blk, t):
             if self.config.activated_sludge_model == ActivatedSludgeModelType.ASM1:
                 return 0.75 * (
-                    sum(blk.inlet.conc_mass_comp[t, i] for i in blk.config.property_package.tss_component_set)
+                    sum(
+                        blk.inlet.conc_mass_comp[t, i]
+                        for i in blk.config.property_package.tss_component_set
+                    )
                 )
-            elif (self.config.activated_sludge_model == ActivatedSludgeModelType.ASM2D) | (self.config.activated_sludge_model == ActivatedSludgeModelType.modified_ASM2D):
-                return blk.inlet.conc_mass_comp[t, blk.config.property_package.tss_component_set.first()]
+            elif (
+                self.config.activated_sludge_model == ActivatedSludgeModelType.ASM2D
+            ) | (
+                self.config.activated_sludge_model
+                == ActivatedSludgeModelType.modified_ASM2D
+            ):
+                return blk.inlet.conc_mass_comp[
+                    t, blk.config.property_package.tss_component_set.first()
+                ]
             else:
-                raise ConfigurationError("The activated_sludge_model was not specified properly in configuration options.")
+                raise ConfigurationError(
+                    "The activated_sludge_model was not specified properly in configuration options."
+                )
 
         @self.Expression(self.flowsheet().time, doc="Thickening factor")
         def f_thick(blk, t):

@@ -56,7 +56,6 @@ class DewateringData(SeparatorData):
     CONFIG.outlet_list = ["underflow", "overflow"]
     CONFIG.split_basis = SplittingType.componentFlow
 
-
     def build(self):
         """
         Begin building model.
