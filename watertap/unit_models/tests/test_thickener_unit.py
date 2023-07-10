@@ -294,7 +294,8 @@ class TestThickASM2d(object):
 
         m.fs.props = ASM2dParameterBlock()
 
-        m.fs.unit = Thickener(property_package=m.fs.props)
+        m.fs.unit = Thickener(property_package=m.fs.props,
+                              activated_sludge_model=ActivatedSludgeModelType.ASM2D)
 
         m.fs.unit.inlet.flow_vol.fix(300 * units.m**3 / units.day)
         m.fs.unit.inlet.temperature.fix(308.15 * units.K)

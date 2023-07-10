@@ -130,7 +130,7 @@ class ThickenerData(SeparatorData):
                     sum(blk.inlet.conc_mass_comp[t, i] for i in blk.config.property_package.tss_component_set)
                 )
             elif (self.config.activated_sludge_model == ActivatedSludgeModelType.ASM2D) | (self.config.activated_sludge_model == ActivatedSludgeModelType.modified_ASM2D):
-                return blk.inlet.conc_mass_comp[t, blk.config.property_package.tss_component_set[0]]
+                return blk.inlet.conc_mass_comp[t, blk.config.property_package.tss_component_set.first()]
             else:
                 raise ConfigurationError("The activated_sludge_model was not specified properly in configuration options.")
 
