@@ -297,15 +297,12 @@ class TestThickASM2d(object):
         m.fs.unit = Thickener(property_package=m.fs.props,
                               activated_sludge_model=ActivatedSludgeModelType.ASM2D)
 
-        m.fs.unit.inlet.flow_vol.fix(300 * units.m**3 / units.day)
-        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-        m.fs.unit.inlet.pressure.fix(1 * units.atm)
-       
+
         # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
         EPS = 1e-8
         
-        m.fs.unit.inlet.flow_vol.fix(92230 * units.m**3 / units.day)
-        m.fs.unit.inlet.temperature.fix(298.15 * units.K)
+        m.fs.unit.inlet.flow_vol.fix(300 * units.m**3 / units.day)
+        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
         m.fs.unit.inlet.pressure.fix(1 * units.atm)
         m.fs.unit.inlet.conc_mass_comp[0, "S_O2"].fix(7.9707 * units.mg / units.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(29.0603 * units.mg / units.liter)
@@ -324,8 +321,8 @@ class TestThickASM2d(object):
         m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(118.3582 * units.mg / units.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
-
         m.fs.unit.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
+        m.fs.unit.inlet.alkalinity[0].fix(4.6663 * units.mmol / units.liter)
 
         return m
     
@@ -359,7 +356,7 @@ class TestThickASM2d(object):
         assert hasattr(tu_asm2d.fs.unit.overflow, "alkalinity")
 
         assert number_variables(tu_asm2d) == 106
-        assert number_total_constraints(tu_asm2d) == 83
+        assert number_total_constraints(tu_asm2d) == 84
         assert number_unused_variables(tu_asm2d) == 0
 
     @pytest.mark.unit
@@ -385,3 +382,108 @@ class TestThickASM2d(object):
         solver = get_solver()
         results = solver.solve(tu_asm2d)
         assert_optimal_termination(results)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, tu_asm2d):
+        assert pytest.approx(101325.0, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.pressure[0]
+        )
+        assert pytest.approx(308.15, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.temperature[0]
+        )
+        assert pytest.approx(0.00330, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.flow_vol[0]
+        )
+        assert pytest.approx(3.36066764339686e-05, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "S_A"]
+        )
+        assert pytest.approx(0.0004748063808766291, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "S_F"]
+        )
+        assert pytest.approx(0.03, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "S_I"]
+        )
+        assert pytest.approx(0.029060299999999997, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "S_N2"]
+        )
+        assert pytest.approx(0.00802090132578769, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "S_NH4"]
+        )
+        tu_asm2d.fs.unit.overflow.conc_mass_comp.pprint()
+        assert pytest.approx(0.006639502251179597, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "S_NO3"]
+        )
+        assert pytest.approx(0.007970701359416384, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "S_O2"]
+        )
+        assert pytest.approx(0.007895301409926407 , rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "S_PO4"]
+        )
+        assert pytest.approx(0.0024900686245326892, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "X_AUT"]
+        )
+        assert pytest.approx(0.03903683632802943, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "X_H"]
+        )
+        assert pytest.approx(0.03567622602578816, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "X_I"]
+        )
+        assert pytest.approx(0, abs=1e-6) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "X_MeOH"]
+        )
+        assert pytest.approx(0, abs=1e-6) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "X_MeP"]
+        )
+        assert pytest.approx(0.004513405145476244, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "X_PAO"]
+        )
+        assert pytest.approx(5.761182100796471e-05, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "X_PHA"]
+        )
+        assert pytest.approx(0.001336607105435848, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "X_PP"]
+        )
+        assert pytest.approx(0.0014368738054293484, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "X_S"]
+        )
+        assert pytest.approx(0.0741692793990388, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.conc_mass_comp[0, "X_TSS"]
+        )
+        assert pytest.approx(0.004666303573014916, rel=1e-3) == value(
+            tu_asm2d.fs.unit.overflow.alkalinity[0]
+        )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, tu_asm2d):
+        assert (
+            abs(
+                value(
+                    tu_asm2d.fs.unit.inlet.flow_vol[0] * tu_asm2d.fs.props.dens_mass
+                    - tu_asm2d.fs.unit.overflow.flow_vol[0] * tu_asm2d.fs.props.dens_mass
+                    - tu_asm2d.fs.unit.underflow.flow_vol[0] * tu_asm2d.fs.props.dens_mass
+                )
+            )
+            <= 1e-6
+        )
+        for i in tu_asm2d.fs.props.solute_set:
+            assert (
+                abs(
+                    value(
+                        tu_asm2d.fs.unit.inlet.flow_vol[0]
+                        * tu_asm2d.fs.unit.inlet.conc_mass_comp[0, i]
+                        - tu_asm2d.fs.unit.overflow.flow_vol[0]
+                        * tu_asm2d.fs.unit.overflow.conc_mass_comp[0, i]
+                        - tu_asm2d.fs.unit.underflow.flow_vol[0]
+                        * tu_asm2d.fs.unit.underflow.conc_mass_comp[0, i]
+                    )
+                )
+                <= 1e-6
+            )
+
+    @pytest.mark.unit
+    def test_report(self, tu_asm2d):
+        tu_asm2d.fs.unit.report()

@@ -62,7 +62,7 @@ class ActivatedSludgeModelType(Enum):
 @declare_process_block_class("Thickener")
 class ThickenerData(SeparatorData):
     """
-    Thickener unit block for BSM2
+    Thickener unit model for BSM2
     """
 
     CONFIG = SeparatorData.CONFIG()
@@ -113,17 +113,17 @@ class ThickenerData(SeparatorData):
             initialize=0.07,
             units=pyunits.dimensionless,
             mutable=True,
-            doc="Percentage of suspended solids in the underflow",
+            doc="Fraction of suspended solids in the underflow",
         )
 
         self.TSS_rem = Param(
             initialize=0.98,
             units=pyunits.dimensionless,
             mutable=True,
-            doc="Percentage of suspended solids removed",
+            doc="Fraction of suspended solids removed",
         )
 
-        @self.Expression(self.flowsheet().time, doc="Suspended solid concentration")
+        @self.Expression(self.flowsheet().time, doc="Suspended solids concentration")
         def TSS(blk, t):
             if self.config.activated_sludge_model == ActivatedSludgeModelType.ASM1:
                 return 0.75 * (

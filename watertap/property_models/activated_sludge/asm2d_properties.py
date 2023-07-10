@@ -105,7 +105,7 @@ class ASM2dParameterData(PhysicalParameterBlock):
 
         # Create sets for use across ASM models and associated unit models
         self.non_particulate_component_set = pyo.Set(initialize=["S_A", "S_F", "S_I", "S_N2", "S_NH4", "S_NO3", "S_O2", "S_PO4", "S_ALK", "H2O"])
-        self.particulate_component_set = pyo.Set(initialize=["X_AUT", "X_H", "X_I", "X_MeOH", "X_MeP", "X_PAO", "X_PHA", "X_PP", "X_TSS"])
+        self.particulate_component_set = pyo.Set(initialize=["X_AUT", "X_H", "X_I", "X_MeOH", "X_MeP", "X_PAO", "X_PHA", "X_PP", "X_S", "X_TSS"])
         self.tss_component_set = pyo.Set(initialize=["X_TSS"])
 
 
