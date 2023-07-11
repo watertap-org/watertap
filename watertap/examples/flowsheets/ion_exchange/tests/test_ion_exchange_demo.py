@@ -20,6 +20,7 @@ from pyomo.environ import (
     Block,
 )
 from pyomo.network import Port
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
@@ -106,6 +107,8 @@ class TestIXDemo:
 
         assert m.fs.ion_exchange.config.property_package is m.fs.properties
         assert "H2O" in m.fs.properties.component_list
+
+        assert_units_consistent(m)
 
     @pytest.mark.component
     def test_specific_operating_conditions(self, ix_0D):
