@@ -19,8 +19,7 @@ from pyomo.environ import units as pyunits
 
 def set_up_sensitivity(m):
     outputs = {}
-    # optimize_kwargs = {"fail_flag": False}
-    optimize_kwargs = {}
+    optimize_kwargs = {"fail_flag": False}
     opt_function = electroNP_flowsheet.solve
 
     # create outputs
@@ -30,7 +29,9 @@ def set_up_sensitivity(m):
         m.fs.costing.aggregate_flow_costs["electricity"] / m.fs.AD.inlet.flow_vol[0],
         to_units=pyunits.USD_2018 / pyunits.m**3,
     )
-    outputs["S_PO4 Concentration, treated effluent stream"] = m.fs.electroNP.treated.conc_mass_comp[0, "S_PO4"]
+    outputs[
+        "S_PO4 Concentration, treated effluent stream"
+    ] = m.fs.electroNP.treated.conc_mass_comp[0, "S_PO4"]
 
     return outputs, optimize_kwargs, opt_function
 
