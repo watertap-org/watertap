@@ -306,7 +306,7 @@ def display_results(m):
         f'{"Specific Energy Consumption":<40s}{f"{m.fs.costing.specific_energy_consumption():<39,.5f}"}{"kWh/m3":<40s}'
     )
     print(
-        f'{f"Annual Regenerant cost ({ix.regen_chem})":<40s}{f"${m.fs.costing.aggregate_flow_costs[ix.regen_chem]():<39,.2f}"}{"$/yr":<40s}'
+        f'{f"Annual Regenerant cost ({ix.config.regenerant})":<40s}{f"${m.fs.costing.aggregate_flow_costs[ix.config.regenerant]():<39,.2f}"}{"$/yr":<40s}'
     )
     print(f'{"BV Until Regen":<40s}{bv_to_regen:<40.3f}{"Bed Volumes":<40s}')
     print(

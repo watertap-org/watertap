@@ -28,136 +28,80 @@ class ContactorType(StrEnum):
 
 def build_gac_cost_param_block(blk):
 
+    # ---------------------------------------------------------------------
+    # design options
+
     blk.num_contactors_op = pyo.Var(
         initialize=1,
         units=pyo.units.dimensionless,
-        doc="Number of GAC contactors in operation in parallel",
+        doc="number of GAC contactors in operation in parallel",
     )
     blk.num_contactors_redundant = pyo.Var(
         initialize=1,
         units=pyo.units.dimensionless,
-        doc="Number of off-line redundant GAC contactors in parallel",
-    )
-    blk.pres_contactor_cost_coeff_0 = pyo.Var(
-        initialize=10010.9,
-        units=pyo.units.USD_2020,
-        doc="GAC steel pressure contactor polynomial cost coefficient 0",
-    )
-    blk.pres_contactor_cost_coeff_1 = pyo.Var(
-        initialize=2204.95,
-        units=pyo.units.USD_2020 * (pyo.units.m**3) ** -1,
-        doc="GAC steel pressure contactor polynomial cost coefficient 1",
-    )
-    blk.pres_contactor_cost_coeff_2 = pyo.Var(
-        initialize=-15.9378,
-        units=pyo.units.USD_2020 * (pyo.units.m**3) ** -2,
-        doc="GAC steel pressure contactor polynomial cost coefficient 2",
-    )
-    blk.pres_contactor_cost_coeff_3 = pyo.Var(
-        initialize=0.110592,
-        units=pyo.units.USD_2020 * (pyo.units.m**3) ** -3,
-        doc="GAC steel pressure contactor polynomial cost coefficient 3",
-    )
-    blk.grav_contactor_cost_coeff_0 = pyo.Var(
-        initialize=75131.3,
-        units=pyo.units.USD_2020,
-        doc="GAC concrete gravity contactor polynomial cost coefficient 0",
-    )
-    blk.grav_contactor_cost_coeff_1 = pyo.Var(
-        initialize=735.550,
-        units=pyo.units.USD_2020 * (pyo.units.m**3) ** -1,
-        doc="GAC concrete gravity contactor polynomial cost coefficient 1",
-    )
-    blk.grav_contactor_cost_coeff_2 = pyo.Var(
-        initialize=-1.01827,
-        units=pyo.units.USD_2020 * (pyo.units.m**3) ** -2,
-        doc="GAC concrete gravity contactor polynomial cost coefficient 2",
-    )
-    blk.grav_contactor_cost_coeff_3 = pyo.Var(
-        initialize=0,
-        units=pyo.units.USD_2020 * (pyo.units.m**3) ** -3,
-        doc="GAC concrete gravity contactor polynomial cost coefficient 3",
-    )
-    blk.bed_mass_max_ref = pyo.Var(
-        initialize=18143.7,
-        units=pyo.units.kg,
-        doc="Reference maximum value of GAC mass needed for initial charge where "
-        "economy of scale no longer discounts the unit price",
-    )
-    blk.adsorbent_unit_cost_coeff = pyo.Var(
-        initialize=4.58342,
-        units=pyo.units.USD_2020 * pyo.units.kg**-1,
-        doc="GAC adsorbent exponential cost pre-exponential coefficient",
-    )
-    blk.adsorbent_unit_cost_exp_coeff = pyo.Var(
-        initialize=-1.25311e-5,
-        units=pyo.units.kg**-1,
-        doc="GAC adsorbent exponential cost parameter coefficient",
-    )
-    blk.pres_other_cost_coeff = pyo.Var(
-        initialize=16660.7,
-        units=pyo.units.USD_2020,
-        doc="GAC pressure other cost power law coefficient",
-    )
-    blk.pres_other_cost_exp = pyo.Var(
-        initialize=0.552207,
-        units=pyo.units.dimensionless,
-        doc="GAC pressure other cost power law exponent",
-    )
-    blk.grav_other_cost_coeff = pyo.Var(
-        initialize=38846.9,
-        units=pyo.units.USD_2020,
-        doc="GAC gravity other cost power law coefficient",
-    )
-    blk.grav_other_cost_exp = pyo.Var(
-        initialize=0.490571,
-        units=pyo.units.dimensionless,
-        doc="GAC gravity other cost power law exponent",
+        doc="number of off-line redundant GAC contactors in parallel",
     )
     blk.regen_frac = pyo.Var(
         initialize=0.70,
         units=pyo.units.dimensionless,
-        doc="Fraction of spent GAC adsorbent that can be regenerated for reuse",
+        doc="fraction of spent GAC adsorbent that can be regenerated for reuse",
+    )
+
+    # ---------------------------------------------------------------------
+    # correlation reference points
+
+    blk.bed_mass_max_ref = pyo.Var(
+        initialize=18143.7,
+        units=pyo.units.kg,
+        doc="reference maximum value of GAC mass needed for initial charge where "
+        "economy of scale no longer discounts the unit price",
+    )
+
+    # ---------------------------------------------------------------------
+    # correlation parameter data
+
+    # dummy data is used to initialize, fixed in cost_gac based on the ContactorType
+    # USD_2020 embedded in equation
+    contactor_cost_coeff_dummy = {0: 10000, 1: 1000, 2: -10, 3: 0.1}
+    blk.contactor_cost_coeff = pyo.Var(
+        contactor_cost_coeff_dummy.keys(),
+        initialize=contactor_cost_coeff_dummy,
+        units=pyo.units.dimensionless,
+        doc="contactor polynomial cost coefficients",
+    )
+    # USD_2020 * kg**-1 embedded in equation adsorbent_unit_cost_constraint
+    adsorbent_unit_cost_coeff_dummy = {0: 1, 1: -1e-5}
+    blk.adsorbent_unit_cost_coeff = pyo.Var(
+        adsorbent_unit_cost_coeff_dummy.keys(),
+        initialize=adsorbent_unit_cost_coeff_dummy,
+        units=pyo.units.dimensionless,
+        doc="GAC adsorbent cost exponential function parameters",
+    )
+    # USD_2020 embedded in equation other_process_cost_constraint
+    other_cost_param_dummy = {0: 10000, 1: 0.1}
+    blk.other_cost_param = pyo.Var(
+        other_cost_param_dummy.keys(),
+        initialize=other_cost_param_dummy,
+        units=pyo.units.dimensionless,
+        doc="other process cost power law parameters",
     )
     blk.regen_unit_cost = pyo.Var(
         initialize=4.28352,
         units=pyo.units.USD_2020 * pyo.units.kg**-1,
-        doc="Unit cost to regenerate spent GAC adsorbent by an offsite regeneration facility",
+        doc="unit cost to regenerate spent GAC adsorbent by an offsite regeneration facility",
     )
     blk.makeup_unit_cost = pyo.Var(
         initialize=4.58223,
         units=pyo.units.USD_2020 * pyo.units.kg**-1,
-        doc="Unit cost to makeup spent GAC adsorbent with fresh adsorbent",
+        doc="unit cost to makeup spent GAC adsorbent with fresh adsorbent",
     )
-    blk.pres_energy_coeff_0 = pyo.Var(
-        initialize=8.09926e-4,
-        units=pyo.units.kW,
-        doc="GAC steel pressure contactor polynomial energy consumption coefficient 0",
-    )
-    blk.pres_energy_coeff_1 = pyo.Var(
-        initialize=8.70577e-4,
-        units=pyo.units.kW * (pyo.units.m**3) ** -1,
-        doc="GAC steel pressure contactor polynomial energy consumption coefficient 1",
-    )
-    blk.pres_energy_coeff_2 = pyo.Var(
-        initialize=0,
-        units=pyo.units.kW * (pyo.units.m**3) ** -2,
-        doc="GAC steel pressure contactor polynomial energy consumption coefficient 2",
-    )
-    blk.grav_energy_coeff_0 = pyo.Var(
-        initialize=0.123782,
-        units=pyo.units.kW,
-        doc="GAC concrete gravity contactor polynomial energy consumption coefficient 0",
-    )
-    blk.grav_energy_coeff_1 = pyo.Var(
-        initialize=0.132403,
-        units=pyo.units.kW * (pyo.units.m**3) ** -1,
-        doc="GAC concrete gravity contactor polynomial energy consumption coefficient 1",
-    )
-    blk.grav_energy_coeff_2 = pyo.Var(
-        initialize=-1.41512e-5,
-        units=pyo.units.kW * (pyo.units.m**3) ** -2,
-        doc="GAC concrete gravity contactor polynomial energy consumption coefficient 2",
+    # kW embedded in equation energy_consumption_constraint
+    energy_consumption_coeff_dummy = {0: 1e-3, 1: 1e-3, 2: 0}
+    blk.energy_consumption_coeff = pyo.Var(
+        energy_consumption_coeff_dummy.keys(),
+        initialize=energy_consumption_coeff_dummy,
+        units=pyo.units.dimensionless,
+        doc="energy consumption polynomial coefficients",
     )
 
 
@@ -178,6 +122,43 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
         contactor_type: ContactorType Enum indicating whether to cost based on steel pressure vessels or concrete,
             default = ContactorType.pressure
     """
+
+    # ---------------------------------------------------------------------
+    # with ContactorType not assigned in build_gac_cost_param_block and blk.costing_package.gac variables
+    # fixed when register_costing_parameter_block, refix parameters based on contactor type here
+
+    # costing data parameters based on contactor type
+    adsorbent_unit_cost_coeff_data = {0: 4.58342, 1: -1.25311e-5}
+    if contactor_type == ContactorType.pressure:
+        contactor_cost_coeff_data = {0: 10010.9, 1: 2204.95, 2: -15.9378, 3: 0.110592}
+        other_cost_param_data = {0: 16660.7, 1: 0.552207}
+        energy_consumption_coeff_data = {0: 8.09926e-4, 1: 8.70577e-4, 2: 0}
+    elif contactor_type == ContactorType.gravity:
+        contactor_cost_coeff_data = {0: 75131.3, 1: 735.550, 2: -1.01827, 3: 0.000000}
+        other_cost_param_data = {0: 38846.9, 1: 0.490571}
+        energy_consumption_coeff_data = {0: 0.123782, 1: 0.132403, 2: -1.41512e-5}
+    else:
+        raise ConfigurationError(
+            f"{blk.unit_model.name} received invalid argument for contactor_type:"
+            f" {contactor_type}. Argument must be a member of the ContactorType Enum."
+        )
+
+    # iterable matching coeff_data to vars
+    gac_cost = blk.costing_package.gac
+    cost_params = (
+        (adsorbent_unit_cost_coeff_data, gac_cost.adsorbent_unit_cost_coeff),
+        (contactor_cost_coeff_data, gac_cost.contactor_cost_coeff),
+        (other_cost_param_data, gac_cost.other_cost_param),
+        (energy_consumption_coeff_data, gac_cost.energy_consumption_coeff),
+    )
+
+    # refix variables to appropriate costing parameters
+    for indexed_data, indexed_var in cost_params:
+        for index, var in indexed_var.items():
+            var.fix(indexed_data[index])
+
+    # ---------------------------------------------------------------------
+
     make_capital_cost_var(blk)
     blk.contactor_cost = pyo.Var(
         initialize=1e5,
@@ -227,40 +208,26 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
     )
     total_bed_volume = num_contactors * unit_contactor_volume
 
-    def rule_contactor_cost(b):
-        if contactor_type == ContactorType.pressure:
-            return b.contactor_cost == num_contactors * pyo.units.convert(
-                (
-                    b.costing_package.gac.pres_contactor_cost_coeff_3
-                    * unit_contactor_volume**3
-                    + b.costing_package.gac.pres_contactor_cost_coeff_2
-                    * unit_contactor_volume**2
-                    + b.costing_package.gac.pres_contactor_cost_coeff_1
-                    * unit_contactor_volume**1
-                    + b.costing_package.gac.pres_contactor_cost_coeff_0
-                ),
-                to_units=b.costing_package.base_currency,
+    blk.contactor_cost_constraint = pyo.Constraint(
+        expr=blk.contactor_cost
+        == num_contactors
+        * pyo.units.convert(
+            (
+                blk.costing_package.gac.contactor_cost_coeff[3]
+                * (pyo.units.m**3) ** -3
+                * unit_contactor_volume**3
+                + blk.costing_package.gac.contactor_cost_coeff[2]
+                * (pyo.units.m**3) ** -2
+                * unit_contactor_volume**2
+                + blk.costing_package.gac.contactor_cost_coeff[1]
+                * (pyo.units.m**3) ** -1
+                * unit_contactor_volume**1
+                + blk.costing_package.gac.contactor_cost_coeff[0]
             )
-        elif contactor_type == ContactorType.gravity:
-            return b.contactor_cost == num_contactors * pyo.units.convert(
-                (
-                    b.costing_package.gac.grav_contactor_cost_coeff_3
-                    * unit_contactor_volume**3
-                    + b.costing_package.gac.grav_contactor_cost_coeff_2
-                    * unit_contactor_volume**2
-                    + b.costing_package.gac.grav_contactor_cost_coeff_1
-                    * unit_contactor_volume**1
-                    + b.costing_package.gac.grav_contactor_cost_coeff_0
-                ),
-                to_units=b.costing_package.base_currency,
-            )
-        else:
-            raise ConfigurationError(
-                f"{blk.unit_model.name} received invalid argument for contactor_type:"
-                f" {contactor_type}. Argument must be a member of the ContactorType Enum."
-            )
-
-    blk.contactor_cost_constraint = pyo.Constraint(expr=rule_contactor_cost)
+            * pyo.units.USD_2020,
+            to_units=blk.costing_package.base_currency,
+        )
+    )
 
     blk.bed_mass_gac_ref_constraint = pyo.Constraint(
         expr=blk.bed_mass_gac_ref
@@ -274,11 +241,14 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
     blk.adsorbent_unit_cost_constraint = pyo.Constraint(
         expr=blk.adsorbent_unit_cost
         == pyo.units.convert(
-            blk.costing_package.gac.adsorbent_unit_cost_coeff
+            blk.costing_package.gac.adsorbent_unit_cost_coeff[0]
             * pyo.exp(
                 blk.bed_mass_gac_ref
-                * blk.costing_package.gac.adsorbent_unit_cost_exp_coeff
-            ),
+                * pyo.units.kg**-1
+                * blk.costing_package.gac.adsorbent_unit_cost_coeff[1]
+            )
+            * pyo.units.USD_2020
+            * pyo.units.kg**-1,
             to_units=blk.costing_package.base_currency * pyo.units.kg**-1,
         )
     )
@@ -286,27 +256,18 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
         expr=blk.adsorbent_cost == blk.adsorbent_unit_cost * blk.unit_model.bed_mass_gac
     )
 
-    def rule_other_process_cost(b):
-        if contactor_type == ContactorType.pressure:
-            return b.other_process_cost == pyo.units.convert(
-                (
-                    b.costing_package.gac.pres_other_cost_coeff
-                    * ((pyo.units.m**3) ** -b.costing_package.gac.pres_other_cost_exp)
-                    * total_bed_volume**b.costing_package.gac.pres_other_cost_exp
-                ),
-                to_units=b.costing_package.base_currency,
+    blk.other_process_cost_constraint = pyo.Constraint(
+        expr=blk.other_process_cost
+        == pyo.units.convert(
+            (
+                blk.costing_package.gac.other_cost_param[0]
+                * (total_bed_volume * pyo.units.m**-3)
+                ** blk.costing_package.gac.other_cost_param[1]
             )
-        elif contactor_type == ContactorType.gravity:
-            return b.other_process_cost == pyo.units.convert(
-                (
-                    b.costing_package.gac.grav_other_cost_coeff
-                    * ((pyo.units.m**3) ** -b.costing_package.gac.grav_other_cost_exp)
-                    * total_bed_volume**b.costing_package.gac.grav_other_cost_exp
-                ),
-                to_units=b.costing_package.base_currency,
-            )
-
-    blk.other_process_cost_constraint = pyo.Constraint(expr=rule_other_process_cost)
+            * pyo.units.USD_2020,
+            to_units=blk.costing_package.base_currency,
+        )
+    )
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
@@ -356,21 +317,19 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
         expr=blk.fixed_operating_cost == blk.gac_regen_cost + blk.gac_makeup_cost
     )
 
-    def rule_energy_consumption(b):
-        if contactor_type == ContactorType.pressure:
-            return b.energy_consumption == (
-                b.costing_package.gac.pres_energy_coeff_2 * (total_bed_volume**2)
-            ) + (b.costing_package.gac.pres_energy_coeff_1 * total_bed_volume) + (
-                b.costing_package.gac.pres_energy_coeff_0
-            )
-        elif contactor_type == ContactorType.gravity:
-            return b.energy_consumption == (
-                b.costing_package.gac.grav_energy_coeff_2 * (total_bed_volume**2)
-            ) + (b.costing_package.gac.grav_energy_coeff_1 * total_bed_volume) + (
-                b.costing_package.gac.grav_energy_coeff_0
-            )
-
-    blk.energy_consumption_constraint = pyo.Constraint(expr=rule_energy_consumption)
+    blk.energy_consumption_constraint = pyo.Constraint(
+        expr=pyo.units.convert(blk.energy_consumption, to_units=pyo.units.kW)
+        == pyo.units.kW
+        * (
+            blk.costing_package.gac.energy_consumption_coeff[2]
+            * total_bed_volume**2
+            * (pyo.units.m**3) ** -2
+            + blk.costing_package.gac.energy_consumption_coeff[1]
+            * total_bed_volume
+            * (pyo.units.m**3) ** -1
+            + blk.costing_package.gac.energy_consumption_coeff[0]
+        )
+    )
 
     blk.costing_package.cost_flow(
         pyo.units.convert(blk.energy_consumption, to_units=pyo.units.kW),

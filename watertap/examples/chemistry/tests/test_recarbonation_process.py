@@ -51,7 +51,6 @@ from idaes.models.properties.modular_properties.base.generic_reaction import (
 
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    gibbs_energy,
     van_t_hoff,
 )
 
@@ -87,10 +86,8 @@ import idaes.logger as idaeslog
 
 # Import scaling helper functions
 from watertap.examples.chemistry.chem_scaling_utils import (
-    _set_eps_vals,
     _set_equ_rxn_scaling,
     _set_mat_bal_scaling_FpcTP,
-    _set_mat_bal_scaling_FTPx,
     _set_ene_bal_scaling,
 )
 

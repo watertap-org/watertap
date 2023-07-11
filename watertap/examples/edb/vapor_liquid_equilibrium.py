@@ -72,38 +72,8 @@
 
 """
 
-# ========= These imports (below) are for testing the configs from EDB ===============
-# Import specific pyomo objects
-from pyomo.environ import (
-    ConcreteModel,
-)
-
-# Import the idaes objects for Generic Properties and Reactions
-from idaes.models.properties.modular_properties.base.generic_property import (
-    GenericParameterBlock,
-)
-from idaes.models.properties.modular_properties.base.generic_reaction import (
-    GenericReactionParameterBlock,
-)
-
-# Import the idaes object for the EquilibriumReactor unit model
-from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
-
-# Import the core idaes objects for Flowsheets and types of balances
-from idaes.core import FlowsheetBlock
-
-# ========= These imports (above) are for testing the configs from EDB ===============
-
-
-# ========================== (3 & 4) ================================
 # Import ElectrolyteDB object
-from watertap.edb import ElectrolyteDB
-from watertap.examples.edb.the_basics import (
-    connect_to_edb,
-    is_thermo_config_valid,
-    grab_base_reaction_config,
-    is_thermo_reaction_pair_valid,
-)
+from watertap.examples.edb.the_basics import grab_base_reaction_config
 from watertap.examples.edb.simple_acid import (
     get_components_and_add_to_idaes_config,
     add_equilibrium_reactions_to_react_base,
@@ -111,6 +81,7 @@ from watertap.examples.edb.simple_acid import (
 )
 
 __author__ = "Austin Ladshaw"
+
 
 # ========================== (5) ================================
 # Grab a new base config for our thermo, but this time we will use

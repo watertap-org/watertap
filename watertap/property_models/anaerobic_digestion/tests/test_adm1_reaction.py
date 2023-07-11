@@ -27,7 +27,6 @@ from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     Constraint,
-    units,
     value,
     Var,
 )
@@ -37,7 +36,6 @@ from idaes.core import FlowsheetBlock
 from watertap.unit_models.anaerobic_digestor import AD
 from idaes.core import MaterialFlowBasis
 from idaes.core.solvers import get_solver
-import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 

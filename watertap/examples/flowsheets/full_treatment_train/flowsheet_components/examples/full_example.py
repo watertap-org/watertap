@@ -18,11 +18,9 @@ from pyomo.environ import (
     TransformationFactory,
     value,
     Param,
-    Block,
 )
 from pyomo.environ import units as pyunits
 from pyomo.network import Arc
-from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.util.initialization import propagate_state
@@ -30,7 +28,6 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components impo
     pretreatment_NF,
     desalination,
     translator_block,
-    feed_block,
     gypsum_saturation_index,
     costing,
 )
@@ -40,8 +37,6 @@ from watertap.examples.flowsheets.full_treatment_train.model_components import (
 from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
-    check_build,
-    check_scaling,
 )
 
 """Flowsheet example that satisfy minimum viable product requirements"""

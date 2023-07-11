@@ -1812,25 +1812,25 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         self.conc_mass_va = pyo.Var(
             initialize=0.01159624,
             domain=pyo.NonNegativeReals,
-            doc="molar concentration of va-",
+            doc="mass concentration of va-",
             units=pyo.units.kg / pyo.units.m**3,
         )
         self.conc_mass_bu = pyo.Var(
             initialize=0.0132208,
             domain=pyo.NonNegativeReals,
-            doc="molar concentration of bu-",
+            doc="mass concentration of bu-",
             units=pyo.units.kg / pyo.units.m**3,
         )
         self.conc_mass_pro = pyo.Var(
             initialize=0.015742,
             domain=pyo.NonNegativeReals,
-            doc="molar concentration of pro-",
+            doc="mass concentration of pro-",
             units=pyo.units.kg / pyo.units.m**3,
         )
         self.conc_mass_ac = pyo.Var(
             initialize=0.1972,
             domain=pyo.NonNegativeReals,
-            doc="molar concentration of ac-",
+            doc="mass concentration of ac-",
             units=pyo.units.kg / pyo.units.m**3,
         )
         self.conc_mol_hco3 = pyo.Var(
@@ -1901,7 +1901,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
 
         self.Dissociation = pyo.Constraint(
             rule=Dissociation_rule,
-            doc="Dissociation constant constraint",
+            doc="Water dissociation constant constraint",
         )
 
         def CO2_acid_base_equilibrium_rule(self, t):

@@ -10,13 +10,11 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from pyomo.environ import check_optimal_termination, TransformationFactory
+from pyomo.environ import TransformationFactory
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.scaling import (
     unscaled_variables_generator,
-    unscaled_constraints_generator,
     calculate_scaling_factors,
 )
 from watertap.core.util.initialization import (

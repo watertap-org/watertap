@@ -26,7 +26,7 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.common.config import ConfigValue
 
 from idaes.core import FlowsheetBlock, declare_process_block_class
 from idaes.core.solvers import get_solver

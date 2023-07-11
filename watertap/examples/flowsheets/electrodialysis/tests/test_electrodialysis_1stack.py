@@ -14,39 +14,24 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     value,
-    Set,
     Var,
-    Constraint,
     Objective,
-    TransformationFactory,
-    assert_optimal_termination,
     Block,
 )
-from pyomo.network import Arc, Port
+from pyomo.network import Port
 
 from idaes.core import (
     FlowsheetBlock,
-    UnitModelCostingBlock,
     MaterialBalanceType,
     MomentumBalanceType,
 )
-from idaes.core.solvers import get_solver
-from idaes.core.util.initialization import propagate_state
-from idaes.core.util.model_statistics import degrees_of_freedom, report_statistics
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import Feed, Product, Separator
-from pandas import DataFrame
-import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslogger
 from watertap.unit_models.electrodialysis_1D import (
     ElectricalOperationMode,
     Electrodialysis1D,
 )
-from watertap.core.util.initialization import (
-    assert_no_degrees_of_freedom,
-    assert_degrees_of_freedom,
-)
 
-from watertap.costing import WaterTAPCosting
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
 import watertap.examples.flowsheets.electrodialysis.electrodialysis_1stack as edfs

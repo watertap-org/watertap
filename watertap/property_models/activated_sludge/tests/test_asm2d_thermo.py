@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for ASM1d thermo property package.
+Tests for ASM2d thermo property package.
 Authors: Andrew Lee
 """
 

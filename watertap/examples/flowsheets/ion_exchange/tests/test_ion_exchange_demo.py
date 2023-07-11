@@ -20,18 +20,17 @@ from pyomo.environ import (
     Block,
 )
 from pyomo.network import Port
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import Feed, Product
-
 from watertap.unit_models.ion_exchange_0D import (
     IonExchange0D,
     IonExchangeType,
     RegenerantChem,
     IsothermType,
-    DiffusionControlType,
 )
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
@@ -98,17 +97,18 @@ class TestIXDemo:
             assert arc.destination is port_tpl[1]
 
         # test configrations
-        assert len(m.fs.ion_exchange.config) == 12
+        assert len(m.fs.ion_exchange.config) == 11
         assert not m.fs.ion_exchange.config.dynamic
         assert not m.fs.ion_exchange.config.has_holdup
         assert m.fs.ion_exchange.config.target_ion == "Ca_2+"
         assert m.fs.ion_exchange.ion_exchange_type == IonExchangeType.cation
         assert m.fs.ion_exchange.config.regenerant == RegenerantChem.NaCl
         assert m.fs.ion_exchange.config.isotherm == IsothermType.langmuir
-        assert m.fs.ion_exchange.config.diffusion_control == DiffusionControlType.liquid
 
         assert m.fs.ion_exchange.config.property_package is m.fs.properties
         assert "H2O" in m.fs.properties.component_list
+
+        assert_units_consistent(m)
 
     @pytest.mark.component
     def test_specific_operating_conditions(self, ix_0D):
@@ -121,10 +121,10 @@ class TestIXDemo:
         results = solver.solve(m)
         assert_optimal_termination(results)
         assert value(m.fs.feed.properties[0].flow_vol_phase["Liq"]) == pytest.approx(
-            0.05, abs=1e-3
+            0.05, rel=1e-3
         )
         assert value(m.fs.product.properties[0].flow_vol_phase["Liq"]) == pytest.approx(
-            0.049995010, abs=1e-3
+            0.049995010, rel=1e-3
         )
         assert value(
             sum(
@@ -139,19 +139,19 @@ class TestIXDemo:
             )
         ) == pytest.approx(0.000211438, rel=1e-3)
 
-        assert value(m.fs.ion_exchange.number_columns) == pytest.approx(4, rel=1e-6)
-        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.7, rel=1e-6)
+        assert value(m.fs.ion_exchange.number_columns) == pytest.approx(4, rel=1e-3)
+        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.7, rel=1e-3)
         assert value(m.fs.ion_exchange.t_breakthru) == pytest.approx(
-            56759.75759, rel=1e-6
+            56759.75759, rel=1e-3
         )
         assert value(m.fs.ion_exchange.partition_ratio) == pytest.approx(
-            235.99899, rel=1e-6
+            235.99899, rel=1e-3
         )
 
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            0.057245, abs=0.001
+            0.057245, rel=1e-3
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.2207154, abs=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.222437, rel=1e-3)
 
     @pytest.mark.component
     def test_optimization(self, ix_0D):
@@ -162,10 +162,10 @@ class TestIXDemo:
         assert degrees_of_freedom(m) == 2
 
         assert value(m.fs.feed.properties[0].flow_vol_phase["Liq"]) == pytest.approx(
-            0.05, abs=1e-3
+            0.05, rel=1e-3
         )
         assert value(m.fs.product.properties[0].flow_vol_phase["Liq"]) == pytest.approx(
-            0.04999624, abs=1e-3
+            0.04999624, rel=1e-3
         )
         assert value(
             sum(
@@ -190,17 +190,17 @@ class TestIXDemo:
         assert_optimal_termination(results)
         assert degrees_of_freedom(m) == 0
         assert value(m.fs.ion_exchange.number_columns) == 6
-        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.622805, abs=1e-4)
+        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.61147, rel=1e-3)
         assert value(m.fs.ion_exchange.t_breakthru) == pytest.approx(
-            133415.81129, abs=1e-4
+            133404.2583, rel=1e-3
         )
         assert value(m.fs.ion_exchange.dimensionless_time) == pytest.approx(
-            1.33210077, abs=1e-4
+            1.33210077, rel=1e-3
         )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            0.052398, abs=1e-4
+            0.051706, rel=1e-3
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.1428129, abs=0.001)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.145645, rel=1e-3)
 
     @pytest.mark.unit
     def test_main_fun(self):
@@ -208,14 +208,14 @@ class TestIXDemo:
 
         assert degrees_of_freedom(m) == 0
         assert value(m.fs.ion_exchange.number_columns) == 6
-        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.622805, abs=1e-4)
+        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.61147, rel=1e-3)
         assert value(m.fs.ion_exchange.t_breakthru) == pytest.approx(
-            133415.81129, abs=1e-4
+            133404.2583, rel=1e-3
         )
         assert value(m.fs.ion_exchange.dimensionless_time) == pytest.approx(
-            1.33210077, abs=1e-4
+            1.33210077, rel=1e-3
         )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            0.052398, abs=1e-4
+            0.051706, rel=1e-3
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.1428129, abs=0.001)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.145645, rel=1e-3)

@@ -72,12 +72,6 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_forms impo
     log_power_law_equil,
 )
 
-# Import k-value functions
-from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    gibbs_energy,
-    van_t_hoff,
-)
-
 # Import built-in van't Hoff function
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
     van_t_hoff,
@@ -129,10 +123,8 @@ import idaes.logger as idaeslog
 
 # Import scaling helper functions
 from watertap.examples.chemistry.chem_scaling_utils import (
-    _set_eps_vals,
     _set_equ_rxn_scaling,
     _set_inherent_rxn_scaling,
-    _set_mat_bal_scaling_FpcTP,
     _set_mat_bal_scaling_FTPx,
     _set_ene_bal_scaling,
 )

@@ -54,6 +54,64 @@ Sets
 **Notes**
  :sup:`*` Ion" is a subset of "Component" and uses the same symbol j.
 
+ADM1 Components
+---------------
+Additional documentation on the ADM1 property model can be found here: `Anaerobic Digestion Model 1 Documentation <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ADM1.html>`_
+
+.. csv-table::
+  :header: "Description", "Symbol", "Variable"
+
+  "Monosaccharides, S_su", ":math:`S_{su}`", "S_su"
+  "Amino acids, S_aa", ":math:`S_{aa}`", "S_aa"
+  "Long chain fatty acids, S_fa", ":math:`S_{fa}`", "S_fa"
+  "Total valerate, S_va", ":math:`S_{va}`", "S_va"
+  "Total butyrate, S_bu", ":math:`S_{bu}`", "S_bu"
+  "Total propionate, S_pro", ":math:`S_{pro}`", "S_pro"
+  "Total acetate, S_ac", ":math:`S_{ac}`", "S_ac"
+  "Hydrogen gas, S_h2", ":math:`S_{h2}`", "S_h2"
+  "Methane gas, S_ch4", ":math:`S_{ch4}`", "S_ch4"
+  "Inorganic carbon, S_IC", ":math:`S_{IC}`", "S_IC"
+  "Inorganic nitrogen, S_IN", ":math:`S_{IN}`", "S_IN"
+  "Soluble inerts, S_I", ":math:`S_I`", "S_I"
+  "Composites, X_c", ":math:`X_c`", "X_c"
+  "Carbohydrates, X_ch", ":math:`X_{ch}`", "X_ch"
+  "Proteins, X_pr", ":math:`X_{pr}`", "X_pr"
+  "Lipids, X_li", ":math:`X_{li}`", "X_li"
+  "Sugar degraders, X_su", ":math:`X_{su}`", "X_su"
+  "Amino acid degraders, X_aa", ":math:`X_{aa}`", "X_aa"
+  "Long chain fatty acid (LCFA) degraders, X_fa", ":math:`X_{fa}`", "X_fa"
+  "Valerate and butyrate degraders, X_c4", ":math:`X_{c4}`", "X_c4"
+  "Propionate degraders, X_pro", ":math:`X_{pro}`", "X_pro"
+  "Acetate degraders, X_ac", ":math:`X_{ac}`", "X_ac"
+  "Hydrogen degraders, X_h2", ":math:`X_{h2}`", "X_h2"
+  "Particulate inerts, X_I", ":math:`X_I`", "X_I"
+  "Total cation equivalents concentration, S_cat", ":math:`S_{cat}`", "S_cat"
+  "Total anion equivalents concentration, S_an", ":math:`S_{an}`", "S_an"
+  "Carbon dioxide, S_co2", ":math:`S_{co2}`", "S_co2"
+
+**NOTE: S_h2 and S_ch4 have vapor phase and liquid phase, S_co2 only has vapor phase, and the other components only have liquid phase. The amount of CO2 dissolved in the liquid phase is equivalent to S_IC - S_HCO3-.**
+
+ASM1 Components
+---------------
+Additional documentation on the ASM1 property model can be found here: `Activated Sludge Model 1 Documentation <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_
+
+.. csv-table::
+  :header: "Description", "Symbol", "Variable"
+
+  "Soluble inert organic matter, S_I", ":math:`S_I`", "S_I"
+  "Readily biodegradable substrate S_S", ":math:`S_S`", "S_S"
+  "Particulate inert organic matter, X_I", ":math:`X_I`", "X_I"
+  "Slowly biodegradable substrate X_S", ":math:`X_S`", "X_S"
+  "Active heterotrophic biomass X_B,H", ":math:`X_{B,H}`", "X_BH"
+  "Active autotrophic biomass X_B,A", ":math:`X_{B,A}`", "X_BA"
+  "Particulate products arising from biomass decay, X_P", ":math:`X_P`", "X_P"
+  "Oxygen, S_O", ":math:`S_O`", "S_O"
+  "Nitrate and nitrite nitrogen, S_NO", ":math:`S_{NO}`", "S_NO"
+  "NH4 :math:`^{+}` + NH :math:`_{3}` Nitrogen, S_NH", ":math:`S_{NH}`", "S_NH"
+  "Soluble biodegradable organic nitrogen, S_ND", ":math:`S_{ND}`", "S_ND"
+  "Particulate biodegradable organic nitrogen, X_ND", ":math:`X_{ND}`", "X_ND"
+  "Alkalinity, S_ALK", ":math:`S_{ALK}`", "S_ALK"
+
 .. _Translator_ADM1_ASM1_equations:
 
 Equations and Relationships
@@ -87,4 +145,4 @@ References
 [1] Copp J. and Jeppsson, U., Rosen, C., 2006.
 Towards an ASM1 - ADM1 State Variable Interface for Plant-Wide Wastewater Treatment Modeling.
 Proceedings of the Water Environment Federation, 2003, pp 498-510.
-https://www.accesswater.org/publications/-290550/towards-an-asm1--ndash--adm1-state-variable-interface-for-plant-wide-wastewater-treatment-modeling
+https://www.accesswater.org/publications/proceedings/-290550/towards-an-asm1---adm1-state-variable-interface-for-plant-wide-wastewater-treatment-modeling

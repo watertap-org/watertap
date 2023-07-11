@@ -39,14 +39,53 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import StrEnum
+from idaes.core.util.exceptions import InitializationError, ConfigurationError
 
-from idaes.core.util.exceptions import InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 __author__ = "Kurban Sitterley"
+
+
+"""
+REFERENCES
+
+LeVan, M. D., Carta, G., & Yon, C. M. (2019).
+Section 16: Adsorption and Ion Exchange.
+Perry's Chemical Engineers' Handbook, 9th Edition.
+
+Crittenden, J. C., Trussell, R. R., Hand, D. W., Howe, K. J., & Tchobanoglous, G. (2012).
+Chapter 16: Ion Exchange.
+MWH's Water Treatment (pp. 1263-1334): John Wiley & Sons, Inc.
+
+DOWEX Ion Exchange Resins Water Conditioning Manual
+https://www.lenntech.com/Data-sheets/Dowex-Ion-Exchange-Resins-Water-Conditioning-Manual-L.pdf
+
+Inamuddin, & Luqman, M. (2012).
+Ion Exchange Technology I: Theory and Materials.
+
+Vassilis J. Inglezakis and Stavros G. Poulopoulos
+Adsorption, Ion Exchange and Catalysis: Design of Operations and Environmental Applications (2006).
+doi.org/10.1016/B978-0-444-52783-7.X5000-9
+
+Michaud, C.F. (2013)
+Hydrodynamic Design, Part 8: Flow Through Ion Exchange Beds
+Water Conditioning & Purification Magazine (WC&P)
+https://wcponline.com/2013/08/06/hydrodynamic-design-part-8-flow-ion-exchange-beds/
+
+Clark, R. M. (1987). 
+Evaluating the cost and performance of field-scale granular activated carbon systems. 
+Environ Sci Technol, 21(6), 573-580. doi:10.1021/es00160a008
+
+Croll, H. C., Adelman, M. J., Chow, S. J., Schwab, K. J., Capelle, R., Oppenheimer, J., & Jacangelo, J. G. (2023). 
+Fundamental kinetic constants for breakthrough of per- and polyfluoroalkyl substances at varying empty bed contact times: 
+Theoretical analysis and pilot scale demonstration. 
+Chemical Engineering Journal, 464. doi:10.1016/j.cej.2023.142587
+
+"""
+
 
 _log = idaeslog.getLogger(__name__)
 
@@ -182,13 +221,17 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
     CONFIG.declare(
         "target_ion",
-        ConfigValue(default="Ca_2+", domain=str, description="Target ion"),
+        ConfigValue(
+            default="Ca_2+",
+            domain=str,
+            description="Designates targeted species for removal",
+        ),
     )
 
     CONFIG.declare(
         "regenerant",
         ConfigValue(
-            default=RegenerantChem.none,
+            default=RegenerantChem.NaCl,
             domain=In(RegenerantChem),
             description="Chemical used for regeneration of fixed bed",
         ),
@@ -215,43 +258,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
     def build(self):
         super().build()
 
-        """
-        REFERENCES
-
-        LeVan, M. D., Carta, G., & Yon, C. M. (2019).
-        Section 16: Adsorption and Ion Exchange.
-        Perry's Chemical Engineers' Handbook, 9th Edition.
-
-        Crittenden, J. C., Trussell, R. R., Hand, D. W., Howe, K. J., & Tchobanoglous, G. (2012).
-        Chapter 16: Ion Exchange.
-        MWH's Water Treatment (pp. 1263-1334): John Wiley & Sons, Inc.
-
-        DOWEX Ion Exchange Resins Water Conditioning Manual
-        https://www.lenntech.com/Data-sheets/Dowex-Ion-Exchange-Resins-Water-Conditioning-Manual-L.pdf
-
-        Inamuddin, & Luqman, M. (2012).
-        Ion Exchange Technology I: Theory and Materials.
-
-        Vassilis J. Inglezakis and Stavros G. Poulopoulos
-        Adsorption, Ion Exchange and Catalysis: Design of Operations and Environmental Applications (2006).
-        doi.org/10.1016/B978-0-444-52783-7.X5000-9
-
-        Michaud, C.F. (2013)
-        Hydrodynamic Design, Part 8: Flow Through Ion Exchange Beds
-        Water Conditioning & Purification Magazine (WC&P)
-        https://wcponline.com/2013/08/06/hydrodynamic-design-part-8-flow-ion-exchange-beds/
-
-        Clark, R. M. (1987). 
-        Evaluating the cost and performance of field-scale granular activated carbon systems. 
-        Environ Sci Technol, 21(6), 573-580. doi:10.1021/es00160a008
-
-        Croll, H. C., Adelman, M. J., Chow, S. J., Schwab, K. J., Capelle, R., Oppenheimer, J., & Jacangelo, J. G. (2023). 
-        Fundamental kinetic constants for breakthrough of per- and polyfluoroalkyl substances at varying empty bed contact times: 
-        Theoretical analysis and pilot scale demonstration. 
-        Chemical Engineering Journal, 464. doi:10.1016/j.cej.2023.142587
-
-        """
-
         comps = self.config.property_package.component_list
         target_ion = self.config.target_ion
 
@@ -260,15 +266,16 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )  # create set for future development of multi-component model
         inerts = comps - self.target_ion_set
 
-        if "+" in target_ion:
+        if len(self.target_ion_set) > 1:
+            raise ConfigurationError(
+                f"IonExchange0D can only accept a single target ion but {len(self.target_ion_set)} were provided."
+            )
+        if self.config.property_package.charge_comp[target_ion].value > 0:
             self.ion_exchange_type = IonExchangeType.cation
-        if "-" in target_ion:
+        elif self.config.property_package.charge_comp[target_ion].value < 0:
             self.ion_exchange_type = IonExchangeType.anion
-
-        if self.config.regenerant is not RegenerantChem.none:
-            self.regen_chem = RegenerantChem(self.config["regenerant"])
-        else:  # default to NaCl as regenerant for both anion and cation exchange
-            self.regen_chem = RegenerantChem.NaCl
+        else:
+            raise ConfigurationError("Target ion must have non-zero charge.")
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
@@ -314,6 +321,40 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         # ==========PARAMETERS==========
 
+        self.process_flow.add_state_blocks(has_phase_equilibrium=False)
+        self.process_flow.add_material_balances(
+            balance_type=self.config.material_balance_type, has_mass_transfer=True
+        )
+        self.process_flow.add_energy_balances(
+            balance_type=self.config.energy_balance_type, has_enthalpy_transfer=False
+        )
+        self.process_flow.add_isothermal_assumption()
+        self.process_flow.add_momentum_balances(
+            balance_type=self.config.momentum_balance_type,
+            has_pressure_change=False,
+        )
+
+        prop_in = self.process_flow.properties_in[0]
+
+        tmp_dict = dict(**self.config.property_package_args)
+        tmp_dict["has_phase_equilibrium"] = False
+        tmp_dict["parameters"] = self.config.property_package
+        tmp_dict["defined_state"] = False
+
+        self.regeneration_stream = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of regeneration stream",
+            **tmp_dict,
+        )
+
+        regen = self.regeneration_stream[0]
+
+        self.add_inlet_port(name="inlet", block=self.process_flow)
+        self.add_outlet_port(name="outlet", block=self.process_flow)
+        self.add_outlet_port(name="regen", block=self.regeneration_stream)
+
+        # ==========PARAMETERS==========
+
         self.underdrain_h = Param(
             initialize=0.5,
             mutable=True,
@@ -326,31 +367,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             mutable=True,
             units=pyunits.m,
             doc="Distributor height",  # Perry's
-        )
-
-        self.p_drop_psi_to_m = Param(
-            initialize=0.70325,
-            units=(pyunits.m / pyunits.psi),
-            doc="Conversion for pressure drop in psi to m",
-        )
-
-        # Liquid holdup correlation
-        # Eq. 4.101 in Inamuddin/Luqman
-
-        self.holdup_A = Param(
-            initialize=21,
-            units=pyunits.dimensionless,
-            doc="Holdup equation A parameter",
-        )
-
-        self.holdup_B = Param(
-            initialize=99.72,
-            units=pyunits.dimensionless,
-            doc="Holdup equation B parameter",
-        )
-
-        self.holdup_exp = Param(
-            initialize=0.28, units=pyunits.dimensionless, doc="Holdup equation exponent"
         )
 
         # Particle Peclet number correlation
@@ -598,7 +614,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         self.ebct = Var(
             initialize=520,
-            bounds=(120, None),
+            bounds=(90, None),
             units=pyunits.s,
             doc="Empty bed contact time",
         )
@@ -615,7 +631,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         self.vel_inter = Var(
             initialize=0.01,
             units=pyunits.m / pyunits.s,
-            doc="Interstitial velocityv through bed",
+            doc="Interstitial velocity through bed",
         )
 
         self.service_flow_rate = Var(
@@ -627,35 +643,35 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         # ====== Dimensionless variables ====== #
 
-        self.Re = Var(
+        self.N_Re = Var(
             initialize=4.3,
-            bounds=(0.001, 60),  # Perry's - bounds relevant to Sh regression
+            bounds=(0.001, 60),  # Perry's - bounds relevant to N_Sh regression
             units=pyunits.dimensionless,
             doc="Reynolds number",
         )
 
-        self.Sc = Var(
+        self.N_Sc = Var(
             self.target_ion_set,
             initialize=700,
             units=pyunits.dimensionless,
             doc="Schmidt number",
         )
 
-        self.Sh = Var(
+        self.N_Sh = Var(
             self.target_ion_set,
             initialize=30,
             units=pyunits.dimensionless,
             doc="Sherwood number",
         )
 
-        self.Pe_p = Var(
+        self.N_Pe_particle = Var(
             initialize=0.1,
             units=pyunits.dimensionless,
             doc="Peclet particle number",
         )
 
-        self.Pe_bed = Var(
-            initialize=1000,  # Inamuddin/Luqman - Pe_bed > ~100 considered to be plug flow
+        self.N_Pe_bed = Var(
+            initialize=1000,  # Inamuddin/Luqman - N_Pe_bed > ~100 considered to be plug flow
             units=pyunits.dimensionless,
             doc="Peclet bed number",
         )
@@ -827,15 +843,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         # ==========EXPRESSIONS==========
 
-        @self.Expression(doc="Column holdup")
-        def holdup(b):  # Eq. 3.332, Inglezakis + Poulopoulos
-            vel_bed_dimensionless = pyunits.convert(
-                pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s)
-                * (pyunits.s / pyunits.cm),
-                to_units=pyunits.dimensionless,
-            )
-            return b.holdup_A + b.holdup_B * vel_bed_dimensionless**b.holdup_exp
-
         @self.Expression(doc="Bed expansion fraction from backwashing")
         def bed_expansion_frac(b):
             return (
@@ -905,40 +912,23 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Expression(doc="Backwash pump power")
         def bw_pump_power(b):
-            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
             return pyunits.convert(
-                (
-                    prop_in.dens_mass_phase["Liq"]
-                    * Constants.acceleration_gravity
-                    * p_drop_m
-                    * b.bw_flow
-                )
-                / b.pump_efficiency,
+                (b.pressure_drop * b.bw_flow) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
             )
 
         @self.Expression(doc="Rinse pump power")
         def rinse_pump_power(b):
-            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
             return pyunits.convert(
-                (
-                    prop_in.dens_mass_phase["Liq"]
-                    * Constants.acceleration_gravity
-                    * p_drop_m
-                    * b.rinse_flow
-                )
-                / b.pump_efficiency,
+                (b.pressure_drop * b.rinse_flow) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
             )
 
         @self.Expression(doc="Rinse pump power")
         def regen_pump_power(b):
-            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
             return pyunits.convert(
                 (
-                    prop_in.dens_mass_phase["Liq"]
-                    * Constants.acceleration_gravity
-                    * p_drop_m
+                    b.pressure_drop
                     * (prop_in.flow_vol_phase["Liq"] / b.service_to_regen_flow_ratio)
                 )
                 / b.pump_efficiency,
@@ -947,15 +937,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Expression(doc="Main pump power")
         def main_pump_power(b):
-            p_drop_m = b.pressure_drop * b.p_drop_psi_to_m
             return pyunits.convert(
-                (
-                    prop_in.dens_mass_phase["Liq"]
-                    * Constants.acceleration_gravity
-                    * p_drop_m
-                    * prop_in.flow_vol_phase["Liq"]
-                )
-                / b.pump_efficiency,
+                (b.pressure_drop * prop_in.flow_vol_phase["Liq"]) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
             )
 
@@ -1000,15 +983,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     b.bed_capacity_param + 1
                 )
 
-            # @self.Expression(
-            #     self.target_ion_set,
-            #     doc="Clark equation bed capacity fitting parameter A",
-            # )  # Croll et al (2023), Eq.19
-            # def clark_A_expr(b, j):
-            #     n = b.freundlich_n
-            #     x = 1 / b.c_norm[j]
-            #     return (x ** (n - 1) - 1) * exp(b.kinetic_param * b.t_breakthru)
-
             @self.Expression(
                 self.target_ion_set, doc="Freundlich base coeff estimation"
             )
@@ -1052,32 +1026,32 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Reynolds number")
         def eq_Re(b):  # Eq. 3.358, Inglezakis + Poulopoulos
-            return b.Re == (b.vel_bed * b.resin_diam) / prop_in.visc_k_phase["Liq"]
+            return b.N_Re == (b.vel_bed * b.resin_diam) / prop_in.visc_k_phase["Liq"]
 
         @self.Constraint(self.target_ion_set, doc="Schmidt number")
         def eq_Sc(b, j):  # Eq. 3.359, Inglezakis + Poulopoulos
             return (
-                b.Sc[j]
+                b.N_Sc[j]
                 == prop_in.visc_k_phase["Liq"] / prop_in.diffus_phase_comp["Liq", j]
             )
 
         @self.Constraint(self.target_ion_set, doc="Sherwood number")
         def eq_Sh(b, j):  # Eq. 3.346, Inglezakis + Poulopoulos
             return (
-                b.Sh[j]
+                b.N_Sh[j]
                 == b.Sh_A
                 * b.bed_porosity**b.Sh_exp_A
-                * b.Re**b.Sh_exp_B
-                * b.Sc[j] ** b.Sh_exp_C
+                * b.N_Re**b.Sh_exp_B
+                * b.N_Sc[j] ** b.Sh_exp_C
             )
 
         @self.Constraint(doc="Bed Peclet number")
         def eq_Pe_bed(b):
-            return b.Pe_bed == b.Pe_p * (b.bed_depth / b.resin_diam)
+            return b.N_Pe_bed == b.N_Pe_particle * (b.bed_depth / b.resin_diam)
 
         @self.Constraint(doc="Particle Peclet number")
         def eq_Pe_p(b):  # Eq. 3.313, Inglezakis + Poulopoulos, for downflow
-            return b.Pe_p == b.Pe_p_A * b.Re**b.Pe_p_exp
+            return b.N_Pe_particle == b.Pe_p_A * b.N_Re**b.Pe_p_exp
 
         # =========== RESIN & COLUMN ===========
 
@@ -1152,7 +1126,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             def eq_fluid_mass_transfer_coeff(b, j):
                 return (
                     b.fluid_mass_transfer_coeff[j] * b.resin_diam
-                    == prop_in.diffus_phase_comp["Liq", j] * b.Sh[j]
+                    == prop_in.diffus_phase_comp["Liq", j] * b.N_Sh[j]
                 )
 
             @self.Constraint(doc="Partition ratio")
@@ -1203,7 +1177,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
             @self.Constraint(
                 self.target_ion_set,
-                doc="Constant pattern solution for fluid-film diffuion controlling",
+                doc="Constant pattern solution for Langmuir isotherm",
             )
             def eq_constant_pattern_soln(
                 b, j
@@ -1220,15 +1194,14 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             @self.Constraint(self.target_ion_set, doc="Breakthrough concentration")
             def eq_c_breakthru(b, j):
                 return (
-                    b.c_norm[j] * prop_in.conc_mass_phase_comp["Liq", j]
-                    == b.c_breakthru[j]
+                    b.c_norm[j]
+                    == b.c_breakthru[j] / prop_in.conc_mass_phase_comp["Liq", j]
                 )
 
             @self.Constraint(
-                self.target_ion_set,
-                doc="Mass transfer coefficient [A] from Clark equation",
+                doc="Mass transfer coefficient from Clark equation (kT)",
             )  # Croll et al (2023), Eq.19
-            def eq_mass_transfer_coeff(b, j):
+            def eq_mass_transfer_coeff(b):
                 return b.mass_transfer_coeff * (b.freundlich_n - 1) == (
                     b.kinetic_param * b.bv_50
                 )
@@ -1279,17 +1252,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     (b.c_norm[j] - b.c_trap_min) / (b.num_traps - 1)
                 )
 
+            # b.ebct == b.bed_depth / b.vel_bed
             @self.Constraint(
-                self.target_ion_set,
                 self.trap_index,
                 doc="Breakthru time calc for trapezoids",
             )
-            def eq_tb_traps(b, j, k):
+            def eq_tb_traps(b, k):
                 x = 1 / b.c_traps[k]
-                return b.tb_traps[k] == (
-                    b.vel_bed / (-b.kinetic_param * b.bed_depth)
-                ) * log((x ** (b.freundlich_n - 1) - 1) / b.bed_capacity_param) * (
-                    b.ebct
+                return b.tb_traps[k] == (1 / -b.kinetic_param) * log(
+                    (x ** (b.freundlich_n - 1) - 1) / b.bed_capacity_param
                 )
 
             @self.Constraint(self.trap_index, doc="Area of trapezoids")
@@ -1299,16 +1270,16 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 ] * ((b.c_traps[k] + b.c_traps[k - 1]) / 2)
 
             @self.Constraint(
-                self.target_ion_set, doc="Average relative effluent calculation"
+                self.target_ion_set, doc="Average relative effluent concentration"
             )
             def eq_c_norm_avg(b, j):
                 return b.c_norm_avg[j] == sum(b.traps[k] for k in b.trap_index)
 
             @self.Constraint(
                 self.target_ion_set,
-                doc="Mass transfer term for target ion",
+                doc="CV mass transfer term",
             )
-            def eq_mass_transfer_target_fr(b, j, doc="CV mass transfer term"):
+            def eq_mass_transfer_target_fr(b, j):
                 return (1 - b.c_norm_avg[j]) * prop_in.get_material_flow_terms(
                     "Liq", j
                 ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
@@ -1408,8 +1379,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         self.process_flow.properties_in.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
-        # if not check_optimal_termination(res):
-        #     raise InitializationError(f"Unit model {self.name} failed to initialize.")
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {self.name} failed to initialize.")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -1420,20 +1391,20 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.t_breakthru) is None:
             iscale.set_scaling_factor(self.t_breakthru, 1e-6)
 
-        if iscale.get_scaling_factor(self.Re) is None:
-            iscale.set_scaling_factor(self.Re, 1)
+        if iscale.get_scaling_factor(self.N_Re) is None:
+            iscale.set_scaling_factor(self.N_Re, 1)
 
-        if iscale.get_scaling_factor(self.Sc) is None:
-            iscale.set_scaling_factor(self.Sc, 1e-2)
+        if iscale.get_scaling_factor(self.N_Sc) is None:
+            iscale.set_scaling_factor(self.N_Sc, 1e-2)
 
-        if iscale.get_scaling_factor(self.Sh) is None:
-            iscale.set_scaling_factor(self.Sh, 0.1)
+        if iscale.get_scaling_factor(self.N_Sh) is None:
+            iscale.set_scaling_factor(self.N_Sh, 0.1)
 
-        if iscale.get_scaling_factor(self.Pe_p) is None:
-            iscale.set_scaling_factor(self.Pe_p, 1e2)
+        if iscale.get_scaling_factor(self.N_Pe_particle) is None:
+            iscale.set_scaling_factor(self.N_Pe_particle, 1e2)
 
-        if iscale.get_scaling_factor(self.Pe_bed) is None:
-            iscale.set_scaling_factor(self.Pe_bed, 1e-3)
+        if iscale.get_scaling_factor(self.N_Pe_bed) is None:
+            iscale.set_scaling_factor(self.N_Pe_bed, 1e-3)
 
         if iscale.get_scaling_factor(self.number_columns) is None:
             iscale.set_scaling_factor(self.number_columns, 1)
@@ -1614,11 +1585,11 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         var_dict["Bed Velocity"] = self.vel_bed
         var_dict["Resin Particle Diameter"] = self.resin_diam
         var_dict["Resin Bulk Density"] = self.resin_bulk_dens
-        var_dict[f"Schmidt Number [{target_ion}]"] = self.Sc[target_ion]
-        var_dict[f"Sherwood Number [{target_ion}]"] = self.Sh[target_ion]
-        var_dict["Reynolds Number"] = self.Re
-        var_dict["Peclet Number (bed)"] = self.Pe_bed
-        var_dict["Peclet Number (particle)"] = self.Pe_p
+        var_dict[f"Schmidt Number [{target_ion}]"] = self.N_Sc[target_ion]
+        var_dict[f"Sherwood Number [{target_ion}]"] = self.N_Sh[target_ion]
+        var_dict["Reynolds Number"] = self.N_Re
+        var_dict["Peclet Number (bed)"] = self.N_Pe_bed
+        var_dict["Peclet Number (particle)"] = self.N_Pe_particle
         if self.config.isotherm == IsothermType.langmuir:
             var_dict["Total Resin Capacity [eq/L]"] = self.resin_max_capacity
             var_dict["Usable Resin Capacity [eq/L]"] = self.resin_eq_capacity

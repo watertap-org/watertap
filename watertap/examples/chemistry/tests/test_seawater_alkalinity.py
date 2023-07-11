@@ -56,7 +56,6 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_forms impo
 
 # Import k-value functions
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    gibbs_energy,
     van_t_hoff,
 )
 
@@ -82,7 +81,6 @@ from idaes.core.util.model_statistics import (
     activated_constraints_set,
     number_variables,
     number_total_constraints,
-    number_unused_variables,
 )
 
 # Import the idaes objects for Generic Properties and Reactions

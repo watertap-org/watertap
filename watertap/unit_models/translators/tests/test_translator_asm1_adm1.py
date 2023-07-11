@@ -23,16 +23,9 @@ water Research Vol. 43 pp.1913–1923.
 import pytest
 from pyomo.environ import ConcreteModel, value, assert_optimal_termination, Param
 
-from idaes.core import (
-    FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-)
+from idaes.core import FlowsheetBlock
 
-from pyomo.environ import (
-    units,
-)
+from pyomo.environ import units
 
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
@@ -40,12 +33,8 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    unused_variables_set,
 )
 
-from idaes.core.util.scaling import (
-    unscaled_variables_generator,
-)
 import idaes.logger as idaeslog
 from idaes.core.util.testing import initialization_tester
 
@@ -63,7 +52,7 @@ from watertap.property_models.anaerobic_digestion.adm1_reactions import (
 )
 
 
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+from pyomo.util.check_units import assert_units_consistent
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -175,8 +164,8 @@ class TestAsm1Adm1(object):
         assert hasattr(asmadm.fs.unit.outlet, "anions")
         assert hasattr(asmadm.fs.unit.outlet, "cations")
 
-        assert number_variables(asmadm) == 133
-        assert number_total_constraints(asmadm) == 33
+        assert number_variables(asmadm) == 134
+        assert number_total_constraints(asmadm) == 34
 
         assert number_unused_variables(asmadm.fs.unit) == 0
 
@@ -370,6 +359,7 @@ class TestAsm1Adm1(object):
                         + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_fa"]
                         + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_c4"]
                         + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_pro"]
+                        + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_ac"]
                         + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_h2"]
                         + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_c"]
                         + asmadm.fs.unit.outlet.conc_mass_comp[0, "X_ch"]
@@ -384,7 +374,7 @@ class TestAsm1Adm1(object):
         assert (
             abs(
                 value(
-                    asmadm.fs.unit.TKN[0]
+                    asmadm.fs.unit.TKN_in[0]
                     - (
                         asmadm.fs.unit.outlet.conc_mass_comp[0, "S_IN"]
                         + asmadm.fs.unit.config.reaction_package.N_xc

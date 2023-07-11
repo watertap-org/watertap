@@ -19,7 +19,6 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     Param,
-    units,
     value,
     Var,
     check_optimal_termination,
