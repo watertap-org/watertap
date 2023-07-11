@@ -384,6 +384,7 @@ class TestGACRobust:
         mr.fs.unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=mr.fs.costing
         )
+        mr.fs.costing.cost_process()
 
         # testing gac costing block dof and initialization
         assert assert_units_consistent(mr) is None
