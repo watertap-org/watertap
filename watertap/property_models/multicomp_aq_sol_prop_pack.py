@@ -289,6 +289,26 @@ class MCASParameterData(PhysicalParameterBlock):
         ),
     )
 
+    CONFIG.declare(
+        "flow_basis",
+        ConfigValue(
+            default=FlowBasis.molar,
+            domain=In(FlowBasis),
+            description="Flow basis",
+            doc="""
+           Flow basis options.
+
+           **default** - ``FlowBasis.molar``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``FlowBasis.molar``", "molar flowrate as the state variable"
+           "``FlowBasis.mass``", "mass flowrate as the state variable"
+       """,
+        ),
+        )
+
     def build(self):
         """
         Callable method for Block construction.
