@@ -127,7 +127,7 @@ class ThickenerData(SeparatorData):
         )
 
         @self.Expression(self.flowsheet().time, doc="Suspended solids concentration")
-        def TSS(blk, t):
+        def TSS_in(blk, t):
             if self.config.activated_sludge_model == ActivatedSludgeModelType.ASM1:
                 return 0.75 * (
                     sum(
@@ -151,7 +151,7 @@ class ThickenerData(SeparatorData):
 
         @self.Expression(self.flowsheet().time, doc="Thickening factor")
         def f_thick(blk, t):
-            return blk.p_thick * (10 / (blk.TSS[t]))
+            return blk.p_thick * (10 / (blk.TSS_in[t]))
 
         @self.Expression(self.flowsheet().time, doc="Remove factor")
         def f_q_du(blk, t):
