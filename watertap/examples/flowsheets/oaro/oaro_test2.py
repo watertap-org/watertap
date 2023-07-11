@@ -255,12 +255,12 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     m.fs.oaro_min_pressure = Param(initialize=10e5, units=pyunits.Pa, mutable=True)
     m.fs.oaro_max_pressure = Param(initialize=65e5, units=pyunits.Pa, mutable=True)
     m.fs.ro_min_pressure = Param(initialize=10e5, units=pyunits.Pa, mutable=True)
-    m.fs.ro_max_pressure = Param(initialize=85e5, units=pyunits.Pa, mutable=True)
+    m.fs.ro_max_pressure = Param(initialize=70e5, units=pyunits.Pa, mutable=True)
     m.fs.recycle_pump_min_pressure = Param(
         initialize=1e5, units=pyunits.Pa, mutable=True
     )
     m.fs.recycle_pump_max_pressure = Param(
-        initialize=85e5, units=pyunits.Pa, mutable=True
+        initialize=70e5, units=pyunits.Pa, mutable=True
     )
 
     # process costing and add system level metrics
@@ -637,7 +637,7 @@ def set_operating_conditions(
     for idx, pump in m.fs.PrimaryPumps.items():
         # pump.control_volume.properties_out[0].pressure = 10e5 + 65e5 / float(idx)
         if idx == m.fs.Stages.last():
-            pump.control_volume.properties_out[0].pressure = 85e5
+            pump.control_volume.properties_out[0].pressure = 70e5
         else:
             pump.control_volume.properties_out[0].pressure = 65e5
         pump.control_volume.properties_out[0].pressure.fix()
@@ -676,7 +676,7 @@ def set_operating_conditions(
     B_RO = 3.5e-8
     m.fs.RO.A_comp.fix(A_RO)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO.B_comp.fix(B_RO)  # membrane salt permeability coefficient [m/s]
-    m.fs.RO.feed_side.channel_height.fix(2e-3)  # channel height in membrane stage [m]
+    m.fs.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
     m.fs.RO.feed_side.spacer_porosity.fix(
         spacer_porosity
     )  # spacer porosity in membrane stage [-]
