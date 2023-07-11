@@ -268,7 +268,7 @@ def test_recursive_parameter_sweep(model, tmp_path):
                 True,
             ],
             "sweep_params": {
-                "fs.a": {
+                "a_val": {
                     "units": "None",
                     "value": np.array(
                         [
@@ -301,7 +301,7 @@ def test_recursive_parameter_sweep(model, tmp_path):
 
         truth_txt_dict = {
             "outputs": ["x_val"],
-            "sweep_params": ["fs.a"],
+            "sweep_params": ["a_val"],
         }
 
         with open(txt_fpath, "r") as f:
@@ -414,7 +414,7 @@ def test_recursive_parameter_sweep_function(model, tmp_path):
                 True,
             ],
             "sweep_params": {
-                "fs.a": {
+                "a_val": {
                     "units": "None",
                     "value": np.array(
                         [
@@ -446,7 +446,7 @@ def test_recursive_parameter_sweep_function(model, tmp_path):
 
         truth_txt_dict = {
             "outputs": ["x_val"],
-            "sweep_params": ["fs.a"],
+            "sweep_params": ["a_val"],
         }
 
         with open(txt_fpath, "r") as f:

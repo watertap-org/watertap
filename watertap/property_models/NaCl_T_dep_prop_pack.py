@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Initial property package for H2O-NaCl system
+Initial property package for H2O-NaCl system with temperature dependence
 """
 
 # Import Python libraries
@@ -63,6 +63,7 @@ import idaes.core.util.scaling as iscale
 
 from watertap.core.util.scaling import transform_property_constraints
 
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -86,10 +87,6 @@ class NaClParameterData(PhysicalParameterBlock):
         # phases
         self.Liq = LiquidPhase()
 
-        # reference
-        # this package is developed from Bartholomew & Mauter (2019) https://doi.org/10.1016/j.memsci.2018.11.067
-        # the enthalpy calculations are from Sharqawy et al. (2010) http://dx.doi.org/10.5004/dwt.2010.1079
-
         # molecular weight
         mw_comp_data = {"H2O": 18.01528e-3, "NaCl": 58.44e-3}
         self.mw_comp = Param(
@@ -100,59 +97,568 @@ class NaClParameterData(PhysicalParameterBlock):
             doc="Molecular weight kg/mol",
         )
 
-        # mass density parameters, eq 4 in Bartholomew
-        dens_mass_param_dict = {"0": 995, "1": 756}
-        self.dens_mass_param = Var(
-            dens_mass_param_dict.keys(),
+        # solubility_comp, 0-450 C
+        # Sparrow 2003, Eq 5: Xsat = param_0 + param_1 * T + param_2 * T**2
+        solubility_comp_param_dict = {"0": 0.2628, "1": 62.75e-6, "2": 1.084e-6}
+        self.solubility_comp_param = Var(
+            solubility_comp_param_dict.keys(),
             domain=Reals,
-            initialize=dens_mass_param_dict,
-            units=pyunits.kg / pyunits.m**3,
-            doc="Mass density parameters",
-        )
-
-        # dynamic viscosity parameters, eq 5 in Bartholomew
-        visc_d_param_dict = {"0": 9.80e-4, "1": 2.15e-3}
-        self.visc_d_param = Var(
-            visc_d_param_dict.keys(),
-            domain=Reals,
-            initialize=visc_d_param_dict,
-            units=pyunits.Pa * pyunits.s,
-            doc="Dynamic viscosity parameters",
-        )
-
-        # diffusivity parameters, eq 6 in Bartholomew
-        diffus_param_dict = {
-            "0": 1.51e-9,
-            "1": -2.00e-9,
-            "2": 3.01e-8,
-            "3": -1.22e-7,
-            "4": 1.53e-7,
-        }
-        self.diffus_param = Var(
-            diffus_param_dict.keys(),
-            domain=Reals,
-            initialize=diffus_param_dict,
-            units=pyunits.m**2 / pyunits.s,
-            doc="Dynamic viscosity parameters",
-        )
-
-        # osmotic coefficient parameters, eq. 3b in Bartholomew
-        osm_coeff_param_dict = {"0": 0.918, "1": 8.89e-2, "2": 4.92}
-        self.osm_coeff_param = Var(
-            osm_coeff_param_dict.keys(),
-            domain=Reals,
-            initialize=osm_coeff_param_dict,
+            initialize=solubility_comp_param_dict,
             units=pyunits.dimensionless,
-            doc="Osmotic coefficient parameters",
+            doc="solubility_comp parameters",
         )
 
-        # TODO: update for NaCl solution, relationship from Sharqawy is for seawater
-        self.cp_w = Var(
-            within=Reals,
-            initialize=4182,  # Assume the heat capacity of NaCl solution is equal to that of water at STP
-            units=pyunits.J / (pyunits.kg * pyunits.K),
-            doc="Specific heat capacity of water",
+        # mass density parameters, 0-300 C
+        # Sparrow 2003, Eq 7: density = A+BT+CT2+DT3+ET4, where A = ao + a1X + a2X2 + a3X3 + a4X4
+        dens_mass_A_param_dict = {
+            "0": 1.0001e3,
+            "1": 0.7666e3,
+            "2": -0.0149e3,
+            "3": 0.2663e3,
+            "4": 0.8845e3,
+        }
+        dens_mass_B_param_dict = {
+            "0": -0.0214,
+            "1": -3.496,
+            "2": 10.02,
+            "3": -6.56,
+            "4": -31.37,
+        }
+        dens_mass_C_param_dict = {
+            "0": -5.263e-3,
+            "1": 39.87e-3,
+            "2": -176.2e-3,
+            "3": 363.5e-3,
+            "4": -7.784e-3,
+        }
+        dens_mass_D_param_dict = {
+            "0": 15.42e-6,
+            "1": -167e-6,
+            "2": 980.7e-6,
+            "3": -2573e-6,
+            "4": 876.6e-6,
+        }
+        dens_mass_E_param_dict = {
+            "0": -0.0276e-6,
+            "1": 0.2978e-6,
+            "2": -2.017e-6,
+            "3": 6.345e-6,
+            "4": -3.914e-6,
+        }
+
+        self.dens_mass_param_A = Var(
+            dens_mass_A_param_dict.keys(),
+            domain=Reals,
+            initialize=dens_mass_A_param_dict,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Mass density parameter A",
         )
+        self.dens_mass_param_B = Var(
+            dens_mass_B_param_dict.keys(),
+            domain=Reals,
+            initialize=dens_mass_B_param_dict,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Mass density parameter B",
+        )
+        self.dens_mass_param_C = Var(
+            dens_mass_C_param_dict.keys(),
+            domain=Reals,
+            initialize=dens_mass_C_param_dict,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Mass density parameter C",
+        )
+        self.dens_mass_param_D = Var(
+            dens_mass_D_param_dict.keys(),
+            domain=Reals,
+            initialize=dens_mass_D_param_dict,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Mass density parameter D",
+        )
+        self.dens_mass_param_E = Var(
+            dens_mass_E_param_dict.keys(),
+            domain=Reals,
+            initialize=dens_mass_E_param_dict,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Mass density parameter E",
+        )
+
+        # specific enthalpy parameters, 0-300 C
+        # Sparrow 2003, Eq 8: h = A+BT+CT2+DT3+ET4, where A = ao + a1X + a2X2 + a3X3 + a4X4
+        enth_A_param_dict = {
+            "0": 0.0005e3,
+            "1": 0.0378e3,
+            "2": -0.3682e3,
+            "3": -0.6529e3,
+            "4": 2.89e3,
+        }
+        enth_B_param_dict = {
+            "0": 4.145,
+            "1": -4.973,
+            "2": 4.482,
+            "3": 18.31,
+            "4": -46.41,
+        }
+        enth_C_param_dict = {
+            "0": 0.0007,
+            "1": -0.0059,
+            "2": 0.0854,
+            "3": -0.495,
+            "4": 0.8255,
+        }
+        enth_D_param_dict = {
+            "0": -0.0048e-3,
+            "1": 0.0639e-3,
+            "2": -0.714e-3,
+            "3": 3.273e-3,
+            "4": -4.85e-3,
+        }
+        enth_E_param_dict = {
+            "0": 0.0202e-6,
+            "1": -0.2432e-6,
+            "2": 2.054e-6,
+            "3": -8.211e-6,
+            "4": 11.43e-6,
+        }
+
+        self.enth_param_A = Var(
+            enth_A_param_dict.keys(),
+            domain=Reals,
+            initialize=enth_A_param_dict,
+            units=pyunits.J / pyunits.kg,
+            doc="Specific enthalpy parameter A",
+        )
+        self.enth_param_B = Var(
+            enth_B_param_dict.keys(),
+            domain=Reals,
+            initialize=enth_B_param_dict,
+            units=pyunits.J / pyunits.kg,
+            doc="Specific enthalpy parameter B",
+        )
+        self.enth_param_C = Var(
+            enth_C_param_dict.keys(),
+            domain=Reals,
+            initialize=enth_C_param_dict,
+            units=pyunits.J / pyunits.kg,
+            doc="Specific enthalpy parameter C",
+        )
+        self.enth_param_D = Var(
+            enth_D_param_dict.keys(),
+            domain=Reals,
+            initialize=enth_D_param_dict,
+            units=pyunits.J / pyunits.kg,
+            doc="Specific enthalpy parameter D",
+        )
+        self.enth_param_E = Var(
+            enth_E_param_dict.keys(),
+            domain=Reals,
+            initialize=enth_E_param_dict,
+            units=pyunits.J / pyunits.kg,
+            doc="Specific enthalpy parameter E",
+        )
+
+        # vapor pressure parameters, 0-150 C
+        # Sparrow 2003, Eq 6: Pvap = A+BT+CT2+DT3+ET4, where A = ao + a1X + a2X2 + a3X3 + a4X4
+        vap_pressure_A1_param_dict = {
+            "0": 0.9083e-3,
+            "1": -0.569e-3,
+            "2": 0.1945e-3,
+            "3": -3.736e-3,
+            "4": 2.82e-3,
+        }
+        vap_pressure_B1_param_dict = {
+            "0": -0.0669e-3,
+            "1": 0.0582e-3,
+            "2": -0.1668e-3,
+            "3": 0.676e-3,
+            "4": -2.091e-3,
+        }
+        vap_pressure_C1_param_dict = {
+            "0": 7.541e-6,
+            "1": -5.143e-6,
+            "2": 6.482e-6,
+            "3": -52.62e-6,
+            "4": 115.7e-6,
+        }
+        vap_pressure_D1_param_dict = {
+            "0": -0.0922e-6,
+            "1": 0.0649e-6,
+            "2": -0.1313e-6,
+            "3": 0.8024e-6,
+            "4": -1.986e-6,
+        }
+        vap_pressure_E1_param_dict = {
+            "0": 1.237e-9,
+            "1": -0.753e-9,
+            "2": 0.1448e-9,
+            "3": -6.964e-9,
+            "4": 14.61e-9,
+        }
+
+        self.vap_pressure_A1_param = Var(
+            vap_pressure_A1_param_dict.keys(),
+            domain=Reals,
+            initialize=vap_pressure_A1_param_dict,
+            units=pyunits.Pa,
+            doc="Vapor pressure parameters A1",
+        )
+        self.vap_pressure_B1_param = Var(
+            vap_pressure_B1_param_dict.keys(),
+            domain=Reals,
+            initialize=vap_pressure_B1_param_dict,
+            units=pyunits.Pa,
+            doc="Vapor pressure parameters B1",
+        )
+        self.vap_pressure_C1_param = Var(
+            vap_pressure_C1_param_dict.keys(),
+            domain=Reals,
+            initialize=vap_pressure_C1_param_dict,
+            units=pyunits.Pa,
+            doc="Vapor pressure parameters C1",
+        )
+        self.vap_pressure_D1_param = Var(
+            vap_pressure_D1_param_dict.keys(),
+            domain=Reals,
+            initialize=vap_pressure_D1_param_dict,
+            units=pyunits.Pa,
+            doc="Vapor pressure parameters D1",
+        )
+        self.vap_pressure_E1_param = Var(
+            vap_pressure_E1_param_dict.keys(),
+            domain=Reals,
+            initialize=vap_pressure_E1_param_dict,
+            units=pyunits.Pa,
+            doc="Vapor pressure parameters E1",
+        )
+
+        # TODO: could add entropy if needed from Sparrow 2003, Eq. 9
+
+        # thermal conductivity, 0-155 C
+        # Regressed from Zaytsev & Aseev (1992):
+        # th cond = A+BT+CT2+DT3, where A = ao + a1X + a2X2 + a3X3
+        therm_cond_A_param_dict = {
+            "0": 0.5424026,
+            "1": 0.01283929,
+            "2": -0.587953,
+            "3": 1.090895,
+        }
+        therm_cond_B_param_dict = {
+            "0": 0.002909031,
+            "1": -0.001817648,
+            "2": 0.007804725,
+            "3": -0.01199839,
+        }
+        therm_cond_C_param_dict = {
+            "0": -0.00002129933,
+            "1": 0.0000275758,
+            "2": -0.0001439831,
+            "3": 0.000237931,
+        }
+        therm_cond_D_param_dict = {
+            "0": 0.00000005486099,
+            "1": -0.0000001044598,
+            "2": 0.0000005747034,
+            "3": -0.0000009645982,
+        }
+
+        self.therm_cond_param_A = Var(
+            therm_cond_A_param_dict.keys(),
+            domain=Reals,
+            initialize=therm_cond_A_param_dict,
+            units=pyunits.W / (pyunits.m * pyunits.K),
+            doc="Thermal conductivity parameter A",
+        )
+        self.therm_cond_param_B = Var(
+            therm_cond_B_param_dict.keys(),
+            domain=Reals,
+            initialize=therm_cond_B_param_dict,
+            units=pyunits.W / (pyunits.m * pyunits.K),
+            doc="Thermal conductivity parameter B",
+        )
+        self.therm_cond_param_C = Var(
+            therm_cond_C_param_dict.keys(),
+            domain=Reals,
+            initialize=therm_cond_C_param_dict,
+            units=pyunits.W / (pyunits.m * pyunits.K),
+            doc="Thermal conductivity parameter C",
+        )
+        self.therm_cond_param_D = Var(
+            therm_cond_D_param_dict.keys(),
+            domain=Reals,
+            initialize=therm_cond_D_param_dict,
+            units=pyunits.W / (pyunits.m * pyunits.K),
+            doc="Thermal conductivity parameter D",
+        )
+
+        # viscosity, 0-200 C,
+        # Regressed from Zaytsev & Aseev (1992):
+        # vis = A+BT+CT2+DT3+ET4, where A = ao + a1X + a2X2 + a3X3 + a4X4
+        visc_A_param_dict = {
+            "0": 1.740036,
+            "1": 0.2437716,
+            "2": 33.97162,
+            "3": -140.441,
+            "4": 381.4262,
+        }
+        visc_B_param_dict = {
+            "0": -0.04347415,
+            "1": 0.01794253,
+            "2": -0.9344071,
+            "3": 3.607937,
+            "4": -9.966248,
+        }
+        visc_C_param_dict = {
+            "0": 0.0005076655,
+            "1": -0.0001613445,
+            "2": 0.009094354,
+            "3": -0.03051292,
+            "4": 0.09635153,
+        }
+        visc_D_param_dict = {
+            "0": -0.00000271643,
+            "1": 0.0000004705967,
+            "2": -0.00003883917,
+            "3": 0.0001014729,
+            "4": -0.0004023515,
+        }
+        visc_E_param_dict = {
+            "0": 0.000000005339076,
+            "1": -0.0000000002519368,
+            "2": 0.00000006098774,
+            "3": -0.000000102327,
+            "4": 0.0000006067517,
+        }
+
+        self.visc_param_A = Var(
+            visc_A_param_dict.keys(),
+            domain=Reals,
+            initialize=visc_A_param_dict,
+            units=pyunits.Pa * pyunits.s,
+            doc="Dynamic viscosity parameter A",
+        )
+        self.visc_param_B = Var(
+            visc_B_param_dict.keys(),
+            domain=Reals,
+            initialize=visc_B_param_dict,
+            units=pyunits.Pa * pyunits.s,
+            doc="Dynamic viscosity parameter B",
+        )
+        self.visc_param_C = Var(
+            visc_C_param_dict.keys(),
+            domain=Reals,
+            initialize=visc_C_param_dict,
+            units=pyunits.Pa * pyunits.s,
+            doc="Dynamic viscosity parameter C",
+        )
+        self.visc_param_D = Var(
+            visc_D_param_dict.keys(),
+            domain=Reals,
+            initialize=visc_D_param_dict,
+            units=pyunits.Pa * pyunits.s,
+            doc="Dynamic viscosity parameter D",
+        )
+        self.visc_param_E = Var(
+            visc_E_param_dict.keys(),
+            domain=Reals,
+            initialize=visc_E_param_dict,
+            units=pyunits.Pa * pyunits.s,
+            doc="Dynamic viscosity parameter E",
+        )
+
+        # heat capacity, 0-200 C
+        # Regressed from Zaytsev & Aseev (1992):
+        # cp = A+BT+CT2+DT3, where A = ao + a1X + a2X2 + a3X3
+        cp_A_param_dict = {
+            "0": 4174.74838,
+            "1": -5533.00792,
+            "2": 9564.358017,
+            "3": -11918.208084,
+        }
+        cp_B_param_dict = {
+            "0": -0.115581,
+            "1": 17.432724,
+            "2": -157.366583,
+            "3": 392.883082,
+        }
+        cp_C_param_dict = {"0": 0.001698, "1": -0.137938, "2": 1.541653, "3": -3.799609}
+        cp_D_param_dict = {"0": 0.000034, "1": 0.000376, "2": -0.004463, "3": 0.010904}
+        self.cp_param_A = Var(
+            cp_A_param_dict.keys(),
+            domain=Reals,
+            initialize=cp_A_param_dict,
+            units=pyunits.J / (pyunits.kg * pyunits.K),
+            doc="Heat Capacity parameter A",
+        )
+        self.cp_param_B = Var(
+            cp_B_param_dict.keys(),
+            domain=Reals,
+            initialize=cp_B_param_dict,
+            units=pyunits.J / (pyunits.kg * pyunits.K),
+            doc="Heat Capacity parameter B",
+        )
+        self.cp_param_C = Var(
+            cp_C_param_dict.keys(),
+            domain=Reals,
+            initialize=cp_C_param_dict,
+            units=pyunits.J / (pyunits.kg * pyunits.K),
+            doc="Heat Capacity parameter C",
+        )
+        self.cp_param_D = Var(
+            cp_D_param_dict.keys(),
+            domain=Reals,
+            initialize=cp_D_param_dict,
+            units=pyunits.J / (pyunits.kg * pyunits.K),
+            doc="Heat Capacity parameter D",
+        )
+
+        # diffusivity parameters, 0-60 C
+        # Regressed from Zaytsev & Aseev (1992):
+        # diffus = A+BT+CT2+DT3, where A = ao + a1X + a2X2 + a3X3
+        diffus_aq_A_param_dict = {
+            "0": 0.4131329195225919,
+            "1": -7.742251927618488,
+            "2": 103.85062756812115,
+            "3": -237.04211192526648,
+        }
+        diffus_aq_B_param_dict = {
+            "0": 0.04632401864393698,
+            "1": 0.8936760261966561,
+            "2": -9.939718876008943,
+            "3": 22.522378774378765,
+        }
+        diffus_aq_C_param_dict = {
+            "0": -7.116300356324601e-06,
+            "1": -0.03354460908477397,
+            "2": 0.33333186888927646,
+            "3": -0.7541027909550477,
+        }
+        diffus_aq_D_param_dict = {
+            "0": -1.1147902601038595e-08,
+            "1": 0.00027118535808978717,
+            "2": -0.0026528149775375542,
+            "3": 0.00603727069050608,
+        }
+        self.diffus_aq_param_A = Var(
+            diffus_aq_A_param_dict.keys(),
+            domain=Reals,
+            initialize=diffus_aq_A_param_dict,
+            units=pyunits.m**2 / pyunits.s,
+            doc="Diffusivity (solution) parameter A",
+        )
+        self.diffus_aq_param_B = Var(
+            diffus_aq_B_param_dict.keys(),
+            domain=Reals,
+            initialize=diffus_aq_B_param_dict,
+            units=pyunits.m**2 / pyunits.s,
+            doc="Diffusivity (solution) parameter B",
+        )
+        self.diffus_aq_param_C = Var(
+            diffus_aq_C_param_dict.keys(),
+            domain=Reals,
+            initialize=diffus_aq_C_param_dict,
+            units=pyunits.m**2 / pyunits.s,
+            doc="Diffusivity (solution) parameter C",
+        )
+        self.diffus_aq_param_D = Var(
+            diffus_aq_D_param_dict.keys(),
+            domain=Reals,
+            initialize=diffus_aq_D_param_dict,
+            units=pyunits.m**2 / pyunits.s,
+            doc="Diffusivity (solution) parameter D",
+        )
+
+        # osmotic coefficient parameters, 0-300 C
+        # Regressed from Pitzer et. al. (1984):
+        # osm coeff = A+BT+CT2+DT3, where A = ao + a1X + a2X2 + a3X3
+        osm_coeff_A_param_dict = {
+            "0": 0.9399062962108361,
+            "1": -0.0189882837141575,
+            "2": 0.019107595372900864,
+            "3": -0.0011117486936487648,
+        }
+        osm_coeff_B_param_dict = {
+            "0": -0.0007061546095086372,
+            "1": 0.0008291452376952367,
+            "2": -6.51004044513984e-05,
+            "3": -8.040912167732404e-06,
+        }
+        osm_coeff_C_param_dict = {
+            "0": 2.5295381526926904e-06,
+            "1": -4.995407097616723e-06,
+            "2": 3.626080914442103e-07,
+            "3": 2.643648394495091e-08,
+        }
+        osm_coeff_D_param_dict = {
+            "0": -4.6659633952665815e-09,
+            "1": 3.766553344020095e-09,
+            "2": 1.761632037484241e-10,
+            "3": -7.493701294810002e-11,
+        }
+        self.osm_coeff_param_A = Var(
+            osm_coeff_A_param_dict.keys(),
+            domain=Reals,
+            initialize=osm_coeff_A_param_dict,
+            units=pyunits.dimensionless,
+            doc="Osmotic coefficient parameter A",
+        )
+        self.osm_coeff_param_B = Var(
+            osm_coeff_B_param_dict.keys(),
+            domain=Reals,
+            initialize=osm_coeff_B_param_dict,
+            units=pyunits.dimensionless,
+            doc="Osmotic coefficient parameter B",
+        )
+        self.osm_coeff_param_C = Var(
+            osm_coeff_C_param_dict.keys(),
+            domain=Reals,
+            initialize=osm_coeff_C_param_dict,
+            units=pyunits.dimensionless,
+            doc="Osmotic coefficient parameter C",
+        )
+        self.osm_coeff_param_D = Var(
+            osm_coeff_D_param_dict.keys(),
+            domain=Reals,
+            initialize=osm_coeff_D_param_dict,
+            units=pyunits.dimensionless,
+            doc="Osmotic coefficient parameter D",
+        )
+
+        # water density parameters from: water_prop_pack for liq water density
+        dens_units = pyunits.kg / pyunits.m**3
+        t_inv_units = pyunits.K**-1
+
+        self.dens_mass_param_A1 = Var(
+            within=Reals,
+            initialize=9.999e2,
+            units=dens_units,
+            doc="Mass density parameter A1",
+        )
+        self.dens_mass_param_A2 = Var(
+            within=Reals,
+            initialize=2.034e-2,
+            units=dens_units * t_inv_units,
+            doc="Mass density parameter A2",
+        )
+        self.dens_mass_param_A3 = Var(
+            within=Reals,
+            initialize=-6.162e-3,
+            units=dens_units * t_inv_units**2,
+            doc="Mass density parameter A3",
+        )
+        self.dens_mass_param_A4 = Var(
+            within=Reals,
+            initialize=2.261e-5,
+            units=dens_units * t_inv_units**3,
+            doc="Mass density parameter A4",
+        )
+        self.dens_mass_param_A5 = Var(
+            within=Reals,
+            initialize=-4.657e-8,
+            units=dens_units * t_inv_units**4,
+            doc="Mass density parameter A5",
+        )
+
+        # TODO: add vapor phase and according properties (if deemed necessary)
+        # including: specific enthalpy, diffusivity(water-air), density, specific heat, heat of vaporization
 
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
@@ -165,7 +671,11 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
         self.set_default_scaling("diffus_phase_comp", 1e9, index=("Liq", "NaCl"))
         self.set_default_scaling("osm_coeff", 1e0)
-        self.set_default_scaling("enth_mass_phase", 1e-4, index="Liq")
+        self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
+        self.set_default_scaling("cp_mass_phase", 1e-4, index="Liq")
+        self.set_default_scaling("pressure_sat", 1e-5)
+        self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
+        self.set_default_scaling("solubility_comp", 1e0)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -187,16 +697,18 @@ class NaClParameterData(PhysicalParameterBlock):
                 "visc_d_phase": {"method": "_visc_d_phase"},
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
+                "cp_mass_phase": {"method": "_cp_mass_phase"},
+                "pressure_sat": {"method": "_pressure_sat"},
             }
         )
-
         obj.define_custom_properties(
             {
                 "osm_coeff": {"method": "_osm_coeff"},
                 "enth_flow": {"method": "_enth_flow"},
+                "solubility_comp": {"method": "_solubility_comp"},
+                "therm_cond_phase": {"method": "_therm_cond_phase"},
             }
         )
-
         obj.add_default_units(
             {
                 "time": pyunits.s,
@@ -332,14 +844,14 @@ class _NaClStateBlock(StateBlock):
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to release state variables fixed during initialisation.
+        Method to release state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
                     unfixed. This dict is returned by initialize if
                     hold_state=True.
-            outlvl : sets output level of of logging
+            outlvl : sets output level of logging
         """
         # Unfix state variables
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
@@ -477,7 +989,7 @@ class NaClStateBlockData(StateBlockData):
 
         self.temperature = Var(
             initialize=298.15,
-            bounds=(273.15, 373.15),
+            bounds=(273.15, 1000),
             domain=NonNegativeReals,
             units=pyunits.degK,
             doc="State temperature",
@@ -485,7 +997,7 @@ class NaClStateBlockData(StateBlockData):
 
         self.pressure = Var(
             initialize=101325,
-            bounds=(1e4, 5e7),
+            bounds=(1e3, 5e7),
             domain=NonNegativeReals,
             units=pyunits.Pa,
             doc="State pressure",
@@ -519,16 +1031,38 @@ class NaClStateBlockData(StateBlockData):
         self.dens_mass_phase = Var(
             self.params.phase_list,
             initialize=1e3,
-            bounds=(5e2, 2e3),
+            bounds=(1, 1e6),
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density",
         )
-
-        def rule_dens_mass_phase(b, p):  # density, eq. 4 in Bartholomew
+        # Sparrow 2003, Eq. 7, 0-300 C
+        def rule_dens_mass_phase(b, p):
+            t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
+            param_vec = [
+                b.params.dens_mass_param_A,
+                b.params.dens_mass_param_B,
+                b.params.dens_mass_param_C,
+                b.params.dens_mass_param_D,
+                b.params.dens_mass_param_E,
+            ]
+            iter_param = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0}
+            k = 0
+            for key in iter_param:
+                iter_param[key] = (
+                    param_vec[k]["0"]
+                    + param_vec[k]["1"] * b.mass_frac_phase_comp[p, "NaCl"]
+                    + param_vec[k]["2"] * b.mass_frac_phase_comp[p, "NaCl"] ** 2
+                    + param_vec[k]["3"] * b.mass_frac_phase_comp[p, "NaCl"] ** 3
+                    + param_vec[k]["4"] * b.mass_frac_phase_comp[p, "NaCl"] ** 4
+                )
+                k += 1
             return (
                 b.dens_mass_phase[p]
-                == b.params.dens_mass_param["1"] * b.mass_frac_phase_comp[p, "NaCl"]
-                + b.params.dens_mass_param["0"]
+                == iter_param["A"]
+                + iter_param["B"] * t
+                + iter_param["C"] * t**2
+                + iter_param["D"] * t**3
+                + iter_param["E"] * t**4
             )
 
         self.eq_dens_mass_phase = Constraint(
@@ -566,7 +1100,7 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=10,
-            bounds=(1e-3, 2e3),
+            bounds=(0.0, 1e6),
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass concentration",
         )
@@ -631,7 +1165,7 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list,
             ["NaCl"],
             initialize=1,
-            bounds=(1e-4, 10),
+            bounds=(0.0, 1e6),
             units=pyunits.mole / pyunits.kg,
             doc="Molality",
         )
@@ -648,24 +1182,186 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list, ["NaCl"], rule=rule_molality_phase_comp
         )
 
+    def _solubility_comp(self):
+        self.solubility_comp = Var(
+            ["NaCl"],
+            initialize=0.5,
+            bounds=(0.0, 1.01),
+            units=pyunits.dimensionless,
+            doc="solubility_comp",
+        )
+        # Sparrow 2003, Eq 5,  0-450 C
+        def rule_solubility_comp(b, j):
+            t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
+            return (
+                self.solubility_comp[j]
+                == b.params.solubility_comp_param["0"]
+                + b.params.solubility_comp_param["1"] * t
+                + b.params.solubility_comp_param["2"] * t**2
+            )
+
+        self.eq_solubility_comp = Constraint(["NaCl"], rule=rule_solubility_comp)
+
+    def _pressure_sat(self):
+        self.pressure_sat = Var(
+            initialize=1e3,
+            bounds=(1, 1e8),
+            units=pyunits.Pa,
+            doc="Vapor Pressure",
+        )
+        # Sparrow 2003, Eq. 6, 0-150 C
+        def rule_pressure_sat(b):
+            t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
+            x = b.mass_frac_phase_comp["Liq", "NaCl"]
+            param_vec = [
+                b.params.vap_pressure_A1_param,
+                b.params.vap_pressure_B1_param,
+                b.params.vap_pressure_C1_param,
+                b.params.vap_pressure_D1_param,
+                b.params.vap_pressure_E1_param,
+            ]
+            iter_param = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0}
+            k = 0
+            for key in iter_param:
+                iter_param[key] = (
+                    param_vec[k]["0"]
+                    + param_vec[k]["1"] * x
+                    + param_vec[k]["2"] * x**2
+                    + param_vec[k]["3"] * x**3
+                    + param_vec[k]["4"] * x**4
+                )
+                k += 1
+            return (
+                b.pressure_sat
+                == (
+                    iter_param["A"]
+                    + iter_param["B"] * t
+                    + iter_param["C"] * t**2
+                    + iter_param["D"] * t**3
+                    + iter_param["E"] * t**4
+                )
+                * 1e6  # convert MPa to Pa
+            )
+
+        self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
+
     def _visc_d_phase(self):
         self.visc_d_phase = Var(
             self.params.phase_list,
             initialize=1e-3,
-            bounds=(1e-4, 1e-2),
+            bounds=(0.0, 1),
             units=pyunits.Pa * pyunits.s,
             doc="Viscosity",
         )
-
-        def rule_visc_d_phase(b, p):  # dynamic viscosity, eq 5 in Bartholomew
-            return (
-                b.visc_d_phase[p]
-                == b.params.visc_d_param["1"] * b.mass_frac_phase_comp[p, "NaCl"]
-                + b.params.visc_d_param["0"]
-            )
+        # Regressed from Zaytsev & Aseev (1992), 0-200 C
+        def rule_visc_d_phase(b, p):
+            t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
+            param_vec = [
+                b.params.visc_param_A,
+                b.params.visc_param_B,
+                b.params.visc_param_C,
+                b.params.visc_param_D,
+                b.params.visc_param_E,
+            ]
+            iter_param = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0}
+            k = 0
+            for key in iter_param:
+                iter_param[key] = (
+                    param_vec[k]["0"]
+                    + param_vec[k]["1"] * b.mass_frac_phase_comp[p, "NaCl"]
+                    + param_vec[k]["2"] * b.mass_frac_phase_comp[p, "NaCl"] ** 2
+                    + param_vec[k]["3"] * b.mass_frac_phase_comp[p, "NaCl"] ** 3
+                    + param_vec[k]["4"] * b.mass_frac_phase_comp[p, "NaCl"] ** 4
+                )
+                k += 1
+            return b.visc_d_phase[p] == (
+                iter_param["A"]
+                + iter_param["B"] * t
+                + iter_param["C"] * t**2
+                + iter_param["D"] * t**3
+                + iter_param["E"] * t**4
+            ) * 10 ** (-3)
 
         self.eq_visc_d_phase = Constraint(
             self.params.phase_list, rule=rule_visc_d_phase
+        )
+
+    def _therm_cond_phase(self):
+        self.therm_cond_phase = Var(
+            self.params.phase_list,
+            initialize=0.6,
+            bounds=(0.0, 2),
+            units=pyunits.W / (pyunits.m * pyunits.K),
+            doc="Thermal Conductivity",
+        )
+        # Regressed from Zaytsev & Aseev (1992), 0-155 C
+        def rule_therm_cond_phase(b, p):
+            t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
+            param_vec = [
+                b.params.therm_cond_param_A,
+                b.params.therm_cond_param_B,
+                b.params.therm_cond_param_C,
+                b.params.therm_cond_param_D,
+            ]
+            iter_param = {"A": 0, "B": 0, "C": 0, "D": 0}
+            k = 0
+            for key in iter_param:
+                iter_param[key] = (
+                    param_vec[k]["0"]
+                    + param_vec[k]["1"] * b.mass_frac_phase_comp[p, "NaCl"]
+                    + param_vec[k]["2"] * b.mass_frac_phase_comp[p, "NaCl"] ** 2
+                    + param_vec[k]["3"] * b.mass_frac_phase_comp[p, "NaCl"] ** 3
+                )
+                k += 1
+            return (
+                b.therm_cond_phase[p]
+                == iter_param["A"]
+                + iter_param["B"] * t
+                + iter_param["C"] * t**2
+                + iter_param["D"] * t**3
+            )
+
+        self.eq_therm_cond_phase = Constraint(
+            self.params.phase_list, rule=rule_therm_cond_phase
+        )
+
+    def _cp_mass_phase(self):
+        self.cp_mass_phase = Var(
+            self.params.phase_list,
+            initialize=4e3,
+            bounds=(0.0, 1e6),
+            units=pyunits.J * pyunits.kg**-1 * pyunits.K**-1,
+            doc="specific heat",
+        )
+        # Regressed from Zaytsev & Aseev (1992), 0-200 C
+        def rule_cp_mass_phase(b, p):
+            t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
+            param_vec = [
+                b.params.cp_param_A,
+                b.params.cp_param_B,
+                b.params.cp_param_C,
+                b.params.cp_param_D,
+            ]
+            iter_param = {"A": 0, "B": 0, "C": 0, "D": 0}
+            k = 0
+            for key in iter_param:
+                iter_param[key] = (
+                    param_vec[k]["0"]
+                    + param_vec[k]["1"] * b.mass_frac_phase_comp[p, "NaCl"]
+                    + param_vec[k]["2"] * b.mass_frac_phase_comp[p, "NaCl"] ** 2
+                    + param_vec[k]["3"] * b.mass_frac_phase_comp[p, "NaCl"] ** 3
+                )
+                k += 1
+            return (
+                b.cp_mass_phase[p]
+                == iter_param["A"]
+                + iter_param["B"] * t
+                + iter_param["C"] * t**2
+                + iter_param["D"] * t**3
+            )
+
+        self.eq_cp_mass_phase = Constraint(
+            self.params.phase_list, rule=rule_cp_mass_phase
         )
 
     def _diffus_phase_comp(self):
@@ -677,14 +1373,33 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.m**2 * pyunits.s**-1,
             doc="Diffusivity",
         )
-
-        def rule_diffus_phase_comp(b, p, j):  # diffusivity, eq 6 in Bartholomew
+        # Regressed from Zaytsev & Aseev (1992), 0-60 C
+        def rule_diffus_phase_comp(b, p, j):
+            t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
+            param_vec = [
+                b.params.diffus_aq_param_A,
+                b.params.diffus_aq_param_B,
+                b.params.diffus_aq_param_C,
+                b.params.diffus_aq_param_D,
+            ]
+            iter_param = {"A": 0, "B": 0, "C": 0, "D": 0}
+            k = 0
+            for key in iter_param:
+                iter_param[key] = (
+                    param_vec[k]["0"]
+                    + param_vec[k]["1"] * b.mass_frac_phase_comp[p, "NaCl"]
+                    + param_vec[k]["2"] * b.mass_frac_phase_comp[p, "NaCl"] ** 2
+                    + param_vec[k]["3"] * b.mass_frac_phase_comp[p, "NaCl"] ** 3
+                )
+                k += 1
             return b.diffus_phase_comp[p, j] == (
-                b.params.diffus_param["4"] * b.mass_frac_phase_comp[p, "NaCl"] ** 4
-                + b.params.diffus_param["3"] * b.mass_frac_phase_comp[p, "NaCl"] ** 3
-                + b.params.diffus_param["2"] * b.mass_frac_phase_comp[p, "NaCl"] ** 2
-                + b.params.diffus_param["1"] * b.mass_frac_phase_comp[p, "NaCl"]
-                + b.params.diffus_param["0"]
+                (
+                    iter_param["A"]
+                    + iter_param["B"] * t
+                    + iter_param["C"] * t**2
+                    + iter_param["D"] * t**3
+                )
+                * 1e-9
             )
 
         self.eq_diffus_phase_comp = Constraint(
@@ -694,17 +1409,36 @@ class NaClStateBlockData(StateBlockData):
     def _osm_coeff(self):
         self.osm_coeff = Var(
             initialize=1,
-            bounds=(0.5, 2),
+            bounds=(0.0, 10),
             units=pyunits.dimensionless,
             doc="Osmotic coefficient",
         )
-
+        # Regressed from Pitzer et. al. (1984), 0-300 C
         def rule_osm_coeff(b):
-            return b.osm_coeff == (
-                b.params.osm_coeff_param["2"]
-                * b.mass_frac_phase_comp["Liq", "NaCl"] ** 2
-                + b.params.osm_coeff_param["1"] * b.mass_frac_phase_comp["Liq", "NaCl"]
-                + b.params.osm_coeff_param["0"]
+            t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
+            m = (b.molality_phase_comp["Liq", "NaCl"]) / (pyunits.mole / pyunits.kg)
+            param_vec = [
+                b.params.osm_coeff_param_A,
+                b.params.osm_coeff_param_B,
+                b.params.osm_coeff_param_C,
+                b.params.osm_coeff_param_D,
+            ]
+            iter_param = {"A": 0, "B": 0, "C": 0, "D": 0}
+            k = 0
+            for key in iter_param:
+                iter_param[key] = (
+                    param_vec[k]["0"]
+                    + param_vec[k]["1"] * m
+                    + param_vec[k]["2"] * m**2
+                    + param_vec[k]["3"] * m**3
+                )
+                k += 1
+            return (
+                b.osm_coeff
+                == iter_param["A"]
+                + iter_param["B"] * t
+                + iter_param["C"] * t**2
+                + iter_param["D"] * t**3
             )
 
         self.eq_osm_coeff = Constraint(rule=rule_osm_coeff)
@@ -713,22 +1447,27 @@ class NaClStateBlockData(StateBlockData):
         self.pressure_osm_phase = Var(
             self.params.phase_list,
             initialize=1e6,
-            bounds=(5e2, 5e7),
+            bounds=(1, 1e8),
             units=pyunits.Pa,
             doc="Osmotic pressure",
         )
 
         def rule_pressure_osm_phase(b, p):
             i = 2  # number of ionic species
-            rhow = (
-                1000 * pyunits.kg / pyunits.m**3
-            )  # TODO: could make this variable based on temperature
+            t = b.temperature - 273.15 * pyunits.K
+            dens_mass = (
+                b.params.dens_mass_param_A1
+                + b.params.dens_mass_param_A2 * t
+                + b.params.dens_mass_param_A3 * t**2
+                + b.params.dens_mass_param_A4 * t**3
+                + b.params.dens_mass_param_A5 * t**4
+            )
             return (
                 b.pressure_osm_phase[p]
                 == i
                 * b.osm_coeff
                 * b.molality_phase_comp[p, "NaCl"]
-                * rhow
+                * dens_mass
                 * Constants.gas_constant
                 * b.temperature
             )
@@ -740,22 +1479,42 @@ class NaClStateBlockData(StateBlockData):
     def _enth_mass_phase(self):
         self.enth_mass_phase = Var(
             self.params.phase_list,
-            initialize=5e4,
-            bounds=(1e4, 1e6),
+            initialize=1e2,
+            bounds=(0, 1e8),
             units=pyunits.J * pyunits.kg**-1,
             doc="Specific enthalpy",
         )
-
-        def rule_enth_mass_phase(
-            b, p
-        ):  # specific enthalpy, H' = Cp(T-Tref) + (P-Pref)/rho  # TODO: remove enthalpy when all units can be isothermal
-            t = (
-                b.temperature - 273.15 * pyunits.K
-            )  # temperature in degC, but pyunits in K
-            P = b.pressure - 101325 * pyunits.Pa
-            h_w = b.params.cp_w * t + P / self.dens_mass_phase[p]
-
-            return b.enth_mass_phase[p] == h_w
+        # Sparrow 2003, Eq 8, 0-300 C
+        def rule_enth_mass_phase(b, p):
+            t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
+            param_vec = [
+                b.params.enth_param_A,
+                b.params.enth_param_B,
+                b.params.enth_param_C,
+                b.params.enth_param_D,
+                b.params.enth_param_E,
+            ]
+            iter_param = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0}
+            k = 0
+            for key in iter_param:
+                iter_param[key] = (
+                    param_vec[k]["0"]
+                    + param_vec[k]["1"] * b.mass_frac_phase_comp[p, "NaCl"]
+                    + param_vec[k]["2"] * b.mass_frac_phase_comp[p, "NaCl"] ** 2
+                    + param_vec[k]["3"] * b.mass_frac_phase_comp[p, "NaCl"] ** 3
+                    + param_vec[k]["4"] * b.mass_frac_phase_comp[p, "NaCl"] ** 4
+                )
+                k += 1
+            return b.enth_mass_phase[p] == (
+                (
+                    iter_param["A"]
+                    + iter_param["B"] * t
+                    + iter_param["C"] * t**2
+                    + iter_param["D"] * t**3
+                    + iter_param["E"] * t**4
+                )
+                * 1000
+            )
 
         self.eq_enth_mass_phase = Constraint(
             self.params.phase_list, rule=rule_enth_mass_phase
@@ -771,9 +1530,6 @@ class NaClStateBlockData(StateBlockData):
             )
 
         self.enth_flow = Expression(rule=rule_enth_flow)
-
-    # TODO: add vapor pressure, specific heat, thermal conductivity,
-    #   and heat of vaporization
 
     # -----------------------------------------------------------------------------
     # General Methods
