@@ -53,7 +53,7 @@ def build_electroNP_cost_param_block(blk):
     parameter_block_name="electroNP",
 )
 def cost_electroNP(
-    blk, cost_electricity_flow=True, cost_MgCl2_flow=True, cost_product_flow=True
+    blk, cost_electricity_flow=True, cost_MgCl2_flow=True, cost_phosphorus_flow=True
 ):
     """
     ElectroNP costing method
