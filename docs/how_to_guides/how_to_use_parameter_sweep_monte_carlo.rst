@@ -101,7 +101,10 @@ With the flowsheet defined and suitably initialized, along with the definitions 
     seed = None
 
     # Run the parameter sweep
-    global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file_name='monte_carlo_results.csv',
+    build_model = lambda: m
+    build_sweep_params = lambda model: sweep_params
+    build_outputs = lambda model, sweep_params: outputs
+    global_results = parameter_sweep(build_model, build_sweep_params, build_outputs, csv_results_file_name='monte_carlo_results.csv',
         optimize_function=RO_flowsheet.optimize, debugging_data_dir=debugging_data_dir, num_samples=num_samples, seed=seed)
 
 Note that ``num_samples`` must be provided for any of the random sample classes.  For the very small problem size and simple model used here, parallel hardware is almost certainly not necessary.  However, for larger total numbers of samples or more computationally demanding models, a significant speedup may be attained on a multi-core workstation or high performance computing (HPC) cluster.  To distribute the workload between more than one worker, simply call the scipt using the ``mpirun`` command from the command line
