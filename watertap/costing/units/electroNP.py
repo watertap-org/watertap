@@ -42,7 +42,7 @@ def build_electroNP_cost_param_block(blk):
     blk.phosphorus_recovery_value = pyo.Param(
         mutable=True,
         initialize=-0.07,
-        doc="Phosphorus recovery revenue",
+        doc="Phosphorus recovery value",
         units=pyo.units.USD_2020 / pyo.units.kg,
     )
     costing.add_defined_flow("phosphorus salt product", blk.phosphorus_recovery_revenue)
