@@ -967,15 +967,26 @@ class MCASStateBlockData(StateBlockData):
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         # Add state variables
-        self.flow_mol_phase_comp = Var(
-            self.params.phase_list,
-            self.params.component_list,
-            initialize=0.1,  # todo: revisit
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.mol / pyunits.s,
-            doc="Mole flow rate",
-        )
+        if self.config.flow_basis == FlowBasis.molar:
+            self.flow_mol_phase_comp = Var(
+                self.params.phase_list,
+                self.params.component_list,
+                initialize=0.1,  # todo: revisit
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.mol / pyunits.s,
+                doc="Mole flow rate",
+            )
+        elif self.config.flow_basis == FlowBasis.mass:
+            self.flow_mass_phase_comp = Var(
+                self.params.phase_list,
+                self.params.component_list,
+                initialize=0.1,  # todo: revisit
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.kg / pyunits.s,
+                doc="Mass flow rate",
+            )
 
         self.temperature = Var(
             initialize=298.15,
@@ -1141,28 +1152,51 @@ class MCASStateBlockData(StateBlockData):
             rule=rule_conc_mass_phase_comp,
         )
 
-    def _flow_mass_phase_comp(self):
-        self.flow_mass_phase_comp = Var(
-            self.params.phase_list,
-            self.params.component_list,
-            initialize=0.5,
-            bounds=(0, None),
-            units=pyunits.kg / pyunits.s,
-            doc="Component Mass flowrate",
-        )
-
-        def rule_flow_mass_phase_comp(b, p, j):
-            return (
-                b.flow_mass_phase_comp[p, j]
-                == b.flow_mol_phase_comp[p, j] * b.params.mw_comp[j]
+    if self.config.flow_basis == FlowBasis.molar:
+        def _flow_mass_phase_comp(self):
+            self.flow_mass_phase_comp = Var(
+                self.params.phase_list,
+                self.params.component_list,
+                initialize=0.5,
+                bounds=(0, None),
+                units=pyunits.kg / pyunits.s,
+                doc="Component Mass flowrate",
             )
 
-        self.eq_flow_mass_phase_comp = Constraint(
-            self.params.phase_list,
-            self.params.component_list,
-            rule=rule_flow_mass_phase_comp,
-        )
+            def rule_flow_mass_phase_comp(b, p, j):
+                return (
+                    b.flow_mass_phase_comp[p, j]
+                    == b.flow_mol_phase_comp[p, j] * b.params.mw_comp[j]
+                )
 
+            self.eq_flow_mass_phase_comp = Constraint(
+                self.params.phase_list,
+                self.params.component_list,
+                rule=rule_flow_mass_phase_comp,
+            )
+    
+    elif self.config.flow_basis == FlowBasis.mass:
+        def _flow_mol_phase_comp(self):
+            self.flow_mol_phase_comp = Var(
+                self.params.phase_list,
+                self.params.component_list,
+                initialize=0.1,
+                bounds=(0, None),
+                units=pyunits.mol / pyunits.s,
+                doc="Component molar flowrate",
+            )
+
+            def rule_flow_mol_phase_comp(b, p, j):
+                return (
+                    b.flow_mass_phase_comp[p, j]
+                    == b.flow_mol_phase_comp[p, j] * b.params.mw_comp[j]
+                )
+
+            self.eq_flow_mol_phase_comp = Constraint(
+                self.params.phase_list,
+                self.params.component_list,
+                rule=rule_flow_mol_phase_comp,
+            )
     def _flow_equiv_phase_comp(self):
         self.flow_equiv_phase_comp = Var(
             self.params.phase_list,
