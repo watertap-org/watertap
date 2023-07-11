@@ -39,7 +39,7 @@ def build_electroNP_cost_param_block(blk):
     )
     costing.add_defined_flow("magnesium chloride", blk.magnesium_chloride_cost)
 
-    blk.phosphorus_recovery_revenue = pyo.Param(
+    blk.phosphorus_recovery_value = pyo.Param(
         mutable=True,
         initialize=-0.07,
         doc="Phosphorus recovery revenue",
