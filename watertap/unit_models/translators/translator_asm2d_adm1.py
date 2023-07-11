@@ -162,7 +162,7 @@ see reaction package for documentation.}""",
             initialize=0.35,
             units=pyunits.dimensionless,
             mutable=True,
-            doc="Proteins from composites",
+            doc="Lipids from composites",
         )
         self.f_XPHA_Sva = Param(
             initialize=0.1,
