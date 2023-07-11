@@ -386,6 +386,7 @@ class TestGACRobust:
         )
 
         # testing gac costing block dof and initialization
+        assert assert_units_consistent(mr) is None
         assert istat.degrees_of_freedom(mr) == 0
         mr.fs.unit.costing.initialize()
 
@@ -421,6 +422,13 @@ class TestGACRobust:
             costing_method_arguments={"contactor_type": "gravity"},
         )
         mr_grav.fs.costing.cost_process()
+
+        # testing gac costing block dof and initialization
+        assert assert_units_consistent(mr_grav) is None
+        assert istat.degrees_of_freedom(mr_grav) == 0
+        mr_grav.fs.unit.costing.initialize()
+
+        # solve
         results = solver.solve(mr_grav)
 
         # Check for optimal solution
