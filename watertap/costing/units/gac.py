@@ -318,10 +318,17 @@ def cost_gac(blk, contactor_type=ContactorType.pressure):
     )
 
     blk.energy_consumption_constraint = pyo.Constraint(
-        expr=blk.energy_consumption
-        == blk.costing_package.gac.energy_consumption_coeff[2] * total_bed_volume**2
-        + blk.costing_package.gac.energy_consumption_coeff[1] * total_bed_volume
-        + blk.costing_package.gac.energy_consumption_coeff[0]
+        expr=pyo.units.convert(blk.energy_consumption, to_units=pyo.units.kW)
+        == pyo.units.kW
+        * (
+            blk.costing_package.gac.energy_consumption_coeff[2]
+            * total_bed_volume**2
+            * (pyo.units.m**3) ** -2
+            + blk.costing_package.gac.energy_consumption_coeff[1]
+            * total_bed_volume
+            * (pyo.units.m**3) ** -1
+            + blk.costing_package.gac.energy_consumption_coeff[0]
+        )
     )
 
     blk.costing_package.cost_flow(
