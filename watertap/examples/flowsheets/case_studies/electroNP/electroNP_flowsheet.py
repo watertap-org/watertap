@@ -154,7 +154,7 @@ def build_flowsheet():
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
     # Costing
-    m.fs.costing.electroNP.phosphorus_recovery_revenue = 0
+    m.fs.costing.electroNP.phosphorus_recovery_value = 0
 
     # scaling
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
