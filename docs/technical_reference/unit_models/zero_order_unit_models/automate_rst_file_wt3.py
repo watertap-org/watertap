@@ -256,6 +256,7 @@ title_exceptions = {
     "municipal_wwtp_zo": "Municipal Wastewater Treatment Plant",
     "ozone_aop_zo": "Ozone with Advanced Oxidation Processes",
     "secondary_treatment_wwtp_zo": "Secondary Wastewater Treatment Plant",
+    "smp_zo": "SMP",
     "sw_onshore_intake_zo": "Seawater Onshore Intake",
     "uv_aop_zo": "UV with Advanced Oxidation Processes",
     "uv_zo": "UV Reactor",
