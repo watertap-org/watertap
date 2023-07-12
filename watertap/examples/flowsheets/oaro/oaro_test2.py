@@ -671,6 +671,16 @@ def set_operating_conditions(
         stage.feed_side.spacer_porosity.fix(spacer_porosity)
         stage.feed_side.velocity[0, 0].fix(0.1)
 
+        # permeate_flow_mass = 0.33 * 1000 * pyunits.kg / pyunits.hr
+        # permeate_mass_frac_NaCl = 0.1
+        # permeate_mass_frac_H2O = 1 - permeate_mass_frac_NaCl
+        # m.fs.P3.control_volume.properties_out[0].flow_mass_phase_comp[
+        #     "Liq", "H2O"
+        # ].value = (permeate_flow_mass * permeate_mass_frac_H2O)
+        # m.fs.P3.control_volume.properties_out[0].flow_mass_phase_comp[
+        #     "Liq", "NaCl"
+        # ].value = (permeate_flow_mass * permeate_mass_frac_NaCl)
+
     # RO unit
     A_RO = 4.2e-12
     B_RO = 3.5e-8
@@ -812,8 +822,8 @@ def initialize_system(m, number_of_stages=None, solver=None, verbose=True):
         recycle_pump_initializer(
             m.fs.RecyclePumps[first_stage + 1],
             m.fs.OAROUnits[first_stage],
-            solvent_multiplier=0.8,
-            solute_multiplier=0.5,
+            solvent_multiplier=0.5,
+            solute_multiplier=0.35,
         )
         propagate_state(m.fs.recyclepump_to_OARO[first_stage + 1])
         m.fs.OAROUnits[first_stage].initialize()
@@ -1073,6 +1083,26 @@ def display_design(m):
             % (stage, m.fs.OAROUnits[stage].permeate_inlet.pressure[0].value / 1e5)
         )
         print(
+            "OARO Stage %d feed side water flux %.1f LMH"
+            % (
+                stage,
+                value(m.fs.OAROUnits[stage].flux_mass_phase_comp[0, 0, "Liq", "H2O"])
+                / 1e3
+                * 1000
+                * 3600,
+            )
+        )
+        print(
+            "OARO Stage %d permeate side water flux %.1f LMH"
+            % (
+                stage,
+                value(m.fs.OAROUnits[stage].flux_mass_phase_comp[0, 1, "Liq", "H2O"])
+                / 1e3
+                * 1000
+                * 3600,
+            )
+        )
+        print(
             "OARO tage %d membrane area      %.1f m2"
             % (stage, m.fs.OAROUnits[stage].area.value)
         )
@@ -1134,6 +1164,10 @@ def display_state(m):
         if stage == m.fs.LastStage:
             pass
         else:
+            print_state(f"OARO {stage} feed inlet", m.fs.OAROUnits[stage].feed_inlet)
+            print_state(
+                f"OARO {stage} permeate inlet", m.fs.OAROUnits[stage].permeate_inlet
+            )
             print_state(f"OARO {stage} feed outlet", m.fs.OAROUnits[stage].feed_outlet)
             print_state(
                 f"OARO {stage} permeate outlet", m.fs.OAROUnits[stage].permeate_outlet
