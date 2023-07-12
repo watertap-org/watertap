@@ -300,41 +300,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )
 
         prop_in = self.process_flow.properties_in[0]
-        prop_out = self.process_flow.properties_out[0]
-
-        tmp_dict = dict(**self.config.property_package_args)
-        tmp_dict["has_phase_equilibrium"] = False
-        tmp_dict["parameters"] = self.config.property_package
-        tmp_dict["defined_state"] = False
-
-        self.regeneration_stream = self.config.property_package.state_block_class(
-            self.flowsheet().config.time,
-            doc="Material properties of regeneration stream",
-            **tmp_dict,
-        )
-
-        regen = self.regeneration_stream[0]
-
-        self.add_inlet_port(name="inlet", block=self.process_flow)
-        self.add_outlet_port(name="outlet", block=self.process_flow)
-        self.add_outlet_port(name="regen", block=self.regeneration_stream)
-
-        # ==========PARAMETERS==========
-
-        self.process_flow.add_state_blocks(has_phase_equilibrium=False)
-        self.process_flow.add_material_balances(
-            balance_type=self.config.material_balance_type, has_mass_transfer=True
-        )
-        self.process_flow.add_energy_balances(
-            balance_type=self.config.energy_balance_type, has_enthalpy_transfer=False
-        )
-        self.process_flow.add_isothermal_assumption()
-        self.process_flow.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type,
-            has_pressure_change=False,
-        )
-
-        prop_in = self.process_flow.properties_in[0]
 
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False

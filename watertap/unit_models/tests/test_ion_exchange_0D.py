@@ -161,7 +161,6 @@ class TestIonExchangeLangmuir:
         ]
 
         for p in ix_params:
-            print(p)
             assert hasattr(ix, p)
             param = getattr(ix, p)
             assert isinstance(param, Param)
@@ -438,7 +437,6 @@ class TestIonExchangeFreundlich:
         ]
 
         for p in ix_params:
-            print(p)
             assert hasattr(ix, p)
             param = getattr(ix, p)
             assert isinstance(param, Param)
