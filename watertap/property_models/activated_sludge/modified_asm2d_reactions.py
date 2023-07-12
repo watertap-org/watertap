@@ -41,7 +41,7 @@ import idaes.core.util.scaling as iscale
 
 
 # Some more information about this module
-__author__ = "Marcus Holly"
+__author__ = "Marcus Holly, Adam Atia"
 
 
 # Set up logger
@@ -256,43 +256,6 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="Magnesium coefficient for polyphosphates",
-        )
-        # COD to VSS coefficients
-        self.CODtoVSS_XI = pyo.Var(
-            initialize=1.5686,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="mass COD per mass VSS of XI",
-        )
-        self.CODtoVSS_XS = pyo.Var(
-            initialize=1.5686,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="mass COD per mass VSS of XS",
-        )
-        self.CODtoVSS_XBM = pyo.Var(
-            initialize=1.3072,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="mass COD per mass VSS of biomass",
-        )
-        self.CODtoVSS_XPHA = pyo.Var(
-            initialize=1.9608,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="mass COD per mass VSS of XPHA",
-        )
-        self.ISS_P = pyo.Var(
-            initialize=3.23,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="mass ISS per mass P",
-        )
-        self.f_ISS_BM = pyo.Var(
-            initialize=0.15,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="ISS content of biomass",
         )
         # Kinetic Parameters
         self.K_H = pyo.Var(
@@ -996,14 +959,6 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
                 "reaction_rate": {"method": "_rxn_rate"},
             }
         )
-
-        obj.define_custom_properties(
-            {
-                "VSS": {"method": "_VSS"},
-                "ISS": {"method": "_ISS"},
-                "TSS": {"method": "_TSS"},
-            }
-        )
         obj.add_default_units(
             {
                 "time": pyo.units.s,
@@ -1633,52 +1588,6 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.rate_expression)
             raise
 
-    def _VSS(self):
-        self.VSS = pyo.Var(
-            initialize=1,
-            domain=pyo.NonNegativeReals,
-            doc="Volatile suspended solids",
-            units=pyo.units.kg / pyo.units.m**3,
-        )
-
-        # TODO: X_SRB not included yet in biomass term summation
-        def rule_VSS(b):
-            return (b.VSS == b.conc_mass_comp_ref["X_I"] / b.params.CODtoVSS_XI
-                    + b.conc_mass_comp_ref["X_S"] / b.params.CODtoVSS_XS
-                    + (b.conc_mass_comp_ref["X_H"] + b.conc_mass_comp_ref["X_PAO"] + b.conc_mass_comp_ref["X_A"]) / b.params.CODtoVSS_XBM
-                    + b.conc_mass_comp_ref["X_PHA"] / b.params.CODtoVSS_XPHA
-                    )
-        self.eq_VSS = pyo.Constraint(rule=rule_VSS)
-    
-    def _ISS(self):
-        self.ISS = pyo.Var(
-            initialize=1,
-            domain=pyo.NonNegativeReals,
-            doc="Inorganic suspended solids",
-            units=pyo.units.kg / pyo.units.m**3,
-        )
-
-        #TODO: Several HFO and other terms omitted since not included yet.
-        def rule_ISS(b):
-            return (b.ISS == b.params.f_ISS_BM 
-                    * (b.conc_mass_comp_ref["X_H"] + b.conc_mass_comp_ref["X_PAO"] + b.conc_mass_comp_ref["X_A"]) / b.params.CODtoVSS_XBM 
-                    + b.params.ISS_P * b.conc_mass_comp_ref["X_PP"]
-                    )
-        self.eq_ISS = pyo.Constraint(rule=rule_ISS)
-
-    def _TSS(self):
-        self.TSS = pyo.Var(
-            initialize=1,
-            domain=pyo.NonNegativeReals,
-            doc="Total suspended solids",
-            units=pyo.units.kg / pyo.units.m**3,
-        )
-    
-        def rule_TSS(b):
-            return b.TSS == b.VSS + b.ISS
-
-        self.eq_TSS = pyo.Constraint(rule=rule_TSS)
-
     def get_reaction_rate_basis(self):
         return MaterialFlowBasis.mass
 
@@ -1689,15 +1598,3 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
             # TODO: Need to work out how to calculate good scaling factors
             # instead of a fixed 1e3.
             iscale.constraint_scaling_transform(c, 1e3, overwrite=True)
-        
-        if self.is_property_constructed("VSS"):
-            if iscale.get_scaling_factor(self.VSS) is None:
-                iscale.set_scaling_factor(self.VSS, 1)
-        
-        if self.is_property_constructed("ISS"):
-            if iscale.get_scaling_factor(self.ISS) is None:
-                iscale.set_scaling_factor(self.ISS, 1)
-        
-        if self.is_property_constructed("TSS"):
-            if iscale.get_scaling_factor(self.TSS) is None:
-                iscale.set_scaling_factor(self.TSS, 1)        
