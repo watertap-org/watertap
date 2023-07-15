@@ -37,7 +37,6 @@ import idaes.logger as idaeslog
 from pyomo.environ import (
     Param,
     units as pyunits,
-    Set,
 )
 from pyomo.common.config import ConfigValue, In
 
@@ -146,10 +145,6 @@ class ThickenerData(SeparatorData):
                 blk.config.activated_sludge_model
                 == ActivatedSludgeModelType.modified_ASM2D
             ):
-                # if not hasattr(blk, mixed_state):
-                #     mixed_block = self.add_mixed_state_block()
-                # else:
-                #     mixed_block = blk.mixed_state
                 return blk.mixed_state[t].TSS
             else:
                 raise ConfigurationError(
