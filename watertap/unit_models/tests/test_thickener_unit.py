@@ -539,7 +539,6 @@ class TestThickModifiedASM2d(object):
             118.3582 * units.mg / units.liter
         )
 
-
         return m
 
     @pytest.mark.build
@@ -671,7 +670,8 @@ class TestThickModifiedASM2d(object):
         assert (
             abs(
                 value(
-                    tu_mod_asm2d.fs.unit.inlet.flow_vol[0] * tu_mod_asm2d.fs.props.dens_mass
+                    tu_mod_asm2d.fs.unit.inlet.flow_vol[0]
+                    * tu_mod_asm2d.fs.props.dens_mass
                     - tu_mod_asm2d.fs.unit.overflow.flow_vol[0]
                     * tu_mod_asm2d.fs.props.dens_mass
                     - tu_mod_asm2d.fs.unit.underflow.flow_vol[0]

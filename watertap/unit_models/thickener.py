@@ -126,7 +126,6 @@ class ThickenerData(SeparatorData):
             doc="Fraction of suspended solids removed",
         )
 
-
         @self.Expression(self.flowsheet().time, doc="Suspended solids concentration")
         def TSS_in(blk, t):
             if blk.config.activated_sludge_model == ActivatedSludgeModelType.ASM1:
@@ -140,7 +139,10 @@ class ThickenerData(SeparatorData):
                 return blk.inlet.conc_mass_comp[
                     t, blk.config.property_package.tss_component_set.first()
                 ]
-            elif blk.config.activated_sludge_model== ActivatedSludgeModelType.modified_ASM2D:
+            elif (
+                blk.config.activated_sludge_model
+                == ActivatedSludgeModelType.modified_ASM2D
+            ):
                 # if not hasattr(blk, mixed_state):
                 #     mixed_block = self.add_mixed_state_block()
                 # else:
