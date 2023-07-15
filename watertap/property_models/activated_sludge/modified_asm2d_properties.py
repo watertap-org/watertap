@@ -172,7 +172,7 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
             doc="Reference temperature",
             units=pyo.units.K,
         )
-        
+
         # COD to VSS coefficients
         self.CODtoVSS_XI = pyo.Var(
             initialize=1.5686,
@@ -395,13 +395,21 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
         # TODO: X_SRB not included yet in biomass term summation
         def rule_VSS(b):
-            return (b.VSS == b.conc_mass_comp["X_I"] / b.params.CODtoVSS_XI
-                    + b.conc_mass_comp["X_S"] / b.params.CODtoVSS_XS
-                    + (b.conc_mass_comp["X_H"] + b.conc_mass_comp["X_PAO"] + b.conc_mass_comp["X_AUT"]) / b.params.CODtoVSS_XBM
-                    + b.conc_mass_comp["X_PHA"] / b.params.CODtoVSS_XPHA
-                    )
+            return (
+                b.VSS
+                == b.conc_mass_comp["X_I"] / b.params.CODtoVSS_XI
+                + b.conc_mass_comp["X_S"] / b.params.CODtoVSS_XS
+                + (
+                    b.conc_mass_comp["X_H"]
+                    + b.conc_mass_comp["X_PAO"]
+                    + b.conc_mass_comp["X_AUT"]
+                )
+                / b.params.CODtoVSS_XBM
+                + b.conc_mass_comp["X_PHA"] / b.params.CODtoVSS_XPHA
+            )
+
         self.eq_VSS = pyo.Constraint(rule=rule_VSS)
-    
+
     def _ISS(self):
         self.ISS = pyo.Var(
             initialize=1,
@@ -410,12 +418,20 @@ class ModifiedASM2dStateBlockData(StateBlockData):
             units=pyo.units.kg / pyo.units.m**3,
         )
 
-        #TODO: Several HFO and other terms omitted since not included yet.
+        # TODO: Several HFO and other terms omitted since not included yet.
         def rule_ISS(b):
-            return (b.ISS == b.params.f_ISS_BM 
-                    * (b.conc_mass_comp["X_H"] + b.conc_mass_comp["X_PAO"] + b.conc_mass_comp["X_AUT"]) / b.params.CODtoVSS_XBM 
-                    + b.params.ISS_P * b.conc_mass_comp["X_PP"]
-                    )
+            return (
+                b.ISS
+                == b.params.f_ISS_BM
+                * (
+                    b.conc_mass_comp["X_H"]
+                    + b.conc_mass_comp["X_PAO"]
+                    + b.conc_mass_comp["X_AUT"]
+                )
+                / b.params.CODtoVSS_XBM
+                + b.params.ISS_P * b.conc_mass_comp["X_PP"]
+            )
+
         self.eq_ISS = pyo.Constraint(rule=rule_ISS)
 
     def _TSS(self):
@@ -425,7 +441,7 @@ class ModifiedASM2dStateBlockData(StateBlockData):
             doc="Total suspended solids",
             units=pyo.units.kg / pyo.units.m**3,
         )
-    
+
         def rule_TSS(b):
             return b.TSS == b.VSS + b.ISS
 
@@ -486,15 +502,15 @@ class ModifiedASM2dStateBlockData(StateBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        #TODO: revisit scaling of these new on-demand props
+        # TODO: revisit scaling of these new on-demand props
         if self.is_property_constructed("VSS"):
             if iscale.get_scaling_factor(self.VSS) is None:
                 iscale.set_scaling_factor(self.VSS, 1)
-        
+
         if self.is_property_constructed("ISS"):
             if iscale.get_scaling_factor(self.ISS) is None:
                 iscale.set_scaling_factor(self.ISS, 1)
-        
+
         if self.is_property_constructed("TSS"):
             if iscale.get_scaling_factor(self.TSS) is None:
-                iscale.set_scaling_factor(self.TSS, 1)        
+                iscale.set_scaling_factor(self.TSS, 1)

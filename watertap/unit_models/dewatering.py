@@ -50,6 +50,7 @@ __author__ = "Alejandro Garciadiego, Adam Atia"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+
 class ActivatedSludgeModelType(Enum):
     """
     ASM1: ASM1 model
@@ -60,6 +61,8 @@ class ActivatedSludgeModelType(Enum):
     ASM1 = auto()
     ASM2D = auto()
     modified_ASM2D = auto()
+
+
 @declare_process_block_class("DewateringUnit")
 class DewateringData(SeparatorData):
     """

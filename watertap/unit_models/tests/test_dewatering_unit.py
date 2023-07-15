@@ -58,7 +58,7 @@ from watertap.property_models.activated_sludge.asm2d_properties import (
 )
 from watertap.property_models.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
-)    
+)
 from pyomo.util.check_units import assert_units_consistent
 
 __author__ = "Alejandro Garciadiego, Adam Atia"
@@ -328,11 +328,11 @@ class TestDUASM2d(object):
         m.fs.unit.inlet.alkalinity[0].fix(4.6663 * units.mmol / units.liter)
 
         return m
-    
+
     @pytest.mark.unit
     def test_dof(self, du_asm2d):
         assert degrees_of_freedom(du_asm2d) == 0
-    
+
     @pytest.mark.unit
     def test_units(self, du_asm2d):
         assert_units_consistent(du_asm2d)
@@ -344,7 +344,7 @@ class TestDUASM2d(object):
 
         iscale.calculate_scaling_factors(du_asm2d)
         initialization_tester(du_asm2d)
-    
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -397,7 +397,7 @@ class TestDUModifiedASM2d(object):
         )
 
         return m
-    
+
     @pytest.mark.unit
     def test_dof(self, du_mod_asm2d):
         assert degrees_of_freedom(du_mod_asm2d) == 0

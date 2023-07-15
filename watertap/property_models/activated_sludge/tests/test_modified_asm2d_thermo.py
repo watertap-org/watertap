@@ -128,7 +128,7 @@ class TestParamBlock(object):
                 "S_IC",
                 "H2O",
             ]
-        
+
         assert isinstance(model.params.CODtoVSS_XI, Var)
         assert model.params.CODtoVSS_XI.is_fixed()
         assert value(model.params.CODtoVSS_XI) == 1.5686
@@ -152,6 +152,7 @@ class TestParamBlock(object):
         assert isinstance(model.params.f_ISS_BM, Var)
         assert model.params.f_ISS_BM.is_fixed()
         assert value(model.params.f_ISS_BM) == 0.15
+
 
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
@@ -219,7 +220,6 @@ class TestStateBlock(object):
                         "Property {v_name} is an on-demand property, but was not built "
                         "when demanded".format(v_name=v.name)
                     )
-
 
     @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
@@ -344,4 +344,3 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def check_units(self, model):
         assert_units_consistent(model)
-

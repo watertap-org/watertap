@@ -776,11 +776,10 @@ class TestAnoxicPHA:
         m.fs.R1.inlet.conc_mass_comp[0, "X_AUT"].fix(115.4611 * units.mg / units.liter)
 
         m.fs.R1.volume.fix(1000 * units.m**3)
-        
+
         # Touch on-demand property, TSS, at inlet and outlet
         m.fs.R1.control_volume.properties_in[0].TSS
         m.fs.R1.control_volume.properties_out[0].TSS
-
 
         iscale.calculate_scaling_factors(m.fs)
 
@@ -866,6 +865,8 @@ class TestAnoxicPHA:
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
             121.314e-3, rel=1e-4
         )
-        assert value(1-model.fs.R1.control_volume.properties_out[0].TSS/model.fs.R1.control_volume.properties_in[0].TSS) * 100 == pytest.approx(
-            0.20371, rel=1e-4
-        )        
+        assert value(
+            1
+            - model.fs.R1.control_volume.properties_out[0].TSS
+            / model.fs.R1.control_volume.properties_in[0].TSS
+        ) * 100 == pytest.approx(0.20371, rel=1e-4)
