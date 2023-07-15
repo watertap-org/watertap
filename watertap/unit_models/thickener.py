@@ -11,7 +11,8 @@
 #
 ###############################################################################
 """
-Thickener unit model for BSM2. Based on IDAES separator unit
+Thickener unit model for BSM2 and plant-wide wastewater treatment modeling. 
+This unit inherits from the IDAES separator unit.
 
 Model based on 
 
@@ -19,6 +20,8 @@ J. Alex, L. Benedetti, J.B. Copp, K.V. Gernaey, U. Jeppsson,
 I. Nopens, M.N. Pons, C. Rosen, J.P. Steyer and
 P. A. Vanrolleghem
 Benchmark Simulation Model no. 2 (BSM2)
+
+Modifications made to TSS formulation based on ASM type.
 """
 from enum import Enum, auto
 
