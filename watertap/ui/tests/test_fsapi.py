@@ -328,3 +328,70 @@ def test_has_version():
     d = fsi.dict()
     assert "version" in d
     assert d["version"] > 0
+
+
+@pytest.mark.unit
+def test_add_options():
+    fsi = flowsheet_interface()
+    assert len(fsi.fs_exp.options) == 0
+    opt_name = "cptype"
+    fsi.fs_exp.add_option(
+        opt_name,
+        display_name="Concentration polarization type",
+        value_type=fsapi.OptionValueType.string,
+        values_allowed=["calculated", "none"],
+    )
+    assert len(fsi.fs_exp.options) == 1
+    fsi.build(erd_type="pressure_exchanger")
+    data = fsi.dict()
+    print(f"Options => {data['options']}")
+    assert "options" in data
+    assert len(data["options"]) == 1
+    data_opt = data["options"][opt_name]
+    assert data_opt["name"] == opt_name
+    assert data_opt["display_name"] == "Concentration polarization type"
+    assert data_opt["description"] == "Concentration polarization type"
+    assert data_opt["value_type"] == fsapi.OptionValueType.string
+    assert data_opt["values_allowed"] == ["calculated", "none"]
+    # check validation
+    opt_name = "cptype"
+    for good_value in "calculated", "none":
+        o1 = fsapi.ModelOption(
+            name=opt_name,
+            values_allowed=["calculated", "none"],
+            value=good_value,
+        )
+        o2 = fsapi.ModelOption(
+            name=opt_name,
+            display_name="Concentration polarization type",
+            values_allowed=["calculated", "none"],
+            value=good_value,
+        )
+        o3 = fsapi.ModelOption(
+            name=opt_name,
+            display_name="Concentration polarization type",
+            description="Calculated or none means don't do it man",
+            values_allowed=["calculated", "none"],
+            value=good_value,
+        )
+    for bad_value in "foo", None:
+        with pytest.raises(ValueError):
+            fsapi.ModelOption(
+                name=opt_name,
+                values_allowed=["calculated", "none"],
+                value=bad_value,
+            )
+    # without allowed, any str is ok
+    for whatever_value in "foo", "ok":
+        fsapi.ModelOption(
+            name=opt_name,
+            value=whatever_value
+        )
+    # .. but choke on None, bool, or numbers
+    for bad_value in None, 12, 1.2, True, False:
+        with pytest.raises(ValueError):
+            fsapi.ModelOption(
+                name=opt_name,
+                value=bad_value
+            )
+

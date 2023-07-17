@@ -19,7 +19,7 @@ __author__ = "Dan Gunter"
 import logging
 from collections import namedtuple
 from enum import Enum
-from typing import Any, Callable, Optional, Dict, Union, TypeVar
+from typing import Any, Callable, List, Optional, Dict, Union, TypeVar
 from types import ModuleType
 
 try:
@@ -181,6 +181,67 @@ class ModelExport(BaseModel):
         return v
 
 
+class OptionValueType(str, Enum):
+    """Possibilities for `value_type` in :meth:`FlowsheetExport.add_option()`
+    """
+    string = "s"
+    float = "f"
+    integer = "i"
+
+    @classmethod
+    def convert(cls, t, v):
+        if t == cls.string:
+            if v is None or v is False or v is True:
+                raise ValueError(f"Got non-string value ({v}) but expected string")
+            if isinstance(v, int) or isinstance(v, float):
+                raise ValueError(f"Got numeric value ({v}) but expected string")
+            cv = str(v)
+        elif t == cls.float:
+            cv = float(v)
+        elif t == cls.integer:
+            cv = int(v)
+        else:
+            raise ValueError(f"Unknown type: {t}")
+        return cv
+
+
+class ModelOption(BaseModel):
+    """An option for building/running the model.
+    """
+    name: str
+    display_name: str = None
+    description: str = None
+    value_type: OptionValueType = OptionValueType.string
+    values_allowed: List[Any] = []
+    value: Any = None
+
+    @validator("display_name", always=True)
+    @classmethod
+    def validate_display_name(cls, v, values):
+        if v is None:
+            v = values.get("name")
+        return v
+
+    @validator("description", always=True)
+    @classmethod
+    def validate_description(cls, v, values):
+        if v is None:
+            v = values.get("display_name")
+        return v
+
+    @validator("value")
+    @classmethod
+    def validate_value(cls, v, values):
+        vtype = values.get("value_type", OptionValueType.string)
+        converted_value = OptionValueType.convert(vtype, v)
+        allowed = values.get("values_allowed", None)
+        if allowed:
+            if converted_value not in allowed:
+                raise ValueError(f"Converted 'value' ({converted_value}) not in "
+                                 f"allowed values: {allowed}")
+        return converted_value
+
+
 class FlowsheetExport(BaseModel):
     """A flowsheet and its contained exported model objects."""
 
@@ -193,6 +254,7 @@ class FlowsheetExport(BaseModel):
     requires_idaes_solver: bool = False
     dof: int = 0
     sweep_results: Union[None, dict] = {}
+    options: Dict[str, ModelOption] = {}
 
     # set name dynamically from object
     @validator("name", always=True)
@@ -271,6 +333,21 @@ class FlowsheetExport(BaseModel):
             )
         self.model_objects[key] = model_export
         return model_export
+
+    def add_option(self, name: str, **kwargs) -> ModelOption:
+        """Add an 'option' to the flowsheet that can be displayed and manipulated
+        from the UI.
+
+        Constructs a :class:`ModelOption` instance with provided args and adds it to
+        the dict of options, keyed by its `name`.
+
+        Args:
+            name: Name of option (internal, for accessing the option)
+            kwargs: Fields of :class:`ModelOption`
+        """
+        option = ModelOption(name=name, **kwargs)
+        self.options[name] = option
+        return option
 
 
 class Actions(str, Enum):
