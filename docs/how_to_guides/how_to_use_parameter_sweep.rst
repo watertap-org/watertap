@@ -105,10 +105,11 @@ in directly still works but is deprecated.
 
 .. testcode::
 
-    build_model = lambda: m
-    build_sweep_params = lambda model: sweep_params
-    build_outputs = lambda model, sweep_params: outputs
-    parameter_sweep(build_model, build_sweep_params, build_outputs, csv_results_file_name='outputs_results.csv', h5_results_file_name='outputs_results.h5')
+    parameter_sweep(m, sweep_params, outputs, csv_results_file_name='outputs_results.csv', h5_results_file_name='outputs_results.h5')
+
+.. testoutput::
+
+    ...
 
 .. testcleanup::
 
