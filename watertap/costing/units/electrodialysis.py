@@ -68,7 +68,8 @@ def cost_electrodialysis(blk, cost_electricity_flow=True, has_rectifier=False):
                 == pyo.units.convert(
                     blk.costing_package.electrodialysis.membrane_capital_cost
                     * (
-                        2 * blk.unit_model.cell_pair_num
+                        2
+                        * blk.unit_model.cell_pair_num
                         * blk.unit_model.cell_width
                         * blk.unit_model.cell_length
                     ),
@@ -93,7 +94,8 @@ def cost_electrodialysis_stack(blk):
         == pyo.units.convert(
             blk.costing_package.electrodialysis.membrane_capital_cost
             * (
-                2 * blk.unit_model.cell_pair_num
+                2
+                * blk.unit_model.cell_pair_num
                 * blk.unit_model.cell_width
                 * blk.unit_model.cell_length
             ),
@@ -106,7 +108,8 @@ def cost_electrodialysis_stack(blk):
             blk.costing_package.electrodialysis.factor_membrane_equipment_replacement
             * blk.costing_package.electrodialysis.membrane_capital_cost
             * (
-                2 * blk.unit_model.cell_pair_num
+                2
+                * blk.unit_model.cell_pair_num
                 * blk.unit_model.cell_width
                 * blk.unit_model.cell_length
             ),
