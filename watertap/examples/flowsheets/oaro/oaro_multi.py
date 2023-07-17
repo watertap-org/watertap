@@ -930,6 +930,8 @@ def optimize_set_up(
         stage.feed_side.velocity[0, 0].setlb(0)
         stage.feed_side.velocity[0, 0].setub(1)
 
+        stage.permeate_outlet.pressure[0].setlb(101325)
+
         # stage.A_comp.unfix()
         # stage.A_comp.setlb(2.78e-12)
         # stage.A_comp.setub(4.2e-11)
