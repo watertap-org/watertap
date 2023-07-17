@@ -318,10 +318,49 @@ def plot(m):
         )
         * 1e3
     )
+    permeate_conc_in = (
+        m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].value
+        / sum(
+            m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", j].value
+            for j in ["H2O", "NaCl"]
+        )
+        * 1e3
+    )
+    permeate_conc_out = (
+        m.fs.unit.permeate_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"].value
+        / sum(
+            m.fs.unit.permeate_outlet.flow_mass_phase_comp[0, "Liq", j].value
+            for j in ["H2O", "NaCl"]
+        )
+        * 1e3
+    )
+    feed_flux = (
+        value(m.fs.unit.flux_mass_phase_comp[0, 0, "Liq", "H2O"]) / 1e3 * 1000 * 3600
+    )
+    permeate_flux = (
+        value(m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]) / 1e3 * 1000 * 3600
+    )
     xpoints = np.array([0, 1])
-    ypoints = np.array([feed_conc_in, feed_conc_out])
+    ypoints1 = np.array([feed_conc_in, feed_conc_out])
+    ypoints2 = np.array([permeate_conc_out, permeate_conc_in])
+    ypoints3 = np.array([feed_flux, permeate_flux])
 
-    plt.plot(xpoints, ypoints)
+    fig, ax = plt.subplots()
+    ax.plot(xpoints, ypoints1, "k")
+    ax.plot(xpoints, ypoints2, "k--")
+    ax.set_xlim([0, 1])
+    ax.set_ylim([0, 175])
+    ax.set_ylabel("Concentration (g/L)")
+    ax.legend(
+        ["feed side concentration", "permeate side concentration"], loc="upper left"
+    )
+
+    ax2 = ax.twinx()
+    ax2.plot(xpoints, ypoints3)
+    ax2.set_ylim([0, 10])
+    ax2.set_ylabel("Water flux (LMH)")
+    ax2.legend(["water flux"])
+
     plt.show()
 
 
