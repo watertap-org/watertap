@@ -68,7 +68,7 @@ class TestElectrodialysis1StackFS:
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
             0.1192, abs=0.001
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.1835, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.3192, rel=1e-3)
         assert value(m.fs.EDstack.inlet_concentrate.pressure[0]) == pytest.approx(
             169278.127, rel=1e-3
         )
@@ -114,24 +114,24 @@ class TestElectrodialysis1StackFS:
         ) == pytest.approx(2.00, rel=1e-3)
         assert value(m.fs.product_salinity) == pytest.approx(0.1000, rel=1e-3)
         assert value(m.fs.disposal_salinity) == pytest.approx(6.4333, rel=1e-3)
-        assert value(m.fs.mem_area) == pytest.approx(19.1783, rel=1e-3)
-        assert value(m.fs.EDstack.cell_pair_num) == pytest.approx(21, rel=1e-8)
-        assert value(m.fs.EDstack.cell_length) == pytest.approx(4.6358, rel=1e-3)
+        assert value(m.fs.mem_area) == pytest.approx(12.1520, rel=1e-3)
+        assert value(m.fs.EDstack.cell_pair_num) == pytest.approx(11, rel=1e-8)
+        assert value(m.fs.EDstack.cell_length) == pytest.approx(5.6078, rel=1e-3)
         assert value(m.fs.EDstack.voltage_applied[0]) == pytest.approx(
-            20.9385, rel=1e-3
+            13.0682, rel=1e-3
         )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            1.3124, rel=1e-3
+            1.6873, rel=1e-3
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.3568, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.3844, rel=1e-3)
         assert value(m.fs.EDstack.inlet_concentrate.pressure[0]) == pytest.approx(
-            604599.151594, rel=1e-3
+            1.262238e06, rel=1e-3
         )
         assert value(m.fs.EDstack.outlet_concentrate.pressure[0]) == pytest.approx(
             101325.00, rel=1e-3
         )
         assert value(m.fs.EDstack.inlet_diluate.pressure[0]) == pytest.approx(
-            604599.151594, rel=1e-3
+            1.262238e06, rel=1e-3
         )
         assert value(m.fs.EDstack.outlet_diluate.pressure[0]) == pytest.approx(
             101325.00, rel=1e-3

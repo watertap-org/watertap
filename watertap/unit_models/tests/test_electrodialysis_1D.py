@@ -288,15 +288,13 @@ class TestElectrodialysisVoltageConst:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(388.6800, rel=1e-3) == value(
+        assert pytest.approx(237.0, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(45.86804, rel=1e-3) == value(
+        assert pytest.approx(63.2711, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(777.3600, rel=1e-3) == value(
-            m.fs.costing.total_capital_cost
-        )
+        assert pytest.approx(474.0, rel=1e-3) == value(m.fs.costing.total_capital_cost)
 
     @pytest.mark.component
     def test_costing_with_rectifier(self, electrodialysis_1d_cell1):
@@ -321,13 +319,13 @@ class TestElectrodialysisVoltageConst:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(2783.7788, rel=1e-3) == value(
+        assert pytest.approx(2632.0988, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(189.7173, rel=1e-3) == value(
+        assert pytest.approx(207.1605, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(5567.5577, rel=1e-3) == value(
+        assert pytest.approx(5264.1977, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
 
