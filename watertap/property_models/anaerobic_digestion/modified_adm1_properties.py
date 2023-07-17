@@ -36,7 +36,7 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
 # Some more information about this module
-__author__ = "Chenyu Wang, Marcus Holly"
+__author__ = "Chenyu Wang, Marcus Holly, Adam Atia"
 # Using Andrew Lee's formulation of ASM1 as a template
 
 # Set up logger
@@ -181,6 +181,11 @@ class ModifiedADM1ParameterData(PhysicalParameterBlock):
             doc="ISS fractional content of biomass",
         )
 
+        # Fix Vars that are treated as Params
+        for v in self.component_objects(pyo.Var):
+            v.fix()
+
+    @classmethod
     def define_metadata(cls, obj):
         obj.add_properties(
             {
@@ -432,7 +437,7 @@ class ModifiedADM1StateBlockData(StateBlockData):
         iscale.set_scaling_factor(self.anions, 1e1)
         iscale.set_scaling_factor(self.cations, 1e1)
 
-        # On-demand properties
+    # On-demand properties
     def _VSS(self):
         self.VSS = pyo.Var(
             initialize=1,
