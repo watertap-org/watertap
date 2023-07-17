@@ -130,7 +130,57 @@ class ModifiedADM1ParameterData(PhysicalParameterBlock):
             units=pyo.units.K,
         )
 
-    @classmethod
+        # COD to VSS coefficients
+        self.CODtoVSS_XI = pyo.Var(
+            initialize=1.5686,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="mass COD per mass VSS of XI",
+        )
+        self.CODtoVSS_XBM = pyo.Var(
+            initialize=1.3072,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="mass COD per mass VSS of biomass",
+        )
+        self.CODtoVSS_XPHA = pyo.Var(
+            initialize=1.9608,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="mass COD per mass VSS of XPHA",
+        )
+        self.CODtoVSS_XCH = pyo.Var(
+            initialize=1.5686,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="mass COD per mass VSS of XCH",
+        )
+        self.CODtoVSS_XPR = pyo.Var(
+            initialize=1.5686,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="mass COD per mass VSS of XPR",
+        )
+        self.CODtoVSS_XLI = pyo.Var(
+            initialize=1.5686,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="mass COD per mass VSS of XLI",
+        )
+        # Inorganic solids parameters
+        self.ISS_P = pyo.Var(
+            initialize=3.23,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="mass ISS per mass P",
+        )
+        self.f_ISS_BM = pyo.Var(
+            initialize=0.15,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="ISS fractional content of biomass",
+        )
+
     def define_metadata(cls, obj):
         obj.add_properties(
             {
@@ -144,6 +194,9 @@ class ModifiedADM1ParameterData(PhysicalParameterBlock):
             {
                 "anions": {"method": None},
                 "cations": {"method": None},
+                "VSS": {"method": "_VSS"},
+                "ISS": {"method": "_ISS"},
+                "TSS": {"method": "_TSS"},
             }
         )
         obj.add_default_units(
@@ -379,6 +432,81 @@ class ModifiedADM1StateBlockData(StateBlockData):
         iscale.set_scaling_factor(self.anions, 1e1)
         iscale.set_scaling_factor(self.cations, 1e1)
 
+        # On-demand properties
+    def _VSS(self):
+        self.VSS = pyo.Var(
+            initialize=1,
+            domain=pyo.NonNegativeReals,
+            doc="Volatile suspended solids",
+            units=pyo.units.kg / pyo.units.m**3,
+        )
+
+        # TODO: X_SRB-related terms not included yet in biomass term summation
+        def rule_VSS(b):
+            return (
+                b.VSS
+                == b.conc_mass_comp["X_I"] / b.params.CODtoVSS_XI
+                + b.conc_mass_comp["X_ch"] / b.params.CODtoVSS_XCH
+                + b.conc_mass_comp["X_pr"] / b.params.CODtoVSS_XPR
+                + b.conc_mass_comp["X_li"] / b.params.CODtoVSS_XLI
+                + (
+                    b.conc_mass_comp["X_su"]
+                    + b.conc_mass_comp["X_aa"]
+                    + b.conc_mass_comp["X_fa"]
+                    + b.conc_mass_comp["X_c4"]
+                    + b.conc_mass_comp["X_pro"]
+                    + b.conc_mass_comp["X_ac"]
+                    + b.conc_mass_comp["X_h2"]
+                    + b.conc_mass_comp["X_PAO"]
+                )
+                / b.params.CODtoVSS_XBM
+                + b.conc_mass_comp["X_PHA"] / b.params.CODtoVSS_XPHA
+            )
+
+        self.eq_VSS = pyo.Constraint(rule=rule_VSS)
+
+    def _ISS(self):
+        self.ISS = pyo.Var(
+            initialize=1,
+            domain=pyo.NonNegativeReals,
+            doc="Inorganic suspended solids",
+            units=pyo.units.kg / pyo.units.m**3,
+        )
+
+        # TODO: Several X_SRB terms omitted from biomass term as well as other terms since not included yet.
+        def rule_ISS(b):
+            return (
+                b.ISS
+                == b.params.f_ISS_BM
+                * (
+                    b.conc_mass_comp["X_su"]
+                    + b.conc_mass_comp["X_aa"]
+                    + b.conc_mass_comp["X_fa"]
+                    + b.conc_mass_comp["X_c4"]
+                    + b.conc_mass_comp["X_pro"]
+                    + b.conc_mass_comp["X_ac"]
+                    + b.conc_mass_comp["X_h2"]
+                    + b.conc_mass_comp["X_PAO"]
+                )
+                / b.params.CODtoVSS_XBM
+                + b.params.ISS_P * b.conc_mass_comp["X_PP"]
+            )
+
+        self.eq_ISS = pyo.Constraint(rule=rule_ISS)
+
+    def _TSS(self):
+        self.TSS = pyo.Var(
+            initialize=1,
+            domain=pyo.NonNegativeReals,
+            doc="Total suspended solids",
+            units=pyo.units.kg / pyo.units.m**3,
+        )
+
+        def rule_TSS(b):
+            return b.TSS == b.VSS + b.ISS
+
+        self.eq_TSS = pyo.Constraint(rule=rule_TSS)
+
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]
 
@@ -455,3 +583,16 @@ class ModifiedADM1StateBlockData(StateBlockData):
             self.enthalpy_flow_expression, sf_F * sf_rho_cp * sf_T
         )
         iscale.set_scaling_factor(self.energy_density_expression, sf_rho_cp * sf_T)
+
+        # TODO: revisit scaling of these new on-demand props
+        if self.is_property_constructed("VSS"):
+            if iscale.get_scaling_factor(self.VSS) is None:
+                iscale.set_scaling_factor(self.VSS, 1)
+
+        if self.is_property_constructed("ISS"):
+            if iscale.get_scaling_factor(self.ISS) is None:
+                iscale.set_scaling_factor(self.ISS, 1)
+
+        if self.is_property_constructed("TSS"):
+            if iscale.get_scaling_factor(self.TSS) is None:
+                iscale.set_scaling_factor(self.TSS, 1)

@@ -198,6 +198,7 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
             domain=pyo.PositiveReals,
             doc="mass COD per mass VSS of XPHA",
         )
+        # Inorganic solids parameters
         self.ISS_P = pyo.Var(
             initialize=3.23,
             units=pyo.units.dimensionless,
