@@ -178,7 +178,7 @@ class TestAsm2dAdm1(object):
         assert hasattr(asmadm.fs.unit.outlet, "temperature")
         assert hasattr(asmadm.fs.unit.outlet, "pressure")
 
-        assert number_variables(asmadm) == 186
+        assert number_variables(asmadm) == 194
         assert number_total_constraints(asmadm) == 21
 
         assert number_unused_variables(asmadm.fs.unit) == 12
