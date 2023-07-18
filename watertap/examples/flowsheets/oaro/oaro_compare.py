@@ -59,6 +59,7 @@ from watertap.core import (
 
 import matplotlib.pyplot as plt
 import numpy as np
+from debug import *
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -70,11 +71,10 @@ def main():
     # solver = get_solver()
 
     # build, set, and initialize
-    m = build()
+    m = build(water_recovery=0.5)
+    results = solve(m)
     # set_operating_conditions(m, number_of_stages=number_of_stages)
     # initialize_system(m, number_of_stages, solver=solver)
-
-    results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
     display_state(m)
     display_design(m)
@@ -90,8 +90,17 @@ def main():
 
     return m
 
+def solve(m):
+    solver = get_solver()
+    try:
+        results = solver.solve(m, tee=True)
+        debug(m)
+    except:
+        debug(m, automate_rescale=True, resolve=True)
 
-def build():
+    return results
+
+def build(water_recovery=0.5):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
@@ -145,14 +154,15 @@ def build():
     m.fs.unit.structural_parameter.fix(1200e-6)
 
     m.fs.unit.permeate_side.channel_height.fix(0.002)
-    m.fs.unit.permeate_side.spacer_porosity.fix(0.75)
+    m.fs.unit.permeate_side.spacer_porosity.fix(0.89)
     m.fs.unit.feed_side.channel_height.fix(0.002)
-    m.fs.unit.feed_side.spacer_porosity.fix(0.75)
-    m.fs.unit.feed_side.velocity[0, 0].fix(0.1)
+    m.fs.unit.feed_side.spacer_porosity.fix(0.95)
+    # m.fs.unit.feed_side.velocity[0, 0].fix(0.1)
+    m.fs.unit.feed_side.N_Re[0, 0].fix(400)
 
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
+        "flow_mass_phase_comp", 1e3, index=("Liq", "NaCl")
     )
 
     calculate_scaling_factors(m)
@@ -169,9 +179,9 @@ def build():
         doc="System Volumetric Recovery of Water",
     )
     m.fs.eq_mass_water_recovery = Constraint(
-        expr=m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        * m.fs.mass_water_recovery
-        == m.fs.unit.permeate_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        expr= m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"] * m.fs.mass_water_recovery == 
+        (m.fs.unit.permeate_outlet.flow_mass_phase_comp[0, "Liq", "H2O"] - 
+        m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "H2O"])
     )
 
     m.fs.unit.permeate_inlet.pressure[0].unfix()
@@ -182,7 +192,7 @@ def build():
 
     m.fs.unit.area.unfix()
 
-    m.fs.mass_water_recovery.fix(0.5)
+    m.fs.mass_water_recovery.fix(water_recovery)
     m.fs.unit.permeate_outlet.pressure[0].fix(1e5)
     m.fs.unit.feed_side.N_Re[0, 0].fix(400)
 
@@ -340,29 +350,60 @@ def plot(m):
     permeate_flux = (
         value(m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]) / 1e3 * 1000 * 3600
     )
+    
+    salt_flux_in = (
+        value(pyunits.convert(m.fs.unit.flux_mass_phase_comp[0, 0, "Liq", "NaCl"], to_units=pyunits.gram / pyunits.m**2 / pyunits.hour))
+    )
+    salt_flux_out = (
+        value(pyunits.convert(m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"], to_units=pyunits.gram / pyunits.m**2 / pyunits.hour))
+    )
     xpoints = np.array([0, 1])
     ypoints1 = np.array([feed_conc_in, feed_conc_out])
     ypoints2 = np.array([permeate_conc_out, permeate_conc_in])
     ypoints3 = np.array([feed_flux, permeate_flux])
+    ypoints4 = np.array([salt_flux_out, salt_flux_in])
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(7, 5))
     ax.plot(xpoints, ypoints1, "k")
     ax.plot(xpoints, ypoints2, "k--")
     ax.set_xlim([0, 1])
     ax.set_ylim([0, 175])
-    ax.set_ylabel("Concentration (g/L)")
+    ax.set_ylabel("Concentration (g/L)", fontsize=12)
     ax.legend(
         ["feed side concentration", "permeate side concentration"], loc="upper left"
     )
 
+    ax.set_xlabel("Normalized Membrane Length", fontsize=12)
+
+    ax.tick_params(axis="x", labelsize=12)
+    ax.tick_params(axis="y", labelsize=12)
+    plt.locator_params(axis="y", nbins=8)
+
     ax2 = ax.twinx()
     ax2.plot(xpoints, ypoints3)
     ax2.set_ylim([0, 10])
-    ax2.set_ylabel("Water flux (LMH)")
+    ax2.set_ylabel("Water flux (LMH)", fontsize=12)
     ax2.legend(["water flux"])
+    ax2.tick_params(axis="x", labelsize=12)
+    ax2.tick_params(axis="y", labelsize=12)
+    ax2.yaxis.label.set_color('#1f77b4')
+    ax2.spines["right"].set_color('#1f77b4')
+    ax2.tick_params(axis="y", colors='#1f77b4')
 
+    ax3 = ax.twinx()
+    ax3.spines.right.set_position(("axes", 1.25))
+    ax3.plot(xpoints, ypoints4, color="#c07432")
+    ax3.set_ylabel("Salt Flux (kg/m2-hr)", fontsize=12)
+    ax3.set_ylim([0, 20])
+    ax3.yaxis.label.set_color('#c07432')
+    ax3.spines["right"].set_color("#c07432")
+    ax3.tick_params(axis="y", colors="#c07432")
+
+    fig.tight_layout()
     plt.show()
 
 
 if __name__ == "__main__":
     m = main()
+
+    # NOTE: I think this can better match the paper if the salt flux is increased at the beginning of the permeate side and reduced at the beginning of the feed side
