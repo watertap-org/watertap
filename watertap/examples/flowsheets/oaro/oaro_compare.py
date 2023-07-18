@@ -59,7 +59,6 @@ from watertap.core import (
 
 import matplotlib.pyplot as plt
 import numpy as np
-from debug import *
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
