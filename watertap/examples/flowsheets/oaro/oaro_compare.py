@@ -158,11 +158,11 @@ def build(water_recovery=0.5):
     m.fs.unit.feed_side.channel_height.fix(0.002)
     m.fs.unit.feed_side.spacer_porosity.fix(0.95)
     # m.fs.unit.feed_side.velocity[0, 0].fix(0.1)
-    m.fs.unit.feed_side.N_Re[0, 0].fix(400)
+    m.fs.unit.feed_side.N_Re[0, 0].fix(375)
 
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e3, index=("Liq", "NaCl")
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
 
     calculate_scaling_factors(m)
@@ -194,7 +194,7 @@ def build(water_recovery=0.5):
 
     m.fs.mass_water_recovery.fix(water_recovery)
     m.fs.unit.permeate_outlet.pressure[0].fix(1e5)
-    m.fs.unit.feed_side.N_Re[0, 0].fix(400)
+    m.fs.unit.feed_side.N_Re[0, 0].fix(375)
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
@@ -204,7 +204,7 @@ def build(water_recovery=0.5):
 def display_design(m):
     print("--decision variables--")
     print(
-        "OARO Stage feed side water flux %.1f L/m2/h"
+        "OARO Stage feed side water flux: %.1f L/m2/h"
         % (
             value(m.fs.unit.flux_mass_phase_comp[0, 0, "Liq", "H2O"])
             / 1e3
@@ -213,7 +213,7 @@ def display_design(m):
         )
     )
     print(
-        "OARO permeate side water flux %.1f L/m2/h"
+        "OARO permeate side water flux: %.1f L/m2/h"
         % (
             value(m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"])
             / 1e3
@@ -222,7 +222,7 @@ def display_design(m):
         )
     )
     print(
-        "OARO average water flux %.1f L/m2/h"
+        "OARO average water flux: %.1f L/m2/h"
         % (
             value(m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"])
             / 1e3
@@ -231,50 +231,50 @@ def display_design(m):
         )
     )
     print(
-        "OARO average salt flux %.1f g/m2/h"
+        "OARO average salt flux: %.1f g/m2/h"
         % (value(m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]) * 1000 * 3600,)
     )
     print(
-        "OARO feed operating pressure %.1f bar"
+        "OARO feed operating pressure: %.1f bar"
         % (m.fs.unit.feed_inlet.pressure[0].value / 1e5)
     )
     print(
-        "OARO feed side pressure drop %.1f bar"
+        "OARO feed side pressure drop: %.1f bar"
         % (-m.fs.unit.feed_side.deltaP[0].value / 1e5)
     )
     print(
-        "OARO permeate operating pressure %.1f bar"
+        "OARO permeate operating pressure: %.1f bar"
         % (m.fs.unit.permeate_inlet.pressure[0].value / 1e5)
     )
     print(
-        "OARO permeate side pressure drop %.1f bar"
+        "OARO permeate side pressure drop: %.1f bar"
         % (-m.fs.unit.permeate_side.deltaP[0].value / 1e5)
     )
-    print("OARO membrane area      %.1f m2" % (m.fs.unit.area.value))
-    print("OARO membrane width      %.1f m" % (m.fs.unit.width.value))
-    print("OARO membrane length      %.1f m" % (m.fs.unit.length.value))
+    print("OARO membrane area:      %.1f m2" % (m.fs.unit.area.value))
+    print("OARO membrane width:      %.1f m" % (m.fs.unit.width.value))
+    print("OARO membrane length:      %.1f m" % (m.fs.unit.length.value))
     print(
-        "OARO feed side average Reynolds number %.1f"
+        "OARO feed side average Reynolds number: %.1f"
         % value(m.fs.unit.feed_side.N_Re_avg[0])
     )
     print(
-        "OARO permeate side average Reynolds number %.1f"
+        "OARO permeate side average Reynolds number: %.1f"
         % value(m.fs.unit.permeate_side.N_Re_avg[0])
     )
     print(
-        "OARO feed side average mass transfer coeff. %.1f mm/h"
+        "OARO feed side average mass transfer coeff.: %.1f mm/h"
         % value(m.fs.unit.feed_side.K_avg[0, "NaCl"] * 1000 * 3600)
     )
     print(
-        "OARO permeate side average mass transfer coeff. %.1f mm/h"
+        "OARO permeate side average mass transfer coeff.: %.1f mm/h"
         % value(m.fs.unit.permeate_side.K_avg[0, "NaCl"] * 1000 * 3600)
     )
     print(
-        "OARO water perm. coeff.  %.3f LMH/bar"
+        "OARO water perm. coeff.:  %.3f LMH/bar"
         % (m.fs.unit.A_comp[0, "H2O"].value * (3.6e11))
     )
     print(
-        "OARO salt perm. coeff.  %.3f LMH/bar"
+        "OARO salt perm. coeff.:  %.3f LMH/bar"
         % (m.fs.unit.B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
     )
 
@@ -305,10 +305,10 @@ def display_state(m):
             % (flow_mass, normalized_flow_mass, mass_frac_ppm, pressure_bar)
         )
 
-    print_state(f"OARO feed inlet", m.fs.unit.feed_inlet)
-    print_state(f"OARO permeate inlet", m.fs.unit.permeate_inlet)
-    print_state(f"OARO feed outlet", m.fs.unit.feed_outlet)
-    print_state(f"OARO permeate outlet", m.fs.unit.permeate_outlet)
+    print_state(f"OARO feed inlet:", m.fs.unit.feed_inlet)
+    print_state(f"OARO permeate inlet:", m.fs.unit.permeate_inlet)
+    print_state(f"OARO feed outlet:", m.fs.unit.feed_outlet)
+    print_state(f"OARO permeate outlet:", m.fs.unit.permeate_outlet)
 
 
 def plot(m):
