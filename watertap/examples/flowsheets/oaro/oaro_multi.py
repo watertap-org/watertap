@@ -66,7 +66,6 @@ from watertap.costing.units.pump import cost_low_pressure_pump, PumpType
 from watertap.core.util.model_diagnostics.infeasible import *
 from idaes.core.util.model_diagnostics import DegeneracyHunter
 
-
 class ERDtype(StrEnum):
     pump_as_turbine = "pump_as_turbine"
 
@@ -79,8 +78,8 @@ def erd_type_not_found(erd_type):
 
 def propagate_state(arc):
     _pro_state(arc)
-    print(arc.destination.name)
-    arc.destination.display()
+    # print(arc.destination.name)
+    # arc.destination.display()
 
 
 def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
@@ -1160,4 +1159,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(3, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
+    m = main(5, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
