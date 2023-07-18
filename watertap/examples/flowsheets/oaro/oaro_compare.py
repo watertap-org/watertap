@@ -90,11 +90,7 @@ def main():
 
 def solve(m):
     solver = get_solver()
-    try:
-        results = solver.solve(m, tee=True)
-        debug(m)
-    except:
-        debug(m, automate_rescale=True, resolve=True)
+    results = solver.solve(m, tee=True)
 
     return results
 

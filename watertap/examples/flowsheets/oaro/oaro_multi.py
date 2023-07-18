@@ -65,7 +65,6 @@ from watertap.costing.units.pump import cost_low_pressure_pump, PumpType
 
 from watertap.core.util.model_diagnostics.infeasible import *
 from idaes.core.util.model_diagnostics import DegeneracyHunter
-from util import *
 
 class ERDtype(StrEnum):
     pump_as_turbine = "pump_as_turbine"
@@ -776,9 +775,7 @@ def initialize_loop(m, solver):
             solute_multiplier=0.5,
         )
         propagate_state(m.fs.recyclepump_to_OARO[stage + 1])
-        report_inlet_condition(m,stage)
         m.fs.OAROUnits[stage].initialize()
-        report_outlet_condition(m,stage)
 
         propagate_state(m.fs.OARO_to_ERD[stage])
         m.fs.EnergyRecoveryDevices[stage].initialize()
@@ -818,9 +815,7 @@ def initialize_system(m, number_of_stages=None, solver=None, verbose=True):
             solute_multiplier=0.5,
         )
         propagate_state(m.fs.recyclepump_to_OARO[first_stage + 1])
-        report_inlet_condition(m,first_stage)
         m.fs.OAROUnits[first_stage].initialize()
-        report_outlet_condition(m,first_stage)
 
         if number_of_stages > 2:
             print(f"DOF before loop: {degrees_of_freedom(m)}")
