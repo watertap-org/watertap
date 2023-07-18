@@ -12,8 +12,8 @@ The constraint used to calculate energy consumption is described in the Addition
 
 Costing Method
 --------------
-Costing is calculated using the **cost_electrochemical_nutrient_removal** method in the zero-order costing package.
-See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
+Costing is calculated using the :py:meth:`~watertap.unit_models.zero_order.electrochemical_nutrient_removal_zo.ElectroNPZOData.cost_electrochemical_nutrient_removal` method.
+For full details on costing, see documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables
 --------------------
@@ -23,7 +23,7 @@ Additional Variables
 
    "Electricity consumption of unit", "electricity", ":math:`kW`"
    "Electricity intensity with respect to phosphorus removal", "energy_electric_flow_mass", ":math:`kWh/kg`"
-   "Dosage of magnesium chloride per treated phosphorus", "magnesium_chloride_dosage", ":math:`dimensionless`"
+   "Dosage of magnesium chloride per phosphorus removal", "magnesium_chloride_dosage", ":math:`dimensionless`"
    "Magnesium chloride flowrate", "MgCl2_flowrate", ":math:`kg/h`"
 
 Additional Constraints
