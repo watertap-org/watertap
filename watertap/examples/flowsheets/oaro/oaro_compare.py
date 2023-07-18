@@ -87,7 +87,6 @@ def main():
     #     display_state(m)
     # else:
     #     pass
-
     return m
 
 def solve(m):
