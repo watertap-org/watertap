@@ -29,7 +29,7 @@ from idaes.core import (
 )
 from idaes.core.util.scaling import calculate_scaling_factors, get_scaling_factor
 
-from pyomo.util.check_units import assert_units_consistent
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
     MCASStateBlock,
@@ -171,6 +171,7 @@ def test_property_ions(model):
     m.fs.stream[0].conc_mol_phase_comp
     m.fs.stream[0].act_coeff_phase_comp
     m.fs.stream[0].trans_num_phase_comp
+    m.fs.stream[0].total_hardness
 
     calculate_scaling_factors(m.fs)
 
@@ -211,6 +212,10 @@ def test_property_ions(model):
     assert isinstance(model.fs.properties.diffus_phase_comp, Var)
     for v in model.fs.properties.diffus_phase_comp.values():
         assert v.fixed
+    assert value(m.fs.stream[0].total_hardness) == pytest.approx(
+        value(m.fs.stream[0].conc_mol_phase_comp["Liq", "C"] * 100.0869), rel=1e-3
+    )
+    assert_units_equivalent(m.fs.stream[0].total_hardness, pyunits.mg / pyunits.L)
 
 
 @pytest.fixture(scope="module")
@@ -351,6 +356,7 @@ def test_build(model3):
         "elec_cond_phase",
         "pressure_osm_phase",
         "act_coeff_phase_comp",
+        "total_hardness",
     ]
 
     # test on demand constraints
@@ -360,9 +366,8 @@ def test_build(model3):
         c = getattr(m.fs.stream[0], "eq_" + v)
         assert isinstance(c, Constraint)
 
-    assert number_variables(m) == 92
-    assert number_total_constraints(m) == 69
-    [print(i) for i in unused_variables_set(m)]
+    assert number_variables(m) == 93
+    assert number_total_constraints(m) == 70
     assert number_unused_variables(m) == 6
 
 
@@ -543,6 +548,7 @@ def test_seawater_data():
     badly_scaled_var_list = list(
         badly_scaled_var_generator(m, large=100, small=0.01, zero=1e-10)
     )
+    [print(i[0], i[1]) for i in badly_scaled_var_list]
     assert len(badly_scaled_var_list) == 0
 
     results = solver.solve(m)
@@ -697,6 +703,15 @@ def test_seawater_data():
 
     assert value(stream[0].debye_huckel_constant) == pytest.approx(0.01554, rel=1e-3)
     assert value(stream[0].ionic_strength_molal) == pytest.approx(0.73467, rel=1e-3)
+    assert value(stream[0].total_hardness) == pytest.approx(
+        value(
+            (
+                stream[0].conc_mol_phase_comp["Liq", "Ca_2+"]
+                + stream[0].conc_mol_phase_comp["Liq", "Mg_2+"]
+            )
+            * 100.0869
+        )
+    )
 
 
 @pytest.mark.component
