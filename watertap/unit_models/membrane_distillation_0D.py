@@ -63,7 +63,7 @@ class MembraneDistillationData(MembraneDistillationBaseData):
     )
 
     def _add_membrane_channel_and_geometry(
-        self, config, channel="evaporator", flow_direction=FlowDirection.forward
+        self, config, channel="hot_side", flow_direction=FlowDirection.forward
     ):
 
         # Build membrane channel control volume
