@@ -29,3 +29,4 @@ from .zero_order_sido import build_sido
 from .zero_order_sido_reactive import build_sido_reactive
 from .zero_order_siso import build_siso
 from .zero_order_diso import build_diso
+from .temperature_polarization_mixn import TemperaturePolarizationMixin

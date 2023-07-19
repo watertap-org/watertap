@@ -31,9 +31,6 @@ from watertap.unit_models.membrane_distillation_base import (
 __author__ = "Elmira Shamlou"
 
 
-
-
-
 @declare_process_block_class("MembraneDistillation0D")
 class MembraneDistillationData(MembraneDistillationBaseData):
     """
@@ -44,12 +41,10 @@ class MembraneDistillationData(MembraneDistillationBaseData):
 
     CONFIG = ConfigBlock()
 
-
     def create_config_block(CONFIG_Template):
         config_block = ConfigBlock(implicit=True)
         config_block.update(CONFIG_Template)
         return config_block
-
 
     CONFIG.declare(
         "hot_side",
