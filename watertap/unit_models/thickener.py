@@ -11,7 +11,8 @@
 #
 ###############################################################################
 """
-Thickener unit model for BSM2. Based on IDAES separator unit
+Thickener unit model for BSM2 and plant-wide wastewater treatment modeling. 
+This unit inherits from the IDAES separator unit.
 
 Model based on 
 
@@ -19,7 +20,10 @@ J. Alex, L. Benedetti, J.B. Copp, K.V. Gernaey, U. Jeppsson,
 I. Nopens, M.N. Pons, C. Rosen, J.P. Steyer and
 P. A. Vanrolleghem
 Benchmark Simulation Model no. 2 (BSM2)
+
+Modifications made to TSS formulation based on ASM type.
 """
+from enum import Enum, auto
 
 # Import IDAES cores
 from idaes.core import (
@@ -33,29 +37,62 @@ import idaes.logger as idaeslog
 from pyomo.environ import (
     Param,
     units as pyunits,
-    Set,
 )
+from pyomo.common.config import ConfigValue, In
 
 from idaes.core.util.exceptions import (
     ConfigurationError,
 )
 
-__author__ = "Alejandro Garciadiego"
+__author__ = "Alejandro Garciadiego, Adam Atia"
 
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
+class ActivatedSludgeModelType(Enum):
+    """
+    ASM1: ASM1 model
+    ASM2D: ASM2D model
+    modified_ASM2D: modified ASM2D model for ADM1 compatibility
+    """
+
+    ASM1 = auto()
+    ASM2D = auto()
+    modified_ASM2D = auto()
+
+
 @declare_process_block_class("Thickener")
 class ThickenerData(SeparatorData):
     """
-    Thickener unit block for BSM2
+    Thickener unit model for BSM2
     """
 
     CONFIG = SeparatorData.CONFIG()
     CONFIG.outlet_list = ["underflow", "overflow"]
     CONFIG.split_basis = SplittingType.componentFlow
+
+    CONFIG.declare(
+        "activated_sludge_model",
+        ConfigValue(
+            default=ActivatedSludgeModelType.ASM1,
+            domain=In(ActivatedSludgeModelType),
+            description="Activated Sludge Model used with unit",
+            doc="""
+        Options to account for version of activated sludge model property package.
+
+        **default** - ``ActivatedSludgeModelType.ASM1``
+
+    .. csv-table::
+        :header: "Configuration Options", "Description"
+
+        "``ActivatedSludgeModelType.ASM1``", "ASM1 model"
+        "``ActivatedSludgeModelType.ASM2D``", "ASM2D model"
+        "``ActivatedSludgeModelType.modified_ASM2D``", "modified ASM2D model for ADM1 compatibility"
+    """,
+        ),
+    )
 
     def build(self):
         """
@@ -81,54 +118,50 @@ class ThickenerData(SeparatorData):
             initialize=0.07,
             units=pyunits.dimensionless,
             mutable=True,
-            doc="Percentage of suspended solids in the underflow",
+            doc="Fraction of suspended solids in the underflow",
         )
 
         self.TSS_rem = Param(
             initialize=0.98,
             units=pyunits.dimensionless,
             mutable=True,
-            doc="Percentage of suspended solids removed",
+            doc="Fraction of suspended solids removed",
         )
 
-        @self.Expression(self.flowsheet().time, doc="Suspended solid concentration")
-        def TSS(blk, t):
-            return 0.75 * (
-                blk.inlet.conc_mass_comp[t, "X_I"]
-                + blk.inlet.conc_mass_comp[t, "X_P"]
-                + blk.inlet.conc_mass_comp[t, "X_BH"]
-                + blk.inlet.conc_mass_comp[t, "X_BA"]
-                + blk.inlet.conc_mass_comp[t, "X_S"]
-            )
+        @self.Expression(self.flowsheet().time, doc="Suspended solids concentration")
+        def TSS_in(blk, t):
+            if blk.config.activated_sludge_model == ActivatedSludgeModelType.ASM1:
+                return 0.75 * (
+                    sum(
+                        blk.inlet.conc_mass_comp[t, i]
+                        for i in blk.config.property_package.tss_component_set
+                    )
+                )
+            elif blk.config.activated_sludge_model == ActivatedSludgeModelType.ASM2D:
+                return blk.inlet.conc_mass_comp[
+                    t, blk.config.property_package.tss_component_set.first()
+                ]
+            elif (
+                blk.config.activated_sludge_model
+                == ActivatedSludgeModelType.modified_ASM2D
+            ):
+                return blk.mixed_state[t].TSS
+            else:
+                raise ConfigurationError(
+                    "The activated_sludge_model was not specified properly in configuration options."
+                )
 
         @self.Expression(self.flowsheet().time, doc="Thickening factor")
         def f_thick(blk, t):
-            return blk.p_thick * (10 / (blk.TSS[t]))
+            return blk.p_thick * (10 / (blk.TSS_in[t]))
 
         @self.Expression(self.flowsheet().time, doc="Remove factor")
         def f_q_du(blk, t):
             return blk.TSS_rem / (pyunits.kg / pyunits.m**3) / 100 / blk.f_thick[t]
 
-        self.non_particulate_components = Set(
-            initialize=[
-                "S_I",
-                "S_S",
-                "S_O",
-                "S_NO",
-                "S_NH",
-                "S_ND",
-                "H2O",
-                "S_ALK",
-            ]
-        )
-
-        self.particulate_components = Set(
-            initialize=["X_I", "X_S", "X_P", "X_BH", "X_BA", "X_ND"]
-        )
-
         @self.Constraint(
             self.flowsheet().time,
-            self.particulate_components,
+            self.config.property_package.particulate_component_set,
             doc="particulate fraction",
         )
         def overflow_particulate_fraction(blk, t, i):
@@ -136,7 +169,7 @@ class ThickenerData(SeparatorData):
 
         @self.Constraint(
             self.flowsheet().time,
-            self.non_particulate_components,
+            self.config.property_package.non_particulate_component_set,
             doc="soluble fraction",
         )
         def non_particulate_components(blk, t, i):
