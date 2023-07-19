@@ -12,8 +12,8 @@ The constraint used to calculate energy consumption is described in the Addition
 
 Costing Method
 --------------
-Costing is calculated using the **cost_supercritical_salt_precipitation** method in the zero-order costing package.
-See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
+Costing is calculated using the :py:meth:`~watertap.unit_models.zero_order.supercritical_salt_precipitation_zo.SaltPrecipitationZOData.cost_supercritical_salt_precipitation` method.
+For full details on costing, see documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables
 --------------------
