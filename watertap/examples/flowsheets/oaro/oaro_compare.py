@@ -88,11 +88,13 @@ def main():
     #     pass
     return m
 
+
 def solve(m):
     solver = get_solver()
     results = solver.solve(m, tee=True)
 
     return results
+
 
 def build(water_recovery=0.5):
     m = ConcreteModel()
@@ -113,7 +115,7 @@ def build(water_recovery=0.5):
     feed_mass_frac_NaCl = 0.075
     feed_pressure = 65e5
     feed_temperature = 273.15 + 25
-    membrane_area = 50
+    membrane_area = 100
     A = 1e-12
     B = 7.7e-8
     pressure_atmospheric = 101325
@@ -137,7 +139,7 @@ def build(water_recovery=0.5):
     m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
         permeate_flow_mass * permeate_mass_frac_NaCl
     )
-    m.fs.unit.permeate_inlet.pressure[0].fix(1.5e5)
+    m.fs.unit.permeate_inlet.pressure[0].fix(2e5)
     m.fs.unit.permeate_inlet.temperature[0].fix(feed_temperature)
 
     m.fs.unit.area.fix(membrane_area)
@@ -150,9 +152,9 @@ def build(water_recovery=0.5):
     m.fs.unit.permeate_side.channel_height.fix(0.002)
     m.fs.unit.permeate_side.spacer_porosity.fix(0.89)
     m.fs.unit.feed_side.channel_height.fix(0.002)
-    m.fs.unit.feed_side.spacer_porosity.fix(0.95)
+    m.fs.unit.feed_side.spacer_porosity.fix(0.96)
     # m.fs.unit.feed_side.velocity[0, 0].fix(0.1)
-    m.fs.unit.feed_side.N_Re[0, 0].fix(375)
+    m.fs.unit.feed_side.N_Re[0, 0].fix(400)
 
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling(
@@ -173,22 +175,25 @@ def build(water_recovery=0.5):
         doc="System Volumetric Recovery of Water",
     )
     m.fs.eq_mass_water_recovery = Constraint(
-        expr= m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"] * m.fs.mass_water_recovery == 
-        (m.fs.unit.permeate_outlet.flow_mass_phase_comp[0, "Liq", "H2O"] - 
-        m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "H2O"])
+        expr=m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        * m.fs.mass_water_recovery
+        == (
+            m.fs.unit.permeate_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            - m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        )
     )
 
     m.fs.unit.permeate_inlet.pressure[0].unfix()
 
-    m.fs.unit.feed_side.velocity[0, 0].unfix()
-    m.fs.unit.feed_side.velocity[0, 0].setlb(0)
-    m.fs.unit.feed_side.velocity[0, 0].setub(1)
+    # m.fs.unit.feed_side.velocity[0, 0].unfix()
+    # m.fs.unit.feed_side.velocity[0, 0].setlb(0)
+    # m.fs.unit.feed_side.velocity[0, 0].setub(1)
 
     m.fs.unit.area.unfix()
 
     m.fs.mass_water_recovery.fix(water_recovery)
     m.fs.unit.permeate_outlet.pressure[0].fix(1e5)
-    m.fs.unit.feed_side.N_Re[0, 0].fix(375)
+    # m.fs.unit.feed_side.N_Re[0, 0].fix(400)
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
@@ -344,12 +349,18 @@ def plot(m):
     permeate_flux = (
         value(m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]) / 1e3 * 1000 * 3600
     )
-    
-    salt_flux_in = (
-        value(pyunits.convert(m.fs.unit.flux_mass_phase_comp[0, 0, "Liq", "NaCl"], to_units=pyunits.gram / pyunits.m**2 / pyunits.hour))
+
+    salt_flux_in = value(
+        pyunits.convert(
+            m.fs.unit.flux_mass_phase_comp[0, 0, "Liq", "NaCl"],
+            to_units=pyunits.gram / pyunits.m**2 / pyunits.hour,
+        )
     )
-    salt_flux_out = (
-        value(pyunits.convert(m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"], to_units=pyunits.gram / pyunits.m**2 / pyunits.hour))
+    salt_flux_out = value(
+        pyunits.convert(
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"],
+            to_units=pyunits.gram / pyunits.m**2 / pyunits.hour,
+        )
     )
     xpoints = np.array([0, 1])
     ypoints1 = np.array([feed_conc_in, feed_conc_out])
@@ -380,16 +391,16 @@ def plot(m):
     ax2.legend(["water flux"])
     ax2.tick_params(axis="x", labelsize=12)
     ax2.tick_params(axis="y", labelsize=12)
-    ax2.yaxis.label.set_color('#1f77b4')
-    ax2.spines["right"].set_color('#1f77b4')
-    ax2.tick_params(axis="y", colors='#1f77b4')
+    ax2.yaxis.label.set_color("#1f77b4")
+    ax2.spines["right"].set_color("#1f77b4")
+    ax2.tick_params(axis="y", colors="#1f77b4")
 
     ax3 = ax.twinx()
     ax3.spines.right.set_position(("axes", 1.25))
     ax3.plot(xpoints, ypoints4, color="#c07432")
     ax3.set_ylabel("Salt Flux (kg/m2-hr)", fontsize=12)
     ax3.set_ylim([0, 20])
-    ax3.yaxis.label.set_color('#c07432')
+    ax3.yaxis.label.set_color("#c07432")
     ax3.spines["right"].set_color("#c07432")
     ax3.tick_params(axis="y", colors="#c07432")
 
