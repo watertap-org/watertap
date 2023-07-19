@@ -43,6 +43,7 @@ from pyomo.environ import (
     log,
     exp,
     Suffix,
+    NonNegativeReals
 )
 
 
@@ -423,6 +424,7 @@ see reaction package for documentation.}""",
         self.volume_AD = Var(
             self.flowsheet().time,
             initialize=3700,
+            domain=NonNegativeReals,
             units=lunits("volume"),
             doc="Total volume of anaerobic digestor",
         )
@@ -430,6 +432,7 @@ see reaction package for documentation.}""",
         self.volume_vapor = Var(
             self.flowsheet().time,
             initialize=300,
+            domain=NonNegativeReals,
             units=lunits("volume"),
             doc="Volume of the gas",
         )
@@ -444,18 +447,21 @@ see reaction package for documentation.}""",
         self.KH_co2 = Var(
             self.flowsheet().time,
             initialize=0.02715,
+            domain=NonNegativeReals,
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
             doc="CO2 Henry's law coefficient",
         )
         self.KH_ch4 = Var(
             self.flowsheet().time,
             initialize=0.00116,
+            domain=NonNegativeReals,
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
             doc="CH4 Henry's law coefficient",
         )
         self.KH_h2 = Var(
             self.flowsheet().time,
             initialize=7.38e-4,
+            domain=NonNegativeReals,
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
             doc="H2 Henry's law coefficient",
         )
@@ -900,7 +906,7 @@ see reaction package for documentation.}""",
                     warning=True,
                 ),
             )
-        iscale.calculate_scaling_factors(self)
+        # iscale.calculate_scaling_factors(self)
 
     # TO DO: fix initialization
     def initialize_build(
