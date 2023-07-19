@@ -195,3 +195,8 @@ class FeedZOData(InitializationMixin, FeedData):
                 f"{self.name} failed to initialize successfully. Please check "
                 f"the output logs for more information."
             )
+
+    # no costing method
+    @property
+    def default_costing_method(self):
+        return lambda *args, **kwargs: None

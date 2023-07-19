@@ -210,6 +210,11 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         self._Q = Reference(self.properties_in[:].flow_vol)
         pump_electricity(self, self._Q)
 
+    # no costing method
+    @property
+    def default_costing_method(self):
+        return lambda *args, **kwargs: None
+
 
 def calculate_scaling_factors_gas_extraction(self):
     # Get default scale factors and do calculations from base classes
