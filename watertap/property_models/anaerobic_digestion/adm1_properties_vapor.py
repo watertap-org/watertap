@@ -291,17 +291,15 @@ class ADM1_vaporStateBlockData(StateBlockData):
                     to_units=pyo.units.Pa,
                 )
             elif j == "H2O":
-                return b.pressure_sat[j] == (
-                    0.0313
-                    * pyo.exp(
+                return pyo.log(b.pressure_sat[j] / pyo.units.Pa) == (
+                    pyo.log(0.0313)
+                    + 
                         5290
                         * pyo.units.K
                         * ((1 / b.params.temperature_ref) - (1 / b.temperature))
-                    )
-                    * 1e5
-                    * pyo.units.Pa
+                    + pyo.log(1e5)
                 )
-            else:
+            elif j == "S_co2":       
                 return b.pressure_sat[j] == pyo.units.convert(
                     b.conc_mass_comp[j]
                     * (1000 * pyo.units.g / pyo.units.kg)
@@ -310,7 +308,11 @@ class ADM1_vaporStateBlockData(StateBlockData):
                     / (12 * pyo.units.g / pyo.units.mole),
                     to_units=pyo.units.Pa,
                 )
-
+            else:
+                raise Exception(
+                    "Vapor component not implemented."
+                )
+                
         self._pressure_sat = pyo.Constraint(
             self.params.component_list,
             rule=pressure_sat_rule,
@@ -364,13 +366,13 @@ class ADM1_vaporStateBlockData(StateBlockData):
             rule=energy_density_expression, doc="Energy density term"
         )
 
-        iscale.set_scaling_factor(self.flow_vol, 1e2)
-        iscale.set_scaling_factor(self.temperature, 1e-2)
-        iscale.set_scaling_factor(self.pressure, 1e-4)
-        iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
-        iscale.set_scaling_factor(self.pressure_sat["S_ch4"], 1e-4)
-        iscale.set_scaling_factor(self.pressure_sat["S_co2"], 1e-4)
-        iscale.set_scaling_factor(self.pressure_sat["S_h2"], 1e-1)
+        iscale.set_scaling_factor(self.flow_vol, 1e5)
+        iscale.set_scaling_factor(self.temperature, 1e-1)
+        iscale.set_scaling_factor(self.pressure, 1e-3)
+        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
+        iscale.set_scaling_factor(self.pressure_sat["S_ch4"], 1e-3)
+        iscale.set_scaling_factor(self.pressure_sat["S_co2"], 1e-3)
+        iscale.set_scaling_factor(self.pressure_sat["S_h2"], 1e-3)
         iscale.set_scaling_factor(self.pressure_sat["H2O"], 1e-3)
 
     def get_material_flow_terms(self, p, j):

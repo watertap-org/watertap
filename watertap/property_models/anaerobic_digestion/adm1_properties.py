@@ -283,10 +283,36 @@ class ADM1StateBlockData(StateBlockData):
             doc="Temperature",
             units=pyo.units.K,
         )
+        Comp_dict = {
+            "S_su": 0.012,
+            "S_aa": 0.0053,
+            "S_fa": 0.099,
+            "S_va": 0.012,
+            "S_bu": 0.013,
+            "S_pro": 0.016,
+            "S_ac": 0.20,
+            "S_h2": 2.3e-7,
+            "S_ch4": 0.055,
+            "S_IC": 0.15,
+            "S_IN": 0.13,
+            "S_I": 0.33,
+            "X_c": 0.31,
+            "X_ch": 0.028,
+            "X_pr": 0.10,
+            "X_li": 0.029,
+            "X_su": 0.42,
+            "X_aa": 1.18,
+            "X_fa": 0.24,
+            "X_c4": 0.43,
+            "X_pro": 0.14,
+            "X_ac": 0.76,
+            "X_h2": 0.32,
+            "X_I": 25.6,
+        }
         self.conc_mass_comp = pyo.Var(
             self.params.solute_set,
             domain=pyo.NonNegativeReals,
-            initialize=0.001,
+            initialize=Comp_dict,
             doc="Component mass concentrations",
             units=pyo.units.kg / pyo.units.m**3,
         )
@@ -366,12 +392,12 @@ class ADM1StateBlockData(StateBlockData):
             rule=energy_density_expression, doc="Energy density term"
         )
 
-        iscale.set_scaling_factor(self.flow_vol, 1e1)
+        iscale.set_scaling_factor(self.flow_vol, 1e5)
         iscale.set_scaling_factor(self.temperature, 1e-1)
         iscale.set_scaling_factor(self.pressure, 1e-3)
-        iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
-        iscale.set_scaling_factor(self.anions, 1e1)
-        iscale.set_scaling_factor(self.cations, 1e1)
+        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
+        iscale.set_scaling_factor(self.anions, 1e2)
+        iscale.set_scaling_factor(self.cations, 1e2)
 
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]
