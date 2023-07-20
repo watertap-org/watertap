@@ -22,8 +22,6 @@ import tempfile
 
 # third-party
 import click
-from json_schema_for_humans import generate as schema_gen
-from json_schema_for_humans.generation_configuration import GenerationConfiguration
 from pymongo.errors import ConnectionFailure
 
 # package
@@ -399,6 +397,15 @@ def drop_database(url, database, yes):
     "-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB
 )
 def schema(output_file, output_format, data_type, url, database):
+    try:
+        from json_schema_for_humans import generate as schema_gen
+        from json_schema_for_humans.generation_configuration import (
+            GenerationConfiguration,
+        )
+    except ModuleNotFoundError:
+        raise ImportError(
+            "json-schema-for-humans (EDB optional dependency) not installed"
+        )
     print_messages = _log.isEnabledFor(logging.ERROR)
     if output_file:
         stream = output_file
