@@ -41,7 +41,7 @@ import idaes.core.util.scaling as iscale
 
 
 # Some more information about this module
-__author__ = "Marcus Holly"
+__author__ = "Marcus Holly, Adam Atia"
 
 
 # Set up logger
