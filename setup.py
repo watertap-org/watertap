@@ -14,7 +14,7 @@ Project setup with setuptools
 """
 
 # Always prefer setuptools over distutils
-from setuptools import setup, find_namespace_packages
+from setuptools import setup, find_packages
 from pathlib import Path
 
 cwd = Path(__file__).parent
@@ -72,7 +72,7 @@ setup(
     ],
     keywords="water systems, chemical engineering, process modeling, filtration, desalination, nawi",
     # just include watertap and everything under it
-    packages=find_namespace_packages(
+    packages=find_packages(
         include=("watertap*",),
     ),
     python_requires=">=3.7",
