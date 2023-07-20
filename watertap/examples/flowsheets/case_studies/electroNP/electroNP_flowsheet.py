@@ -26,7 +26,6 @@ from idaes.core import (
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from watertap.unit_models.anaerobic_digestor import AD
 from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
 )
@@ -42,7 +41,9 @@ from watertap.property_models.activated_sludge.modified_asm2d_properties import 
 from watertap.unit_models.translators.translator_adm1_asm2d import (
     Translator_ADM1_ASM2D,
 )
+from watertap.unit_models.anaerobic_digestor import AD
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
+from watertap.unit_models.dewatering import DewateringUnit, ActivatedSludgeModelType
 from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
@@ -89,6 +90,11 @@ def build_flowsheet():
     m.fs.electroNP = ElectroNPZO(property_package=m.fs.props_ASM2D)
     m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
+    m.fs.dewater = DewateringUnit(
+        property_package=m.fs.props_ASM2D,
+        activated_sludge_model=ActivatedSludgeModelType.modified_ASM2D,
+    )
+
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(
         m.fs.electroNP.properties_treated[0].flow_vol
@@ -99,8 +105,11 @@ def build_flowsheet():
     m.fs.stream_adm1_translator = Arc(
         source=m.fs.AD.liquid_outlet, destination=m.fs.translator_adm1_asm2d.inlet
     )
-    m.fs.stream_translator_electroNP = Arc(
-        source=m.fs.translator_adm1_asm2d.outlet, destination=m.fs.electroNP.inlet
+    m.fs.stream_translator_dewater = Arc(
+        source=m.fs.translator_adm1_asm2d.outlet, destination=m.fs.dewater.inlet
+    )
+    m.fs.stream_dewater_electroNP = Arc(
+        source=m.fs.dewater.overflow, destination=m.fs.electroNP.inlet
     )
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -189,7 +198,9 @@ def build_flowsheet():
     m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH)
     propagate_state(m.fs.stream_adm1_translator)
     m.fs.translator_adm1_asm2d.initialize(outlvl=idaeslog.INFO_HIGH)
-    propagate_state(m.fs.stream_translator_electroNP)
+    propagate_state(m.fs.stream_translator_dewater)
+    m.fs.dewater.initialize(outlvl=idaeslog.INFO_HIGH)
+    propagate_state(m.fs.stream_dewater_electroNP)
     m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH)
     m.fs.costing.initialize()
 
