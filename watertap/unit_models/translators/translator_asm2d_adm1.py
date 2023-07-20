@@ -810,7 +810,9 @@ see reaction package for documentation.}""",
                     # blk.properties_out[t].conc_mol_comp["S_IC"]
                     # == blk.SIC_AS6[t] / (mw_c * 1000)
                     blk.properties_out[t].conc_mass_comp["S_IC"]
-                    == blk.SIC_AS6[t] / 1000
+                    == pyunits.convert(
+                        blk.SIC_AS6[t], to_units=pyunits.kg / pyunits.m**3
+                    )
                 )
 
             @self.Expression(self.flowsheet().time, doc="S_K concentration at step 6")
@@ -1131,7 +1133,9 @@ see reaction package for documentation.}""",
                     # blk.properties_out[t].conc_mol_comp["S_IC"]
                     # == blk.SIC_AS5[t] / (mw_c * 1000)
                     blk.properties_out[t].conc_mass_comp["S_IC"]
-                    == blk.SIC_AS5[t] / 1000
+                    == pyunits.convert(
+                        blk.SIC_AS5[t], to_units=pyunits.kg / pyunits.m**3
+                    )
                 )
 
             XS_AS5 = eps * pyunits.kg / pyunits.m**3

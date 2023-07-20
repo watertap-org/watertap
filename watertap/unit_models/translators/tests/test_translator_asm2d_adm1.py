@@ -70,7 +70,20 @@ from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
 )
 
+from watertap.core.util.model_diagnostics.infeasible import *
+
+# from watertap.core.util.model_diagnostics.infeasible import print_close_to_bounds, print_infeasible_constraints
+
 from pyomo.util.check_units import assert_units_consistent
+
+from idaes.core.util.scaling import (
+    calculate_scaling_factors,
+    set_scaling_factor,
+    get_scaling_factor,
+    constraint_scaling_transform,
+)
+
+import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -209,7 +222,7 @@ class TestAsm2dAdm1(object):
         assert hasattr(asmadm.fs.unit.outlet, "anions")
         assert hasattr(asmadm.fs.unit.outlet, "cations")
 
-        assert number_variables(asmadm) == 251
+        assert number_variables(asmadm) == 265
         assert number_total_constraints(asmadm) == 34
 
         # TODO: Result of SN2_AS2 being unused. Remove? It's also unused in the c-code
@@ -279,6 +292,11 @@ class TestAsm2dAdm1(object):
         dh.check_rank_equality_constraints(dense=True)
         ds = dh.find_candidate_equations(verbose=False, tee=False)
         ids = dh.find_irreducible_degenerate_sets(verbose=False)
+
+        print("------------------------")
+        print("Infeasible Constraints")
+        print_close_to_bounds(asmadm)
+        print_infeasible_constraints(asmadm)
 
         initialization_tester(asmadm)
 
