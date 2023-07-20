@@ -89,6 +89,40 @@ class TestParamBlock(object):
         assert isinstance(model.params.temperature_ref, Param)
         assert value(model.params.temperature_ref) == 298.15
 
+        assert len(model.params.particulate_component_set) == 10
+        assert len(model.params.non_particulate_component_set) == 10
+        assert len(model.params.tss_component_set) == 1
+        for i in model.params.particulate_component_set:
+            assert i in [
+                "X_AUT",
+                "X_H",
+                "X_I",
+                "X_MeOH",
+                "X_MeP",
+                "X_PAO",
+                "X_PHA",
+                "X_PP",
+                "X_S",
+                "X_TSS",
+            ]
+
+        for i in model.params.tss_component_set:
+            assert i in ["X_TSS"]
+
+        for i in model.params.non_particulate_component_set:
+            assert i in [
+                "S_A",
+                "S_F",
+                "S_I",
+                "S_N2",
+                "S_NH4",
+                "S_NO3",
+                "S_O2",
+                "S_PO4",
+                "S_ALK",
+                "H2O",
+            ]
+
 
 class TestStateBlock(object):
     @pytest.fixture(scope="class")

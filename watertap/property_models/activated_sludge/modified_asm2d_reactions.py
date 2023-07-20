@@ -41,7 +41,7 @@ import idaes.core.util.scaling as iscale
 
 
 # Some more information about this module
-__author__ = "Marcus Holly"
+__author__ = "Marcus Holly, Adam Atia"
 
 
 # Set up logger
@@ -285,6 +285,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Magnesium coefficient for polyphosphates",
         )
+
         self.i_NOx_N2 = pyo.Var(
             initialize=2.8571,
             units=pyo.units.dimensionless,
