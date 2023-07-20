@@ -22,7 +22,10 @@ from .util import MockDB
 
 @pytest.fixture
 def mockdb():
-    return MockDB()
+    try:
+        return MockDB()
+    except ModuleNotFoundError:
+        pytest.skip(reason="mongomock (EDB optional dependency) not available")
 
 
 # Test for MongoDB server at default URL
