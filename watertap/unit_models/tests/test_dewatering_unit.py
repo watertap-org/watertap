@@ -48,12 +48,20 @@ from idaes.core.util.exceptions import (
     ConfigurationError,
 )
 
-from watertap.unit_models.dewatering import DewateringUnit
+from watertap.unit_models.dewatering import DewateringUnit, ActivatedSludgeModelType
 from watertap.property_models.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
 )
 
+from watertap.property_models.activated_sludge.asm2d_properties import (
+    ASM2dParameterBlock,
+)
+from watertap.property_models.activated_sludge.modified_asm2d_properties import (
+    ModifiedASM2dParameterBlock,
+)
 from pyomo.util.check_units import assert_units_consistent
+
+__author__ = "Alejandro Garciadiego, Adam Atia"
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -70,12 +78,14 @@ def test_config():
 
     m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
-    assert len(m.fs.unit.config) == 15
+    assert len(m.fs.unit.config) == 16
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
+    assert m.fs.unit.config.activated_sludge_model == ActivatedSludgeModelType.ASM1
+
     assert "underflow" in m.fs.unit.config.outlet_list
     assert "overflow" in m.fs.unit.config.outlet_list
     assert SplittingType.componentFlow is m.fs.unit.config.split_basis
@@ -270,3 +280,144 @@ class TestDu(object):
     @pytest.mark.unit
     def test_report(self, du):
         du.fs.unit.report()
+
+
+class TestDUASM2d(object):
+    @pytest.fixture(scope="class")
+    def du_asm2d(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props = ASM2dParameterBlock()
+
+        m.fs.unit = DewateringUnit(
+            property_package=m.fs.props,
+            activated_sludge_model=ActivatedSludgeModelType.ASM2D,
+        )
+
+        # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
+        EPS = 1e-8
+
+        m.fs.unit.inlet.flow_vol.fix(300 * units.m**3 / units.day)
+        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
+        m.fs.unit.inlet.pressure.fix(1 * units.atm)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O2"].fix(7.9707 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(29.0603 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(8.0209 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(6.6395 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(7.8953 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(0.4748 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(0.0336 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1695.7695 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(68.2975 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(1855.5067 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(
+            214.5319 * units.mg / units.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(63.5316 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(2.7381 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(
+            118.3582 * units.mg / units.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_TSS"].fix(
+            3525.429 * units.mg / units.liter
+        )
+        m.fs.unit.inlet.alkalinity[0].fix(4.6663 * units.mmol / units.liter)
+
+        return m
+
+    @pytest.mark.unit
+    def test_dof(self, du_asm2d):
+        assert degrees_of_freedom(du_asm2d) == 0
+
+    @pytest.mark.unit
+    def test_units(self, du_asm2d):
+        assert_units_consistent(du_asm2d)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, du_asm2d):
+
+        iscale.calculate_scaling_factors(du_asm2d)
+        initialization_tester(du_asm2d)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, du_asm2d):
+        solver = get_solver()
+        results = solver.solve(du_asm2d)
+        assert_optimal_termination(results)
+
+
+class TestDUModifiedASM2d(object):
+    @pytest.fixture(scope="class")
+    def du_mod_asm2d(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props = ModifiedASM2dParameterBlock()
+
+        m.fs.unit = DewateringUnit(
+            property_package=m.fs.props,
+            activated_sludge_model=ActivatedSludgeModelType.modified_ASM2D,
+        )
+
+        # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
+        EPS = 1e-8
+
+        m.fs.unit.inlet.flow_vol.fix(300 * units.m**3 / units.day)
+        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
+        m.fs.unit.inlet.pressure.fix(1 * units.atm)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O2"].fix(7.9707 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(29.0603 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(8.0209 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(6.6395 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(7.8953 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(0.4748 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(0.0336 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(7 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(6 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(10 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1695.7695 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(68.2975 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(1855.5067 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(
+            214.5319 * units.mg / units.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(63.5316 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(2.7381 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(
+            118.3582 * units.mg / units.liter
+        )
+
+        return m
+
+    @pytest.mark.unit
+    def test_dof(self, du_mod_asm2d):
+        assert degrees_of_freedom(du_mod_asm2d) == 0
+
+    @pytest.mark.unit
+    def test_units(self, du_mod_asm2d):
+        assert_units_consistent(du_mod_asm2d)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, du_mod_asm2d):
+
+        iscale.calculate_scaling_factors(du_mod_asm2d)
+        initialization_tester(du_mod_asm2d)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, du_mod_asm2d):
+        solver = get_solver()
+        results = solver.solve(du_mod_asm2d)
+        assert_optimal_termination(results)

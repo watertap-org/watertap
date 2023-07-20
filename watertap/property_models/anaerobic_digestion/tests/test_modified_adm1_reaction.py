@@ -18,7 +18,7 @@ X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J
 Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes,
 Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
 
-Authors: Chenyu Wang, Marcus Holly
+Authors: Chenyu Wang, Marcus Holly, Adam Atia
 """
 
 import pytest
@@ -616,6 +616,10 @@ class TestReactor:
         m.fs.unit.volume_vapor.fix(300)
         m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
+        # Touch on-demand property, TSS, at inlet and outlet
+        m.fs.unit.liquid_phase.properties_in[0].TSS
+        m.fs.unit.liquid_phase.properties_out[0].TSS
+
         return m
 
     @pytest.mark.unit
@@ -624,7 +628,7 @@ class TestReactor:
 
     @pytest.mark.unit
     def test_unit_consistency(self, model):
-        assert_units_consistent(model) == 0
+        assert_units_consistent(model)
 
     @pytest.mark.unit
     def test_scaling_factors(self, model):
@@ -651,7 +655,7 @@ class TestReactor:
     @pytest.mark.component
     @pytest.mark.requires_idaes_solver
     def test_solve(self, model):
-        solver = get_solver(options={"bound_push": 1e-8})
+        solver = get_solver()
         results = solver.solve(model, tee=True)
         model.display()
         print(large_residuals_set(model))
@@ -811,3 +815,18 @@ class TestReactor:
         assert value(
             model.fs.unit.liquid_phase.reactions[0].K_a_IN, Var
         ) == pytest.approx(1.11e-9, rel=1e-2)
+        assert value(
+            1
+            - model.fs.unit.liquid_phase.properties_out[0].TSS
+            / model.fs.unit.liquid_phase.properties_in[0].TSS
+        ) * 100 == pytest.approx(55.989195, rel=1e-4)
+        assert value(
+            1
+            - model.fs.unit.liquid_phase.properties_out[0].VSS
+            / model.fs.unit.liquid_phase.properties_in[0].VSS
+        ) * 100 == pytest.approx(51.72925597, rel=1e-4)
+        assert value(
+            1
+            - model.fs.unit.liquid_phase.properties_out[0].ISS
+            / model.fs.unit.liquid_phase.properties_in[0].ISS
+        ) * 100 == pytest.approx(86.582365, rel=1e-4)
