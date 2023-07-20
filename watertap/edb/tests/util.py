@@ -13,12 +13,13 @@
 Utility functions for EDB tests
 """
 import pytest
-import mongomock
 from watertap.edb.db_api import ElectrolyteDB
 
 
 class MockDB(ElectrolyteDB):
     def __init__(self, db="foo", **kwargs):
+        import mongomock
+
         self._client = mongomock.MongoClient()
         self._db = getattr(self._client, db)
         # note: don't call superclass!
@@ -28,7 +29,10 @@ class MockDB(ElectrolyteDB):
 
 @pytest.fixture
 def mockdb():
-    return MockDB()
+    try:
+        return MockDB()
+    except ModuleNotFoundError:
+        pytest.skip(reason="mongomock (EDB optional dependency) not available")
 
 
 def dict_diff(d1, d2, result=[], pfx=""):

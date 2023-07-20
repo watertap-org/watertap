@@ -41,7 +41,10 @@ def edb(pytestconfig: Config) -> ElectrolyteDB:
         _edb = ElectrolyteDB()
     else:
         if mock_allowed:
-            _edb = MockDB()
+            try:
+                _edb = MockDB()
+            except ModuleNotFoundError:
+                pytest.skip(reason="mongomock (EDB optional dependency) not available")
         else:
             pytest.fail(
                 "EDB could not connect to a database instance, but mocking is not allowed"
