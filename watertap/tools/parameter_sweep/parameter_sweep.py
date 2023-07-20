@@ -13,7 +13,6 @@ import numpy as np
 import pyomo.environ as pyo
 import warnings
 import copy
-import requests
 import time
 
 from abc import abstractmethod, ABC
@@ -191,6 +190,13 @@ class _ParameterSweepBase(ABC):
                 outputs[output_name] = exprs[output_name]
 
     def _publish_updates(self, iteration, solve_status, solve_time):
+        try:
+            import requests
+        except ModuleNotFoundError:
+            raise ImportError(
+                "requests (parameter_sweep optional dependency) not installed"
+            )
+
         if self.config.publish_progress:
             publish_dict = {
                 "worker_number": self.parallel_manager.get_rank(),
