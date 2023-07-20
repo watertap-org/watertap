@@ -91,6 +91,7 @@ setup(
         "scipy",
         # for parameter_sweep
         "h5py",
+        "requests",
         # for watertap.ui.api_model (though may be generally useful)
         "pydantic < 2",
         "numpy",
