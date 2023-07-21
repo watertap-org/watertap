@@ -92,14 +92,13 @@ class ParameterSweepWriter:
         else:
             return file_name, None
 
-    @staticmethod
-    def _process_results_filename(results_file_name):
+    def _process_results_filename(self, results_file_name):
         # Get the directory path
         dirname = os.path.dirname(results_file_name)
         # Get the file name without the extension
         known_extensions = [".h5", ".csv"]
         for ext in known_extensions:
-            fname_no_ext, extension = _strip_extension(results_file_name, ext)
+            fname_no_ext, extension = self._strip_extension(results_file_name, ext)
             if extension is not None:
                 break
 
@@ -249,8 +248,9 @@ class ParameterSweepWriter:
 
         if process_number == self.parallel_manager.ROOT_PROCESS_RANK:
             data_header = ",".join(itertools.chain(sweep_params))
-            for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
-                data_header = ",".join([data_header, key])
+            for i, (key) in enumerate(global_results_dict["outputs"].keys()):
+                if key not in sweep_params.keys() or key not in [obj.pyomo_object.name for obj in sweep_params.values()]:
+                    data_header = ",".join([data_header, key])
 
             if self.config["csv_results_file_name"] is not None:
                 # Write the CSV

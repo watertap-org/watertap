@@ -375,8 +375,8 @@ class _ParameterSweepBase(ABC):
         sweep_param_objs = ComponentSet()
 
         # Store the inputs
-        for param_name, sweep_param in sweep_params.items():
-            var = sweep_param.pyomo_object
+        for param_name, sampling_obj in sweep_params.items():
+            var = sampling_obj.pyomo_object
             sweep_param_objs.add(var)
             output_dict["sweep_params"][
                 param_name
@@ -387,9 +387,16 @@ class _ParameterSweepBase(ABC):
             for pyo_obj in model.component_data_objects(
                 (pyo.Var, pyo.Expression, pyo.Objective, pyo.Param), active=True
             ):
-                output_dict["outputs"][
-                    pyo_obj.name
-                ] = self._create_component_output_skeleton(pyo_obj, num_samples)
+                # We do however need to make sure that the short name for the inputs is used here
+                for param_name, sampling_obj in sweep_params.items():
+                    if pyo_obj.name == sampling_obj.pyomo_object.name:
+                        output_dict["outputs"][
+                            param_name
+                        ] = self._create_component_output_skeleton(pyo_obj, num_samples)
+                    else:
+                        output_dict["outputs"][
+                            pyo_obj.name
+                        ] = self._create_component_output_skeleton(pyo_obj, num_samples)
 
         else:
             # Save only the outputs specified in the outputs dictionary
@@ -397,6 +404,13 @@ class _ParameterSweepBase(ABC):
                 output_dict["outputs"][
                     short_name
                 ] = self._create_component_output_skeleton(pyo_obj, num_samples)
+            # We will save the input values as well here
+            for param_name, sweep_param in sweep_params.items():
+                var = sweep_param.pyomo_object
+                sweep_param_objs.add(var)
+                output_dict["outputs"][
+                    param_name
+                ] = self._create_component_output_skeleton(var, num_samples)
 
         return output_dict
 
@@ -733,7 +747,7 @@ class ParameterSweep(_ParameterSweepBase):
     one process's run.
     """
 
-    def _combine_outputs(self, gathered_results):
+    def _combine_output_array(self, sweep_params, gathered_results):
         outputs = gathered_results["outputs"]
         if len(outputs) == 0:
             return []
@@ -742,9 +756,10 @@ class ParameterSweep(_ParameterSweepBase):
         combined_outputs = [
             np.asarray([]) for _ in range(len(list(outputs.values())[0]["value"]))
         ]
-        for _, output in outputs.items():
-            for i in range(len(output["value"])):
-                combined_outputs[i] = np.append(combined_outputs[i], output["value"][i])
+        for var_name, output in outputs.items():
+            if var_name not in sweep_params.keys() or var_name not in [obj.pyomo_object.name for obj in sweep_params.values()]:
+                for i in range(len(output["value"])):
+                    combined_outputs[i] = np.append(combined_outputs[i], output["value"][i])
 
         return np.asarray(combined_outputs)
 
@@ -865,8 +880,8 @@ class ParameterSweep(_ParameterSweepBase):
             all_parameter_combinations,
         )
 
-        global_sweep_results = self._combine_gather_results(all_results)
-        combined_outputs = self._combine_outputs(global_sweep_results)
+        global_sweep_results_dict = self._combine_gather_results(all_results)
+        combined_output_arr = self._combine_output_array(sweep_params, global_sweep_results_dict)
 
         # save the results for all simulations run by this process and its children
         for results in self.parallel_manager.results_from_local_tree(all_results):
@@ -875,14 +890,14 @@ class ParameterSweep(_ParameterSweepBase):
                 results.parameters,
                 all_parameter_combinations,
                 results.results,
-                global_sweep_results,
-                combined_outputs,
+                global_sweep_results_dict,
+                combined_output_arr,
                 process_number=results.process_number,
             )
 
-        global_save_data = np.hstack((all_parameter_combinations, combined_outputs))
+        global_save_data = np.hstack((all_parameter_combinations, combined_output_arr))
 
-        return global_save_data, global_sweep_results
+        return global_save_data, global_sweep_results_dict
 
 
 class RecursiveParameterSweep(_ParameterSweepBase):
