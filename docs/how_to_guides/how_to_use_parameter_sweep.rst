@@ -99,9 +99,17 @@ The file `outputs_results.csv` contains the `sweep_param` values and `outputs` v
 The H5 writer also creates a companion text file containing the metadata of the h5 file in `outputs_results.h5.txt`.
 Note that if `outputs = None` and an H5 results file is specified, all of the pyomo model variables will be stored in the `outputs_results.h5` and `outputs_results.h5.txt` files.
 
+In future versions, to allow for parallel implementations, the arguments for the model, sweep params, and outputs
+to the parameter_sweep function will be callable functions that return the appropriate objects. Passing the objects
+in directly still works but is deprecated. 
+
 .. testcode::
 
     parameter_sweep(m, sweep_params, outputs, csv_results_file_name='outputs_results.csv', h5_results_file_name='outputs_results.h5')
+
+.. testoutput::
+
+    ...
 
 .. testcleanup::
 
