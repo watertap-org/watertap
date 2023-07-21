@@ -224,7 +224,7 @@ def test_recursive_parameter_sweep(model, tmp_path):
         assert os.path.isfile(csv_results_file)
 
         # Check that all local output files have been created
-        for k in range(ps.parallel_manager.number_of_processes()):
+        for k in range(ps.parallel_manager.number_of_worker_processes()):
             assert os.path.isfile(os.path.join(tmp_path, f"local_results_{k:03}.h5"))
             assert os.path.isfile(os.path.join(tmp_path, f"local_results_{k:03}.csv"))
 
