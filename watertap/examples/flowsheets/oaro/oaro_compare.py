@@ -20,6 +20,8 @@ from pyomo.environ import (
     assert_optimal_termination,
     units as pyunits,
     NonNegativeReals,
+    Objective,
+    SolverFactory,
 )
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.network import Port
@@ -59,6 +61,9 @@ from watertap.core import (
 
 import matplotlib.pyplot as plt
 import numpy as np
+from idaes.core.util.model_diagnostics import DegeneracyHunter
+from watertap.core.util.model_diagnostics.infeasible import *
+import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -72,20 +77,11 @@ def main():
     # build, set, and initialize
     m = build(water_recovery=0.5)
     results = solve(m)
-    # set_operating_conditions(m, number_of_stages=number_of_stages)
-    # initialize_system(m, number_of_stages, solver=solver)
     assert_optimal_termination(results)
-    display_state(m)
-    display_design(m)
-    plot(m)
 
-    # print("\n***---Optimization results---***")
-    # display_system(m)
+    # display_state(m)
     # display_design(m)
-    # if erd_type == ERDtype.pump_as_turbine:
-    #     display_state(m)
-    # else:
-    #     pass
+    # plot(m)
     return m
 
 
@@ -152,7 +148,7 @@ def build(water_recovery=0.5):
     m.fs.unit.permeate_side.channel_height.fix(0.002)
     m.fs.unit.permeate_side.spacer_porosity.fix(0.89)
     m.fs.unit.feed_side.channel_height.fix(0.002)
-    m.fs.unit.feed_side.spacer_porosity.fix(0.96)
+    m.fs.unit.feed_side.spacer_porosity.fix(0.95)
     # m.fs.unit.feed_side.velocity[0, 0].fix(0.1)
     m.fs.unit.feed_side.N_Re[0, 0].fix(400)
 
@@ -161,11 +157,20 @@ def build(water_recovery=0.5):
         "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
 
+    iscale.set_scaling_factor(m.fs.unit.area, 1e-2)
     calculate_scaling_factors(m)
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
     m.fs.unit.initialize()
+    print_close_to_bounds(m)
+    print_infeasible_constraints(m)
+    # Use of Degeneracy Hunter for troubleshooting model.
+    # m.fs.dummy_objective = Objective(expr=0)
+    # solver.options["max_iter"] = 0
+    # solver.solve(m, tee=True)
+    # dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
+    # dh.check_residuals(tol=0.1)
 
     m.fs.mass_water_recovery = Var(
         initialize=0.5,
