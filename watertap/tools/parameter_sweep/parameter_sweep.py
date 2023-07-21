@@ -332,13 +332,20 @@ class _ParameterSweepBase(ABC):
 
     def _aggregate_results_arr(self, global_results_dict, num_cases):
 
-        global_results = np.zeros(
-            (num_cases, len(global_results_dict["outputs"])), dtype=float
+        n_outputs = len(
+            [
+                output_key
+                for output_key in global_results_dict["outputs"].keys()
+                if output_key not in global_results_dict["sweep_params"].keys()
+            ]
         )
+
+        global_results = np.zeros((num_cases, n_outputs), dtype=float)
 
         if self.parallel_manager.is_root_process():
             for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
-                global_results[:, i] = item["value"][:num_cases]
+                if key not in global_results_dict["sweep_params"].keys():
+                    global_results[:, i] = item["value"][:num_cases]
 
         self.parallel_manager.sync_data_with_peers(global_results)
 
@@ -757,9 +764,13 @@ class ParameterSweep(_ParameterSweepBase):
             np.asarray([]) for _ in range(len(list(outputs.values())[0]["value"]))
         ]
         for var_name, output in outputs.items():
-            if var_name not in sweep_params.keys() or var_name not in [obj.pyomo_object.name for obj in sweep_params.values()]:
+            if var_name not in sweep_params.keys() or var_name not in [
+                obj.pyomo_object.name for obj in sweep_params.values()
+            ]:
                 for i in range(len(output["value"])):
-                    combined_outputs[i] = np.append(combined_outputs[i], output["value"][i])
+                    combined_outputs[i] = np.append(
+                        combined_outputs[i], output["value"][i]
+                    )
 
         return np.asarray(combined_outputs)
 
@@ -881,7 +892,9 @@ class ParameterSweep(_ParameterSweepBase):
         )
 
         global_sweep_results_dict = self._combine_gather_results(all_results)
-        combined_output_arr = self._combine_output_array(sweep_params, global_sweep_results_dict)
+        combined_output_arr = self._combine_output_array(
+            sweep_params, global_sweep_results_dict
+        )
 
         # save the results for all simulations run by this process and its children
         for results in self.parallel_manager.results_from_local_tree(all_results):
@@ -1110,6 +1123,10 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         # Now we can save this
         self.comm.Barrier()
 
+        import pprint
+
+        print("global_filtered_results")
+        pprint.pprint(global_filtered_results)
         # Save to file
         global_save_data = self.writer.save_results(
             sweep_params,

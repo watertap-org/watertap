@@ -249,7 +249,9 @@ class ParameterSweepWriter:
         if process_number == self.parallel_manager.ROOT_PROCESS_RANK:
             data_header = ",".join(itertools.chain(sweep_params))
             for i, (key) in enumerate(global_results_dict["outputs"].keys()):
-                if key not in sweep_params.keys() or key not in [obj.pyomo_object.name for obj in sweep_params.values()]:
+                if key not in sweep_params.keys() or key not in [
+                    obj.pyomo_object.name for obj in sweep_params.values()
+                ]:
                     data_header = ",".join([data_header, key])
 
             if self.config["csv_results_file_name"] is not None:

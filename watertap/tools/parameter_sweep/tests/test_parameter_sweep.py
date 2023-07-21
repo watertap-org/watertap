@@ -1929,7 +1929,13 @@ class TestParameterSweep:
             import ast
 
             truth_txt_dict = {
-                "outputs": ["output_c", "output_d", "performance", "fs.input[a]", "fs.input[b]"],
+                "outputs": [
+                    "output_c",
+                    "output_d",
+                    "performance",
+                    "fs.input[a]",
+                    "fs.input[b]",
+                ],
                 "sweep_params": ["fs.input[a]", "fs.input[b]"],
             }
 
