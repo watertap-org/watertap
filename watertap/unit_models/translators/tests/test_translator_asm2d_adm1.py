@@ -156,27 +156,30 @@ class TestAsm2dAdm1(object):
         m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
         m.fs.unit.inlet.temperature.fix(308.15 * units.K)
         m.fs.unit.inlet.pressure.fix(1 * units.atm)
-        eps = 1e-9 * units.g / units.m**3
+        eps = 1e-9 * units.kg / units.m**3
 
         m.fs.unit.inlet.conc_mass_comp[0, "S_O2"].fix(eps)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(26.44 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(17.66 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(27.23 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(18.58 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(5.07 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(0.02 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(4.69 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(78.99 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(26.44 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(17.66 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(27.23 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(18.58 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(5.07 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(0.02 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(4.69 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(78.99 * units.kg / units.m**3)
 
-        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(10964.41 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(19084.76 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(9479.39 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(3862.2 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(450.87 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(24.64 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(333.79 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(19.79 * units.g / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(189.87 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(10964.41 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(19084.76 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(9479.39 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(3862.2 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(450.87 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(24.64 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(333.79 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(19.79 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(189.87 * units.kg / units.m**3)
+
+        constraint_scaling_transform(m.fs.unit.SIC_output1[0], 1e-3)
+        # iscale.set_scaling_factor(m.fs.unit.SIC_AS6, 1)
 
         return m
 
