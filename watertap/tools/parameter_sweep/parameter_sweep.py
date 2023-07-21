@@ -332,20 +332,21 @@ class _ParameterSweepBase(ABC):
 
     def _aggregate_results_arr(self, global_results_dict, num_cases):
 
-        n_outputs = len(
-            [
+        filtered_output_keys = [
                 output_key
                 for output_key in global_results_dict["outputs"].keys()
                 if output_key not in global_results_dict["sweep_params"].keys()
             ]
-        )
+        n_outputs = len(filtered_output_keys)
 
         global_results = np.zeros((num_cases, n_outputs), dtype=float)
 
         if self.parallel_manager.is_root_process():
-            for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
-                if key not in global_results_dict["sweep_params"].keys():
-                    global_results[:, i] = item["value"][:num_cases]
+            for i, (key) in enumerate(filtered_output_keys):
+                global_results[:, i] = global_results_dict["outputs"][key]["value"][:num_cases]
+            # for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
+            #     if key not in global_results_dict["sweep_params"].keys():
+            #         global_results[:, i] = item["value"][:num_cases]
 
         self.parallel_manager.sync_data_with_peers(global_results)
 

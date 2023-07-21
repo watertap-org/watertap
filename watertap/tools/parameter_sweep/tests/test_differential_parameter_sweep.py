@@ -283,7 +283,7 @@ def test_differential_sweep_outputs(model):
 def test_differential_parameter_sweep(model, tmp_path):
 
     comm = MPI.COMM_WORLD
-    tmp_path = "./output/"  # _get_rank0_path(comm, tmp_path)
+    tmp_path = _get_rank0_path(comm, tmp_path)
 
     results_fname = os.path.join(tmp_path, "global_results")
     csv_results_file_name = str(results_fname) + ".csv"
