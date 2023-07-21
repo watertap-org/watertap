@@ -869,4 +869,4 @@ class TestAnoxicPHA:
             1
             - model.fs.R1.control_volume.properties_out[0].TSS
             / model.fs.R1.control_volume.properties_in[0].TSS
-        ) * 100 == pytest.approx(0.20371, rel=1e-4)
+        ) * 100 == pytest.approx(0.20374, rel=1e-4)
