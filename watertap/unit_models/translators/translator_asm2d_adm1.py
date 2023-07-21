@@ -777,7 +777,7 @@ see reaction package for documentation.}""",
 
             # TODO: Default implementation outputs this as kmol/m3 - I assume we want kg/m3?
             @self.Constraint(self.flowsheet().time, doc="S_IC concentration output")
-            def SIC_output1(blk, t):
+            def SIC_output(blk, t):
                 return (
                     # blk.properties_out[t].conc_mol_comp["S_IC"]
                     # == blk.SIC_AS6[t] / mw_c
@@ -1085,7 +1085,7 @@ see reaction package for documentation.}""",
 
             # TODO: Default implementation outputs this as kmol/m3 - I assume we want kg/m3?
             @self.Constraint(self.flowsheet().time, doc="S_IC concentration output")
-            def SIC_output2(blk, t):
+            def SIC_output(blk, t):
                 return (
                     # blk.properties_out[t].conc_mol_comp["S_IC"]
                     # == blk.SIC_AS5[t] / mw_c

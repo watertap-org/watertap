@@ -178,8 +178,7 @@ class TestAsm2dAdm1(object):
         m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(19.79 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(189.87 * units.kg / units.m**3)
 
-        constraint_scaling_transform(m.fs.unit.SIC_output1[0], 1e-3)
-        # iscale.set_scaling_factor(m.fs.unit.SIC_AS6, 1)
+        # constraint_scaling_transform(m.fs.unit.SIC_output[0], 1e-3)
 
         return m
 
