@@ -43,7 +43,7 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.math import smooth_max
 
 # Some more information about this module
-__author__ = "Adam Atia, Alejandro Garciadiego"
+__author__ = "Adam Atia, Alejandro Garciadiego, Xinhong Liu"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

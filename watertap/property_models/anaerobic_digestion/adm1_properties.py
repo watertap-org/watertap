@@ -36,7 +36,7 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
 # Some more information about this module
-__author__ = "Alejandro Garciadiego, Adam Atia"
+__author__ = "Alejandro Garciadiego, Adam Atia, Xinhong Liu"
 # Using Andrew Lee's formulation of ASM1 as a template
 
 # Set up logger
@@ -293,8 +293,8 @@ class ADM1StateBlockData(StateBlockData):
             "S_ac": 0.20,
             "S_h2": 2.3e-7,
             "S_ch4": 0.055,
-            "S_IC": 0.15,
-            "S_IN": 0.13,
+            "S_IC": 0.15*12,
+            "S_IN": 0.13*14,
             "S_I": 0.33,
             "X_c": 0.31,
             "X_ch": 0.028,

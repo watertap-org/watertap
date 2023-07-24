@@ -36,7 +36,7 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
 # Some more information about this module
-__author__ = "Alejandro Garciadiego"
+__author__ = "Alejandro Garciadiego, Xinhong Liu"
 
 
 # Set up logger
