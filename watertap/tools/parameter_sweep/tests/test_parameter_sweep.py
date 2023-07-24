@@ -300,7 +300,7 @@ class TestParameterSweep:
         )
 
         num_procs = ps.parallel_manager.number_of_worker_processes()
-        rank = ps.rank
+        rank = ps.parallel_manager.get_rank()
         test = np.array_split(global_combo_array, num_procs, axis=0)[rank]
 
         local_combo_array = ps._divide_combinations(global_combo_array)
@@ -531,7 +531,7 @@ class TestParameterSweep:
         # Manually update the values in the numpy array
         for key, value in local_output_dict.items():
             for subkey, subvalue in value.items():
-                subvalue["value"][:] = ps.rank
+                subvalue["value"][:] = ps.parallel_manager.get_rank()
 
         # Local output dict also contains the solve_successful. The solve status is
         # based on the
@@ -542,7 +542,7 @@ class TestParameterSweep:
             local_output_dict, global_num_cases
         )
 
-        if ps.rank > 0:
+        if ps.parallel_manager.get_rank() > 0:
             assert global_output_dict == local_output_dict
         else:
             test_array = np.repeat(
@@ -558,7 +558,6 @@ class TestParameterSweep:
                         assert np.allclose(subvalue["value"], test_array)
                 elif key == "solve_successful":
                     assert list(value) == test_list
-        ps.comm.Barrier()
 
     @pytest.mark.component
     @pytest.mark.parametrize("number_of_subprocesses", [1, 2, 3])
@@ -573,7 +572,6 @@ class TestParameterSweep:
         h5_results_file_name = str(results_fname) + ".h5"
 
         ps = ParameterSweep(
-            comm=comm,
             optimize_function=_optimization,
             csv_results_file_name=csv_results_file_name,
             h5_results_file_name=h5_results_file_name,
@@ -593,7 +591,7 @@ class TestParameterSweep:
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
             assert os.path.isfile(
@@ -617,7 +615,7 @@ class TestParameterSweep:
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
         # Check for the h5 output
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             truth_dict = {
                 "outputs": {
                     "output_c": {
@@ -760,7 +758,7 @@ class TestParameterSweep:
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -778,7 +776,7 @@ class TestParameterSweep:
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
         # Check the h5
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
 
             truth_dict = {
                 "outputs": {
@@ -927,7 +925,7 @@ class TestParameterSweep:
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -1150,7 +1148,7 @@ class TestParameterSweep:
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -1338,7 +1336,7 @@ class TestParameterSweep:
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -1649,7 +1647,7 @@ class TestParameterSweep:
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -1747,7 +1745,6 @@ class TestParameterSweep:
             optimize_function=_optimization,
             debugging_data_dir=tmp_path,
             interpolate_nan_outputs=True,
-            mpi_comm=comm,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1877,8 +1874,6 @@ class TestParameterSweep:
     def test_parameter_sweep_custom_do_param_sweep(self, model, tmp_path):
         def custom_do_param_sweep(model, sweep_params, outputs, local_values, **kwargs):
             return kwargs
-
-        comm = MPI.COMM_WORLD
 
         custom_kwargs = {"val1": 2.0}
         ps = ParameterSweep(

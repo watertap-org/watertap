@@ -31,7 +31,7 @@ from pyomo.core.base.param import _ParamData
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
 from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
 
-import watertap.tools.MPI as MPI
+from watertap.tools.parallel.parallel_manager import ParallelManager
 from watertap.tools.parallel.parallel_manager_factory import create_parallel_manager
 
 
@@ -161,10 +161,8 @@ class _ParameterSweepBase(ABC):
         **options,
     ):
 
-        self.comm = options.pop("comm", MPI.COMM_WORLD)
         parallel_manager_class = options.pop("parallel_manager_class", None)
 
-        self.rank = self.comm.Get_rank()
         self.config = self.CONFIG(options)
 
         self.parallel_manager = create_parallel_manager(
@@ -295,7 +293,7 @@ class _ParameterSweepBase(ABC):
             )
 
         # make sure all processes running in parallel have an identical copy of the data
-        self.parallel_manager.sync_data_with_peers(global_combo_array)
+        self.parallel_manager.sync_array_with_peers(global_combo_array)
 
         return global_combo_array
 
@@ -340,7 +338,7 @@ class _ParameterSweepBase(ABC):
             for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
                 global_results[:, i] = item["value"][:num_cases]
 
-        self.parallel_manager.sync_data_with_peers(global_results)
+        self.parallel_manager.sync_array_with_peers(global_results)
 
         return global_results
 
@@ -455,8 +453,11 @@ class _ParameterSweepBase(ABC):
         # local_output_dict remains the same across all mpi_ranks
         local_num_cases = len(local_output_dict["solve_successful"])
 
-        # Gather the size of the value array on each MPI rank
-        sample_split_arr = self.comm.allgather(local_num_cases)
+        # Gather the size of the value array for each peer process
+        sample_split_arr = self.parallel_manager.combine_data_with_peers(
+            local_num_cases
+        )
+
         num_total_samples = sum(sample_split_arr)
         if req_num_samples is None:
             req_num_samples = num_total_samples
@@ -477,13 +478,12 @@ class _ParameterSweepBase(ABC):
         for key, item in local_output_dict.items():
             if key != "solve_successful":
                 for subkey, subitem in item.items():
-                    self.comm.Gatherv(
+                    self.parallel_manager.gather_arrays_to_root(
                         sendbuf=subitem["value"],
-                        recvbuf=(
+                        recvbuf_spec=(
                             global_output_dict[key][subkey]["value"],
                             sample_split_arr,
                         ),
-                        root=0,
                     )
 
                     # Trim to the exact number
@@ -499,10 +499,9 @@ class _ParameterSweepBase(ABC):
                 else:
                     global_solve_successful = None
 
-                self.comm.Gatherv(
+                self.parallel_manager.gather_arrays_to_root(
                     sendbuf=local_solve_successful,
-                    recvbuf=(global_solve_successful, sample_split_arr),
-                    root=0,
+                    recvbuf_spec=(global_solve_successful, sample_split_arr),
                 )
 
                 if self.parallel_manager.is_root_process():
@@ -664,12 +663,10 @@ class ParameterSweep(_ParameterSweepBase):
         """
         saved_state = {
             "parallel_manager": parameter_sweep_instance.parallel_manager,
-            "comm": parameter_sweep_instance.comm,
             "writer": parameter_sweep_instance.writer,
         }
 
         parameter_sweep_instance.parallel_manager = None
-        parameter_sweep_instance.comm = None
         parameter_sweep_instance.writer = None
         return saved_state
 
@@ -680,7 +677,6 @@ class ParameterSweep(_ParameterSweepBase):
         the ParameterSweep object.
         """
         parameter_sweep_instance.parallel_manager = state.get("parallel_manager", None)
-        parameter_sweep_instance.comm = state.get("comm", None)
         parameter_sweep_instance.writer = state.get("writer", None)
 
     """
@@ -946,7 +942,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             ):
                 global_filtered_values[:, i] = item["value"][:req_num_samples]
 
-        self.parallel_manager.sync_data_with_peers(global_filtered_values)
+        self.parallel_manager.sync_array_with_peers(global_filtered_values)
 
         return global_filtered_values
 
@@ -1040,11 +1036,15 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             ):  # pragma: no cover
                 global_success_count = np.zeros(1, dtype=float)
                 global_failure_count = np.zeros(1, dtype=float)
-                self.comm.Allreduce(
-                    np.array(success_count, dtype=float), global_success_count
+
+                self.parallel_manager.sum_values_and_sync(
+                    sendbuf=np.array(success_count, dtype=float),
+                    recvbuf=global_success_count,
                 )
-                self.comm.Allreduce(
-                    np.array(failure_count, dtype=float), global_failure_count
+
+                self.parallel_manager.sum_values_and_sync(
+                    sendbuf=np.array(failure_count, dtype=float),
+                    recvbuf=global_failure_count,
                 )
             else:
                 global_success_count = success_count
@@ -1093,7 +1093,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         ) = self._aggregate_filtered_results(local_filtered_dict, req_num_samples)
 
         # Now we can save this
-        self.comm.Barrier()
+        self.parallel_manager.sync_with_peers()
 
         # Save to file
         global_save_data = self.writer.save_results(
