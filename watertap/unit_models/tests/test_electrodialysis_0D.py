@@ -281,15 +281,13 @@ class TestElectrodialysisVoltageConst:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(237.0000, rel=1e-3) == value(
+        assert pytest.approx(584.6, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(63.3112, rel=1e-3) == value(
+        assert pytest.approx(153.6471, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(474.0000, rel=1e-3) == value(
-            m.fs.costing.total_capital_cost
-        )
+        assert pytest.approx(1169.2, rel=1e-3) == value(m.fs.costing.total_capital_cost)
 
 
 class TestElectrodialysisCurrentConst:

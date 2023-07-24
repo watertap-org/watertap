@@ -20,16 +20,28 @@ from ..util import (
 
 
 def build_electrodialysis_cost_param_block(blk):
-
+    # The following costing itemization and values are referenced to "Desalination 452 (2019) 265–278"
     blk.membrane_capital_cost = pyo.Var(
-        initialize=150,
-        doc="Membrane and capitcal costs in [US$/m^2-membrane-area], referenced to Desalination 142 (2002) 267-286.",
+        initialize=160,
+        doc="Membrane and capitcal costs in [US$/m^2-membrane-area]",
         units=pyo.units.USD_2018 / (pyo.units.meter**2),
     )
 
-    blk.factor_membrane_equipment_replacement = pyo.Var(
+    blk.factor_membrane_replacement = pyo.Var(
         initialize=0.2,
         doc="Membrane and equipment (other stack components) housing replacement factor, equal to 1/lifetime.",
+        units=pyo.units.year**-1,
+    )
+
+    blk.stack_electrode_captical_cost = pyo.Var(
+        initialize=2100,
+        doc="Electrode cost in [US$/m^2-electrode-area] ",
+        units=pyo.units.USD_2018 / (pyo.units.meter**2),
+    )
+
+    blk.factor_stack_electrode_replacement = pyo.Var(
+        initialize=0.2,
+        doc="Stack and electrode replacement factor, equal to 1/lifetime.",
         units=pyo.units.year**-1,
     )
 
@@ -98,21 +110,26 @@ def cost_electrodialysis_stack(blk):
                 * blk.unit_model.cell_pair_num
                 * blk.unit_model.cell_width
                 * blk.unit_model.cell_length
-            ),
+            )
+            + blk.costing_package.electrodialysis.stack_electrode_captical_cost
+            * (2 * blk.unit_model.cell_width * blk.unit_model.cell_length),
             to_units=blk.costing_package.base_currency,
         )
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
         == pyo.units.convert(
-            blk.costing_package.electrodialysis.factor_membrane_equipment_replacement
+            blk.costing_package.electrodialysis.factor_membrane_replacement
             * blk.costing_package.electrodialysis.membrane_capital_cost
             * (
                 2
                 * blk.unit_model.cell_pair_num
                 * blk.unit_model.cell_width
                 * blk.unit_model.cell_length
-            ),
+            )
+            + blk.costing_package.electrodialysis.factor_stack_electrode_replacement
+            * blk.costing_package.electrodialysis.stack_electrode_captical_cost
+            * (2 * blk.unit_model.cell_width * blk.unit_model.cell_length),
             to_units=blk.costing_package.base_currency
             / blk.costing_package.base_period,
         )
