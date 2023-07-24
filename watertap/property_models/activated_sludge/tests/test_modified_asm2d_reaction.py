@@ -11,7 +11,7 @@
 #################################################################################
 """
 Tests for modified ASM2d reaction package.
-Author: Marcus Holly
+Author: Marcus Holly, Adam Atia
 
 References:
 
@@ -746,8 +746,6 @@ class TestAnoxicPHA:
 
         m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
 
-        iscale.calculate_scaling_factors(m.fs)
-
         # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
         EPS = 1e-8
 
@@ -779,6 +777,12 @@ class TestAnoxicPHA:
 
         m.fs.R1.volume.fix(1000 * units.m**3)
 
+        # Touch on-demand property, TSS, at inlet and outlet
+        m.fs.R1.control_volume.properties_in[0].TSS
+        m.fs.R1.control_volume.properties_out[0].TSS
+
+        iscale.calculate_scaling_factors(m.fs)
+
         return m
 
     @pytest.mark.unit
@@ -787,7 +791,7 @@ class TestAnoxicPHA:
 
     @pytest.mark.unit
     def test_unit_consistency(self, model):
-        assert_units_consistent(model) == 0
+        assert_units_consistent(model)
 
     @pytest.mark.component
     def test_solve(self, model):
@@ -861,3 +865,8 @@ class TestAnoxicPHA:
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
             121.314e-3, rel=1e-4
         )
+        assert value(
+            1
+            - model.fs.R1.control_volume.properties_out[0].TSS
+            / model.fs.R1.control_volume.properties_in[0].TSS
+        ) * 100 == pytest.approx(0.20371, rel=1e-4)

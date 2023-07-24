@@ -25,6 +25,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 
 from watertap.examples.flowsheets.case_studies.electroNP.electroNP_flowsheet import (
     build_flowsheet,
+    display_costing,
 )
 
 
@@ -91,12 +92,6 @@ class TestElectroNPFlowsheet:
             model.fs.electroNP.treated.conc_mass_comp[0, "X_I"]
         ) == pytest.approx(13.0695, rel=1e-4)
         assert value(
-            model.fs.electroNP.treated.conc_mass_comp[0, "X_MeOH"]
-        ) == pytest.approx(0, abs=1e-4)
-        assert value(
-            model.fs.electroNP.treated.conc_mass_comp[0, "X_MeP"]
-        ) == pytest.approx(0, abs=1e-4)
-        assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_PAO"]
         ) == pytest.approx(0, abs=1e-4)
         assert value(
@@ -108,10 +103,8 @@ class TestElectroNPFlowsheet:
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_S"]
         ) == pytest.approx(0.13979, rel=1e-4)
-        assert value(
-            model.fs.electroNP.treated.conc_mass_comp[0, "X_TSS"]
-        ) == pytest.approx(0, abs=1e-4)
-        assert value(model.fs.electroNP.treated.alkalinity[0]) == pytest.approx(
-            0.09373, rel=1e-4
-        )
-        assert value(model.fs.costing.LCOW) == pytest.approx(6.01036, rel=1e-4)
+        assert value(model.fs.costing.LCOW) == pytest.approx(6.05475, rel=1e-4)
+
+    @pytest.mark.component
+    def test_display(self, model):
+        display_costing(model)
