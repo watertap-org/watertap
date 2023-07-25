@@ -31,7 +31,6 @@ from pyomo.core.base.param import _ParamData
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
 from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
 
-from watertap.tools.parallel.parallel_manager import ParallelManager
 from watertap.tools.parallel.parallel_manager_factory import create_parallel_manager
 
 
