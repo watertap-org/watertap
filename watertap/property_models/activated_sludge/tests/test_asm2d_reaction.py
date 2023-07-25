@@ -377,7 +377,7 @@ class TestAerobic:
         # No data on TSS from EXPOsan at this point
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(EPS * units.mg / units.liter)
 
-        # Alkalinity was givien in mg/L based on C
+        # Alkalinity was given in mg/L based on C
         m.fs.R1.inlet.alkalinity[0].fix(61 / 12 * units.mmol / units.liter)
 
         m.fs.R1.volume.fix(1333 * units.m**3)
