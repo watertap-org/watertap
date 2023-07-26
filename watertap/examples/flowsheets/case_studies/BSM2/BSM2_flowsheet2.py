@@ -81,6 +81,10 @@ from watertap.property_models.activated_sludge.asm1_reactions import (
 
 from watertap.core.util.initialization import check_solve
 
+from pyomo.environ import SolverFactory, Objective
+from idaes.core.util.model_diagnostics import DegeneracyHunter
+from idaes.core.util.scaling import report_scaling_issues, badly_scaled_var_generator,list_badly_scaled_variables
+
 
 def build_flowsheet():
     m = pyo.ConcreteModel()
@@ -139,7 +143,7 @@ def build_flowsheet():
         property_package=m.fs.props_ASM1, inlet_list=["clarifier", "reactor"]
     )
     # Product Blocks
-    m.fs.Treated = Product(property_package=m.fs.props_ASM1)
+    # m.fs.Treated = Product(property_package=m.fs.props_ASM1)
     # Recycle pressure changer - use a simple isothermal unit for now
     m.fs.P1 = PressureChanger(property_package=m.fs.props_ASM1)
 
@@ -152,7 +156,7 @@ def build_flowsheet():
     m.fs.stream7 = Arc(source=m.fs.R5.outlet, destination=m.fs.SP5.inlet)
     m.fs.stream8 = Arc(source=m.fs.SP5.overflow, destination=m.fs.CL1.inlet)
     m.fs.stream9 = Arc(source=m.fs.SP5.underflow, destination=m.fs.MX6.reactor)
-    m.fs.stream10 = Arc(source=m.fs.CL1.effluent, destination=m.fs.Treated.inlet)
+    # m.fs.stream10 = Arc(source=m.fs.CL1.effluent, destination=m.fs.Treated.inlet)
     m.fs.stream11 = Arc(source=m.fs.CL1.underflow, destination=m.fs.SP6.inlet)
     m.fs.stream13 = Arc(source=m.fs.SP6.recycle, destination=m.fs.MX6.clarifier)
     m.fs.stream14 = Arc(source=m.fs.MX6.outlet, destination=m.fs.P1.inlet)
@@ -200,7 +204,7 @@ def build_flowsheet():
 
     # Feed Water Conditions
     m.fs.FeedWater.flow_vol.fix(20648 * pyo.units.m**3 / pyo.units.day)
-    m.fs.FeedWater.temperature.fix(298.15 * pyo.units.K)
+    m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
     m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(27 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_S"].fix(58 * pyo.units.g / pyo.units.m**3)
@@ -256,7 +260,7 @@ def build_flowsheet():
     m.fs.CL1.split_fraction[0, "effluent", "S_ALK"].fix(0.48956)
 
     # Sludge purge separator
-    m.fs.SP6.split_fraction[:, "recycle"].fix(0.975)
+    m.fs.SP6.split_fraction[:, "recycle"].fix(0.985)
 
     # Outlet pressure from recycle pump
     m.fs.P1.outlet.pressure.fix(101325)
@@ -342,9 +346,11 @@ def build_flowsheet():
     m.fs.stream10adm = Arc(source=m.fs.MX4.outlet, destination=m.fs.asm_adm.inlet)
     m.fs.stream1adm = Arc(source=m.fs.asm_adm.outlet, destination=m.fs.RADM.inlet)
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
-
-    iscale.calculate_scaling_factors(m.fs)
+    
     m.fs.set_default_scaling("conc_mass_comp", 1)
+    iscale.calculate_scaling_factors(m.fs)
+    
+    print("Degree of Freedom is ", degrees_of_freedom(m))
 
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
@@ -352,51 +358,187 @@ def build_flowsheet():
     seq.options.select_tear_method = "heuristic"
     seq.options.tear_method = "Wegstein"
     seq.options.iterLim = 1
+    # seq.options.tear_set = [m.fs.stream2, m.fs.stream10adm]
+    # seq.options.tol = 1e-5
+    seq.options.solve_tear = False
 
     G = seq.create_graph(m)
-
     # # Uncomment this code to see tear set and initialization order
     heuristic_tear_set = seq.tear_set_arcs(G, method="heuristic")
     order = seq.calculation_order(G)
     for o in heuristic_tear_set:
         print(o.name)
+    print("order")    
     for o in order:
         print(o[0].name)
 
     # Initial guesses for flow into first reactor
     tear_guesses = {
-        "flow_vol": {0: 0.26},
+        "flow_vol": {0: 103531/24/3600},
+        "conc_mass_comp": {
+            (0, "S_I"): 0.028,
+            (0, "S_S"): 0.012,
+            (0, "X_I"): 1.532,
+            (0, "X_S"): 0.069,
+            (0, "X_BH"): 2.233,
+            (0, "X_BA"): 0.167,
+            (0, "X_P"): 0.964,
+            (0, "S_O"): 0.0011,
+            (0, "S_NO"): 0.0073,
+            (0, "S_NH"): 0.0072,
+            (0, "S_ND"): 0.0016,
+            (0, "X_ND"): 0.0040,
+        },
+        "alkalinity": {0: 0.0052},
+        "temperature": {0: 308.15},
+        "pressure": {0: 101325},
+    }
+    
+    tear_guesses1 = {
+        "flow_vol": {0: 147/24/3600},
         "conc_mass_comp": {
             (0, "S_I"): 0.028,
             (0, "S_S"): 0.059,
-            (0, "X_I"): 0.094,
-            (0, "X_S"): 0.356,
-            (0, "X_BH"): 0.05,
-            (0, "X_BA"): 0.0009,
-            (0, "X_P"): 0.0006,
+            (0, "X_I"): 6.480,
+            (0, "X_S"): 24.509,
+            (0, "X_BH"): 3.495,
+            (0, "X_BA"): 0.0065,
+            (0, "X_P"): 0.045,
             (0, "S_O"): 0.000017,
             (0, "S_NO"): 0.000117,
-            (0, "S_NH"): 0.034,
-            (0, "S_ND"): 0.005,
-            (0, "X_ND"): 0.015,
+            (0, "S_NH"): 0.035,
+            (0, "S_ND"): 0.0055,
+            (0, "X_ND"): 1.086,
         },
-        "alkalinity": {0: 7.69},
-        "temperature": {0: 298.15},
+        "alkalinity": {0: 0.0077},
+        "temperature": {0: 308.15},
+        "pressure": {0: 101325},
+    }
+    
+    tear_guesses2 = {
+        "flow_vol": {0: 178/24/3600},
+        "conc_mass_comp": {
+            (0, "S_I"): 0.028,
+            (0, "S_S"): 0.048,
+            (0, "X_I"): 10.362,
+            (0, "X_S"): 20.375,
+            (0, "X_BH"): 10.210,
+            (0, "X_BA"): 0.553,
+            (0, "X_P"): 3.204,
+            (0, "S_O"): 0.00025,
+            (0, "S_NO"): 0.00169,
+            (0, "S_NH"): 0.0289,
+            (0, "S_ND"): 0.00468,
+            (0, "X_ND"): 0.906,
+        },
+        "alkalinity": {0: 0.00715},
+        "temperature": {0: 308.15},
+        "pressure": {0: 101325},
+    }
+    
+    tear_guesses3 = {
+        "flow_vol": {0: 178/24/3600},
+        "conc_mass_comp": {
+            (0, "S_su"): 0,
+            (0, "S_aa"): 0.04388,
+            (0, "S_fa"): 0,
+            (0, "S_va"): 0,
+            (0, "S_bu"): 0,
+            (0, "S_pro"): 0,
+            (0, "S_ac"): 0,
+            (0, "S_h2"): 0,
+            (0, "S_ch4"): 0,
+            (0, "S_IC"): 0.0079326*12,
+            (0, "S_IN"): 0.0019721*14,
+            (0, "S_I"): 0.028067,
+            (0, "X_c"): 0,
+            (0, "X_ch"): 3.7236,
+            (0, "X_pr"): 15.9235,
+            (0, "X_li"): 8.047,
+            (0, "X_su"): 0,
+            (0, "X_aa"): 0,
+            (0, "X_fa"): 0,
+            (0, "X_c4"): 0,
+            (0, "X_pro"): 0,
+            (0, "X_ac"): 0,
+            (0, "X_h2"): 0,
+            (0, "X_I"): 17.0106,
+        },
+        "cations": {0: 0},
+        "anions": {0: 0.005},
+        "temperature": {0: 308.15},
+        "pressure": {0: 101325},
+    }
+    
+    tear_guesses4 = {
+        "flow_vol": {0: 178/24/3600},
+        "conc_mass_comp": {
+            (0, "S_su"): 0,
+            (0, "S_aa"): 0.04388,
+            (0, "S_fa"): 0,
+            (0, "S_va"): 0,
+            (0, "S_bu"): 0,
+            (0, "S_pro"): 0,
+            (0, "S_ac"): 0,
+            (0, "S_h2"): 0,
+            (0, "S_ch4"): 0,
+            (0, "S_IC"): 0.0079326*12,
+            (0, "S_IN"): 0.0019721*14,
+            (0, "S_I"): 0.028067,
+            (0, "X_c"): 0,
+            (0, "X_ch"): 3.7236,
+            (0, "X_pr"): 15.9235,
+            (0, "X_li"): 8.047,
+            (0, "X_su"): 0,
+            (0, "X_aa"): 0,
+            (0, "X_fa"): 0,
+            (0, "X_c4"): 0,
+            (0, "X_pro"): 0,
+            (0, "X_ac"): 0,
+            (0, "X_h2"): 0,
+            (0, "X_I"): 17.0106,
+        },
+        "cations": {0: 0},
+        "anions": {0: 0.005},
+        "temperature": {0: 308.15},
         "pressure": {0: 101325},
     }
 
     # Pass the tear_guess to the SD tool
     seq.set_guesses_for(m.fs.R1.inlet, tear_guesses)
-
+    seq.set_guesses_for(m.fs.MX4.clarifier, tear_guesses1)
+    # seq.set_guesses_for(m.fs.asm_adm.inlet, tear_guesses2)
+    # seq.set_guesses_for(m.fs.asm_adm.outlet, tear_guesses3)
+    # seq.set_guesses_for(m.fs.RADM.inlet, tear_guesses4)
+    
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO_HIGH)
+        if unit == m.fs.RADM:
+            # i = 0
+            unit.initialize(outlvl=idaeslog.DEBUG,optarg={"halt_on_ampl_error": "yes","bound_push": 1e-8})
+            print("Degree of Freedom is ", degrees_of_freedom(unit))
+            # unit.pprint()
+            # results = solver.solve(unit, tee=True)
+        elif unit == m.fs.asm_adm:
+            # unit.pprint()
+            unit.initialize(outlvl=idaeslog.DEBUG)
+            print("Degree of Freedom is ", degrees_of_freedom(unit))
+
+            # results = solver.solve(unit, tee=True)
+        else:
+            unit.initialize(outlvl=idaeslog.DEBUG)
+            print("Degree of Freedom is ", degrees_of_freedom(unit))
+            # unit.pprint()
+            # results = solver.solve(unit, tee=True)
 
     seq.run(m, function)
-
-    # solver = get_solver(options={"bound_push": 1e-8,"max_iter":0})
-    solver = get_solver()
-    results = solver.solve(m, tee=True)
     print(degrees_of_freedom(m))
+    solver = get_solver(options={"halt_on_ampl_error": "yes","tol": 1e-6, "constr_viol_tol": 1e-6, "bound_push": 1e-8})
+    results = solver.solve(m, tee=True)
+    m.obj = Objective(expr=0)
+    dh = DegeneracyHunter(m, solver=SolverFactory('cbc'))
+    dh.check_residuals(tol=1E-14) 
+    report_scaling_issues(m)
+    
     # pyo.assert_optimal_termination(results)
     # m.display()
 

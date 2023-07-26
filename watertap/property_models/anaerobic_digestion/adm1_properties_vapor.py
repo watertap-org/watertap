@@ -253,10 +253,13 @@ class ADM1_vaporStateBlockData(StateBlockData):
             doc="Temperature",
             units=pyo.units.K,
         )
+        
+        Comp_dict = {"S_ch4": 1.6256, "S_co2": 0.01415*12, "S_h2": 1e-5}
+        
         self.conc_mass_comp = pyo.Var(
             self.params.solute_set,
             domain=pyo.NonNegativeReals,
-            initialize=0.1,
+            initialize=Comp_dict,
             doc="Component mass concentrations",
             units=pyo.units.kg / pyo.units.m**3,
         )

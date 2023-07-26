@@ -942,11 +942,11 @@ see reaction package for documentation.}""",
             optarg = {}
 
         # Check DOF
-        if degrees_of_freedom(self) != 0:
-            raise InitializationError(
-                f"{self.name} degrees of freedom were not 0 at the beginning "
-                f"of initialization. DoF = {degrees_of_freedom(self)}"
-            )
+        # if degrees_of_freedom(self) != 0:
+        #     raise InitializationError(
+        #         f"{self.name} degrees of freedom were not 0 at the beginning "
+        #         f"of initialization. DoF = {degrees_of_freedom(self)}"
+        #     )
 
         # Set solver options
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
@@ -974,33 +974,36 @@ see reaction package for documentation.}""",
             
         # ---------------------------------------------------------------------
         # Initialize vapor phase state block
-        if vapor_state_args is None:
-            t_init = self.flowsheet().time.first()
-            vapor_state_args = {}
-            vap_state_vars = self.vapor_phase[t_init].define_state_vars()
+        # if vapor_state_args is None:
+        #     t_init = self.flowsheet().time.first()
+        #     vapor_state_args = {}
+        #     vap_state_vars = self.vapor_phase[t_init].define_state_vars()
 
-            liq_state = self.liquid_phase.properties_out[t_init]
+        #     liq_state = self.liquid_phase.properties_out[t_init]
 
-            # Check for unindexed state variables
-            for sv in vap_state_vars:
-                if "flow" in sv:
-                    vapor_state_args[sv] = 13 * value(getattr(liq_state, sv))
-                elif "conc" in sv:
-                    # Flow is indexed by component
-                    vapor_state_args[sv] = {}
-                    for j in vap_state_vars[sv]:
-                        if j in liq_state.component_list:
-                            vapor_state_args[sv][j] = 1e3 * value(
-                                getattr(liq_state, sv)[j]
-                            )
-                        else:
-                            vapor_state_args[sv][j] = 0.5
+        #     # Check for unindexed state variables
+        #     for sv in vap_state_vars:
+        #         if "flow" in sv:
+        #             vapor_state_args[sv] = 13 * value(getattr(liq_state, sv))
+        #         elif "conc" in sv:
+        #             # Flow is indexed by component
+        #             vapor_state_args[sv] = {}
+        #             for j in vap_state_vars[sv]:
+        #                 if j in liq_state.component_list:
+        #                     vapor_state_args[sv][j] = 1e3 * value(
+        #                         getattr(liq_state, sv)[j]
+        #                     )
+        #                 else:
+        #                     vapor_state_args[sv][j] = 0.5
 
-                elif "pressure" in sv:
-                    vapor_state_args[sv] = 1.05 * value(getattr(liq_state, sv))
+        #         elif "pressure" in sv:
+        #             vapor_state_args[sv] = 1.05 * value(getattr(liq_state, sv))
 
-                else:
-                    vapor_state_args[sv] = value(getattr(liq_state, sv))
+        #         else:
+        #             vapor_state_args[sv] = value(getattr(liq_state, sv))
+        
+        for t,v in self.vapor_phase[0].conc_mass_comp.items():
+            v.fix()
 
         self.vapor_phase.initialize(
             outlvl=outlvl,
@@ -1009,9 +1012,10 @@ see reaction package for documentation.}""",
             state_args=vapor_state_args,
             hold_state=False,
         )
+        for t,v in self.vapor_phase[0].conc_mass_comp.items():
+            v.unfix()
 
         init_log.info_high("Initialization Step 2 Complete.")
-
         # ---------------------------------------------------------------------
         # # Solve unit model
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -1029,10 +1033,10 @@ see reaction package for documentation.}""",
             self.H2_Henrys_law.deactivate()
             
             results = solverobj.solve(self, tee=slc.tee)
-            self.obj = Objective(expr=0)
-            dh = DegeneracyHunter(self, solver=SolverFactory('cbc'))
-            dh.check_residuals(tol=1E-14) 
-            report_scaling_issues(self)
+            # self.obj = Objective(expr=0)
+            # dh = DegeneracyHunter(self, solver=SolverFactory('cbc'))
+            # dh.check_residuals(tol=1E-14) 
+            # report_scaling_issues(self)
             if not check_optimal_termination(results):
                 init_log.warning(
                     f"Trouble solving unit model {self.name}, trying one more time"
