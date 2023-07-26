@@ -159,7 +159,7 @@ class TestElectroNPZO:
         assert pytest.approx(640.523, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphorus"]
         )
-        assert pytest.approx(3.168, abs=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(155.232, abs=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

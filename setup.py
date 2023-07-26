@@ -21,14 +21,14 @@ cwd = Path(__file__).parent
 long_description = (cwd / "README.md").read_text()
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse==2.0.*",  # from PyPI
+    "idaes-pse==2.1.*",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse==2.0.*",
+    "idaes-pse==2.1.0",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -37,7 +37,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="0.9.dev0",
+    version="0.10.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -80,7 +80,7 @@ setup(
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
         *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
-        "pyomo>=6.2,<6.6",  # (also needed for units in electrolyte database (edb))
+        "pyomo>=6.6.1",  # (also needed for units in electrolyte database (edb))
         # the following requirements are for the electrolyte database (edb)
         "pymongo>3",  # database interface
         "fastjsonschema",  # schema validation
@@ -103,6 +103,7 @@ setup(
             "mongomock",
             "pandas",
             "nbmake",
+            "nbconvert",
         ],
         "dev": [
             "nbsphinx",  # jupyter notebook support for sphinx
@@ -136,6 +137,8 @@ setup(
             "edb = watertap.edb.commands:command_base",
         ],
         "watertap.flowsheets": [
+            "nf = watertap.examples.flowsheets.nf_dspmde.nf_ui",
+            "nf_with_bypass = watertap.examples.flowsheets.nf_dspmde.nf_with_bypass_ui",
             "metab = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab_ui",
             "suboxic_ASM = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_ASM_ui",
             "Magprex = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex_ui",

@@ -12,8 +12,8 @@ The constraint used to calculate energy consumption is described in the Addition
 
 Costing Method
 --------------
-Costing is calculated using the **cost_hydrothermal_gasification** method in the zero-order costing package.
-See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
+Costing is calculated using the :py:meth:`~watertap.unit_models.zero_order.hydrothermal_gasification_zo.HTGZOData.cost_hydrothermal_gasification` method.
+For full details on costing, see documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables
 --------------------

@@ -36,7 +36,7 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
 # Some more information about this module
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Adam Atia"
 
 
 # Set up logger
@@ -77,6 +77,26 @@ class ASM1ParameterData(PhysicalParameterBlock):
         self.X_ND = Solute(doc="Particulate biodegradable organic nitrogen, X_ND")
 
         self.S_ALK = Component(doc="Alkalinity, S_ALK")
+
+        # Create sets for use across ASM models and associated unit models (e.g., thickener, dewaterer)
+        self.non_particulate_component_set = pyo.Set(
+            initialize=[
+                "S_I",
+                "S_S",
+                "S_O",
+                "S_NO",
+                "S_NH",
+                "S_ND",
+                "H2O",
+                "S_ALK",
+            ]
+        )
+        self.particulate_component_set = pyo.Set(
+            initialize=["X_I", "X_S", "X_P", "X_BH", "X_BA", "X_ND"]
+        )
+        self.tss_component_set = pyo.Set(
+            initialize=["X_I", "X_S", "X_P", "X_BH", "X_BA"]
+        )
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(
@@ -160,7 +180,9 @@ class _ASM1StateBlock(StateBlock):
                          were not provided at the unit model level, the
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
-            flow_mol_comp : value at which to initialize component flows (default=None)
+            flow_vol : value at which to initialize total volumetric flow (default=None)
+            alkalinity: value of alkalinity expressed as molar concentration
+            conc_mass_comp : value at which to initialize component concentrations (default=None)
             pressure : value at which to initialize pressure (default=None)
             temperature : value at which to initialize temperature (default=None)
             outlvl : sets output level of initialization routine
