@@ -21,7 +21,7 @@ Department of Industrial Electrical Engineering and Automation, Lund University,
 """
 
 # Some more information about this module
-__author__ = "Alejandro Garciadiego"
+__author__ = "Alejandro Garciadiego, Xinhong Liu"
 
 import pytest
 import pytest

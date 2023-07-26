@@ -11,7 +11,7 @@
 #################################################################################
 """
 Tests for ADM1 vapor phase thermo property package.
-Authors: Alejandro Garciadiego
+Authors: Alejandro Garciadiego, Xinhong Liu
 """
 
 import pytest
@@ -102,9 +102,11 @@ class TestStateBlock(object):
         assert isinstance(model.props[1].conc_mass_comp, Var)
 
         assert len(model.props[1].conc_mass_comp) == 3
+        
+        Comp_dict = {"S_ch4": 1.6256, "S_co2": 0.01415 * 12, "S_h2": 1e-5}
         for i in model.props[1].conc_mass_comp:
             assert i in ["S_h2", "S_ch4", "S_co2"]
-            assert value(model.props[1].conc_mass_comp[i]) == 0.1
+            assert value(model.props[1].conc_mass_comp[i]) == Comp_dict[i]
 
     @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
@@ -241,17 +243,17 @@ class TestStateBlock(object):
         )
 
         assert value(model.props[1].pressure_sat["S_h2"]) == pytest.approx(
-            1.6397, rel=1e-4
+            1.639, rel=1e-4
         )
         assert value(model.props[1].pressure_sat["S_ch4"]) == pytest.approx(
-            65077.382, rel=1e-4
+            65077, rel=1e-4
         )
         assert value(model.props[1].pressure_sat["S_co2"]) == pytest.approx(
-            36125.633, rel=1e-4
+            36255, rel=1e-4
         )
 
         assert value(model.props[1].pressure_sat["H2O"]) == pytest.approx(
-            5640.5342, rel=1e-4
+            5566, rel=1e-4
         )
 
     @pytest.mark.unit

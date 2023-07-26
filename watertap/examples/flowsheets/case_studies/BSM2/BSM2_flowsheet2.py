@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-__author__ = "Alejandro Garciadiego"
+__author__ = "Alejandro Garciadiego, Xinhong Liu"
 
 import pyomo.environ as pyo
 from pyomo.environ import (
@@ -200,17 +200,17 @@ def build_flowsheet():
 
     # Feed Water Conditions
     m.fs.FeedWater.flow_vol.fix(20648 * pyo.units.m**3 / pyo.units.day)
-    m.fs.FeedWater.temperature.fix(298.15 * pyo.units.K)
+    m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
     m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(27 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_S"].fix(58 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(92 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(363 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_BH"].fix(50 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_BA"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_P"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_O"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_NO"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_BA"].fix(0 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_P"].fix(0 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_O"].fix(0 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_NO"].fix(0 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_NH"].fix(23 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_ND"].fix(5 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_ND"].fix(16 * pyo.units.g / pyo.units.m**3)
@@ -256,7 +256,7 @@ def build_flowsheet():
     m.fs.CL1.split_fraction[0, "effluent", "S_ALK"].fix(0.48956)
 
     # Sludge purge separator
-    m.fs.SP6.split_fraction[:, "recycle"].fix(0.975)
+    m.fs.SP6.split_fraction[:, "recycle"].fix(0.985)
 
     # Outlet pressure from recycle pump
     m.fs.P1.outlet.pressure.fix(101325)
@@ -325,7 +325,6 @@ def build_flowsheet():
     m.fs.RADM.liquid_outlet.temperature.fix(308.15)
 
     # Apply scaling
-
     m.fs.stream2adm = Arc(
         source=m.fs.RADM.liquid_outlet, destination=m.fs.adm_asm.inlet
     )
@@ -344,61 +343,79 @@ def build_flowsheet():
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     iscale.calculate_scaling_factors(m.fs)
-    m.fs.set_default_scaling("conc_mass_comp", 1)
 
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
-    seq.options.select_tear_method = "heuristic"
-    seq.options.tear_method = "Wegstein"
+    # seq.options.select_tear_method = "heuristic"
+    seq.options.tear_method = "Direct"
     seq.options.iterLim = 1
+    seq.options.tear_set = [m.fs.stream2, m.fs.stream10adm]
 
     G = seq.create_graph(m)
-
-    # # Uncomment this code to see tear set and initialization order
-    heuristic_tear_set = seq.tear_set_arcs(G, method="heuristic")
+    # Uncomment this code to see tear set and initialization order
     order = seq.calculation_order(G)
-    for o in heuristic_tear_set:
-        print(o.name)
+    print("Initialization Order")
     for o in order:
         print(o[0].name)
 
     # Initial guesses for flow into first reactor
-    tear_guesses = {
-        "flow_vol": {0: 0.26},
+    tear_guesses1 = {
+        "flow_vol": {0: 103531 / 24 / 3600},
         "conc_mass_comp": {
             (0, "S_I"): 0.028,
-            (0, "S_S"): 0.059,
-            (0, "X_I"): 0.094,
-            (0, "X_S"): 0.356,
-            (0, "X_BH"): 0.05,
-            (0, "X_BA"): 0.0009,
-            (0, "X_P"): 0.0006,
-            (0, "S_O"): 0.000017,
-            (0, "S_NO"): 0.000117,
-            (0, "S_NH"): 0.034,
-            (0, "S_ND"): 0.005,
-            (0, "X_ND"): 0.015,
+            (0, "S_S"): 0.012,
+            (0, "X_I"): 1.532,
+            (0, "X_S"): 0.069,
+            (0, "X_BH"): 2.233,
+            (0, "X_BA"): 0.167,
+            (0, "X_P"): 0.964,
+            (0, "S_O"): 0.0011,
+            (0, "S_NO"): 0.0073,
+            (0, "S_NH"): 0.0072,
+            (0, "S_ND"): 0.0016,
+            (0, "X_ND"): 0.0040,
         },
-        "alkalinity": {0: 7.69},
-        "temperature": {0: 298.15},
+        "alkalinity": {0: 0.0052},
+        "temperature": {0: 308.15},
+        "pressure": {0: 101325},
+    }
+
+    tear_guesses2 = {
+        "flow_vol": {0: 178 / 24 / 3600},
+        "conc_mass_comp": {
+            (0, "S_I"): 0.028,
+            (0, "S_S"): 0.048,
+            (0, "X_I"): 10.362,
+            (0, "X_S"): 20.375,
+            (0, "X_BH"): 10.210,
+            (0, "X_BA"): 0.553,
+            (0, "X_P"): 3.204,
+            (0, "S_O"): 0.00025,
+            (0, "S_NO"): 0.00169,
+            (0, "S_NH"): 0.0289,
+            (0, "S_ND"): 0.00468,
+            (0, "X_ND"): 0.906,
+        },
+        "alkalinity": {0: 0.00715},
+        "temperature": {0: 308.15},
         "pressure": {0: 101325},
     }
 
     # Pass the tear_guess to the SD tool
-    seq.set_guesses_for(m.fs.R1.inlet, tear_guesses)
+    seq.set_guesses_for(m.fs.R1.inlet, tear_guesses1)
+    seq.set_guesses_for(m.fs.asm_adm.inlet, tear_guesses2)
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO_HIGH)
 
     seq.run(m, function)
 
-    # solver = get_solver(options={"bound_push": 1e-8,"max_iter":0})
     solver = get_solver()
     results = solver.solve(m, tee=True)
-    print(degrees_of_freedom(m))
-    # pyo.assert_optimal_termination(results)
-    # m.display()
+
+    pyo.assert_optimal_termination(results)
+    m.display()
 
     print(large_residuals_set(m))
 
