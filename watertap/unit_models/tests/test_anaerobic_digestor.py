@@ -125,7 +125,7 @@ class TestAdm(object):
             has_pressure_change=False,
         )
 
-        m.fs.unit.inlet.flow_vol.fix(170/24/3600)
+        m.fs.unit.inlet.flow_vol.fix(170 / 24 / 3600)
         m.fs.unit.inlet.temperature.fix(308.15)
         m.fs.unit.inlet.pressure.fix(101325)
 
@@ -217,7 +217,7 @@ class TestAdm(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, adm):
-        initialization_tester(adm, optarg={"bound_push": 1e-8})
+        initialization_tester(adm)
 
     @pytest.mark.component
     def test_var_scaling(self, adm):
@@ -231,7 +231,7 @@ class TestAdm(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, adm):
-        solver = get_solver(options={"bound_push": 1e-8})
+        solver = get_solver()
         results = solver.solve(adm)
         assert_optimal_termination(results)
 
@@ -401,7 +401,7 @@ class TestAdm(object):
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(m.fs.unit.liquid_phase.properties_out[0].flow_vol)
-        solver = get_solver(options={"bound_push": 1e-8})
+        solver = get_solver()
         results = solver.solve(m)
 
         assert_optimal_termination(results)
