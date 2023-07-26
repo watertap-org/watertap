@@ -128,6 +128,53 @@ def build_flowsheet():
     m.fs.feed = Feed(property_package=m.fs.props_ASM2D)
 
     # Unit models
+    # Activated Sludge Process
+    # First reactor (anoxic) - standard CSTR
+    m.fs.R1 = CSTR(
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
+    )
+    # First reactor (anoxic) - standard CSTR
+    m.fs.R2 = CSTR(
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
+    )
+    # Second reactor (anoxic) - standard CSTR
+    m.fs.R3 = CSTR(
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
+    )
+    m.fs.R4 = CSTR(
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
+    )
+    # Third reactor (aerobic) - CSTR with injection
+    m.fs.R5 = CSTR_Injection(
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
+    )
+    # Fourth reactor (aerobic) - CSTR with injection
+    m.fs.R6 = CSTR_Injection(
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
+    )
+    # Fifth reactor (aerobic) - CSTR with injection
+    m.fs.R7 = CSTR_Injection(
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
+    )
+    m.fs.SP1 = Separator(
+        property_package=m.fs.props_ASM2D, outlet_list=["underflow", "overflow"]
+    )
+
+    # Clarifier
+    # TODO: Replace with more detailed model when available
+    m.fs.CL1 = Separator(
+        property_package=m.fs.props_ASM2D,
+        outlet_list=["underflow", "effluent"],
+        split_basis=SplittingType.componentFlow,
+    )
+    # Mixing sludge recycle and R5 underflow
+    m.fs.MX2 = Mixer(
+        property_package=m.fs.props_ASM2D, inlet_list=["clarifier", "reactor"]
+    )
+    # Sludge separator
+    m.fs.SP2 = Separator(
+        property_package=m.fs.props_ASM2D, outlet_list=["waste", "recycle"]
+    )
 
     # Anaerobic digestor
     m.fs.AD = AD(
@@ -181,9 +228,22 @@ def build_flowsheet():
     m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
 
     # Connections
-    m.fs.stream_feed_thickener = Arc(
-        source=m.fs.feed.outlet, destination=m.fs.thickener.inlet
-    )
+    m.fs.stream1 = Arc(source=m.fs.feed.outlet, destination=m.fs.R1.inlet)
+    m.fs.stream3 = Arc(source=m.fs.R1.outlet, destination=m.fs.R2.inlet)
+    m.fs.stream4 = Arc(source=m.fs.R2.outlet, destination=m.fs.MX2.reactor)
+    m.fs.stream5 = Arc(source=m.fs.MX2.outlet, destination=m.fs.R3.inlet)
+    m.fs.stream6 = Arc(source=m.fs.R3.outlet, destination=m.fs.R4.inlet)
+    m.fs.stream7 = Arc(source=m.fs.R4.outlet, destination=m.fs.R5.inlet)
+    m.fs.stream8 = Arc(source=m.fs.R5.outlet, destination=m.fs.R6.inlet)
+    m.fs.stream9 = Arc(source=m.fs.R6.outlet, destination=m.fs.R7.inlet)
+    m.fs.stream10 = Arc(source=m.fs.R7.outlet, destination=m.fs.SP1.inlet)
+    m.fs.stream11 = Arc(source=m.fs.SP1.overflow, destination=m.fs.CL1.inlet)
+    m.fs.stream12 = Arc(source=m.fs.SP1.underflow, destination=m.fs.MX2.clarifier)
+    # m.fs.stream13 = Arc(source=m.fs.CL1.effluent, destination=m.fs.Treated.inlet)
+    m.fs.stream14 = Arc(source=m.fs.CL1.underflow, destination=m.fs.thickener.inlet)
+    # m.fs.stream_feed_thickener = Arc(
+    #     source=m.fs.feed.outlet, destination=m.fs.thickener.inlet
+    # )
     m.fs.stream_thickener_translator = Arc(
         source=m.fs.thickener.underflow, destination=m.fs.translator_asm2d_adm1.inlet
     )
@@ -200,6 +260,60 @@ def build_flowsheet():
         source=m.fs.dewater.overflow, destination=m.fs.electroNP.inlet
     )
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
+
+    # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
+    # Add additional parameter and constraints
+    m.fs.R5.KLa = pyo.Var(
+        initialize=240,
+        units=pyo.units.hour**-1,
+        doc="Lumped mass transfer coefficient for oxygen",
+    )
+    m.fs.R6.KLa = pyo.Var(
+        initialize=240,
+        units=pyo.units.hour**-1,
+        doc="Lumped mass transfer coefficient for oxygen",
+    )
+    m.fs.R7.KLa = pyo.Var(
+        initialize=84,
+        units=pyo.units.hour**-1,
+        doc="Lumped mass transfer coefficient for oxygen",
+    )
+    m.fs.S_O_eq = pyo.Param(
+        default=8e-3,
+        units=pyo.units.kg / pyo.units.m**3,
+        mutable=True,
+        doc="Dissolved oxygen concentration at equilibrium",
+    )
+
+    @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
+    def mass_transfer_R5(self, t):
+        return pyo.units.convert(
+            m.fs.R5.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
+        ) == (
+            m.fs.R5.KLa
+            * m.fs.R5.volume[t]
+            * (m.fs.S_O_eq - m.fs.R5.outlet.conc_mass_comp[t, "S_O2"])
+        )
+
+    @m.fs.R6.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
+    def mass_transfer_R6(self, t):
+        return pyo.units.convert(
+            m.fs.R6.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
+        ) == (
+            m.fs.R6.KLa
+            * m.fs.R6.volume[t]
+            * (m.fs.S_O_eq - m.fs.R6.outlet.conc_mass_comp[t, "S_O2"])
+        )
+
+    @m.fs.R7.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
+    def mass_transfer_R7(self, t):
+        return pyo.units.convert(
+            m.fs.R7.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
+        ) == (
+            m.fs.R7.KLa
+            * m.fs.R7.volume[t]
+            * (m.fs.S_O_eq - m.fs.R7.outlet.conc_mass_comp[t, "S_O2"])
+        )
 
     # Scaling
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
@@ -284,6 +398,60 @@ def set_operating_conditions(m):
 
     print("DOF before AD:", degrees_of_freedom(m))
 
+    # Activated Sludge
+    # Reactor sizing
+    m.fs.R1.volume.fix(1000 * pyo.units.m**3)
+    m.fs.R2.volume.fix(1000 * pyo.units.m**3)
+    m.fs.R3.volume.fix(1000 * pyo.units.m**3)
+    m.fs.R4.volume.fix(1000 * pyo.units.m**3)
+    m.fs.R5.volume.fix(1333 * pyo.units.m**3)
+    m.fs.R6.volume.fix(1333 * pyo.units.m**3)
+    m.fs.R7.volume.fix(1333 * pyo.units.m**3)
+
+    # Injection rates to Reactions 3, 4 and 5
+    for j in m.fs.props_ASM2D.component_list:
+        if j != "S_O2":
+            # All components except S_O have no injection
+            m.fs.R5.injection[:, :, j].fix(0)
+            m.fs.R6.injection[:, :, j].fix(0)
+            m.fs.R7.injection[:, :, j].fix(0)
+    # Then set injections rates for O2
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].fix(1.91e-3)
+    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].fix(2.60e-3)
+    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].fix(3.20e-3)
+
+    # Set fraction of outflow from reactor 5 that goes to recycle
+    m.fs.SP1.split_fraction[:, "underflow"].fix(0.60)
+
+    # Clarifier
+    # TODO: Update once more detailed model available
+    m.fs.CL1.split_fraction[0, "effluent", "H2O"].fix(0.49986)
+    m.fs.CL1.split_fraction[0, "effluent", "S_A"].fix(0.49986)
+    m.fs.CL1.split_fraction[0, "effluent", "S_F"].fix(0.49986)
+    m.fs.CL1.split_fraction[0, "effluent", "S_I"].fix(0.49986)
+    m.fs.CL1.split_fraction[0, "effluent", "S_N2"].fix(0.49986)
+    m.fs.CL1.split_fraction[0, "effluent", "S_NH4"].fix(0.49986)
+    m.fs.CL1.split_fraction[0, "effluent", "S_NO3"].fix(0.49986)
+    m.fs.CL1.split_fraction[0, "effluent", "S_O2"].fix(0.49986)
+    m.fs.CL1.split_fraction[0, "effluent", "S_PO4"].fix(0.49986)
+    m.fs.CL1.split_fraction[0, "effluent", "S_IC"].fix(0.49986)
+    m.fs.CL1.split_fraction[0, "effluent", "S_K"].fix(0.49986)
+    m.fs.CL1.split_fraction[0, "effluent", "S_Mg"].fix(0.49986)
+    # m.fs.CL1.split_fraction[0, "effluent", "S_ALK"].fix(0.49986)
+    m.fs.CL1.split_fraction[0, "effluent", "X_AUT"].fix(0.022117)
+    m.fs.CL1.split_fraction[0, "effluent", "X_H"].fix(0.021922)
+    m.fs.CL1.split_fraction[0, "effluent", "X_I"].fix(0.021715)
+    # m.fs.CL1.split_fraction[0, "effluent", "X_MeOH"].fix(0.022)
+    # m.fs.CL1.split_fraction[0, "effluent", "X_MeP"].fix(0.022)
+    m.fs.CL1.split_fraction[0, "effluent", "X_PAO"].fix(0.022)
+    m.fs.CL1.split_fraction[0, "effluent", "X_PHA"].fix(0.02147)
+    m.fs.CL1.split_fraction[0, "effluent", "X_PP"].fix(0.02144)
+    m.fs.CL1.split_fraction[0, "effluent", "X_S"].fix(0.02221)
+    # m.fs.CL1.split_fraction[0, "effluent", "X_TSS"].fix(0.02194)
+
+    # Sludge purge separator
+    m.fs.SP2.split_fraction[:, "recycle"].fix(0.97955)
+
     # AD
     m.fs.AD.volume_liquid.fix(3400)
     m.fs.AD.volume_vapor.fix(300)
@@ -299,7 +467,26 @@ def set_operating_conditions(m):
 
 def initialize_system(m):
     # Initialize
-    propagate_state(m.fs.stream_feed_thickener)
+    m.fs.feed.initialize()
+    propagate_state(m.fs.stream1)
+    m.fs.R1.initialize()
+    propagate_state(m.fs.stream3)
+    m.fs.R2.initialize()
+    propagate_state(m.fs.stream4)
+    propagate_state(m.fs.stream5)
+    m.fs.R3.initialize()
+    propagate_state(m.fs.stream6)
+    m.fs.R4.initialize()
+    propagate_state(m.fs.stream7)
+    m.fs.R5.initialize()
+    propagate_state(m.fs.stream8)
+    m.fs.R6.initialize()
+    propagate_state(m.fs.stream9)
+    m.fs.R7.initialize()
+    propagate_state(m.fs.stream10)
+    m.fs.SP1.initialize()
+    propagate_state(m.fs.stream14)
+    # propagate_state(m.fs.stream_feed_thickener)
     m.fs.thickener.initialize()
     propagate_state(m.fs.stream_thickener_translator)
     m.fs.translator_asm2d_adm1.initialize(outlvl=idaeslog.INFO_HIGH)
