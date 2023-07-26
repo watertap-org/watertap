@@ -249,13 +249,13 @@ class ADM1_vaporStateBlockData(StateBlockData):
         self.temperature = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=298.15,
-            bounds=(298.15, 323.15),
+            bounds=(273.15, 323.15),
             doc="Temperature",
             units=pyo.units.K,
         )
-        
-        Comp_dict = {"S_ch4": 1.6256, "S_co2": 0.01415*12, "S_h2": 1e-5}
-        
+
+        Comp_dict = {"S_ch4": 1.6256, "S_co2": 0.01415 * 12, "S_h2": 1e-5}
+
         self.conc_mass_comp = pyo.Var(
             self.params.solute_set,
             domain=pyo.NonNegativeReals,
@@ -264,7 +264,7 @@ class ADM1_vaporStateBlockData(StateBlockData):
             units=pyo.units.kg / pyo.units.m**3,
         )
 
-        init = {"S_ch4": 65077, "S_co2": 36255, "S_h2": 1.639, "H2O": 5643.8025}
+        init = {"S_ch4": 65077, "S_co2": 36255, "S_h2": 1.639, "H2O": 5570}
 
         self.pressure_sat = pyo.Var(
             self.params.component_list,
@@ -296,13 +296,12 @@ class ADM1_vaporStateBlockData(StateBlockData):
             elif j == "H2O":
                 return pyo.log(b.pressure_sat[j] / pyo.units.Pa) == (
                     pyo.log(0.0313)
-                    + 
-                        5290
-                        * pyo.units.K
-                        * ((1 / b.params.temperature_ref) - (1 / b.temperature))
+                    + 5290
+                    * pyo.units.K
+                    * ((1 / b.params.temperature_ref) - (1 / b.temperature))
                     + pyo.log(1e5)
                 )
-            elif j == "S_co2":       
+            elif j == "S_co2":
                 return b.pressure_sat[j] == pyo.units.convert(
                     b.conc_mass_comp[j]
                     * (1000 * pyo.units.g / pyo.units.kg)
@@ -312,10 +311,8 @@ class ADM1_vaporStateBlockData(StateBlockData):
                     to_units=pyo.units.Pa,
                 )
             else:
-                raise Exception(
-                    "Vapor component not implemented."
-                )
-                
+                raise Exception("Vapor component not implemented.")
+
         self._pressure_sat = pyo.Constraint(
             self.params.component_list,
             rule=pressure_sat_rule,
@@ -373,10 +370,9 @@ class ADM1_vaporStateBlockData(StateBlockData):
         iscale.set_scaling_factor(self.temperature, 1e-1)
         iscale.set_scaling_factor(self.pressure, 1e-3)
         iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
-        iscale.set_scaling_factor(self.pressure_sat["S_ch4"], 1e-3)
-        iscale.set_scaling_factor(self.pressure_sat["S_co2"], 1e-3)
-        iscale.set_scaling_factor(self.pressure_sat["S_h2"], 1e-3)
-        iscale.set_scaling_factor(self.pressure_sat["H2O"], 1e-3)
+        iscale.set_scaling_factor(self.conc_mass_comp["S_h2"], 1e3)
+        iscale.set_scaling_factor(self.pressure_sat, 1e-3)
+        iscale.set_scaling_factor(self.pressure_sat["S_h2"], 1e-2)
 
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]

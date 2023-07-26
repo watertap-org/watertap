@@ -90,9 +90,9 @@ def build_flowsheet():
     m.fs.R1.liquid_outlet.temperature.fix(308.15 * pyo.units.K)
 
     # TO DO: Fix initialization
-    m.fs.R1.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-8})
+    m.fs.R1.initialize(outlvl=idaeslog.INFO_HIGH)
 
-    solver = get_solver(options={"bound_push": 1e-8})
+    solver = get_solver()
 
     results = solver.solve(m, tee=True)
 

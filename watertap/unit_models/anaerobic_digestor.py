@@ -27,9 +27,7 @@ Rosen, C. and Jeppsson, U., 2006.
 Aspects on ADM1 Implementation within the BSM2 Framework.
 Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
 """
-from pyomo.environ import SolverFactory, Objective
-from idaes.core.util.model_diagnostics import DegeneracyHunter
-from idaes.core.util.scaling import report_scaling_issues, badly_scaled_var_generator,list_badly_scaled_variables
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import (
@@ -43,7 +41,7 @@ from pyomo.environ import (
     log,
     exp,
     Suffix,
-    NonNegativeReals
+    NonNegativeReals,
 )
 
 
@@ -71,7 +69,7 @@ from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
 
-__author__ = "Alejandro Garciadiego, Andrew Lee"
+__author__ = "Alejandro Garciadiego, Andrew Lee, Xinhong Liu"
 
 
 @declare_process_block_class("AD")
@@ -486,19 +484,17 @@ see reaction package for documentation.}""",
         )
 
         def CO2_Henrys_law_rule(self, t):
-            return (
-                log(self.KH_co2[t] / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1))
-                == (
-                    log(0.035)
-                    +
-                        -19410
-                        / pyunits.mole
-                        * pyunits.joule
-                        / (Constants.gas_constant)
-                        * (
-                            (1 / self.config.vapor_property_package.temperature_ref)
-                            - (1 / self.vapor_phase[t].temperature)
-                        )
+            return log(
+                self.KH_co2[t] / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
+            ) == (
+                log(0.035)
+                + -19410
+                / pyunits.mole
+                * pyunits.joule
+                / (Constants.gas_constant)
+                * (
+                    (1 / self.config.vapor_property_package.temperature_ref)
+                    - (1 / self.vapor_phase[t].temperature)
                 )
             )
 
@@ -509,21 +505,18 @@ see reaction package for documentation.}""",
         )
 
         def Ch4_Henrys_law_rule(self, t):
-            return (
-                log(self.KH_ch4[t] / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1))
-                == (
-                    log(0.0014)
-                    +
-                        -14240
-                        / pyunits.mole
-                        * pyunits.joule
-                        / (Constants.gas_constant)
-                        * (
-                            (1 / self.config.vapor_property_package.temperature_ref)
-                            - (1 / self.vapor_phase[t].temperature)
-                        )
-                    )
-                
+            return log(
+                self.KH_ch4[t] / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
+            ) == (
+                log(0.0014)
+                + -14240
+                / pyunits.mole
+                * pyunits.joule
+                / (Constants.gas_constant)
+                * (
+                    (1 / self.config.vapor_property_package.temperature_ref)
+                    - (1 / self.vapor_phase[t].temperature)
+                )
             )
 
         self.Ch4_Henrys_law = Constraint(
@@ -533,20 +526,18 @@ see reaction package for documentation.}""",
         )
 
         def H2_Henrys_law_rule(self, t):
-            return (
-                log(self.KH_h2[t] / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1))
-                == (
-                    log(7.8e-4)
-                    +
-                        -4180
-                        / pyunits.mole
-                        * pyunits.joule
-                        / (Constants.gas_constant)
-                        * (
-                            (1 / self.config.vapor_property_package.temperature_ref)
-                            - (1 / self.vapor_phase[t].temperature)
-                        )
-                    )
+            return log(
+                self.KH_h2[t] / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
+            ) == (
+                log(7.8e-4)
+                + -4180
+                / pyunits.mole
+                * pyunits.joule
+                / (Constants.gas_constant)
+                * (
+                    (1 / self.config.vapor_property_package.temperature_ref)
+                    - (1 / self.vapor_phase[t].temperature)
+                )
             )
 
         self.H2_Henrys_law = Constraint(
@@ -587,9 +578,9 @@ see reaction package for documentation.}""",
             elif j in self.liquid_phase.properties_out.component_list:
                 # No mass transfer term
                 # Set vapor flowrate to an arbitary small value
-                return self.liquid_phase.mass_transfer_term[
-                    t, "Liq", j
-                ] == 0 * lunits(fb)
+                return self.liquid_phase.mass_transfer_term[t, "Liq", j] == 0 * lunits(
+                    fb
+                )
 
         self.unit_material_balance = Constraint(
             self.flowsheet().time,
@@ -668,12 +659,12 @@ see reaction package for documentation.}""",
         )
 
         def flow_vol_vap_rule(self, t):
-            return self.vapor_phase[t].flow_vol * (101325 * pyunits.Pa) == (
+            return self.vapor_phase[t].flow_vol == (
                 pyunits.convert(
                     self.k_p, to_units=pyunits.m**3 / pyunits.s / pyunits.Pa
                 )
                 * (self.vapor_phase[t].pressure - 101325 * pyunits.Pa)
-            ) * (self.vapor_phase[t].pressure) 
+            ) * (self.vapor_phase[t].pressure) / (101325 * pyunits.Pa)
 
         self.flow_vol_vap = Constraint(
             self.flowsheet().time,
@@ -829,38 +820,38 @@ see reaction package for documentation.}""",
                 self.liquid_phase.properties_out[0].conc_mass_comp["S_IN"], 1e-5
             )
 
-        # for t, v in self.flow_vol_vap.items():
-        #     iscale.constraint_scaling_transform(
-        #         v,
-        #         iscale.get_scaling_factor(
-        #             self.liquid_phase.properties_out[t].flow_vol,
-        #             default=1,
-        #             warning=True,
-        #         ),
-        #     )
+        for t, v in self.flow_vol_vap.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.properties_out[t].flow_vol,
+                    default=1,
+                    warning=True,
+                ),
+            )
 
-        # for (t, j), v in self.unit_material_balance.items():
-        #     if j in common_comps:
-        #         iscale.constraint_scaling_transform(
-        #             v,
-        #             iscale.get_scaling_factor(
-        #                 self.liquid_phase.mass_transfer_term[t, "Liq", j],
-        #                 default=1,
-        #                 warning=True,
-        #             ),
-        #         )
-        #     else:
-        #         pass  # no need to scale this constraint
+        for (t, j), v in self.unit_material_balance.items():
+            if j in common_comps:
+                iscale.constraint_scaling_transform(
+                    v,
+                    iscale.get_scaling_factor(
+                        self.liquid_phase.mass_transfer_term[t, "Liq", j],
+                        default=1,
+                        warning=True,
+                    ),
+                )
+            else:
+                pass  # no need to scale this constraint
 
-        # for t, v in self.unit_temperature_equality.items():
-        #     iscale.constraint_scaling_transform(
-        #         v,
-        #         iscale.get_scaling_factor(
-        #             self.liquid_phase.properties_out[t].temperature,
-        #             default=1,
-        #             warning=True,
-        #         ),
-        #     )
+        for t, v in self.unit_temperature_equality.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.properties_out[t].temperature,
+                    default=1,
+                    warning=True,
+                ),
+            )
 
         for t, v in self.unit_enthalpy_balance.items():
             iscale.constraint_scaling_transform(
@@ -870,15 +861,15 @@ see reaction package for documentation.}""",
                 ),
             )
 
-        # for t, v in self.outlet_P.items():
-        #     iscale.constraint_scaling_transform(
-        #         v,
-        #         iscale.get_scaling_factor(
-        #             self.liquid_phase.properties_out[t].pressure,
-        #             default=1,
-        #             warning=True,
-        #         ),
-        #     )
+        for t, v in self.outlet_P.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.properties_out[t].pressure,
+                    default=1,
+                    warning=True,
+                ),
+            )
         for t, v in self.Sh2_conc.items():
             iscale.constraint_scaling_transform(
                 v,
@@ -906,7 +897,6 @@ see reaction package for documentation.}""",
                     warning=True,
                 ),
             )
-        # iscale.calculate_scaling_factors(self)
 
     # TO DO: fix initialization
     def initialize_build(
@@ -942,11 +932,11 @@ see reaction package for documentation.}""",
             optarg = {}
 
         # Check DOF
-        # if degrees_of_freedom(self) != 0:
-        #     raise InitializationError(
-        #         f"{self.name} degrees of freedom were not 0 at the beginning "
-        #         f"of initialization. DoF = {degrees_of_freedom(self)}"
-        #     )
+        if degrees_of_freedom(self) != 0:
+            raise InitializationError(
+                f"{self.name} degrees of freedom were not 0 at the beginning "
+                f"of initialization. DoF = {degrees_of_freedom(self)}"
+            )
 
         # Set solver options
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
@@ -957,9 +947,9 @@ see reaction package for documentation.}""",
         # ---------------------------------------------------------------------
         # Initialize liquid phase control volume block
 
-        for t,v in self.liquid_phase.properties_out[0].conc_mass_comp.items():
+        for t, v in self.liquid_phase.properties_out[0].conc_mass_comp.items():
             v.fix()
-            
+
         flags = self.liquid_phase.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -969,40 +959,13 @@ see reaction package for documentation.}""",
         )
         init_log.info_high("Initialization Step 1 Complete.")
 
-        for t,v in self.liquid_phase.properties_out[0].conc_mass_comp.items():
+        for t, v in self.liquid_phase.properties_out[0].conc_mass_comp.items():
             v.unfix()
-            
+
         # ---------------------------------------------------------------------
         # Initialize vapor phase state block
-        # if vapor_state_args is None:
-        #     t_init = self.flowsheet().time.first()
-        #     vapor_state_args = {}
-        #     vap_state_vars = self.vapor_phase[t_init].define_state_vars()
 
-        #     liq_state = self.liquid_phase.properties_out[t_init]
-
-        #     # Check for unindexed state variables
-        #     for sv in vap_state_vars:
-        #         if "flow" in sv:
-        #             vapor_state_args[sv] = 13 * value(getattr(liq_state, sv))
-        #         elif "conc" in sv:
-        #             # Flow is indexed by component
-        #             vapor_state_args[sv] = {}
-        #             for j in vap_state_vars[sv]:
-        #                 if j in liq_state.component_list:
-        #                     vapor_state_args[sv][j] = 1e3 * value(
-        #                         getattr(liq_state, sv)[j]
-        #                     )
-        #                 else:
-        #                     vapor_state_args[sv][j] = 0.5
-
-        #         elif "pressure" in sv:
-        #             vapor_state_args[sv] = 1.05 * value(getattr(liq_state, sv))
-
-        #         else:
-        #             vapor_state_args[sv] = value(getattr(liq_state, sv))
-        
-        for t,v in self.vapor_phase[0].conc_mass_comp.items():
+        for t, v in self.vapor_phase[0].conc_mass_comp.items():
             v.fix()
 
         self.vapor_phase.initialize(
@@ -1012,7 +975,7 @@ see reaction package for documentation.}""",
             state_args=vapor_state_args,
             hold_state=False,
         )
-        for t,v in self.vapor_phase[0].conc_mass_comp.items():
+        for t, v in self.vapor_phase[0].conc_mass_comp.items():
             v.unfix()
 
         init_log.info_high("Initialization Step 2 Complete.")
@@ -1031,12 +994,9 @@ see reaction package for documentation.}""",
             self.CO2_Henrys_law.deactivate()
             self.Ch4_Henrys_law.deactivate()
             self.H2_Henrys_law.deactivate()
-            
+
             results = solverobj.solve(self, tee=slc.tee)
-            # self.obj = Objective(expr=0)
-            # dh = DegeneracyHunter(self, solver=SolverFactory('cbc'))
-            # dh.check_residuals(tol=1E-14) 
-            # report_scaling_issues(self)
+
             if not check_optimal_termination(results):
                 init_log.warning(
                     f"Trouble solving unit model {self.name}, trying one more time"
@@ -1049,7 +1009,7 @@ see reaction package for documentation.}""",
         # ---------------------------------------------------------------------
         # Release states
         self.liquid_phase.release_state(flags, outlvl)
-        
+
         self.liquid_phase.reactions[0.0].pKW.unfix()
         self.liquid_phase.reactions[0.0].pK_a_co2.unfix()
         self.liquid_phase.reactions[0.0].pK_a_IN.unfix()

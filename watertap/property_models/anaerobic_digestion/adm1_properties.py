@@ -279,7 +279,7 @@ class ADM1StateBlockData(StateBlockData):
         self.temperature = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=298.15,
-            bounds=(298.15, 323.15),
+            bounds=(273.15, 323.15),
             doc="Temperature",
             units=pyo.units.K,
         )
@@ -293,8 +293,8 @@ class ADM1StateBlockData(StateBlockData):
             "S_ac": 0.20,
             "S_h2": 2.3e-7,
             "S_ch4": 0.055,
-            "S_IC": 0.15*12,
-            "S_IN": 0.13*14,
+            "S_IC": 0.15 * 12,
+            "S_IN": 0.13 * 14,
             "S_I": 0.33,
             "X_c": 0.31,
             "X_ch": 0.028,
@@ -394,8 +394,9 @@ class ADM1StateBlockData(StateBlockData):
 
         iscale.set_scaling_factor(self.flow_vol, 1e5)
         iscale.set_scaling_factor(self.temperature, 1e-1)
-        iscale.set_scaling_factor(self.pressure, 1e-3)
+        iscale.set_scaling_factor(self.pressure, 1e-6)
         iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
+        iscale.set_scaling_factor(self.conc_mass_comp["S_h2"], 1e5)
         iscale.set_scaling_factor(self.anions, 1e2)
         iscale.set_scaling_factor(self.cations, 1e2)
 

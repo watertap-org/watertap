@@ -174,7 +174,9 @@ see reaction package for documentation.}""",
         )
         def CODd_step1(blk, t):
             return blk.inter_S_S[t] == smooth_max(
-                0 * pyunits.kg / pyunits.m**3,  blk.properties_in[t].conc_mass_comp["S_S"] - blk.CODd[t], blk.eps
+                0 * pyunits.kg / pyunits.m**3,
+                blk.properties_in[t].conc_mass_comp["S_S"] - blk.CODd[t],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after S_S")
@@ -183,7 +185,9 @@ see reaction package for documentation.}""",
         # COD remains
         def CODd2(blk, t):
             return smooth_max(
-                0 * pyunits.kg / pyunits.m**3,  blk.CODd[t] - blk.properties_in[t].conc_mass_comp["S_S"], blk.eps
+                0 * pyunits.kg / pyunits.m**3,
+                blk.CODd[t] - blk.properties_in[t].conc_mass_comp["S_S"],
+                blk.eps,
             )
 
         self.inter_X_S = Var(
@@ -200,13 +204,17 @@ see reaction package for documentation.}""",
         )
         def CODd_step2(blk, t):
             return blk.inter_X_S[t] == smooth_max(
-                0 * pyunits.kg / pyunits.m**3,  blk.properties_in[t].conc_mass_comp["X_S"] - blk.CODd2[t], blk.eps
+                0 * pyunits.kg / pyunits.m**3,
+                blk.properties_in[t].conc_mass_comp["X_S"] - blk.CODd2[t],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after X_S")
         def CODd3(blk, t):
             return smooth_max(
-                0 * pyunits.kg / pyunits.m**3,  blk.CODd2[t] - blk.properties_in[t].conc_mass_comp["X_S"], blk.eps
+                0 * pyunits.kg / pyunits.m**3,
+                blk.CODd2[t] - blk.properties_in[t].conc_mass_comp["X_S"],
+                blk.eps,
             )
 
         self.inter_X_BH = Var(
@@ -223,13 +231,17 @@ see reaction package for documentation.}""",
         )
         def CODd_step3(blk, t):
             return blk.inter_X_BH[t] == smooth_max(
-                0 * pyunits.kg / pyunits.m**3,  blk.properties_in[t].conc_mass_comp["X_BH"] - blk.CODd3[t], blk.eps
+                0 * pyunits.kg / pyunits.m**3,
+                blk.properties_in[t].conc_mass_comp["X_BH"] - blk.CODd3[t],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after X_BH")
         def CODd4(blk, t):
             return smooth_max(
-                0 * pyunits.kg / pyunits.m**3,  blk.CODd3[t] - blk.properties_in[t].conc_mass_comp["X_BH"], blk.eps
+                0 * pyunits.kg / pyunits.m**3,
+                blk.CODd3[t] - blk.properties_in[t].conc_mass_comp["X_BH"],
+                blk.eps,
             )
 
         self.inter_X_BA = Var(
@@ -246,13 +258,17 @@ see reaction package for documentation.}""",
         )
         def CODd_step4(blk, t):
             return blk.inter_X_BA[t] == smooth_max(
-                0 * pyunits.kg / pyunits.m**3,  blk.properties_in[t].conc_mass_comp["X_BA"] - blk.CODd4[t], blk.eps
+                0 * pyunits.kg / pyunits.m**3,
+                blk.properties_in[t].conc_mass_comp["X_BA"] - blk.CODd4[t],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after X_BA")
         def CODd5(blk, t):
             return smooth_max(
-                0 * pyunits.kg / pyunits.m**3,  blk.CODd4[t] - blk.properties_in[t].conc_mass_comp["X_BA"], blk.eps
+                0 * pyunits.kg / pyunits.m**3,
+                blk.CODd4[t] - blk.properties_in[t].conc_mass_comp["X_BA"],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="Soluble COD")
@@ -332,7 +348,7 @@ see reaction package for documentation.}""",
             return Expr_if(
                 blk.inter_S_S[t] > blk.ReqCODs[t],
                 blk.inter_S_S[t] - blk.ReqCODs[t],
-                1e-6 * pyunits.kg / pyunits.m**3,
+                1e-10 * pyunits.kg / pyunits.m**3,
             )
 
         @self.Constraint(
@@ -344,7 +360,9 @@ see reaction package for documentation.}""",
 
         @self.Expression(self.flowsheet().time, doc="COD remaining from step A")
         def COD_remain_a(blk, t):
-            return smooth_max(0 * pyunits.kg / pyunits.m**3, blk.CODt[t] - blk.inter_S_S[t], blk.eps)
+            return smooth_max(
+                0 * pyunits.kg / pyunits.m**3, blk.CODt[t] - blk.inter_S_S[t], blk.eps
+            )
 
         @self.Expression(self.flowsheet().time, doc="Organic nitrogen pool from step A")
         def ORGN_remain_a(blk, t):
@@ -403,7 +421,7 @@ see reaction package for documentation.}""",
         @self.Expression(self.flowsheet().time, doc="COD remaining from step B")
         def COD_remain_b(blk, t):
             return smooth_max(
-                0 * pyunits.kg / pyunits.m**3, 
+                0 * pyunits.kg / pyunits.m**3,
                 blk.COD_remain_a[t] - blk.properties_in[t].conc_mass_comp["S_I"],
                 blk.eps,
             )
@@ -457,7 +475,7 @@ see reaction package for documentation.}""",
         @self.Expression(self.flowsheet().time, doc="COD remaining from step C")
         def COD_remain_c(blk, t):
             return smooth_max(
-                0 * pyunits.kg / pyunits.m**3, 
+                0 * pyunits.kg / pyunits.m**3,
                 blk.COD_remain_b[t] - blk.properties_out[t].conc_mass_comp["X_I"],
                 blk.eps,
             )
@@ -499,7 +517,7 @@ see reaction package for documentation.}""",
                     + blk.config.reaction_package.f_li_xc
                 )
                 * (blk.COD_remain_c[t] - blk.properties_out[t].conc_mass_comp["X_c"]),
-                1e-6 * pyunits.kg / pyunits.m**3,
+                1e-10 * pyunits.kg / pyunits.m**3,
             )
 
         @self.Constraint(
@@ -519,7 +537,7 @@ see reaction package for documentation.}""",
                     + blk.config.reaction_package.f_li_xc
                 )
                 * (blk.COD_remain_c[t] - blk.properties_out[t].conc_mass_comp["X_c"]),
-                1e-6 * pyunits.kg / pyunits.m**3,
+                1e-10 * pyunits.kg / pyunits.m**3,
             )
 
         @self.Constraint(
@@ -598,7 +616,7 @@ see reaction package for documentation.}""",
         def return_zero_flow_comp(blk, t, i):
             return (
                 blk.properties_out[t].conc_mass_comp[i]
-                == 1e-6 * pyunits.kg / pyunits.m**3
+                == 1e-10 * pyunits.kg / pyunits.m**3
             )
 
         @self.Constraint(
