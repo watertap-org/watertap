@@ -38,7 +38,6 @@ import idaes.core.util.scaling as iscale
 # Some more information about this module
 __author__ = "Andrew Lee, Adam Atia, Xinhong Liu"
 
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 

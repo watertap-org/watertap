@@ -164,6 +164,7 @@ class TestAsm1Adm1(object):
         assert hasattr(asmadm.fs.unit.outlet, "anions")
         assert hasattr(asmadm.fs.unit.outlet, "cations")
 
+
         assert number_variables(asmadm) == 137
         assert number_total_constraints(asmadm) == 34
 
