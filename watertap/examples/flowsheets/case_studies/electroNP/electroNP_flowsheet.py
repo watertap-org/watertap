@@ -90,9 +90,7 @@ def build_flowsheet():
     m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(
-        m.fs.electroNP.treated.flow_vol[0]
-    )
+    m.fs.costing.add_annual_water_production(m.fs.electroNP.treated.flow_vol[0])
     m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
 
     # connections
