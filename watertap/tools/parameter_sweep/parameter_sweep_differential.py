@@ -17,7 +17,6 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
     _ParameterSweepBase,
     ParameterSweep,
 )
-from watertap.tools.MPI.dummy_mpi import DummyCOMM
 from watertap.tools.parallel.single_process_parallel_manager import (
     SingleProcessParallelManager,
 )
@@ -231,13 +230,13 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             dtype=float,
         )
 
-        if self.rank == 0:
+        if self.parallel_manager.is_root_process():
             for i, (key, item) in enumerate(
                 global_results_dict["sweep_params"].items()
             ):
                 global_values[:, i] = item["value"]
 
-        self.comm.Bcast(global_values, root=0)
+        self.parallel_manager.sync_array_with_peers(global_values)
 
         return global_values
 
@@ -248,7 +247,9 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         # Broadcast the number of global samples to all ranks
         num_global_samples = len(global_results_dict["solve_successful"])
-        num_global_samples = self.comm.bcast(num_global_samples, root=0)
+        num_global_samples = self.parallel_manager.sync_pyobject_with_peers(
+            num_global_samples
+        )
 
         global_results_arr = self._aggregate_results_arr(
             global_results_dict, num_global_samples
@@ -325,7 +326,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             reinitialize_kwargs=self.config.reinitialize_kwargs,
             reinitialize_before_sweep=self.config.reinitialize_before_sweep,
             parallel_manager_class=SingleProcessParallelManager,
-            comm=DummyCOMM,
         )
 
         _, differential_sweep_output_dict = diff_ps.parameter_sweep(
