@@ -91,7 +91,7 @@ def build_flowsheet():
 
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(
-        m.fs.electroNP.properties_treated[0].flow_vol
+        m.fs.electroNP.treated.flow_vol[0]
     )
     m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
 
@@ -183,7 +183,7 @@ def build_flowsheet():
 
     iscale.calculate_scaling_factors(m)
 
-    iscale.set_scaling_factor(m.fs.electroNP.properties_byproduct[0.0].flow_vol, 1e7)
+    iscale.set_scaling_factor(m.fs.electroNP.byproduct.flow_vol[0.0], 1e7)
     iscale.set_scaling_factor(m.fs.AD.vapor_phase[0].pressure_sat, 1e-3)
 
     m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH)
