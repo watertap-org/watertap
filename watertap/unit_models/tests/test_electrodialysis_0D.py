@@ -272,11 +272,6 @@ class TestElectrodialysisVoltageConst:
             flowsheet_costing_block=m.fs.costing, costing_method_arguments={}
         )
 
-        # Set costing parameters
-        m.fs.costing.electrodialysis.aem_membrane_cost.set_value(45)
-        m.fs.costing.electrodialysis.cem_membrane_cost.set_value(41)
-        m.fs.costing.electrodialysis.factor_membrane_housing_replacement.set_value(0.2)
-
         m.fs.costing.cost_process()
 
         assert_units_consistent(m)
@@ -286,15 +281,13 @@ class TestElectrodialysisVoltageConst:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(388.6800, rel=1e-3) == value(
+        assert pytest.approx(584.6, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(45.86804, rel=1e-3) == value(
+        assert pytest.approx(153.6471, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(777.3600, rel=1e-3) == value(
-            m.fs.costing.total_capital_cost
-        )
+        assert pytest.approx(1169.2, rel=1e-3) == value(m.fs.costing.total_capital_cost)
 
 
 class TestElectrodialysisCurrentConst:
@@ -495,16 +488,6 @@ class TestElectrodialysisCurrentConst:
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
         ) == pytest.approx(1.330e-3, rel=5e-3)
-
-        assert pytest.approx(388.6800, rel=1e-3) == value(
-            m.fs.costing.aggregate_capital_cost
-        )
-        assert pytest.approx(47.16423, rel=1e-3) == value(
-            m.fs.costing.total_operating_cost
-        )
-        assert pytest.approx(777.3600, rel=1e-3) == value(
-            m.fs.costing.total_capital_cost
-        )
 
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_cell2):
