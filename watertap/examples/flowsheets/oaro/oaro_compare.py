@@ -135,7 +135,7 @@ def build(water_recovery=0.5):
     m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
         permeate_flow_mass * permeate_mass_frac_NaCl
     )
-    m.fs.unit.permeate_inlet.pressure[0].fix(2e5)
+    m.fs.unit.permeate_inlet.pressure[0].fix(5e5)
     m.fs.unit.permeate_inlet.temperature[0].fix(feed_temperature)
 
     m.fs.unit.area.fix(membrane_area)
@@ -146,9 +146,9 @@ def build(water_recovery=0.5):
     m.fs.unit.structural_parameter.fix(1200e-6)
 
     m.fs.unit.permeate_side.channel_height.fix(0.002)
-    m.fs.unit.permeate_side.spacer_porosity.fix(0.89)
+    m.fs.unit.permeate_side.spacer_porosity.fix(0.894)
     m.fs.unit.feed_side.channel_height.fix(0.002)
-    m.fs.unit.feed_side.spacer_porosity.fix(0.95)
+    m.fs.unit.feed_side.spacer_porosity.fix(0.96)
     # m.fs.unit.feed_side.velocity[0, 0].fix(0.1)
     m.fs.unit.feed_side.N_Re[0, 0].fix(400)
 
