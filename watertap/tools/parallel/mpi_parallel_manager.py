@@ -37,13 +37,29 @@ class MPIParallelManager(ParallelManager):
     def sync_with_peers(self):
         self.comm.Barrier()
 
-    def sync_data_with_peers(self, data):
+    def sync_array_with_peers(self, data):
         """
         Broadcast the array to all processes. this call acts as a synchronization point
         when run by multiple peer mpi processes.
         """
         if self.num_procs > 1:
             self.comm.Bcast(data, root=self.ROOT_PROCESS_RANK)
+
+    def sync_pyobject_with_peers(self, obj):
+        """
+        Broadcast the object to all processes from the root. this call acts as a synchronization point
+        when run by multiple peer mpi processes.
+        """
+        return self.comm.bcast(obj, root=self.ROOT_PROCESS_RANK)
+
+    def combine_data_with_peers(self, data):
+        return self.comm.allgather(data)
+
+    def gather_arrays_to_root(self, sendbuf, recvbuf_spec):
+        self.comm.Gatherv(sendbuf, recvbuf_spec, root=self.ROOT_PROCESS_RANK)
+
+    def sum_values_and_sync(self, sendbuf, recvbuf):
+        self.comm.Allreduce(sendbuf, recvbuf)
 
     def scatter(
         self,
