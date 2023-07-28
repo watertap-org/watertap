@@ -58,6 +58,7 @@ from pyomo.util.check_units import assert_units_consistent
 # Get default solver for testing
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_config():
@@ -139,7 +140,6 @@ class TestAsm1Adm1(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, asmadm):
-
         assert isinstance(asmadm.fs.unit.i_xe, Param)
         assert value(asmadm.fs.unit.i_xe) == 0.06
         assert isinstance(asmadm.fs.unit.i_xb, Param)
@@ -164,7 +164,6 @@ class TestAsm1Adm1(object):
         assert hasattr(asmadm.fs.unit.outlet, "anions")
         assert hasattr(asmadm.fs.unit.outlet, "cations")
 
-
         assert number_variables(asmadm) == 137
         assert number_total_constraints(asmadm) == 34
 
@@ -188,7 +187,6 @@ class TestAsm1Adm1(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, asmadm):
-
         asmadm.fs.unit.initialize(outlvl=idaeslog.INFO_HIGH)
         solver = get_solver()
         results = solver.solve(asmadm, tee=True)

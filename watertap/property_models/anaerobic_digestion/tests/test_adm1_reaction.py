@@ -29,7 +29,7 @@ from pyomo.environ import (
     Constraint,
     value,
     Var,
-    log10
+    log10,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -178,7 +178,7 @@ class TestParamBlock(object):
             ("R12", "Liq", "S_h2"): -1,
             ("R12", "Liq", "S_ch4"): 0.94,
             ("R12", "Liq", "S_IN"): -0.0003428 * mw_n,
-            ("R12", "Liq", "S_IC"): -0.01654 * mw_c, 
+            ("R12", "Liq", "S_IC"): -0.01654 * mw_c,
             ("R12", "Liq", "X_h2"): 0.06,
             # R13: Decay of X_su
             ("R13", "Liq", "S_IC"): 0.00344 * mw_c,
@@ -219,7 +219,6 @@ class TestParamBlock(object):
 
         assert len(model.rparams.rate_reaction_stoichiometry) == 19 * 27
         for i, v in model.rparams.rate_reaction_stoichiometry.items():
-
             assert i[0] in [
                 "R1",
                 "R2",
@@ -382,13 +381,13 @@ class TestParamBlock(object):
         assert value(model.rparams.k_dec_X_h2) == 0.02
 
         assert isinstance(model.rparams.K_a_va, Var)
-        assert value(model.rparams.K_a_va) == 10**(-4.86)
+        assert value(model.rparams.K_a_va) == 10 ** (-4.86)
         assert isinstance(model.rparams.K_a_bu, Var)
-        assert value(model.rparams.K_a_bu) == 10**(-4.82)
+        assert value(model.rparams.K_a_bu) == 10 ** (-4.82)
         assert isinstance(model.rparams.K_a_pro, Var)
-        assert value(model.rparams.K_a_pro) == 10**(-4.88)
+        assert value(model.rparams.K_a_pro) == 10 ** (-4.88)
         assert isinstance(model.rparams.K_a_ac, Var)
-        assert value(model.rparams.K_a_ac) == 10**(-4.76)
+        assert value(model.rparams.K_a_ac) == 10 ** (-4.76)
 
 
 class TestReactionBlock(object):
@@ -498,7 +497,6 @@ class TestReactor:
 
     @pytest.mark.unit
     def test_scaling_factors(self, model):
-
         m = model
         iscale.calculate_scaling_factors(m)
 
