@@ -33,13 +33,11 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import (
     Reference,
     Var,
-    value,
     Constraint,
     Param,
     units as pyunits,
     check_optimal_termination,
     log,
-    exp,
     Suffix,
     NonNegativeReals,
 )
