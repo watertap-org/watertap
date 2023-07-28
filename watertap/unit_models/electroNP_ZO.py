@@ -13,7 +13,6 @@
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
-    check_optimal_termination,
     Param,
     Suffix,
     NonNegativeReals,
@@ -21,22 +20,16 @@ from pyomo.environ import (
 )
 from idaes.models.unit_models.separator import SeparatorData, SplittingType
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
-
 # Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
-    UnitModelBlockData,
-    useDefault,
 )
-from idaes.core.solvers import get_solver
+
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.core import InitializationMixin
 
 __author__ = "Chenyu Wang"
 
