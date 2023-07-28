@@ -491,8 +491,8 @@ class ASM1ReactionBlockData(ReactionBlockDataBase):
                     return b.reaction_rate[r] == (
                         b.reaction_rate["R7"]
                         * (
-                            b.conc_mass_comp_ref["X_ND"] / b.conc_mass_comp_ref["X_S"]
-                            + 1e-10
+                            b.conc_mass_comp_ref["X_ND"] 
+                            / (b.conc_mass_comp_ref["X_S"] + 1e-10 * pyo.units.kg / pyo.units.m**3)
                         )
                     )
                 else:

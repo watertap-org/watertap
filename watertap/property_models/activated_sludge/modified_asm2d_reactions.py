@@ -41,7 +41,7 @@ import idaes.core.util.scaling as iscale
 
 
 # Some more information about this module
-__author__ = "Marcus Holly, Adam Atia"
+__author__ = "Marcus Holly, Adam Atia, Xinhong Liu"
 
 
 # Set up logger
@@ -1051,15 +1051,12 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.KL_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
                         * (
-                            (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"])
+                            b.conc_mass_comp_ref["X_S"]
                             / (
-                                b.params.KL_X
-                                + (
-                                    b.conc_mass_comp_ref["X_S"]
-                                    / b.conc_mass_comp_ref["X_H"]
-                                )
+                                b.params.KL_X * b.conc_mass_comp_ref["X_H"]
+                                + b.conc_mass_comp_ref["X_S"]
                             )
-                        )
+                          )
                         * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
@@ -1077,13 +1074,10 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.KL_NO3 + b.conc_mass_comp_ref["S_NO3"])
                         )
                         * (
-                            (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"])
+                            b.conc_mass_comp_ref["X_S"]
                             / (
-                                b.params.KL_X
-                                + (
-                                    b.conc_mass_comp_ref["X_S"]
-                                    / b.conc_mass_comp_ref["X_H"]
-                                )
+                                b.params.KL_X * b.conc_mass_comp_ref["X_H"]
+                                + b.conc_mass_comp_ref["X_S"]
                             )
                         )
                         * b.conc_mass_comp_ref["X_H"],
@@ -1103,13 +1097,10 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.KL_NO3 + b.conc_mass_comp_ref["S_NO3"])
                         )
                         * (
-                            (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"])
+                            b.conc_mass_comp_ref["X_S"]
                             / (
-                                b.params.KL_X
-                                + (
-                                    b.conc_mass_comp_ref["X_S"]
-                                    / b.conc_mass_comp_ref["X_H"]
-                                )
+                                b.params.KL_X * b.conc_mass_comp_ref["X_H"]
+                                + b.conc_mass_comp_ref["X_S"]
                             )
                         )
                         * b.conc_mass_comp_ref["X_H"],
@@ -1131,7 +1122,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_F"]
                             / (
                                 b.conc_mass_comp_ref["S_F"]
-                                + b.conc_mass_comp_ref["S_A"]
+                                + b.conc_mass_comp_ref["S_A"] + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * (
@@ -1161,7 +1152,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_A"]
                             / (
                                 b.conc_mass_comp_ref["S_F"]
-                                + b.conc_mass_comp_ref["S_A"]
+                                + b.conc_mass_comp_ref["S_A"] + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * (
@@ -1192,7 +1183,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_F"]
                             / (
                                 b.conc_mass_comp_ref["S_F"]
-                                + b.conc_mass_comp_ref["S_A"]
+                                + b.conc_mass_comp_ref["S_A"] + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * (
@@ -1227,7 +1218,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_A"]
                             / (
                                 b.conc_mass_comp_ref["S_F"]
-                                + b.conc_mass_comp_ref["S_A"]
+                                + b.conc_mass_comp_ref["S_A"] + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * (
@@ -1295,16 +1286,10 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.KP_A + b.conc_mass_comp_ref["S_A"])
                         )
                         * (
-                            (
                                 b.conc_mass_comp_ref["X_PP"]
-                                / b.conc_mass_comp_ref["X_PAO"]
-                            )
                             / (
-                                b.params.KP_PP
-                                + (
-                                    b.conc_mass_comp_ref["X_PP"]
-                                    / b.conc_mass_comp_ref["X_PAO"]
-                                )
+                                b.params.KP_PP * b.conc_mass_comp_ref["X_PAO"]
+                                + b.conc_mass_comp_ref["X_PP"]
                             )
                         )
                         * b.conc_mass_comp_ref["X_PAO"],
@@ -1323,33 +1308,21 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.KP_P + b.conc_mass_comp_ref["S_PO4"])
                         )
                         * (
-                            (
                                 b.conc_mass_comp_ref["X_PHA"]
-                                / b.conc_mass_comp_ref["X_PAO"]
-                            )
                             / (
-                                b.params.KP_PHA
-                                + (
-                                    b.conc_mass_comp_ref["X_PHA"]
-                                    / b.conc_mass_comp_ref["X_PAO"]
-                                )
+                                b.params.KP_PHA * b.conc_mass_comp_ref["X_PAO"]
+                                + b.conc_mass_comp_ref["X_PHA"]
                             )
                         )
                         * (
                             (
-                                b.params.K_MAX
-                                - (
-                                    b.conc_mass_comp_ref["X_PP"]
-                                    / b.conc_mass_comp_ref["X_PAO"]
-                                )
+                                b.params.K_MAX * b.conc_mass_comp_ref["X_PAO"]
+                                - b.conc_mass_comp_ref["X_PP"]
                             )
                             / (
-                                b.params.KI_PP
-                                + b.params.K_MAX
-                                - (
-                                    b.conc_mass_comp_ref["X_PP"]
-                                    / b.conc_mass_comp_ref["X_PAO"]
-                                )
+                                b.params.KI_PP * b.conc_mass_comp_ref["X_PAO"]
+                                + b.params.K_MAX * b.conc_mass_comp_ref["X_PAO"]
+                                - b.conc_mass_comp_ref["X_PP"]
                             )
                         )
                         * b.conc_mass_comp_ref["X_PAO"],
@@ -1374,28 +1347,20 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                         )
                         * (
                             b.conc_mass_comp_ref["X_PHA"]
-                            / b.conc_mass_comp_ref["X_PAO"]
                             / (
-                                b.params.KP_PHA
-                                + b.conc_mass_comp_ref["X_PHA"]
-                                / b.conc_mass_comp_ref["X_PAO"]
+                            b.params.KP_PHA * b.conc_mass_comp_ref["X_PAO"]
+                            + b.conc_mass_comp_ref["X_PHA"]
                             )
                         )
                         * (
                             (
-                                b.params.K_MAX
-                                - (
-                                    b.conc_mass_comp_ref["X_PP"]
-                                    / b.conc_mass_comp_ref["X_PAO"]
-                                )
+                            b.params.K_MAX * b.conc_mass_comp_ref["X_PAO"]
+                            - b.conc_mass_comp_ref["X_PP"]
                             )
                             / (
-                                b.params.KI_PP
-                                + b.params.K_MAX
-                                - (
-                                    b.conc_mass_comp_ref["X_PP"]
-                                    / b.conc_mass_comp_ref["X_PAO"]
-                                )
+                            b.params.KI_PP * b.conc_mass_comp_ref["X_PAO"]
+                            + b.params.K_MAX * b.conc_mass_comp_ref["X_PAO"]
+                            - b.conc_mass_comp_ref["X_PP"]
                             )
                         )
                         * b.conc_mass_comp_ref["X_PAO"],
@@ -1418,16 +1383,10 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.KP_PO4 + b.conc_mass_comp_ref["S_PO4"])
                         )
                         * (
-                            (
-                                b.conc_mass_comp_ref["X_PHA"]
-                                / b.conc_mass_comp_ref["X_PAO"]
-                            )
+                            b.conc_mass_comp_ref["X_PHA"]
                             / (
-                                b.params.KP_PHA
-                                + (
-                                    b.conc_mass_comp_ref["X_PHA"]
-                                    / b.conc_mass_comp_ref["X_PAO"]
-                                )
+                            b.params.KP_PHA * b.conc_mass_comp_ref["X_PAO"]
+                            + b.conc_mass_comp_ref["X_PHA"]
                             )
                         )
                         * b.conc_mass_comp_ref["X_PAO"],
@@ -1456,11 +1415,9 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                         )
                         * (
                             b.conc_mass_comp_ref["X_PHA"]
-                            / b.conc_mass_comp_ref["X_PAO"]
                             / (
-                                b.params.KP_PHA
-                                + b.conc_mass_comp_ref["X_PHA"]
-                                / b.conc_mass_comp_ref["X_PAO"]
+                            b.params.KP_PHA * b.conc_mass_comp_ref["X_PAO"]
+                            + b.conc_mass_comp_ref["X_PHA"]
                             )
                         )
                         * b.conc_mass_comp_ref["X_PAO"],
