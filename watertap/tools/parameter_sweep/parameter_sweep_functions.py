@@ -32,7 +32,6 @@ def parameter_sweep(
     reinitialize_kwargs=None,
     reinitialize_before_sweep=False,
     probe_function=None,
-    mpi_comm=None,
     debugging_data_dir=None,
     interpolate_nan_outputs=False,
     num_samples=None,
@@ -109,10 +108,6 @@ def parameter_sweep(
         probe_function (optional): A user-defined function that can cheaply check if a current model
                                   configuration is solvable without actually reinitializing or solving.
 
-        mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
-                              If None COMM_WORLD will be used. The default is sufficient for most
-                              users.
-
         debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging
                                         purposes. If None no `debugging` data will be saved.
 
@@ -143,8 +138,6 @@ def parameter_sweep(
     """
 
     kwargs = {}
-    if mpi_comm is not None:
-        kwargs["comm"] = mpi_comm
     if csv_results_file_name is not None:
         kwargs["csv_results_file_name"] = csv_results_file_name
     if h5_results_file_name is not None:
@@ -195,7 +188,6 @@ def recursive_parameter_sweep(
     reinitialize_kwargs=None,
     reinitialize_before_sweep=False,
     probe_function=None,
-    mpi_comm=None,
     debugging_data_dir=None,
     interpolate_nan_outputs=False,
     req_num_samples=None,
@@ -267,10 +259,6 @@ def recursive_parameter_sweep(
         probe_function (optional): A user-defined function that can cheaply check if a current model
                                   configuration is solvable without actually reinitializing or solving.
 
-        mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
-                              If None COMM_WORLD will be used. The default is sufficient for most
-                              users.
-
         debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging
                                         purposes. If None no `debugging` data will be saved.
 
@@ -294,8 +282,6 @@ def recursive_parameter_sweep(
     """
 
     kwargs = {}
-    if mpi_comm is not None:
-        kwargs["comm"] = mpi_comm
     if csv_results_file_name is not None:
         kwargs["csv_results_file_name"] = csv_results_file_name
     if h5_results_file_name is not None:
@@ -339,7 +325,6 @@ def differential_parameter_sweep(
     reinitialize_kwargs=None,
     reinitialize_before_sweep=False,
     probe_function=None,
-    mpi_comm=None,
     debugging_data_dir=None,
     interpolate_nan_outputs=False,
     num_samples=None,
@@ -436,10 +421,6 @@ def differential_parameter_sweep(
         probe_function (optional): A user-defined function that can cheaply check if a current model
                                   configuration is solvable without actually reinitializing or solving.
 
-        mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
-                              If None COMM_WORLD will be used. The default is sufficient for most
-                              users.
-
         debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging
                                         purposes. If None no `debugging` data will be saved.
 
@@ -467,8 +448,6 @@ def differential_parameter_sweep(
 
     kwargs = {}
     kwargs["differential_sweep_specs"] = differential_sweep_specs
-    if mpi_comm is not None:
-        kwargs["comm"] = mpi_comm
     if csv_results_file_name is not None:
         kwargs["csv_results_file_name"] = csv_results_file_name
     if h5_results_file_name is not None:
