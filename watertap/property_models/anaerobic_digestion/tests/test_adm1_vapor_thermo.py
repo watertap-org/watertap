@@ -247,11 +247,11 @@ class TestStateBlock(object):
             65077, rel=1e-4
         )
         assert value(model.props[1].pressure_sat["S_co2"]) == pytest.approx(
-            36255, rel=1e-4
+            36126, rel=1e-4
         )
 
         assert value(model.props[1].pressure_sat["H2O"]) == pytest.approx(
-            5566, rel=1e-4
+            5567, rel=1e-4
         )
 
     @pytest.mark.unit
