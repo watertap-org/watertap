@@ -154,8 +154,7 @@ class TestAsm2dAdm1_decay_on(object):
             outlet_state_defined=True,
         )
 
-        # TODO: Check influent flow_vol
-        m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
+        m.fs.unit.inlet.flow_vol.fix(18446 * units.m**3 / units.day)
         m.fs.unit.inlet.temperature.fix(308.15 * units.K)
         m.fs.unit.inlet.pressure.fix(1 * units.atm)
         eps = 1e-9 * units.kg / units.m**3
