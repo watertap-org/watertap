@@ -23,12 +23,7 @@ Authors: Chenyu Wang, Marcus Holly, Adam Atia, Xinhong Liu
 
 import pytest
 
-from pyomo.environ import (
-    check_optimal_termination,
-    ConcreteModel,
-    Param,
-    log10
-)
+from pyomo.environ import check_optimal_termination, ConcreteModel, Param, log10
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.anaerobic_digestor import AD
@@ -466,13 +461,13 @@ class TestParamBlock(object):
         assert value(model.rparams.k_dec_X_h2) == 0.02
 
         assert isinstance(model.rparams.K_a_va, Var)
-        assert value(model.rparams.K_a_va) == 10**(-4.86)
+        assert value(model.rparams.K_a_va) == 10 ** (-4.86)
         assert isinstance(model.rparams.K_a_bu, Var)
-        assert value(model.rparams.K_a_bu) == 10**(-4.82)
+        assert value(model.rparams.K_a_bu) == 10 ** (-4.82)
         assert isinstance(model.rparams.K_a_pro, Var)
-        assert value(model.rparams.K_a_pro) == 10**(-4.88)
+        assert value(model.rparams.K_a_pro) == 10 ** (-4.88)
         assert isinstance(model.rparams.K_a_ac, Var)
-        assert value(model.rparams.K_a_ac) == 10**(-4.76)
+        assert value(model.rparams.K_a_ac) == 10 ** (-4.76)
 
         assert isinstance(model.rparams.K_I_h2s_ac, Var)
         assert value(model.rparams.K_I_h2s_ac) == 460e-3

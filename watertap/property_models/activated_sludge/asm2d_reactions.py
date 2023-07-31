@@ -1127,7 +1127,8 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_F"]
                             / (
                                 b.conc_mass_comp_ref["S_F"]
-                                + b.conc_mass_comp_ref["S_A"] + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + b.conc_mass_comp_ref["S_A"]
+                                + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * (
@@ -1161,7 +1162,8 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_A"]
                             / (
                                 b.conc_mass_comp_ref["S_F"]
-                                + b.conc_mass_comp_ref["S_A"] + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + b.conc_mass_comp_ref["S_A"]
+                                + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * (
@@ -1200,7 +1202,8 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_F"]
                             / (
                                 b.conc_mass_comp_ref["S_F"]
-                                + b.conc_mass_comp_ref["S_A"] + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + b.conc_mass_comp_ref["S_A"]
+                                + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * (
@@ -1239,7 +1242,8 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_A"]
                             / (
                                 b.conc_mass_comp_ref["S_F"]
-                                + b.conc_mass_comp_ref["S_A"] + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + b.conc_mass_comp_ref["S_A"]
+                                + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * (
@@ -1299,7 +1303,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.K_ALK + b.state_ref.alkalinity)
                         )
                         * (
-                                b.conc_mass_comp_ref["X_PP"]
+                            b.conc_mass_comp_ref["X_PP"]
                             / (
                                 b.params.K_PP * b.conc_mass_comp_ref["X_PAO"]
                                 + b.conc_mass_comp_ref["X_PP"]
@@ -1325,7 +1329,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.K_ALK + b.state_ref.alkalinity)
                         )
                         * (
-                                b.conc_mass_comp_ref["X_PHA"]
+                            b.conc_mass_comp_ref["X_PHA"]
                             / (
                                 b.params.K_PHA * b.conc_mass_comp_ref["X_PAO"]
                                 + b.conc_mass_comp_ref["X_PHA"]
@@ -1378,7 +1382,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.K_ALK + b.state_ref.alkalinity)
                         )
                         * (
-                                b.conc_mass_comp_ref["X_PHA"]
+                            b.conc_mass_comp_ref["X_PHA"]
                             / (
                                 b.params.K_PHA * b.conc_mass_comp_ref["X_PAO"]
                                 + b.conc_mass_comp_ref["X_PHA"]

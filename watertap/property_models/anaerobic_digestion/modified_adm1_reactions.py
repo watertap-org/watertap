@@ -49,6 +49,7 @@ mw_n = 14 * pyo.units.kg / pyo.units.kmol
 mw_c = 12 * pyo.units.kg / pyo.units.kmol
 mw_p = 31 * pyo.units.kg / pyo.units.kmol
 
+
 @declare_process_block_class("ModifiedADM1ReactionParameterBlock")
 class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
     """
@@ -1904,7 +1905,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             rule=Dissociation_rule,
             doc="Water dissociation constant constraint",
         )
-        
+
         def CO2_acid_base_equilibrium_rule(self, t):
             return pyo.log(10**-self.pK_a_co2) == (
                 pyo.log(10**-6.35)
@@ -2206,17 +2207,45 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
 
         def rule_I(self, r):
             if r == "R4" or r == "R5":
-                return self.I[r] == pyo.exp(self.I_pH_aa) * self.I_IN_lim * self.I_IP_lim
+                return (
+                    self.I[r] == pyo.exp(self.I_pH_aa) * self.I_IN_lim * self.I_IP_lim
+                )
             elif r == "R6":
-                return self.I[r] == pyo.exp(self.I_pH_aa) * self.I_IN_lim * self.I_h2_fa * self.I_IP_lim
+                return (
+                    self.I[r]
+                    == pyo.exp(self.I_pH_aa)
+                    * self.I_IN_lim
+                    * self.I_h2_fa
+                    * self.I_IP_lim
+                )
             elif r == "R7" or r == "R8":
-                return self.I[r] == pyo.exp(self.I_pH_aa) * self.I_IN_lim * self.I_h2_c4 * self.I_IP_lim
+                return (
+                    self.I[r]
+                    == pyo.exp(self.I_pH_aa)
+                    * self.I_IN_lim
+                    * self.I_h2_c4
+                    * self.I_IP_lim
+                )
             elif r == "R9":
-                return self.I[r] == pyo.exp(self.I_pH_aa) * self.I_IN_lim * self.I_h2_pro * self.I_IP_lim
+                return (
+                    self.I[r]
+                    == pyo.exp(self.I_pH_aa)
+                    * self.I_IN_lim
+                    * self.I_h2_pro
+                    * self.I_IP_lim
+                )
             elif r == "R10":
-                return self.I[r] == pyo.exp(self.I_pH_ac) * self.I_IN_lim * self.I_nh3 * self.I_IP_lim
+                return (
+                    self.I[r]
+                    == pyo.exp(self.I_pH_ac)
+                    * self.I_IN_lim
+                    * self.I_nh3
+                    * self.I_IP_lim
+                )
             elif r == "R11":
-                return self.I[r] == pyo.exp(self.I_pH_h2) * self.I_IN_lim * self.I_IP_lim
+                return (
+                    self.I[r] == pyo.exp(self.I_pH_h2) * self.I_IN_lim * self.I_IP_lim
+                )
             else:
                 return self.I[r] == 1.0
 
@@ -2510,11 +2539,11 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.reaction_rate)
             self.del_component(self.rate_expression)
             raise
-            
+
         for i, c in self.rates.items():
             iscale.set_scaling_factor(self.reaction_rate[i], 1 / c)
-            
-        iscale.set_scaling_factor(self.I, 1e1)    
+
+        iscale.set_scaling_factor(self.I, 1e1)
         iscale.set_scaling_factor(self.conc_mass_va, 1e2)
         iscale.set_scaling_factor(self.conc_mass_bu, 1e2)
         iscale.set_scaling_factor(self.conc_mass_pro, 1e2)
