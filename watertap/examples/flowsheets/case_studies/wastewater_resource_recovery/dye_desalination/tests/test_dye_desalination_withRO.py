@@ -32,23 +32,23 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_
 solver = get_solver()
 
 
-class TestDyewithROFlowsheet:
+class TestDyewithROFlowsheetwithPretreatment:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m = build()
-        return m
+        m, include_pretreatment = build(include_pretreatment=True)
+        return m, include_pretreatment
 
     @pytest.mark.unit
     def test_build(self, system_frame):
-        m = system_frame
+        m, include_pretreatment = system_frame
         assert_degrees_of_freedom(m, 28)
         assert_units_consistent(m)
 
     @pytest.mark.component
     def test_set_operating_conditions(self, system_frame):
-        m = system_frame
-        set_operating_conditions(m)
-        initialize_system(m)
+        m, include_pretreatment = system_frame
+        set_operating_conditions(m, include_pretreatment)
+        initialize_system(m, include_pretreatment)
 
         # test feed
         assert pytest.approx(31.583, rel=1e-3) == value(
@@ -96,7 +96,7 @@ class TestDyewithROFlowsheet:
 
     @pytest.mark.component
     def test_solve(self, system_frame):
-        m = system_frame
+        m, include_pretreatment = system_frame
 
         results = solve(m)
 
@@ -117,9 +117,9 @@ class TestDyewithROFlowsheet:
         )
 
     def test_costing(self, system_frame):
-        m = system_frame
+        m, include_pretreatment = system_frame
 
-        add_costing(m)
+        add_costing(m, include_pretreatment)
         initialize_costing(m)
         optimize_operation(m)
 
@@ -132,6 +132,100 @@ class TestDyewithROFlowsheet:
 
     @pytest.mark.component
     def test_display(self, system_frame):
-        m = system_frame
-        display_results(m)
-        display_costing(m)
+        m, include_pretreatment = system_frame
+        display_results(m, include_pretreatment)
+        display_costing(m, include_pretreatment)
+
+
+class TestDyewithROFlowsheetwithoutPretreatment:
+    @pytest.fixture(scope="class")
+    def system_frame(self):
+        m, include_pretreatment = build(include_pretreatment=False)
+        return m, include_pretreatment
+
+    @pytest.mark.unit
+    def test_build(self, system_frame):
+        m, include_pretreatment = system_frame
+        assert_degrees_of_freedom(m, 24)
+        assert_units_consistent(m)
+
+    @pytest.mark.component
+    def test_set_operating_conditions(self, system_frame):
+        m, include_pretreatment = system_frame
+        set_operating_conditions(m, include_pretreatment)
+        initialize_system(m, include_pretreatment)
+
+        # test feed
+        assert pytest.approx(31.583, rel=1e-3) == value(
+            m.fs.feed.flow_mass_comp[0, "H2O"]
+        )
+
+        assert pytest.approx(50.0, rel=1e-5) == value(
+            m.fs.feed.conc_mass_comp[0, "tds"]
+        )
+
+        assert pytest.approx(2.50, rel=1e-5) == value(
+            m.fs.feed.conc_mass_comp[0, "dye"]
+        )
+
+        # test pump block
+        assert pytest.approx(6.895, rel=1e-5) == value(
+            m.fs.dye_separation.P1.applied_pressure[0]
+        )
+
+        # test nanofiltration
+        assert pytest.approx(130.075, rel=1e-5) == value(
+            m.fs.dye_separation.nanofiltration.area
+        )
+
+        # check products
+        assert pytest.approx(0.44250, rel=1e-3) == value(
+            m.fs.dye_retentate.flow_mass_comp[0, "tds"]
+        )
+
+        assert pytest.approx(0.965, rel=1e-5) == value(
+            m.fs.permeate.flow_mass_phase_comp[0, "Liq", "H2O"]
+        )
+
+        assert pytest.approx(0.035, rel=1e-5) == value(
+            m.fs.brine.flow_mass_phase_comp[0, "Liq", "TDS"]
+        )
+
+    @pytest.mark.component
+    def test_solve(self, system_frame):
+        m, include_pretreatment = system_frame
+
+        results = solve(m)
+
+        # check products
+        assert pytest.approx(7.8958, rel=1e-3) == value(
+            m.fs.dye_retentate.flow_mass_comp[0, "H2O"]
+        )
+
+        assert pytest.approx(12.0034, rel=1e-5) == value(
+            m.fs.permeate.flow_mass_phase_comp[0, "Liq", "H2O"]
+        )
+
+        assert pytest.approx(11.684, rel=1e-5) == value(
+            m.fs.brine.flow_mass_phase_comp[0, "Liq", "H2O"]
+        )
+
+    def test_costing(self, system_frame):
+        m, include_pretreatment = system_frame
+
+        add_costing(m, include_pretreatment)
+        initialize_costing(m)
+        optimize_operation(m)
+
+        results = solve(m)
+        assert_optimal_termination(results)
+
+        # check costing
+        assert pytest.approx(0.620567, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(0.226899, rel=1e-3) == value(m.fs.LCOT)
+
+    @pytest.mark.component
+    def test_display(self, system_frame):
+        m, include_pretreatment = system_frame
+        display_results(m, include_pretreatment)
+        display_costing(m, include_pretreatment)
