@@ -43,8 +43,26 @@ class ConcurrentFuturesParallelManager(ParallelManager):
     def sync_with_peers(self):
         pass
 
-    def sync_data_with_peers(self, data):
+    def sync_array_with_peers(self, data):
         pass
+
+    def sync_pyobject_with_peers(self, obj):
+        return obj
+
+    def combine_data_with_peers(self, data):
+        return [data]
+
+    def sum_values_and_sync(self, sendbuf, recvbuf):
+        recvbuf[0][:] = sendbuf[0][:]
+
+    def gather_arrays_to_root(self, sendbuf, recvbuf_spec):
+        receive_arr = recvbuf_spec[0]
+        receive_sizes = recvbuf_spec[1]
+
+        assert len(receive_arr) == sum(
+            receive_sizes
+        ), "Gathering arrays to root cannot be done with mismatched sizes"
+        receive_arr[:] = sendbuf[:]
 
     def scatter(
         self,
