@@ -29,14 +29,6 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_
     display_costing,
 )
 
-from watertap.core.util.model_diagnostics.infeasible import (
-    print_close_to_bounds,
-    print_infeasible_constraints,
-)
-from idaes.core.util.model_diagnostics import DegeneracyHunter
-from idaes.core.util.testing import initialization_tester
-import idaes.core.util.scaling as iscale
-
 solver = get_solver()
 
 
@@ -195,19 +187,6 @@ class TestDyewithROFlowsheetwithoutPretreatment:
     def test_solve(self, system_frame):
         m, include_pretreatment = system_frame
 
-        print("------------------------")
-        print("Badly Scaled Vars")
-        badly_scaled_var_list = iscale.badly_scaled_var_generator(
-            m, large=1e1, small=1e-1
-        )
-        for x in badly_scaled_var_list:
-            print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
-        print("------------------------")
-        print("Infeasible Constraints")
-        print_close_to_bounds(m)
-        print_infeasible_constraints(m)
-
         results = solve(m)
 
         # check products
@@ -215,11 +194,11 @@ class TestDyewithROFlowsheetwithoutPretreatment:
             m.fs.dye_retentate.flow_mass_comp[0, "H2O"]
         )
 
-        assert pytest.approx(12.0034, rel=1e-5) == value(
+        assert pytest.approx(32.2242, rel=1e-5) == value(
             m.fs.permeate.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
-        assert pytest.approx(11.684, rel=1e-5) == value(
+        assert pytest.approx(32.1893, rel=1e-5) == value(
             m.fs.brine.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 

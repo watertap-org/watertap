@@ -221,7 +221,12 @@ def build(include_pretreatment=False):
     m.fs.prop_ro.set_default_scaling("flow_mass_phase_comp", 1e-1, index=("Liq", "TDS"))
 
     # set unit model values
-    iscale.set_scaling_factor(desal.P2.control_volume.work, 1e-5)
+    iscale.set_scaling_factor(desal.P2.control_volume.work, 1e-6)
+    iscale.set_scaling_factor(desal.P2.control_volume.deltaP, 1e-7)
+    iscale.set_scaling_factor(
+        desal.P2.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "H2O"],
+        1e-1,
+    )
     iscale.set_scaling_factor(desal.RO.area, 1e-4)
     iscale.set_scaling_factor(desal.P3.control_volume.work, 1e-5)
     iscale.set_scaling_factor(desal.PXR.low_pressure_side.work, 1e-5)
