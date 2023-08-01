@@ -29,6 +29,14 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_
     display_costing,
 )
 
+from watertap.core.util.model_diagnostics.infeasible import (
+    print_close_to_bounds,
+    print_infeasible_constraints,
+)
+from idaes.core.util.model_diagnostics import DegeneracyHunter
+from idaes.core.util.testing import initialization_tester
+import idaes.core.util.scaling as iscale
+
 solver = get_solver()
 
 
@@ -51,17 +59,13 @@ class TestDyewithROFlowsheetwithPretreatment:
         initialize_system(m, include_pretreatment)
 
         # test feed
-        assert pytest.approx(31.583, rel=1e-3) == value(
+        assert pytest.approx(77.607, rel=1e-3) == value(
             m.fs.feed.flow_mass_comp[0, "H2O"]
         )
 
-        assert pytest.approx(50.0, rel=1e-5) == value(
-            m.fs.feed.conc_mass_comp[0, "tds"]
-        )
+        assert pytest.approx(2, rel=1e-5) == value(m.fs.feed.conc_mass_comp[0, "tds"])
 
-        assert pytest.approx(2.50, rel=1e-5) == value(
-            m.fs.feed.conc_mass_comp[0, "dye"]
-        )
+        assert pytest.approx(0.2, rel=1e-5) == value(m.fs.feed.conc_mass_comp[0, "dye"])
 
         # test wwtp
         assert pytest.approx(0.14, rel=1e-5) == value(
@@ -69,12 +73,12 @@ class TestDyewithROFlowsheetwithPretreatment:
         )
 
         # test pump block
-        assert pytest.approx(6.895, rel=1e-5) == value(
+        assert pytest.approx(7, rel=1e-5) == value(
             m.fs.dye_separation.P1.applied_pressure[0]
         )
 
         # test nanofiltration
-        assert pytest.approx(128.886, rel=1e-5) == value(
+        assert pytest.approx(316.0848, rel=1e-5) == value(
             m.fs.dye_separation.nanofiltration.area
         )
 
@@ -82,7 +86,7 @@ class TestDyewithROFlowsheetwithPretreatment:
         assert pytest.approx(0, rel=1e-6) == value(
             m.fs.wwt_retentate.flow_mass_comp[0, "dye"]
         )
-        assert pytest.approx(0.36017, rel=1e-3) == value(
+        assert pytest.approx(0.006331, rel=1e-3) == value(
             m.fs.dye_retentate.flow_mass_comp[0, "tds"]
         )
 
@@ -101,18 +105,18 @@ class TestDyewithROFlowsheetwithPretreatment:
         results = solve(m)
 
         # check products
-        assert pytest.approx(0.31008, rel=1e-3) == value(
+        assert pytest.approx(0.02894, rel=1e-3) == value(
             m.fs.wwt_retentate.flow_mass_comp[0, "tds"]
         )
-        assert pytest.approx(7.8958, rel=1e-3) == value(
+        assert pytest.approx(13.1931, rel=1e-3) == value(
             m.fs.dye_retentate.flow_mass_comp[0, "H2O"]
         )
 
-        assert pytest.approx(11.9716, rel=1e-5) == value(
+        assert pytest.approx(32.2209, rel=1e-5) == value(
             m.fs.permeate.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
-        assert pytest.approx(11.716, rel=1e-5) == value(
+        assert pytest.approx(32.1926, rel=1e-5) == value(
             m.fs.brine.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
@@ -127,8 +131,8 @@ class TestDyewithROFlowsheetwithPretreatment:
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(0.690498, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(0.284743, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(0.447186, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(0.259355, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
@@ -156,30 +160,26 @@ class TestDyewithROFlowsheetwithoutPretreatment:
         initialize_system(m, include_pretreatment)
 
         # test feed
-        assert pytest.approx(31.583, rel=1e-3) == value(
+        assert pytest.approx(77.607, rel=1e-3) == value(
             m.fs.feed.flow_mass_comp[0, "H2O"]
         )
 
-        assert pytest.approx(50.0, rel=1e-5) == value(
-            m.fs.feed.conc_mass_comp[0, "tds"]
-        )
+        assert pytest.approx(2, rel=1e-5) == value(m.fs.feed.conc_mass_comp[0, "tds"])
 
-        assert pytest.approx(2.50, rel=1e-5) == value(
-            m.fs.feed.conc_mass_comp[0, "dye"]
-        )
+        assert pytest.approx(0.2, rel=1e-5) == value(m.fs.feed.conc_mass_comp[0, "dye"])
 
         # test pump block
-        assert pytest.approx(6.895, rel=1e-5) == value(
+        assert pytest.approx(7, rel=1e-5) == value(
             m.fs.dye_separation.P1.applied_pressure[0]
         )
 
         # test nanofiltration
-        assert pytest.approx(130.075, rel=1e-5) == value(
+        assert pytest.approx(316.219, rel=1e-5) == value(
             m.fs.dye_separation.nanofiltration.area
         )
 
         # check products
-        assert pytest.approx(0.44250, rel=1e-3) == value(
+        assert pytest.approx(0.007778, rel=1e-3) == value(
             m.fs.dye_retentate.flow_mass_comp[0, "tds"]
         )
 
@@ -195,10 +195,23 @@ class TestDyewithROFlowsheetwithoutPretreatment:
     def test_solve(self, system_frame):
         m, include_pretreatment = system_frame
 
+        print("------------------------")
+        print("Badly Scaled Vars")
+        badly_scaled_var_list = iscale.badly_scaled_var_generator(
+            m, large=1e1, small=1e-1
+        )
+        for x in badly_scaled_var_list:
+            print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
+        print("------------------------")
+        print("Infeasible Constraints")
+        print_close_to_bounds(m)
+        print_infeasible_constraints(m)
+
         results = solve(m)
 
         # check products
-        assert pytest.approx(7.8958, rel=1e-3) == value(
+        assert pytest.approx(13.1931, rel=1e-3) == value(
             m.fs.dye_retentate.flow_mass_comp[0, "H2O"]
         )
 
@@ -221,8 +234,8 @@ class TestDyewithROFlowsheetwithoutPretreatment:
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(0.620567, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(0.226899, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(0.354995, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(0.190667, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
