@@ -725,18 +725,18 @@ def export_variables(flowsheet=None, exports=None):
 
 def build_flowsheet():
     # build and solve initial flowsheet
-    m = build()
+    m, include_pretreatment = build(include_pretreatment=True)
 
-    set_operating_conditions(m)
+    set_operating_conditions(m, include_pretreatment)
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
-    initialize_system(m)
+    initialize_system(m, include_pretreatment)
 
     results = solve(m)
     assert_optimal_termination(results)
 
-    add_costing(m)
+    add_costing(m, include_pretreatment)
     assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
