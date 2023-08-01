@@ -242,9 +242,9 @@ def set_operating_conditions(m, include_pretreatment):
     desal = m.fs.desalination
 
     # feed
-    flow_vol = 120 / 3600 * pyunits.m**3 / pyunits.s
-    conc_mass_dye = 2.5 * pyunits.kg / pyunits.m**3
-    conc_mass_tds = 50.0 * pyunits.kg / pyunits.m**3
+    flow_vol = 280 / 3600 * pyunits.m**3 / pyunits.s
+    conc_mass_dye = 0.2 * pyunits.kg / pyunits.m**3
+    conc_mass_tds = 2 * pyunits.kg / pyunits.m**3
     temperature = 298 * pyunits.K
     pressure = 101325 * pyunits.Pa
 
@@ -267,6 +267,7 @@ def set_operating_conditions(m, include_pretreatment):
     dye_sep.P1.applied_pressure.fix(
         dye_sep.nanofiltration.applied_pressure.get_values()[0]
     )
+    dye_sep.P1.eta_pump.fix(0.75)  # pump efficiency [-]
     dye_sep.P1.lift_height.unfix()
 
     # desalination
@@ -425,6 +426,7 @@ def add_costing(m, include_pretreatment):
         flowsheet_costing_block=m.fs.zo_costing
     )
     dye_sep.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.zo_costing)
+    m.fs.zo_costing.pump_electricity.pump_cost["default"].fix(76)
 
     # RO Train
     # RO equipment is costed using more detailed costing package

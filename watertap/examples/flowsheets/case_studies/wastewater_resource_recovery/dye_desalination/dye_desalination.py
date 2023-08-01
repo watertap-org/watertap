@@ -111,9 +111,9 @@ def build():
 def set_operating_conditions(m):
     dye_sep = m.fs.dye_separation
     # feed
-    flow_vol = 120 / 3600 * pyunits.m**3 / pyunits.s
-    conc_mass_dye = 2.5 * pyunits.kg / pyunits.m**3
-    conc_mass_tds = 50.0 * pyunits.kg / pyunits.m**3
+    flow_vol = 280 / 3600 * pyunits.m**3 / pyunits.s
+    conc_mass_dye = 0.2 * pyunits.kg / pyunits.m**3
+    conc_mass_tds = 2 * pyunits.kg / pyunits.m**3
 
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "dye"].fix(conc_mass_dye)
@@ -128,6 +128,7 @@ def set_operating_conditions(m):
     dye_sep.P1.applied_pressure.fix(
         dye_sep.nanofiltration.applied_pressure.get_values()[0]
     )
+    dye_sep.P1.eta_pump.fix(0.75)  # pump efficiency [-]
     dye_sep.P1.lift_height.unfix()
 
     return
@@ -165,6 +166,7 @@ def add_costing(m):
     # create costing blocks
     dye_sep.nanofiltration.costing = UnitModelCostingBlock(**costing_kwargs)
     dye_sep.P1.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.zo_costing.pump_electricity.pump_cost["default"].fix(76)
 
     # aggregate unit level costs
     m.fs.zo_costing.cost_process()
