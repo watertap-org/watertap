@@ -12,6 +12,7 @@
 
 import pytest
 import idaes.logger as idaeslog
+import pyomo.environ as pyo
 from pyomo.environ import (
     ConcreteModel,
     value,
@@ -76,8 +77,8 @@ def main():
 
     # build, set, and initialize
     m = build(water_recovery=0.5)
-    results = solve(m)
-    assert_optimal_termination(results)
+    # results = solve(m)
+    # assert_optimal_termination(results)
 
     # display_state(m)
     # display_design(m)
@@ -146,11 +147,11 @@ def build(water_recovery=0.5):
     m.fs.unit.structural_parameter.fix(1200e-6)
 
     m.fs.unit.permeate_side.channel_height.fix(0.002)
-    m.fs.unit.permeate_side.spacer_porosity.fix(0.894)
+    m.fs.unit.permeate_side.spacer_porosity.fix(0.9)
     m.fs.unit.feed_side.channel_height.fix(0.002)
-    m.fs.unit.feed_side.spacer_porosity.fix(0.96)
-    # m.fs.unit.feed_side.velocity[0, 0].fix(0.1)
-    m.fs.unit.feed_side.N_Re[0, 0].fix(400)
+    m.fs.unit.feed_side.spacer_porosity.fix(0.97)
+    m.fs.unit.feed_side.velocity[0, 0].fix(0.13)
+    # m.fs.unit.feed_side.N_Re[0, 0].fix(400)
 
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling(
@@ -158,13 +159,22 @@ def build(water_recovery=0.5):
     )
 
     iscale.set_scaling_factor(m.fs.unit.area, 1e-2)
+    iscale.set_scaling_factor(m.fs.unit.feed_side.velocity[0.0, 0.0], 1e1)
+    iscale.set_scaling_factor(m.fs.unit.feed_side.velocity[0.0, 1.0], 1e1)
+    iscale.set_scaling_factor(m.fs.unit.permeate_side.velocity[0.0, 0.0], 1e1)
+    iscale.set_scaling_factor(m.fs.unit.permeate_side.velocity[0.0, 1.0], 1e1)
     calculate_scaling_factors(m)
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
     m.fs.unit.initialize()
+    # print_close_to_bounds(m)
+    # print_infeasible_constraints(m)
+
+    model_debug(m)
     print_close_to_bounds(m)
     print_infeasible_constraints(m)
+
     # Use of Degeneracy Hunter for troubleshooting model.
     # m.fs.dummy_objective = Objective(expr=0)
     # solver.options["max_iter"] = 0
@@ -190,15 +200,15 @@ def build(water_recovery=0.5):
 
     m.fs.unit.permeate_inlet.pressure[0].unfix()
 
-    # m.fs.unit.feed_side.velocity[0, 0].unfix()
-    # m.fs.unit.feed_side.velocity[0, 0].setlb(0)
-    # m.fs.unit.feed_side.velocity[0, 0].setub(1)
+    m.fs.unit.feed_side.velocity[0, 0].unfix()
+    m.fs.unit.feed_side.velocity[0, 0].setlb(0)
+    m.fs.unit.feed_side.velocity[0, 0].setub(1)
 
     m.fs.unit.area.unfix()
 
     m.fs.mass_water_recovery.fix(water_recovery)
     m.fs.unit.permeate_outlet.pressure[0].fix(1e5)
-    # m.fs.unit.feed_side.N_Re[0, 0].fix(400)
+    m.fs.unit.feed_side.N_Re[0, 0].fix(400)
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
@@ -411,6 +421,71 @@ def plot(m):
 
     fig.tight_layout()
     plt.show()
+
+
+def model_debug(model):
+
+    check_jac(model)
+
+    model.obj = pyo.Objective(expr=0)
+
+    # initial point
+    print("\nInitial Point\n")
+    solver.options["max_iter"] = 0
+    solver.solve(model, tee=False)
+    dh = DegeneracyHunter(model, solver=pyo.SolverFactory("cbc"))
+    dh.check_residuals(tol=1e-8)
+    dh.check_variable_bounds(tol=1e-8)
+
+    # solved model
+    print("\nSolved Model\n")
+    solver.options["max_iter"] = 10000
+    solver.solve(model, tee=False)
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(
+        model, large=1e1, small=1e-1
+    )
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    dh.check_residuals(tol=1e-8)
+    dh.check_variable_bounds(tol=1e-8)
+    # dh.check_rank_equality_constraints(dense=True)
+    # ds = dh.find_candidate_equations(verbose=True, tee=True)
+    # ids = dh.find_irreducible_degenerate_sets(verbose=True)
+
+    """
+    variables_near_bounds_list = variables_near_bounds_generator(model)
+    for x in variables_near_bounds_list:
+        print(x, x.value)
+    """
+
+    return model
+
+
+def check_jac(model):
+    jac, jac_scaled, nlp = iscale.constraint_autoscale_large_jac(model, min_scale=1e-8)
+    # cond_number = iscale.jacobian_cond(model, jac=jac_scaled)  # / 1e10
+    # print("--------------------------")
+    print("Extreme Jacobian entries:")
+    extreme_entries = iscale.extreme_jacobian_entries(
+        model, jac=jac_scaled, zero=1e-20, large=10
+    )
+    extreme_entries = sorted(extreme_entries, key=lambda x: x[0], reverse=True)
+
+    print("EXTREME_ENTRIES")
+    print(f"\nThere are {len(extreme_entries)} extreme Jacobian entries")
+    for i in extreme_entries:
+        print(i[0], i[1], i[2])
+
+    print("--------------------------")
+    print("Extreme Jacobian columns:")
+    extreme_cols = iscale.extreme_jacobian_columns(model, jac=jac_scaled)
+    for val, var in extreme_cols:
+        print(val, var.name)
+    print("------------------------")
+    print("Extreme Jacobian rows:")
+    extreme_rows = iscale.extreme_jacobian_rows(model, jac=jac_scaled)
+    for val, con in extreme_rows:
+        print(val, con.name)
 
 
 if __name__ == "__main__":
