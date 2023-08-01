@@ -13,12 +13,11 @@ __author__ = "Chenyu Wang"
 
 import pyomo.environ as pyo
 from pyomo.environ import (
-    units,
     value,
     assert_optimal_termination,
     units as pyunits,
 )
-from pyomo.network import Arc
+from pyomo.network import Arc, SequentialDecomposition
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
@@ -233,53 +232,63 @@ def build_flowsheet():
 
 def set_operating_conditions(m):
     # Feed inlet
-    m.fs.feed.properties[0].pressure.fix(1 * units.atm)
-    m.fs.feed.properties[0].temperature.fix(308.15 * units.K)
-    m.fs.feed.properties[0].flow_vol.fix(178.4674 * units.m**3 / units.day)
-    eps = 1e-9 * units.kg / units.m**3
+    m.fs.feed.properties[0].pressure.fix(1 * pyunits.atm)
+    m.fs.feed.properties[0].temperature.fix(308.15 * pyunits.K)
+    m.fs.feed.properties[0].flow_vol.fix(178.4674 * pyunits.m**3 / pyunits.day)
+    eps = 1e-9 * pyunits.kg / pyunits.m**3
 
     m.fs.feed.properties[0].conc_mass_comp["S_O2"].fix(eps)
-    m.fs.feed.properties[0].conc_mass_comp["S_F"].fix(0.02644 * units.kg / units.m**3)
-    m.fs.feed.properties[0].conc_mass_comp["S_A"].fix(0.01766 * units.kg / units.m**3)
-    m.fs.feed.properties[0].conc_mass_comp["S_I"].fix(0.02723 * units.kg / units.m**3)
+    m.fs.feed.properties[0].conc_mass_comp["S_F"].fix(
+        0.02644 * pyunits.kg / pyunits.m**3
+    )
+    m.fs.feed.properties[0].conc_mass_comp["S_A"].fix(
+        0.01766 * pyunits.kg / pyunits.m**3
+    )
+    m.fs.feed.properties[0].conc_mass_comp["S_I"].fix(
+        0.02723 * pyunits.kg / pyunits.m**3
+    )
     m.fs.feed.properties[0].conc_mass_comp["S_NH4"].fix(
-        0.01858 * units.kg / units.m**3
+        0.01858 * pyunits.kg / pyunits.m**3
     )
     m.fs.feed.properties[0].conc_mass_comp["S_N2"].fix(
-        0.00507 * units.kg / units.m**3
+        0.00507 * pyunits.kg / pyunits.m**3
     )
     m.fs.feed.properties[0].conc_mass_comp["S_NO3"].fix(
-        0.00002 * units.kg / units.m**3
+        0.00002 * pyunits.kg / pyunits.m**3
     )
     m.fs.feed.properties[0].conc_mass_comp["S_PO4"].fix(
-        0.00469 * units.kg / units.m**3
+        0.00469 * pyunits.kg / pyunits.m**3
     )
     m.fs.feed.properties[0].conc_mass_comp["S_IC"].fix(
-        0.07899 * units.kg / units.m**3
+        0.07899 * pyunits.kg / pyunits.m**3
     )
 
     m.fs.feed.properties[0].conc_mass_comp["X_I"].fix(
-        10.96441 * units.kg / units.m**3
+        10.96441 * pyunits.kg / pyunits.m**3
     )
     m.fs.feed.properties[0].conc_mass_comp["X_S"].fix(
-        19.08476 * units.kg / units.m**3
+        19.08476 * pyunits.kg / pyunits.m**3
     )
-    m.fs.feed.properties[0].conc_mass_comp["X_H"].fix(9.47939 * units.kg / units.m**3)
+    m.fs.feed.properties[0].conc_mass_comp["X_H"].fix(
+        9.47939 * pyunits.kg / pyunits.m**3
+    )
     m.fs.feed.properties[0].conc_mass_comp["X_PAO"].fix(
-        3.8622 * units.kg / units.m**3
+        3.8622 * pyunits.kg / pyunits.m**3
     )
     m.fs.feed.properties[0].conc_mass_comp["X_PP"].fix(
-        0.45087 * units.kg / units.m**3
+        0.45087 * pyunits.kg / pyunits.m**3
     )
     m.fs.feed.properties[0].conc_mass_comp["X_PHA"].fix(
-        0.02464 * units.kg / units.m**3
+        0.02464 * pyunits.kg / pyunits.m**3
     )
     m.fs.feed.properties[0].conc_mass_comp["X_AUT"].fix(
-        0.33379 * units.kg / units.m**3
+        0.33379 * pyunits.kg / pyunits.m**3
     )
-    m.fs.feed.properties[0].conc_mass_comp["S_K"].fix(0.01979 * units.kg / units.m**3)
+    m.fs.feed.properties[0].conc_mass_comp["S_K"].fix(
+        0.01979 * pyunits.kg / pyunits.m**3
+    )
     m.fs.feed.properties[0].conc_mass_comp["S_Mg"].fix(
-        0.18987 * units.kg / units.m**3
+        0.18987 * pyunits.kg / pyunits.m**3
     )
 
     print("DOF before AD:", degrees_of_freedom(m))
@@ -290,7 +299,7 @@ def set_operating_conditions(m):
     m.fs.AD.liquid_outlet.temperature.fix(308.15)
 
     # ElectroNP
-    m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * units.kWh / units.kg)
+    m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * pyunits.kWh / pyunits.kg)
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
     # Costing
@@ -299,18 +308,28 @@ def set_operating_conditions(m):
 
 def initialize_system(m):
     # Initialize
-    propagate_state(m.fs.stream_feed_thickener)
-    m.fs.thickener.initialize()
-    propagate_state(m.fs.stream_thickener_translator)
-    m.fs.translator_asm2d_adm1.initialize(outlvl=idaeslog.INFO_HIGH)
-    propagate_state(m.fs.stream_translator_AD)
-    m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH)
-    propagate_state((m.fs.stream_AD_translator))
-    m.fs.translator_adm1_asm2d.initialize(outlvl=idaeslog.INFO_HIGH)
-    propagate_state(m.fs.stream_translator_dewater)
-    m.fs.dewater.initialize(outlvl=idaeslog.INFO_HIGH)
-    propagate_state(m.fs.stream_dewater_electroNP)
-    m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH)
+    seq = SequentialDecomposition()
+    seq.options.select_tear_method = "heuristic"
+    seq.options.tear_method = "Wegstein"
+    seq.options.iterLim = 0
+
+    def function(unit):
+        unit.initialize(outlvl=idaeslog.INFO)
+
+    seq.run(m, function)
+
+    # propagate_state(m.fs.stream_feed_thickener)
+    # m.fs.thickener.initialize()
+    # propagate_state(m.fs.stream_thickener_translator)
+    # m.fs.translator_asm2d_adm1.initialize(outlvl=idaeslog.INFO_HIGH)
+    # propagate_state(m.fs.stream_translator_AD)
+    # m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH)
+    # propagate_state((m.fs.stream_AD_translator))
+    # m.fs.translator_adm1_asm2d.initialize(outlvl=idaeslog.INFO_HIGH)
+    # propagate_state(m.fs.stream_translator_dewater)
+    # m.fs.dewater.initialize(outlvl=idaeslog.INFO_HIGH)
+    # propagate_state(m.fs.stream_dewater_electroNP)
+    # m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH)
     m.fs.costing.initialize()
 
 
@@ -382,7 +401,7 @@ def display_costing(m):
     electricity_intensity = value(
         pyunits.convert(
             m.fs.costing.aggregate_flow_electricity / m.fs.AD.inlet.flow_vol[0],
-            to_units=units.kWh / units.m**3,
+            to_units=pyunits.kWh / pyunits.m**3,
         )
     )
     print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/m3")
