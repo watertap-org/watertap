@@ -100,8 +100,8 @@ class TestParallelWriterManager:
     def test_h5_read_write(self, tmp_path):
         ps = ParameterSweep()
 
-        tmp_path = _get_rank0_path(ps.comm, tmp_path)
-        h5_fname = "h5_test_{0}.h5".format(ps.rank)
+        tmp_path = _get_rank0_path(None, tmp_path)
+        h5_fname = "h5_test_{0}.h5".format(ps.parallel_manager.get_rank())
 
         ps_writer = ParameterSweepWriter(
             ps.parallel_manager,
@@ -180,8 +180,8 @@ class TestParallelWriterManager:
     def test_h5_parents(self, tmp_path):
         ps = ParameterSweep()
 
-        tmp_path = _get_rank0_path(ps.comm, tmp_path)
-        h5_fname = "h5_test_{0}.h5".format(ps.rank)
+        tmp_path = _get_rank0_path(None, tmp_path)
+        h5_fname = "h5_test_{0}.h5".format(ps.parallel_manager.get_rank())
         h5_parent_groups = ["loop1", "loop2"]
 
         embedded_dict = {

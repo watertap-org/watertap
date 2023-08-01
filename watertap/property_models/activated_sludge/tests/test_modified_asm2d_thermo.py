@@ -11,7 +11,7 @@
 #################################################################################
 """
 Tests for modified ASM2d thermo property package.
-Author: Marcus Holly
+Author: Marcus Holly, Adam Atia
 """
 
 import pytest
@@ -29,6 +29,7 @@ from idaes.core.util.model_statistics import (
 )
 
 from idaes.core.solvers import get_solver
+from watertap.property_models.tests.property_test_harness import PropertyAttributeError
 
 
 # -----------------------------------------------------------------------------
@@ -88,6 +89,70 @@ class TestParamBlock(object):
         assert isinstance(model.params.temperature_ref, Param)
         assert value(model.params.temperature_ref) == 298.15
 
+        assert len(model.params.particulate_component_set) == 7
+        assert len(model.params.non_particulate_component_set) == 12
+        assert len(model.params.tss_component_set) == 7
+        for i in model.params.particulate_component_set:
+            assert i in [
+                "X_AUT",
+                "X_H",
+                "X_I",
+                "X_PAO",
+                "X_PHA",
+                "X_PP",
+                "X_S",
+            ]
+        for i in model.params.tss_component_set:
+            assert i in [
+                "X_AUT",
+                "X_H",
+                "X_I",
+                "X_PAO",
+                "X_PHA",
+                "X_PP",
+                "X_S",
+            ]
+
+        for i in model.params.non_particulate_component_set:
+            assert i in [
+                "S_A",
+                "S_F",
+                "S_I",
+                "S_N2",
+                "S_NH4",
+                "S_NO3",
+                "S_O2",
+                "S_PO4",
+                "S_K",
+                "S_Mg",
+                "S_IC",
+                "H2O",
+            ]
+
+        assert isinstance(model.params.CODtoVSS_XI, Var)
+        assert model.params.CODtoVSS_XI.is_fixed()
+        assert value(model.params.CODtoVSS_XI) == 1.5686
+
+        assert isinstance(model.params.CODtoVSS_XS, Var)
+        assert model.params.CODtoVSS_XS.is_fixed()
+        assert value(model.params.CODtoVSS_XS) == 1.5686
+
+        assert isinstance(model.params.CODtoVSS_XBM, Var)
+        assert model.params.CODtoVSS_XBM.is_fixed()
+        assert value(model.params.CODtoVSS_XBM) == 1.3072
+
+        assert isinstance(model.params.CODtoVSS_XPHA, Var)
+        assert model.params.CODtoVSS_XPHA.is_fixed()
+        assert value(model.params.CODtoVSS_XPHA) == 1.9608
+
+        assert isinstance(model.params.ISS_P, Var)
+        assert model.params.ISS_P.is_fixed()
+        assert value(model.params.ISS_P) == 3.23
+
+        assert isinstance(model.params.f_ISS_BM, Var)
+        assert model.params.f_ISS_BM.is_fixed()
+        assert value(model.params.f_ISS_BM) == 0.15
+
 
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
@@ -135,6 +200,26 @@ class TestStateBlock(object):
                 "X_S",
             ]
             assert value(model.props[1].conc_mass_comp[i]) == 0.1
+
+        metadata = model.params.get_metadata().properties
+
+        # check that properties are not built if not demanded
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if model.props[1].is_property_constructed(v.name):
+                    raise PropertyAttributeError(
+                        "Property {v_name} is an on-demand property, but was found "
+                        "on the stateblock without being demanded".format(v_name=v.name)
+                    )
+
+        # check that properties are built if demanded
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if not hasattr(model.props[1], v.name):
+                    raise PropertyAttributeError(
+                        "Property {v_name} is an on-demand property, but was not built "
+                        "when demanded".format(v_name=v.name)
+                    )
 
     @pytest.mark.unit
     def test_get_material_flow_terms(self, model):

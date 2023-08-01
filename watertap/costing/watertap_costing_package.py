@@ -176,14 +176,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=pyo.units.kg / pyo.units.kWh,
         )
 
-        self.magnesium_chloride_cost = pyo.Param(
-            mutable=True,
-            initialize=0.0786,
-            doc="Magnesium chloride cost",
-            units=pyo.units.USD_2020 / pyo.units.kg,
-        )
-        self.add_defined_flow("magnesium chloride", self.magnesium_chloride_cost)
-
         # fix the parameters
         self.fix_all_vars()
 
@@ -274,13 +266,27 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             == self.factor_maintenance_labor_chemical * self.total_capital_cost
         )
 
-        self.total_operating_cost_constraint = pyo.Constraint(
-            expr=self.total_operating_cost
-            == self.maintenance_labor_chemical_operating_cost
-            + self.aggregate_fixed_operating_cost
-            + self.aggregate_variable_operating_cost
-            + sum(self.aggregate_flow_costs.values()) * self.utilization_factor
-        )
+        if (
+            pyo.units.get_units(sum(self.aggregate_flow_costs.values()))
+        ) == pyo.units.dimensionless:
+            self.total_operating_cost_constraint = pyo.Constraint(
+                expr=self.total_operating_cost
+                == self.maintenance_labor_chemical_operating_cost
+                + self.aggregate_fixed_operating_cost
+                + self.aggregate_variable_operating_cost
+                + sum(self.aggregate_flow_costs.values())
+                * self.base_currency
+                / self.base_period
+                * self.utilization_factor
+            )
+        else:
+            self.total_operating_cost_constraint = pyo.Constraint(
+                expr=self.total_operating_cost
+                == self.maintenance_labor_chemical_operating_cost
+                + self.aggregate_fixed_operating_cost
+                + self.aggregate_variable_operating_cost
+                + sum(self.aggregate_flow_costs.values()) * self.utilization_factor
+            )
 
     def initialize_build(self):
         calculate_variable_from_constraint(

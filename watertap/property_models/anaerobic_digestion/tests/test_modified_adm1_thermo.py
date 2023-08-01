@@ -25,6 +25,7 @@ from watertap.property_models.anaerobic_digestion.modified_adm1_properties impor
     ModifiedADM1ParameterBlock,
     ModifiedADM1StateBlock,
 )
+from watertap.property_models.tests.property_test_harness import PropertyAttributeError
 from idaes.core.util.model_statistics import (
     fixed_variables_set,
     activated_constraints_set,
@@ -103,6 +104,40 @@ class TestParamBlock(object):
         assert isinstance(model.params.temperature_ref, Param)
         assert value(model.params.temperature_ref) == 298.15
 
+        assert isinstance(model.params.CODtoVSS_XI, Var)
+        assert model.params.CODtoVSS_XI.is_fixed()
+        assert value(model.params.CODtoVSS_XI) == 1.5686
+
+        assert not hasattr(model, "params.CODtoVSS_XS")
+
+        assert isinstance(model.params.CODtoVSS_XBM, Var)
+        assert model.params.CODtoVSS_XBM.is_fixed()
+        assert value(model.params.CODtoVSS_XBM) == 1.3072
+
+        assert isinstance(model.params.CODtoVSS_XPHA, Var)
+        assert model.params.CODtoVSS_XPHA.is_fixed()
+        assert value(model.params.CODtoVSS_XPHA) == 1.9608
+
+        assert isinstance(model.params.CODtoVSS_XCH, Var)
+        assert model.params.CODtoVSS_XCH.is_fixed()
+        assert value(model.params.CODtoVSS_XCH) == 1.5686
+
+        assert isinstance(model.params.CODtoVSS_XPR, Var)
+        assert model.params.CODtoVSS_XPR.is_fixed()
+        assert value(model.params.CODtoVSS_XPR) == 1.5686
+
+        assert isinstance(model.params.CODtoVSS_XLI, Var)
+        assert model.params.CODtoVSS_XLI.is_fixed()
+        assert value(model.params.CODtoVSS_XLI) == 1.5686
+
+        assert isinstance(model.params.ISS_P, Var)
+        assert model.params.ISS_P.is_fixed()
+        assert value(model.params.ISS_P) == 3.23
+
+        assert isinstance(model.params.f_ISS_BM, Var)
+        assert model.params.f_ISS_BM.is_fixed()
+        assert value(model.params.f_ISS_BM) == 0.15
+
 
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
@@ -167,6 +202,26 @@ class TestStateBlock(object):
                 "S_Mg",
             ]
             assert value(model.props[1].conc_mass_comp[i]) == 0.001
+
+        metadata = model.params.get_metadata().properties
+
+        # check that properties are not built if not demanded
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if model.props[1].is_property_constructed(v.name):
+                    raise PropertyAttributeError(
+                        "Property {v_name} is an on-demand property, but was found "
+                        "on the stateblock without being demanded".format(v_name=v.name)
+                    )
+
+        # check that properties are built if demanded
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if not hasattr(model.props[1], v.name):
+                    raise PropertyAttributeError(
+                        "Property {v_name} is an on-demand property, but was not built "
+                        "when demanded".format(v_name=v.name)
+                    )
 
     @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
