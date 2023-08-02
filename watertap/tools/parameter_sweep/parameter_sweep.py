@@ -334,6 +334,8 @@ class _ParameterSweepBase(ABC):
             for output_key in global_results_dict["outputs"].keys()
             if output_key not in global_results_dict["sweep_params"].keys()
         ]
+        print("\nfiltered_output_keys = ", filtered_output_keys)
+        print()
         n_outputs = len(filtered_output_keys)
 
         global_results = np.zeros((num_cases, n_outputs), dtype=float)
@@ -759,9 +761,15 @@ class ParameterSweep(_ParameterSweepBase):
             np.asarray([]) for _ in range(len(list(outputs.values())[0]["value"]))
         ]
         for var_name, output in outputs.items():
-            if var_name not in sweep_params.keys() or var_name not in [
+            if var_name not in list(sweep_params.keys()) and var_name not in [
                 obj.pyomo_object.name for obj in sweep_params.values()
             ]:
+                # print("var_name = ", var_name)
+                # print("var_name not in list(sweep_params.keys()) = ", var_name not in list(sweep_params.keys()))
+                # val_names = [obj.pyomo_object.name for obj in sweep_params.values()]
+                # print("val_names = ", val_names)
+                # print("var_name not in val_names = ", var_name not in val_names)
+                # print("sweep_params.keys() =  ", sweep_params.keys())
                 for i in range(len(output["value"])):
                     combined_outputs[i] = np.append(
                         combined_outputs[i], output["value"][i]
