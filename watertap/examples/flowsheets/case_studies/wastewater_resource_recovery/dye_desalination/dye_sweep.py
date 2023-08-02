@@ -47,9 +47,9 @@ def run_analysis(
     interpolate_nan_outputs = bool(interpolate_nan_outputs)
     withRO = bool(withRO)
 
-    if not withRO and case_num > 7:
+    if not withRO and case_num > 11:
         raise ValueError(
-            "Case numbers 8 and above are only for dye_desalination_withRO. Please set 'withRO=True'"
+            "Case numbers 12 and above are only for dye_desalination_withRO. Please set 'withRO=True'"
         )
 
     # select flowsheet
@@ -119,71 +119,8 @@ def run_analysis(
         sweep_params["electricity_cost"] = LinearSample(
             m.fs.zo_costing.electricity_cost, 0.0, 0.25, nx
         )
+
     elif case_num == 8:
-        m.fs.zo_costing.recovered_water_cost.unfix()
-        sweep_params["recovered_water_value"] = LinearSample(
-            m.fs.zo_costing.recovered_water_cost, 0.0, 1.5, nx
-        )
-        m.fs.zo_costing.dye_mass_cost.unfix()
-        sweep_params["recovered_dye_value"] = LinearSample(
-            m.fs.zo_costing.dye_mass_cost, 0.0, 1, nx
-        )
-    elif case_num == 9:
-        m.fs.zo_costing.recovered_water_cost.unfix()
-        sweep_params["recovered_water_value"] = LinearSample(
-            m.fs.zo_costing.recovered_water_cost, 0.0, 1.5, nx
-        )
-        m.fs.zo_costing.waste_disposal_cost.unfix()
-        sweep_params["waste_disposal_cost"] = LinearSample(
-            m.fs.zo_costing.waste_disposal_cost, 0.0, 10, nx
-        )
-    elif case_num == 10:
-        m.fs.zo_costing.electricity_cost.unfix()
-        m.fs.zo_costing.recovered_water_cost.unfix()
-        sweep_params["recovered_water_value"] = LinearSample(
-            m.fs.zo_costing.recovered_water_cost, 0.0, 1.5, nx
-        )
-        sweep_params["electricity_cost"] = LinearSample(
-            m.fs.zo_costing.electricity_cost, 0.0, 0.25, nx
-        )
-    elif case_num == 11:
-        m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"].unfix()
-        sweep_params["NF_dye_removal"] = LinearSample(
-            m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
-            0.2,
-            1,
-            nx,
-        )
-        m.fs.desalination.RO.A_comp.unfix()
-        sweep_params["RO_permeability"] = LinearSample(
-            m.fs.desalination.RO.A_comp, 1e-12, 1e-11, nx
-        )
-    elif case_num == 12:
-        desal = m.fs.desalination
-        desal.RO.recovery_vol_phase[0, "Liq"].unfix()
-        desal.RO.feed_side.velocity[0, 0].unfix()
-
-        desal.P2.control_volume.properties_out[0].pressure.unfix()
-        desal.P2.control_volume.properties_out[0].pressure.setub(8300000)
-        desal.P2.control_volume.properties_out[0].pressure.setlb(100000)
-
-        desal.RO.area.unfix()
-        desal.RO.area.setub(5000)
-        desal.RO.area.setlb(50)
-
-        sweep_params["RO_recovery"] = LinearSample(
-            m.fs.desalination.RO.recovery_vol_phase[0, "Liq"], 0.1, 0.75, nx
-        )
-    elif case_num == 13:
-        m.fs.feed.conc_mass_comp[0, "dye"].unfix()
-        sweep_params["inlet_dye_concentration"] = LinearSample(
-            m.fs.feed.conc_mass_comp[0, "dye"], 0.1, 5, nx
-        )
-        m.fs.feed.conc_mass_comp[0, "tds"].unfix()
-        sweep_params["inlet_salt_concentration"] = LinearSample(
-            m.fs.feed.conc_mass_comp[0, "tds"], 1, 10, nx
-        )
-    elif case_num == 14:
         m.fs.dye_separation.P1.eta_pump.unfix()
         sweep_params["pump_efficiency"] = LinearSample(
             m.fs.dye_separation.P1.eta_pump, 0.5, 1, nx
@@ -192,12 +129,12 @@ def run_analysis(
         sweep_params["motor_efficiency"] = LinearSample(
             m.fs.dye_separation.P1.eta_motor, 0.5, 1, nx
         )
-    elif case_num == 15:
+    elif case_num == 9:
         m.fs.zo_costing.pump_electricity.pump_cost["default"].unfix()
         sweep_params["pump_sizing_cost"] = LinearSample(
             m.fs.zo_costing.pump_electricity.pump_cost["default"], 50, 100, nx
         )
-    elif case_num == 16:
+    elif case_num == 10:
         m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"].unfix()
         sweep_params["NF_dye_removal"] = LinearSample(
             m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
@@ -212,7 +149,7 @@ def run_analysis(
             0.5,
             nx,
         )
-    elif case_num == 17:
+    elif case_num == 11:
         m.fs.zo_costing.nanofiltration.membrane_cost["rHGO_dye_rejection"].unfix()
         sweep_params["membrane_cost"] = LinearSample(
             m.fs.zo_costing.nanofiltration.membrane_cost["rHGO_dye_rejection"],
@@ -228,6 +165,70 @@ def run_analysis(
             5,
             75,
             nx,
+        )
+    elif case_num == 12:
+        m.fs.zo_costing.recovered_water_cost.unfix()
+        sweep_params["recovered_water_value"] = LinearSample(
+            m.fs.zo_costing.recovered_water_cost, 0.0, 1.5, nx
+        )
+        m.fs.zo_costing.dye_mass_cost.unfix()
+        sweep_params["recovered_dye_value"] = LinearSample(
+            m.fs.zo_costing.dye_mass_cost, 0.0, 1, nx
+        )
+    elif case_num == 13:
+        m.fs.zo_costing.recovered_water_cost.unfix()
+        sweep_params["recovered_water_value"] = LinearSample(
+            m.fs.zo_costing.recovered_water_cost, 0.0, 1.5, nx
+        )
+        m.fs.zo_costing.waste_disposal_cost.unfix()
+        sweep_params["waste_disposal_cost"] = LinearSample(
+            m.fs.zo_costing.waste_disposal_cost, 0.0, 10, nx
+        )
+    elif case_num == 14:
+        m.fs.zo_costing.electricity_cost.unfix()
+        m.fs.zo_costing.recovered_water_cost.unfix()
+        sweep_params["recovered_water_value"] = LinearSample(
+            m.fs.zo_costing.recovered_water_cost, 0.0, 1.5, nx
+        )
+        sweep_params["electricity_cost"] = LinearSample(
+            m.fs.zo_costing.electricity_cost, 0.0, 0.25, nx
+        )
+    elif case_num == 15:
+        m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"].unfix()
+        sweep_params["NF_dye_removal"] = LinearSample(
+            m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
+            0.2,
+            1,
+            nx,
+        )
+        m.fs.desalination.RO.A_comp.unfix()
+        sweep_params["RO_permeability"] = LinearSample(
+            m.fs.desalination.RO.A_comp, 1e-12, 1e-11, nx
+        )
+    elif case_num == 16:
+        desal = m.fs.desalination
+        desal.RO.recovery_vol_phase[0, "Liq"].unfix()
+        desal.RO.feed_side.velocity[0, 0].unfix()
+
+        desal.P2.control_volume.properties_out[0].pressure.unfix()
+        desal.P2.control_volume.properties_out[0].pressure.setub(8300000)
+        desal.P2.control_volume.properties_out[0].pressure.setlb(100000)
+
+        desal.RO.area.unfix()
+        desal.RO.area.setub(5000)
+        desal.RO.area.setlb(50)
+
+        sweep_params["RO_recovery"] = LinearSample(
+            m.fs.desalination.RO.recovery_vol_phase[0, "Liq"], 0.1, 0.75, nx
+        )
+    elif case_num == 17:
+        m.fs.feed.conc_mass_comp[0, "dye"].unfix()
+        sweep_params["inlet_dye_concentration"] = LinearSample(
+            m.fs.feed.conc_mass_comp[0, "dye"], 0.1, 5, nx
+        )
+        m.fs.feed.conc_mass_comp[0, "tds"].unfix()
+        sweep_params["inlet_salt_concentration"] = LinearSample(
+            m.fs.feed.conc_mass_comp[0, "tds"], 1, 10, nx
         )
 
     else:
@@ -383,5 +384,5 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
 
 
 if __name__ == "__main__":
-    results, model = main(case_num=14, nx=17)
+    results, model = main(case_num=8, nx=17)
     # results, sweep_params, m = run_analysis()
