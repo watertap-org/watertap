@@ -77,12 +77,15 @@ def main():
 
     # build, set, and initialize
     m = build(water_recovery=0.5)
-    # results = solve(m)
-    # assert_optimal_termination(results)
+    # model_debug(m)
+    # print_close_to_bounds(m)
+    # print_infeasible_constraints(m)
+    results = solve(m)
+    assert_optimal_termination(results)
 
-    # display_state(m)
-    # display_design(m)
-    # plot(m)
+    display_state(m)
+    display_design(m)
+    plot(m)
     return m
 
 
@@ -147,11 +150,19 @@ def build(water_recovery=0.5):
     m.fs.unit.structural_parameter.fix(1200e-6)
 
     m.fs.unit.permeate_side.channel_height.fix(0.002)
-    m.fs.unit.permeate_side.spacer_porosity.fix(0.9)
+    m.fs.unit.permeate_side.spacer_porosity.fix(0.97)
     m.fs.unit.feed_side.channel_height.fix(0.002)
     m.fs.unit.feed_side.spacer_porosity.fix(0.97)
-    m.fs.unit.feed_side.velocity[0, 0].fix(0.13)
-    # m.fs.unit.feed_side.N_Re[0, 0].fix(400)
+    # m.fs.unit.feed_side.velocity[0, 0].fix(0.13)
+    m.fs.unit.feed_side.N_Re[0, 0].fix(400)
+
+    # m.fs.unit.feed_side.K[0.0, 0.0, "NaCl"].setlb(0)
+    # m.fs.unit.feed_side.K[0.0, 1.0, "NaCl"].setlb(0)
+    # m.fs.unit.permeate_side.K[0.0, 0.0, "NaCl"].setlb(0)
+    # m.fs.unit.permeate_side.K[0.0, 1.0, "NaCl"].setlb(0)
+    m.fs.unit.feed_side.dP_dx[0.0, 1.0].setub(None)
+    # m.fs.unit.permeate_side.dP_dx[0.0, 0.0].setub(None)
+    m.fs.unit.permeate_side.dP_dx[0.0, 1.0].setub(None)
 
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling(
@@ -159,56 +170,22 @@ def build(water_recovery=0.5):
     )
 
     iscale.set_scaling_factor(m.fs.unit.area, 1e-2)
-    iscale.set_scaling_factor(m.fs.unit.feed_side.velocity[0.0, 0.0], 1e1)
-    iscale.set_scaling_factor(m.fs.unit.feed_side.velocity[0.0, 1.0], 1e1)
-    iscale.set_scaling_factor(m.fs.unit.permeate_side.velocity[0.0, 0.0], 1e1)
-    iscale.set_scaling_factor(m.fs.unit.permeate_side.velocity[0.0, 1.0], 1e1)
     calculate_scaling_factors(m)
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
     m.fs.unit.initialize()
-    # print_close_to_bounds(m)
-    # print_infeasible_constraints(m)
-
-    model_debug(m)
-    print_close_to_bounds(m)
-    print_infeasible_constraints(m)
-
-    # Use of Degeneracy Hunter for troubleshooting model.
-    # m.fs.dummy_objective = Objective(expr=0)
-    # solver.options["max_iter"] = 0
-    # solver.solve(m, tee=True)
-    # dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
-    # dh.check_residuals(tol=0.1)
-
-    m.fs.mass_water_recovery = Var(
-        initialize=0.5,
-        bounds=(0, 1),
-        domain=NonNegativeReals,
-        units=pyunits.dimensionless,
-        doc="System Volumetric Recovery of Water",
-    )
-    m.fs.eq_mass_water_recovery = Constraint(
-        expr=m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        * m.fs.mass_water_recovery
-        == (
-            m.fs.unit.permeate_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-            - m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        )
-    )
 
     m.fs.unit.permeate_inlet.pressure[0].unfix()
 
-    m.fs.unit.feed_side.velocity[0, 0].unfix()
-    m.fs.unit.feed_side.velocity[0, 0].setlb(0)
-    m.fs.unit.feed_side.velocity[0, 0].setub(1)
+    # m.fs.unit.feed_side.velocity[0, 0].unfix()
+    # m.fs.unit.feed_side.velocity[0, 0].setlb(0)
+    # m.fs.unit.feed_side.velocity[0, 0].setub(1)
 
     m.fs.unit.area.unfix()
 
-    m.fs.mass_water_recovery.fix(water_recovery)
+    m.fs.unit.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(water_recovery)
     m.fs.unit.permeate_outlet.pressure[0].fix(1e5)
-    m.fs.unit.feed_side.N_Re[0, 0].fix(400)
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
@@ -435,7 +412,7 @@ def model_debug(model):
     solver.solve(model, tee=False)
     dh = DegeneracyHunter(model, solver=pyo.SolverFactory("cbc"))
     dh.check_residuals(tol=1e-8)
-    dh.check_variable_bounds(tol=1e-8)
+    # dh.check_variable_bounds(tol=1e-8)
 
     # solved model
     print("\nSolved Model\n")
@@ -447,7 +424,7 @@ def model_debug(model):
     for x in badly_scaled_var_list:
         print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
     dh.check_residuals(tol=1e-8)
-    dh.check_variable_bounds(tol=1e-8)
+    # dh.check_variable_bounds(tol=1e-8)
     # dh.check_rank_equality_constraints(dense=True)
     # ds = dh.find_candidate_equations(verbose=True, tee=True)
     # ids = dh.find_irreducible_degenerate_sets(verbose=True)
