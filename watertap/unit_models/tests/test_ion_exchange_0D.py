@@ -500,7 +500,7 @@ class TestIonExchangeFreundlich:
             "flow_mol_phase_comp", 1e-4, index=("Liq", "H2O")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e5, index=("Liq", "Cl_-")
+            "flow_mol_phase_comp", 1e6, index=("Liq", "Cl_-")
         )
         calculate_scaling_factors(m)
 
