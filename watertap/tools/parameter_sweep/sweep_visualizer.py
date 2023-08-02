@@ -17,15 +17,15 @@ import matplotlib.pyplot as plt
 
 def line_plot(data_path, xlabel, ylabel, xunit=None, yunit=None, filetype=".pdf"):
     """
-    Description: plots a simple line and returns the figure object
-    params:
-        data_path - path to raw data csv
-        xlabel - title of the independent variable column
-        ylabel - title of the dependent variable column
-        save_path - path to save figure with default settings
-    return:
-        fig - figure object
-        ax - axes object
+    Plots a simple line and returns the figure object
+    Args:
+        data_path : path to raw data csv
+        xlabel : title of the independent variable column
+        ylabel : title of the dependent variable column
+        filetype : filetype of the save file (pdf, csv, etc.)
+    Returns:
+        fig : figure object
+        ax : axes object
     """
     # read csv data into dataframe
     df = pd.read_csv(data_path)
@@ -65,19 +65,19 @@ def contour_plot(
     filetype=".pdf",
 ):
     """
-    Description: plots a filled contour and returns the figure object
-    params:
-        data_path - path to raw data csv
-        xlabel - title of the independent variable column
-        ylabel - title of the dependent variable column
-        zlabel - title of the dependent variable column
-        levels - number of iso-lines
-        cmap - color scheme defined by matplotlib
-            https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html
-        save_path - path to save figure with default settings
-    return:
-        fig - figure object
-        ax - axes object
+    Plots a filled contour and returns the figure object
+    Args:
+        data_path : path to raw data csv
+        xlabel : title of the independent variable column
+        ylabel : title of the dependent variable column
+        zlabel : title of the dependent variable column
+        levels : number of iso-lines
+        cmap : color scheme defined by matplotlib
+               https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html
+        filetype : filetype of the save file (pdf, csv, etc.)
+    Returns:
+        fig : figure object
+        ax : axes object
     """
     # read csv data into dataframe
     df = pd.read_csv(data_path)
