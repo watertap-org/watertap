@@ -36,7 +36,7 @@ def test_dye_sweep(case_num, tmp_path):
         nx=1,
         interpolate_nan_outputs=False,
         withRO=withRO,
-        save_path=temp.name,
+        output_filename=temp.name,
     )
     os.remove(temp.name)
     os.chdir(cwd)
