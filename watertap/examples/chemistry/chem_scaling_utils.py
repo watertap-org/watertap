@@ -17,13 +17,11 @@ from idaes.core.util import scaling as iscale
 from pyomo.environ import value
 
 from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
-    log_power_law_equil,
     power_law_equil,
-    log_solubility_product,
     solubility_product,
 )
 
-__author__ = "Austin Ladshaw"
+__author__ = "Austin Ladshaw, Xinhong Liu"
 
 ## Helper function for setting eps values associated with solubility_product functions
 # NOTE: Function does nothing if no solubility reactions are present
