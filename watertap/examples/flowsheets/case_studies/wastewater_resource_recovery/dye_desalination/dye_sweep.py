@@ -13,10 +13,8 @@ from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination as dye_desalination
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination_withRO as dye_desalination_withRO
 
-from pyomo.environ import units as pyunits
 import os
 from watertap.tools.parameter_sweep.sweep_visualizer import line_plot, contour_plot
-import matplotlib.pyplot as plt
 
 
 def set_up_sensitivity(m, withRO):

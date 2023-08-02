@@ -72,8 +72,7 @@ def contour_plot(
         ylabel : title of the dependent variable column
         zlabel : title of the dependent variable column
         levels : number of iso-lines
-        cmap : color scheme defined by matplotlib
-               https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html
+        cmap : color scheme defined by matplotlib at https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html
         filetype : filetype of the save file (pdf, csv, etc.)
     Returns:
         fig : figure object
