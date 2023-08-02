@@ -239,8 +239,6 @@ def test_bad_differential_sweep_specs(model, tmp_path):
 @pytest.mark.component
 def test_differential_sweep_outputs(model):
 
-    comm = MPI.COMM_WORLD
-
     m = model
     m.fs.slack_penalty = 1000.0
     m.fs.slack.setub(0)
@@ -262,7 +260,6 @@ def test_differential_sweep_outputs(model):
     outputs = {"fs.output[c]": m.fs.output["c"]}
 
     ps = DifferentialParameterSweep(
-        comm=comm,
         optimize_function=_optimization,
         reinitialize_function=_reinitialize,
         reinitialize_kwargs={"slack_penalty": 10.0},
@@ -314,7 +311,6 @@ def test_differential_parameter_sweep(model, tmp_path):
     }
 
     ps = DifferentialParameterSweep(
-        comm=comm,
         csv_results_file_name=csv_results_file_name,
         h5_results_file_name=h5_results_file_name,
         debugging_data_dir=tmp_path,
@@ -333,7 +329,7 @@ def test_differential_parameter_sweep(model, tmp_path):
         seed=0,
     )
 
-    if ps.rank == 0:
+    if ps.parallel_manager.is_root_process():
 
         truth_dict = {
             "outputs": {
@@ -665,7 +661,7 @@ def test_differential_parameter_sweep(model, tmp_path):
         read_dict = _read_output_h5(h5_results_file_name)
         _assert_h5_csv_agreement(csv_results_file_name, read_dict)
         _assert_dictionary_correctness(global_results_dict, read_dict)
-        if ps.parallel_manager.number_of_processes() > 1:
+        if ps.parallel_manager.number_of_worker_processes() > 1:
             # Compare the sorted dictionary. We need to work with a sorted dictionary
             # because the differential parameter sweep produces a global dictionary
             # that is jumbled by the number of procs.
@@ -705,7 +701,6 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
     }
 
     ps = DifferentialParameterSweep(
-        comm=comm,
         csv_results_file_name=csv_results_file_name,
         h5_results_file_name=h5_results_file_name,
         debugging_data_dir=tmp_path,
@@ -725,7 +720,7 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
         seed=0,
     )
 
-    if ps.rank == 0:
+    if ps.parallel_manager.is_root_process():
 
         truth_dict = {
             "outputs": {
@@ -1165,7 +1160,7 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
         read_dict = _read_output_h5(h5_results_file_name)
         _assert_h5_csv_agreement(csv_results_file_name, read_dict)
         _assert_dictionary_correctness(global_results_dict, read_dict)
-        if ps.parallel_manager.number_of_processes() > 1:
+        if ps.parallel_manager.number_of_worker_processes() > 1:
             # Compare the sorted dictionary. We need to work with a sorted dictionary
             # because the differential parameter sweep produces a global dictionary
             # that is jumbled by the number of procs.
@@ -1216,7 +1211,6 @@ def test_differential_parameter_sweep_function(model, tmp_path):
         sweep_params,
         differential_sweep_specs,
         outputs=None,
-        mpi_comm=comm,
         csv_results_file_name=csv_results_file_name,
         h5_results_file_name=h5_results_file_name,
         debugging_data_dir=tmp_path,

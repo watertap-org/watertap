@@ -74,11 +74,9 @@ class ParameterSweepWriter:
     ):
 
         self.parallel_manager = parallel_manager
-        self.rank = self.parallel_manager.get_rank()
-
         self.config = self.CONFIG(options)
 
-        if self.rank == 0:
+        if self.parallel_manager.is_root_process():
             if (
                 self.config.h5_results_file_name is None
                 and self.config.csv_results_file_name is None
@@ -143,16 +141,17 @@ class ParameterSweepWriter:
         local_results_dict,
         write_h5,
         write_csv,
+        process_number,
     ):
 
         if write_h5:
-            fname_h5 = f"local_results_{self.rank:03}.h5"
+            fname_h5 = f"local_results_{process_number:03}.h5"
             self._write_output_to_h5(
                 local_results_dict,
                 os.path.join(self.config["debugging_data_dir"], fname_h5),
             )
         if write_csv:
-            fname_csv = f"local_results_{self.rank:03}.csv"
+            fname_csv = f"local_results_{process_number:03}.csv"
 
             data_header = ",".join(itertools.chain(sweep_params))
             local_results = np.zeros(
@@ -242,12 +241,13 @@ class ParameterSweepWriter:
         global_values,
         global_results_dict,
         global_results_arr,
+        process_number,
     ):
 
         # Create the dataframe that is going to be written to a CSV
         global_save_data = np.hstack((global_values, global_results_arr))
 
-        if self.rank == 0:
+        if process_number == self.parallel_manager.ROOT_PROCESS_RANK:
             data_header = ",".join(itertools.chain(sweep_params))
             for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
                 data_header = ",".join([data_header, key])
@@ -296,9 +296,10 @@ class ParameterSweepWriter:
         local_results_dict,
         global_results_dict,
         global_results_arr,
+        process_number,
     ):
 
-        if self.rank == 0:
+        if process_number == self.parallel_manager.ROOT_PROCESS_RANK:
             if self.config["debugging_data_dir"] is not None:
                 os.makedirs(self.config["debugging_data_dir"], exist_ok=True)
             if self.config["h5_results_file_name"] is not None:
@@ -310,7 +311,7 @@ class ParameterSweepWriter:
                     parents=True, exist_ok=True
                 )
 
-        self.parallel_manager.sync_point()
+        self.parallel_manager.sync_with_peers()
 
         # Handle values in the debugging data_directory
         if self.config["debugging_data_dir"] is not None:
@@ -320,6 +321,7 @@ class ParameterSweepWriter:
                 local_results_dict,
                 self.config["h5_results_file_name"] is not None,
                 self.config["csv_results_file_name"] is not None,
+                process_number,
             )
 
         global_save_data = self._write_to_csv(
@@ -327,9 +329,13 @@ class ParameterSweepWriter:
             global_values,
             global_results_dict,
             global_results_arr,
+            process_number,
         )
 
-        if self.rank == 0 and self.config["h5_results_file_name"] is not None:
+        if (
+            process_number == self.parallel_manager.ROOT_PROCESS_RANK
+            and self.config["h5_results_file_name"] is not None
+        ):
             # Save the data of output dictionary
             self._write_outputs(global_results_dict, txt_options="keys")
 

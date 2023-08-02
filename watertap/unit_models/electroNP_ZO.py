@@ -462,8 +462,18 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
         super().calculate_scaling_factors()
 
         iscale.set_scaling_factor(self.recovery_frac_mass_H2O, 1)
-        iscale.set_scaling_factor(self.energy_electric_flow_mass, 1e2)
-        iscale.set_scaling_factor(self.magnesium_chloride_dosage, 1e1)
+
+        if iscale.get_scaling_factor(self.energy_electric_flow_mass) is None:
+            sf = iscale.get_scaling_factor(
+                self.energy_electric_flow_mass, default=1e2, warning=True
+            )
+            iscale.set_scaling_factor(self.energy_electric_flow_mass, sf)
+
+        if iscale.get_scaling_factor(self.magnesium_chloride_dosage) is None:
+            sf = iscale.get_scaling_factor(
+                self.magnesium_chloride_dosage, default=1e1, warning=True
+            )
+            iscale.set_scaling_factor(self.magnesium_chloride_dosage, sf)
 
         for (t, j), v in self.removal_frac_mass_comp.items():
             if j == "S_PO4":
