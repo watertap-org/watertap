@@ -28,7 +28,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse==2.1.0",
+    "idaes-pse @ git+https://github.com/IDAES/idaes-pse.git#52d7d5cf896a66053affe105e00b12ecc71f20ab",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
