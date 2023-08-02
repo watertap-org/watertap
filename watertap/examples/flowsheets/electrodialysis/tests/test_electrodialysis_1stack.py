@@ -163,9 +163,9 @@ class TestElectrodialysisVoltageConst:
         ) == pytest.approx(7.900, rel=1e-3)
         assert value(m.fs.EDstack.voltage_applied[0]) == 5
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            0.197, abs=0.001
+            0.1973, rel=1e-3
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.37, abs=0.01)
+        assert value(m.fs.costing.LCOW) == pytest.approx(1.1142, rel=1e-3)
 
     @pytest.mark.component
     def test_optimization(self, electrodialysis_1D1stack):
@@ -185,18 +185,18 @@ class TestElectrodialysisVoltageConst:
         assert value(
             m.fs.disposal.properties[0].flow_vol_phase["Liq"]
         ) == pytest.approx(4.5e-5, abs=1e-6)
-        assert value(m.fs.product_salinity) == pytest.approx(1.000, rel=1e-3)
-        assert value(m.fs.disposal_salinity) == pytest.approx(18.074, rel=1e-3)
+        assert value(m.fs.product_salinity) == pytest.approx(0.9996, rel=1e-3)
+        assert value(m.fs.disposal_salinity) == pytest.approx(18.1124, rel=1e-3)
 
         assert value(m.fs.EDstack.recovery_mass_H2O[0]) == pytest.approx(
-            0.483, rel=1e-3
+            0.4846, rel=1e-3
         )
-        assert value(m.fs.mem_area) == pytest.approx(2.0028, rel=1e-3)
-        assert value(m.fs.EDstack.voltage_applied[0]) == pytest.approx(7.538, rel=1e-3)
+        assert value(m.fs.mem_area) == pytest.approx(1.0980, rel=1e-3)
+        assert value(m.fs.EDstack.voltage_applied[0]) == pytest.approx(7.0325, rel=1e-3)
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            1.435, abs=0.002
+            2.3062, rel=1e-3
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.25, abs=0.01)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.42546, rel=1e-3)
 
     @pytest.mark.unit
     def test_main_fun(self, electrodialysis_1D1stack):
