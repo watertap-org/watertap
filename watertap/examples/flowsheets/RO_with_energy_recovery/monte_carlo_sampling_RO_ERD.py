@@ -22,7 +22,6 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
     build,
     set_operating_conditions,
     initialize_system,
-    solve,
     optimize,
 )
 
