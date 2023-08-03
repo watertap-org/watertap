@@ -119,9 +119,6 @@ def run_parameter_sweep(
     # Set up the solver
     solver = get_solver()
 
-    # Simulate once outside the parameter sweep to ensure everything is appropriately initialized
-    solve(build_model(), solver=solver)
-
     # Run the parameter sweep study using num_samples randomly drawn from the above range
     num_samples = 10
 
