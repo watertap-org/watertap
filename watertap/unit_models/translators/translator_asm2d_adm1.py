@@ -196,6 +196,12 @@ see reaction package for documentation.}""",
             mutable=True,
             doc="Carbon content of polyhydroxyalkanoates",
         )
+        self.i_PSI = Param(
+            initialize=0.00649,
+            units=pyunits.dimensionless,
+            mutable=True,
+            doc="P content of inert soluble COD S_I, [kg P/kg COD]",
+        )
 
         @self.Constraint(
             self.flowsheet().time,
@@ -495,9 +501,7 @@ see reaction package for documentation.}""",
                 return (
                     blk.SPO4_AS3[t]
                     + blk.biomass[t] * blk.config.inlet_reaction_package.i_PBM
-                    - blk.biomass[t]
-                    * self.f_sI_xc
-                    * blk.config.inlet_reaction_package.i_PSI
+                    - blk.biomass[t] * self.f_sI_xc * self.i_PSI
                     - blk.biomass[t]
                     * self.f_xI_xc
                     * blk.config.inlet_reaction_package.i_PXI
@@ -838,9 +842,7 @@ see reaction package for documentation.}""",
                 return (
                     blk.SPO4_AS3[t]
                     + blk.biomass[t] * blk.config.inlet_reaction_package.i_PBM
-                    - blk.biomass[t]
-                    * self.f_sI_xc
-                    * blk.config.inlet_reaction_package.i_PSI
+                    - blk.biomass[t] * self.f_sI_xc * self.i_PSI
                     - blk.biomass[t]
                     * self.f_xI_xc
                     * blk.config.inlet_reaction_package.i_PXI

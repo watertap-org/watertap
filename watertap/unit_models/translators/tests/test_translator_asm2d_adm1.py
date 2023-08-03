@@ -218,6 +218,8 @@ class TestAsm2dAdm1_decay_on(object):
 
         assert isinstance(asmadm.fs.unit.C_PHA, Param)
         assert value(asmadm.fs.unit.C_PHA) == 0.3 / 12
+        assert isinstance(asmadm.fs.unit.i_PSI, Param)
+        assert value(asmadm.fs.unit.i_PSI) == 0.00649
 
         assert hasattr(asmadm.fs.unit, "inlet")
         assert len(asmadm.fs.unit.inlet.vars) == 4
@@ -235,7 +237,7 @@ class TestAsm2dAdm1_decay_on(object):
         assert hasattr(asmadm.fs.unit.outlet, "anions")
         assert hasattr(asmadm.fs.unit.outlet, "cations")
 
-        assert number_variables(asmadm) == 265
+        assert number_variables(asmadm) == 264
         assert number_total_constraints(asmadm) == 34
 
         # TODO: Result of SN2_AS2 being unused. Remove? It's also unused in the c-code
@@ -501,6 +503,8 @@ class TestAsm2dAdm1_decay_off(object):
 
         assert isinstance(asmadm.fs.unit.C_PHA, Param)
         assert value(asmadm.fs.unit.C_PHA) == 0.3 / 12
+        assert isinstance(asmadm.fs.unit.i_PSI, Param)
+        assert value(asmadm.fs.unit.i_PSI) == 0.00649
 
         assert hasattr(asmadm.fs.unit, "inlet")
         assert len(asmadm.fs.unit.inlet.vars) == 4
@@ -518,7 +522,7 @@ class TestAsm2dAdm1_decay_off(object):
         assert hasattr(asmadm.fs.unit.outlet, "anions")
         assert hasattr(asmadm.fs.unit.outlet, "cations")
 
-        assert number_variables(asmadm) == 265
+        assert number_variables(asmadm) == 264
         assert number_total_constraints(asmadm) == 34
 
         # TODO: Result of SN2_AS2 being unused. Remove? It's also unused in the c-code
