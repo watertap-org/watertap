@@ -155,7 +155,7 @@ def fix_init_vars(m):
     # apply defaults for normal NF init
     nf.fix_init_vars(m)
     # fix initial guess for splitter
-    m.fs.by_pass_splitter.split_fraction[0, "bypass"].fix(0.5)
+    m.fs.by_pass_splitter.split_fraction[0, "bypass"].fix(0.9)
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].setlb(0)
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].setub(None)
 
