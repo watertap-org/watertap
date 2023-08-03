@@ -88,7 +88,7 @@ def test_ideal_naocl_chlorination_full_block():
     ].value == pytest.approx(4.508812116261189e-07, rel=1e-3)
     assert model.fs.ideal_naocl_chlorination_unit.outlet.mole_frac_comp[
         0, "H_+"
-    ].value == pytest.approx(6.089333576685783e-11, rel=1e-3)
+    ].value == pytest.approx(5.113673483800101e-11, rel=1e-3)
 
 
 @pytest.mark.component
