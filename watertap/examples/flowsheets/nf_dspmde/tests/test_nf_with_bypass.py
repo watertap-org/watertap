@@ -15,6 +15,7 @@ import pytest
 from pyomo.environ import value
 from watertap.examples.flowsheets.nf_dspmde.nf_with_bypass import main
 
+
 @pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_main():
