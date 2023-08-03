@@ -143,7 +143,7 @@ def run_parameter_sweep(
             sweep_params_fname=sweep_params_fname,
             read_sweep_params_from_file=read_sweep_params_from_file,
         ),
-        number_of_subprocesses=2,
+        number_of_subprocesses=1,
     )
 
     return global_results_arr
