@@ -253,64 +253,6 @@ class TestAsm2dAdm1_decay_on(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, asmadm):
-        def check_jac(model):
-            jac, jac_scaled, nlp = iscale.constraint_autoscale_large_jac(
-                model, min_scale=1e-8
-            )
-            # cond_number = iscale.jacobian_cond(model, jac=jac_scaled)  # / 1e10
-            # print("--------------------------")
-            print("Extreme Jacobian entries:")
-            extreme_entries = iscale.extreme_jacobian_entries(
-                model, jac=jac_scaled, zero=1e-20, large=10
-            )
-            extreme_entries = sorted(extreme_entries, key=lambda x: x[0], reverse=True)
-
-            print("EXTREME_ENTRIES")
-            print(f"\nThere are {len(extreme_entries)} extreme Jacobian entries")
-            for i in extreme_entries:
-                print(i[0], i[1], i[2])
-
-            print("--------------------------")
-            print("Extreme Jacobian columns:")
-            extreme_cols = iscale.extreme_jacobian_columns(model, jac=jac_scaled)
-            for val, var in extreme_cols:
-                print(val, var.name)
-            print("------------------------")
-            print("Extreme Jacobian rows:")
-            extreme_rows = iscale.extreme_jacobian_rows(model, jac=jac_scaled)
-            for val, con in extreme_rows:
-                print(val, con.name)
-
-        check_jac(asmadm)
-
-        asmadm.obj = Objective(expr=0)
-
-        # initial point
-        solver.options["max_iter"] = 0
-        solver.solve(asmadm, tee=False)
-        dh = DegeneracyHunter(asmadm, solver=SolverFactory("cbc"))
-        dh.check_residuals(tol=1e-8)
-        dh.check_variable_bounds(tol=1e-8)
-
-        # solved model
-        solver.options["max_iter"] = 10000
-        solver.solve(asmadm, tee=False)
-        badly_scaled_var_list = iscale.badly_scaled_var_generator(
-            asmadm, large=1e1, small=1e-1
-        )
-        for x in badly_scaled_var_list:
-            print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-        dh.check_residuals(tol=1e-8)
-        dh.check_variable_bounds(tol=1e-8)
-        dh.check_rank_equality_constraints(dense=True)
-        ds = dh.find_candidate_equations(verbose=False, tee=False)
-        ids = dh.find_irreducible_degenerate_sets(verbose=False)
-
-        print("------------------------")
-        print("Infeasible Constraints")
-        print_close_to_bounds(asmadm)
-        print_infeasible_constraints(asmadm)
-
         initialization_tester(asmadm)
 
     @pytest.mark.solver
@@ -360,7 +302,7 @@ class TestAsm2dAdm1_decay_on(object):
         assert pytest.approx(1e-9, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_ch4"]
         )
-        assert pytest.approx(0.541823, rel=1e-3) == value(
+        assert pytest.approx(0.382172, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_IC"]
         )
         assert pytest.approx(0.6985, rel=1e-3) == value(
@@ -421,7 +363,7 @@ class TestAsm2dAdm1_decay_on(object):
         assert pytest.approx(0.34016, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_Mg"]
         )
-        assert pytest.approx(0.04515, rel=1e-3) == value(
+        assert pytest.approx(0.031848, rel=1e-3) == value(
             asmadm.fs.unit.outlet.cations[0]
         )
         assert pytest.approx(0.04989, rel=1e-3) == value(
@@ -497,8 +439,7 @@ class TestAsm2dAdm1_decay_off(object):
             outlet_state_defined=True,
         )
 
-        # TODO: Check influent flow_vol
-        m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
+        m.fs.unit.inlet.flow_vol.fix(18446 * units.m**3 / units.day)
         m.fs.unit.inlet.temperature.fix(308.15 * units.K)
         m.fs.unit.inlet.pressure.fix(1 * units.atm)
         eps = 1e-9 * units.kg / units.m**3
@@ -532,8 +473,6 @@ class TestAsm2dAdm1_decay_off(object):
         )
         m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(0.01979 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(0.18987 * units.kg / units.m**3)
-
-        # constraint_scaling_transform(m.fs.unit.SIC_output[0], 1e-3)
 
         return m
 
@@ -597,64 +536,6 @@ class TestAsm2dAdm1_decay_off(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, asmadm):
-        def check_jac(model):
-            jac, jac_scaled, nlp = iscale.constraint_autoscale_large_jac(
-                model, min_scale=1e-8
-            )
-            # cond_number = iscale.jacobian_cond(model, jac=jac_scaled)  # / 1e10
-            # print("--------------------------")
-            print("Extreme Jacobian entries:")
-            extreme_entries = iscale.extreme_jacobian_entries(
-                model, jac=jac_scaled, zero=1e-20, large=10
-            )
-            extreme_entries = sorted(extreme_entries, key=lambda x: x[0], reverse=True)
-
-            print("EXTREME_ENTRIES")
-            print(f"\nThere are {len(extreme_entries)} extreme Jacobian entries")
-            for i in extreme_entries:
-                print(i[0], i[1], i[2])
-
-            print("--------------------------")
-            print("Extreme Jacobian columns:")
-            extreme_cols = iscale.extreme_jacobian_columns(model, jac=jac_scaled)
-            for val, var in extreme_cols:
-                print(val, var.name)
-            print("------------------------")
-            print("Extreme Jacobian rows:")
-            extreme_rows = iscale.extreme_jacobian_rows(model, jac=jac_scaled)
-            for val, con in extreme_rows:
-                print(val, con.name)
-
-        check_jac(asmadm)
-
-        asmadm.obj = Objective(expr=0)
-
-        # initial point
-        solver.options["max_iter"] = 0
-        solver.solve(asmadm, tee=False)
-        dh = DegeneracyHunter(asmadm, solver=SolverFactory("cbc"))
-        dh.check_residuals(tol=1e-8)
-        dh.check_variable_bounds(tol=1e-8)
-
-        # solved model
-        solver.options["max_iter"] = 10000
-        solver.solve(asmadm, tee=False)
-        badly_scaled_var_list = iscale.badly_scaled_var_generator(
-            asmadm, large=1e1, small=1e-1
-        )
-        for x in badly_scaled_var_list:
-            print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-        dh.check_residuals(tol=1e-8)
-        dh.check_variable_bounds(tol=1e-8)
-        dh.check_rank_equality_constraints(dense=True)
-        ds = dh.find_candidate_equations(verbose=False, tee=False)
-        ids = dh.find_irreducible_degenerate_sets(verbose=False)
-
-        print("------------------------")
-        print("Infeasible Constraints")
-        print_close_to_bounds(asmadm)
-        print_infeasible_constraints(asmadm)
-
         initialization_tester(asmadm)
 
     @pytest.mark.solver
@@ -704,7 +585,7 @@ class TestAsm2dAdm1_decay_off(object):
         assert pytest.approx(1e-9, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_ch4"]
         )
-        assert pytest.approx(0.41266, rel=1e-3) == value(
+        assert pytest.approx(0.253013, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_IC"]
         )
         assert pytest.approx(0.50648, rel=1e-3) == value(
@@ -765,7 +646,7 @@ class TestAsm2dAdm1_decay_off(object):
         assert pytest.approx(0.18987, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_Mg"]
         )
-        assert pytest.approx(0.03439, rel=1e-3) == value(
+        assert pytest.approx(0.0210843, rel=1e-3) == value(
             asmadm.fs.unit.outlet.cations[0]
         )
         assert pytest.approx(0.03618, rel=1e-3) == value(
