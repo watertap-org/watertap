@@ -169,7 +169,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             initialize=1,
             bounds=(0, None),
             units=pyunits.m**2,
-            doc="Area of canode",
+            doc="Area of anode",
         )
 
         self.electrode_thick = Var(
@@ -462,7 +462,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         #     )
 
         @self.Constraint(doc = "Cathode and anode areas are equal")
-        def eq_cathode_anodea(b):
+        def eq_cathode_anode(b):
             return (
                 b.cathode_area == b.anode_area
             )
