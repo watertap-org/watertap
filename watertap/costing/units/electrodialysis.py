@@ -85,7 +85,7 @@ def cost_electrodialysis_stack(blk):
     """
     make_capital_cost_var(blk)
     make_fixed_operating_cost_var(blk)
-    if blk.find_component("capital_cost_rectifier") is not None:)
+    if blk.find_component("capital_cost_rectifier") is not None:
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == pyo.units.convert(
