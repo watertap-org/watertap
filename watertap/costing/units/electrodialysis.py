@@ -74,7 +74,11 @@ def cost_electrodialysis(blk, cost_electricity_flow=True, has_rectifier=False):
             )
         else:
             power = blk.unit_model.get_power_electrical(blk.flowsheet().time.first())
+            blk.del_component("capital_cost")
             cost_rectifier(blk, power=power, ac_dc_conversion_efficiency=0.9)
+            blk.del_component("capital_cost_constraint")
+
+            # blk.add_component("captical_cost")
             blk.capital_cost_constraint = pyo.Constraint(
                 expr=blk.capital_cost
                 == pyo.units.convert(
