@@ -26,13 +26,9 @@ from pyomo.environ import (
     value,
     assert_optimal_termination,
     Param,
-    Objective,
-    SolverFactory,
 )
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util.model_diagnostics import DegeneracyHunter
-import idaes.core.util.scaling as iscale
 
 from pyomo.environ import units
 
@@ -42,12 +38,6 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    unused_variables_set,
-    variables_set,
-    fixed_variables_set,
-    fixed_variables_generator,
-    unfixed_variables_set,
-    unfixed_variables_generator,
 )
 
 import idaes.logger as idaeslog
@@ -71,20 +61,7 @@ from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
     DecaySwitch,
 )
 
-from watertap.core.util.model_diagnostics.infeasible import *
-
-# from watertap.core.util.model_diagnostics.infeasible import print_close_to_bounds, print_infeasible_constraints
-
 from pyomo.util.check_units import assert_units_consistent
-
-from idaes.core.util.scaling import (
-    calculate_scaling_factors,
-    set_scaling_factor,
-    get_scaling_factor,
-    constraint_scaling_transform,
-)
-
-import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
