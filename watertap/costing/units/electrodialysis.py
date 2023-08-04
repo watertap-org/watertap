@@ -59,8 +59,6 @@ def cost_electrodialysis(blk, cost_electricity_flow=True, has_rectifier=False):
     """
     t0 = blk.flowsheet().time.first()
 
-    cost_electrodialysis_stack(blk)
-
     # Changed this to grab power from performance table which is identified
     # by same key regardless of whether the Electrodialysis unit is 0D or 1D
     if cost_electricity_flow:
@@ -74,23 +72,8 @@ def cost_electrodialysis(blk, cost_electricity_flow=True, has_rectifier=False):
             )
         else:
             power = blk.unit_model.get_power_electrical(blk.flowsheet().time.first())
-            blk.del_component("capital_cost")
             cost_rectifier(blk, power=power, ac_dc_conversion_efficiency=0.9)
-            blk.del_component("capital_cost_constraint")
-            blk.capital_cost_constraint = pyo.Constraint(
-                expr=blk.capital_cost
-                == pyo.units.convert(
-                    blk.costing_package.electrodialysis.membrane_capital_cost
-                    * (
-                        2
-                        * blk.unit_model.cell_pair_num
-                        * blk.unit_model.cell_width
-                        * blk.unit_model.cell_length
-                    ),
-                    to_units=blk.costing_package.base_currency,
-                )
-                + blk.capital_cost_rectifier
-            )
+    cost_electrodialysis_stack(blk)
 
 
 def cost_electrodialysis_stack(blk):
@@ -102,22 +85,39 @@ def cost_electrodialysis_stack(blk):
     """
     make_capital_cost_var(blk)
     make_fixed_operating_cost_var(blk)
-
-    blk.capital_cost_constraint = pyo.Constraint(
-        expr=blk.capital_cost
-        == pyo.units.convert(
-            blk.costing_package.electrodialysis.membrane_capital_cost
-            * (
-                2
-                * blk.unit_model.cell_pair_num
-                * blk.unit_model.cell_width
-                * blk.unit_model.cell_length
+    if blk.find_component("capital_cost_rectifier") is not None:)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == pyo.units.convert(
+                blk.costing_package.electrodialysis.membrane_capital_cost
+                * (
+                    2
+                    * blk.unit_model.cell_pair_num
+                    * blk.unit_model.cell_width
+                    * blk.unit_model.cell_length
+                )
+                + blk.costing_package.electrodialysis.stack_electrode_captical_cost
+                * (2 * blk.unit_model.cell_width * blk.unit_model.cell_length),
+                to_units=blk.costing_package.base_currency,
             )
-            + blk.costing_package.electrodialysis.stack_electrode_captical_cost
-            * (2 * blk.unit_model.cell_width * blk.unit_model.cell_length),
-            to_units=blk.costing_package.base_currency,
+            + blk.capital_cost_rectifier
         )
-    )
+    else:
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == pyo.units.convert(
+                blk.costing_package.electrodialysis.membrane_capital_cost
+                * (
+                    2
+                    * blk.unit_model.cell_pair_num
+                    * blk.unit_model.cell_width
+                    * blk.unit_model.cell_length
+                )
+                + blk.costing_package.electrodialysis.stack_electrode_captical_cost
+                * (2 * blk.unit_model.cell_width * blk.unit_model.cell_length),
+                to_units=blk.costing_package.base_currency,
+            )
+        )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
         == pyo.units.convert(
