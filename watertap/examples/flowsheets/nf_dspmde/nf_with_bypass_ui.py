@@ -9,6 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+import pytest
 from watertap.ui.fsapi import FlowsheetInterface
 from watertap.examples.flowsheets.nf_dspmde import nf_with_bypass
 from watertap.examples.flowsheets.nf_dspmde import nf
