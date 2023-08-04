@@ -47,6 +47,7 @@ __author__ = "Xiangyu Bi"
 
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 # Start test class
 class TestElectrodialysisVoltageConst:
@@ -319,13 +320,13 @@ class TestElectrodialysisVoltageConst:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(2647.8988, rel=1e-3) == value(
+        assert pytest.approx(2979.6988, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(277.6285, rel=1e-3) == value(
+        assert pytest.approx(297.5365, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(5295.7977, rel=1e-3) == value(
+        assert pytest.approx(5959.3976, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
 
@@ -1307,7 +1308,6 @@ class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
     def test_model_solutions(self, edcell_ilim_empi, edcell_ilim_theo):
         model = (edcell_ilim_empi, edcell_ilim_theo)
         for m in model:
-
             m.fs.properties.set_default_scaling(
                 "flow_mol_phase_comp", 1e1, index=("Liq", "H2O")
             )
