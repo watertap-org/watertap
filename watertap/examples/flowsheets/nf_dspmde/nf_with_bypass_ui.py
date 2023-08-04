@@ -392,6 +392,7 @@ def build_flowsheet():
     return m
 
 
+@pytest.mark.requires_idaes_solver
 def solve_flowsheet(flowsheet=None):
     fs = flowsheet
     solver = get_solver()

@@ -508,11 +508,13 @@ class TestIonExchangeFreundlich:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, IX_fr):
         m = IX_fr
         initialization_tester(m, unit=m.fs.ix, outlvl=idaeslog.DEBUG)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, IX_fr):
         m = IX_fr
@@ -521,6 +523,7 @@ class TestIonExchangeFreundlich:
         # Check for optimal solution
         assert_optimal_termination(results)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, IX_fr):
         m = IX_fr
