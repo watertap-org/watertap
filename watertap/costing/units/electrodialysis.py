@@ -86,7 +86,9 @@ def cost_electrodialysis(blk, cost_electricity_flow=True, has_rectifier=False):
                         * blk.unit_model.cell_pair_num
                         * blk.unit_model.cell_width
                         * blk.unit_model.cell_length
-                    ),
+                    )
+                    + blk.costing_package.electrodialysis.stack_electrode_captical_cost
+                    * (2 * blk.unit_model.cell_width * blk.unit_model.cell_length),
                     to_units=blk.costing_package.base_currency,
                 )
                 + blk.capital_cost_rectifier

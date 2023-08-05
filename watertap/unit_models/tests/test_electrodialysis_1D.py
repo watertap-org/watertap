@@ -262,7 +262,9 @@ class TestElectrodialysisVoltageConst:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(3.0, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.197, rel=5e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.485, rel=5e-3
@@ -319,13 +321,13 @@ class TestElectrodialysisVoltageConst:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(2647.8988, rel=1e-3) == value(
+        assert pytest.approx(2979.6988, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(277.6285, rel=1e-3) == value(
+        assert pytest.approx(297.5365, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(5295.7977, rel=1e-3) == value(
+        assert pytest.approx(5959.3977, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
 
@@ -536,7 +538,9 @@ class TestElectrodialysisCurrentConst:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(5.83, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.390, rel=5e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.480, rel=5e-3
@@ -762,7 +766,9 @@ class TestElectrodialysis_withNeutralSPecies:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(5.837, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.3896, rel=5e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.480, rel=5e-3
@@ -985,7 +991,9 @@ class Test_ED_MembNonohm_On_ConstV:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(1.4735, rel=1e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.0955, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4925, rel=1e-3
@@ -1197,7 +1205,9 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(1.3907, rel=1e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.0900, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4928, rel=1e-3
@@ -1587,7 +1597,9 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(12.904, rel=1e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.8627, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4791, rel=1e-3
