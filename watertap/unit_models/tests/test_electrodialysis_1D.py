@@ -47,6 +47,7 @@ __author__ = "Xiangyu Bi"
 
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 # Start test class
 class TestElectrodialysisVoltageConst:
@@ -1317,7 +1318,6 @@ class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
     def test_model_solutions(self, edcell_ilim_empi, edcell_ilim_theo):
         model = (edcell_ilim_empi, edcell_ilim_theo)
         for m in model:
-
             m.fs.properties.set_default_scaling(
                 "flow_mol_phase_comp", 1e1, index=("Liq", "H2O")
             )
