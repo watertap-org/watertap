@@ -20,7 +20,6 @@ from pyomo.environ import (
 )
 
 
-
 @pytest.mark.requires_idaes_solver
 def export_to_ui():
     return FlowsheetInterface(
