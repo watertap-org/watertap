@@ -20,6 +20,8 @@ from pyomo.environ import (
 )
 
 
+
+@pytest.mark.requires_idaes_solver
 def export_to_ui():
     return FlowsheetInterface(
         name="NF-DSPM-DE with bypass",
@@ -393,7 +395,6 @@ def build_flowsheet():
     return m
 
 
-@pytest.mark.requires_idaes_solver
 def solve_flowsheet(flowsheet=None):
     fs = flowsheet
     solver = get_solver()
