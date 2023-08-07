@@ -52,6 +52,7 @@ def main():
     solve(m, solver=solver, checkpoint="solve flowsheet after initializing system")
 
     print("\n***---Simulation results---***")
+    m.fs.EDstack.report()
     display_model_metrics(m)
 
     # Perform an optimization over selected variables
@@ -60,6 +61,7 @@ def main():
         m, solver=solver, checkpoint="solve flowsheet after optimizing system"
     )
     print("\n***---Optimization results---***")
+    m.fs.EDstack.report()
     display_model_metrics(m)
 
 
