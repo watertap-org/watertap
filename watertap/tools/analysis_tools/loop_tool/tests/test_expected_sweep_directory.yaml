@@ -1,0 +1,76 @@
+ro_analysis:
+  erd_type:
+    pressure_exchanger:
+      membrane_cost:
+        simulation_setup:
+          build_defaults:
+            erd_type: pressure_exchanger
+          diff_params: {}
+          diff_samples: 0
+          dir: D:\OneDrive\NAWI_work\Analysis\NAWI-analysis\analysis_waterTAP\analysisWaterTAP\toolkits\loopTool\tests/output/ro_with_erd/ro_analysis/erd_type/pressure_exchanger/membrane_cost
+          expected_num_samples: 3
+          force_rerun: null
+          h5dir: ro_analysis/erd_type/pressure_exchanger/membrane_cost
+          init_defaults: {}
+          min_num_samples: null
+          num_samples: 3
+          optimize_defaults: {}
+          original_options_dict:
+            build_defaults:
+              erd_type: pump_as_turbine
+            build_loop:
+              erd_type:
+              - pump_as_turbine
+              - pressure_exchanger
+              sweep_param_loop:
+                membrane_cost:
+                  lower_limit: 10
+                  num_samples: 3
+                  param: fs.costing.reverse_osmosis.membrane_cost
+                  type: LinearSample
+                  upper_limit: 30
+            reinitialize_before_sweep: false
+          sweep_params:
+            membrane_cost:
+              lower_limit: 10
+              num_samples: 3
+              param: fs.costing.reverse_osmosis.membrane_cost
+              type: LinearSample
+              upper_limit: 30
+    pump_as_turbine:
+      membrane_cost:
+        simulation_setup:
+          build_defaults:
+            erd_type: pump_as_turbine
+          diff_params: {}
+          diff_samples: 0
+          dir: null
+          expected_num_samples: 3
+          force_rerun: null
+          h5dir: ro_analysis/erd_type/pump_as_turbine/membrane_cost
+          init_defaults: {}
+          min_num_samples: null
+          num_samples: 3
+          optimize_defaults: {}
+          original_options_dict:
+            build_defaults:
+              erd_type: pump_as_turbine
+            build_loop:
+              erd_type:
+              - pump_as_turbine
+              - pressure_exchanger
+              sweep_param_loop:
+                membrane_cost:
+                  lower_limit: 10
+                  num_samples: 3
+                  param: fs.costing.reverse_osmosis.membrane_cost
+                  type: LinearSample
+                  upper_limit: 30
+            reinitialize_before_sweep: false
+          sweep_params:
+            membrane_cost:
+              lower_limit: 10
+              num_samples: 3
+              param: fs.costing.reverse_osmosis.membrane_cost
+              type: LinearSample
+              upper_limit: 30

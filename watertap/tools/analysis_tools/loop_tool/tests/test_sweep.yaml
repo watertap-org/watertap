@@ -1,0 +1,15 @@
+ro_analysis:
+  reinitialize_before_sweep: False
+  build_defaults:
+    erd_type: pump_as_turbine
+  build_loop:
+    erd_type:
+      - pump_as_turbine
+      - pressure_exchanger
+    sweep_param_loop:
+      membrane_cost:
+        type: LinearSample
+        param: fs.costing.reverse_osmosis.membrane_cost
+        lower_limit: 10
+        upper_limit: 30
+        num_samples: 3
