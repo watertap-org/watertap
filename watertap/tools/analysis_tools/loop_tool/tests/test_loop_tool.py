@@ -18,17 +18,19 @@ from watertap.tools.analysis_tools.loop_tool.loop_tool import loopTool, get_work
 import yaml
 import h5py
 
+_this_file_path = os.path.dirname(os.path.abspath(__file__))
+
 
 @pytest.fixture()
 def loop_sweep_setup():
     # Test without parallel implementation as its broken in
-    # water tap paramtersweep tool
+    cwd = get_working_dir()
     lp = loopTool(
-        get_working_dir() + "/test_sweep.yaml",
+        _this_file_path + "/test_sweep.yaml",
         build_function=ro_setup.ro_build,
         initialize_function=ro_setup.ro_init,
         optimize_function=ro_setup.ro_solve,
-        saving_dir=get_working_dir(),
+        saving_dir=_this_file_path,
         save_name="ro_with_erd",
         execute_simulations=False,
         number_of_subprocesses=False,
@@ -37,7 +39,7 @@ def loop_sweep_setup():
     """ used to generate test file"""
     # with open("test_expected_sweep_directory.yaml", "w") as file:
     #     documents = yaml.dump(lp.sweep_directory, file)
-    with open(get_working_dir() + "/test_expected_sweep_directory.yaml", "r") as infile:
+    with open(_this_file_path + "/test_expected_sweep_directory.yaml", "r") as infile:
         expected_run_dict = yaml.safe_load(infile)
 
     return lp, expected_run_dict
@@ -49,11 +51,11 @@ def loop_diff_setup():
     # water tap paramtersweep tool
     cdw = get_working_dir()
     lp = loopTool(
-        get_working_dir() + "/test_diff.yaml",
+        _this_file_path + "/test_diff.yaml",
         build_function=ro_setup.ro_build,
         initialize_function=ro_setup.ro_init,
         optimize_function=ro_setup.ro_solve,
-        saving_dir=get_working_dir(),
+        saving_dir=_this_file_path,
         save_name="ro_with_erd",
         execute_simulations=False,
         number_of_subprocesses=False,
@@ -62,7 +64,7 @@ def loop_diff_setup():
     """ used to generate test file"""
     # with open("test_expected_diff_directory.yaml", "w") as file:
     #     documents = yaml.dump(lp.sweep_directory, file)
-    with open(get_working_dir() + "/test_expected_diff_directory.yaml", "r") as infile:
+    with open(_this_file_path + "/test_expected_diff_directory.yaml", "r") as infile:
         expected_run_dict = yaml.safe_load(infile)
 
     return lp, expected_run_dict
