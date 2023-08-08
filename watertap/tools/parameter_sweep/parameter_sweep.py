@@ -814,6 +814,9 @@ class ParameterSweep(_ParameterSweepBase):
                 version="0.10.0",
             )
 
+        if build_outputs is None:
+            build_outputs = return_none
+
         if not callable(build_outputs):
             _combined_outputs = build_outputs
             build_outputs = lambda model, sweep_params: _combined_outputs
@@ -1136,3 +1139,11 @@ def do_execute(
     return param_sweep_instance._do_param_sweep(
         model, sweep_params, outputs, local_combo_array
     )
+
+
+def return_none(model, sweep_params):
+    """
+    Used so that build_outputs=None is a valid usage of the parameter sweep tool
+    without requiring the user to wrap it in a function.
+    """
+    return None
