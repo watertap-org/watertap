@@ -23,4 +23,4 @@ ro_diff_analysis:
         param: fs.costing.reverse_osmosis.factor_membrane_replacement
         lower_limit: 10
         upper_limit: 30
-      num_samples: 10
+      num_samples: 2

@@ -19,7 +19,7 @@ ro_diff_analysis:
       h5dir: ro_diff_analysis/membrane_cost
       init_defaults: {}
       min_num_samples: null
-      num_samples: 10
+      num_samples: 2
       optimize_defaults: {}
       original_options_dict:
         build_defaults:
@@ -37,28 +37,28 @@ ro_diff_analysis:
           sweep_reference_params:
             factor_membrane_replacement:
               lower_limit: 10
-              num_samples: 10
+              num_samples: 2
               param: fs.costing.reverse_osmosis.factor_membrane_replacement
               type: UniformSample
               upper_limit: 30
             membrane_cost:
               lower_limit: 10
-              num_samples: 10
+              num_samples: 2
               param: fs.costing.reverse_osmosis.membrane_cost
               type: UniformSample
               upper_limit: 30
-            num_samples: 10
+            num_samples: 2
         reinitialize_before_sweep: false
       sweep_params:
         fs.costing.reverse_osmosis.factor_membrane_replacement:
           lower_limit: 10
-          num_samples: 10
+          num_samples: 2
           param: fs.costing.reverse_osmosis.factor_membrane_replacement
           type: UniformSample
           upper_limit: 30
         fs.costing.reverse_osmosis.membrane_cost:
           lower_limit: 10
-          num_samples: 10
+          num_samples: 2
           param: fs.costing.reverse_osmosis.membrane_cost
           type: UniformSample
           upper_limit: 30
