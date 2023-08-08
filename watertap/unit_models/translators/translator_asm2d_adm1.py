@@ -196,6 +196,12 @@ see reaction package for documentation.}""",
             mutable=True,
             doc="Carbon content of polyhydroxyalkanoates",
         )
+        self.i_PSI = Param(
+            initialize=0.00649,
+            units=pyunits.dimensionless,
+            mutable=True,
+            doc="P content of inert soluble COD S_I, [kg P/kg COD]",
+        )
 
         @self.Constraint(
             self.flowsheet().time,
@@ -495,9 +501,7 @@ see reaction package for documentation.}""",
                 return (
                     blk.SPO4_AS3[t]
                     + blk.biomass[t] * blk.config.inlet_reaction_package.i_PBM
-                    - blk.biomass[t]
-                    * self.f_sI_xc
-                    * blk.config.inlet_reaction_package.i_PSI
+                    - blk.biomass[t] * self.f_sI_xc * self.i_PSI
                     - blk.biomass[t]
                     * self.f_xI_xc
                     * blk.config.inlet_reaction_package.i_PXI
@@ -670,21 +674,20 @@ see reaction package for documentation.}""",
                 )
 
             @self.Expression(self.flowsheet().time, doc="S_IC concentration at step 5")
-            # TODO: Need to determine why this full expression causes initialization to fail
             def SIC_AS5(blk, t):
                 return (
                     blk.SIC_AS4[t]
-                    + blk.properties_in[t].conc_mass_comp["S_F"]
+                    + blk.properties_in[t].conc_mass_comp["X_S"]
                     * blk.config.inlet_reaction_package.i_CXS
-                    # - blk.Xch_mapping[t]
-                    # * blk.config.outlet_reaction_package.Ci["X_ch"]
-                    # * mw_c
-                    # - blk.Xpr_mapping[t]
-                    # * blk.config.outlet_reaction_package.Ci["X_pr"]
-                    # * mw_c
-                    # - blk.Xli_mapping[t]
-                    # * blk.config.outlet_reaction_package.Ci["X_li"]
-                    # * mw_c
+                    - blk.Xch_mapping[t]
+                    * blk.config.outlet_reaction_package.Ci["X_ch"]
+                    * mw_c
+                    - blk.Xpr_mapping[t]
+                    * blk.config.outlet_reaction_package.Ci["X_pr"]
+                    * mw_c
+                    - blk.Xli_mapping[t]
+                    * blk.config.outlet_reaction_package.Ci["X_li"]
+                    * mw_c
                 )
 
             XS_AS5 = eps * pyunits.kg / pyunits.m**3
@@ -839,9 +842,7 @@ see reaction package for documentation.}""",
                 return (
                     blk.SPO4_AS3[t]
                     + blk.biomass[t] * blk.config.inlet_reaction_package.i_PBM
-                    - blk.biomass[t]
-                    * self.f_sI_xc
-                    * blk.config.inlet_reaction_package.i_PSI
+                    - blk.biomass[t] * self.f_sI_xc * self.i_PSI
                     - blk.biomass[t]
                     * self.f_xI_xc
                     * blk.config.inlet_reaction_package.i_PXI
@@ -1022,21 +1023,20 @@ see reaction package for documentation.}""",
                 return blk.properties_out[t].conc_mass_comp["S_IP"] == blk.SPO4_AS5[t]
 
             @self.Expression(self.flowsheet().time, doc="S_IC concentration at step 5")
-            # TODO: Need to determine why this full expression causes initialization to fail
             def SIC_AS5(blk, t):
                 return (
                     blk.SIC_AS4[t]
-                    + blk.properties_in[t].conc_mass_comp["S_F"]
+                    + blk.properties_in[t].conc_mass_comp["X_S"]
                     * blk.config.inlet_reaction_package.i_CXS
-                    # - blk.Xch_mapping[t]
-                    # * blk.config.outlet_reaction_package.Ci["X_ch"]
-                    # * mw_c
-                    # - blk.Xpr_mapping[t]
-                    # * blk.config.outlet_reaction_package.Ci["X_pr"]
-                    # * mw_c
-                    # - blk.Xli_mapping[t]
-                    # * blk.config.outlet_reaction_package.Ci["X_li"]
-                    # * mw_c
+                    - blk.Xch_mapping[t]
+                    * blk.config.outlet_reaction_package.Ci["X_ch"]
+                    * mw_c
+                    - blk.Xpr_mapping[t]
+                    * blk.config.outlet_reaction_package.Ci["X_pr"]
+                    * mw_c
+                    - blk.Xli_mapping[t]
+                    * blk.config.outlet_reaction_package.Ci["X_li"]
+                    * mw_c
                 )
 
             @self.Constraint(self.flowsheet().time, doc="S_IC concentration output")
@@ -1156,7 +1156,7 @@ see reaction package for documentation.}""",
                 == eps * pyunits.kg / pyunits.m**3
             )
 
-        # TODO: Relationship carried over from ASM1/ADM1 - not clear how Flores-Alsina does it (see perf_plant_AD_ss.m?)
+        # TODO: Relationship carried over from ASM1/ADM1 - not clear how Flores-Alsina handles ions (see perf_plant_AD_ss.m?)
         @self.Constraint(
             self.flowsheet().time,
             doc="Anions balance",
