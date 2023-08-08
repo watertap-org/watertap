@@ -163,18 +163,18 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
 
-    # Unit model, secondary WWTP
-    exports.add(
-        obj=fs.pretreatment.wwtp.energy_electric_flow_vol_inlet,
-        name="Specific energy consumption per inlet flow rate",
-        ui_units=pyunits.kWh / pyunits.m**3,
-        display_units="kWh/m3",
-        rounding=2,
-        description="Electrical energy consumption with respect to influent volumetric flow rate",
-        is_input=True,
-        input_category="Secondary Wastewater Treatment",
-        is_output=False,
-    )
+    # Unit model, secondary WWTP - uncomment if we want to consider pretreatment
+    # exports.add(
+    #     obj=fs.pretreatment.wwtp.energy_electric_flow_vol_inlet,
+    #     name="Specific energy consumption per inlet flow rate",
+    #     ui_units=pyunits.kWh / pyunits.m**3,
+    #     display_units="kWh/m3",
+    #     rounding=2,
+    #     description="Electrical energy consumption with respect to influent volumetric flow rate",
+    #     is_input=True,
+    #     input_category="Secondary Wastewater Treatment",
+    #     is_output=False,
+    # )
 
     # Unit model, RO
     v = fs.desalination.RO.A_comp
@@ -599,18 +599,18 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Capital costs",
     )
-    wwtp_capex = fs.pretreatment.wwtp.costing.capital_cost
-    exports.add(
-        obj=wwtp_capex,
-        name="Secondary WWTP Cost",
-        ui_units=fs.zo_costing.base_currency,
-        display_units="$",
-        rounding=2,
-        description="Secondary WWTP representative of conventional activated sludge with secondary clarifier",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
+    # wwtp_capex = fs.pretreatment.wwtp.costing.capital_cost - uncomment if we want to consider pretreatment
+    # exports.add(
+    #     obj=wwtp_capex,
+    #     name="Secondary WWTP Cost",
+    #     ui_units=fs.zo_costing.base_currency,
+    #     display_units="$",
+    #     rounding=2,
+    #     description="Secondary WWTP representative of conventional activated sludge with secondary clarifier",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
     nf_capex = (
         fs.dye_separation.nanofiltration.costing.capital_cost
         + fs.dye_separation.P1.costing.capital_cost
@@ -725,7 +725,7 @@ def export_variables(flowsheet=None, exports=None):
 
 def build_flowsheet():
     # build and solve initial flowsheet
-    m, include_pretreatment = build(include_pretreatment=True)
+    m, include_pretreatment = build(include_pretreatment=False)
 
     set_operating_conditions(m, include_pretreatment)
     assert_degrees_of_freedom(m, 0)
