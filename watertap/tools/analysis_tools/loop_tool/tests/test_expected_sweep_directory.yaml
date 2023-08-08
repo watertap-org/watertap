@@ -7,7 +7,7 @@ ro_analysis:
             erd_type: pressure_exchanger
           diff_params: {}
           diff_samples: 0
-          dir: D:\OneDrive\NAWI_work\Analysis\NAWI-analysis\analysis_waterTAP\analysisWaterTAP\toolkits\loopTool\tests/output/ro_with_erd/ro_analysis/erd_type/pressure_exchanger/membrane_cost
+          dir: D:\OneDrive\NAWI_work\Analysis\WaterTAP\watertap-dev\watertap\tools\analysis_tools\loop_tool\tests/output/ro_with_erd/ro_analysis/erd_type/pressure_exchanger/membrane_cost
           expected_num_samples: 3
           force_rerun: null
           h5dir: ro_analysis/erd_type/pressure_exchanger/membrane_cost
@@ -31,7 +31,7 @@ ro_analysis:
                   upper_limit: 30
             reinitialize_before_sweep: false
           sweep_params:
-            membrane_cost:
+            fs.costing.reverse_osmosis.membrane_cost:
               lower_limit: 10
               num_samples: 3
               param: fs.costing.reverse_osmosis.membrane_cost
@@ -44,7 +44,7 @@ ro_analysis:
             erd_type: pump_as_turbine
           diff_params: {}
           diff_samples: 0
-          dir: null
+          dir: D:\OneDrive\NAWI_work\Analysis\WaterTAP\watertap-dev\watertap\tools\analysis_tools\loop_tool\tests/output/ro_with_erd/ro_analysis/erd_type/pump_as_turbine/membrane_cost
           expected_num_samples: 3
           force_rerun: null
           h5dir: ro_analysis/erd_type/pump_as_turbine/membrane_cost
@@ -68,7 +68,7 @@ ro_analysis:
                   upper_limit: 30
             reinitialize_before_sweep: false
           sweep_params:
-            membrane_cost:
+            fs.costing.reverse_osmosis.membrane_cost:
               lower_limit: 10
               num_samples: 3
               param: fs.costing.reverse_osmosis.membrane_cost

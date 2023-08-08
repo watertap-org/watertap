@@ -331,7 +331,7 @@ class loopTool:
         # print(loop_value, key)
         if "diff_mode" in loop_value[key]:
             diff_samples = loop_value[key]["num_samples"]
-            diff_params[key] = loop_value[key]
+            diff_params[loop_value[key]["param"]] = loop_value[key]
             expected_num_samples = loop_value[key]["num_samples"]
             min_num_samples = loop_value[key].get("min_num_samples")
             force_rerun = loop_value[key].get("rerun")
@@ -339,16 +339,16 @@ class loopTool:
             for key, values in loop_value[key].items():
                 # print(values)
                 diff_samples = values["num_samples"]
-                diff_params[key] = values
+                diff_params[values["param"]] = values
                 expected_num_samples = values["num_samples"]
                 min_num_samples = loop_value[key].get("min_num_samples")
                 force_rerun = loop_value[key].get("rerun")
         sweep_samples = loop_value["sweep_reference_params"]["num_samples"]
         for key, values in loop_value["sweep_reference_params"].items():
             if key != "num_samples" and key != "min_num_samples":
-                sweep_params[key] = values
+                sweep_params[values["param"]] = values
                 if "num_samples" not in values:
-                    sweep_params[key]["num_samples"] = sweep_samples
+                    sweep_params[values["param"]]["num_samples"] = sweep_samples
         return (
             sweep_params,
             sweep_samples,
@@ -369,9 +369,10 @@ class loopTool:
             # try:
             min_num_samples = loop_value[key].get("min_num_samples")
             force_rerun = loop_value[key].get("rerun")
+            param = loop_value[key]["param"]
             # except:
             return (
-                {key: loop_value[key]},
+                {param: loop_value[key]},
                 num_samples,
                 expected_num_samples,
                 min_num_samples,
@@ -391,7 +392,8 @@ class loopTool:
                 elif key == "rerun":
                     force_rerun = values
                 else:
-                    params[key] = values
+                    param = values["param"]
+                    params[param] = values
                     num_samples = num_samples * values["num_samples"]
             if expected_num_samples == None:
                 expected_num_samples = num_samples

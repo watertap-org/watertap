@@ -68,130 +68,154 @@ def loop_diff_setup():
     return lp, expected_run_dict
 
 
-# def test_sweep_setup(loop_sweep_setup):
-#     lp, expected_run_dict = loop_sweep_setup
-#     lp.build_run_dict()
-
-#     def test_diff_dict(dicta, dictb):
-#         for key in dicta:
-#             if key != "dir":
-#                 if isinstance(dicta[key], dict):
-#                     test_diff_dict(dicta[key], dictb[key])
-
-#                 elif dicta[key] != dictb[key]:
-#                     # print(dicta[key], dictb[key])
-#                     return False
-#                 # else:
-#                 #   break
-
-#         return True
-
-#     assert test_diff_dict(lp.sweep_directory, expected_run_dict)
-
-
-# def test_diff_setup(loop_diff_setup):
-#     lp, expected_run_dict = loop_diff_setup
-#     lp.build_run_dict()
-
-#     def test_diff_dict(dicta, dictb):
-#         for key in dicta:
-#             if key != "dir":
-#                 if isinstance(dicta[key], dict):
-#                     test_diff_dict(dicta[key], dictb[key])
-
-#                 elif dicta[key] != dictb[key]:
-#                     # print(dicta[key], dictb[key])
-#                     return False
-#                 # else:
-#                 #   break
-
-#         return True
-
-#     assert test_diff_dict(lp.sweep_directory, expected_run_dict)
-
-
-# def test_sweep_run(loop_sweep_setup):
-#     lp, test_file = loop_sweep_setup
-#     lp.build_run_dict()
-#     try:
-#         os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
-#     except OSError:
-#         pass
-#     lp.run_simulations()
-
-#     h5file = h5py.File(
-#         lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
-#     )
-#     data = h5file[
-#         "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
-#     ]
-
-#     true_vals = [0.79001381, 0.79909567, 0.80820627]
-#     d = data[()]
-#     for i, tv in enumerate(true_vals):
-#         assert d[i] == pytest.approx(tv, rel=1e-2)
-#     data = h5file[
-#         "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
-#     ]
-
-#     true_vals = [0.46957795, 0.50886109, 0.54814424]
-#     d = data[()]
-#     for i, tv in enumerate(true_vals):
-#         assert d[i] == pytest.approx(tv, rel=1e-2)
-#     h5file.close()
-#     """test that backup works, will not run actual simulation ,create a back up file, and
-#     load data from it into sim file. The lp.back_file_name should not be None
-#     """
-
-
-# def test_sweep_backup(loop_sweep_setup):
-#     """test that backup works, will not run actual simulation ,create a back up file, and
-#     load data from it into sim file. The lp.back_file_name should not be None
-#     """
-#     lp, test_file = loop_sweep_setup
-#     lp.build_run_dict()
-#     lp.run_simulations()
-#     assert lp.h5_backup_location != None
-
-#     h5file = h5py.File(
-#         lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
-#     )
-#     data = h5file[
-#         "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
-#     ]
-
-#     true_vals = [0.79001381, 0.79909567, 0.80820627]
-#     d = data[()]
-#     for i, tv in enumerate(true_vals):
-#         assert d[i] == pytest.approx(tv, rel=1e-2)
-#     data = h5file[
-#         "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
-#     ]
-#     true_vals = [0.46957795, 0.50886109, 0.54814424]
-#     d = data[()]
-#     for i, tv in enumerate(true_vals):
-#         assert d[i] == pytest.approx(tv, rel=1e-2)
-#     h5file.close()
-#     try:
-#         os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
-#     except OSError:
-#         pass
-#     try:
-#         os.remove(lp.h5_backup_location)
-#     except OSError:
-#         pass
-
-
-# Differentail parmater sweep tool does not work with current
-# frame work, this will be incldued once it is.
-def test_diff_setup(loop_diff_setup):
-    lp, test_file = loop_diff_setup
+def test_sweep_setup(loop_sweep_setup):
+    lp, expected_run_dict = loop_sweep_setup
     lp.build_run_dict()
+
+    def test_diff_dict(dicta, dictb):
+        for key in dicta:
+            if key != "dir":
+                if isinstance(dicta[key], dict):
+                    test_diff_dict(dicta[key], dictb[key])
+
+                elif dicta[key] != dictb[key]:
+                    # print(dicta[key], dictb[key])
+                    return False
+                # else:
+                #   break
+
+        return True
+
+    assert test_diff_dict(lp.sweep_directory, expected_run_dict)
+
+
+def test_diff_setup(loop_diff_setup):
+    lp, expected_run_dict = loop_diff_setup
+    lp.build_run_dict()
+
+    def test_diff_dict(dicta, dictb):
+        for key in dicta:
+            if key != "dir":
+                if isinstance(dicta[key], dict):
+                    test_diff_dict(dicta[key], dictb[key])
+
+                elif dicta[key] != dictb[key]:
+                    # print(dicta[key], dictb[key])
+                    return False
+                # else:
+                #   break
+
+        return True
+
+    assert test_diff_dict(lp.sweep_directory, expected_run_dict)
+
+
+def test_sweep_run(loop_sweep_setup):
+    lp, test_file = loop_sweep_setup
+    lp.build_run_dict()
+    try:
+        os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
+    except OSError:
+        pass
     lp.run_simulations()
+
     h5file = h5py.File(
         lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
     )
     data = h5file[
         "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
     ]
-    print(data[()])
+
+    true_vals = [0.79001381, 0.79909567, 0.80820627]
+    d = data[()]
+    for i, tv in enumerate(true_vals):
+        assert d[i] == pytest.approx(tv, rel=1e-2)
+    data = h5file[
+        "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
+    ]
+
+    true_vals = [0.46957795, 0.50886109, 0.54814424]
+    d = data[()]
+    for i, tv in enumerate(true_vals):
+        assert d[i] == pytest.approx(tv, rel=1e-2)
+    h5file.close()
+    """test that backup works, will not run actual simulation ,create a back up file, and
+    load data from it into sim file. The lp.back_file_name should not be None
+    """
+
+
+def test_sweep_backup(loop_sweep_setup):
+    """test that backup works, will not run actual simulation ,create a back up file, and
+    load data from it into sim file. The lp.back_file_name should not be None
+    """
+    lp, test_file = loop_sweep_setup
+    lp.build_run_dict()
+    lp.run_simulations()
+    assert lp.h5_backup_location != None
+
+    h5file = h5py.File(
+        lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
+    )
+    data = h5file[
+        "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
+    ]
+
+    true_vals = [0.79001381, 0.79909567, 0.80820627]
+    d = data[()]
+    for i, tv in enumerate(true_vals):
+        assert d[i] == pytest.approx(tv, rel=1e-2)
+    data = h5file[
+        "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
+    ]
+    true_vals = [0.46957795, 0.50886109, 0.54814424]
+    d = data[()]
+    for i, tv in enumerate(true_vals):
+        assert d[i] == pytest.approx(tv, rel=1e-2)
+    h5file.close()
+    try:
+        os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
+    except OSError:
+        pass
+    try:
+        os.remove(lp.h5_backup_location)
+    except OSError:
+        pass
+
+
+def test_diff_run(loop_diff_setup):
+    lp, test_file = loop_diff_setup
+    lp.build_run_dict()
+    lp.run_simulations()
+    h5file = h5py.File(
+        lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5", "r"
+    )
+
+    data = h5file["ro_diff_analysis/membrane_cost/outputs/fs.costing.LCOW/value"][()]
+    true_vals = [
+        1.11654627,
+        1.11839541,
+        1.12703573,
+        1.12475258,
+        1.12637664,
+        1.1313534,
+        1.12753104,
+        1.13400891,
+        1.13749514,
+        1.13844748,
+        1.11633815,
+        1.1182023,
+        1.12680221,
+        1.12455299,
+        1.12615641,
+        1.13107285,
+        1.12730917,
+        1.13372604,
+        1.13722276,
+        1.13818948,
+    ]
+    for i, tv in enumerate(true_vals):
+        assert data[i] == pytest.approx(tv, rel=1e-2)
+    try:
+        os.remove(lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5")
+    except OSError:
+        pass
