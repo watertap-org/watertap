@@ -11,6 +11,7 @@ from watertap.tools.parameter_sweep.parameter_sweep_differential import (
 
 
 from idaes.core.solvers import get_solver
+import os
 
 
 def ro_build(**kwargs):
@@ -42,7 +43,7 @@ def ro_solve(m, solver=None, **kwargs):
     return result
 
 
-if __name__ == "__main__":
+def test_sweep():
     sweep_params = {
         "feed_mass_nacl": {
             "type": "LinearSample",
@@ -89,3 +90,72 @@ if __name__ == "__main__":
         build_model_kwargs={},
         build_sweep_params_kwargs={"input_dict": sweep_params},
     )
+
+
+def test_diff():
+    sweep_params = {
+        "membrane_cost": {
+            "type": "UniformSample",
+            "param": "fs.costing.reverse_osmosis.membrane_cost",
+            "lower_limit": 0.03,
+            "upper_limit": 0.04,
+            "num_samples": 10,
+        },
+        "factor_membrane_replacement": {
+            "type": "UniformSample",
+            "param": "fs.costing.reverse_osmosis.factor_membrane_replacement",
+            "lower_limit": 10,
+            "upper_limit": 30,
+            "num_samples": 10,
+        },
+    }
+    diff_spec_dict = {
+        "membrane_cost": {
+            "diff_mode": "percentile",
+            "diff_sample_type": "UniformSample",
+            "param": "fs.costing.reverse_osmosis.membrane_cost",
+            "relative_lb": -0.01,
+            "relative_ub": -0.01,
+            "nominal_lb": 10,
+            "nominal_ub": 30,
+            "num_samples": 1,
+        },
+    }
+    m = ro_build()
+    cwd = os.getcwd()
+    solver = get_solver()
+    opt_kwargs = {"solver": solver}
+    ps_kwargs = {}
+    ps_kwargs["csv_results_file_name"] = None
+    ps_kwargs["h5_results_file_name"] = cwd + "test.h5"
+    ps_kwargs["h5_parent_group_name"] = "test/1"
+
+    ps_kwargs["optimize_function"] = ro_solve
+    ps_kwargs["optimize_kwargs"] = opt_kwargs
+
+    ps_kwargs["reinitialize_function"] = ro_init
+    ps_kwargs["reinitialize_kwargs"] = opt_kwargs
+    ps_kwargs["reinitialize_before_sweep"] = False
+
+    ps_kwargs["custom_do_param_sweep"] = None
+    ps_kwargs["custom_do_param_sweep_kwargs"] = None
+
+    ps_kwargs["probe_function"] = None
+
+    ps_kwargs["differential_sweep_specs"] = ParameterSweepReader()._dict_to_diff_spec(
+        m, diff_spec_dict
+    )
+    # ps_kwargs["number_of_subprocesses"] = 1
+
+    ps = DifferentialParameterSweep(**ps_kwargs)
+    ps.parameter_sweep(
+        m,
+        ParameterSweepReader()._dict_to_params(m, input_dict=sweep_params),
+        num_samples=10,
+        # build_model_kwargs=self.combined_build_defaults,
+        # build_sweep_params_kwargs={"input_dict": self.sweep_params},
+    )
+
+
+if __name__ == "__main__":
+    test_diff()

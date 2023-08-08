@@ -20,7 +20,7 @@ ro_diff_analysis:
         upper_limit: 30
       factor_membrane_replacement:
         type: UniformSample
-        param: fs.costing.reverse_osmosis.membrane_cost
+        param: fs.costing.reverse_osmosis.factor_membrane_replacement
         lower_limit: 10
         upper_limit: 30
       num_samples: 10

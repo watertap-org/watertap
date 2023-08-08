@@ -617,8 +617,6 @@ class loopTool:
             build_sweep_params_kwargs={"input_dict": self.sweep_params},
         )
 
-    # This will not work, as diff _parametr sweep tool
-    # requires an update
     def run_diff_parameter_sweep(self):
         """setup and run diff paramer sweep
         fix once the diff paramter tool is updated to new version."""
@@ -632,6 +630,9 @@ class loopTool:
         self.combined_init_defaults.update({"solver": solver})
         # add solver to optimize kwarg
         self.combined_optimize_defaults.update({"solver": solver})
+
+        # legacy, need to build m
+        m = self.build_function(**self.combined_build_defaults)
 
         # setup parmater sweep tool
         ps_kwargs = {}
@@ -651,15 +652,24 @@ class loopTool:
 
         ps_kwargs["probe_function"] = self.probe_function
 
-        ps_kwargs["number_of_subprocesses"] = self.number_of_subprocesses
-
-        ps_kwargs["differential_sweep_specs"] = self.differential_sweep_specs
+        # ps_kwargs["number_of_subprocesses"] = self.number_of_subprocesses
+        # LEGACY will need to change when parallmanage radded to diff
+        ps_kwargs[
+            "differential_sweep_specs"
+        ] = ParameterSweepReader()._dict_to_diff_spec(m, self.differential_sweep_specs)
         ps = DifferentialParameterSweep(**ps_kwargs)
+
+        # these are added for custom function access
+        ps.build_model = self.build_function
+        ps.build_sweep_params = ParameterSweepReader()._dict_to_params
+        ps.build_outputs = None
+        ps.build_model_kwargs = self.combined_build_defaults
+        ps.build_sweep_params_kwargs = {"input_dict": self.sweep_params}
+
         ps.parameter_sweep(
-            self.build_function,
-            ParameterSweepReader()._dict_to_params,
-            build_outputs=None,
+            m,
+            ParameterSweepReader()._dict_to_params(m, input_dict=self.sweep_params),
             num_samples=self.num_samples,
-            build_model_kwargs=self.combined_build_defaults,
-            build_sweep_params_kwargs={"input_dict": self.sweep_params},
+            # build_model_kwargs=self.combined_build_defaults,
+            # build_sweep_params_kwargs={"input_dict": self.sweep_params},
         )

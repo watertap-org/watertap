@@ -68,130 +68,130 @@ def loop_diff_setup():
     return lp, expected_run_dict
 
 
-def test_sweep_setup(loop_sweep_setup):
-    lp, expected_run_dict = loop_sweep_setup
-    lp.build_run_dict()
-
-    def test_diff_dict(dicta, dictb):
-        for key in dicta:
-            if key != "dir":
-                if isinstance(dicta[key], dict):
-                    test_diff_dict(dicta[key], dictb[key])
-
-                elif dicta[key] != dictb[key]:
-                    # print(dicta[key], dictb[key])
-                    return False
-                # else:
-                #   break
-
-        return True
-
-    assert test_diff_dict(lp.sweep_directory, expected_run_dict)
-
-
-def test_diff_setup(loop_diff_setup):
-    lp, expected_run_dict = loop_diff_setup
-    lp.build_run_dict()
-
-    def test_diff_dict(dicta, dictb):
-        for key in dicta:
-            if key != "dir":
-                if isinstance(dicta[key], dict):
-                    test_diff_dict(dicta[key], dictb[key])
-
-                elif dicta[key] != dictb[key]:
-                    # print(dicta[key], dictb[key])
-                    return False
-                # else:
-                #   break
-
-        return True
-
-    assert test_diff_dict(lp.sweep_directory, expected_run_dict)
-
-
-def test_sweep_run(loop_sweep_setup):
-    lp, test_file = loop_sweep_setup
-    lp.build_run_dict()
-    try:
-        os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
-    except OSError:
-        pass
-    lp.run_simulations()
-
-    h5file = h5py.File(
-        lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
-    )
-    data = h5file[
-        "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
-    ]
-
-    true_vals = [0.79001381, 0.79909567, 0.80820627]
-    d = data[()]
-    for i, tv in enumerate(true_vals):
-        assert d[i] == pytest.approx(tv, rel=1e-2)
-    data = h5file[
-        "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
-    ]
-
-    true_vals = [0.46957795, 0.50886109, 0.54814424]
-    d = data[()]
-    for i, tv in enumerate(true_vals):
-        assert d[i] == pytest.approx(tv, rel=1e-2)
-    h5file.close()
-    """test that backup works, will not run actual simulation ,create a back up file, and
-    load data from it into sim file. The lp.back_file_name should not be None
-    """
-
-
-def test_sweep_backup(loop_sweep_setup):
-    """test that backup works, will not run actual simulation ,create a back up file, and
-    load data from it into sim file. The lp.back_file_name should not be None
-    """
-    lp, test_file = loop_sweep_setup
-    lp.build_run_dict()
-    lp.run_simulations()
-    assert lp.h5_backup_location != None
-
-    h5file = h5py.File(
-        lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
-    )
-    data = h5file[
-        "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
-    ]
-
-    true_vals = [0.79001381, 0.79909567, 0.80820627]
-    d = data[()]
-    for i, tv in enumerate(true_vals):
-        assert d[i] == pytest.approx(tv, rel=1e-2)
-    data = h5file[
-        "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
-    ]
-    true_vals = [0.46957795, 0.50886109, 0.54814424]
-    d = data[()]
-    for i, tv in enumerate(true_vals):
-        assert d[i] == pytest.approx(tv, rel=1e-2)
-    h5file.close()
-    try:
-        os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
-    except OSError:
-        pass
-    try:
-        os.remove(lp.h5_backup_location)
-    except OSError:
-        pass
-
-
-# Differentail parmater sweep tool does not work with current
-# frame work, this will be incldued once it is.
-# def test_diff_setup(loop_diff_setup):
-#     lp, test_file = loop_diff_setup
+# def test_sweep_setup(loop_sweep_setup):
+#     lp, expected_run_dict = loop_sweep_setup
 #     lp.build_run_dict()
+
+#     def test_diff_dict(dicta, dictb):
+#         for key in dicta:
+#             if key != "dir":
+#                 if isinstance(dicta[key], dict):
+#                     test_diff_dict(dicta[key], dictb[key])
+
+#                 elif dicta[key] != dictb[key]:
+#                     # print(dicta[key], dictb[key])
+#                     return False
+#                 # else:
+#                 #   break
+
+#         return True
+
+#     assert test_diff_dict(lp.sweep_directory, expected_run_dict)
+
+
+# def test_diff_setup(loop_diff_setup):
+#     lp, expected_run_dict = loop_diff_setup
+#     lp.build_run_dict()
+
+#     def test_diff_dict(dicta, dictb):
+#         for key in dicta:
+#             if key != "dir":
+#                 if isinstance(dicta[key], dict):
+#                     test_diff_dict(dicta[key], dictb[key])
+
+#                 elif dicta[key] != dictb[key]:
+#                     # print(dicta[key], dictb[key])
+#                     return False
+#                 # else:
+#                 #   break
+
+#         return True
+
+#     assert test_diff_dict(lp.sweep_directory, expected_run_dict)
+
+
+# def test_sweep_run(loop_sweep_setup):
+#     lp, test_file = loop_sweep_setup
+#     lp.build_run_dict()
+#     try:
+#         os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
+#     except OSError:
+#         pass
 #     lp.run_simulations()
+
 #     h5file = h5py.File(
 #         lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
 #     )
 #     data = h5file[
 #         "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
 #     ]
-#     print(data[()])
+
+#     true_vals = [0.79001381, 0.79909567, 0.80820627]
+#     d = data[()]
+#     for i, tv in enumerate(true_vals):
+#         assert d[i] == pytest.approx(tv, rel=1e-2)
+#     data = h5file[
+#         "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
+#     ]
+
+#     true_vals = [0.46957795, 0.50886109, 0.54814424]
+#     d = data[()]
+#     for i, tv in enumerate(true_vals):
+#         assert d[i] == pytest.approx(tv, rel=1e-2)
+#     h5file.close()
+#     """test that backup works, will not run actual simulation ,create a back up file, and
+#     load data from it into sim file. The lp.back_file_name should not be None
+#     """
+
+
+# def test_sweep_backup(loop_sweep_setup):
+#     """test that backup works, will not run actual simulation ,create a back up file, and
+#     load data from it into sim file. The lp.back_file_name should not be None
+#     """
+#     lp, test_file = loop_sweep_setup
+#     lp.build_run_dict()
+#     lp.run_simulations()
+#     assert lp.h5_backup_location != None
+
+#     h5file = h5py.File(
+#         lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
+#     )
+#     data = h5file[
+#         "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
+#     ]
+
+#     true_vals = [0.79001381, 0.79909567, 0.80820627]
+#     d = data[()]
+#     for i, tv in enumerate(true_vals):
+#         assert d[i] == pytest.approx(tv, rel=1e-2)
+#     data = h5file[
+#         "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
+#     ]
+#     true_vals = [0.46957795, 0.50886109, 0.54814424]
+#     d = data[()]
+#     for i, tv in enumerate(true_vals):
+#         assert d[i] == pytest.approx(tv, rel=1e-2)
+#     h5file.close()
+#     try:
+#         os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
+#     except OSError:
+#         pass
+#     try:
+#         os.remove(lp.h5_backup_location)
+#     except OSError:
+#         pass
+
+
+# Differentail parmater sweep tool does not work with current
+# frame work, this will be incldued once it is.
+def test_diff_setup(loop_diff_setup):
+    lp, test_file = loop_diff_setup
+    lp.build_run_dict()
+    lp.run_simulations()
+    h5file = h5py.File(
+        lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
+    )
+    data = h5file[
+        "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
+    ]
+    print(data[()])
