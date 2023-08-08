@@ -8,7 +8,7 @@ Loop Tool
 
 The loopTool is a wrapper for the parameter sweep (PS) tool set, and is designed to simplify setting up parametric sweeps, enabling sweeping over discreet design choices, and providing a structured data management.  
 The loopTool uses the full features of PS tool set, including standard PS tool and differential PS tool, but brings in the ability to run iteratively over different build options, initialization options, and solve options that might be required for full flowsheet analysis. A common example is solving processes with multiple stages such as LSRRO flow sheet, or options where different design choices need to be evaluated such as different pressure exchanger types in RO. Other examples, could be exploring different initialization guess, or setting up different solve constraints. All of these options can be run in nested configuration (e.g. for every stage simulate N number of build configurations) 
-The loopTool provide uses h5 format to provide a single structured data management structure, and campion tool dataImporter provides a simple interface to explore these files (coming soon TM). The h5 format enables saving data in a file using path, such that each unique simulation run with parameter sweep is stored in its own address, enabling one file to store large number of different simulations. The loopTool does not support storing data in CSV format due to its limitations. 
+The loopTool uses h5 format for structured data management, and campion tool dataImporter provides a simple interface to explore these files (coming soon TM). The h5 format enables saving data in a file using path, such that each unique simulation run with parameter sweep is stored in its own address, enabling one file to store large number of different simulations. The loopTool does not support storing data in CSV format due to its limitations. 
 
 Setting up loopTool
 -----------------------------
@@ -17,12 +17,14 @@ The loopTool setup involves creating the following:
 2)	A .yaml file with simulation configuration 
 3)	A .py file that connects looptool to the flowsheet, directories for where to save data, and yaml file, as well as other solve or PS options 
 
-Setting up a flowsheet for use with loopTool and PS
----------------------------------------------------
+Setting up a flowsheet for use with loopTool
+----------------------------------------------------
 The loopTool requires similar functional setup as PS tool kit. Here we will setup RO_with_energy_recovery.py exmaple flowsheet for use with PS and loopTool.The RO_with_energy_recovery has an option 
 that pass in erd_type allowing user to select type of ERD device (either a pressure_exchanger, pump_as_turbine, or None). The user likely would want to run parameter sweep across these options, and we wil setup the loopTool to do so. 
 
-1.  The *build_function* that builds the flowsheet (build)- This function should build the flowsheet, and accept any kwargs for its configuration. Here we pass explicitly erd_type, but also include *kwargs* incase we want to pass in another options in the future. When loopTool runs, it will pass selectd *kwargs* into this function before running the sweep. 
+*The user will need to setup the following three function, description and example are shown below:*
+
+1. The *build_function* that builds the flowsheet (ro_build)- This function should build the flowsheet, and accept any kwargs for its configuration. Here we pass explicitly erd_type, but also include *kwargs* incase we want to pass in another options in the future. When loopTool runs, it will pass selectd *kwargs* into this function before running the sweep. 
 2. The *initialization_function* (ro_init)- this function will initialize the model. This is in general optional, as initialization can be done in build function as well, but it is useful for PS tool, as it can use it to reinitialize the model in case a solve fails and try again. 
    
    Additionally, the PS tool (and loopTool) will update the parameters on model tree we are sweep across before calling initialize as well as before calling the solve function. It is critical that in initialize function, we fix or unfix any variable we are sweeping over to their required values for initialize routine unless, that routine can leverage changes in sweeped parameters. 
@@ -37,25 +39,20 @@ An example of the functions setup for use with loopTool for RO_with_energy_recov
 .. code-block::
 
    import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as ro_erd
-   def build(erd_type=None, **kwargs):
+   def ro_build(erd_type=None, **kwargs):
       m = ro_erd.build(erd_type)
       return m
 
    def ro_init(m, solver=None, **kwargs):
-    # make sure these are fixed by init routine instad..
-    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
-    m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
+      # these would need to unfixed for initialization
+      m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
+      m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
 
-    ro_erd.set_operating_conditions(
-        m, water_recovery=0.5, over_pressure=0.3, solver=solver
-    )
-    ro_erd.initialize_system(m, solver=solver)
-    ro_erd.optimize_set_up(m)
-    print(
-        'm.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]',
-        m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"].value,
-    )
-    m.fs.feed.properties[0].display()
+      ro_erd.set_operating_conditions(
+         m, water_recovery=0.5, over_pressure=0.3, solver=solver
+      )
+      ro_erd.initialize_system(m, solver=solver)
+      ro_erd.optimize_set_up(m)
 
    def ro_solve(m, solver=None, **kwargs):
       result = solver.solve(m)
@@ -63,7 +60,8 @@ An example of the functions setup for use with loopTool for RO_with_energy_recov
 
 Setting up the .yaml configuration file 
 --------------------------------------------------
-The loopTool uses a yaml file to generate all sweep configurations, define variables to sweep over, and other options. This enables user to have multiple setup files that can be used to run simulations ,with out having to change any underlying code, except changing which yaml file the loopTool uses. 
+The loopTool uses a yaml file to generate all sweep configurations, define variables to sweep over, and other options. 
+This enables user to have multiple setup files that can be used to run simulations with out having to change any underlying code, except changing which yaml file the loopTool uses. 
 
 The loopTool yaml file accepts two types of configurations:
    * *default options* - these configure simulation defaults, that either define PS tool behavior, loopTool behavior, or default keys that are passed into build, initialize, or optimize functions, unless they are overridden by loop options 
@@ -91,7 +89,7 @@ These configuration arguments are designed to be defined and set up in a yaml fi
 
 .. code-block::
 
-   # for sweep_param_loop
+   # for parametric sweeps
    # for LinearSamples, UniformSample, GeomSample, ReverseGeomSample, LatinHypercubeSample
    sweep_param_loop:
       sweep_param_name:  
@@ -113,11 +111,12 @@ These configuration arguments are designed to be defined and set up in a yaml fi
 The sweep_param_loop parameters will be iterated one by one, to sweep over multiple parameter, you can define a group, examples
 
 **Defining diff_param_loop**
+
 The diff_param_loop defines a run for parameter_sweep_differential tool and requires same parametrization. Namely the differential spec, and parameter sweep values. In the yaml file, when setting up diff_param_loop, the first set of parameters will define the differential spec, while values after *sweep_reference_params* will define the parameters for reference sweep.
 
 .. code-block::
 
-   # for sweep_param_loop
+   # for differenatial sweeps
    diff_param_loop:
       # percentile diff_type
       diff_param_name:  
@@ -145,8 +144,10 @@ The diff_param_loop defines a run for parameter_sweep_differential tool and requ
             sd: standard deviation
             num_samples: number of samples to run 
 
-**General yaml structure**
+**General yaml structure:**
+
 The general structure starts with analysis name, which will be used in the file name when saving, followed by default options and configurations, and finally by loops options. The general structure is shown below: 
+
 .. code-block::
 
    analysis_name:
@@ -179,8 +180,9 @@ The general structure starts with analysis name, which will be used in the file 
                         etc
 
 
-**Examples for RO ewith ERD**
-Here we setup a simple run on RO erd, requesting loopTool, to run PS tool over 2 RO erd_type configurations, for each erd_configuration, we run a linear sweep over membrane cost, a linear sweep over factor_membrane_replacment, and map sweep over NaCl loading and RO recovery, the map sweep will generate a mesh grid using NaCl loading and RO recovery, producing a 9 samples total. The example of map sweep can include as many or as few parameters as user desires.  
+**Examples for RO with ERD**
+
+Here we setup a simple run on RO erd flowsheet, requesting loopTool, to run PS tool over 2 RO erd_type configurations, for each erd_configuration, we run a linear sweep over membrane cost, a linear sweep over factor_membrane_replacment, and map sweep over NaCl loading and RO recovery, the map sweep will generate a mesh grid using NaCl loading and RO recovery, producing a 9 samples total. The example of map sweep can include as many or as few parameters as user desires.  
 
 .. code-block::
 
@@ -219,19 +221,20 @@ Here we setup a simple run on RO erd, requesting loopTool, to run PS tool over 2
 
 
 Example useing cases, here we assume ro_build function takes in 2 options, a water type, and erd type.
+The loop tool will ran parameter sweep over each case.
 
 .. code-block::
 
    ro_erd_analysis_simple:
       build_loop:
          cases:
-            case_a:
+            BGW_with_erd:
                water_type: BGW
                erd_type: pump_as_turbine
-            case_b: 
+            BGW_without_ERD: 
                water_type: BGW
                erd_type: null # none in yaml is null
-            case_c:
+            SW_with_ERD:
                water_type: SW
                erd_type: pump_as_turbine 
          sweep_param_loop:
@@ -242,7 +245,7 @@ Example useing cases, here we assume ro_build function takes in 2 options, a wat
                   upper_limit: 30
                   num_samples: 3
 
-Example where we don't do any build loops, intit loops etc, this will simply run membrane_cost sweep
+Example where we don't do any build loops, intit loops etc, this will simply run membrane_cost sweep, this is same as useing PS tool directly, but gives simple data managment if user wants to sweep over many variables in the model.
 
 .. code-block::
 
@@ -255,7 +258,7 @@ Example where we don't do any build loops, intit loops etc, this will simply run
                upper_limit: 30
                num_samples: 3
 
-Example setting up differential sweep:
+Example setting up differential sweep. Briefly, this type of analysis can provide insight into how reducing membrane cost can reduce RO costs, even when exact membrnae costs and replacement factors are unkown. 
 
 .. code-block::
 
@@ -290,18 +293,13 @@ Example setting up differential sweep:
                   param: fs.costing.reverse_osmosis.membrane_cost
                   lower_limit: 10
                   upper_limit: 30                  
-               factor_membrane_replacement: 
-                  type: UniformSample
-                  param: fs.costing.reverse_osmosis.factor_membrane_replacement
-                  lower_limit: 0.1
-                  upper_limit: 0.2
                num_samples: 10
 
 Setting up the loopTool
 -------------------------------------
 
 
-To loopTool can be exuted by passing in the flowsheet functions, yaml file, and save locations into the loopTool, as well as additional optional arguments:
+To loopTool can be excuted by passing in the flowsheet functions, yaml file, and save locations into the loopTool, as well as additional optional arguments:
 
    * loop_file (required): .yaml config file that contains iterative loops to run
    * solver (optional): solver to use in model, default uses watertap solver
@@ -339,7 +337,8 @@ Example of code for setting up our example of RO with ERD
     )
 
 The above code example will run the RO_erd flowsheet through loops specified with our yaml file. 
-If run without MPI
+If run without MPI, the loopTool will default to useing mutliprocessing for parallelizaiton if available. 
+
 The loopTool will create an output folder in directory as found by get_working_dir(). 
 
 Upon succesfull run, there will be an output folder, with an h5File, that will have a name of save_name_analysisType_analysis_name, save_name is specified in loopTool, while analysis_name is specified in yaml file.
@@ -385,7 +384,10 @@ The loopTool will store data in h5 file, with structure similar to that of the y
             |-solve_successful 
             |-sweep_params 
 
-We can readely access the data for processing by useing h5py 
+We can readely access the data for processing by useing h5py. 
+To visually explore the h5 file, use HDFviewer ( https://www.hdfgroup.org/downloads/hdfview/ )
+All the parameters will use thier parm names or object keys as reference (e.g. if you set up yaml file to sweep over 'RO_recovery' for which param is 'fs.ro.ro_recovery', the file will store data for RO_recovery under key 'fs.ro.ro_recovery'.
+
 
 .. code-block::
 
@@ -404,7 +406,9 @@ We can readely access the data for processing by useing h5py
 
 The loopTool includes a naïve data management schema to prevent overwriting existing files and minimize simulations runs through creation of backups from existing files. When the loopTool starts it will check if a file with same name already exists, if it does it will rename that file to include a data and time (file_name+_M_D-H_M-S.bak).  
 
-The backup file will be used to check if existing completed simulations exists, before running a simulation it will check if the backup file contains a complete simulation for current run, (this only checks number of successfully solved samples, but does not check if the sweep_parameters match), if the number of simulations is the same, it will copy over the data from back up file into new file, otherwise it will re-run the simulations. The user can specify the expected number of samples if it differs from num_samples by passing additional  expected_num_samples along num_samples. 
+The backup file will be used to check if existing completed simulations exists, before running a simulation it will check if the backup file contains a complete simulation for current run, (this only checks number of successfully solved samples, but does not check if the sweep_parameters match), if the all of simulations were succesfull solved in backup file, it will copy over the data from back up file into new file, otherwise it will re-run the simulations. The user can specify the expected number of samples if it differs from num_samples by passing additional  expected_num_samples along num_samples. 
+
+This feature is designed to help with getting complete sets, without needing to re-run all the looped options. For example, you might run a certain build loop, where only in one build option some solutions failed. After fixing the reason, you can rerun the loopTool, and it will only rerun those build options that failed to solve. 
 
 The user can disable the backup generation by setting h5_backup argument in loopTool to False, or ideally by deleting existing h5 file if the simulation results in it are not needed. The loopTool will avoid overwriting exiting files, and if a file with same name exists it will error out. 
  
