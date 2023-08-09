@@ -142,7 +142,9 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 for i in blk.readily_biodegradable2
             )
 
-        self.unchanged_component = Set(initialize=["S_I", "X_I", "X_PP", "X_PHA"])
+        self.unchanged_component = Set(
+            initialize=["S_I", "X_I", "X_PP", "X_PHA", "S_K", "S_Mg", "S_IC"]
+        )
 
         @self.Constraint(
             self.flowsheet().time,
@@ -175,17 +177,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 == blk.properties_in[t].conc_mass_comp["S_IP"]
             )
 
-        # TODO: No S_IC for current ASM2D, need to revisit it later
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Equality alkalinity equation",
-        )
-        def return_Salk(blk, t):
-            return (
-                blk.properties_out[t].alkalinity
-                == blk.properties_in[t].conc_mass_comp["S_IC"] / mw_c
-            )
-
         self.slowly_biodegradable = Set(
             initialize=[
                 "X_ch",
@@ -203,9 +194,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 blk.properties_in[t].conc_mass_comp[i] for i in blk.slowly_biodegradable
             )
 
-        # TODO: check if we track S_SO4, S_Na, S_Cl, S_Ca, X_Ca2(PO4)3, X_MgNH4PO4
-
-        # TODO: X_TSS, X_MeOH and X_MeP are not given in Flores-Alsina's paper, need to check how to address them
         self.zero_flow_components = Set(
             initialize=[
                 "S_N2",
@@ -214,9 +202,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 "X_AUT",
                 "X_H",
                 "X_PAO",
-                "X_TSS",
-                "X_MeOH",
-                "X_MeP",
             ]
         )
 
@@ -230,22 +215,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 blk.properties_out[t].conc_mass_comp[i]
                 == 1e-6 * pyunits.kg / pyunits.m**3
             )
-
-        if (
-            self.config.outlet_property_package.config.additional_solute_list
-            is not None
-        ):
-
-            @self.Constraint(
-                self.flowsheet().time,
-                self.config.outlet_property_package.config.additional_solute_list,
-                doc="Equality ASM2D additional solute equation",
-            )
-            def eq_ASM2D_additional_conc(blk, t, i):
-                return (
-                    blk.properties_out[t].conc_mass_comp[i]
-                    == blk.properties_in[t].conc_mass_comp[i]
-                )
 
     def initialize_build(
         self,

@@ -282,13 +282,11 @@ def build_flowsheet():
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-3)
+                iscale.set_scaling_factor(var, 1e-4)
             if "enth_mol" in var.name:
                 iscale.set_scaling_factor(var, 1e-3)
             if "alkalinity" in var.name:
                 iscale.set_scaling_factor(var, 1e3)
-            if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
 
             if "conc_mass_comp[S_O2]" in var.name:
                 iscale.set_scaling_factor(var, 1e3)
@@ -398,7 +396,7 @@ def build_flowsheet():
 
     seq.run(m, function)
 
-    solver = get_solver(options={"bound_push": 1e-8})
+    solver = get_solver()
     results = solver.solve(m, tee=False)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
 

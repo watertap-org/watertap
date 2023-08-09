@@ -20,9 +20,9 @@ from watertap.tools.parameter_sweep.parameter_sweep_differential import (
 
 
 def parameter_sweep(
-    model,
-    sweep_params,
-    outputs=None,
+    build_model,
+    build_sweep_params,
+    build_outputs=None,
     csv_results_file_name=None,
     h5_results_file_name=None,
     h5_parent_group_name=None,
@@ -32,11 +32,13 @@ def parameter_sweep(
     reinitialize_kwargs=None,
     reinitialize_before_sweep=False,
     probe_function=None,
-    mpi_comm=None,
     debugging_data_dir=None,
     interpolate_nan_outputs=False,
     num_samples=None,
     seed=None,
+    number_of_subprocesses=None,
+    build_model_kwargs=None,
+    build_sweep_params_kwargs=None,
 ):
 
     """
@@ -47,22 +49,23 @@ def parameter_sweep(
 
     Arguments:
 
-        model : A Pyomo ConcreteModel containing a watertap flowsheet, for best
-                results it should be initialized before being passed to this
-                function.
+        build_model : A function that can be called to build a Pyomo ConcreteModel, OR
+                      (deprecated) a Pyomo ConcreteModel containing a watertap flowsheet.
 
-        sweep_params: A dictionary containing the values to vary with the format
-                      ``sweep_params['Short/Pretty-print Name'] =
-                      (model.fs.variable_or_param[index], lower_limit, upper_limit, num_samples)``.
-                      A uniform number of samples ``num_samples`` will be take between
-                      the ``lower_limit`` and ``upper_limit``.
+        build_sweep_params: A function that can be called to build a dictionary containing the values to vary
+                            with the format ``sweep_params['Short/Pretty-print Name'] =
+                            (model.fs.variable_or_param[index], lower_limit, upper_limit, num_samples)``.
+                            A uniform number of samples ``num_samples`` will be take between
+                            the ``lower_limit`` and ``upper_limit``.
+                            OR (deprecated) the dictionary itself rather than a function for creating it.
 
-        outputs (optional) : An optional dictionary containing "short names" as keys and and Pyomo objects
-                  on ``model`` whose values to report as values. E.g.,
-                  ``outputs['Short/Pretty-print Name'] = model.fs.variable_or_expression_to_report``.
-                  If not provided, i.e., outputs = None, the default behavior is to save all model
-                  variables, parameters, and expressions which provides very thorough results
-                  at the cost of large file sizes.
+        outputs (optional) : An optional function to produce a dictionary containing "short names" as
+                             keys and and Pyomo objects on ``model`` whose values to report as values. E.g.,
+                             ``outputs['Short/Pretty-print Name'] = model.fs.variable_or_expression_to_report``.
+                             OR (deprecated) the dictionary itself rather than a function for creating it.
+                             If neither is provided, i.e., outputs = None, the default behavior is to save all model
+                             variables, parameters, and expressions which provides very thorough results
+                             at the cost of large file sizes.
 
         csv_results_file_name (optional) : The path and file name to write a csv file. The default `None`
                                            does not write a csv file.
@@ -106,10 +109,6 @@ def parameter_sweep(
         probe_function (optional): A user-defined function that can cheaply check if a current model
                                   configuration is solvable without actually reinitializing or solving.
 
-        mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
-                              If None COMM_WORLD will be used. The default is sufficient for most
-                              users.
-
         debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging
                                         purposes. If None no `debugging` data will be saved.
 
@@ -124,6 +123,14 @@ def parameter_sweep(
 
         seed (optional) : If the user is using a random sampling technique, this sets the seed
 
+        number_of_subprocesses (optional) : Directive for fanning out subprocesses to perform
+                                            parallel computation.
+
+        build_model_kwargs (optional): A dictionary of kwargs to pass into the build_model function.
+
+        build_sweep_params_kwargs (optional): A dictionary of kwargs to pass into the build_sweep_params
+                                              function.
+
     Returns:
 
         save_data : A list were the first N columns are the values of the parameters passed
@@ -132,8 +139,6 @@ def parameter_sweep(
     """
 
     kwargs = {}
-    if mpi_comm is not None:
-        kwargs["comm"] = mpi_comm
     if csv_results_file_name is not None:
         kwargs["csv_results_file_name"] = csv_results_file_name
     if h5_results_file_name is not None:
@@ -155,15 +160,19 @@ def parameter_sweep(
         kwargs["debugging_data_dir"] = debugging_data_dir
     if interpolate_nan_outputs is not None:
         kwargs["interpolate_nan_outputs"] = interpolate_nan_outputs
+    if number_of_subprocesses is not None:
+        kwargs["number_of_subprocesses"] = number_of_subprocesses
 
     ps = ParameterSweep(**kwargs)
 
     return ps.parameter_sweep(
-        model,
-        sweep_params,
-        combined_outputs=outputs,
+        build_model,
+        build_sweep_params,
+        build_outputs=build_outputs,
         num_samples=num_samples,
         seed=seed,
+        build_model_kwargs=build_model_kwargs,
+        build_sweep_params_kwargs=build_sweep_params_kwargs,
     )
 
 
@@ -180,7 +189,6 @@ def recursive_parameter_sweep(
     reinitialize_kwargs=None,
     reinitialize_before_sweep=False,
     probe_function=None,
-    mpi_comm=None,
     debugging_data_dir=None,
     interpolate_nan_outputs=False,
     req_num_samples=None,
@@ -252,10 +260,6 @@ def recursive_parameter_sweep(
         probe_function (optional): A user-defined function that can cheaply check if a current model
                                   configuration is solvable without actually reinitializing or solving.
 
-        mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
-                              If None COMM_WORLD will be used. The default is sufficient for most
-                              users.
-
         debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging
                                         purposes. If None no `debugging` data will be saved.
 
@@ -279,8 +283,6 @@ def recursive_parameter_sweep(
     """
 
     kwargs = {}
-    if mpi_comm is not None:
-        kwargs["comm"] = mpi_comm
     if csv_results_file_name is not None:
         kwargs["csv_results_file_name"] = csv_results_file_name
     if h5_results_file_name is not None:
@@ -324,7 +326,6 @@ def differential_parameter_sweep(
     reinitialize_kwargs=None,
     reinitialize_before_sweep=False,
     probe_function=None,
-    mpi_comm=None,
     debugging_data_dir=None,
     interpolate_nan_outputs=False,
     num_samples=None,
@@ -421,10 +422,6 @@ def differential_parameter_sweep(
         probe_function (optional): A user-defined function that can cheaply check if a current model
                                   configuration is solvable without actually reinitializing or solving.
 
-        mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
-                              If None COMM_WORLD will be used. The default is sufficient for most
-                              users.
-
         debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging
                                         purposes. If None no `debugging` data will be saved.
 
@@ -452,8 +449,6 @@ def differential_parameter_sweep(
 
     kwargs = {}
     kwargs["differential_sweep_specs"] = differential_sweep_specs
-    if mpi_comm is not None:
-        kwargs["comm"] = mpi_comm
     if csv_results_file_name is not None:
         kwargs["csv_results_file_name"] = csv_results_file_name
     if h5_results_file_name is not None:

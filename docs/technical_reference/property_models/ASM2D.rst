@@ -120,7 +120,7 @@ Kinetic Parameters
    "Inhibition coefficient for PP storage", ":math:`K_{IPP}`", "K_IPP", 0.02, ":math:`\text{kg PP/}\text{kg PAO}`"
    "Saturation coefficient for PHA", ":math:`K_{PHA}`", "K_PHA", 0.01, ":math:`\text{kg PHA/}\text{kg PAO}`"
    "Maximum growth rate of X_AUT", ":math:`µ_{AUT}`", "mu_AUT", 1, ":math:`\text{day}^{-1}`"
-   "Decay rate of X_AUT", ":math:`µ_{AUT}`", "mu_{AUT}", 0.15, ":math:`\text{day}^{-1}`"
+   "Decay rate of X_AUT", ":math:`b_{AUT}`", "b_{AUT}", 0.15, ":math:`\text{day}^{-1}`"
    "Rate constant for P precipitation", ":math:`k_{PRE}`", "k_pre", 1000, ":math:`\text{m/}^{3}\text{kg Fe(OH)_3 . day}`"
    "Rate constant for redissolution", ":math:`k_{RED}`", "k_red", 0.6, ":math:`\text{day}^{-1}`"
 

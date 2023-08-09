@@ -19,8 +19,8 @@ from pyomo.environ import (
 )
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
-from watertap.property_models.activated_sludge.modified_asm2d_properties import (
-    ModifiedASM2dParameterBlock,
+from watertap.property_models.activated_sludge.simple_modified_asm2d_properties import (
+    SimpleModifiedASM2dParameterBlock,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -45,7 +45,7 @@ class TestElectroNP:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = ModifiedASM2dParameterBlock(
+        m.fs.properties = SimpleModifiedASM2dParameterBlock(
             additional_solute_list=["S_K", "S_Mg"]
         )
 
@@ -278,10 +278,10 @@ class TestElectroNP:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(1295.765, rel=1e-5) == value(
+        assert pytest.approx(1036611.9, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(1.75266e-4, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.04431857, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, ElectroNP_frame):

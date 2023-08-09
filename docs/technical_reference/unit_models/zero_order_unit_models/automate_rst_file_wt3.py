@@ -33,7 +33,7 @@ from pathlib import Path
 sidor_db_path = os.path.dirname(os.path.abspath(__file__))
 
 
-def grab_unit_components(unit_class):
+def grab_unit_components(unit_class, i):
 
     m = ConcreteModel()
     m.zero_db = Database(dbpath=sidor_db_path)
@@ -256,6 +256,7 @@ title_exceptions = {
     "municipal_wwtp_zo": "Municipal Wastewater Treatment Plant",
     "ozone_aop_zo": "Ozone with Advanced Oxidation Processes",
     "secondary_treatment_wwtp_zo": "Secondary Wastewater Treatment Plant",
+    "smp_zo": "SMP",
     "sw_onshore_intake_zo": "Seawater Onshore Intake",
     "uv_aop_zo": "UV with Advanced Oxidation Processes",
     "uv_zo": "UV Reactor",
@@ -273,189 +274,198 @@ p_subtype_exceptions = {"MetabZO": "hydrogen"}
 has_subtype = {}
 
 
-# Create index file for all zero order model docs
-with open("index.rst", "w") as f:
-    f.write("Zero-Order Unit Models\n")
-    f.write("=" * len("Zero-Order Unit Models"))
-    f.write("\n")
-    f.write(
-        "The zero-order models rely on default model parameter values specified in YAML files, "
-        "but these data are generally only meant to help initiate model usage for new users. Users "
-        "should supply their own values, if possible, instead of relying on the default parameter values. "
-        "The YAML database files for the zero-order models are located in :code:`watertap/data/techno_economic/`. "
-        "The name of the YAML file should match the associated model name without the ZO letters and use snake "
-        "case style. For example, the YAML file for the :code:`DualMediaFiltrationZO()` zero-order model is named "
-        ":code:`dual_media_filtration.yaml`.\n\n"
-    )
-    f.write(".. toctree::\n")
-    f.write("   :maxdepth: 1\n\n")
+if __name__ == "__main__":
 
-for i, u in enumerate(unit_name_list):
-
-    list = [
-        f"This unit model is formulated as a **{model_type_list[i]}** model form.",
-        f"See documentation for :ref:`{model_type_list[i]} Helper Methods<{model_type_ref_list[i]}>`.",
-        f"Electricity consumption is calculated using the **{elect_func_list[i]}** helper function.",
-        f"Costing is calculated using the **{cost_func_list[i]}** method in the zero-order costing package.",
-        f"   pair: watertap.unit_models.zero_order.{zo_name_list[i]};{zo_name_list[i]}",
-        f".. currentmodule:: watertap.unit_models.zero_order.{zo_name_list[i]}",
-        f".. automodule:: watertap.unit_models.zero_order.{zo_name_list[i]}",
-    ]
-
-    # append unit doc to index
-    with open("index.rst", "a") as f:
-        f.write(f"   {zo_name_list[i]}\n")
-
-    with open(f"{zo_name_list[i]}.rst", "w", encoding="utf-8") as f:
-        # write doc title based on unit name
-        if zo_name_list[i] in title_exceptions:
-            f.write(f"{title_exceptions[zo_name_list[i]]} (ZO)")
-            f.write("\n")
-            f.write("=" * len(f"{title_exceptions[zo_name_list[i]]} (ZO)"))
-        else:
-            f.write(f"{unit_name_list[i]} (ZO)")
-            f.write("\n")
-            f.write("=" * (5 + len(u)))
+    # Create index file for all zero order model docs
+    with open("index.rst", "w") as f:
+        f.write("Zero-Order Unit Models\n")
+        f.write("=" * len("Zero-Order Unit Models"))
         f.write("\n")
+        f.write(
+            "The zero-order models rely on default model parameter values specified in YAML files, "
+            "but these data are generally only meant to help initiate model usage for new users. Users "
+            "should supply their own values, if possible, instead of relying on the default parameter values. "
+            "The YAML database files for the zero-order models are located in :code:`watertap/data/techno_economic/`. "
+            "The name of the YAML file should match the associated model name without the ZO letters and use snake "
+            "case style. For example, the YAML file for the :code:`DualMediaFiltrationZO()` zero-order model is named "
+            ":code:`dual_media_filtration.yaml`.\n\n"
+        )
+        f.write(".. toctree::\n")
+        f.write("   :maxdepth: 1\n\n")
 
-        if zo_name_list[i] == "feed_zo":
-            f.write(
-                "\nThe Feed (ZO) model adds volumetric flowrate and mass concentration "
-                "as variables in connection with the zero-order property model's state "
-                "variable, mass flow rate. "
-                "This allows the user to enter feed volumetric flow rate and "
-                "concentrations without calculating the mass flowrates of each "
-                "component in the feed.\n"
-            )
+    for i, u in enumerate(unit_name_list):
 
-        f.write("\nModel Type\n")
-        f.write("-" * len("Model Type"))
-        if not (zo_name_list[i] == "feed_zo"):
-            # write Model Type section
-            f.write(f"\n{list[0]}")
-            f.write(f"\n{list[1]}\n")
-        else:
-            f.write(
-                "\nThe Feed (ZO) block for zero-order flowsheets contains "
-                "methods for getting concentration data from the database, and it "
-                "has been created to work with the zero-order property package.\n"
-            )
+        list = [
+            f"This unit model is formulated as a **{model_type_list[i]}** model form.",
+            f"See documentation for :ref:`{model_type_list[i]} Helper Methods<{model_type_ref_list[i]}>`.",
+            f"Electricity consumption is calculated using the **{elect_func_list[i]}** helper function.",
+            None,  # created on the fly now
+            f"   pair: watertap.unit_models.zero_order.{zo_name_list[i]};{zo_name_list[i]}",
+            f".. currentmodule:: watertap.unit_models.zero_order.{zo_name_list[i]}",
+            f".. automodule:: watertap.unit_models.zero_order.{zo_name_list[i]}",
+        ]
 
-        if not (zo_name_list[i] == "feed_zo") and not (
-            zo_name_list[i] == "constructed_wetlands_zo"
-        ):
-            # write Electricity Consumption section
-            f.write("\nElectricity Consumption\n")
-            f.write("-" * len("Electricity Consumption"))
-            if (elect_func_list[i] != "pump_electricity") and (
-                elect_func_list[i] != "constant_intensity"
+        # append unit doc to index
+        with open("index.rst", "a") as f:
+            f.write(f"   {zo_name_list[i]}\n")
+
+        with open(f"{zo_name_list[i]}.rst", "w", encoding="utf-8") as f:
+            # write doc title based on unit name
+            if zo_name_list[i] in title_exceptions:
+                f.write(f"{title_exceptions[zo_name_list[i]]} (ZO)")
+                f.write("\n")
+                f.write("=" * len(f"{title_exceptions[zo_name_list[i]]} (ZO)"))
+            else:
+                f.write(f"{unit_name_list[i]} (ZO)")
+                f.write("\n")
+                f.write("=" * (5 + len(u)))
+            f.write("\n")
+
+            if zo_name_list[i] == "feed_zo":
+                f.write(
+                    "\nThe Feed (ZO) model adds volumetric flowrate and mass concentration "
+                    "as variables in connection with the zero-order property model's state "
+                    "variable, mass flow rate. "
+                    "This allows the user to enter feed volumetric flow rate and "
+                    "concentrations without calculating the mass flowrates of each "
+                    "component in the feed.\n"
+                )
+
+            f.write("\nModel Type\n")
+            f.write("-" * len("Model Type"))
+            if not (zo_name_list[i] == "feed_zo"):
+                # write Model Type section
+                f.write(f"\n{list[0]}")
+                f.write(f"\n{list[1]}\n")
+            else:
+                f.write(
+                    "\nThe Feed (ZO) block for zero-order flowsheets contains "
+                    "methods for getting concentration data from the database, and it "
+                    "has been created to work with the zero-order property package.\n"
+                )
+
+            if not (zo_name_list[i] == "feed_zo") and not (
+                zo_name_list[i] == "constructed_wetlands_zo"
             ):
+                # write Electricity Consumption section
+                f.write("\nElectricity Consumption\n")
+                f.write("-" * len("Electricity Consumption"))
+                if (elect_func_list[i] != "pump_electricity") and (
+                    elect_func_list[i] != "constant_intensity"
+                ):
+                    (
+                        _,
+                        _,
+                        _,
+                        _,
+                        _,
+                        addedconscheck,
+                        _,
+                    ) = grab_unit_components(class_name_list[i], i)
+
+                    if len(addedconscheck) > 0:
+                        f.write(
+                            "\nThe constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.\n"
+                        )
+                else:
+                    f.write(f"\n{list[2]}")
+                    f.write(
+                        f"\nSee documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.\n"
+                    )
+
+            if not (zo_name_list[i] == "feed_zo"):
+                # write Costing Method section
+                f.write("\nCosting Method\n")
+                f.write("-" * len("Costing Method"))
+                if not cost_func_list[i]:
+                    f.write("\nThis unit does not include costing.\n")
+                else:
+                    m, *_ = grab_unit_components(class_name_list[i], i)
+                    costing_method = m.fs.unit.default_costing_method
+                    costing_method_path = (
+                        costing_method.__module__ + "." + costing_method.__qualname__
+                    )
+                    f.write(
+                        f"\nCosting is calculated using the :py:meth:`~{costing_method_path}` method."
+                    )
+                    f.write(
+                        f"\nFor full details on costing, see documentation for the :ref:`zero-order costing package<zero_order_costing>`.\n"
+                    )
+
+            # write Additional Variables section if unit is non-basic
+            # TODO: conditional setting section to Variables if custom model type; add indices?; Add constraints section
+            # if class_list[i] == "non-basic":
+            if not (zo_name_list[i] == "feed_zo"):
+                print(class_name_list[i])
                 (
                     _,
                     _,
-                    _,
-                    _,
-                    _,
-                    addedconscheck,
-                    _,
-                ) = grab_unit_components(class_name_list[i])
+                    addedvars,
+                    vardocs,
+                    varunits,
+                    addedcons,
+                    condocs,
+                ) = grab_unit_components(class_name_list[i], i)
+                if len(addedvars) > 0:
+                    f.write("\nAdditional Variables\n")
+                    f.write("-" * len("Additional Variables"))
+                    f.write("\n\n")
+                    f.write(".. csv-table::\n")
+                    f.write('   :header: "Description", "Variable Name", "Units"\n\n')
+                for k, v in enumerate(addedvars):
+                    f.write(f'   "{vardocs[k]}", "{v}", "{varunits[k]}"\n')
 
-                if len(addedconscheck) > 0:
-                    f.write(
-                        "\nThe constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.\n"
-                    )
+                # write Additional Constraints section if unit is non-basic
+                if len(addedcons) > 0:
+                    f.write("\nAdditional Constraints\n")
+                    f.write("-" * len("Additional Constraints"))
+                    f.write("\n\n")
+                    f.write(".. csv-table::\n")
+                    f.write('   :header: "Description", "Constraint Name"\n\n')
+                    for k, c in enumerate(addedcons):
+                        f.write(f'   "{condocs[k]}", "{c}"\n')
+
             else:
-                f.write(f"\n{list[2]}")
-                f.write(
-                    f"\nSee documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.\n"
-                )
+                print(class_name_list[i])
+                (
+                    _,
+                    addedvars,
+                    vardocs,
+                    varunits,
+                    addedcons,
+                    condocs,
+                ) = grab_unit_components_feed(class_name_list[i])
+                if len(addedvars) > 0:
+                    f.write("\nAdditional Variables\n")
+                    f.write("-" * len("Additional Variables"))
+                    f.write("\n\n")
+                    f.write(".. csv-table::\n")
+                    f.write('   :header: "Description", "Variable Name", "Units"\n\n')
+                for k, v in enumerate(addedvars):
+                    f.write(f'   "{vardocs[k]}", "{v}", "{varunits[k]}"\n')
 
-        if not (zo_name_list[i] == "feed_zo"):
-            # write Costing Method section
-            f.write("\nCosting Method\n")
-            f.write("-" * len("Costing Method"))
-            if not cost_func_list[i]:
-                f.write("\nThis unit does not include costing.\n")
+                # write Additional Constraints section if unit is non-basic
+                if len(addedcons) > 0:
+                    f.write("\nAdditional Constraints\n")
+                    f.write("-" * len("Additional Constraints"))
+                    f.write("\n\n")
+                    f.write(".. csv-table::\n")
+                    f.write('   :header: "Description", "Constraint Name"\n\n')
+                    for k, c in enumerate(addedcons):
+                        f.write(f'   "{condocs[k]}", "{c}"\n')
+
+            if not (zo_name_list[i] == "feed_zo"):
+                f.write("\n.. index::")
+                f.write(f"\n{list[4]}\n")
+                f.write(f"\n{list[5]}\n")
+                f.write("\nClass Documentation\n")
+                f.write("-" * len("Class Documentation"))
+                f.write(f"\n\n{list[6]}\n")
+                f.write("    :members:\n")
+                f.write("    :noindex:\n")
             else:
-                f.write(f"\n{list[3]}")
-                f.write(
-                    f"\nSee documentation for the :ref:`zero-order costing package<zero_order_costing>`.\n"
-                )
-
-        # write Additional Variables section if unit is non-basic
-        # TODO: conditional setting section to Variables if custom model type; add indices?; Add constraints section
-        # if class_list[i] == "non-basic":
-        if not (zo_name_list[i] == "feed_zo"):
-            print(class_name_list[i])
-            (
-                _,
-                _,
-                addedvars,
-                vardocs,
-                varunits,
-                addedcons,
-                condocs,
-            ) = grab_unit_components(class_name_list[i])
-            if len(addedvars) > 0:
-                f.write("\nAdditional Variables\n")
-                f.write("-" * len("Additional Variables"))
-                f.write("\n\n")
-                f.write(".. csv-table::\n")
-                f.write('   :header: "Description", "Variable Name", "Units"\n\n')
-            for k, v in enumerate(addedvars):
-                f.write(f'   "{vardocs[k]}", "{v}", "{varunits[k]}"\n')
-
-            # write Additional Constraints section if unit is non-basic
-            if len(addedcons) > 0:
-                f.write("\nAdditional Constraints\n")
-                f.write("-" * len("Additional Constraints"))
-                f.write("\n\n")
-                f.write(".. csv-table::\n")
-                f.write('   :header: "Description", "Constraint Name"\n\n')
-                for k, c in enumerate(addedcons):
-                    f.write(f'   "{condocs[k]}", "{c}"\n')
-
-        else:
-            print(class_name_list[i])
-            (
-                _,
-                addedvars,
-                vardocs,
-                varunits,
-                addedcons,
-                condocs,
-            ) = grab_unit_components_feed(class_name_list[i])
-            if len(addedvars) > 0:
-                f.write("\nAdditional Variables\n")
-                f.write("-" * len("Additional Variables"))
-                f.write("\n\n")
-                f.write(".. csv-table::\n")
-                f.write('   :header: "Description", "Variable Name", "Units"\n\n')
-            for k, v in enumerate(addedvars):
-                f.write(f'   "{vardocs[k]}", "{v}", "{varunits[k]}"\n')
-
-            # write Additional Constraints section if unit is non-basic
-            if len(addedcons) > 0:
-                f.write("\nAdditional Constraints\n")
-                f.write("-" * len("Additional Constraints"))
-                f.write("\n\n")
-                f.write(".. csv-table::\n")
-                f.write('   :header: "Description", "Constraint Name"\n\n')
-                for k, c in enumerate(addedcons):
-                    f.write(f'   "{condocs[k]}", "{c}"\n')
-
-        if not (zo_name_list[i] == "feed_zo"):
-            f.write("\n.. index::")
-            f.write(f"\n{list[4]}\n")
-            f.write(f"\n{list[5]}\n")
-            f.write("\nClass Documentation\n")
-            f.write("-" * len("Class Documentation"))
-            f.write(f"\n\n{list[6]}\n")
-            f.write("    :members:\n")
-            f.write("    :noindex:\n")
-        else:
-            f.write("\nClass Documentation\n")
-            f.write("-" * len("Class Documentation"))
-            f.write(f"\n\n{list[6]}\n")
-            f.write("    :members:\n")
-            f.write("    :noindex:\n")
+                f.write("\nClass Documentation\n")
+                f.write("-" * len("Class Documentation"))
+                f.write(f"\n\n{list[6]}\n")
+                f.write("    :members:\n")
+                f.write("    :noindex:\n")

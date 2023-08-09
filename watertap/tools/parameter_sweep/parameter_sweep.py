@@ -21,6 +21,7 @@ from idaes.core.solvers import get_solver
 
 from idaes.core.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet, ComponentMap
+from pyomo.common.deprecation import deprecation_warning
 from pyomo.common.tee import capture_output
 from pyomo.common.config import ConfigValue
 from pyomo.common.modeling import unique_component_name
@@ -30,8 +31,7 @@ from pyomo.core.base.param import _ParamData
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
 from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
 
-import watertap.tools.MPI as MPI
-from watertap.tools.parallel.parallel_manager import ParallelManager
+from watertap.tools.parallel.parallel_manager_factory import create_parallel_manager
 
 
 def _default_optimize(model, options=None, tee=False):
@@ -55,7 +55,6 @@ def _default_optimize(model, options=None, tee=False):
 
 
 class _ParameterSweepBase(ABC):
-
     CONFIG = ParameterSweepWriter.CONFIG()
 
     CONFIG.declare(
@@ -146,19 +145,27 @@ class _ParameterSweepBase(ABC):
         ),
     )
 
+    CONFIG.declare(
+        "number_of_subprocesses",
+        ConfigValue(
+            default=1,
+            domain=int,
+            description="Number of processes to fan out to locally - ignored if running under MPI.",
+        ),
+    )
+
     def __init__(
         self,
         **options,
     ):
-
-        self.parallel_manager = ParallelManager.create_parallel_manager(
-            options.pop("parallel_manager_class", None)
-        )
-
-        self.comm = options.pop("comm", MPI.COMM_WORLD)
-        self.rank = self.comm.Get_rank()
+        parallel_manager_class = options.pop("parallel_manager_class", None)
 
         self.config = self.CONFIG(options)
+
+        self.parallel_manager = create_parallel_manager(
+            parallel_manager_class=parallel_manager_class,
+            number_of_subprocesses=self.config.number_of_subprocesses,
+        )
 
         # Initialize the writer
         self.writer = ParameterSweepWriter(
@@ -171,8 +178,7 @@ class _ParameterSweepBase(ABC):
         )
 
     @staticmethod
-    def _assign_variable_names(model, outputs):
-
+    def assign_variable_names(model, outputs):
         # Only assign output variable names to unassigned outputs
         exprs = pyo.Expression(pyo.Any)
         model.add_component(
@@ -185,7 +191,6 @@ class _ParameterSweepBase(ABC):
                 outputs[output_name] = exprs[output_name]
 
     def _publish_updates(self, iteration, solve_status, solve_time):
-
         if self.config.publish_progress:
             publish_dict = {
                 "worker_number": self.parallel_manager.get_rank(),
@@ -283,17 +288,16 @@ class _ParameterSweepBase(ABC):
             )
 
         # make sure all processes running in parallel have an identical copy of the data
-        self.parallel_manager.sync_data(global_combo_array)
+        self.parallel_manager.sync_array_with_peers(global_combo_array)
 
         return global_combo_array
 
     def _divide_combinations(self, global_combo_array):
-
         # Split the total list of combinations into NUM_PROCS chunks,
         # one per each of the MPI ranks
         # divided_combo_array = np.array_split(global_combo_array, num_procs, axis=0)
         divided_combo_array = np.array_split(
-            global_combo_array, self.parallel_manager.number_of_processes()
+            global_combo_array, self.parallel_manager.number_of_worker_processes()
         )
 
         # Return only this rank's portion of the total workload
@@ -302,9 +306,7 @@ class _ParameterSweepBase(ABC):
         return local_combo_array
 
     def _update_model_values(self, m, param_dict, values):
-
         for k, item in enumerate(param_dict.values()):
-
             param = item.pyomo_object
 
             if param.is_variable_type():
@@ -319,7 +321,6 @@ class _ParameterSweepBase(ABC):
                 raise RuntimeError(f"Unrecognized Pyomo object {param}")
 
     def _aggregate_results_arr(self, global_results_dict, num_cases):
-
         global_results = np.zeros(
             (num_cases, len(global_results_dict["outputs"])), dtype=float
         )
@@ -328,17 +329,15 @@ class _ParameterSweepBase(ABC):
             for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
                 global_results[:, i] = item["value"][:num_cases]
 
-        self.parallel_manager.sync_data(global_results)
+        self.parallel_manager.sync_array_with_peers(global_results)
 
         return global_results
 
     def _process_sweep_params(self, sweep_params):
-
         sampling_type = None
 
         # Check the list of parameters to make sure they are valid
         for k in sweep_params:
-
             # Convert to using Sample class
             if isinstance(sweep_params[k], (list, tuple)):
                 sweep_params[k] = LinearSample(*sweep_params[k])
@@ -355,7 +354,6 @@ class _ParameterSweepBase(ABC):
         return sweep_params, sampling_type
 
     def _create_local_output_skeleton(self, model, sweep_params, outputs, num_samples):
-
         output_dict = {}
         output_dict["sweep_params"] = {}
         output_dict["outputs"] = {}
@@ -363,11 +361,11 @@ class _ParameterSweepBase(ABC):
         sweep_param_objs = ComponentSet()
 
         # Store the inputs
-        for sweep_param in sweep_params.values():
+        for param_name, sweep_param in sweep_params.items():
             var = sweep_param.pyomo_object
             sweep_param_objs.add(var)
             output_dict["sweep_params"][
-                var.name
+                param_name
             ] = self._create_component_output_skeleton(var, num_samples)
 
         if outputs is None:
@@ -389,7 +387,6 @@ class _ParameterSweepBase(ABC):
         return output_dict
 
     def _create_component_output_skeleton(self, component, num_samples):
-
         comp_dict = {}
         comp_dict["value"] = np.zeros(num_samples, dtype=float)
         if hasattr(component, "lb"):
@@ -412,12 +409,10 @@ class _ParameterSweepBase(ABC):
     def _update_local_output_dict(
         self, model, sweep_params, case_number, run_successful, output_dict
     ):
-
         # Get the inputs
         op_ps_dict = output_dict["sweep_params"]
         for key, item in sweep_params.items():
-            var_name = item.pyomo_object.name
-            op_ps_dict[var_name]["value"][case_number] = item.pyomo_object.value
+            op_ps_dict[key]["value"][case_number] = item.pyomo_object.value
 
         # Get the outputs from model
         if run_successful:
@@ -438,14 +433,16 @@ class _ParameterSweepBase(ABC):
                     output_dict["outputs"][label]["value"][case_number] = np.nan
 
     def _create_global_output(self, local_output_dict, req_num_samples=None):
-
         # We make the assumption that the parameter sweep is running the same
         # flowsheet num_samples number of times, i.e., the structure of the
         # local_output_dict remains the same across all mpi_ranks
         local_num_cases = len(local_output_dict["solve_successful"])
 
-        # Gather the size of the value array on each MPI rank
-        sample_split_arr = self.comm.allgather(local_num_cases)
+        # Gather the size of the value array for each peer process
+        sample_split_arr = self.parallel_manager.combine_data_with_peers(
+            local_num_cases
+        )
+
         num_total_samples = sum(sample_split_arr)
         if req_num_samples is None:
             req_num_samples = num_total_samples
@@ -466,13 +463,12 @@ class _ParameterSweepBase(ABC):
         for key, item in local_output_dict.items():
             if key != "solve_successful":
                 for subkey, subitem in item.items():
-                    self.comm.Gatherv(
+                    self.parallel_manager.gather_arrays_to_root(
                         sendbuf=subitem["value"],
-                        recvbuf=(
+                        recvbuf_spec=(
                             global_output_dict[key][subkey]["value"],
                             sample_split_arr,
                         ),
-                        root=0,
                     )
 
                     # Trim to the exact number
@@ -488,10 +484,9 @@ class _ParameterSweepBase(ABC):
                 else:
                     global_solve_successful = None
 
-                self.comm.Gatherv(
+                self.parallel_manager.gather_arrays_to_root(
                     sendbuf=local_solve_successful,
-                    recvbuf=(global_solve_successful, sample_split_arr),
-                    root=0,
+                    recvbuf_spec=(global_solve_successful, sample_split_arr),
                 )
 
                 if self.parallel_manager.is_root_process():
@@ -503,7 +498,6 @@ class _ParameterSweepBase(ABC):
         return global_output_dict
 
     def _param_sweep_kernel(self, model, reinitialize_values):
-
         optimize_function = self.config.optimize_function
         optimize_kwargs = self.config.optimize_kwargs
         reinitialize_before_sweep = self.config.reinitialize_before_sweep
@@ -595,7 +589,6 @@ class _ParameterSweepBase(ABC):
         return run_successful
 
     def _do_param_sweep(self, model, sweep_params, outputs, local_values):
-
         # Initialize space to hold results
         local_num_cases = np.shape(local_values)[0]
 
@@ -641,8 +634,32 @@ class _ParameterSweepBase(ABC):
 
 
 class ParameterSweep(_ParameterSweepBase):
-
     CONFIG = _ParameterSweepBase.CONFIG()
+
+    @classmethod
+    def remove_unpicklable_state(cls, parameter_sweep_instance):
+        """
+        Remove and return any state from the ParameterSweep object that cannot be
+        pickled, to make the instance picklable. Needed in order to use the
+        ConcurrentFuturesParallelManager.
+        """
+        saved_state = {
+            "parallel_manager": parameter_sweep_instance.parallel_manager,
+            "writer": parameter_sweep_instance.writer,
+        }
+
+        parameter_sweep_instance.parallel_manager = None
+        parameter_sweep_instance.writer = None
+        return saved_state
+
+    @classmethod
+    def restore_unpicklable_state(cls, parameter_sweep_instance, state):
+        """
+        Restore a collection of saved state that was removed in order to pickle
+        the ParameterSweep object.
+        """
+        parameter_sweep_instance.parallel_manager = state.get("parallel_manager", None)
+        parameter_sweep_instance.writer = state.get("writer", None)
 
     """
     Combine all of the results retrieved from calling gather().
@@ -709,75 +726,156 @@ class ParameterSweep(_ParameterSweepBase):
 
         return np.asarray(combined_outputs)
 
+    """
+    Use the embedded ParallelManager to fan out and then back in the results.
+    Args:
+    - build_model: a function for building the flowsheet model
+    - build_model_kwargs: any keyword args necessary for the build_model function
+    - build_sweep_params: a function for building the sweep parameters
+    - build_sweep_params_kwargs: any keyword args necessary for the build_sweep_params
+    function
+    - build_outputs: a function for building the outputs dictionary
+    - all_parameter_combinations: a list where each element represents the parameters
+    for a single local run
+    Returns:
+    - a list of LocalResults representing the results of the simulation runs 
+    """
+
+    def run_scatter_gather(
+        self,
+        build_model,
+        build_model_kwargs,
+        build_sweep_params,
+        build_sweep_params_kwargs,
+        build_outputs,
+        all_parameter_combinations,
+    ):
+        # save a reference to the parallel manager since it will be removed
+        # along with the other unpicklable state
+        parallel_manager = self.parallel_manager
+        saved_state = ParameterSweep.remove_unpicklable_state(self)
+
+        do_build_kwargs = {
+            "param_sweep_instance": self,
+            "build_model": build_model,
+            "build_model_kwargs": build_model_kwargs,
+            "build_sweep_params": build_sweep_params,
+            "build_sweep_params_kwargs": build_sweep_params_kwargs,
+            "build_outputs": build_outputs,
+        }
+
+        parallel_manager.scatter(
+            do_build,
+            do_build_kwargs,
+            do_execute,
+            all_parameter_combinations,
+        )
+
+        # gather the results and combine them into the format we want
+        all_results = parallel_manager.gather()
+        ParameterSweep.restore_unpicklable_state(self, saved_state)
+
+        return all_results
+
     def parameter_sweep(
         self,
-        model,
-        sweep_params,
-        combined_outputs=None,
+        build_model,
+        build_sweep_params,
+        build_outputs=None,
         num_samples=None,
         seed=None,
+        build_model_kwargs=None,
+        build_sweep_params_kwargs=None,
     ):
+        build_model_kwargs = (
+            build_model_kwargs if build_model_kwargs is not None else dict()
+        )
+        build_sweep_params_kwargs = (
+            build_sweep_params_kwargs
+            if build_sweep_params_kwargs is not None
+            else dict()
+        )
 
-        # Convert sweep_params to LinearSamples
+        if not callable(build_model):
+            _model = build_model
+            build_model = lambda: _model
+            deprecation_warning(
+                "Passing a model directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+
+        if not callable(build_sweep_params):
+            _sweep_params = build_sweep_params
+            build_sweep_params = lambda model: _sweep_params
+            deprecation_warning(
+                "Passing sweep params directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+
+        if build_outputs is None:
+            build_outputs = return_none
+
+        if not callable(build_outputs):
+            _combined_outputs = build_outputs
+            build_outputs = lambda model, sweep_params: _combined_outputs
+            deprecation_warning(
+                "Passing the output dict directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+        # add build functions and kwargs to instance for use with custom function
+        # this might be better to move all of these to Config instead
+        self.build_model = build_model
+        self.build_sweep_params = build_sweep_params
+        self.build_outputs = build_outputs
+        self.build_model_kwargs = build_model_kwargs
+        self.build_sweep_params_kwargs = build_sweep_params_kwargs
+        # create the list of all combinations - needed for some aspects of scattering
+        model = build_model(**build_model_kwargs)
+        sweep_params = build_sweep_params(model, **build_sweep_params_kwargs)
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
-
-        # Set the seed before sampling
         np.random.seed(seed)
-
-        # build the list of all parameters that need to be run as part of the sweep
         all_parameter_combinations = self._build_combinations(
             sweep_params, sampling_type, num_samples
         )
 
-        # Check if the outputs have the name attribute. If not, assign one.
-        if combined_outputs is not None:
-            self._assign_variable_names(model, combined_outputs)
-
-        # Do the Loop
-        if self.config.custom_do_param_sweep is None:
-            sweep_fn = lambda local_values: self._do_param_sweep(
-                model, sweep_params, combined_outputs, local_values
-            )
-        else:
-            sweep_fn = lambda local_values: self.config.custom_do_param_sweep(
-                model, sweep_params, combined_outputs, local_values
-            )
-
-        # scatter out the computation
-        self.parallel_manager.scatter(
+        all_results = self.run_scatter_gather(
+            build_model,
+            build_model_kwargs,
+            build_sweep_params,
+            build_sweep_params_kwargs,
+            build_outputs,
             all_parameter_combinations,
-            sweep_fn,
         )
 
-        # gather the results and combine them into the format we want
-        gather_results = self.parallel_manager.gather()
-        global_sweep_results = self._combine_gather_results(gather_results.all_results)
+        global_sweep_results = self._combine_gather_results(all_results)
         combined_outputs = self._combine_outputs(global_sweep_results)
 
-        local_parameters = gather_results.local_results.parameters
-        local_results_dict = gather_results.local_results.results
+        # save the results for all simulations run by this process and its children
+        for results in self.parallel_manager.results_from_local_tree(all_results):
+            self.writer.save_results(
+                sweep_params,
+                results.parameters,
+                all_parameter_combinations,
+                results.results,
+                global_sweep_results,
+                combined_outputs,
+                process_number=results.process_number,
+            )
 
-        # Save to file
-        global_save_data = self.writer.save_results(
-            sweep_params,
-            local_parameters,
-            all_parameter_combinations,
-            local_results_dict,
-            global_sweep_results,
-            combined_outputs,
-        )
+        global_save_data = np.hstack((all_parameter_combinations, combined_outputs))
 
         return global_save_data, global_sweep_results
 
 
 class RecursiveParameterSweep(_ParameterSweepBase):
-
     CONFIG = _ParameterSweepBase.CONFIG()
 
     def _filter_recursive_solves(
         self, model, sweep_params, outputs, recursive_local_dict
     ):
-
         # Figure out how many filtered solves did this rank actually do
         filter_counter = 0
         for case, content in recursive_local_dict.items():
@@ -819,7 +917,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         return local_filtered_dict, filter_counter
 
     def _aggregate_filtered_input_arr(self, global_filtered_dict, req_num_samples):
-
         global_filtered_values = np.zeros(
             (req_num_samples, len(global_filtered_dict["sweep_params"])),
             dtype=float,
@@ -831,12 +928,11 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             ):
                 global_filtered_values[:, i] = item["value"][:req_num_samples]
 
-        self.parallel_manager.sync_data(global_filtered_values)
+        self.parallel_manager.sync_array_with_peers(global_filtered_values)
 
         return global_filtered_values
 
     def _aggregate_filtered_results(self, local_filtered_dict, req_num_samples):
-
         global_filtered_dict = self._create_global_output(
             local_filtered_dict, req_num_samples
         )
@@ -862,7 +958,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         req_num_samples=None,
         seed=None,
     ):
-
         # Convert sweep_params to LinearSamples
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
 
@@ -871,14 +966,13 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         # Check if the outputs have the name attribute. If not, assign one.
         if outputs is not None:
-            self._assign_variable_names(model, outputs)
+            self.assign_variable_names(model, outputs)
 
         n_samples_remaining = req_num_samples
         num_total_samples = req_num_samples
 
         local_output_collection = {}
         for loop_ctr in range(10):
-
             if n_samples_remaining <= 0:
                 break
 
@@ -920,14 +1014,20 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             failure_count = local_num_cases - success_count
 
             # Get the global number of successful solves and update the number of remaining samples
-            if self.parallel_manager.number_of_processes() > 1:  # pragma: no cover
+            if (
+                self.parallel_manager.number_of_worker_processes() > 1
+            ):  # pragma: no cover
                 global_success_count = np.zeros(1, dtype=float)
                 global_failure_count = np.zeros(1, dtype=float)
-                self.comm.Allreduce(
-                    np.array(success_count, dtype=float), global_success_count
+
+                self.parallel_manager.sum_values_and_sync(
+                    sendbuf=np.array(success_count, dtype=float),
+                    recvbuf=global_success_count,
                 )
-                self.comm.Allreduce(
-                    np.array(failure_count, dtype=float), global_failure_count
+
+                self.parallel_manager.sum_values_and_sync(
+                    sendbuf=np.array(failure_count, dtype=float),
+                    recvbuf=global_failure_count,
                 )
             else:
                 global_success_count = success_count
@@ -976,7 +1076,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         ) = self._aggregate_filtered_results(local_filtered_dict, req_num_samples)
 
         # Now we can save this
-        self.comm.Barrier()
+        self.parallel_manager.sync_with_peers()
 
         # Save to file
         global_save_data = self.writer.save_results(
@@ -986,6 +1086,64 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             local_filtered_dict,
             global_filtered_dict,
             global_filtered_results,
+            self.parallel_manager.get_rank(),
         )
 
         return global_save_data
+
+
+def do_build(
+    param_sweep_instance,
+    build_model,
+    build_model_kwargs,
+    build_sweep_params,
+    build_sweep_params_kwargs,
+    build_outputs,
+):
+    """
+    Used to pass into the parallel manager to build the parameters necessary
+    for the sweep function. Defined at the top level so it's picklable.
+    """
+
+    model = build_model(**build_model_kwargs)
+    sweep_params = build_sweep_params(model, **build_sweep_params_kwargs)
+    outputs = build_outputs(model, sweep_params)
+
+    sweep_params, sampling_type = param_sweep_instance._process_sweep_params(
+        sweep_params
+    )
+
+    if outputs is not None:
+        param_sweep_instance.assign_variable_names(model, outputs)
+
+    return [param_sweep_instance, model, sweep_params, outputs]
+
+
+def do_execute(
+    local_combo_array,
+    param_sweep_instance,
+    model,
+    sweep_params,
+    outputs,
+):
+    """
+    Used to pass into the parallel manager in order to execute the sweep
+    for a set of local values. Defined at the top level so it's picklable.
+    """
+
+    if param_sweep_instance.config.custom_do_param_sweep is not None:
+        return param_sweep_instance.config.custom_do_param_sweep(
+            param_sweep_instance, model, sweep_params, outputs, local_combo_array
+        )
+
+    return param_sweep_instance._do_param_sweep(
+        model, sweep_params, outputs, local_combo_array
+    )
+
+
+def return_none(model, sweep_params):
+    """
+    Used so that build_outputs=None is a valid usage of the parameter sweep tool
+    without requiring the user to wrap it in a function.
+    """
+    return None

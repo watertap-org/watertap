@@ -2862,10 +2862,16 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                 "Total electrical power consumption(Watt)": self.diluate.power_electrical_x[
                     time_point, self.diluate.length_domain.last()
                 ],
-                "Specific electrical power consumption (kW*h/m**3)": self.specific_power_electrical[
+                "Specific electrical power consumption, ED stack (kW*h/m**3)": self.specific_power_electrical[
                     time_point
                 ],
                 "Water recovery by mass": self.recovery_mass_H2O[time_point],
+                "Channel inlet velocity, diluate (m/s)": self.velocity_diluate[
+                    time_point, self.diluate.length_domain.first()
+                ],
+                "Channel inlet velocity, concentrate (m/s)": self.velocity_concentrate[
+                    time_point, self.diluate.length_domain.first()
+                ],
             },
             "exprs": {},
             "params": {},
