@@ -126,7 +126,6 @@ class TestElectroNP:
 
         calculate_scaling_factors(m)
 
-
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
