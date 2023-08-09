@@ -1,9 +1,9 @@
 ###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
@@ -13,14 +13,14 @@
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
-# 1.	Redistributions of source code must retain the above copyright notice,
+# 1. Redistributions of source code must retain the above copyright notice,
 # this list of conditions and the following disclaimer.
 #
-# 2.	Redistributions in binary form must reproduce the above copyright notice,
+# 2. Redistributions in binary form must reproduce the above copyright notice,
 # this list of conditions and the following disclaimer in the documentation and/or
 # other materials provided with the distribution.
 #
-# 3.	Neither the name of OLI Systems, Inc. nor the names of any contributors to
+# 3. Neither the name of OLI Systems, Inc. nor the names of any contributors to
 # the software made available herein may be used to endorse or promote products derived
 # from this software without specific prior written permission.
 #
