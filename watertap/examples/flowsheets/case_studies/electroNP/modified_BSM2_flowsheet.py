@@ -192,7 +192,7 @@ def build_flowsheet():
     )
 
     # ElectroNP
-    # m.fs.electroNP = ElectroNPZO(property_package=m.fs.props_ASM2D)
+    m.fs.electroNP = ElectroNPZO(property_package=m.fs.props_ASM2D)
     # m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # Link units
@@ -221,25 +221,10 @@ def build_flowsheet():
     m.fs.stream_translator_dewater = Arc(
         source=m.fs.translator_adm1_asm2d.outlet, destination=m.fs.dewater.inlet
     )
-    # m.fs.stream_dewater_electroNP = Arc(
-    #     source=m.fs.dewater.overflow, destination=m.fs.electroNP.inlet
-    # )
+    m.fs.stream_dewater_electroNP = Arc(
+        source=m.fs.dewater.overflow, destination=m.fs.electroNP.inlet
+    )
 
-    # m.fs.stream1 = Arc(source=m.fs.feed.outlet, destination=m.fs.MX1.feed_water)
-    # m.fs.stream2 = Arc(source=m.fs.MX1.outlet, destination=m.fs.R1.inlet)
-    # m.fs.stream3 = Arc(source=m.fs.R1.outlet, destination=m.fs.R2.inlet)
-    # m.fs.stream4 = Arc(source=m.fs.R2.outlet, destination=m.fs.R3.inlet)
-    # m.fs.stream5 = Arc(source=m.fs.R3.outlet, destination=m.fs.R4.inlet)
-    # m.fs.stream6 = Arc(source=m.fs.R4.outlet, destination=m.fs.R5.inlet)
-    # m.fs.stream7 = Arc(source=m.fs.R5.outlet, destination=m.fs.SP5.inlet)
-    # m.fs.stream8 = Arc(source=m.fs.SP5.overflow, destination=m.fs.CL1.inlet)
-    # m.fs.stream9 = Arc(source=m.fs.SP5.underflow, destination=m.fs.MX6.reactor)
-    # m.fs.stream10 = Arc(source=m.fs.CL1.effluent, destination=m.fs.Treated.inlet)
-    # m.fs.stream11 = Arc(source=m.fs.CL1.underflow, destination=m.fs.SP6.inlet)
-    # m.fs.stream102 = Arc(source=m.fs.SP6.waste, destination=m.fs.Sludge.inlet)
-    # m.fs.stream13 = Arc(source=m.fs.SP6.recycle, destination=m.fs.MX6.clarifier)
-    # m.fs.stream14 = Arc(source=m.fs.MX6.outlet, destination=m.fs.P1.inlet)
-    # m.fs.stream15 = Arc(source=m.fs.P1.outlet, destination=m.fs.MX1.recycle)
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
@@ -310,55 +295,6 @@ def build_flowsheet():
         1e-6 * pyo.units.g / pyo.units.m**3
     )
 
-    # m.fs.feed.properties[0].pressure.fix(1 * pyunits.atm)
-    # m.fs.feed.properties[0].temperature.fix(308.15 * pyunits.K)
-    # m.fs.feed.properties[0].flow_vol.fix(178.4674 * pyunits.m ** 3 / pyunits.day)
-
-    # eps = 1e-9 * pyunits.kg / pyunits.m ** 3
-    # m.fs.feed.properties[0].conc_mass_comp["S_O2"].fix(eps)
-    # m.fs.feed.properties[0].conc_mass_comp["S_F"].fix(0.02644 * pyunits.kg / pyunits.m ** 3)
-    # m.fs.feed.properties[0].conc_mass_comp["S_A"].fix(0.01766 * pyunits.kg / pyunits.m ** 3)
-    # m.fs.feed.properties[0].conc_mass_comp["S_I"].fix(0.02723 * pyunits.kg / pyunits.m ** 3)
-    # m.fs.feed.properties[0].conc_mass_comp["S_NH4"].fix(
-    #     0.01858 * pyunits.kg / pyunits.m ** 3
-    # )
-    # m.fs.feed.properties[0].conc_mass_comp["S_N2"].fix(
-    #     0.00507 * pyunits.kg / pyunits.m ** 3
-    # )
-    # m.fs.feed.properties[0].conc_mass_comp["S_NO3"].fix(
-    #     0.00002 * pyunits.kg / pyunits.m ** 3
-    # )
-    # m.fs.feed.properties[0].conc_mass_comp["S_PO4"].fix(
-    #     0.00469 * pyunits.kg / pyunits.m ** 3
-    # )
-    # m.fs.feed.properties[0].conc_mass_comp["S_IC"].fix(
-    #     0.07899 * pyunits.kg / pyunits.m ** 3
-    # )
-    #
-    # m.fs.feed.properties[0].conc_mass_comp["X_I"].fix(
-    #     10.96441 * pyunits.kg / pyunits.m ** 3
-    # )
-    # m.fs.feed.properties[0].conc_mass_comp["X_S"].fix(
-    #     19.08476 * pyunits.kg / pyunits.m ** 3
-    # )
-    # m.fs.feed.properties[0].conc_mass_comp["X_H"].fix(9.47939 * pyunits.kg / pyunits.m ** 3)
-    # m.fs.feed.properties[0].conc_mass_comp["X_PAO"].fix(
-    #     3.8622 * pyunits.kg / pyunits.m ** 3
-    # )
-    # m.fs.feed.properties[0].conc_mass_comp["X_PP"].fix(
-    #     0.45087 * pyunits.kg / pyunits.m ** 3
-    # )
-    # m.fs.feed.properties[0].conc_mass_comp["X_PHA"].fix(
-    #     0.02464 * pyunits.kg / pyunits.m ** 3
-    # )
-    # m.fs.feed.properties[0].conc_mass_comp["X_AUT"].fix(
-    #     0.33379 * pyunits.kg / pyunits.m ** 3
-    # )
-    # m.fs.feed.properties[0].conc_mass_comp["S_K"].fix(0.01979 * pyunits.kg / pyunits.m ** 3)
-    # m.fs.feed.properties[0].conc_mass_comp["S_Mg"].fix(
-    #     0.18987 * pyunits.kg / pyunits.m ** 3
-    # )
-
     # Reactor sizing
     m.fs.R1.volume.fix(1000 * pyo.units.m**3)
     m.fs.R2.volume.fix(1000 * pyo.units.m**3)
@@ -422,99 +358,99 @@ def build_flowsheet():
     print(degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
 
-    # def scale_variables(m):
-    #     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-    # if "flow_vol" in var.name:
-    #     iscale.set_scaling_factor(var, 1e2)
-    # if "temperature" in var.name:
-    #     iscale.set_scaling_factor(var, 1e-1)
-    # if "pressure" in var.name:
-    #     iscale.set_scaling_factor(var, 1e-4)
-    # if "conc_mass_comp" in var.name:
-    #     iscale.set_scaling_factor(var, 1e1)
-    # if "enth_mol" in var.name:
-    #     iscale.set_scaling_factor(var, 1e-4)
-    # if "conc_mass_comp[S_F]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e2)
-    # if "conc_mass_comp[S_A]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e2)
-    # if "conc_mass_comp[S_NH4]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e2)
-    # if "conc_mass_comp[S_PO4]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e3)
-    # if "conc_mass_comp[S_I]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e2)
-    # if "conc_mass_comp[S_N2]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e2)
-    # if "conc_mass_comp[X_I]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e2)
-    # if "conc_mass_comp[X_S]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e1)
-    # if "conc_mass_comp[X_H]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e2)
-    # if "conc_mass_comp[S_IC]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e2)
-    # if "conc_mass_comp[S_O2]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e5)
-    # if "conc_mass_comp[S_NO3]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e5)
-    # if "conc_mass_comp[X_PAO]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e5)
-    # if "conc_mass_comp[X_PP]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e5)
-    # if "conc_mass_comp[X_PHA]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e5)
-    # if "conc_mass_comp[X_AUT]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e5)
-    # if "conc_mass_comp[S_K]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e5)
-    # if "conc_mass_comp[S_Mg]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e5)
+    def scale_variables(m):
+        for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+            if "flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e2)
+            if "temperature" in var.name:
+                iscale.set_scaling_factor(var, 1e-1)
+            if "pressure" in var.name:
+                iscale.set_scaling_factor(var, 1e-4)
+            if "conc_mass_comp" in var.name:
+                iscale.set_scaling_factor(var, 1e1)
+            # if "conc_mass_comp[S_PO4]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e3)
+            # if "enth_mol" in var.name:
+            #     iscale.set_scaling_factor(var, 1e-4)
+            # if "conc_mass_comp[S_F]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp[S_A]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp[S_NH4]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp[S_I]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp[S_N2]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp[X_I]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp[X_S]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e1)
+            # if "conc_mass_comp[X_H]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp[S_IC]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp[S_O2]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
+            # if "conc_mass_comp[S_NO3]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
+            # if "conc_mass_comp[X_PAO]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
+            # if "conc_mass_comp[X_PP]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
+            # if "conc_mass_comp[X_PHA]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
+            # if "conc_mass_comp[X_AUT]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
+            # if "conc_mass_comp[S_K]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
+            # if "conc_mass_comp[S_Mg]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
 
-    # if "conc_mass_comp[S_su]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e3)
-    # if "conc_mass_comp[S_aa]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e3)
-    # if "conc_mass_comp[S_fa]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e0)
-    # if "conc_mass_comp[S_va]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e0)
-    # if "conc_mass_comp[S_bu]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e0)
-    # if "conc_mass_comp[S_pro]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e0)
-    # if "conc_mass_comp[S_ac]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e2)
-    # if "conc_mass_comp[S_h2]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e3)
-    # if "conc_mass_comp[S_ch4]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e2)
-    # if "conc_mass_comp[S_IN]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e0)
-    # if "conc_mass_comp[S_IP]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e1)
-    # if "conc_mass_comp[X_ch]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e3)
-    # if "conc_mass_comp[X_pr]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e3)
-    # if "conc_mass_comp[X_li]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e2)
-    # if "conc_mass_comp[X_su]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e1)
-    # if "conc_mass_comp[X_aa]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e1)
-    # if "conc_mass_comp[X_fa]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e4)
-    # if "conc_mass_comp[X_c4]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e4)
-    # if "conc_mass_comp[X_pro]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e4)
-    # if "conc_mass_comp[X_ac]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e1)
-    # if "conc_mass_comp[X_h2]" in var.name:
-    #     iscale.set_scaling_factor(var, 1e5)
+            # if "conc_mass_comp[S_su]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e3)
+            # if "conc_mass_comp[S_aa]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e3)
+            # if "conc_mass_comp[S_fa]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e0)
+            # if "conc_mass_comp[S_va]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e0)
+            # if "conc_mass_comp[S_bu]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e0)
+            # if "conc_mass_comp[S_pro]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e0)
+            # if "conc_mass_comp[S_ac]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp[S_h2]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e3)
+            # if "conc_mass_comp[S_ch4]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp[S_IN]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e0)
+            # if "conc_mass_comp[S_IP]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e1)
+            # if "conc_mass_comp[X_ch]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e3)
+            # if "conc_mass_comp[X_pr]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e3)
+            # if "conc_mass_comp[X_li]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp[X_su]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e1)
+            # if "conc_mass_comp[X_aa]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e1)
+            # if "conc_mass_comp[X_fa]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e4)
+            # if "conc_mass_comp[X_c4]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e4)
+            # if "conc_mass_comp[X_pro]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e4)
+            # if "conc_mass_comp[X_ac]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e1)
+            # if "conc_mass_comp[X_h2]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
 
-    # scale_variables(m)
+    scale_variables(m)
     iscale.calculate_scaling_factors(m.fs)
 
     # Initialize flowsheet
@@ -586,8 +522,6 @@ def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
 
 
 if __name__ == "__main__":
-    # This method builds and runs a steady state activated sludge
-    # flowsheet.
     m, results = build_flowsheet()
 
     stream_table = create_stream_table_dataframe(
