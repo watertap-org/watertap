@@ -41,13 +41,13 @@
 # derivative works, incorporate into other computer software, distribute, and sublicense such enhancements
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
+
 """
 This class provides methods for using the OLI Cloud API and augments the code provided via
 OLI API documentation. [WIP]
 
 Most of this code was adopted from examples in OLI's documentation, with modifications implemented for
-(1) interfacing w/WaterTap and
-(2) addition of other functions for better utilizing OLI API functionality
+interfacing w/WaterTap and addition of other functions for better utilizing OLI API functionality
 
 """
 
