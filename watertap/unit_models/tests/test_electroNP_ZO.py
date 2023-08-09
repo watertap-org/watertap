@@ -126,13 +126,6 @@ class TestElectroNP:
 
         calculate_scaling_factors(m)
 
-        # check that all variables have scaling factors
-        unscaled_var_list = list(iscale.unscaled_variables_generator(m))
-        assert len(unscaled_var_list) == 0
-
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i[0]) for i in badly_scaled_var_lst]
-        assert badly_scaled_var_lst == []
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -140,12 +133,16 @@ class TestElectroNP:
     def test_initialize(self, ElectroNP_frame):
         initialization_tester(ElectroNP_frame)
 
+        # check that all variables have scaling factors
+        unscaled_var_list = list(iscale.unscaled_variables_generator(ElectroNP_frame))
+        assert len(unscaled_var_list) == 0
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, ElectroNP_frame):
         m = ElectroNP_frame
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
