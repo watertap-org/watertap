@@ -271,10 +271,15 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         # We now need to get the mapping array. This only needs to happen on root
         local_num_cases_all = len(local_output_dict["solve_successful"])
         # AllGather the total size of the value array on each MPI rank
-        sample_split_arr = self.comm.allgather(local_num_cases_all)
+        sample_split_arr = self.parallel_manager.combine_data_with_peers(
+            local_num_cases_all
+        )
         num_total_samples = sum(sample_split_arr)
+
         # AllGather nominal values for creating the parallel offset
-        nominal_sample_split_arr = self.comm.allgather(self.n_nominal_local)
+        nominal_sample_split_arr = self.parallel_manager.combine_data_with_peers(
+            self.n_nominal_local
+        )
 
         # We need to create a global index and offset items accordingly. This
         # needs to happen on all ranks/workers.
@@ -295,21 +300,19 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             )
 
         # Now we need to collect it on global_output_dict
-        self.comm.Gatherv(
+        self.parallel_manager.gather_arrays_to_root(
             sendbuf=local_output_dict["nominal_idx"],
-            recvbuf=(
+            recvbuf_spec=(
                 global_output_dict["nominal_idx"],
                 sample_split_arr,
             ),
-            root=0,
         )
-        self.comm.Gatherv(
+        self.parallel_manager.gather_arrays_to_root(
             sendbuf=local_output_dict["differential_idx"],
-            recvbuf=(
+            recvbuf_spec=(
                 global_output_dict["differential_idx"],
                 sample_split_arr,
             ),
-            root=0,
         )
 
         return global_output_dict
