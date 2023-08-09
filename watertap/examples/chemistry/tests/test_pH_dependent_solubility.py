@@ -1109,6 +1109,7 @@ def test_case_2_low_pH_no_precip():
     )
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case_2_ultra_high_ca():
     model = run_case2(
@@ -2581,6 +2582,7 @@ def test_case_4_seawater_added_Fe_OH_PO4():
 #       Add 1e-4 M of Fe
 #       Add 1e-4 M of PO4
 #       Add 0 M of OH
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case_4_seawater_added_Fe_PO4():
     model = run_case4(

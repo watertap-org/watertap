@@ -67,6 +67,7 @@ def test_ideal_naocl_chlorination():
     ].value == pytest.approx(5.6407676871845223e-11, rel=1e-3)
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_ideal_naocl_chlorination_full_block():
     model = run_chlorination_block_example(fix_free_chlorine=True)

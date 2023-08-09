@@ -579,6 +579,7 @@ def run_case2(
 
 
 ## ================================= Case 1 Tests ===============================
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case1_low_conc_no_precipitation():
     model = run_case1(
@@ -591,6 +592,7 @@ def test_case1_low_conc_no_precipitation():
     )
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case1_mid_conc_no_precipitation():
     model = run_case1(
