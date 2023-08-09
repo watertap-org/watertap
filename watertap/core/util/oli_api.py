@@ -1,24 +1,3 @@
-###############################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
-# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
-# of Energy). All rights reserved.
-#
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
-# information, respectively. These files are also available online at the URL
-# "https://github.com/watertap-org/watertap/"
-###############################################################################
-
-"""
-This class provides methods for using the OLI Cloud API and augments the code provided via
-OLI API documentation. [WIP]
-
-Most of this code was adopted from examples in OLI's documentation, with modifications implemented for
-interfacing w/WaterTap and addition of other functions for better utilizing OLI API functionality
-
-"""
-
 import requests
 import json
 import time
