@@ -799,24 +799,6 @@ class TestParameterSweep:
 
             truth_dict = {
                 "outputs": {
-                    "fs.input[a]": {
-                        "full_name": "fs.input[a]",
-                        "lower bound": 0,
-                        "units": "None",
-                        "upper bound": 1,
-                        "value": np.array(
-                            [0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]
-                        ),
-                    },
-                    "fs.input[b]": {
-                        "full_name": "fs.input[b]",
-                        "lower bound": 0,
-                        "units": "None",
-                        "upper bound": 1,
-                        "value": np.array(
-                            [0.0, 0.25, 0.5, 0.0, 0.25, 0.5, 0.0, 0.25, 0.5]
-                        ),
-                    },
                     "output_c": {
                         "lower bound": 0,
                         "units": "None",
