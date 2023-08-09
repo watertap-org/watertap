@@ -25,10 +25,7 @@ from watertap.property_models.activated_sludge.simple_modified_asm2d_properties 
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util.scaling import (
-    calculate_scaling_factors,
-    badly_scaled_var_generator,
-)
+from idaes.core.util.scaling import calculate_scaling_factors
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
