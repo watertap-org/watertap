@@ -303,7 +303,7 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
 
     # visualize results
 
-    # case 1
+    # case 17
     # fig, ax = visualize_results(
     #     case_num,
     #     plot_type="contour",
@@ -320,7 +320,7 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     # ax.set_ylabel("Inlet Salt Concentration (kg/m3)")
     # ax.set_title("LCOW ($/m3)")
 
-    # case 2
+    # case 8
     fig, ax = visualize_results(
         case_num,
         plot_type="contour",
@@ -336,7 +336,7 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     ax.set_ylabel("Motor Efficiency")
     ax.set_title("LCOW ($/m3)")
 
-    # case 3
+    # case 9
     # fig, ax = visualize_results(
     #     case_num,
     #     plot_type="contour",
@@ -348,7 +348,7 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     # ax.set_xlabel("Pump Sizing Cost")
     # ax.set_ylabel("LCOW")
 
-    # case 4
+    # case 10
     # fig, ax = visualize_results(
     #     case_num,
     #     plot_type="contour",
@@ -364,7 +364,7 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     # ax.set_ylabel("Salt Mass Removal Fraction")
     # ax.set_title("LCOW ($/m3)")
 
-    # case 5
+    # case 11
     # fig, ax = visualize_results(
     #     case_num,
     #     plot_type="contour",

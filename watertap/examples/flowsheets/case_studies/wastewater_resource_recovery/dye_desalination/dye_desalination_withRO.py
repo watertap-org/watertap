@@ -497,7 +497,7 @@ def add_costing(m, include_pretreatment):
             doc="Cost of disposing of waste water treatment plant sludge",
         )
     else:
-        m.fs.sludge_disposal_cost = 0 * pyunits.USD_2020 / pyunits.year
+        pass
 
     m.fs.dye_recovery_revenue = Expression(
         expr=(
@@ -551,13 +551,21 @@ def add_costing(m, include_pretreatment):
 
     @m.fs.Expression(doc="Total cost of water/dye recovered and brine/sludge disposed")
     def total_externalities(b):
-        return pyunits.convert(
-            m.fs.water_recovery_revenue
-            + m.fs.dye_recovery_revenue
-            - m.fs.brine_disposal_cost
-            - m.fs.sludge_disposal_cost,
-            to_units=pyunits.USD_2020 / pyunits.year,
-        )
+        if include_pretreatment == True:
+            return pyunits.convert(
+                m.fs.water_recovery_revenue
+                + m.fs.dye_recovery_revenue
+                - m.fs.brine_disposal_cost
+                - m.fs.sludge_disposal_cost,
+                to_units=pyunits.USD_2020 / pyunits.year,
+            )
+        else:
+            return pyunits.convert(
+                m.fs.water_recovery_revenue
+                + m.fs.dye_recovery_revenue
+                - m.fs.brine_disposal_cost,
+                to_units=pyunits.USD_2020 / pyunits.year,
+            )
 
     @m.fs.Expression(
         doc="Levelized cost of treatment with respect to volumetric feed flow"
@@ -594,22 +602,38 @@ def add_costing(m, include_pretreatment):
         doc="Levelized cost of water with respect to volumetric permeate flow"
     )
     def LCOW(b):
-        return (
-            b.total_capital_cost * b.zo_costing.capital_recovery_factor
-            + b.total_operating_cost
-            - pyunits.convert(
-                m.fs.dye_recovery_revenue
-                - m.fs.brine_disposal_cost
-                - m.fs.sludge_disposal_cost,
-                to_units=pyunits.USD_2020 / pyunits.year,
+        if include_pretreatment == True:
+            return (
+                b.total_capital_cost * b.zo_costing.capital_recovery_factor
+                + b.total_operating_cost
+                - pyunits.convert(
+                    m.fs.dye_recovery_revenue
+                    - m.fs.brine_disposal_cost
+                    - m.fs.sludge_disposal_cost,
+                    to_units=pyunits.USD_2020 / pyunits.year,
+                )
+            ) / (
+                pyunits.convert(
+                    b.permeate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / pyunits.year,
+                )
+                * b.zo_costing.utilization_factor
             )
-        ) / (
-            pyunits.convert(
-                b.permeate.properties[0].flow_vol,
-                to_units=pyunits.m**3 / pyunits.year,
+        else:
+            return (
+                b.total_capital_cost * b.zo_costing.capital_recovery_factor
+                + b.total_operating_cost
+                - pyunits.convert(
+                    m.fs.dye_recovery_revenue - m.fs.brine_disposal_cost,
+                    to_units=pyunits.USD_2020 / pyunits.year,
+                )
+            ) / (
+                pyunits.convert(
+                    b.permeate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / pyunits.year,
+                )
+                * b.zo_costing.utilization_factor
             )
-            * b.zo_costing.utilization_factor
-        )
 
     @m.fs.Expression(
         doc="Levelized cost of water with respect to volumetric permeate flow"
@@ -805,11 +829,14 @@ def display_costing(m, include_pretreatment):
             m.fs.brine_disposal_cost, to_units=pyunits.USD_2020 / pyunits.year
         )
     )
-    sdc = value(
-        pyunits.convert(
-            m.fs.sludge_disposal_cost, to_units=pyunits.USD_2020 / pyunits.year
+    if include_pretreatment == True:
+        sdc = value(
+            pyunits.convert(
+                m.fs.sludge_disposal_cost, to_units=pyunits.USD_2020 / pyunits.year
+            )
         )
-    )
+    else:
+        pass
 
     # normalized costs
     feed_flowrate = value(
@@ -876,7 +903,10 @@ def display_costing(m, include_pretreatment):
     print(f"Water recovery revenue: {wrr: .4f} USD/year")
     print(f"Dye recovery revenue: {drr: .4f} USD/year")
     print(f"Brine disposal cost: {-1*bdc: .4f} USD/year")
-    print(f"Sludge disposal cost: {-1*sdc: .4f} USD/year")
+    if include_pretreatment == True:
+        print(f"Sludge disposal cost: {-1*sdc: .4f} USD/year")
+    else:
+        pass
 
     print(f"\nTotal Annual Cost: {annual_investment : .4f} $/year")
     print(f"Normalized Capital Cost: {capex_norm:.4f} $/m3feed/hr")
