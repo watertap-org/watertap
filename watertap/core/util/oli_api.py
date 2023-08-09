@@ -48,7 +48,9 @@ OLI API documentation. [WIP]
 Most of this code was adopted from examples in OLI's documentation, with modifications implemented for
 (1) interfacing w/WaterTap and
 (2) addition of other functions for better utilizing OLI API functionality
+
 """
+
 import requests
 import json
 import time
