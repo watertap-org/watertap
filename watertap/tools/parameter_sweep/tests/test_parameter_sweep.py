@@ -1776,7 +1776,7 @@ class TestParameterSweep:
         parameter_sweep(
             m,
             sweep_params,
-            outputs=outputs,
+            build_outputs=outputs,
             csv_results_file_name=csv_results_file_name,
             h5_results_file_name=h5_results_file_name,
             optimize_function=_optimization,
