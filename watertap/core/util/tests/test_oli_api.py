@@ -18,7 +18,7 @@ import time
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.solvers import get_solver
 import watertap.property_models.multicomp_aq_sol_prop_pack as props
- 
+
 __author__ = "Adam Atia"
 
 
@@ -34,12 +34,15 @@ def test_login():
     password = "dummy_pass"
     root_url = "https://dummy_root.com"
     auth_url = "https://dummy_url.com/dummy"
-    oliapi = OLIApi(username=username, password=password, root_url=root_url, auth_url=auth_url)
+    oliapi = OLIApi(
+        username=username, password=password, root_url=root_url, auth_url=auth_url
+    )
 
     # TODO: Want capability to test successful login (as well as testing desired exceptions to be raise upon intentional fail)
-    # is desired from OLI. 
+    # is desired from OLI.
     # login will fail due to dummy credentials right now, with unintentional exception.
-    #oliapi.login(fail_flag=False)
+    # oliapi.login(fail_flag=False)
+
 
 # Start test class
 # TODO: Consider using dummy metadata rather than importing property package
@@ -49,50 +52,78 @@ class TestOLIAPI_WaterTAP:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = props.MCASParameterBlock(
-            solute_list= ["NAION", "CLION", "CAION", "SO4ION", "MGION", "KION","HCO3ION"],
-            mw_data= {"H2O": 18e-3,
-                        "NAION": 22.989770e-3,
-                        "CLION": 35.45e-3,
-                        "CAION": 40.08e-3,
-                        "SO4ION": 96.06e-3,
-                        "MGION": 24.305e-3,
-                        "KION": 39.10e-3,
-                        "HCO3ION": 61.02e-3
-                        },
-            charge= {"NAION": 1,
-                    "CLION": -1,
-                    "CAION": 2,
-                    "SO4ION": -2,
-                    "MGION": 2,
-                    "KION": 1,
-                    "HCO3ION": -1
-                    },
+            solute_list=[
+                "NAION",
+                "CLION",
+                "CAION",
+                "SO4ION",
+                "MGION",
+                "KION",
+                "HCO3ION",
+            ],
+            mw_data={
+                "H2O": 18e-3,
+                "NAION": 22.989770e-3,
+                "CLION": 35.45e-3,
+                "CAION": 40.08e-3,
+                "SO4ION": 96.06e-3,
+                "MGION": 24.305e-3,
+                "KION": 39.10e-3,
+                "HCO3ION": 61.02e-3,
+            },
+            charge={
+                "NAION": 1,
+                "CLION": -1,
+                "CAION": 2,
+                "SO4ION": -2,
+                "MGION": 2,
+                "KION": 1,
+                "HCO3ION": -1,
+            },
         )
         stream = m.fs.stream = m.fs.properties.build_state_block([0])
         stream[0].temperature.fix(298)
         stream[0].pressure.fix(101325)
 
-
-        stream.calculate_state(var_args={('mass_frac_phase_comp', ('Liq', 'NAION')): 10556e-6,
-                                        ('mass_frac_phase_comp', ('Liq', 'CLION')): 18980e-6,
-                                    ('mass_frac_phase_comp', ('Liq', 'MGION')): 1262e-6,
-                                    ('mass_frac_phase_comp', ('Liq', 'CAION')): 400e-6,
-                                    ('mass_frac_phase_comp', ('Liq', 'SO4ION')): 2649e-6,
-                                    ('mass_frac_phase_comp', ('Liq', 'KION')): 380e-6,
-                                    ('mass_frac_phase_comp', ('Liq', 'HCO3ION')): 140e-6,
-                                    ('flow_vol_phase', 'Liq'): 1e-3},
-                            hold_state=True,  # fixes the calculated component mass flow rates
-                            )
+        stream.calculate_state(
+            var_args={
+                ("mass_frac_phase_comp", ("Liq", "NAION")): 10556e-6,
+                ("mass_frac_phase_comp", ("Liq", "CLION")): 18980e-6,
+                ("mass_frac_phase_comp", ("Liq", "MGION")): 1262e-6,
+                ("mass_frac_phase_comp", ("Liq", "CAION")): 400e-6,
+                ("mass_frac_phase_comp", ("Liq", "SO4ION")): 2649e-6,
+                ("mass_frac_phase_comp", ("Liq", "KION")): 380e-6,
+                ("mass_frac_phase_comp", ("Liq", "HCO3ION")): 140e-6,
+                ("flow_vol_phase", "Liq"): 1e-3,
+            },
+            hold_state=True,  # fixes the calculated component mass flow rates
+        )
 
         stream[0].conc_mass_phase_comp
-        m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', "H2O"))
-        m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', "NAION"))
-        m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', "CLION"))
-        m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', "MGION"))
-        m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', "CAION"))
-        m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', "SO4ION"))
-        m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', "KION"))
-        m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', "HCO3ION"))
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1, index=("Liq", "NAION")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1, index=("Liq", "CLION")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1, index=("Liq", "MGION")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1, index=("Liq", "CAION")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1, index=("Liq", "SO4ION")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1, index=("Liq", "KION")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1, index=("Liq", "HCO3ION")
+        )
 
         calculate_scaling_factors(m)
         stream.initialize()
@@ -110,36 +141,41 @@ class TestOLIAPI_WaterTAP:
         root_url = "https://dummy_root.com"
         auth_url = "https://dummy_url.com/dummy"
         try:
-            oliapi = OLIApi(username=username, password=password, root_url=root_url, auth_url=auth_url)
+            oliapi = OLIApi(
+                username=username,
+                password=password,
+                root_url=root_url,
+                auth_url=auth_url,
+            )
         except ConnectionError:
             pass
         # Continue if login  successful
         # if oliapi.login():
 
-        # All code below would be wrapped in the conditional above to run only if oli login was successful  
-          
+        # All code below would be wrapped in the conditional above to run only if oli login was successful
+
         # TODO: Need OLI testing for automatic dbs file generation to run line below:
         # Create chemistry file ID using OLI's chem-builder and the solute set defined in WaterTAP's MCAS
         # chemistry_file_id = oliapi.get_dbs_file_id(ions=m.fs.properties.solute_set, model_name="Test_Seawater")
-        
+
         # Use MCAS stateblock to create dictionary with input concentration data required for OLI call function.
-        # Will add check to see in dict is as expected 
+        # Will add check to see in dict is as expected
         brine_input_clone = oliapi.create_input_dict(m.fs.stream)
-        
+
         # TODO: Need OLI testing to call wateranalysis function in line below:
         # call OLI's wateranalysis function and save results
         # result = oliapi.call("wateranalysis", chemistry_file_id, brine_input_clone)
-        
+
         # TODO: Need OLI testing to get the job id in line below:
         # save jobid for troubleshooting with OLI support team
         # jobid = oliapi.get_job_id(chemistry_file_id)
-        
-        # TODO: Need OLI testing to get scaling tendency example results to verify a single value for gypsum scaling, 
+
+        # TODO: Need OLI testing to get scaling tendency example results to verify a single value for gypsum scaling,
         # specific to feed comp specified earlier:
         # Extract scaling tendency for gypsum as an example and verify value is as expected within tolerance
         # SI = result['result']['additionalProperties']['scalingTendencies']['values']['CASO4.2H2O']
         # assert SI == pytest.approx(1, rel=1e-2)
-        
+
         # TODO: Need OLI testing to test flash history method
         # The function below just gives us a record
         # flash_hist = oliapi.get_flash_history(chemistry_file_id)
