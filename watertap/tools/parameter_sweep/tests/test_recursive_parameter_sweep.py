@@ -304,7 +304,7 @@ def test_recursive_parameter_sweep(model, tmp_path):
         assert os.path.exists(txt_fpath)
 
         truth_txt_dict = {
-            "outputs": ["x_val", "a_val"],
+            "outputs": ["x_val"],
             "sweep_params": ["a_val"],
         }
 
@@ -449,7 +449,7 @@ def test_recursive_parameter_sweep_function(model, tmp_path):
         assert os.path.exists(txt_fpath)
 
         truth_txt_dict = {
-            "outputs": ["x_val", "a_val"],
+            "outputs": ["x_val"],
             "sweep_params": ["a_val"],
         }
 

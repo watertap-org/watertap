@@ -329,22 +329,13 @@ class _ParameterSweepBase(ABC):
 
     def _aggregate_results_arr(self, global_results_dict, num_cases):
 
-        filtered_output_keys = [
-            output_key
-            for output_key in global_results_dict["outputs"].keys()
-            if output_key not in global_results_dict["sweep_params"].keys()
-        ]
-        print("\nfiltered_output_keys = ", filtered_output_keys)
-        print()
-        n_outputs = len(filtered_output_keys)
-
-        global_results = np.zeros((num_cases, n_outputs), dtype=float)
+        global_results = np.zeros(
+            (num_cases, len(global_results_dict["outputs"])), dtype=float
+        )
 
         if self.parallel_manager.is_root_process():
-            for i, (key) in enumerate(filtered_output_keys):
-                global_results[:, i] = global_results_dict["outputs"][key]["value"][
-                    :num_cases
-                ]
+            for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
+                global_results[:, i] = item["value"][:num_cases]
 
         self.parallel_manager.sync_array_with_peers(global_results)
 
@@ -410,13 +401,6 @@ class _ParameterSweepBase(ABC):
                 output_dict["outputs"][
                     short_name
                 ] = self._create_component_output_skeleton(pyo_obj, num_samples)
-            # We will save the input values as well here
-            for param_name, sweep_param in sweep_params.items():
-                var = sweep_param.pyomo_object
-                sweep_param_objs.add(var)
-                output_dict["outputs"][
-                    param_name
-                ] = self._create_component_output_skeleton(var, num_samples)
 
         return output_dict
 
@@ -751,7 +735,7 @@ class ParameterSweep(_ParameterSweepBase):
     one process's run.
     """
 
-    def _combine_output_array(self, sweep_params, gathered_results):
+    def _combine_output_array(self, gathered_results):
         outputs = gathered_results["outputs"]
         if len(outputs) == 0:
             return []
@@ -760,20 +744,9 @@ class ParameterSweep(_ParameterSweepBase):
         combined_outputs = [
             np.asarray([]) for _ in range(len(list(outputs.values())[0]["value"]))
         ]
-        for var_name, output in outputs.items():
-            if var_name not in list(sweep_params.keys()) and var_name not in [
-                obj.pyomo_object.name for obj in sweep_params.values()
-            ]:
-                # print("var_name = ", var_name)
-                # print("var_name not in list(sweep_params.keys()) = ", var_name not in list(sweep_params.keys()))
-                # val_names = [obj.pyomo_object.name for obj in sweep_params.values()]
-                # print("val_names = ", val_names)
-                # print("var_name not in val_names = ", var_name not in val_names)
-                # print("sweep_params.keys() =  ", sweep_params.keys())
-                for i in range(len(output["value"])):
-                    combined_outputs[i] = np.append(
-                        combined_outputs[i], output["value"][i]
-                    )
+        for _, output in outputs.items():
+            for i in range(len(output["value"])):
+                combined_outputs[i] = np.append(combined_outputs[i], output["value"][i])
 
         return np.asarray(combined_outputs)
 
@@ -895,9 +868,7 @@ class ParameterSweep(_ParameterSweepBase):
         )
 
         global_sweep_results_dict = self._combine_gather_results(all_results)
-        combined_output_arr = self._combine_output_array(
-            sweep_params, global_sweep_results_dict
-        )
+        combined_output_arr = self._combine_output_array(global_sweep_results_dict)
 
         # save the results for all simulations run by this process and its children
         for results in self.parallel_manager.results_from_local_tree(all_results):
@@ -1130,10 +1101,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         # Now we can save this
         self.parallel_manager.sync_with_peers()
 
-        import pprint
-
-        print("global_filtered_results")
-        pprint.pprint(global_filtered_results)
         # Save to file
         global_save_data = self.writer.save_results(
             sweep_params,

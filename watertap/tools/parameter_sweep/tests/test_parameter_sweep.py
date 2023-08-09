@@ -346,18 +346,6 @@ class TestParameterSweep:
 
         input_dict = {
             "outputs": {
-                "fs.input[a]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.input[b]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
                 "fs.output[c]": {
                     "lower bound": 0,
                     "units": "None",
@@ -645,24 +633,6 @@ class TestParameterSweep:
         if ps.parallel_manager.is_root_process():
             truth_dict = {
                 "outputs": {
-                    "fs.input[a]": {
-                        "full_name": "fs.input[a]",
-                        "lower bound": 0,
-                        "units": "None",
-                        "upper bound": 1,
-                        "value": np.array(
-                            [0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]
-                        ),
-                    },
-                    "fs.input[b]": {
-                        "full_name": "fs.input[b]",
-                        "lower bound": 0,
-                        "units": "None",
-                        "upper bound": 1,
-                        "value": np.array(
-                            [0.0, 0.25, 0.5, 0.0, 0.25, 0.5, 0.0, 0.25, 0.5]
-                        ),
-                    },
                     "output_c": {
                         "lower bound": 0,
                         "units": "None",
@@ -748,8 +718,6 @@ class TestParameterSweep:
                     "output_c",
                     "output_d",
                     "performance",
-                    "fs.input[a]",
-                    "fs.input[b]",
                 ],
                 "sweep_params": ["fs.input[a]", "fs.input[b]"],
             }
@@ -1002,7 +970,7 @@ class TestParameterSweep:
             data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
 
             # Compare the last row of the imported data to truth
-            truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 10.0, 2.0]
+            truth_data = [0.9, 0.5, -11.0, 0.9, 0.5, 1.0, 1.0, 0.8, 0.5, 10.0, 2.0]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
             # H5 dictionary test
@@ -1229,6 +1197,8 @@ class TestParameterSweep:
                 0.9,
                 0.5,
                 np.nan,
+                0.9,
+                0.5,
                 np.nan,
                 np.nan,
                 np.nan,
@@ -1411,7 +1381,7 @@ class TestParameterSweep:
             data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
 
             # Compare the last row of the imported data to truth
-            truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 10.0, 2.0]
+            truth_data = [0.9, 0.5, -11.0, 0.9, 0.5, 1.0, 1.0, 0.8, 0.5, 10.0, 2.0]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
             # H5 dictionary test
@@ -1930,8 +1900,6 @@ class TestParameterSweep:
                     "output_c",
                     "output_d",
                     "performance",
-                    "fs.input[a]",
-                    "fs.input[b]",
                 ],
                 "sweep_params": ["fs.input[a]", "fs.input[b]"],
             }
