@@ -675,17 +675,17 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Operating costs",
     )
-    exports.add(
-        obj=fs.sludge_disposal_cost,
-        name="WWTP sludge disposal",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=2,
-        description="Annual sludge disposal",
-        is_input=False,
-        is_output=True,
-        output_category="Operating costs",
-    )
+    # exports.add( - uncomment if we want to consider pretreatment
+    #     obj=fs.sludge_disposal_cost,
+    #     name="WWTP sludge disposal",
+    #     ui_units=fs.zo_costing.base_currency / pyunits.year,
+    #     display_units="$/year",
+    #     rounding=2,
+    #     description="Annual sludge disposal",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Operating costs",
+    # )
     # Revenue
     total_revenue = fs.water_recovery_revenue + fs.dye_recovery_revenue
     exports.add(
