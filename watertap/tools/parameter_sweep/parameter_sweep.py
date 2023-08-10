@@ -520,8 +520,8 @@ class _ParameterSweepBase(ABC):
 
         try:
             # Simulate/optimize with this set of parameter
-            with capture_output():
-                results = optimize_function(model, **optimize_kwargs)
+            # with capture_output():
+            results = optimize_function(model, **optimize_kwargs)
             pyo.assert_optimal_termination(results)
 
         except TypeError:
@@ -537,8 +537,8 @@ class _ParameterSweepBase(ABC):
                         v.set_value(val, skip_validation=True)
                 try:
                     reinitialize_function(model, **reinitialize_kwargs)
-                    with capture_output():
-                        results = optimize_function(model, **optimize_kwargs)
+                    # with capture_output():
+                    results = optimize_function(model, **optimize_kwargs)
                     pyo.assert_optimal_termination(results)
 
                 except TypeError:
