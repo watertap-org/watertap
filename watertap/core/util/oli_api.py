@@ -103,7 +103,7 @@ class OLIApi:
 
     def login(self, tee=True, fail_flag=True):
         """
-        Login into user credentials for the OLI Cloud:
+        Login into user credentials for the OLI Cloud
         tee: boolean argument to print status code when True
         fail_flag: boolean argument to raise exception upon login failure when True
         :return: True on success, False on failure
