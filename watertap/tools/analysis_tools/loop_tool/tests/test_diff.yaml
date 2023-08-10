@@ -9,18 +9,18 @@ ro_diff_analysis:
       param: fs.costing.reverse_osmosis.membrane_cost
       relative_lb: -0.01
       relative_ub: -0.01
-      nominal_lb: 10
+      nominal_lb: 25
       nominal_ub: 30
       num_samples: 1 
     sweep_reference_params:
       membrane_cost:
         type: UniformSample
         param: fs.costing.reverse_osmosis.membrane_cost
-        lower_limit: 10
+        lower_limit: 25
         upper_limit: 30
       factor_membrane_replacement:
         type: UniformSample
         param: fs.costing.reverse_osmosis.factor_membrane_replacement
-        lower_limit: 10
-        upper_limit: 30
+        lower_limit: 0.15
+        upper_limit: 0.2
       num_samples: 2

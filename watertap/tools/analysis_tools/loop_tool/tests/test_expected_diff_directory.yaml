@@ -6,14 +6,14 @@ ro_diff_analysis:
         fs.costing.reverse_osmosis.membrane_cost:
           diff_mode: percentile
           diff_sample_type: UniformSample
-          nominal_lb: 10
+          nominal_lb: 25
           nominal_ub: 30
           num_samples: 1
           param: fs.costing.reverse_osmosis.membrane_cost
           relative_lb: -0.01
           relative_ub: -0.01
       diff_samples: 1
-      dir: D:\OneDrive\NAWI_work\Analysis\WaterTAP\watertap-dev\watertap\tools\analysis_tools\loop_tool\tests/output/ro_with_erd/ro_diff_analysis/membrane_cost
+      dir: null
       expected_num_samples: 1
       force_rerun: null
       h5dir: ro_diff_analysis/membrane_cost
@@ -28,7 +28,7 @@ ro_diff_analysis:
           membrane_cost:
             diff_mode: percentile
             diff_sample_type: UniformSample
-            nominal_lb: 10
+            nominal_lb: 25
             nominal_ub: 30
             num_samples: 1
             param: fs.costing.reverse_osmosis.membrane_cost
@@ -36,13 +36,13 @@ ro_diff_analysis:
             relative_ub: -0.01
           sweep_reference_params:
             factor_membrane_replacement:
-              lower_limit: 10
+              lower_limit: 0.15
               num_samples: 2
               param: fs.costing.reverse_osmosis.factor_membrane_replacement
               type: UniformSample
-              upper_limit: 30
+              upper_limit: 0.2
             membrane_cost:
-              lower_limit: 10
+              lower_limit: 25
               num_samples: 2
               param: fs.costing.reverse_osmosis.membrane_cost
               type: UniformSample
@@ -51,13 +51,13 @@ ro_diff_analysis:
         reinitialize_before_sweep: false
       sweep_params:
         fs.costing.reverse_osmosis.factor_membrane_replacement:
-          lower_limit: 10
+          lower_limit: 0.15
           num_samples: 2
           param: fs.costing.reverse_osmosis.factor_membrane_replacement
           type: UniformSample
-          upper_limit: 30
+          upper_limit: 0.2
         fs.costing.reverse_osmosis.membrane_cost:
-          lower_limit: 10
+          lower_limit: 25
           num_samples: 2
           param: fs.costing.reverse_osmosis.membrane_cost
           type: UniformSample

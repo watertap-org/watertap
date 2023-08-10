@@ -26,13 +26,19 @@ import os
 
 def ro_build(**kwargs):
     m = ro_erd.build(**kwargs)
+    print("BUILD MODEL")
+    print("----------------------------------------------------------------")
+
     # ro_erd.set_operating_conditions(m)
     # ro_erd.optimize_set_up(m)
+    ro_init(m, None)
     return m
 
 
 def ro_init(m, solver=None, **kwargs):
     # make sure these are fixed by init routine instad..
+    print("INITIALIZING MODEL")
+    print("----------------------------------------------------------------")
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
     m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
 
@@ -49,26 +55,37 @@ def ro_init(m, solver=None, **kwargs):
 
 
 def ro_solve(m, solver=None, **kwargs):
+    print("SOLVING MODEL")
+    print("----------------------------------------------------------------")
     result = solver.solve(m)
     return result
 
 
 def test_sweep():
+    # sweep_params = {
+    #     "feed_mass_nacl": {
+    #         "type": "LinearSample",
+    #         "param": "fs.feed.properties[0].flow_mass_phase_comp[Liq,NaCl]",
+    #         "lower_limit": 0.03,
+    #         "upper_limit": 0.04,
+    #         "num_samples": 3,
+    #     },
+    #     "ro_recovery": {
+    #         "type": "LinearSample",
+    #         "param": "fs.RO.recovery_mass_phase_comp[0,Liq,H2O]",
+    #         "lower_limit": 0.3,
+    #         "upper_limit": 0.5,
+    #         "num_samples": 3,
+    #     },
+    # }
     sweep_params = {
-        "feed_mass_nacl": {
+        "membrane_cost": {
             "type": "LinearSample",
-            "param": "fs.feed.properties[0].flow_mass_phase_comp[Liq,NaCl]",
-            "lower_limit": 0.03,
-            "upper_limit": 0.04,
+            "param": "fs.costing.reverse_osmosis.membrane_cost",
+            "lower_limit": 20,
+            "upper_limit": 30,
             "num_samples": 3,
-        },
-        "ro_recovery": {
-            "type": "LinearSample",
-            "param": "fs.RO.recovery_mass_phase_comp[0,Liq,H2O]",
-            "lower_limit": 0.3,
-            "upper_limit": 0.5,
-            "num_samples": 3,
-        },
+        }
     }
     solver = get_solver()
     opt_kwargs = {"solver": solver}
@@ -168,4 +185,4 @@ def test_diff():
 
 
 if __name__ == "__main__":
-    test_diff()
+    test_sweep()

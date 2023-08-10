@@ -10,6 +10,6 @@ ro_analysis:
       membrane_cost:
         type: LinearSample
         param: fs.costing.reverse_osmosis.membrane_cost
-        lower_limit: 10
+        lower_limit: 20
         upper_limit: 30
         num_samples: 3

@@ -7,7 +7,7 @@ ro_analysis:
             erd_type: pressure_exchanger
           diff_params: {}
           diff_samples: 0
-          dir: D:\OneDrive\NAWI_work\Analysis\WaterTAP\watertap-dev\watertap\tools\analysis_tools\loop_tool\tests/output/ro_with_erd/ro_analysis/erd_type/pressure_exchanger/membrane_cost
+          dir: null
           expected_num_samples: 3
           force_rerun: null
           h5dir: ro_analysis/erd_type/pressure_exchanger/membrane_cost
@@ -24,7 +24,7 @@ ro_analysis:
               - pressure_exchanger
               sweep_param_loop:
                 membrane_cost:
-                  lower_limit: 10
+                  lower_limit: 20
                   num_samples: 3
                   param: fs.costing.reverse_osmosis.membrane_cost
                   type: LinearSample
@@ -32,7 +32,7 @@ ro_analysis:
             reinitialize_before_sweep: false
           sweep_params:
             fs.costing.reverse_osmosis.membrane_cost:
-              lower_limit: 10
+              lower_limit: 20
               num_samples: 3
               param: fs.costing.reverse_osmosis.membrane_cost
               type: LinearSample
@@ -61,7 +61,7 @@ ro_analysis:
               - pressure_exchanger
               sweep_param_loop:
                 membrane_cost:
-                  lower_limit: 10
+                  lower_limit: 20
                   num_samples: 3
                   param: fs.costing.reverse_osmosis.membrane_cost
                   type: LinearSample
@@ -69,7 +69,7 @@ ro_analysis:
             reinitialize_before_sweep: false
           sweep_params:
             fs.costing.reverse_osmosis.membrane_cost:
-              lower_limit: 10
+              lower_limit: 20
               num_samples: 3
               param: fs.costing.reverse_osmosis.membrane_cost
               type: LinearSample
