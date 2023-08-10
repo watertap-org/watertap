@@ -75,8 +75,8 @@ class ElectroNPZOdata(SeparatorData):
             raise ConfigurationError(
                 "{} encountered unrecognised "
                 "outlet_list. This should not "
-                "occur - please use overflow "
-                "and underflow as outlets.".format(self.name)
+                "occur - please use treated "
+                "and byproduct.".format(self.name)
             )
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
@@ -221,14 +221,26 @@ class ElectroNPZOdata(SeparatorData):
             iscale.set_scaling_factor(self.magnesium_chloride_dosage, sf)
 
         for (t, i, j), v in self.split_fraction.items():
-            for i in self.config.outlet_list:
-                if j == "S_PO4":
-                    sf = 1
-                elif j == "S_NH4":
-                    sf = 1
-                else:
-                    sf = 1
-                iscale.set_scaling_factor(v, sf)
+            if i == "treated":
+                for i in self.config.outlet_list:
+                    if j == "S_PO4":
+                        sf = 1
+                    elif j == "S_NH4":
+                        sf = 1
+                    else:
+                        sf = 1
+            iscale.set_scaling_factor(v, sf)
+
+        for (t, i, j), v in self.split_fraction.items():
+            if i == "byproduct":
+                for i in self.config.outlet_list:
+                    if j == "S_PO4":
+                        sf = 1
+                    elif j == "S_NH4":
+                        sf = 1
+                    else:
+                        sf = 1e7
+            iscale.set_scaling_factor(v, sf)
 
         for t, v in self.electricity.items():
             sf = (
