@@ -14,7 +14,6 @@ from abc import abstractmethod, ABC
 
 
 class ParallelManager(ABC):
-
     ROOT_PROCESS_RANK = 0
 
     @abstractmethod
@@ -111,7 +110,6 @@ class ParallelManager(ABC):
         do_execute,
         all_parameters,
     ):
-
         """
         Scatter the specified execution out, as defined by the implementation's parallelism, for
         a list of parameters.
@@ -155,6 +153,38 @@ def build_and_execute(do_build, do_build_kwargs, do_execute, local_parameters):
     For a description of the first three arguments, see the scatter() function above.
     The fourth argument is the list of local parameters that should be run by this process.
     """
-    execute_args = do_build(**do_build_kwargs)
-    results = do_execute(local_parameters, *execute_args)
+    pa = parallelActor(do_build, do_build_kwargs, do_execute, local_parameters)
+    results = pa.execute(local_parameters)
+    # execute_args = do_build(**do_build_kwargs)
+    # results = do_execute(local_parameters, *execute_args)
     return results
+
+
+class parallelActor:
+    def __init__(self, do_build, do_build_kwargs, do_execute, local_parameters):
+        self.do_build = do_build
+        self.do_build_kwargs = do_build_kwargs
+        self.do_execute = do_execute
+        self.local_parameters = local_parameters
+        self.build_model()
+
+    def build_model(self):
+        (
+            self.param_sweep_instance,
+            self.model,
+            self.sweep_params,
+            self.outputs,
+        ) = self.do_build(**self.do_build_kwargs)
+
+    def execute(self, local_parameters, order_index=None):
+        exec_params = [
+            self.param_sweep_instance,
+            self.model,
+            self.sweep_params,
+            self.outputs,
+        ]
+        print(self.sweep_params, local_parameters)
+        if order_index is not None:
+            return self.do_execute(local_parameters, *exec_params), order_index
+        else:
+            return self.do_execute(local_parameters, *exec_params)
