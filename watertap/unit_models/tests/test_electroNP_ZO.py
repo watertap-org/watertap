@@ -138,7 +138,7 @@ class TestElectroNP:
     @pytest.mark.component
     def test_solve(self, ElectroNP_frame):
         m = ElectroNP_frame
-        results = solver.solve(m, tee=True)
+        results = solver.solve(m)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -265,7 +265,7 @@ class TestElectroNP:
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
-        m.fs.costing.add_LCOW(m.fs.unit.treated_state[0].flow_vol)
+        m.fs.costing.add_LCOW(m.fs.unit.properties_treated[0].flow_vol)
         results = solver.solve(m)
 
         assert_optimal_termination(results)

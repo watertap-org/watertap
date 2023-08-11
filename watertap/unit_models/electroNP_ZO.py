@@ -27,6 +27,7 @@ from idaes.core import (
 
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.misc import add_object_reference
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -39,7 +40,7 @@ _log = idaeslog.getLogger(__name__)
 @declare_process_block_class("ElectroNPZO")
 class ElectroNPZOdata(SeparatorData):
     """
-    Zero order electrochemical nutrient removal (ElectroNP) model based on specified water flux and ion rejection.
+    Zero order electrochemical nutrient removal (ElectroNP) model based on specified removal efficiencies for nitrogen and phosphorus.
     """
 
     CONFIG = SeparatorData.CONFIG()
@@ -83,6 +84,10 @@ class ElectroNPZOdata(SeparatorData):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
+        add_object_reference(self, "proerties_in", self.mixed_state)
+        add_object_reference(self, "properties_treated", self.treated_state)
+        add_object_reference(self, "properties_byproduct", self.byproduct_state)
+
         # Add performance variables
         self.recovery_frac_mass_H2O = Var(
             self.flowsheet().time,
@@ -111,6 +116,8 @@ class ElectroNPZOdata(SeparatorData):
             units=pyunits.dimensionless,
         )
 
+        add_object_reference(self, "removal_frac_mass_comp", self.split_fraction)
+
         @self.Constraint(
             self.flowsheet().time,
             self.config.property_package.component_list,
@@ -119,15 +126,15 @@ class ElectroNPZOdata(SeparatorData):
         def split_components(blk, t, i):
             if i == "H2O":
                 return (
-                    blk.split_fraction[t, "byproduct", i]
+                    blk.removal_frac_mass_comp[t, "byproduct", i]
                     == 1 - blk.recovery_frac_mass_H2O[t]
                 )
             elif i == "S_PO4":
-                return blk.split_fraction[t, "byproduct", i] == blk.P_removal
+                return blk.removal_frac_mass_comp[t, "byproduct", i] == blk.P_removal
             elif i == "S_NH4":
-                return blk.split_fraction[t, "byproduct", i] == blk.N_removal
+                return blk.removal_frac_mass_comp[t, "byproduct", i] == blk.N_removal
             else:
-                return blk.split_fraction[t, "byproduct", i] == 1e-7
+                return blk.removal_frac_mass_comp[t, "byproduct", i] == 1e-7
 
         self.electricity = Var(
             self.flowsheet().time,
@@ -149,7 +156,7 @@ class ElectroNPZOdata(SeparatorData):
             return b.electricity[t] == (
                 b.energy_electric_flow_mass
                 * pyunits.convert(
-                    b.byproduct_state[t].get_material_flow_terms("Liq", "S_PO4"),
+                    b.properties_byproduct[t].get_material_flow_terms("Liq", "S_PO4"),
                     to_units=pyunits.kg / pyunits.hour,
                 )
             )
@@ -175,7 +182,7 @@ class ElectroNPZOdata(SeparatorData):
             return b.MgCl2_flowrate[t] == (
                 b.magnesium_chloride_dosage
                 * pyunits.convert(
-                    b.byproduct_state[t].get_material_flow_terms("Liq", "S_PO4"),
+                    b.properties_byproduct[t].get_material_flow_terms("Liq", "S_PO4"),
                     to_units=pyunits.kg / pyunits.hour,
                 )
             )
@@ -184,7 +191,9 @@ class ElectroNPZOdata(SeparatorData):
         var_dict = {}
         var_dict["Water Recovery"] = self.recovery_frac_mass_H2O[time_point]
         for j in self.config.property_package.solute_set:
-            var_dict[f"Solute Removal {j}"] = self.split_fraction[0, "byproduct", j]
+            var_dict[f"Solute Removal {j}"] = self.removal_frac_mass_comp[
+                time_point, "byproduct", j
+            ]
         var_dict["Electricity Demand"] = self.electricity[time_point]
         var_dict["Electricity Intensity"] = self.energy_electric_flow_mass
         var_dict[
@@ -220,7 +229,7 @@ class ElectroNPZOdata(SeparatorData):
             )
             iscale.set_scaling_factor(self.magnesium_chloride_dosage, sf)
 
-        for (t, i, j), v in self.split_fraction.items():
+        for (t, i, j), v in self.removal_frac_mass_comp.items():
             if i == "treated":
                 for i in self.config.outlet_list:
                     if j == "S_PO4":
@@ -231,7 +240,7 @@ class ElectroNPZOdata(SeparatorData):
                         sf = 1
             iscale.set_scaling_factor(v, sf)
 
-        for (t, i, j), v in self.split_fraction.items():
+        for (t, i, j), v in self.removal_frac_mass_comp.items():
             if i == "byproduct":
                 for i in self.config.outlet_list:
                     if j == "S_PO4":
