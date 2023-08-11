@@ -39,7 +39,7 @@ from pyomo.opt import TerminationCondition, SolverStatus
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.examples.flowsheets.case_studies.BSM2.BSM2_flowsheet2 import (
+from watertap.examples.flowsheets.case_studies.BSM2.ASM_ADM_integration import (
     build_flowsheet,
 )
 
