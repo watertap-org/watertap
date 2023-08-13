@@ -79,10 +79,11 @@ class OLIApi:
         """
         Constructs all necessary attributes for OLIApi class
 
-        username: user's username
-        password: user's password
-        root_url: root url
-        auth_url: authorization url
+        Args:
+            username: user's username
+            password: user's password
+            root_url: root url
+            auth_url: authorization url
         """
         if username is None or not len(username):
             username = input("Enter OLI username:\n")
@@ -104,9 +105,12 @@ class OLIApi:
     def login(self, tee=True, fail_flag=True):
         """
         Login into user credentials for the OLI Cloud
-        tee: boolean argument to print status code when True
-        fail_flag: boolean argument to raise exception upon login failure when True
-        :return: True on success, False on failure
+        
+        Args:
+            tee: boolean argument to print status code when True
+            fail_flag: boolean argument to raise exception upon login failure when True
+        Returns: 
+            True on success, False on failure
         """
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -140,7 +144,8 @@ class OLIApi:
     def refresh_token(self):
         """
         Refreshes the access token using the refresh token got obtained on login
-        :return: True on success, False on failure
+        Returns: 
+            True on success, False on failure
         """
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -168,8 +173,10 @@ class OLIApi:
         Gets a new access token if the request returns with an expired token error. First tries with the refresh token
         if it's still active or simple relogs in using the username and password.
 
-        :param req_func: function to call
-        :return: Returns an empty dict if failed
+        Args:
+            req_func: function to call
+        Returns:
+            an empty dict if failed
         """
 
         num_tries = 1
@@ -196,9 +203,10 @@ class OLIApi:
         """
         Uploads a dbs file to the OLI Cloud given a full file path.
 
-        :param file_path: full path to dbs file
-        :return: dictionary containing the
-        uploaded file id
+        Args:
+            file_path: full path to dbs file
+        Returns: 
+            dictionary containing the uploaded file ID
         """
         req_result = dict()
 
@@ -220,8 +228,6 @@ class OLIApi:
     def get_user_dbs_files(self):
         """
         Returns a dictionary containing a list of all user dbs file(s) uploaded
-
-        :return: dictionary containing list of dbs files
         """
         return self.request_auto_login(
             lambda headers: requests.get(self.__dbs_url, headers=headers)
@@ -232,14 +238,16 @@ class OLIApi:
         self, function_name, chemistry_model_file_id="", json_input=dict()
     ):
         """
-        calls a function in the OLI Engine API.
+        calls chemistry-builder function in the OLI Engine API.
 
-        :param function_name: name of function to call
-        :param chemistry_model_file_id: the chemistry model file if for this calculation
-        :param json_input: calculation input JSON
-        :param poll_time: max delay between each call
-        :param max_request: maximum requests
-        :return: dictionary containing result or error
+        Args:
+            function_name: name of function to call
+            chemistry_model_file_id: the chemistry model file if for this calculation
+            json_input: calculation input JSON
+            poll_time: max delay between each call
+            max_request: maximum requests
+        Returns: 
+            dictionary containing result or error
         """
 
         # formulate url
@@ -291,13 +299,15 @@ class OLIApi:
         """
         calls a function in the OLI Engine API.
 
-        :param function_name: name of function to call
-        :param chemistry_model_file_id: the chemistry model file if for this calculation
-        :param json_input: calculation input JSON
-        :param poll_time: max delay between each call
-        :param max_request: maximum requests
-        :param tee: boolean argument ti hide or display print messages
-        :return: dictionary containing result or error
+        Args:
+            function_name: name of function to call
+            chemistry_model_file_id: the chemistry model file if for this calculation
+            json_input: calculation input JSON
+            poll_time: max delay between each call
+            max_request: maximum requests
+            tee: boolean argument to hide or display print messages
+        Returns: 
+            dictionary containing result or error
         """
 
         # formulate url
@@ -337,8 +347,7 @@ class OLIApi:
                 return requests.post(endpoint, headers=headers, data=data)
 
             output = requests.get(endpoint, headers=headers, data=data)
-            # with open("testnnnn.text", "w") as outfile:
-            #     outfile.write(str(output.text))
+
             return output
 
         # first call
@@ -411,14 +420,14 @@ class OLIApi:
 
         return dict()
 
-    def get_flash_history(
-        self, dbs_file_id
-    ):  # TODO: check this. Adding this function to easily access job id
+    # TODO: check this. Adding this function to easily access job id
+    def get_flash_history(self, dbs_file_id): 
         """
         Retrieves history of flash information, e.g., input for a chemistry model
-        :param dbs_file_id: the DBS file ID
-        :return: dictionary containing array of submitted jobs, from which the jobID
-        and input data can be obtained
+        Args:
+            dbs_file_id: the DBS file ID
+        Returns: 
+            dictionary containing array of submitted jobs, from which the jobID and input data can be obtained
         """
         endpoint = f"{self.__root_url}/engine/flash/history/{dbs_file_id}"
 
@@ -426,11 +435,13 @@ class OLIApi:
             lambda headers: requests.get(endpoint, headers=headers)
         )
 
-    def get_job_id(self, dbs_file_id):  # Adding this function to easily get job id
+    def get_job_id(self, dbs_file_id):
         """
         Retrieves jobID which is useful for troubleshooting with OLI Support Team
-        :param dbs_file_id: the DBS file ID
-        :return: jobID
+        Args:
+            dbs_file_id: the DBS file ID
+        Returns: 
+            id: OLI jobID 
         """
         flash_h = self.get_flash_history(dbs_file_id)
         id = flash_h["data"][0]["jobId"]
@@ -451,10 +462,12 @@ class OLIApi:
         Returns the chemistry file ID (dbs_file_id) from either
         (1) creating a DBS dict that requires ion names and is then fed to chemistry-builder or
         (2) an uploaded DBS via the "manual" workflow without using chemistry-builder
-        :param dbs_file_path: file path to DBS file;
-        :param ions: ion names as pyomo set
-        :param *args passes optional args to create_dbs_dict in the case of option (1)
-        :return: chemistry file ID as a string
+        
+        Args:
+            dbs_file_path: file path to DBS file.
+            ions: ion names as pyomo set
+        Returns: 
+            chemistry file ID as a string
         """
         if dbs_file_path is not None and ions is not None:
             raise IOError(
@@ -490,9 +503,13 @@ class OLIApi:
         self, ions=None, phases=None, thermo_framework=None, model_name=None
     ):
         """
-        Creates dict for chemistry-builder to later generate a dbs file id
-        :param ions: OLI-compatible ion names as a Pyomo Set, list, or dict where the keys are ion names
-        :param phases: OLI-compatible phases; if None, use default of liquid1 and solid #TODO: support not None
+        Creates dict for chemistry-builder to later generate a DBS file ID
+        Args:
+            ions: OLI-compatible ion names as a Pyomo Set, list, or dict where the keys are ion names
+            phases: OLI-compatible phases; if None, use default of liquid1 and solid 
+        Returns;
+            dbs_dict: dictionary in OLI format needed to generate chemistry [DBS] file ID
+        #TODO: support not None for phases
         """
 
         if phases is None:
@@ -543,8 +560,8 @@ class OLIApi:
     ):
         """
         Creates dict for call function that performs calculations via OLI Cloud API
-        :param stateblock: stateblock that contains ion concentrations, ion charge, temp and pressure
-        :param time_point: stateblock time dimension
+        stateblock: stateblock that contains ion concentrations, ion charge, temp and pressure
+        time_point: stateblock time dimension
         """
         if time_point is None:
             time_point = 0
@@ -556,6 +573,7 @@ class OLIApi:
                     )
         tmp_list = []
         tmp_dict = {}
+
         # TODO: need to check indexes and whether should be conc_mass_comp or conc_mass_phase_comp
         #  - for now, expecting conc_mass_phase_comp
         for (p, j), val in stateblock[time_point].conc_mass_phase_comp.items():
@@ -730,6 +748,9 @@ class OLIApi:
         tee=True,
         inflows=None,
     ):
+        '''
+        Recursive function to enable user-defined number of composition surveys
+        '''
         if results is None:
             results = []
         if inflows is None:
@@ -751,12 +772,7 @@ class OLIApi:
                     tee=tee,
                     inflows=inflows,
                 )
-                # inflows.append(deepcopy(input_dict))
-                # if tee:
-                #     print(input_dict)
-                # results.append(
-                #     self.call("wateranalysis", chemistry_file_ID, input_dict)
-                # )
+
         else:
             for val in vec_list[number_surveys]:
                 input_dict["params"]["waterAnalysisInputs"][index_list[number_surveys]][
