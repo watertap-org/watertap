@@ -145,6 +145,9 @@ class ParallelManager(ABC):
         raise NotImplementedError
 
 
+# TODO this probably should be owned by parameer sweep as its PS specific
+
+
 def build_and_execute(do_build, do_build_kwargs, do_execute, local_parameters):
     """
     Entrypoint for implementations of the parallel manager to use for running the
@@ -160,31 +163,53 @@ def build_and_execute(do_build, do_build_kwargs, do_execute, local_parameters):
     return results
 
 
+# TODO this probably should be owned by parameer sweep as its PS specific
 class parallelActor:
     def __init__(self, do_build, do_build_kwargs, do_execute, local_parameters):
         self.do_build = do_build
         self.do_build_kwargs = do_build_kwargs
         self.do_execute = do_execute
         self.local_parameters = local_parameters
+
+        self.model = None
         self.build_model()
 
     def build_model(self):
+        del self.model
         (
             self.param_sweep_instance,
             self.model,
             self.sweep_params,
             self.outputs,
         ) = self.do_build(**self.do_build_kwargs)
+        self.not_initilized = True
 
-    def execute(self, local_parameters, order_index=None):
+    def init_model(self):
+        # only initlize model if init function is available, and we are
+        # not inilization before every sweep parameter
+
+        if (
+            self.param_sweep_instance.config.initialize_function is not None
+            and self.param_sweep_instance.config.initialize_before_sweep == False
+            and self.not_initilized
+        ):
+            self.param_sweep_instance.config.initialize_function(
+                self.model, **self.param_sweep_instance.config.initialize_kwargs
+            )
+            self.not_initilized = False
+
+    def re_init(self):
+        self.build_model()
+        self.init_model()
+
+    def execute(self, local_parameters):
+        self.init_model()
         exec_params = [
             self.param_sweep_instance,
             self.model,
             self.sweep_params,
             self.outputs,
         ]
-        print(self.sweep_params, local_parameters)
-        if order_index is not None:
-            return self.do_execute(local_parameters, *exec_params), order_index
-        else:
-            return self.do_execute(local_parameters, *exec_params)
+        result = self.do_execute(local_parameters, *exec_params)
+
+        return result

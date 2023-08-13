@@ -93,7 +93,7 @@ class MultiprocessingParallelManager(ParallelManager):
         # setup multiprocessing actors
         self.actors = []
 
-        for cpu in range(self.max_number_of_subprocesses):
+        for cpu in range(self.actual_number_of_subprocesses):
             self.actors.append(
                 multiprocessing.Process(
                     target=multiProcessingActor,

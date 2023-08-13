@@ -21,6 +21,8 @@ from watertap.tools.parallel.parallel_manager import (
 )
 import ray
 from ray.util import ActorPool
+import os
+import platform
 
 
 class RayIoParallelManager(ParallelManager):
@@ -33,6 +35,8 @@ class RayIoParallelManager(ParallelManager):
         # Future -> (process number, parameters). Used to keep track of the process number and parameters for
         # all in-progress futures
         self.running_futures = dict()
+        # TODO: this should be deprciated once max resource option is avaiable
+        self.cluster_mode = False
 
     def is_root_process(self):
         return True
@@ -77,76 +81,52 @@ class RayIoParallelManager(ParallelManager):
         all_parameters,
     ):
         # constrain the number of child processes to the number of unique values to be run
-        self.actual_number_of_subprocesses = min(
-            self.max_number_of_subprocesses, len(all_parameters)
-        )
+        self.setup_ray_cluster()
 
+        # over ride max_number of subprocess if user setus up cluster mode
+        # by adding "ip_head" and  "redis_password" to their ENVS
+        # and starting ray cluster before running parameter sweep
+        if self.cluster_mode:
+            self.actual_number_of_subprocesses = min(
+                int(ray.cluster_resources()["CPU"]), len(all_parameters)
+            )
+        else:
+            self.actual_number_of_subprocesses = min(
+                self.max_number_of_subprocesses, len(all_parameters)
+            )
         # split the parameters prameters for async run
         self.expected_samples = len(all_parameters)
         divided_parameters = numpy.array_split(all_parameters, self.expected_samples)
         # create queues, run queue will be used to store paramters we want to run
-        # and return_queue is used to store results
-        self.run_queue = multiprocessing.Queue()
-        self.return_queue = multiprocessing.Queue()
-        for i, param in enumerate(divided_parameters):
-            # print(param)
-            self.run_queue.put([i, param])
-        # setup multiprocessing actors
-        self.actors = []
-
-        for cpu in range(self.max_number_of_subprocesses):
-            self.actors.append(
-                multiprocessing.Process(
-                    target=multiProcessingActor,
-                    args=(
-                        self.run_queue,
-                        self.return_queue,
-                        do_build,
-                        do_build_kwargs,
-                        do_execute,
-                        divided_parameters[0],
-                    ),
-                )
-            )
-            self.actors[-1].start()
 
         actors = []
-
-        print("Starting {} actors".format(ray.cluster_resources()["CPU"]))
-        cpus = int(ray.cluster_resources()["CPU"])
-        if cpus > conds:
-            cpus = conds
-        # if cpus > 10:
-        #     cpus = 10
-        for cpu in range(cpus):
+        # start ray actirs
+        for cpu in range(self.actual_number_of_subprocesses):
             actors.append(
                 paramActor.remote(
-                    build_function,
-                    build_kwargs,
-                    reinitialize_before_sweep,
-                    reinitialize_function,
-                    reinitialize_kwargs,
-                    optimize_function,
-                    optimize_kwargs,
-                    probe_function,
-                    outputs,
+                    do_build,
+                    do_build_kwargs,
+                    do_execute,
+                    divided_parameters[0],
                 )
             )
-        return actors
+        # create actor pool for load balancing
+        actor_pool = ActorPool(actors)
+        # run in async.
+        # run_vars = []
+        # for i, dv in enumerate(divided_parameters):
+        #     run_vars.append([dv, i])
+        # load intoshared memory space
+        run_vars_ray = ray.put(divided_parameters)
+        self.results = actor_pool.map_unordered(
+            lambda actor, var: actor.excute_with_order.remote(var, run_vars_ray),
+            numpy.arange(self.expected_samples),
+        )
 
     def gather(self):
         results = []
-        actor_pool = ActorPool(actors)
-        results = actor_pool.map_unordered(
-            lambda actor, var: actor.solve_problem.remote(var), run_dict
-        )
-        del actors
-        # collect result from the actors
-        while len(results) < self.expected_samples:
-            if self.return_queue.empty() == False:
-                i, values, result = self.return_queue.get()
-
-                results.append(LocalResults(i, values, result))
+        for i, values, result in list(self.results):
+            results.append(LocalResults(i, values, result))
         # sort the results by the process number to keep a deterministic ordering
         # results.sort(key=lambda result: result.process_number)
         results.sort(key=lambda result: result.process_number)
@@ -155,23 +135,53 @@ class RayIoParallelManager(ParallelManager):
     def results_from_local_tree(self, results):
         return results
 
+    # will need clean up
+    def setup_ray_cluster(self):
+        if ray.is_initialized() == False:
+            try:
+                # This will try to connect ot existing ray
+                # cluster, typical usage is for a cluster
+                # where ray needs to be started as head, with additional
+                # workers started on each node
+                # the parllel manaager will connect to this cluster
+                # useing ip_head addres of head node, and its password
+                # if these are not found it will reveret to local mode.
+                print(os.environ["ip_head"], os.environ["redis_password"])
 
-@ray.remote(num_cpus=1, scheduling_strategy="SPREAD")
-class paramActor:
-# This function is used for running the actors in multprocessing
-def multiProcessingActor(
-    queue,
-    return_queue,
-    do_build,
-    do_build_kwargs,
-    do_execute,
-    local_parameters,
-):
-    actor = parallelActor(do_build, do_build_kwargs, do_execute, local_parameters)
-    while True:
-        if queue.empty():
-            break
+                ray.init(
+                    include_dashboard=False,
+                    address=os.environ["ip_head"],
+                    _redis_password=os.environ["redis_password"],
+                )
+                print("Nodes in the Ray cluster:")
+                print(ray.nodes())
+                print(ray.cluster_resources())
+                self.cluster_mode = True
+            except KeyError:
+                print("Did not find ray cluster address, running in local mode")
+                if ray.is_initialized() == False:
+                    # ray.shutdown()
+                    ray.init(include_dashboard=False)
+                self.cluster_mode = False
         else:
-            i, local_parameters = queue.get()
-            result = actor.execute(local_parameters)
-            return_queue.put([i, local_parameters, result])
+            if platform.system() != "Linux" and self.cluster_mode == False:
+                # restart ray on windows machine to deal with memoery issues
+                if ray.is_initialized():
+                    ray.shutdown()
+                ray.init(include_dashboard=False)
+                self.cluster_mode = False
+
+
+# Spread ensures that load balancing makes all CPU's nodes work
+# set it so it only uses 1 core per worekers as WT/IPOPT cant multiprocess
+# might be not most efficienct on clusters with long data transfers...
+@ray.remote(num_cpus=1)
+class paramActor(parallelActor):
+    # this lets us track the order in execution
+    def excute_with_order(self, order_index, local_parameters):
+        local_parameters = local_parameters[order_index]
+        return (
+            order_index,
+            local_parameters,
+            self.execute(local_parameters),
+        )

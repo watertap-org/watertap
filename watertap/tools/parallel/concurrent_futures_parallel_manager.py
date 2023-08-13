@@ -15,12 +15,7 @@ import numpy
 from concurrent import futures
 
 from watertap.tools.parallel.results import LocalResults
-from watertap.tools.parallel.parallel_manager import (
-    parallelActor,
-    build_and_execute,
-    ParallelManager,
-)
-import multiprocessing
+from watertap.tools.parallel.parallel_manager import build_and_execute, ParallelManager
 
 
 class ConcurrentFuturesParallelManager(ParallelManager):
@@ -82,65 +77,46 @@ class ConcurrentFuturesParallelManager(ParallelManager):
         )
 
         # split the parameters into chunks, one for each child process
-        print("all", len(all_parameters))
-        self.expected_samples = len(all_parameters)
-        divided_parameters = numpy.array_split(all_parameters, self.expected_samples)
-        # self.expexted_samples = en(all_parameters)
-        self.run_queue = multiprocessing.Queue()
-        self.return_queue = multiprocessing.Queue()
-        for i, param in enumerate(divided_parameters):
-            # print(param)
-            self.run_queue.put([i, param])
-        # create an executor and kick off the child processes that will perform the computation
-        self.actors = []
+        divided_parameters = numpy.array_split(
+            all_parameters, self.actual_number_of_subprocesses
+        )
 
-        for cpu in range(self.max_number_of_subprocesses):
-            self.actors.append(
-                multiprocessing.Process(
-                    target=multiProcessingActor,
-                    args=(
-                        self.run_queue,
-                        self.return_queue,
-                        do_build,
-                        do_build_kwargs,
-                        do_execute,
-                        divided_parameters[0],
-                    ),
+        # create an executor and kick off the child processes that will perform the computation
+        self.executor = futures.ProcessPoolExecutor(
+            max_workers=self.actual_number_of_subprocesses
+        )
+
+        for i in range(self.actual_number_of_subprocesses):
+            local_parameters = divided_parameters[i]
+            # save the mapping of future -> (process number, params that it's running)
+            self.running_futures[
+                self.executor.submit(
+                    build_and_execute,
+                    do_build,
+                    do_build_kwargs,
+                    do_execute,
+                    local_parameters,
                 )
-            )
-            self.actors[-1].start()
+            ] = (i, local_parameters)
 
     def gather(self):
         results = []
+        try:
+            execution_results = futures.wait(self.running_futures.keys())
+            for future in execution_results.done:
+                process_number, values = self.running_futures[future]
+                results.append(LocalResults(process_number, values, future.result()))
 
-        while len(results) < self.expected_samples:
-            if self.return_queue.empty() == False:
-                i, values, result = self.return_queue.get()
+            if len(execution_results.not_done) > 0:
+                print(
+                    f"{len(execution_results.not_done)} out of {len(self.running_futures.keys())} total subprocesses did not finish and provide results"
+                )
+        finally:
+            self.executor.shutdown()
 
-                results.append(LocalResults(i, values, result))
         # sort the results by the process number to keep a deterministic ordering
-        # results.sort(key=lambda result: result.process_number)
         results.sort(key=lambda result: result.process_number)
         return results
 
     def results_from_local_tree(self, results):
         return results
-
-
-def multiProcessingActor(
-    queue,
-    return_queue,
-    do_build,
-    do_build_kwargs,
-    do_execute,
-    local_parameters,
-):
-    actor = parallelActor(do_build, do_build_kwargs, do_execute, local_parameters)
-    while True:
-        if queue.empty():
-            break
-        else:
-            i, local_parameters = queue.get()
-
-            result = actor.execute(local_parameters)
-            return_queue.put([i, local_parameters, result])
