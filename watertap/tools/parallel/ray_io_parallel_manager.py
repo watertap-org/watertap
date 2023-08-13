@@ -19,8 +19,12 @@ from watertap.tools.parallel.parallel_manager import (
     build_and_execute,
     ParallelManager,
 )
-import ray
-from ray.util import ActorPool
+
+try:
+    import ray
+    from ray.util import ActorPool
+except:
+    print("Ray io module not available")
 import os
 import platform
 

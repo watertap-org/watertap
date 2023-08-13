@@ -51,7 +51,12 @@ def create_parallel_manager(parallel_manager_class=None, **kwargs):
         elif parallel_backend == "MultiProcessing":
             return MultiprocessingParallelManager(number_of_subprocesses)
         elif parallel_backend == "RayIo":
-            return RayIoParallelManager(number_of_subprocesses)
+            try:
+                import ray
+
+                return RayIoParallelManager(number_of_subprocesses)
+            except:
+                print("Ray io not available, please install to use")
         else:
             raise NotImplementedError
 
