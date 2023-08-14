@@ -30,6 +30,10 @@ from watertap.tools.parameter_sweep.parameter_sweep_differential import (
 
 from watertap.tools.analysis_tools.loop_tool.data_merging_tool import *
 
+from watertap.tools.parallel.parallel_manager_factory import (
+    has_mpi_peer_processes,
+    get_mpi_comm_process,
+)
 import copy
 import os
 import h5py
@@ -304,17 +308,10 @@ class loopTool:
             self.mpi_comm = False
             self.number_of_subprocesses = 1
         else:
-            try:
-                from mpi4py import MPI
-
-                self.mpi_comm = MPI.COMM_WORLD
-                self.number_of_subprocesses = 1
-            except:
+            if has_mpi_peer_processes():
+                self.mpi_comm = get_mpi_comm_process()
+            else:
                 self.mpi_comm = False
-                if self.number_of_subprocesses is None:
-                    self.number_of_subprocesses = int(multiprocessing.cpu_count())
-                else:
-                    self.number_of_subprocesses = 1
 
     def get_diff_params(self, key, loop_value):
         """creates dict for differntial sweep
