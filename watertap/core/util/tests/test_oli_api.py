@@ -197,7 +197,6 @@ class TestOLIAPI_WaterTAP:
         except ConnectionError:
             pass
         brine_input_clone = oliapi.create_input_dict(m.fs.stream)
-        print(brine_input_clone)
         test_clone = {
             "params": {
                 "waterAnalysisInputs": [
