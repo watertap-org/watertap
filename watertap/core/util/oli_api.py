@@ -80,10 +80,10 @@ class OLIApi:
         Constructs all necessary attributes for OLIApi class
 
         Args:
-            username: user's username
-            password: user's password
-            root_url: root url
-            auth_url: authorization url
+        username: user's username
+        password: user's password
+        root_url: root url
+        auth_url: authorization url
         """
         if username is None or not len(username):
             username = input("Enter OLI username:\n")
