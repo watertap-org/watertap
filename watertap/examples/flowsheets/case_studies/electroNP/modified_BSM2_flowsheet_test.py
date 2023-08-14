@@ -369,7 +369,7 @@ def build_flowsheet():
             if "flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
             if "translator_asm2d_adm1.properties_in[0.0].flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
+                iscale.set_scaling_factor(var, 1e5)
             # if "AD.liquid_phase.properties_in[0.0].flow_vol" in var.name:
             #     iscale.set_scaling_factor(var, 1e4)
             # if "translator_adm1_asm2d.properties_in[0.0].flow_vol" in var.name:
@@ -380,10 +380,14 @@ def build_flowsheet():
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
-            if "conc_mass_comp" in var.name:
+            # if "conc_mass_comp" in var.name:
+            #     iscale.set_scaling_factor(var, 1e1)
+            if "conc_mass_comp[S_PO4]" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
-            # if "conc_mass_comp[S_PO4]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
+            # if "electroNP.electricity[0.0]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "electroNP.MgCl2_flowrate[0.0]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e1)
             # if "enth_mol" in var.name:
             #     iscale.set_scaling_factor(var, 1e-4)
             # if "conc_mass_comp[S_F]" in var.name:
@@ -520,9 +524,9 @@ def build_flowsheet():
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
-        badly_scaled_vars = list(iscale.badly_scaled_var_generator(unit))
-        if len(badly_scaled_vars) > 0:
-            automate_rescale_variables(unit)
+        # badly_scaled_vars = list(iscale.badly_scaled_var_generator(unit))
+        # if len(badly_scaled_vars) > 0:
+        #     automate_rescale_variables(unit)
 
     seq.run(m, function)
 
@@ -539,10 +543,10 @@ def build_flowsheet():
     # )
     # for x in badly_scaled_var_list:
     #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    # # dh.check_residuals(tol=1e-8)
-    # # dh.check_variable_bounds(tol=1e-8)
-    # # dh.check_rank_equality_constraints(dense=True)
-    # # ds = dh.find_candidate_equations(verbose=True, tee=True)
+    # dh.check_residuals(tol=1e-8)
+    # dh.check_variable_bounds(tol=1e-8)
+    # dh.check_rank_equality_constraints(dense=True)
+    # ds = dh.find_candidate_equations(verbose=True, tee=True)
     # ids = dh.find_irreducible_degenerate_sets(verbose=True)
 
     return m, results
@@ -559,22 +563,22 @@ def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
 if __name__ == "__main__":
     m, results = build_flowsheet()
 
-    # stream_table = create_stream_table_dataframe(
-    #     {
-    #         "Feed": m.fs.feed.outlet,
-    #         "Mix": m.fs.R1.inlet,
-    #         "R1": m.fs.R1.outlet,
-    #         "R2": m.fs.R2.outlet,
-    #         "R3": m.fs.R3.outlet,
-    #         "R4": m.fs.R4.outlet,
-    #         "R5": m.fs.R5.outlet,
-    #         "thickener": m.fs.thickener.underflow,
-    #         "AD liquid outlet": m.fs.AD.liquid_outlet,
-    #         "AD vapor outlet": m.fs.AD.vapor_outlet,
-    #         "dewater": m.fs.dewater.overflow,
-    #         "ElectroNP treated": m.fs.electroNP.treated,
-    #         "ElectroNP byproduct": m.fs.electroNP.byproduct,
-    #     },
-    #     time_point=0,
-    # )
-    # print(stream_table_dataframe_to_string(stream_table))
+    stream_table = create_stream_table_dataframe(
+        {
+            "Feed": m.fs.feed.outlet,
+            "Mix": m.fs.R1.inlet,
+            "R1": m.fs.R1.outlet,
+            "R2": m.fs.R2.outlet,
+            "R3": m.fs.R3.outlet,
+            "R4": m.fs.R4.outlet,
+            "R5": m.fs.R5.outlet,
+            "thickener": m.fs.thickener.underflow,
+            "AD liquid outlet": m.fs.AD.liquid_outlet,
+            "AD vapor outlet": m.fs.AD.vapor_outlet,
+            "dewater": m.fs.dewater.overflow,
+            "ElectroNP treated": m.fs.electroNP.treated,
+            "ElectroNP byproduct": m.fs.electroNP.byproduct,
+        },
+        time_point=0,
+    )
+    print(stream_table_dataframe_to_string(stream_table))
