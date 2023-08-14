@@ -10,7 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for ADM1 flowsheet example.
+Tests for full Water Resource Recovery Facility 
+(WRRF; a.k.a., wastewater treatment plant) flowsheet example with ASM1 and ADM1.
 
 Verified against results from:
 
@@ -26,25 +27,19 @@ __author__ = "Alejandro Garciadiego, Xinhong Liu"
 import pytest
 import pytest
 
-from pyomo.environ import assert_optimal_termination, value
+from pyomo.environ import assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-import numpy as np
-import pandas as pd
-from idaes.core.solvers import get_solver
-import idaes.core.util.scaling as iscale
-from pyomo.opt import TerminationCondition, SolverStatus
-
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.examples.flowsheets.case_studies.BSM2.BSM2_flowsheet import (
+from watertap.examples.flowsheets.case_studies.BSM2.full_WRRF_with_ASM1_ADM1 import (
     build_flowsheet,
 )
 
 
-class TestASM1Flowsheet:
+class TestFullFlowsheet:
     @pytest.fixture(scope="class")
     def model(self):
         m, res = build_flowsheet()
