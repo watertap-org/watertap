@@ -398,9 +398,20 @@ class _ParameterSweepBase(ABC):
 
         return local_combo_array
 
+    def _get_object(self, model, pyomo_object):
+        name = pyomo_object.name
+
+        # seems to be a bug, as indexed var with [None] exists
+        # but can't be found by find_component
+        if "[None]" in name:
+            name = name.replace("[None]", "")
+            return model.find_component(name)[None]
+        else:
+            return model.find_component(name)
+
     def _update_model_values(self, m, param_dict, values):
         for k, item in enumerate(param_dict.values()):
-            name = item.pyomo_object.name
+            name = self._get_object(m, item.pyomo_object)
             param = m.find_component(name)
             if param.is_variable_type():
                 # Fix the single value to values[k]
@@ -451,12 +462,12 @@ class _ParameterSweepBase(ABC):
         output_dict["sweep_params"] = {}
         output_dict["outputs"] = {}
 
-        sweep_param_objs = ComponentSet()
+        # sweep_param_objs = ComponentSet()
 
         # Store the inputs
         for param_name, sweep_param in sweep_params.items():
             var = sweep_param.pyomo_object
-            sweep_param_objs.add(var)
+            # sweep_param_objs.add(var)
             output_dict["sweep_params"][
                 param_name
             ] = self._create_component_output_skeleton(var, num_samples)
@@ -476,7 +487,7 @@ class _ParameterSweepBase(ABC):
                 output_dict["outputs"][
                     short_name
                 ] = self._create_component_output_skeleton(
-                    model.find_component(pyo_obj.name), num_samples
+                    self._get_object(model, pyo_obj), num_samples
                 )
 
         return output_dict
@@ -509,8 +520,8 @@ class _ParameterSweepBase(ABC):
         op_ps_dict = output_dict["sweep_params"]
         for key, item in sweep_params.items():
             # stores value actually applied to model, rather one assumed to be applied
-            op_ps_dict[key]["value"][case_number] = model.find_component(
-                item.pyomo_object.name
+            op_ps_dict[key]["value"][case_number] = self._get_object(
+                model, item.pyomo_object
             ).value
 
         # Get the outputs from model
