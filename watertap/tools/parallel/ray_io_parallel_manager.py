@@ -179,13 +179,18 @@ class RayIoParallelManager(ParallelManager):
 # Spread ensures that load balancing makes all CPU's nodes work
 # set it so it only uses 1 core per worekers as WT/IPOPT cant multiprocess
 # might be not most efficienct on clusters with long data transfers...
-@ray.remote(num_cpus=1)
-class paramActor(parallelActor):
-    # this lets us track the order in execution
-    def excute_with_order(self, order_index, local_parameters):
-        local_parameters = local_parameters[order_index]
-        return (
-            order_index,
-            local_parameters,
-            self.execute(local_parameters),
-        )
+try:
+
+    @ray.remote(num_cpus=1)
+    class paramActor(parallelActor):
+        # this lets us track the order in execution
+        def excute_with_order(self, order_index, local_parameters):
+            local_parameters = local_parameters[order_index]
+            return (
+                order_index,
+                local_parameters,
+                self.execute(local_parameters),
+            )
+
+except:
+    pass
