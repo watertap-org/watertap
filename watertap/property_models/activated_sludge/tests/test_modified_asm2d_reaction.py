@@ -11,17 +11,13 @@
 #################################################################################
 """
 Tests for modified ASM2d reaction package.
-Authors: Andrew Lee, Alejandro Garciadiego, Chenyu Wang
+Author: Marcus Holly, Adam Atia
 
 References:
 
-[1] Henze, M., Gujer, W., Mino, T., Matsuo, T., Wentzel, M.C., Marais, G.v.R.,
-Van Loosdrecht, M.C.M., "Activated Sludge Model No.2D, ASM2D", 1999,
-Wat. Sci. Tech. Vol. 39, No. 1, pp. 165-182
-
-[2] Flores-Alsina X., Gernaey K.V. and Jeppsson, U. "Benchmarking biological
-nutrient removal in wastewater treatment plants: influence of mathematical model
-assumptions", 2012, Wat. Sci. Tech., Vol. 65 No. 8, pp. 1496-1505
+X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
+Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions fordynamic simulations of anaerobic digestion processes,
+Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
 """
 import pytest
 
@@ -59,9 +55,7 @@ class TestParamBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.pparams = ModifiedASM2dParameterBlock(
-            additional_solute_list=["S_K", "S_Mg"]
-        )
+        model.pparams = ModifiedASM2dParameterBlock()
         model.rparams = ModifiedASM2dReactionParameterBlock(
             property_package=model.pparams
         )
@@ -72,7 +66,7 @@ class TestParamBlock(object):
     def test_build(self, model):
         assert model.rparams.reaction_block_class is ModifiedASM2dReactionBlock
 
-        assert len(model.rparams.rate_reaction_idx) == 21
+        assert len(model.rparams.rate_reaction_idx) == 19
         for i in model.rparams.rate_reaction_idx:
             assert i in [
                 "R1",
@@ -94,158 +88,136 @@ class TestParamBlock(object):
                 "R17",
                 "R18",
                 "R19",
-                "R20",
-                "R21",
             ]
 
         # Expected non-zero stoichiometries
-        # Values from table 11 in reference
+        # Values from Flores-Alsina BSM2.PSFe Gujer matrix Excel (https://github.com/wwtmodels/Plant-Wide-Models)
         stoic = {
+            # R1: Aerobic hydrolysis
             ("R1", "Liq", "S_F"): 1,
-            ("R1", "Liq", "S_NH4"): 0.01,
-            ("R1", "Liq", "S_ALK"): 0.01 * 61 / 14,  # ~0.001*61
             ("R1", "Liq", "X_S"): -1,
-            ("R1", "Liq", "X_TSS"): -0.75,
+            # R2: Anoxic hydrolysis
             ("R2", "Liq", "S_F"): 1,
-            ("R2", "Liq", "S_NH4"): 0.01,
-            ("R2", "Liq", "S_ALK"): 0.01 * 61 / 14,  # ~0.001*61
             ("R2", "Liq", "X_S"): -1,
-            ("R2", "Liq", "X_TSS"): -0.75,
+            # R3: Anaerobic hydrolysis
             ("R3", "Liq", "S_F"): 1,
-            ("R3", "Liq", "S_NH4"): 0.01,
-            ("R3", "Liq", "S_ALK"): 0.01 * 61 / 14,  # ~0.001*61
             ("R3", "Liq", "X_S"): -1,
-            ("R3", "Liq", "X_TSS"): -0.75,
+            # R4: Aerobic growth on S_F
             ("R4", "Liq", "S_O2"): -0.6,
             ("R4", "Liq", "S_F"): -1.6,
-            ("R4", "Liq", "S_NH4"): -0.022,
-            ("R4", "Liq", "S_PO4"): -0.004,
-            ("R4", "Liq", "S_ALK"): -0.022 * 61 / 14
-            + 1.5 * 0.004 * 61 / 31,  # ~ -0.001*61
+            ("R4", "Liq", "S_NH4"): -0.032518,
+            ("R4", "Liq", "S_PO4"): -0.012596,
+            ("R4", "Liq", "S_IC"): 0.143367,
             ("R4", "Liq", "X_H"): 1,
-            ("R4", "Liq", "X_TSS"): 0.9,
+            # R5: Aerobic growth on S_A
             ("R5", "Liq", "S_O2"): -0.6,
             ("R5", "Liq", "S_A"): -1.6,
-            ("R5", "Liq", "S_NH4"): -0.07,
-            ("R5", "Liq", "S_PO4"): -0.02,
-            ("R5", "Liq", "S_ALK"): -0.07 * 61 / 14
-            + 1.5 * 0.02 * 61 / 31
-            + 1.6 * 61 / 64,  # ~0.021*61
+            ("R5", "Liq", "S_NH4"): -0.08615,
+            ("R5", "Liq", "S_PO4"): -0.02154,
+            ("R5", "Liq", "S_IC"): 0.23388,
             ("R5", "Liq", "X_H"): 1,
-            ("R5", "Liq", "X_TSS"): 0.9,
+            # R6: Anoxic growth on S_F
             ("R6", "Liq", "S_F"): -1.6,
-            ("R6", "Liq", "S_NH4"): -0.022,
+            ("R6", "Liq", "S_NH4"): -0.032518,
             ("R6", "Liq", "S_N2"): 0.21,
             ("R6", "Liq", "S_NO3"): -0.21,
-            ("R6", "Liq", "S_PO4"): -0.004,
-            ("R6", "Liq", "S_ALK"): -0.022 * 61 / 14
-            + 0.21 * 61 / 14
-            + 0.004 * 1.5 * 61 / 31,  # ~0.014*61
+            ("R6", "Liq", "S_PO4"): -0.012596,
+            ("R6", "Liq", "S_IC"): 0.143368,
             ("R6", "Liq", "X_H"): 1,
-            ("R6", "Liq", "X_TSS"): 0.9,
+            # R7: Anoxic growth on S_A, denitrification
             ("R7", "Liq", "S_A"): -1.6,
-            ("R7", "Liq", "S_NH4"): -0.07,
+            ("R7", "Liq", "S_NH4"): -0.08615,
             ("R7", "Liq", "S_N2"): 0.21,
             ("R7", "Liq", "S_NO3"): -0.21,
-            ("R7", "Liq", "S_PO4"): -0.02,
-            ("R7", "Liq", "S_ALK"): 1.6 * 61 / 64
-            + (-0.07 + 0.21) * 61 / 14
-            + 0.02 * 1.5 * 61 / 31,  # ~0.036*61
+            ("R7", "Liq", "S_PO4"): -0.02154,
+            ("R7", "Liq", "S_IC"): 0.23388,
             ("R7", "Liq", "X_H"): 1,
-            ("R7", "Liq", "X_TSS"): 0.9,
+            # R8: Fermentation
             ("R8", "Liq", "S_F"): -1,
             ("R8", "Liq", "S_A"): 1,
-            ("R8", "Liq", "S_NH4"): 0.03,
-            ("R8", "Liq", "S_PO4"): 0.01,
-            ("R8", "Liq", "S_ALK"): -1 / 64
-            + 0.03 * 61 / 14
-            - 0.01 * 1.5 * 61 / 31,  # ~-0.0014*61
-            ("R9", "Liq", "S_NH4"): 0.032,
-            ("R9", "Liq", "S_PO4"): 0.01,
-            ("R9", "Liq", "S_ALK"): 0.032 * 61 / 14 - 0.01 * 1.5 * 61 / 31,  # ~0.002*61
+            ("R8", "Liq", "S_NH4"): -0.03352,
+            ("R8", "Liq", "S_PO4"): 0.00559,
+            ("R8", "Liq", "S_IC"): -0.05657,
+            # R9: Lysis
+            ("R9", "Liq", "S_NH4"): 0.049979,
+            ("R9", "Liq", "S_PO4"): 0.01586,
+            ("R9", "Liq", "S_IC"): 0.043355,
             ("R9", "Liq", "X_I"): 0.1,
             ("R9", "Liq", "X_S"): 0.9,
             ("R9", "Liq", "X_H"): -1,
-            ("R9", "Liq", "X_TSS"): -0.15,
+            # R10: Storage of X_PHA
             ("R10", "Liq", "S_A"): -1,
-            ("R10", "Liq", "S_PO4"): 0.4,
-            ("R10", "Liq", "S_ALK"): 61 / 64 - 0.4 * 0.5 * 61 / 31,  # ~0.009*61
-            ("R10", "Liq", "X_PP"): -0.4,
+            ("R10", "Liq", "S_PO4"): 0.0129,
+            ("R10", "Liq", "S_IC"): 0.075,
+            ("R10", "Liq", "X_PP"): -0.0129,
             ("R10", "Liq", "X_PHA"): 1,
-            ("R10", "Liq", "X_TSS"): -0.69,
+            ("R10", "Liq", "S_K"): 0.00542316,
+            ("R10", "Liq", "S_Mg"): 0.00337206,
+            # R11: Aerobic storage of X_PP
             ("R11", "Liq", "S_O2"): -0.2,
             ("R11", "Liq", "S_PO4"): -1,
-            ("R11", "Liq", "S_ALK"): 0.016 * 61,
+            ("R11", "Liq", "S_IC"): 0.06,
             ("R11", "Liq", "X_PP"): 1,
             ("R11", "Liq", "X_PHA"): -0.2,
-            ("R11", "Liq", "X_TSS"): 3.11,
+            ("R11", "Liq", "S_K"): -0.4204,
+            ("R11", "Liq", "S_Mg"): -0.2614,
+            # R12: Anoxic storage of X_PP
             ("R12", "Liq", "S_N2"): 0.07,
             ("R12", "Liq", "S_NO3"): -0.07,
             ("R12", "Liq", "S_PO4"): -1,
-            ("R12", "Liq", "S_ALK"): 0.021 * 61,
+            ("R12", "Liq", "S_IC"): 0.06,
             ("R12", "Liq", "X_PP"): 1,
             ("R12", "Liq", "X_PHA"): -0.2,
-            ("R12", "Liq", "X_TSS"): 3.11,
+            ("R12", "Liq", "S_K"): -0.4204,
+            ("R12", "Liq", "S_Mg"): -0.2614,
+            # R13: Aerobic growth of X_PAO
             ("R13", "Liq", "S_O2"): -0.6,
-            ("R13", "Liq", "S_NH4"): -0.07,
-            ("R13", "Liq", "S_PO4"): -0.02,
-            ("R13", "Liq", "S_ALK"): -0.07 * 61 / 14
-            + 0.02 * 1.5 * 61 / 31,  # ~-0.004*61
+            ("R13", "Liq", "S_NH4"): -0.08615,
+            ("R13", "Liq", "S_PO4"): -0.02154,
+            ("R13", "Liq", "S_IC"): 0.11388,
             ("R13", "Liq", "X_PAO"): 1,
             ("R13", "Liq", "X_PHA"): -1.6,
-            ("R13", "Liq", "X_TSS"): -0.06,
-            ("R14", "Liq", "S_NH4"): -0.07,
+            # R14: Anoxic growth of X_PAO
+            ("R14", "Liq", "S_NH4"): -0.08615,
             ("R14", "Liq", "S_N2"): 0.21,
             ("R14", "Liq", "S_NO3"): -0.21,
-            ("R14", "Liq", "S_PO4"): -0.02,
-            ("R14", "Liq", "S_ALK"): (-0.07 + 0.21) * 61 / 14
-            + 0.02 * 61 / 31,  # ~0.011*61
+            ("R14", "Liq", "S_PO4"): -0.02154,
+            ("R14", "Liq", "S_IC"): 0.11388,
             ("R14", "Liq", "X_PAO"): 1,
             ("R14", "Liq", "X_PHA"): -1.6,
-            ("R14", "Liq", "X_TSS"): -0.06,
-            ("R15", "Liq", "S_NH4"): 0.032,
-            ("R15", "Liq", "S_PO4"): 0.01,
-            ("R15", "Liq", "S_ALK"): 0.032 * 61 / 14
-            - 0.01 * 1.5 * 61 / 31,  # ~0.002*61
+            # R15: Lysis of X_PAO
+            ("R15", "Liq", "S_NH4"): 0.049979,
+            ("R15", "Liq", "S_PO4"): 0.01586,
+            ("R15", "Liq", "S_IC"): 0.043355,
             ("R15", "Liq", "X_I"): 0.1,
             ("R15", "Liq", "X_S"): 0.9,
             ("R15", "Liq", "X_PAO"): -1,
-            ("R15", "Liq", "X_TSS"): -0.15,
+            # R16: Lysis of X_PP
             ("R16", "Liq", "S_PO4"): 1,
-            ("R16", "Liq", "S_ALK"): -0.016 * 61,
             ("R16", "Liq", "X_PP"): -1,
-            ("R16", "Liq", "X_TSS"): -3.23,
+            ("R16", "Liq", "S_K"): 0.4204,
+            ("R16", "Liq", "S_Mg"): 0.2614,
+            # R17: Lysis of X_PHA
             ("R17", "Liq", "S_A"): 1,
-            ("R17", "Liq", "S_ALK"): 61 * (1 / 64 - 1 / 31),  # ~-0.016*61
+            ("R17", "Liq", "S_IC"): -0.075,
             ("R17", "Liq", "X_PHA"): -1,
-            ("R17", "Liq", "X_TSS"): -0.6,
-            ("R18", "Liq", "S_O2"): -18,
-            ("R18", "Liq", "S_NH4"): -4.24,
+            # R18: Aerobic growth of X_AUT
+            ("R18", "Liq", "S_O2"): -18.048,
+            ("R18", "Liq", "S_NH4"): -4.253,
             ("R18", "Liq", "S_NO3"): 4.17,
-            ("R18", "Liq", "S_PO4"): -0.02,
-            ("R18", "Liq", "S_ALK"): -0.6 * 61,
+            ("R18", "Liq", "S_PO4"): -0.02154,
+            ("R18", "Liq", "S_IC"): -0.36612,
             ("R18", "Liq", "X_AUT"): 1,
-            ("R18", "Liq", "X_TSS"): 0.9,
-            ("R19", "Liq", "S_NH4"): 0.032,
-            ("R19", "Liq", "S_PO4"): 0.01,
-            ("R19", "Liq", "S_ALK"): 0.032 * 61 / 14 - 0.01 * 61 / 31,  # ~0.002*61
+            # R19: Lysis of X_AUT
+            ("R19", "Liq", "S_NH4"): 0.049979,
+            ("R19", "Liq", "S_PO4"): 0.01586,
+            ("R19", "Liq", "S_IC"): 0.043355,
             ("R19", "Liq", "X_I"): 0.1,
             ("R19", "Liq", "X_S"): 0.9,
             ("R19", "Liq", "X_AUT"): -1,
-            ("R19", "Liq", "X_TSS"): -0.15,
-            ("R20", "Liq", "S_PO4"): -1,
-            ("R20", "Liq", "S_ALK"): 0.048 * 61,
-            ("R20", "Liq", "X_TSS"): 1.42,
-            ("R20", "Liq", "X_MeOH"): -3.45,
-            ("R20", "Liq", "X_MeP"): 4.87,
-            ("R21", "Liq", "S_PO4"): 1,
-            ("R21", "Liq", "S_ALK"): -0.048 * 61,
-            ("R21", "Liq", "X_TSS"): -1.42,
-            ("R21", "Liq", "X_MeOH"): 3.45,
-            ("R21", "Liq", "X_MeP"): -4.87,
         }
 
-        assert len(model.rparams.rate_reaction_stoichiometry) == 22 * 21
+        assert len(model.rparams.rate_reaction_stoichiometry) == 19 * 19
         for i, v in model.rparams.rate_reaction_stoichiometry.items():
             assert i[0] in [
                 "R1",
@@ -267,8 +239,6 @@ class TestParamBlock(object):
                 "R17",
                 "R18",
                 "R19",
-                "R20",
-                "R21",
             ]
             assert i[1] == "Liq"
             assert i[2] in [
@@ -281,19 +251,16 @@ class TestParamBlock(object):
                 "S_NO3",
                 "S_O2",
                 "S_PO4",
-                "S_ALK",
+                "S_K",
+                "S_Mg",
+                "S_IC",
                 "X_AUT",
                 "X_H",
                 "X_I",
-                "X_MeOH",
-                "X_MeP",
                 "X_PAO",
                 "X_PHA",
                 "X_PP",
                 "X_S",
-                "X_TSS",
-                "S_K",
-                "S_Mg",
             ]
 
             if i in stoic:
@@ -306,9 +273,7 @@ class TestReactionBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.pparams = ModifiedASM2dParameterBlock(
-            additional_solute_list=["S_K", "S_Mg"]
-        )
+        model.pparams = ModifiedASM2dParameterBlock()
         model.rparams = ModifiedASM2dReactionParameterBlock(
             property_package=model.pparams
         )
@@ -326,9 +291,9 @@ class TestReactionBlock(object):
     @pytest.mark.unit
     def test_rxn_rate(self, model):
         assert isinstance(model.rxns[1].reaction_rate, Var)
-        assert len(model.rxns[1].reaction_rate) == 21
+        assert len(model.rxns[1].reaction_rate) == 19
         assert isinstance(model.rxns[1].rate_expression, Constraint)
-        assert len(model.rxns[1].rate_expression) == 21
+        assert len(model.rxns[1].rate_expression) == 19
 
     @pytest.mark.unit
     def test_get_reaction_rate_basis(self, model):
@@ -350,7 +315,7 @@ class TestAerobic:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ModifiedASM2dParameterBlock(additional_solute_list=["S_K", "S_Mg"])
+        m.fs.props = ModifiedASM2dParameterBlock()
         m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
             property_package=m.fs.props
         )
@@ -377,6 +342,12 @@ class TestAerobic:
         m.fs.R1.inlet.conc_mass_comp[0, "S_F"].fix(30 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "S_A"].fix(20 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
+
+        # No data on S_IC, K and Mg from EXPOsan at this point
+        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_IC"].fix(5 * units.mg / units.liter)
+
         m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(25 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(125 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_H"].fix(30 * units.mg / units.liter)
@@ -384,15 +355,6 @@ class TestAerobic:
         m.fs.R1.inlet.conc_mass_comp[0, "X_PP"].fix(EPS * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_PHA"].fix(EPS * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_AUT"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
-        # No data on TSS, K and Mg from EXPOsan at this point
-        m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
-
-        # Alkalinity was givien in mg/L based on C
-        m.fs.R1.inlet.alkalinity[0].fix(61 / 12 * units.mmol / units.liter)
 
         m.fs.R1.volume.fix(1333 * units.m**3)
 
@@ -428,10 +390,10 @@ class TestAerobic:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            13.440e-3, rel=1e-4
+            15.510e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            23.543e-3, rel=1e-4
+            26.510e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
@@ -440,7 +402,7 @@ class TestAerobic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            15.632e-3, rel=1e-4
+            15.565e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             0, abs=1e-4
@@ -449,22 +411,25 @@ class TestAerobic:
             2e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            3.4932e-3, rel=1e-4
+            3.4743e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_IC"]) == pytest.approx(
+            6.5566e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            42.128e-3, rel=1e-4
+            38.171e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            25.122e-3, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_MeOH"]) == pytest.approx(
-            0, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_MeP"]) == pytest.approx(
-            0, abs=1e-4
+            25.070e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
             0, abs=1e-4
@@ -476,19 +441,7 @@ class TestAerobic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            117.76e-3, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
-            5.5762e-3, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
-            0, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
-            0, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
-            5.1754e-3, rel=1e-4
+            119.415e-3, rel=1e-4
         )
 
 
@@ -499,7 +452,7 @@ class TestAnoxic:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ModifiedASM2dParameterBlock(additional_solute_list=["S_K", "S_Mg"])
+        m.fs.props = ModifiedASM2dParameterBlock()
         m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
             property_package=m.fs.props
         )
@@ -523,6 +476,12 @@ class TestAnoxic:
         m.fs.R1.inlet.conc_mass_comp[0, "S_F"].fix(30 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "S_A"].fix(20 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
+
+        # No data on S_IC, K and Mg from EXPOsan at this point
+        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_IC"].fix(5 * units.mg / units.liter)
+
         m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(25 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(125 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_H"].fix(30 * units.mg / units.liter)
@@ -530,17 +489,6 @@ class TestAnoxic:
         m.fs.R1.inlet.conc_mass_comp[0, "X_PP"].fix(EPS * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_PHA"].fix(EPS * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_AUT"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
-        # No data on TSS from EXPOsan at this point
-        # However, TSS is needed for this reaction
-        m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(100 * units.mg / units.liter)
-
-        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
-
-        # Alkalinity was given in mg/L based on C
-        m.fs.R1.inlet.alkalinity[0].fix(61 / 12 * units.mmol / units.liter)
 
         m.fs.R1.volume.fix(1000 * units.m**3)
 
@@ -556,19 +504,15 @@ class TestAnoxic:
 
     @pytest.mark.component
     def test_solve(self, model):
-        model.fs.R1.initialize(optarg={"bound_push": 1e-8, "mu_init": 1e-8})
+        model.fs.R1.initialize()
 
         solver = get_solver()
-        solver.options = {"bound_push": 1e-8, "mu_init": 1e-8}
         results = solver.solve(model, tee=True)
 
         assert check_optimal_termination(results)
 
     @pytest.mark.component
     def test_solution(self, model):
-        # EXPOsan calculations appear to be slightly off from this implementation
-        # It is supected that this is due to an error in the EXPOsan stoichiometric
-        # coefficient for alkalinity
         assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(0.21350, rel=1e-4)
 
         assert value(model.fs.R1.outlet.temperature[0]) == pytest.approx(
@@ -576,10 +520,10 @@ class TestAnoxic:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            24.093e-3, rel=1e-4
+            23.01e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            27.773e-3, rel=1e-4
+            28.552e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
@@ -588,7 +532,7 @@ class TestAnoxic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            16.162e-3, rel=1e-4
+            15.899e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             0, abs=1e-4
@@ -597,22 +541,25 @@ class TestAnoxic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            3.6473e-3, rel=1e-4
+            3.6168e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_IC"]) == pytest.approx(
+            4.830e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            29.363e-3, rel=1e-4
+            3.0e-2, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            25.064e-3, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_MeOH"]) == pytest.approx(
-            0, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_MeP"]) == pytest.approx(
-            0, abs=1e-4
+            25.0e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
             0, abs=1e-4
@@ -624,19 +571,7 @@ class TestAnoxic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            123.71e-3, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
-            98.505e-3, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
-            0, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
-            0, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
-            5.0916e-3, rel=1e-4
+            123.44e-3, rel=1e-4
         )
 
 
@@ -647,7 +582,7 @@ class TestAerobic15C:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ModifiedASM2dParameterBlock(additional_solute_list=["S_K", "S_Mg"])
+        m.fs.props = ModifiedASM2dParameterBlock()
         m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
             property_package=m.fs.props
         )
@@ -684,6 +619,12 @@ class TestAerobic15C:
         m.fs.R1.inlet.conc_mass_comp[0, "S_F"].fix(0.4748 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "S_A"].fix(0.0336 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
+
+        # No data on S_IC, K and Mg from EXPOsan at this point
+        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(7 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(6 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_IC"].fix(10 * units.mg / units.liter)
+
         m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(1695.7695 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(68.2975 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_H"].fix(1855.5067 * units.mg / units.liter)
@@ -691,16 +632,6 @@ class TestAerobic15C:
         m.fs.R1.inlet.conc_mass_comp[0, "X_PP"].fix(63.5316 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_PHA"].fix(2.7381 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_AUT"].fix(118.3582 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
-
-        m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
-
-        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
-
-        # Alkalinity was given in mg/L based on C
-        m.fs.R1.inlet.alkalinity[0].fix(4.6663 * units.mmol / units.liter)
 
         m.fs.R1.volume.fix(1000 * units.m**3)
 
@@ -716,10 +647,9 @@ class TestAerobic15C:
 
     @pytest.mark.component
     def test_solve(self, model):
-        model.fs.R1.initialize(optarg={"bound_push": 1e-8, "mu_init": 1e-8})
+        model.fs.R1.initialize()
 
         solver = get_solver()
-        solver.options = {"bound_push": 1e-8, "mu_init": 1e-8}
         results = solver.solve(model, tee=True)
 
         assert check_optimal_termination(results)
@@ -734,67 +664,58 @@ class TestAerobic15C:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            4.6374e-5, rel=1e-4
+            3.0560e-5, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            4.555e-4, rel=1e-2
+            3.840e-4, rel=1e-2
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_N2"]) == pytest.approx(
-            29.748e-3, abs=1e-4
+            29.606e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            6.8070e-3, rel=1e-4
+            6.8638e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             7.273e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_O2"]) == pytest.approx(
-            1.210e-4, abs=1e-4
+            2.700e-4, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            7.4478e-3, rel=1e-4
+            7.2940e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
+            6.757e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
+            5.849e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_IC"]) == pytest.approx(
+            11.177e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
             118.547e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            1.8554, rel=1e-4
+            1.8574, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
             1.6964, rel=1e-4
         )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_MeOH"]) == pytest.approx(
-            0, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_MeP"]) == pytest.approx(
-            0, abs=1e-4
-        )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
-            214.821e-3, abs=1e-4
+            214.976e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PHA"]) == pytest.approx(
-            1.668e-3, abs=1e-4
+            1.543e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PP"]) == pytest.approx(
-            64.001e-3, abs=1e-4
+            64.109e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            64.513e-3, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
-            3.524, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
-            0, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
-            0, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
-            4.5433e-3, rel=1e-4
+            62.358e-3, rel=1e-4
         )
 
 
@@ -805,7 +726,7 @@ class TestAnoxicPHA:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ModifiedASM2dParameterBlock(additional_solute_list=["S_K", "S_Mg"])
+        m.fs.props = ModifiedASM2dParameterBlock()
         m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
             property_package=m.fs.props
         )
@@ -825,8 +746,6 @@ class TestAnoxicPHA:
 
         m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
 
-        iscale.calculate_scaling_factors(m.fs)
-
         # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
         EPS = 1e-8
 
@@ -842,6 +761,12 @@ class TestAnoxicPHA:
         m.fs.R1.inlet.conc_mass_comp[0, "S_F"].fix(2.9275 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "S_A"].fix(4.9273 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
+
+        # No data on S_IC, K and Mg from EXPOsan at this point
+        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_IC"].fix(5 * units.mg / units.liter)
+
         m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(1686.7928 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(141.1854 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_H"].fix(1846.1747 * units.mg / units.liter)
@@ -849,18 +774,14 @@ class TestAnoxicPHA:
         m.fs.R1.inlet.conc_mass_comp[0, "X_PP"].fix(60.6935 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_PHA"].fix(6.4832 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_AUT"].fix(115.4611 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
-
-        m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
-
-        m.fs.R1.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
-
-        # Alkalinity was given in mg/L based on C
-        m.fs.R1.inlet.alkalinity[0].fix(5.980 * units.mmol / units.liter)
 
         m.fs.R1.volume.fix(1000 * units.m**3)
+
+        # Touch on-demand property, TSS, at inlet and outlet
+        m.fs.R1.control_volume.properties_in[0].TSS
+        m.fs.R1.control_volume.properties_out[0].TSS
+
+        iscale.calculate_scaling_factors(m.fs)
 
         return m
 
@@ -870,14 +791,13 @@ class TestAnoxicPHA:
 
     @pytest.mark.unit
     def test_unit_consistency(self, model):
-        assert_units_consistent(model) == 0
+        assert_units_consistent(model)
 
     @pytest.mark.component
     def test_solve(self, model):
-        model.fs.R1.initialize(optarg={"bound_push": 1e-8, "mu_init": 1e-8})
+        model.fs.R1.initialize()
 
         solver = get_solver()
-        solver.options = {"bound_push": 1e-8, "mu_init": 1e-8}
         results = solver.solve(model, tee=True)
 
         assert check_optimal_termination(results)
@@ -892,10 +812,10 @@ class TestAnoxicPHA:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            15.592e-3, rel=1e-4
+            14.339e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            1.0699e-3, rel=1e-2
+            9.7237e-4, rel=1e-2
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
@@ -904,7 +824,7 @@ class TestAnoxicPHA:
             20.524e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            22.821e-3, rel=1e-4
+            20.660e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             4.3e-5, abs=1e-4
@@ -913,44 +833,40 @@ class TestAnoxicPHA:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            15.23e-3, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
-            115.149e-3, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            1.8323, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            1.6883, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_MeOH"]) == pytest.approx(
-            0, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_MeP"]) == pytest.approx(
-            0, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
-            209.312e-3, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PHA"]) == pytest.approx(
-            17.074e-3, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PP"]) == pytest.approx(
-            56.310e-3, abs=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            134.494e-3, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
-            3.500, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
-            0, abs=1e-4
+            10.601e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_K"]) == pytest.approx(
             0, abs=1e-4
         )
-        assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
-            6.188e-3, rel=1e-4
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
+            0, abs=1e-4
         )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_IC"]) == pytest.approx(
+            4.825e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
+            115.460e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
+            1.8472, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
+            1.6868, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
+            210.142e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PHA"]) == pytest.approx(
+            17.205e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PP"]) == pytest.approx(
+            60.576e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
+            121.314e-3, rel=1e-4
+        )
+        assert value(
+            1
+            - model.fs.R1.control_volume.properties_out[0].TSS
+            / model.fs.R1.control_volume.properties_in[0].TSS
+        ) * 100 == pytest.approx(0.20374, rel=1e-4)

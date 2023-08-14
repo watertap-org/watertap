@@ -21,7 +21,7 @@ Department of Industrial Electrical Engineering and Automation, Lund University,
 """
 
 # Some more information about this module
-__author__ = "Alejandro Garciadiego"
+__author__ = "Alejandro Garciadiego, Xinhong Liu"
 
 import pytest
 import pytest
@@ -39,7 +39,7 @@ from pyomo.opt import TerminationCondition, SolverStatus
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.examples.flowsheets.case_studies.BSM2.ASM1_ADM1_flowsheet import (
+from watertap.examples.flowsheets.case_studies.BSM2.ASM_ADM_integration import (
     build_flowsheet,
 )
 

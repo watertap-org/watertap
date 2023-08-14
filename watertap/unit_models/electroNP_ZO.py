@@ -182,7 +182,7 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
         # Add performance variables
         self.recovery_frac_mass_H2O = Var(
             self.flowsheet().time,
-            initialize=1,
+            initialize=0.99999,
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             bounds=(0.0, 1.0000001),
@@ -285,7 +285,7 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
             elif j == "S_NH4":
                 return b.removal_frac_mass_comp[t, j] == b.N_removal
             else:
-                return b.removal_frac_mass_comp[t, j] == 0
+                return b.removal_frac_mass_comp[t, j] == 1e-7
 
         self._stream_table_dict = {
             "Inlet": self.inlet,
@@ -313,7 +313,7 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
             return b.electricity[t] == (
                 b.energy_electric_flow_mass
                 * pyunits.convert(
-                    b.properties_treated[t].get_material_flow_terms("Liq", "S_PO4"),
+                    b.properties_byproduct[t].get_material_flow_terms("Liq", "S_PO4"),
                     to_units=pyunits.kg / pyunits.hour,
                 )
             )
@@ -321,7 +321,7 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
         self.magnesium_chloride_dosage = Var(
             units=pyunits.dimensionless,
             bounds=(0, None),
-            doc="Dosage of magnesium chloride per treated phosphorus",
+            doc="Dosage of magnesium chloride per phosphorus removal",
         )
 
         self.MgCl2_flowrate = Var(
@@ -339,7 +339,7 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
             return b.MgCl2_flowrate[t] == (
                 b.magnesium_chloride_dosage
                 * pyunits.convert(
-                    b.properties_treated[t].get_material_flow_terms("Liq", "S_PO4"),
+                    b.properties_byproduct[t].get_material_flow_terms("Liq", "S_PO4"),
                     to_units=pyunits.kg / pyunits.hour,
                 )
             )
@@ -459,45 +459,43 @@ class ElectroNPZOData(InitializationMixin, UnitModelBlockData):
         )
 
     def calculate_scaling_factors(self):
-        # Get default scale factors and do calculations from base classes
-        for t, v in self.water_recovery_equation.items():
-            iscale.constraint_scaling_transform(
-                v,
-                iscale.get_scaling_factor(
-                    self.properties_in[t].get_material_flow_terms("Liq", "H2O"),
-                    default=1,
-                    warning=True,
-                    hint=" for water recovery",
-                ),
+        super().calculate_scaling_factors()
+
+        iscale.set_scaling_factor(self.recovery_frac_mass_H2O, 1)
+
+        if iscale.get_scaling_factor(self.energy_electric_flow_mass) is None:
+            sf = iscale.get_scaling_factor(
+                self.energy_electric_flow_mass, default=1e2, warning=True
             )
+            iscale.set_scaling_factor(self.energy_electric_flow_mass, sf)
 
-        for t, v in self.water_balance.items():
-            iscale.constraint_scaling_transform(
-                v,
-                iscale.get_scaling_factor(
-                    self.properties_in[t].get_material_flow_terms("Liq", "H2O"),
-                    default=1,
-                    warning=False,
-                ),
-            )  # would just be a duplicate of above
-
-        for (t, p, j), v in self.solute_removal_equation.items():
-            iscale.constraint_scaling_transform(
-                v,
-                iscale.get_scaling_factor(
-                    self.properties_in[t].get_material_flow_terms(p, j),
-                    default=1,
-                    warning=True,
-                    hint=" for solute removal",
-                ),
+        if iscale.get_scaling_factor(self.magnesium_chloride_dosage) is None:
+            sf = iscale.get_scaling_factor(
+                self.magnesium_chloride_dosage, default=1e1, warning=True
             )
+            iscale.set_scaling_factor(self.magnesium_chloride_dosage, sf)
 
-        for (t, p, j), v in self.solute_treated_equation.items():
-            iscale.constraint_scaling_transform(
-                v,
-                iscale.get_scaling_factor(
-                    self.properties_in[t].get_material_flow_terms(p, j),
-                    default=1,
-                    warning=False,
-                ),
-            )  # would just be a duplicate of above
+        for (t, j), v in self.removal_frac_mass_comp.items():
+            if j == "S_PO4":
+                sf = 1
+            elif j == "S_NH4":
+                sf = 1
+            else:
+                sf = 1e6
+            iscale.set_scaling_factor(v, sf)
+
+        for t, v in self.electricity.items():
+            sf = (
+                iscale.get_scaling_factor(self.energy_electric_flow_mass)
+                * iscale.get_scaling_factor(self.byproduct.flow_vol[t])
+                * iscale.get_scaling_factor(self.byproduct.conc_mass_comp[t, "S_PO4"])
+            )
+            iscale.set_scaling_factor(v, sf)
+
+        for t, v in self.MgCl2_flowrate.items():
+            sf = (
+                iscale.get_scaling_factor(self.magnesium_chloride_dosage)
+                * iscale.get_scaling_factor(self.byproduct.flow_vol[t])
+                * iscale.get_scaling_factor(self.byproduct.conc_mass_comp[t, "S_PO4"])
+            )
+            iscale.set_scaling_factor(v, sf)

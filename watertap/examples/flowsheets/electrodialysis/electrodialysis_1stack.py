@@ -52,6 +52,7 @@ def main():
     solve(m, solver=solver, checkpoint="solve flowsheet after initializing system")
 
     print("\n***---Simulation results---***")
+    m.fs.EDstack.report()
     display_model_metrics(m)
 
     # Perform an optimization over selected variables
@@ -60,6 +61,7 @@ def main():
         m, solver=solver, checkpoint="solve flowsheet after optimizing system"
     )
     print("\n***---Optimization results---***")
+    m.fs.EDstack.report()
     display_model_metrics(m)
 
 
@@ -167,10 +169,10 @@ def build():
     # Scaling
     m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e1, index=("Liq", "Na_+")
+        "flow_mol_phase_comp", 5e1, index=("Liq", "Na_+")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e1, index=("Liq", "Cl_-")
+        "flow_mol_phase_comp", 5e1, index=("Liq", "Cl_-")
     )
     iscale.set_scaling_factor(m.fs.EDstack.cell_width, 10)
     iscale.set_scaling_factor(m.fs.EDstack.cell_length, 10)

@@ -100,6 +100,70 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
     )
 
 
+def cost_rectifier(blk, power=100 * pyo.units.kW, ac_dc_conversion_efficiency=0.90):
+    """
+    Method to cost rectifiers for electrified process units that require direct current which must be converted
+    from an alternating current source. Note that this should be used solely for units that require the conversion,
+    and should not be used universally for electricity requirements.
+    Assumes the unit_model has a `power` variable or parameter.
+
+    Args:
+        ac_dc_conversion_efficiency - Efficiency of the conversion from AC to DC current
+    """
+
+    # create variables on cost block
+    make_capital_cost_var(blk)
+    blk.ac_dc_conversion_efficiency = pyo.Expression(
+        expr=ac_dc_conversion_efficiency,
+        doc="fixing unit model vairable for upscaling required power considering "
+        "the efficiency of converting alternating to direct current",
+    )
+    blk.ac_power = pyo.Var(
+        initialize=100,
+        domain=pyo.NonNegativeReals,
+        units=pyo.units.kW,
+        doc="Unit AC power",
+    )
+
+    # use unit.power variable in conversion with efficiency
+    blk.power_conversion = pyo.Constraint(
+        expr=blk.ac_power * blk.ac_dc_conversion_efficiency
+        == pyo.units.convert(power, to_units=pyo.units.kW)
+    )
+
+    # USD_2021 embedded in equation
+    rectifier_cost_coeff = {0: 508.6, 1: 2810}
+    blk.rectifier_cost_coeff = pyo.Var(
+        rectifier_cost_coeff.keys(),
+        initialize=rectifier_cost_coeff,
+        units=pyo.units.dimensionless,
+        doc="Rectifier cost coefficients",
+    )
+    blk.capital_cost_rectifier = pyo.Var(
+        initialize=100, units=blk.costing_package.base_currency
+    )
+
+    # refix variables to appropriate costing parameters
+    for index, var in blk.rectifier_cost_coeff.items():
+        var.fix(rectifier_cost_coeff[index])
+
+    # calculate capital cost
+    blk.capital_cost_rectifier_constraint = pyo.Constraint(
+        expr=blk.capital_cost_rectifier
+        == pyo.units.convert(
+            pyo.units.USD_2021
+            * (
+                blk.rectifier_cost_coeff[1]
+                + (blk.rectifier_cost_coeff[0] * (blk.ac_power * pyo.units.kW**-1))
+            ),
+            to_units=blk.costing_package.base_currency,
+        )
+    )
+
+    # cost electicity flow
+    blk.costing_package.cost_flow(blk.ac_power, "electricity")
+
+
 def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     """
     Generic function for costing by flow volume.

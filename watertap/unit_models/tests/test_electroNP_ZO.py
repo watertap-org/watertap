@@ -19,16 +19,20 @@ from pyomo.environ import (
 )
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
-from watertap.property_models.activated_sludge.modified_asm2d_properties import (
-    ModifiedASM2dParameterBlock,
+from watertap.property_models.activated_sludge.simple_modified_asm2d_properties import (
+    SimpleModifiedASM2dParameterBlock,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util.scaling import calculate_scaling_factors
+from idaes.core.util.scaling import (
+    calculate_scaling_factors,
+    badly_scaled_var_generator,
+)
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
+import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -41,7 +45,7 @@ class TestElectroNP:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = ModifiedASM2dParameterBlock(
+        m.fs.properties = SimpleModifiedASM2dParameterBlock(
             additional_solute_list=["S_K", "S_Mg"]
         )
 
@@ -95,7 +99,40 @@ class TestElectroNP:
     @pytest.mark.unit
     def test_calculate_scaling(self, ElectroNP_frame):
         m = ElectroNP_frame
+        m.fs.properties.set_default_scaling("pressure", 1e-3)
+        m.fs.properties.set_default_scaling("temperature", 1e-1)
+        m.fs.properties.set_default_scaling("flow_vol", 1)
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_O2"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_N2"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_NH4"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_NO3"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_PO4"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_F"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_A"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_I"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_I"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_S"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_H"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_PAO"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_PP"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_PHA"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_AUT"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_MeOH"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_MeP"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_TSS"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_K"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_Mg"))
+        m.fs.properties.set_default_scaling("alkalinity", 1)
+
         calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+        assert len(unscaled_var_list) == 0
+
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        [print(i[0]) for i in badly_scaled_var_lst]
+        assert badly_scaled_var_lst == []
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -211,14 +248,19 @@ class TestElectroNP:
             0, abs=1e-4
         )
         assert value(m.fs.unit.byproduct.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            4.5289e14, rel=1e-4
+            480, rel=1e-4
         )
         assert value(m.fs.unit.byproduct.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            3.328756e14, rel=1e-4
+            352.8, rel=1e-4
         )
         assert value(m.fs.unit.treated.alkalinity[0]) == pytest.approx(
             0.005083, rel=1e-4
         )
+        assert value(m.fs.unit.energy_electric_flow_mass) == pytest.approx(
+            0.044, rel=1e-4
+        )
+        assert value(m.fs.unit.electricity[0]) == pytest.approx(0.1193, rel=1e-4)
+        assert value(m.fs.unit.MgCl2_flowrate[0]) == pytest.approx(1.0521, rel=1e-4)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -236,10 +278,10 @@ class TestElectroNP:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(1295.765, rel=1e-5) == value(
+        assert pytest.approx(1036611.9, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(5.800325e-5, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.04431857, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, ElectroNP_frame):
