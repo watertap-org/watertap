@@ -17,6 +17,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.solvers import get_solver
 import watertap.property_models.multicomp_aq_sol_prop_pack as props
+import unittest
 
 __author__ = "Adam Atia"
 
@@ -197,7 +198,7 @@ class TestOLIAPI_WaterTAP:
             pass
         brine_input_clone = oliapi.create_input_dict(m.fs.stream)
         print(brine_input_clone)
-        assert brine_input_clone == {
+        test_clone = {
             "params": {
                 "waterAnalysisInputs": [
                     {
@@ -294,3 +295,6 @@ class TestOLIAPI_WaterTAP:
                 },
             }
         }
+
+        testcase = unittest.TestCase()
+        testcase.assertDictEqual(brine_input_clone, test_clone)
