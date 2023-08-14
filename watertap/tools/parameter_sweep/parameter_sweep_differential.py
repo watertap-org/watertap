@@ -23,7 +23,6 @@ from watertap.tools.parallel.single_process_parallel_manager import (
 
 
 class DifferentialParameterSweep(_ParameterSweepBase):
-
     CONFIG = _ParameterSweepBase.CONFIG()
 
     CONFIG.declare(
@@ -88,7 +87,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         self,
         **options,
     ):
-
         # Initialize the base Class
         super().__init__(**options)
 
@@ -96,7 +94,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             raise NotImplementedError
 
     def _create_differential_sweep_params(self, local_values):
-
         differential_sweep_specs = self.config.differential_sweep_specs
 
         diff_sweep_param = {}
@@ -152,7 +149,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                     self.differential_outputs[key] = sweep_params[key].pyomo_object
 
     def _append_differential_results(self, local_output_dict, diff_results_dict):
-
         for idx, diff_sol in diff_results_dict.items():
             for key, item in diff_sol.items():
                 # Solve status
@@ -185,7 +181,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                             )
 
     def _collect_local_inputs(self, local_results_dict):
-
         num_local_samples = len(local_results_dict["solve_successful"])
         local_inputs = np.zeros(
             (num_local_samples, len(local_results_dict["sweep_params"])),
@@ -198,7 +193,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         return local_inputs
 
     def _aggregate_input_arr(self, global_results_dict, num_global_samples):
-
         global_values = np.zeros(
             (num_global_samples, len(global_results_dict["sweep_params"])),
             dtype=float,
@@ -215,7 +209,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         return global_values
 
     def _aggregate_results(self, local_output_dict):
-
         # Create the global results dictionary
         global_results_dict = self._create_global_output(local_output_dict)
 
@@ -240,7 +233,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         )
 
     def _run_differential_sweep(self, model, local_value):
-
         diff_sweep_param_dict = self._create_differential_sweep_params(local_value)
 
         # We want this instance of the parameter sweep to run in serial
@@ -266,16 +258,13 @@ class DifferentialParameterSweep(_ParameterSweepBase):
     def _run_sample(
         self,
         model,
-        reinitialize_values,
         local_value_k,
         k,
         sweep_params,
         local_output_dict,
     ):
-
         run_successful = super()._run_sample(
             model,
-            reinitialize_values,
             local_value_k,
             k,
             sweep_params,
@@ -309,7 +298,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         num_samples=None,
         seed=None,
     ):
-
         # Create a base sweep_params
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
 
