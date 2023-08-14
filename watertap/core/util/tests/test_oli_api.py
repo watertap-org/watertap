@@ -14,7 +14,6 @@ import pytest
 from watertap.core.util.oli_api import OLIApi
 from pyomo.environ import ConcreteModel, assert_optimal_termination
 from idaes.core import FlowsheetBlock
-import time
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.solvers import get_solver
 import watertap.property_models.multicomp_aq_sol_prop_pack as props
