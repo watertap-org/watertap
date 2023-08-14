@@ -109,8 +109,7 @@ class OLIApi:
         Args:
             tee: boolean argument to print status code when True
             fail_flag: boolean argument to raise exception upon login failure when True
-        Returns: 
-            True on success, False on failure
+        Returns: True on success, False on failure
         """
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -144,8 +143,7 @@ class OLIApi:
     def refresh_token(self):
         """
         Refreshes the access token using the refresh token got obtained on login
-        Returns: 
-            True on success, False on failure
+        Returns: True on success, False on failure
         """
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -175,8 +173,7 @@ class OLIApi:
 
         Args:
             req_func: function to call
-        Returns:
-            an empty dict if failed
+        Returns: an empty dict if failed
         """
 
         num_tries = 1
@@ -205,8 +202,7 @@ class OLIApi:
 
         Args:
             file_path: full path to dbs file
-        Returns: 
-            dictionary containing the uploaded file ID
+        Returns: dictionary containing the uploaded file ID
         """
         req_result = dict()
 
@@ -246,8 +242,7 @@ class OLIApi:
             json_input: calculation input JSON
             poll_time: max delay between each call
             max_request: maximum requests
-        Returns: 
-            dictionary containing result or error
+        Returns: dictionary containing result or error
         """
 
         # formulate url
@@ -306,8 +301,7 @@ class OLIApi:
             poll_time: max delay between each call
             max_request: maximum requests
             tee: boolean argument to hide or display print messages
-        Returns: 
-            dictionary containing result or error
+        Returns: dictionary containing result or error
         """
 
         # formulate url
@@ -426,8 +420,7 @@ class OLIApi:
         Retrieves history of flash information, e.g., input for a chemistry model
         Args:
             dbs_file_id: the DBS file ID
-        Returns: 
-            dictionary containing array of submitted jobs, from which the jobID and input data can be obtained
+        Returns: dictionary containing array of submitted jobs, from which the jobID and input data can be obtained
         """
         endpoint = f"{self.__root_url}/engine/flash/history/{dbs_file_id}"
 
@@ -440,8 +433,7 @@ class OLIApi:
         Retrieves jobID which is useful for troubleshooting with OLI Support Team
         Args:
             dbs_file_id: the DBS file ID
-        Returns: 
-            id: OLI jobID 
+        Returns: OLI jobID 
         """
         flash_h = self.get_flash_history(dbs_file_id)
         id = flash_h["data"][0]["jobId"]
@@ -466,8 +458,7 @@ class OLIApi:
         Args:
             dbs_file_path: file path to DBS file.
             ions: ion names as pyomo set
-        Returns: 
-            chemistry file ID as a string
+        Returns: chemistry file ID as a string
         """
         if dbs_file_path is not None and ions is not None:
             raise IOError(
@@ -507,8 +498,8 @@ class OLIApi:
         Args:
             ions: OLI-compatible ion names as a Pyomo Set, list, or dict where the keys are ion names
             phases: OLI-compatible phases; if None, use default of liquid1 and solid 
-        Returns;
-            dbs_dict: dictionary in OLI format needed to generate chemistry [DBS] file ID
+        Returns: dbs_dict: dictionary in OLI format needed to generate chemistry [DBS] file ID
+        
         #TODO: support not None for phases
         """
 
