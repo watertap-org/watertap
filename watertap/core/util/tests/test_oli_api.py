@@ -178,3 +178,119 @@ class TestOLIAPI_WaterTAP:
         # TODO: Need OLI testing to test flash history method
         # The function below just gives us a record
         # flash_hist = oliapi.get_flash_history(chemistry_file_id)
+
+    @pytest.mark.unit
+    def test_create_dbs_dict(self, model):
+        m = model
+        username = "dummy@dummy.edu"
+        password = "dummy_pass"
+        root_url = "https://dummy_root.com"
+        auth_url = "https://dummy_url.com/dummy"
+        try:
+            oliapi = OLIApi(
+                username=username,
+                password=password,
+                root_url=root_url,
+                auth_url=auth_url,
+            )
+        except ConnectionError:
+            pass
+        brine_input_clone = oliapi.create_input_dict(m.fs.stream)
+        print(brine_input_clone)
+        assert brine_input_clone == {
+            "params": {
+                "waterAnalysisInputs": [
+                    {
+                        "group": "Cations",
+                        "name": "NAION",
+                        "unit": "mg/L",
+                        "value": 10555.99999998432,
+                        "charge": 1,
+                    },
+                    {
+                        "group": "Anions",
+                        "name": "CLION",
+                        "unit": "mg/L",
+                        "value": 18979.999999969295,
+                        "charge": -1,
+                    },
+                    {
+                        "group": "Cations",
+                        "name": "CAION",
+                        "unit": "mg/L",
+                        "value": 399.9999999402999,
+                        "charge": 2,
+                    },
+                    {
+                        "group": "Anions",
+                        "name": "SO4ION",
+                        "unit": "mg/L",
+                        "value": 2648.9999999917354,
+                        "charge": -2,
+                    },
+                    {
+                        "group": "Cations",
+                        "name": "MGION",
+                        "unit": "mg/L",
+                        "value": 1261.9999999828099,
+                        "charge": 2,
+                    },
+                    {
+                        "group": "Cations",
+                        "name": "KION",
+                        "unit": "mg/L",
+                        "value": 379.9999999812004,
+                        "charge": 1,
+                    },
+                    {
+                        "group": "Anions",
+                        "name": "HCO3ION",
+                        "unit": "mg/L",
+                        "value": 140.00000186069485,
+                        "charge": -1,
+                    },
+                    {
+                        "group": "Properties",
+                        "name": "Temperature",
+                        "unit": "°C",
+                        "value": 24.850000000000023,
+                    },
+                    {
+                        "group": "Properties",
+                        "name": "Pressure",
+                        "unit": "Pa",
+                        "value": 101325,
+                    },
+                    {
+                        "group": "Electroneutrality Options",
+                        "name": "ElectroNeutralityBalanceType",
+                        "value": "DominantIon",
+                    },
+                    {
+                        "group": "Calculation Options",
+                        "name": "CalcType",
+                        "value": "EquilCalcOnly",
+                    },
+                    {
+                        "group": "Calculation Options",
+                        "name": "CalcAlkalnity",
+                        "value": False,
+                    },
+                    {
+                        "group": "Calculation Options",
+                        "name": "AllowSolidsToForm",
+                        "value": False,
+                    },
+                ],
+                "optionalProperties": {
+                    "scalingIndex": True,
+                    "scalingTendencies": True,
+                    "kValuesMBased": True,
+                },
+                "unitSetInfo": {
+                    "tds": "mg/L",
+                    "solid_phs_comp": "g/g",
+                    "liquid_phs_comp": "mg/L",
+                },
+            }
+        }
