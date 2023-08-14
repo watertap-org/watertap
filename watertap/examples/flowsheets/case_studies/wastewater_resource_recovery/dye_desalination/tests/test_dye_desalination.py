@@ -99,12 +99,12 @@ class TestDyeFlowsheet:
     def test_costing(self, system_frame):
         m = system_frame
 
-        add_costing(m)
+        add_costing(m, dye_revenue=False)
         results = solve(m)
         assert_optimal_termination(results)
 
         # check values
-        assert pytest.approx(0.836402, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(1.026126, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):

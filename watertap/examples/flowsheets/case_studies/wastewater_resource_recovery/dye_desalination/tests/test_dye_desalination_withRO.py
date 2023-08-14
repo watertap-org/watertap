@@ -115,7 +115,7 @@ class TestDyewithROFlowsheetwithPretreatment:
     def test_costing(self, system_frame):
         m, include_pretreatment = system_frame
 
-        add_costing(m, include_pretreatment)
+        add_costing(m, include_pretreatment, dye_revenue=False)
         initialize_costing(m)
         optimize_operation(m)
 
@@ -123,8 +123,8 @@ class TestDyewithROFlowsheetwithPretreatment:
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(0.447186, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(0.259355, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(0.701149, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(0.449066, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
@@ -205,7 +205,7 @@ class TestDyewithROFlowsheetwithoutPretreatment:
     def test_costing(self, system_frame):
         m, include_pretreatment = system_frame
 
-        add_costing(m, include_pretreatment)
+        add_costing(m, include_pretreatment, dye_revenue=False)
         initialize_costing(m)
         optimize_operation(m)
 
@@ -213,8 +213,8 @@ class TestDyewithROFlowsheetwithoutPretreatment:
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(0.354995, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(0.190667, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(0.608728, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(0.380391, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):

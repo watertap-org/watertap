@@ -76,7 +76,7 @@ def main():
 
     results = solve(m, checkpoint="solve flowsheet after initializing system")
 
-    add_costing(m, include_pretreatment)
+    add_costing(m, include_pretreatment, dye_revenue=False)
     initialize_costing(m)
     assert_degrees_of_freedom(m, 0)  # ensures problem is square
 
@@ -402,7 +402,7 @@ def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     return results
 
 
-def add_costing(m, include_pretreatment):
+def add_costing(m, include_pretreatment, dye_revenue=False):
     if include_pretreatment == True:
         prtrt = m.fs.pretreatment
     else:
@@ -499,17 +499,32 @@ def add_costing(m, include_pretreatment):
     else:
         pass
 
-    m.fs.dye_recovery_revenue = Expression(
-        expr=(
-            m.fs.zo_costing.utilization_factor
-            * m.fs.zo_costing.dye_mass_cost
-            * pyunits.convert(
-                m.fs.dye_retentate.flow_mass_comp[0, "dye"],
-                to_units=pyunits.kg / m.fs.zo_costing.base_period,
-            )
-        ),
-        doc="Savings from dye recovered back to the plant",
-    )
+    if dye_revenue == True:
+        m.fs.dye_value = Expression(
+            expr=(
+                m.fs.zo_costing.utilization_factor
+                * m.fs.zo_costing.dye_mass_cost
+                * pyunits.convert(
+                    m.fs.dye_retentate.flow_mass_comp[0, "dye"],
+                    to_units=pyunits.kg / m.fs.zo_costing.base_period,
+                )
+            ),
+            doc="Savings from dye recovered back to the plant",
+        )
+    # Note: this is multiplied by -1 since the sign is handled implicitly
+    elif dye_revenue == False:
+        m.fs.dye_value = Expression(
+            expr=(
+                -1
+                * m.fs.zo_costing.utilization_factor
+                * m.fs.zo_costing.dye_disposal_cost
+                * pyunits.convert(
+                    m.fs.dye_retentate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                )
+            ),
+            doc="Cost of disposing of dye waste",
+        )
 
     m.fs.water_recovery_revenue = Expression(
         expr=(
@@ -554,16 +569,14 @@ def add_costing(m, include_pretreatment):
         if include_pretreatment == True:
             return pyunits.convert(
                 m.fs.water_recovery_revenue
-                + m.fs.dye_recovery_revenue
+                + m.fs.dye_value
                 - m.fs.brine_disposal_cost
                 - m.fs.sludge_disposal_cost,
                 to_units=pyunits.USD_2020 / pyunits.year,
             )
         else:
             return pyunits.convert(
-                m.fs.water_recovery_revenue
-                + m.fs.dye_recovery_revenue
-                - m.fs.brine_disposal_cost,
+                m.fs.water_recovery_revenue + m.fs.dye_value - m.fs.brine_disposal_cost,
                 to_units=pyunits.USD_2020 / pyunits.year,
             )
 
@@ -607,7 +620,7 @@ def add_costing(m, include_pretreatment):
                 b.total_capital_cost * b.zo_costing.capital_recovery_factor
                 + b.total_operating_cost
                 - pyunits.convert(
-                    m.fs.dye_recovery_revenue
+                    m.fs.dye_value
                     - m.fs.brine_disposal_cost
                     - m.fs.sludge_disposal_cost,
                     to_units=pyunits.USD_2020 / pyunits.year,
@@ -624,7 +637,7 @@ def add_costing(m, include_pretreatment):
                 b.total_capital_cost * b.zo_costing.capital_recovery_factor
                 + b.total_operating_cost
                 - pyunits.convert(
-                    m.fs.dye_recovery_revenue - m.fs.brine_disposal_cost,
+                    m.fs.dye_value - m.fs.brine_disposal_cost,
                     to_units=pyunits.USD_2020 / pyunits.year,
                 )
             ) / (
@@ -819,10 +832,8 @@ def display_costing(m, include_pretreatment):
             m.fs.water_recovery_revenue, to_units=pyunits.USD_2020 / pyunits.year
         )
     )
-    drr = value(
-        pyunits.convert(
-            m.fs.dye_recovery_revenue, to_units=pyunits.USD_2020 / pyunits.year
-        )
+    dv = value(
+        pyunits.convert(m.fs.dye_value, to_units=pyunits.USD_2020 / pyunits.year)
     )
     bdc = value(
         pyunits.convert(
@@ -901,7 +912,7 @@ def display_costing(m, include_pretreatment):
 
     print(f"\nTotal Externalities: {externalities:.4f} M$/year")
     print(f"Water recovery revenue: {wrr: .4f} USD/year")
-    print(f"Dye recovery revenue: {drr: .4f} USD/year")
+    print(f"Dye value: {dv: .4f} USD/year")
     print(f"Brine disposal cost: {-1*bdc: .4f} USD/year")
     if include_pretreatment == True:
         print(f"Sludge disposal cost: {-1*sdc: .4f} USD/year")

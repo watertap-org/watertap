@@ -687,7 +687,7 @@ def export_variables(flowsheet=None, exports=None):
     #     output_category="Operating costs",
     # )
     # Revenue
-    total_revenue = fs.water_recovery_revenue + fs.dye_recovery_revenue
+    total_revenue = fs.water_recovery_revenue + fs.dye_value
     exports.add(
         obj=total_revenue,
         name="Total",
@@ -700,7 +700,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Revenue",
     )
     exports.add(
-        obj=fs.dye_recovery_revenue,
+        obj=fs.dye_value,
         name="Dye",
         ui_units=fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
@@ -736,7 +736,7 @@ def build_flowsheet():
     results = solve(m)
     assert_optimal_termination(results)
 
-    add_costing(m, include_pretreatment)
+    add_costing(m, include_pretreatment, dye_revenue=False)
     assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
