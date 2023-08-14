@@ -257,21 +257,19 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
     def _run_sample(
         self,
-        model,
         local_value_k,
         k,
         sweep_params,
         local_output_dict,
     ):
         run_successful = super()._run_sample(
-            model,
             local_value_k,
             k,
             sweep_params,
             local_output_dict,
         )
         self.differential_sweep_output_dict[k] = self._run_differential_sweep(
-            model, local_value_k
+            self.model, local_value_k
         )
 
         return run_successful

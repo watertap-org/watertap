@@ -170,46 +170,11 @@ class parallelActor:
         self.do_build_kwargs = do_build_kwargs
         self.do_execute = do_execute
         self.local_parameters = local_parameters
-
-        self.model = None
         self.build_model()
 
     def build_model(self):
-        del self.model
-        (
-            self.param_sweep_instance,
-            self.model,
-            self.sweep_params,
-            self.outputs,
-        ) = self.do_build(**self.do_build_kwargs)
-        self.not_initilized = True
-
-    def init_model(self):
-        # only initlize model if init function is available, and we are
-        # not inilization before every sweep parameter
-
-        if (
-            self.param_sweep_instance.config.initialize_function is not None
-            and self.param_sweep_instance.config.initialize_before_sweep == False
-            and self.not_initilized
-        ):
-            self.param_sweep_instance.config.initialize_function(
-                self.model, **self.param_sweep_instance.config.initialize_kwargs
-            )
-            self.not_initilized = False
-
-    def re_init(self):
-        self.build_model()
-        self.init_model()
+        self.exec_args = self.do_build(**self.do_build_kwargs)
 
     def execute(self, local_parameters):
-        self.init_model()
-        exec_params = [
-            self.param_sweep_instance,
-            self.model,
-            self.sweep_params,
-            self.outputs,
-        ]
-        result = self.do_execute(local_parameters, *exec_params)
-
+        result = self.do_execute(local_parameters, *self.exec_args)
         return result

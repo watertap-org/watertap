@@ -1125,18 +1125,10 @@ class TestParameterSweep:
             interpolate_nan_outputs=True,
         )
 
-        m = model
-        m.fs.slack_penalty = 1000.0
-        m.fs.slack.setub(0)
-
-        A = m.fs.input["a"]
-        B = m.fs.input["b"]
-        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-
         # Call the parameter_sweep function
         _ = ps.parameter_sweep(
-            m,
-            sweep_params,
+            build_model_for_tps,
+            build_sweep_params_for_tps,
             build_outputs=None,
         )
 
@@ -1312,18 +1304,10 @@ class TestParameterSweep:
             interpolate_nan_outputs=False,
         )
 
-        m = model
-        m.fs.slack_penalty = 1000.0
-        m.fs.slack.setub(0)
-
-        A = m.fs.input["a"]
-        B = m.fs.input["b"]
-        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-
         # Call the parameter_sweep function
         _ = ps.parameter_sweep(
-            m,
-            sweep_params,
+            build_model_for_tps,
+            build_sweep_params_for_tps,
             build_outputs=None,
         )
 
@@ -1421,7 +1405,7 @@ class TestParameterSweep:
                         "full_name": "fs.slack[ab_slack]",
                         "lower bound": 0,
                         "units": "None",
-                        "upper bound": 0,
+                        # "upper bound": 0,
                         "value": np.array(
                             [
                                 -9.77219059e-09,
@@ -1440,7 +1424,7 @@ class TestParameterSweep:
                         "full_name": "fs.slack[cd_slack]",
                         "lower bound": 0,
                         "units": "None",
-                        "upper bound": 0,
+                        # "upper bound": 0,
                         "value": np.array(
                             [
                                 -9.77899282e-09,
@@ -1934,12 +1918,21 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
             for subkey, subitem in item.items():
                 for subsubkey, subsubitem in subitem.items():
                     if subsubkey == "value":
+                        print(
+                            key,
+                            subkey,
+                            test_dict[key][subkey]["value"],
+                            subitem["value"],
+                        )
                         assert np.allclose(
                             test_dict[key][subkey]["value"],
                             subitem["value"],
                             equal_nan=True,
                         )
                     else:
+                        # print(
+                        #     key, subkey, subsubitem, test_dict[key][subkey][subsubkey]
+                        # )
                         assert subsubitem == test_dict[key][subkey][subsubkey]
         elif key == "solve_successful":
             assert item == test_dict[key]

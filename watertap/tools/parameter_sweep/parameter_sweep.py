@@ -252,7 +252,8 @@ class _ParameterSweepBase(ABC):
         parallel_manager_class = options.pop("parallel_manager_class", None)
 
         self.config = self.CONFIG(options)
-
+        self.model = None
+        self.model_not_initialized = True
         self.parallel_manager = create_parallel_manager(
             parallel_manager_class=parallel_manager_class,
             number_of_subprocesses=self.config.number_of_subprocesses,
@@ -507,7 +508,10 @@ class _ParameterSweepBase(ABC):
         # Get the inputs
         op_ps_dict = output_dict["sweep_params"]
         for key, item in sweep_params.items():
-            op_ps_dict[key]["value"][case_number] = item.pyomo_object.value
+            # stores value actually applied to model, rather one assumed to be applied
+            op_ps_dict[key]["value"][case_number] = model.find_component(
+                item.pyomo_object.name
+            ).value
 
         # Get the outputs from model
         if run_successful:
@@ -592,7 +596,7 @@ class _ParameterSweepBase(ABC):
 
         return global_output_dict
 
-    def _param_sweep_kernel(self, model, sweep_params, local_value_k):
+    def _param_sweep_kernel(self, sweep_params, local_value_k):
         optimize_function = self.config.optimize_function
         optimize_kwargs = self.config.optimize_kwargs
         build_model = self.config.build_model
@@ -605,28 +609,34 @@ class _ParameterSweepBase(ABC):
         # reinitialize_function = self.config.reinitialize_function
         # reinitialize_kwargs = self.config.reinitialize_kwargs
         run_successful = False  # until proven otherwise
-
         # Forced reinitialization of the flowsheet if enabled
-        if initialize_before_sweep:
-            if initialize_function is None:
+        if initialize_before_sweep or self.model_not_initialized:
+            if initialize_before_sweep and initialize_function is None:
                 raise ValueError(
                     "Reinitialization function was not specified. The model will not be reinitialized."
                 )
-            else:
-                model = build_model(**build_model_kwargs)
-                if update_sweep_params_before_init:
-                    self._update_model_values(model, sweep_params, local_value_k)
-                initialize_function(model, **initialize_kwargs)
-                # need to ensure values changed in init are updated
-                self._update_model_values(model, sweep_params, local_value_k)
+
+            elif initialize_function is not None:
+                try:
+                    self.model = build_model(**build_model_kwargs)
+                    if update_sweep_params_before_init:
+                        self._update_model_values(
+                            self.model, sweep_params, local_value_k
+                        )
+                    initialize_function(self.model, **initialize_kwargs)
+                except TypeError:
+                    # this happens if the reinitialize_kwargs are misspecified,
+                    # which is an error we want to raise
+                    raise
+                except:
+                    pass
         try:
             # Simulate/optimize with this set of parameter
 
             # Update the model values with a single combination from the parameter space
-            self._update_model_values(model, sweep_params, local_value_k)
-            results = optimize_function(model, **optimize_kwargs)
+            self._update_model_values(self.model, sweep_params, local_value_k)
+            results = optimize_function(self.model, **optimize_kwargs)
             pyo.assert_optimal_termination(results)
-
             run_successful = True
 
         except TypeError:
@@ -638,12 +648,14 @@ class _ParameterSweepBase(ABC):
             # run_successful remains false. We try to reinitialize and solve again
             if initialize_function is not None:
                 try:
-                    model = build_model(**build_model_kwargs)
+                    self.model = build_model(**build_model_kwargs)
                     if update_sweep_params_before_init:
-                        self._update_model_values(model, sweep_params, local_value_k)
-                    initialize_function(model, **initialize_kwargs)
-                    self._update_model_values(model, sweep_params, local_value_k)
-                    results = optimize_function(model, **optimize_kwargs)
+                        self._update_model_values(
+                            self.model, sweep_params, local_value_k
+                        )
+                    initialize_function(self.model, **initialize_kwargs)
+                    self._update_model_values(self.model, sweep_params, local_value_k)
+                    results = optimize_function(self.model, **optimize_kwargs)
                     pyo.assert_optimal_termination(results)
 
                     run_successful = True
@@ -654,46 +666,62 @@ class _ParameterSweepBase(ABC):
 
                 except:
                     pass
-
+        if run_successful == False:
+            self.model_not_initialized = True
+        else:
+            self.model_not_initialized = False
         return run_successful
 
     def _run_sample(
         self,
-        model,
         local_value_k,
         k,
         sweep_params,
         local_output_dict,
     ):
         # Update model parmeters for record keeping and probe testing
-        self._update_model_values(model, sweep_params, local_value_k)
-        if self.config.probe_function is None or self.config.probe_function(model):
+        self._update_model_values(self.model, sweep_params, local_value_k)
+
+        if self.config.probe_function is None or self.config.probe_function(self.model):
             run_successful = self._param_sweep_kernel(
-                model,
                 sweep_params,
                 local_value_k,
             )
         else:
             run_successful = False
+            # makes sure that if model was build,, but failed to init
+            # we store the pars that were run
 
         # Update the loop based on the reinitialization
         self._update_local_output_dict(
-            model,
+            self.model,
             sweep_params,
             k,
             run_successful,
             local_output_dict,
         )
-
         return run_successful
 
     def _do_param_sweep(self, model, sweep_params, outputs, local_values):
         # Initialize space to hold results
+        # set the model to model being sweeped, if its not created
+        if self.model is None:
+            self.model = model
+            initialize_function = self.config.initialize_function
+            initialize_kwargs = self.config.initialize_kwargs
+            if initialize_function is not None and self.model_not_initialized:
+                try:
+                    initialize_function(self.model, **initialize_kwargs)
+                    self.model_not_initialized = False
+                except TypeError:
+                    raise
+                except:
+                    pass
         local_num_cases = np.shape(local_values)[0]
 
         # Create the output skeleton for storing detailed data
         local_output_dict = self._create_local_output_skeleton(
-            model, sweep_params, outputs, local_num_cases
+            self.model, sweep_params, outputs, local_num_cases
         )
 
         local_solve_successful_list = []
@@ -705,7 +733,6 @@ class _ParameterSweepBase(ABC):
         for k in range(local_num_cases):
             start_time = time.time()
             run_successful = self._run_sample(
-                model,
                 local_values[k, :],
                 k,
                 sweep_params,
