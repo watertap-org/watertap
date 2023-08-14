@@ -102,8 +102,6 @@ class loopTool:
 
         self.number_of_subprocesses = number_of_subprocesses
 
-        self.setup_multi_processing()
-
         self.test_mode = False
 
         self.custom_do_param_sweep = custom_do_param_sweep
@@ -302,12 +300,6 @@ class loopTool:
             return {key: {eval(lp[0]): float(lp[1])}}
         else:
             return {key: loop_value}
-
-    def setup_multi_processing(self):
-        if has_mpi_peer_processes():
-            self.mpi_comm = get_mpi_comm_process()
-        else:
-            self.mpi_comm = False
 
     def get_diff_params(self, key, loop_value):
         """creates dict for differntial sweep
@@ -544,19 +536,20 @@ class loopTool:
         solution check"""
         print("Checking if solution exists", self.h5_file_location, self.h5_directory)
         self.cur_h5_file = (self.h5_file_location, self.h5_directory)
-        if self.mpi_comm != False:
-            self.mpi_comm.Barrier()
-            results = np.empty(self.mpi_comm.Get_size(), dtype=bool)
+        if has_mpi_peer_processes():
+            mpi_comm = get_mpi_comm_process()
+            mpi_comm.Barrier()
+            results = np.empty(mpi_comm.Get_size(), dtype=bool)
 
             results[:] = True
-            if self.mpi_comm.Get_rank() == 0:
+            if mpi_comm.Get_rank() == 0:
                 success = self._check_solution_exists()
                 results[:] = success
                 print("Got test_result", results)
-            self.mpi_comm.Bcast(results, root=0)
-            self.mpi_comm.Barrier()
+            mpi_comm.Bcast(results, root=0)
+            mpi_comm.Barrier()
 
-            success = results[self.mpi_comm.Get_rank()]
+            success = results[mpi_comm.Get_rank()]
         else:
             success = self._check_solution_exists()
         return success
