@@ -26,7 +26,10 @@ from pyomo.environ import (
 )
 from pyomo.network import Arc, SequentialDecomposition
 
-from idaes.core import FlowsheetBlock
+from idaes.core import (
+    FlowsheetBlock,
+    UnitModelCostingBlock,
+)
 from idaes.models.unit_models import (
     CSTR,
     Feed,
@@ -76,6 +79,7 @@ from watertap.unit_models.thickener import (
     ActivatedSludgeModelType as thickener_type,
 )
 from watertap.core.util.initialization import check_solve
+from watertap.costing import WaterTAPCosting
 
 from watertap.core.util.model_diagnostics.infeasible import *
 from idaes.core.util.model_diagnostics import DegeneracyHunter
@@ -109,6 +113,8 @@ def build_flowsheet():
     m.fs.rxn_props_ADM1 = ModifiedADM1ReactionParameterBlock(
         property_package=m.fs.props_ADM1
     )
+
+    m.fs.costing = WaterTAPCosting()
 
     # Feed water stream
     m.fs.feed = Feed(property_package=m.fs.props_ASM2D)
@@ -190,6 +196,7 @@ def build_flowsheet():
         has_heat_transfer=True,
         has_pressure_change=False,
     )
+    m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # Dewatering Unit
     m.fs.dewater = DewateringUnit(
@@ -199,7 +206,14 @@ def build_flowsheet():
 
     # ElectroNP
     m.fs.electroNP = ElectroNPZO(property_package=m.fs.props_ASM2D)
-    # m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    # Costing
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(
+        m.fs.electroNP.properties_treated[0].flow_vol
+    )
+    m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
 
     # Link units
     m.fs.stream1 = Arc(source=m.fs.feed.outlet, destination=m.fs.R1.inlet)
@@ -359,6 +373,9 @@ def build_flowsheet():
     # ElectroNP
     m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * pyunits.kWh / pyunits.kg)
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
+
+    # Costing
+    m.fs.costing.electroNP.phosphorus_recovery_value = 0
 
     # Check degrees of freedom
     print(degrees_of_freedom(m))
@@ -529,6 +546,7 @@ def build_flowsheet():
         #     automate_rescale_variables(unit)
 
     seq.run(m, function)
+    m.fs.costing.initialize()
 
     results = solve(m, tee=True)
 
