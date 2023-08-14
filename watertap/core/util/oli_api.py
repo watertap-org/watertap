@@ -105,7 +105,7 @@ class OLIApi:
     def login(self, tee=True, fail_flag=True):
         """
         Login into user credentials for the OLI Cloud
-        
+
         Args:
             tee: boolean argument to print status code when True
             fail_flag: boolean argument to raise exception upon login failure when True
@@ -415,7 +415,7 @@ class OLIApi:
         return dict()
 
     # TODO: check this. Adding this function to easily access job id
-    def get_flash_history(self, dbs_file_id): 
+    def get_flash_history(self, dbs_file_id):
         """
         Retrieves history of flash information, e.g., input for a chemistry model
         Args:
@@ -433,7 +433,7 @@ class OLIApi:
         Retrieves jobID which is useful for troubleshooting with OLI Support Team
         Args:
             dbs_file_id: the DBS file ID
-        Returns: OLI jobID 
+        Returns: OLI jobID
         """
         flash_h = self.get_flash_history(dbs_file_id)
         id = flash_h["data"][0]["jobId"]
@@ -454,7 +454,7 @@ class OLIApi:
         Returns the chemistry file ID (dbs_file_id) from either
         (1) creating a DBS dict that requires ion names and is then fed to chemistry-builder or
         (2) an uploaded DBS via the "manual" workflow without using chemistry-builder
-        
+
         Args:
             dbs_file_path: file path to DBS file.
             ions: ion names as pyomo set
@@ -497,9 +497,9 @@ class OLIApi:
         Creates dict for chemistry-builder to later generate a DBS file ID
         Args:
             ions: OLI-compatible ion names as a Pyomo Set, list, or dict where the keys are ion names
-            phases: OLI-compatible phases; if None, use default of liquid1 and solid 
+            phases: OLI-compatible phases; if None, use default of liquid1 and solid
         Returns: dbs_dict: dictionary in OLI format needed to generate chemistry [DBS] file ID
-        
+
         #TODO: support not None for phases
         """
 
@@ -739,9 +739,9 @@ class OLIApi:
         tee=True,
         inflows=None,
     ):
-        '''
+        """
         Recursive function to enable user-defined number of composition surveys
-        '''
+        """
         if results is None:
             results = []
         if inflows is None:
