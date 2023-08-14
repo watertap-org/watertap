@@ -18,7 +18,6 @@ from pyomo.environ import (
 
 from pyomo.network import Arc, SequentialDecomposition
 from idaes.core import FlowsheetBlock
-from idaes.core.util.model_diagnostics import DegeneracyHunter
 from watertap.unit_models.anaerobic_digestor import AD
 from watertap.unit_models.thickener import Thickener
 from watertap.unit_models.dewatering import DewateringUnit
@@ -30,7 +29,6 @@ from idaes.models.unit_models import Separator, Mixer
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     large_residuals_set,
-    activated_inequalities_set,
 )
 import idaes.logger as idaeslog
 from idaes.core.util.initialization import propagate_state
@@ -81,6 +79,7 @@ from watertap.property_models.activated_sludge.asm1_reactions import (
 from watertap.core.util.initialization import check_solve
 from idaes.core.util.exceptions import InitializationError
 
+
 def build_flowsheet():
     m = pyo.ConcreteModel()
 
@@ -93,10 +92,10 @@ def build_flowsheet():
     m.fs.ASM1_rxn_props = ASM1ReactionParameterBlock(property_package=m.fs.props_ASM1)
     # Feed water stream
     m.fs.FeedWater = Feed(property_package=m.fs.props_ASM1)
-    
-    #==========================================================================
+
+    # ==========================================================================
     # Activated Sludge Process
-    #==========================================================================
+    # ==========================================================================
     # Mixer for inlet water and recycled sludge
     m.fs.MX1 = Mixer(
         property_package=m.fs.props_ASM1, inlet_list=["feed_water", "recycle"]
@@ -337,50 +336,53 @@ def build_flowsheet():
     m.fs.RADM.volume_vapor.fix(300)
     m.fs.RADM.liquid_outlet.temperature.fix(308.15)
 
-    print(degrees_of_freedom(m), " degrees of freedom after fixing all vars/before final arcs")
+    print(
+        degrees_of_freedom(m),
+        " degrees of freedom after fixing all vars/before final arcs",
+    )
 
     # Apply scaling
     m.fs.stream2adm = Arc(
         source=m.fs.RADM.liquid_outlet, destination=m.fs.adm_asm.inlet
     )
-    print(degrees_of_freedom(m),"first arc")
+    print(degrees_of_freedom(m), "first arc")
     m.fs.stream6adm = Arc(source=m.fs.SP6.waste, destination=m.fs.TU.inlet)
-    print(degrees_of_freedom(m),"next arc")
+    print(degrees_of_freedom(m), "next arc")
     m.fs.stream3adm = Arc(source=m.fs.TU.underflow, destination=m.fs.MX4.thickener)
-    print(degrees_of_freedom(m),"next arc")
-   
+    print(degrees_of_freedom(m), "next arc")
+
     m.fs.stream7adm = Arc(source=m.fs.TU.overflow, destination=m.fs.MX3.recycle2)
-    print(degrees_of_freedom(m),"next arc")
+    print(degrees_of_freedom(m), "next arc")
 
     m.fs.stream9adm = Arc(source=m.fs.CL.underflow, destination=m.fs.MX4.clarifier)
-    print(degrees_of_freedom(m),"next arc")
+    print(degrees_of_freedom(m), "next arc")
 
     m.fs.stream4adm = Arc(source=m.fs.adm_asm.outlet, destination=m.fs.DU.inlet)
-    print(degrees_of_freedom(m),"next arc")
+    print(degrees_of_freedom(m), "next arc")
 
     m.fs.stream5adm = Arc(source=m.fs.DU.overflow, destination=m.fs.MX2.recycle1)
-    print(degrees_of_freedom(m),"next arc")
+    print(degrees_of_freedom(m), "next arc")
 
     m.fs.stream01 = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX2.feed_water1)
-    print(degrees_of_freedom(m),"next arc")
+    print(degrees_of_freedom(m), "next arc")
 
     m.fs.stream02 = Arc(source=m.fs.MX2.outlet, destination=m.fs.MX3.feed_water2)
-    print(degrees_of_freedom(m),"next arc")
+    print(degrees_of_freedom(m), "next arc")
 
     m.fs.stream03 = Arc(source=m.fs.MX3.outlet, destination=m.fs.CL.inlet)
-    print(degrees_of_freedom(m),"next arc")
+    print(degrees_of_freedom(m), "next arc")
 
     m.fs.stream04 = Arc(source=m.fs.CL.effluent, destination=m.fs.MX1.feed_water)
-    print(degrees_of_freedom(m),"next arc")
+    print(degrees_of_freedom(m), "next arc")
 
     m.fs.stream10adm = Arc(source=m.fs.MX4.outlet, destination=m.fs.asm_adm.inlet)
-    print(degrees_of_freedom(m),"next arc")
+    print(degrees_of_freedom(m), "next arc")
 
     m.fs.stream1adm = Arc(source=m.fs.asm_adm.outlet, destination=m.fs.RADM.inlet)
-    print(degrees_of_freedom(m),"final arc")
+    print(degrees_of_freedom(m), "final arc")
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
-    print(degrees_of_freedom(m),"transform arcs")
+    print(degrees_of_freedom(m), "transform arcs")
 
     iscale.calculate_scaling_factors(m.fs)
 
