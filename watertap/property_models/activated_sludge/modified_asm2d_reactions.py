@@ -58,7 +58,27 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
     """
     Property Parameter Block Class
     """
+    CONFIG = ReactionParameterBlock.CONFIG()
 
+    CONFIG.declare(
+        "decay_switch",
+        ConfigValue(
+            default=DecaySwitch.on,
+            domain=In(DecaySwitch),
+            description="Switching function for decay",
+            doc="""
+           Switching function for handling decay in reaction rate expressions.
+
+           **default** - `DecaySwitch.on``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``DecaySwitch.on``", "The decay of heterotrophs and autotrophs is dependent on the electron acceptor present"
+           "``DecaySwitch.off``", "The decay of heterotrophs and autotrophs does not change"
+       """,
+        ),
+    )
     def build(self):
         """
         Callable method for Block construction.
@@ -257,6 +277,13 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Magnesium coefficient for polyphosphates",
         )
+        self.i_NOx_N2 = pyo.Var(
+            initialize=2.8571,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Nitrogen oxide coefficient for N2",
+        )
+        
         # Kinetic Parameters
         self.K_H = pyo.Var(
             initialize=2.46,
@@ -998,28 +1025,6 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
     Reaction Block for ASM2d.
     """
 
-    CONFIG = ReactionBlockDataBase.CONFIG()
-
-    CONFIG.declare(
-        "decay_switch",
-        ConfigValue(
-            default=DecaySwitch.on,
-            domain=In(DecaySwitch),
-            description="Switching function for decay",
-            doc="""
-           Switching function for handling decay in reaction rate expressions.
-
-           **default** - `DecaySwitch.on``
-
-       .. csv-table::
-           :header: "Configuration Options", "Description"
-
-           "``DecaySwitch.on``", "The decay of heterotrophs and autotrophs is dependent on the electron acceptor present"
-           "``DecaySwitch.off``", "The decay of heterotrophs and autotrophs does not change"
-       """,
-        ),
-    )
-
     def build(self):
         """
         Callable method for Block construction
@@ -1261,7 +1266,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R9":
                     # R9: Lysis
-                    if self.config.decay_switch == DecaySwitch.on:
+                    if self.params.config.decay_switch == DecaySwitch.on:
                         return b.reaction_rate[r] == pyo.units.convert(
                             b.params.b_H
                             * (
@@ -1276,7 +1281,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             * b.conc_mass_comp_ref["X_H"],
                             to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                         )
-                    elif self.config.decay_switch == DecaySwitch.off:
+                    elif self.params.config.decay_switch == DecaySwitch.off:
                         return b.reaction_rate[r] == pyo.units.convert(
                             b.params.b_H * b.conc_mass_comp_ref["X_H"],
                             to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
@@ -1429,7 +1434,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R15":
                     # R15: Lysis of X_PAO
-                    if self.config.decay_switch == DecaySwitch.on:
+                    if self.params.config.decay_switch == DecaySwitch.on:
                         return b.reaction_rate[r] == pyo.units.convert(
                             b.params.b_PAO
                             * (
@@ -1444,14 +1449,14 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             * b.conc_mass_comp_ref["X_PAO"],
                             to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                         )
-                    elif self.config.decay_switch == DecaySwitch.off:
+                    elif self.params.config.decay_switch == DecaySwitch.off:
                         return b.reaction_rate[r] == pyo.units.convert(
                             b.params.b_PAO * b.conc_mass_comp_ref["X_PAO"],
                             to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                         )
                 elif r == "R16":
                     # R16: Lysis of X_PP
-                    if self.config.decay_switch == DecaySwitch.on:
+                    if self.params.config.decay_switch == DecaySwitch.on:
                         return b.reaction_rate[r] == pyo.units.convert(
                             b.params.b_PP
                             * (
@@ -1466,14 +1471,14 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             * b.conc_mass_comp_ref["X_PP"],
                             to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                         )
-                    elif self.config.decay_switch == DecaySwitch.off:
+                    elif self.params.config.decay_switch == DecaySwitch.off:
                         return b.reaction_rate[r] == pyo.units.convert(
                             b.params.b_PP * b.conc_mass_comp_ref["X_PP"],
                             to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                         )
                 elif r == "R17":
                     # R17: Lysis of X_PHA
-                    if self.config.decay_switch == DecaySwitch.on:
+                    if self.params.config.decay_switch == DecaySwitch.on:
                         return b.reaction_rate[r] == pyo.units.convert(
                             b.params.b_PHA
                             * (
@@ -1488,7 +1493,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             * b.conc_mass_comp_ref["X_PHA"],
                             to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                         )
-                    elif self.config.decay_switch == DecaySwitch.off:
+                    elif self.params.config.decay_switch == DecaySwitch.off:
                         return b.reaction_rate[r] == pyo.units.convert(
                             b.params.b_PHA * b.conc_mass_comp_ref["X_PHA"],
                             to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
@@ -1514,7 +1519,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R19":
                     # R19: Aerobic growth of X_AUT
-                    if self.config.decay_switch == DecaySwitch.on:
+                    if self.params.config.decay_switch == DecaySwitch.on:
                         return b.reaction_rate[r] == pyo.units.convert(
                             b.params.b_AUT
                             * (
@@ -1529,7 +1534,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             * b.conc_mass_comp_ref["X_AUT"],
                             to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                         )
-                    elif self.config.decay_switch == DecaySwitch.off:
+                    elif self.params.config.decay_switch == DecaySwitch.off:
                         return b.reaction_rate[r] == pyo.units.convert(
                             b.params.b_AUT * b.conc_mass_comp_ref["X_AUT"],
                             to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,

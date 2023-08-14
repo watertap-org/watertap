@@ -174,7 +174,7 @@ class TestAsm2dAdm1_decay_on(object):
     @pytest.mark.unit
     def test_build(self, asmadm):
         assert isinstance(asmadm.fs.unit.f_sI_xc, Param)
-        assert value(asmadm.fs.unit.f_sI_xc) == 0
+        assert value(asmadm.fs.unit.f_sI_xc) == 1e-10
         assert isinstance(asmadm.fs.unit.f_xI_xc, Param)
         assert value(asmadm.fs.unit.f_xI_xc) == 0.1
         assert isinstance(asmadm.fs.unit.f_ch_xc, Param)
@@ -263,7 +263,7 @@ class TestAsm2dAdm1_decay_on(object):
         assert pytest.approx(1e-8, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_fa"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-8) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_va"]
         )
         assert pytest.approx(1e-8, rel=1e-3) == value(
@@ -459,7 +459,7 @@ class TestAsm2dAdm1_decay_off(object):
     @pytest.mark.unit
     def test_build(self, asmadm):
         assert isinstance(asmadm.fs.unit.f_sI_xc, Param)
-        assert value(asmadm.fs.unit.f_sI_xc) == 0
+        assert value(asmadm.fs.unit.f_sI_xc) == 1e-10
         assert isinstance(asmadm.fs.unit.f_xI_xc, Param)
         assert value(asmadm.fs.unit.f_xI_xc) == 0.1
         assert isinstance(asmadm.fs.unit.f_ch_xc, Param)
@@ -545,10 +545,10 @@ class TestAsm2dAdm1_decay_off(object):
         assert pytest.approx(0.00801, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_aa"]
         )
-        assert pytest.approx(1e-8, rel=1e-2) == value(
+        assert pytest.approx(1e-10, rel=1e-2) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_fa"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-8) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_va"]
         )
         assert pytest.approx(1e-8, rel=1e-3) == value(

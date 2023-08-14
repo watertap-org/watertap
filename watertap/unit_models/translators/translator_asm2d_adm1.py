@@ -127,7 +127,7 @@ see reaction package for documentation.}""",
         # Call UnitModel.build to setup dynamics
         super(TranslatorDataASM2dADM1, self).build()
 
-        eps = 0
+        eps = 1e-9
         mw_p = 31 * pyunits.kg / pyunits.kmol
         mw_n = 14 * pyunits.kg / pyunits.kmol
         mw_c = 12 * pyunits.kg / pyunits.kmol
