@@ -304,14 +304,10 @@ class loopTool:
             return {key: loop_value}
 
     def setup_multi_processing(self):
-        if self.number_of_subprocesses == False:
-            self.mpi_comm = False
-            self.number_of_subprocesses = 1
+        if has_mpi_peer_processes():
+            self.mpi_comm = get_mpi_comm_process()
         else:
-            if has_mpi_peer_processes():
-                self.mpi_comm = get_mpi_comm_process()
-            else:
-                self.mpi_comm = False
+            self.mpi_comm = False
 
     def get_diff_params(self, key, loop_value):
         """creates dict for differntial sweep
