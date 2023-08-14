@@ -12,9 +12,6 @@
 __author__ = "Alejandro Garciadiego, Xinhong Liu"
 
 import pyomo.environ as pyo
-from pyomo.environ import (
-    units,
-)
 
 from pyomo.network import Arc, SequentialDecomposition
 from idaes.core import FlowsheetBlock
@@ -34,10 +31,6 @@ import idaes.logger as idaeslog
 from idaes.core.util.initialization import propagate_state
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
-from idaes.core.util.tables import (
-    create_stream_table_dataframe,
-    stream_table_dataframe_to_string,
-)
 
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
@@ -52,13 +45,6 @@ from idaes.models.unit_models.separator import SplittingType
 from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
 )
-
-from idaes.core.util.tables import (
-    create_stream_table_dataframe,
-    stream_table_dataframe_to_string,
-)
-
-from watertap.core.util.initialization import check_solve
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import (
@@ -75,9 +61,6 @@ from watertap.property_models.activated_sludge.asm1_properties import ASM1Parame
 from watertap.property_models.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
-
-from watertap.core.util.initialization import check_solve
-from idaes.core.util.exceptions import InitializationError
 
 
 def build_flowsheet():
