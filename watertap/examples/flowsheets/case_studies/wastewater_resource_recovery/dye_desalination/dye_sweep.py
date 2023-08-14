@@ -121,50 +121,49 @@ def run_analysis(
         )
 
     elif case_num == 8:
+        m.fs.zo_costing.nanofiltration.membrane_cost.unfix()
+        m.fs.dye_separation.nanofiltration.water_permeability_coefficient[0].unfix()
+
+        sweep_params["membrane_cost"] = LinearSample(
+            m.fs.zo_costing.nanofiltration.membrane_cost, 1, 100, nx
+        )
+        sweep_params["water_permeability"] = LinearSample(
+            m.fs.dye_separation.nanofiltration.water_permeability_coefficient[0],
+            50,
+            150,
+            nx,
+        )
+    elif case_num == 9:
+        m.fs.zo_costing.nanofiltration.membrane_cost.unfix()
+        m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"].unfix()
+
+        sweep_params["membrane_cost"] = LinearSample(
+            m.fs.zo_costing.nanofiltration.membrane_cost, 1, 100, nx
+        )
+        sweep_params["dye_removal"] = LinearSample(
+            m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
+            0.2,
+            0.999,
+            nx,
+        )
+    elif case_num == 10:
+        m.fs.zo_costing.electricity_cost.unfix()
         m.fs.dye_separation.P1.eta_pump.unfix()
+
+        sweep_params["electricity_cost"] = LinearSample(
+            m.fs.zo_costing.electricity_cost, 0.0, 0.25, nx
+        )
         sweep_params["pump_efficiency"] = LinearSample(
             m.fs.dye_separation.P1.eta_pump, 0.5, 1, nx
         )
-        m.fs.dye_separation.P1.eta_motor.unfix()
-        sweep_params["motor_efficiency"] = LinearSample(
-            m.fs.dye_separation.P1.eta_motor, 0.5, 1, nx
-        )
-    elif case_num == 9:
-        m.fs.zo_costing.pump_electricity.pump_cost["default"].unfix()
-        sweep_params["pump_sizing_cost"] = LinearSample(
-            m.fs.zo_costing.pump_electricity.pump_cost["default"], 50, 100, nx
-        )
-    elif case_num == 10:
-        m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"].unfix()
-        sweep_params["NF_dye_removal"] = LinearSample(
-            m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
-            0.2,
-            1,
-            nx,
-        )
-        m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "tds"].unfix()
-        sweep_params["NF_salt_removal"] = LinearSample(
-            m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "tds"],
-            0.05,
-            0.5,
-            nx,
-        )
     elif case_num == 11:
-        m.fs.zo_costing.nanofiltration.membrane_cost["rHGO_dye_rejection"].unfix()
-        sweep_params["membrane_cost"] = LinearSample(
-            m.fs.zo_costing.nanofiltration.membrane_cost["rHGO_dye_rejection"],
-            5,
-            75,
-            nx,
+        m.fs.zo_costing.waste_disposal_cost.unfix()
+        m.fs.zo_costing.dye_disposal_cost.unfix()
+        sweep_params["waste_disposal_cost"] = LinearSample(
+            m.fs.zo_costing.waste_disposal_cost, 1, 10, nx
         )
-        m.fs.zo_costing.nanofiltration.membrane_replacement_rate[
-            "rHGO_dye_rejection"
-        ].unfix()
-        sweep_params["membrane_replacement_rate"] = LinearSample(
-            m.fs.zo_costing.nanofiltration.membrane_cost["rHGO_dye_rejection"],
-            5,
-            75,
-            nx,
+        sweep_params["dye_disposal_cost"] = LinearSample(
+            m.fs.zo_costing.dye_disposal_cost, 1, 10, nx
         )
     elif case_num == 12:
         m.fs.zo_costing.recovered_water_cost.unfix()
@@ -220,15 +219,6 @@ def run_analysis(
 
         sweep_params["RO_recovery"] = LinearSample(
             m.fs.desalination.RO.recovery_vol_phase[0, "Liq"], 0.1, 0.75, nx
-        )
-    elif case_num == 17:
-        m.fs.feed.conc_mass_comp[0, "dye"].unfix()
-        sweep_params["inlet_dye_concentration"] = LinearSample(
-            m.fs.feed.conc_mass_comp[0, "dye"], 0.1, 5, nx
-        )
-        m.fs.feed.conc_mass_comp[0, "tds"].unfix()
-        sweep_params["inlet_salt_concentration"] = LinearSample(
-            m.fs.feed.conc_mass_comp[0, "tds"], 1, 10, nx
         )
 
     else:
@@ -303,81 +293,62 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
 
     # visualize results
 
-    # case 17
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="contour",
-    #     xlabel="# inlet_dye_concentration",
-    #     ylabel="inlet_salt_concentration",
-    #     zlabel="LCOW",
-    #     isolines=[0],
-    #     cmap="GnBu",
-    # )
-    # ax.plot(0.2, 2, 'ko')
-    # ax.set_xlim([0, 5])
-    # ax.set_ylim([0, 10])
-    # ax.set_xlabel("Inlet Dye Concentration (kg/m3)")
-    # ax.set_ylabel("Inlet Salt Concentration (kg/m3)")
-    # ax.set_title("LCOW ($/m3)")
-
     # case 8
     fig, ax = visualize_results(
         case_num,
         plot_type="contour",
-        xlabel="# pump_efficiency",
-        ylabel="motor_efficiency",
+        xlabel="# membrane_cost",
+        ylabel="water_permeability",
         zlabel="LCOW",
         cmap="GnBu",
     )
     ax.plot(0.75, 0.9, "ko")
-    ax.set_xlim([0.5, 1])
-    ax.set_ylim([0.5, 1])
-    ax.set_xlabel("Pump Efficiency")
-    ax.set_ylabel("Motor Efficiency")
+    ax.set_xlabel("Membrane Cost ($/m2)")
+    ax.set_ylabel("Water Permeability (LMH/bar)")
     ax.set_title("LCOW ($/m3)")
 
     # case 9
     # fig, ax = visualize_results(
     #     case_num,
     #     plot_type="contour",
-    #     xlabel="# pump_sizing_cost",
-    #     ylabel="LCOW",
-    #     cmap="GnBu",
-    # )
-    # ax.set_xlim([0.5, 1])
-    # ax.set_xlabel("Pump Sizing Cost")
-    # ax.set_ylabel("LCOW")
-
-    # case 10
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="contour",
-    #     xlabel="# NF_dye_removal",
-    #     ylabel="NF_salt_removal",
+    #     xlabel="# membrane_cost",
+    #     ylabel="dye_removal",
     #     zlabel="LCOW",
     #     cmap="GnBu",
     # )
-    # ax.plot(0.99, 0.05, 'ko')
-    # ax.set_xlim([0, 1])
-    # ax.set_ylim([0, 1])
-    # ax.set_xlabel("Dye Mass Removal Fraction")
-    # ax.set_ylabel("Salt Mass Removal Fraction")
+    # ax.plot(0.75, 0.9, "ko")
+    # ax.set_xlabel("Membrane Cost ($/m2)")
+    # ax.set_ylabel("Dye Removal Fraction")
+    # ax.set_title("LCOW ($/m3)")
+
+    # case 10
+    # Note: Set motor efficiency to 1 in flowsheet before running this (dye_sep.P1.eta_motor.fix(1))
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# electricity_cost",
+    #     ylabel="pump_efficiency",
+    #     zlabel="LCOW",
+    #     cmap="GnBu",
+    # )
+    # ax.plot(0.75, 0.9, "ko")
+    # ax.set_xlabel("Electricity Cost ($/kWh)")
+    # ax.set_ylabel("Pump Efficiency")
     # ax.set_title("LCOW ($/m3)")
 
     # case 11
+    # Note: Generate 3 LCOW colorbar plots, each with different values of product water (0.05, 0.5, and $5/m3)
     # fig, ax = visualize_results(
     #     case_num,
     #     plot_type="contour",
-    #     xlabel="# membrane_cost",
-    #     ylabel="membrane_replacement_rate",
+    #     xlabel="# waste_disposal_cost",
+    #     ylabel="dye_disposal_cost",
     #     zlabel="LCOW",
     #     cmap="GnBu",
     # )
-    # ax.plot(50, 0.2, 'ko')
-    # ax.set_xlim([10, 100])
-    # ax.set_ylim([0.1, 0.5])
-    # ax.set_xlabel("Membrane Cost ($/m2) ")
-    # ax.set_ylabel("Membrane Replacement Rate per Year")
+    # ax.plot(0.75, 0.9, "ko")
+    # ax.set_xlabel("Waste Disposal Cost ($/m3)")
+    # ax.set_ylabel("Dye Disposal Cost ($/m3)")
     # ax.set_title("LCOW ($/m3)")
 
     return global_results, m
