@@ -52,13 +52,12 @@ jobs:
         idaes get-extensions --verbose
     - name: Conda info
       run: conda info
-    - name: Add coverage report pytest options
-      run:
-        |
-        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-report=xml" >> $GITHUB_ENV
     - name: Test parallel pytest w/ MPI
       run: |
         mpiexec -n 2 coverage run --parallel-mode -m mpi4py -m pytest watertap/tools/parameter_sweep/tests/test*parameter_sweep.py --no-cov
+        # single report
         coverage combine
+        # convert to XML
+        coverage xml
     - name: Upload coverage report to Codecov
       uses: codecov/codecov-action@v2
