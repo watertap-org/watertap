@@ -630,7 +630,7 @@ class _ParameterSweepBase(ABC):
         if initialize_before_sweep or self.model_not_initialized:
             if initialize_before_sweep and initialize_function is None:
                 raise ValueError(
-                    "Reinitialization function was not specified. The model will not be reinitialized."
+                    "Initialization function was not specified. The model will not be reinitialized."
                 )
 
             elif initialize_function is not None:
