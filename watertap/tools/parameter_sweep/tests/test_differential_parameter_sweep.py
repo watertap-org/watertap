@@ -322,6 +322,50 @@ def test_differential_parameter_sweep(model, tmp_path):
 
     if ps.parallel_manager.is_root_process():
         truth_dict = {
+            "differential_idx": np.array(
+                [
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    0.0,
+                    1.0,
+                    2.0,
+                    3.0,
+                    4.0,
+                    5.0,
+                    6.0,
+                    7.0,
+                    8.0,
+                ]
+            ),
+            "nominal_idx": np.array(
+                [
+                    0.0,
+                    1.0,
+                    2.0,
+                    3.0,
+                    4.0,
+                    5.0,
+                    6.0,
+                    7.0,
+                    8.0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                ]
+            ),
             "outputs": {
                 "fs.input[a]": {
                     "full_name": "fs.input[a]",
@@ -655,10 +699,16 @@ def test_differential_parameter_sweep(model, tmp_path):
             # Compare the sorted dictionary. We need to work with a sorted dictionary
             # because the differential parameter sweep produces a global dictionary
             # that is jumbled by the number of procs.
-            sorted_truth_dict = sort_output_dict(truth_dict)
-            sorted_read_dict = sort_output_dict(read_dict)
-            _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
+            if ps.parallel_manager.rank == 0:
+                sorted_truth_dict = sort_output_dict(truth_dict)
+                sorted_read_dict = sort_output_dict(read_dict)
+                sorted_global_results_dict = sort_output_dict(global_results_dict)
+                _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
+                _assert_dictionary_correctness(
+                    sorted_truth_dict, sorted_global_results_dict
+                )
         else:
+            _assert_dictionary_correctness(truth_dict, global_results_dict)
             _assert_dictionary_correctness(truth_dict, read_dict)
 
 
@@ -709,6 +759,68 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
 
     if ps.parallel_manager.is_root_process():
         truth_dict = {
+            "differential_idx": np.array(
+                [
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    0.0,
+                    0.0,
+                    1.0,
+                    1.0,
+                    2.0,
+                    2.0,
+                    3.0,
+                    3.0,
+                    4.0,
+                    4.0,
+                    5.0,
+                    5.0,
+                    6.0,
+                    6.0,
+                    7.0,
+                    7.0,
+                    8.0,
+                    8.0,
+                ]
+            ),
+            "nominal_idx": np.array(
+                [
+                    0.0,
+                    1.0,
+                    2.0,
+                    3.0,
+                    4.0,
+                    5.0,
+                    6.0,
+                    7.0,
+                    8.0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                ]
+            ),
             "outputs": {
                 "fs.input[a]": {
                     "full_name": "fs.input[a]",
@@ -1150,10 +1262,16 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
             # Compare the sorted dictionary. We need to work with a sorted dictionary
             # because the differential parameter sweep produces a global dictionary
             # that is jumbled by the number of procs.
-            sorted_truth_dict = sort_output_dict(truth_dict)
-            sorted_read_dict = sort_output_dict(read_dict)
-            _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
+            if ps.parallel_manager.rank == 0:
+                sorted_truth_dict = sort_output_dict(truth_dict)
+                sorted_read_dict = sort_output_dict(read_dict)
+                sorted_global_results_dict = sort_output_dict(global_results_dict)
+                _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
+                _assert_dictionary_correctness(
+                    sorted_truth_dict, sorted_global_results_dict
+                )
         else:
+            _assert_dictionary_correctness(truth_dict, global_results_dict)
             _assert_dictionary_correctness(truth_dict, read_dict)
 
 
@@ -1206,6 +1324,50 @@ def test_differential_parameter_sweep_function(model, tmp_path):
 
     if comm.rank == 0:
         truth_dict = {
+            "differential_idx": np.array(
+                [
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    0.0,
+                    1.0,
+                    2.0,
+                    3.0,
+                    4.0,
+                    5.0,
+                    6.0,
+                    7.0,
+                    8.0,
+                ]
+            ),
+            "nominal_idx": np.array(
+                [
+                    0.0,
+                    1.0,
+                    2.0,
+                    3.0,
+                    4.0,
+                    5.0,
+                    6.0,
+                    7.0,
+                    8.0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                ]
+            ),
             "outputs": {
                 "fs.input[a]": {
                     "full_name": "fs.input[a]",
@@ -1534,15 +1696,20 @@ def test_differential_parameter_sweep_function(model, tmp_path):
 
         read_dict = _read_output_h5(h5_results_file_name)
         _assert_h5_csv_agreement(csv_results_file_name, read_dict)
-        # _assert_dictionary_correctness(global_results_dict, read_dict)
         if comm.size > 1:
             # Compare the sorted dictionary. We need to work with a sorted dictionary
             # because the differential parameter sweep produces a global dictionary
             # that is jumbled by the number of procs.
-            sorted_truth_dict = sort_output_dict(truth_dict)
-            sorted_read_dict = sort_output_dict(read_dict)
-            _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
+            if comm.rank == 0:
+                sorted_truth_dict = sort_output_dict(truth_dict)
+                sorted_read_dict = sort_output_dict(read_dict)
+                sorted_global_results_dict = sort_output_dict(global_results_dict)
+                _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
+                _assert_dictionary_correctness(
+                    sorted_truth_dict, sorted_global_results_dict
+                )
         else:
+            _assert_dictionary_correctness(truth_dict, global_results_dict)
             _assert_dictionary_correctness(truth_dict, read_dict)
 
 
@@ -1551,10 +1718,12 @@ def sort_output_dict(input_dict):
 
     sorted_dict = copy.deepcopy(input_dict)
     for key, item in input_dict.items():
-        if key != "solve_successful":
+        if key in ["sweep_params", "outputs"]:  # != "solve_successful":
             for subkey, subitem in item.items():
                 sorted_dict[key][subkey]["value"] = np.sort(subitem["value"])
         elif key == "solve_successful":
             sorted_dict["solve_successful"] = np.sort(input_dict[key]).tolist()
+        elif key in ["nominal_idx", "differential_idx"]:
+            sorted_dict[key] = np.sort(item)
 
     return sorted_dict
