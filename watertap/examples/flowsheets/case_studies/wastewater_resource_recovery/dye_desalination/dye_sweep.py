@@ -302,7 +302,6 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
         zlabel="LCOT",
         cmap="GnBu",
     )
-    ax.plot(0.75, 0.9, "ko")
     ax.set_xlabel("Membrane Cost ($/m2)")
     ax.set_ylabel("Water Permeability (LMH/bar)")
     ax.set_title("LCOT ($/m3)")
@@ -316,7 +315,6 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     #     zlabel="LCOT",
     #     cmap="GnBu",
     # )
-    # ax.plot(0.75, 0.9, "ko")
     # ax.set_xlabel("Membrane Cost ($/m2)")
     # ax.set_ylabel("Dye Removal Fraction")
     # ax.set_title("LCOT ($/m3)")
@@ -331,7 +329,6 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     #     zlabel="LCOT",
     #     cmap="GnBu",
     # )
-    # ax.plot(0.75, 0.9, "ko")
     # ax.set_xlabel("Electricity Cost ($/kWh)")
     # ax.set_ylabel("Pump Efficiency")
     # ax.set_title("LCOT ($/m3)")
@@ -346,7 +343,6 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     #     zlabel="LCOT",
     #     cmap="GnBu",
     # )
-    # ax.plot(0.75, 0.9, "ko")
     # ax.set_xlabel("Waste Disposal Cost ($/m3)")
     # ax.set_ylabel("Dye Disposal Cost ($/m3)")
     # ax.set_title("LCOT ($/m3)")
