@@ -371,6 +371,9 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 doc="Constant k2 in overpotential equation",
             )        
 
+            self._fixed_perf_vars.append(self.overpotential_k1)
+            self._fixed_perf_vars.append(self.overpotential_k2)
+
             @self.Constraint(doc="Overpotential calculation")
             def eq_overpotential(b):
                 cd = pyunits.convert(

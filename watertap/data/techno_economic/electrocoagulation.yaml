@@ -29,6 +29,12 @@ default:
   overpotential:
     value: 1.5
     units: volt
+  overpotential_k1:
+    value: 0.430
+    units: volt
+  overpotential_k2:
+    value: 1
+    units: volt
   recovery_frac_mass_H2O:
     value: 0.99
     units: dimensionless
