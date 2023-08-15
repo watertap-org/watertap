@@ -18,6 +18,9 @@ from watertap.tools.parallel.concurrent_futures_parallel_manager import (
 from watertap.tools.parallel.single_process_parallel_manager import (
     SingleProcessParallelManager,
 )
+from watertap.tools.parallel.multiprocessing_parallel_manager import (
+    MultiprocessingParallelManager,
+)
 
 
 def do_build(base=10):
@@ -42,42 +45,69 @@ class TestParallelManager:
         assert execution_results[0].parameters == all_parameters
         assert execution_results[0].results == [-11, -12, -13, -14]
 
-    # @pytest.mark.component
-    # def test_single_process_with_build_kwargs(self):
-    #     all_parameters = [1, 2, 3, 4]
+    @pytest.mark.component
+    def test_single_process_with_build_kwargs(self):
+        all_parameters = [1, 2, 3, 4]
 
-    #     parallel_manager = SingleProcessParallelManager()
-    #     parallel_manager.scatter(do_build, {"base": 100}, do_execute, all_parameters)
-    #     execution_results = parallel_manager.gather()
+        parallel_manager = SingleProcessParallelManager()
+        parallel_manager.scatter(do_build, {"base": 100}, do_execute, all_parameters)
+        execution_results = parallel_manager.gather()
 
-    #     # there should be no fan-out; all results should come back from a single node
-    #     assert len(execution_results) == 1
-    #     assert execution_results[0].parameters == all_parameters
-    #     assert execution_results[0].results == [-101, -102, -103, -104]
+        # there should be no fan-out; all results should come back from a single node
+        assert len(execution_results) == 1
+        assert execution_results[0].parameters == all_parameters
+        assert execution_results[0].results == [-101, -102, -103, -104]
 
-    # @pytest.mark.component
-    # @pytest.mark.parametrize("number_of_subprocesses", [1, 2, 3, 4, 8, 16])
-    # def test_multiple_subprocesses(self, number_of_subprocesses):
-    #     all_parameters = [1, 2, 3, 4, 5]
+    @pytest.mark.component
+    @pytest.mark.parametrize("number_of_subprocesses", [1, 4, 8])
+    def test_multiple_subprocesses(self, number_of_subprocesses):
+        all_parameters = [1, 2, 3, 4, 5]
 
-    #     parallel_manager = ConcurrentFuturesParallelManager(number_of_subprocesses)
+        parallel_manager = ConcurrentFuturesParallelManager(number_of_subprocesses)
 
-    #     # the parallel manager shouldn't kick off more subprocesses than can do work
-    #     number_of_subprocesses_used = min(number_of_subprocesses, len(all_parameters))
+        # the parallel manager shouldn't kick off more subprocesses than can do work
+        number_of_subprocesses_used = min(number_of_subprocesses, len(all_parameters))
 
-    #     parallel_manager.scatter(do_build, {"base": 100}, do_execute, all_parameters)
-    #     execution_results = parallel_manager.gather()
+        parallel_manager.scatter(do_build, {"base": 100}, do_execute, all_parameters)
+        execution_results = parallel_manager.gather()
 
-    #     # there should be a set of local results for each subprocess
-    #     assert len(execution_results) == number_of_subprocesses_used
+        # there should be a set of local results for each subprocess
+        assert len(execution_results) == number_of_subprocesses_used
 
-    #     # verify that each subprocess did actual work
-    #     for i in range(len(execution_results)):
-    #         assert len(execution_results[i].parameters) > 0
-    #         assert len(execution_results[i].parameters) == len(
-    #             execution_results[i].results
-    #         )
+        # verify that each subprocess did actual work
+        for i in range(len(execution_results)):
+            assert len(execution_results[i].parameters) > 0
+            assert len(execution_results[i].parameters) == len(
+                execution_results[i].results
+            )
 
-    #     # verify that the full list of results matches the expected
-    #     all_results = [r for result in execution_results for r in result.results]
-    #     assert all_results == [-101, -102, -103, -104, -105]
+        # verify that the full list of results matches the expected
+        all_results = [r for result in execution_results for r in result.results]
+        assert all_results == [-101, -102, -103, -104, -105]
+
+    @pytest.mark.component
+    @pytest.mark.parametrize("number_of_subprocesses", [1, 4])
+    def test_multiple_subprocesses_with_multiprocessing(self, number_of_subprocesses):
+        all_parameters = [1, 2, 3, 4, 5]
+
+        parallel_manager = MultiprocessingParallelManager(number_of_subprocesses)
+
+        # the parallel manager shouldn't kick off more subprocesses than can do work
+        number_of_subprocesses_used = min(number_of_subprocesses, len(all_parameters))
+
+        parallel_manager.scatter(do_build, {"base": 100}, do_execute, all_parameters)
+        execution_results = parallel_manager.gather()
+        # print(execution_results)
+        # running in async, so there should be as many results as parametrs
+        assert len(execution_results) == len(all_parameters)
+
+        # verify that each subprocess did actual work
+        for i in range(len(execution_results)):
+            assert len(execution_results[i].parameters) > 0
+            assert len(execution_results[i].parameters) == len(
+                execution_results[i].results
+            )
+
+        # verify that the full list of results matches the expected
+        all_results = [r for result in execution_results for r in result.results]
+        assert all_results == [-101, -102, -103, -104, -105]
