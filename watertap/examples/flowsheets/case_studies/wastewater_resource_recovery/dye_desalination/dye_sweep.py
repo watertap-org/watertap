@@ -299,13 +299,13 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
         plot_type="contour",
         xlabel="# membrane_cost",
         ylabel="water_permeability",
-        zlabel="LCOW",
+        zlabel="LCOT",
         cmap="GnBu",
     )
     ax.plot(0.75, 0.9, "ko")
     ax.set_xlabel("Membrane Cost ($/m2)")
     ax.set_ylabel("Water Permeability (LMH/bar)")
-    ax.set_title("LCOW ($/m3)")
+    ax.set_title("LCOT ($/m3)")
 
     # case 9
     # fig, ax = visualize_results(
@@ -313,13 +313,13 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     #     plot_type="contour",
     #     xlabel="# membrane_cost",
     #     ylabel="dye_removal",
-    #     zlabel="LCOW",
+    #     zlabel="LCOT",
     #     cmap="GnBu",
     # )
     # ax.plot(0.75, 0.9, "ko")
     # ax.set_xlabel("Membrane Cost ($/m2)")
     # ax.set_ylabel("Dye Removal Fraction")
-    # ax.set_title("LCOW ($/m3)")
+    # ax.set_title("LCOT ($/m3)")
 
     # case 10
     # Note: Set motor efficiency to 1 in flowsheet before running this (dye_sep.P1.eta_motor.fix(1))
@@ -328,28 +328,28 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     #     plot_type="contour",
     #     xlabel="# electricity_cost",
     #     ylabel="pump_efficiency",
-    #     zlabel="LCOW",
+    #     zlabel="LCOT",
     #     cmap="GnBu",
     # )
     # ax.plot(0.75, 0.9, "ko")
     # ax.set_xlabel("Electricity Cost ($/kWh)")
     # ax.set_ylabel("Pump Efficiency")
-    # ax.set_title("LCOW ($/m3)")
+    # ax.set_title("LCOT ($/m3)")
 
     # case 11
-    # Note: Generate 3 LCOW colorbar plots, each with different values of product water (0.05, 0.5, and $5/m3)
+    # Note: Generate 3 LCOT colorbar plots, each with different values of product water (0.05, 0.5, and $5/m3)
     # fig, ax = visualize_results(
     #     case_num,
     #     plot_type="contour",
     #     xlabel="# waste_disposal_cost",
     #     ylabel="dye_disposal_cost",
-    #     zlabel="LCOW",
+    #     zlabel="LCOT",
     #     cmap="GnBu",
     # )
     # ax.plot(0.75, 0.9, "ko")
     # ax.set_xlabel("Waste Disposal Cost ($/m3)")
     # ax.set_ylabel("Dye Disposal Cost ($/m3)")
-    # ax.set_title("LCOW ($/m3)")
+    # ax.set_title("LCOT ($/m3)")
 
     return global_results, m
 
