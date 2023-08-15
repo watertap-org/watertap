@@ -393,6 +393,8 @@ def build_flowsheet():
             #     iscale.set_scaling_factor(var, 1e4)
             # if "electroNP.properties_in[0.0].flow_vol" in var.name:
             #     iscale.set_scaling_factor(var, 1e4)
+            # if "electroNP.byproduct_state[0.0].flow_vol" in var.name:
+            #     iscale.set_scaling_factor(var, 1e7)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
@@ -401,6 +403,12 @@ def build_flowsheet():
             #     iscale.set_scaling_factor(var, 1e1)
             if "conc_mass_comp[S_PO4]" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
+            # if "conc_mass_comp[S_NO3]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e7)
+            # if "conc_mass_comp[X_AUT]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e7)
+            # if "conc_mass_comp[X_PAO]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e7)
             # if "electroNP.electricity[0.0]" in var.name:
             #     iscale.set_scaling_factor(var, 1e2)
             # if "electroNP.MgCl2_flowrate[0.0]" in var.name:
@@ -578,6 +586,78 @@ def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     return results
 
 
+def display_costing(m):
+    print("\n----------Capital Cost----------")
+    total_capital_cost = value(
+        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.USD_2018)
+    )
+    normalized_capex = total_capital_cost / value(
+        pyunits.convert(m.fs.AD.inlet.flow_vol[0], to_units=pyunits.m**3 / pyunits.hr)
+    )
+    print(f"Total Capital Costs: {total_capital_cost:.3f} $")
+    print(f"Normalized Capital Costs: {normalized_capex:.3f} $/m3/hr")
+    print("Capital Cost Breakdown")
+    for u in m.fs.costing._registered_unit_costing:
+        print(
+            u.name,
+            " : {price:0.3f} $".format(
+                price=value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018))
+            ),
+        )
+    print("\n----------Operation Cost----------")
+    total_operating_cost = value(
+        pyunits.convert(
+            m.fs.costing.total_operating_cost, to_units=pyunits.USD_2018 / pyunits.year
+        )
+    )
+    print(f"Total Operating Cost: {total_operating_cost:.3f} $/year")
+
+    opex_fraction = value(
+        pyunits.convert(
+            m.fs.costing.total_operating_cost, to_units=pyunits.USD_2018 / pyunits.year
+        )
+        / pyunits.convert(
+            m.fs.AD.inlet.flow_vol[0], to_units=pyunits.m**3 / pyunits.year
+        )
+        / m.fs.costing.LCOW
+    )
+    print(f"Operating cost fraction: {opex_fraction:.3f} $ opex / $ LCOW")
+
+    print("Operating Cost Breakdown")
+    for f in m.fs.costing.used_flows:
+        print(
+            f.title(),
+            " :    {price:0.3f} $/m3 feed".format(
+                price=value(
+                    pyunits.convert(
+                        m.fs.costing.aggregate_flow_costs[f],
+                        to_units=pyunits.USD_2018 / pyunits.year,
+                    )
+                    / pyunits.convert(
+                        m.fs.AD.inlet.flow_vol[0],
+                        to_units=pyunits.m**3 / pyunits.year,
+                    )
+                )
+            ),
+        )
+
+    print("\n----------Energy----------")
+
+    electricity_intensity = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_electricity / m.fs.AD.inlet.flow_vol[0],
+            to_units=pyunits.kWh / pyunits.m**3,
+        )
+    )
+    print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/m3")
+
+    print("\n----------Levelized Cost----------")
+    LCOW = value(
+        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
+    )
+    print(f"Levelized Cost of Water: {LCOW:.3f} $/m^3")
+
+
 if __name__ == "__main__":
     m, results = build_flowsheet()
 
@@ -600,3 +680,4 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
+    # display_costing(m)
