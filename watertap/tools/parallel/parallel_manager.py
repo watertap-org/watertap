@@ -47,14 +47,63 @@ class ParallelManager(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def sync_data_with_peers(self, data):
+    def sync_array_with_peers(self, data):
         """
-        Synchronize a piece of data with all peers processes. The data parameter is either:
+        Synchronize an array with all peers processes. The data parameter is either:
         - (if root) the source of truth that will be broadcast to all processes
         - (if not root) an empty buffer that will hold the data sent from root once the function returns
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def sync_pyobject_with_peers(self, obj):
+        """
+        Synchronize a python object with all peer processes. The obj parameter is either:
+        - (if root) the source of truth that will be broadcast to all processes
+        - (if not root) ignored
+
+        Different from sync_array_with_peers in that it returns the synced object rather than
+        using an existing buffer.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def combine_data_with_peers(self, data):
+        """
+        Combine the data from each peer into a list. The return value will be a list of all
+        the data elements provided by each process that calls this function.
+
+        With multiple processes, this must:
+        - act as a synchronization point
+        - return the list in the same order on each process
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def gather_arrays_to_root(self, sendbuf, recvbuf_spec):
+        """
+        Gather the data in the send buffer to the root process. Parameters are:
+        - sendbuf: the data to be sent from this process
+        - recvbuf_spec: a tuple of (receive buffer, list of sizes) where the list of sizes is
+        how much data will come from each process. Ignored if not the root process.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def sum_values_and_sync(self, sendbuf, recvbuf):
+        """
+        Sum a list of values from each process and sync the result to all processes. Parameters:
+        - sendbuf: an array of values the local process is contributing to the sum
+        - recvbuf: an array of a single value that will hold the summed result (same on
+        each process) when the function returns.
+
+        Note: this is a specific case of a global reduce (with sum() as the reducing function).
+        If more than sum() is needed in the future, this function should be extended to receive
+        an Op argument.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def scatter(
         self,
         do_build,
@@ -62,6 +111,7 @@ class ParallelManager(ABC):
         do_execute,
         all_parameters,
     ):
+
         """
         Scatter the specified execution out, as defined by the implementation's parallelism, for
         a list of parameters.
@@ -78,6 +128,7 @@ class ParallelManager(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def gather(self):
         """
         Gather the results of the computation that was kicked off via a previous scatter.
@@ -87,6 +138,7 @@ class ParallelManager(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def results_from_local_tree(self, results):
         """
         Given a list of LocalResults objects, return a sublist of the ones the current process
