@@ -503,13 +503,13 @@ def add_costing(m, include_pretreatment, dye_revenue=False):
         m.fs.dye_value = Expression(
             expr=(
                 m.fs.zo_costing.utilization_factor
-                * m.fs.zo_costing.dye_mass_cost
+                * m.fs.zo_costing.dye_recovery_cost
                 * pyunits.convert(
-                    m.fs.dye_retentate.flow_mass_comp[0, "dye"],
-                    to_units=pyunits.kg / m.fs.zo_costing.base_period,
+                    m.fs.dye_retentate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
                 )
             ),
-            doc="Savings from dye recovered back to the plant",
+            doc="Profit from recovering dye",
         )
     # Note: this is multiplied by -1 since the sign is handled implicitly
     elif dye_revenue == False:
