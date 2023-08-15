@@ -74,7 +74,7 @@ class TestElectrodialysisVoltageConst:
     def test_build_model(self, electrodialysis_1d_cell1):
         m = electrodialysis_1d_cell1
         # test configrations
-        assert len(m.fs.unit.config) == 21
+        assert len(m.fs.unit.config) == 22
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -358,7 +358,7 @@ class TestElectrodialysisCurrentConst:
         m = electrodialysis_1d_cell2
 
         # test configrations
-        assert len(m.fs.unit.config) == 21
+        assert len(m.fs.unit.config) == 22
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -572,7 +572,7 @@ class TestElectrodialysis_withNeutralSPecies:
         m = electrodialysis_1d_cell3
 
         # test configrations
-        assert len(m.fs.unit.config) == 21
+        assert len(m.fs.unit.config) == 22
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -800,7 +800,7 @@ class Test_ED_MembNonohm_On_ConstV:
     def test_build_model(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
         # test configrations
-        assert len(m.fs.unit.config) == 21
+        assert len(m.fs.unit.config) == 22
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -1028,7 +1028,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
     def test_build_model(self, electrodialysis_1d_cell5):
         m = electrodialysis_1d_cell5
         # test configrations
-        assert len(m.fs.unit.config) == 21
+        assert len(m.fs.unit.config) == 22
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -1419,7 +1419,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
     def test_build_model(self, electrodialysis_1d_cell6):
         m = electrodialysis_1d_cell6
         # test configrations
-        assert len(m.fs.unit.config) == 21
+        assert len(m.fs.unit.config) == 22
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
