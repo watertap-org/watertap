@@ -902,6 +902,22 @@ def display_costing(m, include_pretreatment):
     print(f"Nanofiltration (r-HGO) Capital Cost: {nf_capex:.4f} $")
     print(f"Reverse Osmosis Capital Cost: {ro_capex:.4f} $")
 
+    print("\n----------Unit Capital Costs----------\n")
+    for u in m.fs.zo_costing._registered_unit_costing:
+        print(
+            u.name,
+            " : {price:0.3f} $".format(
+                price=value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2020))
+            ),
+        )
+    for z in m.fs.ro_costing._registered_unit_costing:
+        print(
+            z.name,
+            " : {price:0.3f} $".format(
+                price=value(pyunits.convert(z.capital_cost, to_units=pyunits.USD_2020))
+            ),
+        )
+
     print(f"\nTotal Operating Cost: {opex:.4f} M$/year")
     if include_pretreatment == True:
         print(f"Wastewater Treatment Operating Cost: {wwtp_opex:.4f} $/yr")

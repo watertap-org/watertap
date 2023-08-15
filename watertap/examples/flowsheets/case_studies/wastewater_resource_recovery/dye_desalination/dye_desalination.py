@@ -292,6 +292,12 @@ def display_costing(m):
             m.fs.total_externalities, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
+    bdc = value(
+        pyunits.convert(
+            m.fs.brine_disposal_cost, to_units=pyunits.USD_2020 / pyunits.year
+        )
+    )
+    print(f"Brine disposal cost: {-1*bdc: .4f} USD/year")
     print(f"Total Externalities: {total_externalities:.4f} M$/year")
 
     levelized_cost_treatment = value(
