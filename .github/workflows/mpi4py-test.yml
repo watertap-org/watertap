@@ -9,6 +9,11 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  # --color=yes needed for colorized output to be shown in GHA logs
+  # --pyargs watertap is needed to be able to define CLI options in watertap/conftest.py
+  PYTEST_ADDOPTS: "--color=yes"
+
 jobs:
   build:
 
@@ -47,6 +52,15 @@ jobs:
         idaes get-extensions --verbose
     - name: Conda info
       run: conda info
-    - name: Test parallel pytest
+    - name: Test parallel pytest w/ MPI
       run: |
-        mpiexec -n 2 pytest watertap/tools/parameter_sweep/tests/test*parameter_sweep.py --no-cov
+        mpiexec -n 2 pytest watertap/tools/parameter_sweep/tests/test*parameter_sweep.py watertap/tools/parallel/tests/test_parallel_manager.py --no-cov
+    - name: Add coverage report pytest options
+      run:
+        |
+        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-report=xml" >> $GITHUB_ENV
+    - name: Test serial pytest w/ MPI
+      run: |
+        mpiexec -n 1 pytest watertap/tools/parameter_sweep/tests/test*parameter_sweep.py watertap/tools/parallel/tests/test_parallel_manager.py
+    - name: Upload coverage report to Codecov
+      uses: codecov/codecov-action@v2
