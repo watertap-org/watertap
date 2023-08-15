@@ -58,7 +58,7 @@ def create_parallel_manager(parallel_manager_class=None, **kwargs):
             except:
                 print("Ray io not available, please install to use")
         else:
-            raise NotImplementedError
+            raise NotImplementedError(f"ParallelManager {parallel_backend} is not yet implemented")
 
     return SingleProcessParallelManager()
 
