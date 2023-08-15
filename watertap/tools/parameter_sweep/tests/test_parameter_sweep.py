@@ -1953,9 +1953,6 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
                             equal_nan=True,
                         )
                     else:
-                        # print(
-                        #     key, subkey, subsubitem, test_dict[key][subkey][subsubkey]
-                        # )
                         assert subsubitem == test_dict[key][subkey][subsubkey]
         elif key == "solve_successful":
             assert item == test_dict[key]
