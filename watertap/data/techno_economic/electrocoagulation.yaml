@@ -14,9 +14,9 @@ default:
   metal_dose:
     value: 0.0001
     units: kg/L
-  number_electrode_pairs:
-    value: 10
-    units: dimensionless
+  # number_electrode_pairs:
+  #   value: 10
+  #   units: dimensionless
   electrode_gap:
     value: 0.005
     units: m
@@ -26,9 +26,9 @@ default:
   floc_retention_time:
     value: 12
     units: min
-  # overpotential:
-  #   value: 1.5
-  #   units: volt
+  overpotential:
+    value: 1.5
+    units: volt
   recovery_frac_mass_H2O:
     value: 0.99
     units: dimensionless

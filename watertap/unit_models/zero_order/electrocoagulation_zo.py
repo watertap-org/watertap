@@ -53,6 +53,11 @@ class ReactorMaterial(StrEnum):
     stainless_steel = "stainless_steel"
 
 
+class OverpotentialCalculation(StrEnum):
+    calculated = "calculated"
+    fixed = "fixed"
+
+
 @declare_process_block_class("ElectrocoagulationZO")
 class ElectrocoagulationZOData(ZeroOrderBaseData):
     """
@@ -76,6 +81,15 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             default="pvc",
             domain=In(ReactorMaterial),
             description="Reactor material",
+        ),
+    )
+
+    CONFIG.declare(
+        "overpotential_calculation",
+        ConfigValue(
+            default="fixed",
+            domain=In(OverpotentialCalculation),
+            description="Determination of overpotential",
         ),
     )
 
@@ -270,18 +284,6 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             doc="Overpotential",
         )
 
-        self.overpotential_k1 = Var(
-            initialize = 430,
-            units=pyunits.millivolt,
-            doc="Constant k1 in overpotential equation",
-        )
-
-        self.overpotential_k2 = Var(
-            initialize = 1000,
-            units=pyunits.millivolt,
-            doc="Constant k2 in overpotential equation",
-        )
-
         self.reactor_volume = Var(
             initialize=1,
             bounds=(0, None),
@@ -350,37 +352,55 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.current_efficiency)
         # self._fixed_perf_vars.append(self.overpotential) 
         self._fixed_perf_vars.append(self.floc_retention_time)      
-        
 
-        @self.Constraint(doc="Overpotential calculation")
-        def eq_overpotential(b):
-            cd = pyunits.convert(
-                    b.current_density, to_units=pyunits.milliampere / pyunits.cm**2
-                )
-            cd_dimensionless = pyunits.convert(
-                    cd * pyunits.cm**2 / pyunits.milliampere,
-                    to_units=pyunits.dimensionless,
-                )
-            cd_cur = pyunits.convert(
-                    b.applied_current, to_units=pyunits.milliampere
-                )
-            ea_tot = pyunits.convert(
-                    b.anode_area, to_units=pyunits.cm**2
-                )
-            return b.overpotential == pyunits.convert(
-                    (
-                        (
-                            # cd*
-                            (
-                                b.overpotential_k1 * log(cd_dimensionless)
-                                + b.overpotential_k2
-                            )
-                        )
-                        # * ea_tot
+        if self.config.overpotential_calculation is OverpotentialCalculation.fixed:
+            
+            self._fixed_perf_vars.append(self.overpotential)
+
+        if self.config.overpotential_calculation == OverpotentialCalculation.calculated:        
+
+            self.overpotential_k1 = Var(
+                initialize = 430,
+                units=pyunits.millivolt,
+                doc="Constant k1 in overpotential equation",
+            )
+
+            self.overpotential_k2 = Var(
+                initialize = 1000,
+                units=pyunits.millivolt,
+                doc="Constant k2 in overpotential equation",
+            )        
+
+            @self.Constraint(doc="Overpotential calculation")
+            def eq_overpotential(b):
+                cd = pyunits.convert(
+                        b.current_density, to_units=pyunits.milliampere / pyunits.cm**2
                     )
-                    # / b.applied_current
-                    ,to_units=pyunits.volt,
-                )
+                cd_dimensionless = pyunits.convert(
+                        cd * pyunits.cm**2 / pyunits.milliampere,
+                        to_units=pyunits.dimensionless,
+                    )
+                cd_cur = pyunits.convert(
+                        b.applied_current, to_units=pyunits.milliampere
+                    )
+                ea_tot = pyunits.convert(
+                        b.anode_area, to_units=pyunits.cm**2
+                    )
+                return b.overpotential == pyunits.convert(
+                        (
+                            (
+                                # cd*
+                                (
+                                    b.overpotential_k1 * log(cd_dimensionless)
+                                    + b.overpotential_k2
+                                )
+                            )
+                            # * ea_tot
+                        )
+                        # / b.applied_current
+                        ,to_units=pyunits.volt,
+                    )
+
 
         @self.Constraint(doc="Charge loading rate equation")
         def eq_charge_loading_rate(b):
