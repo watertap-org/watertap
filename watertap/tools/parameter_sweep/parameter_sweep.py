@@ -20,8 +20,6 @@ from abc import abstractmethod, ABC
 from idaes.core.solvers import get_solver
 
 from idaes.core.surrogate.pysmo import sampling
-
-# from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.deprecation import deprecation_warning
 
 # from pyomo.common.tee import capture_output
