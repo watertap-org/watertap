@@ -66,7 +66,7 @@ def main():
         "recovery_vol_H2O": 0.65,
         "channel_height": 1e-3,
     }
-    initarg = make_initarg_list([9],flow_rate_vol=1.04e-3)
+    initarg = make_initarg_list([9], flow_rate_vol=1.04e-3)
     initialize_dof0_system(
         m=m, initargs=initarg[0], solve_after_init=True, **deci_var_dict
     )
@@ -77,7 +77,7 @@ def main():
         "cell_pair_num": (100, 1, 10000),
         "cell_length": (1.68, 0.01, 10),
         "cell_width": (0.197, 0.01, 10),
-        #"channel_height": (7e-4, 1e-4, 1e-2),
+        # "channel_height": (7e-4, 1e-4, 1e-2),
     }
     if not m.find_component("obj") is None:
         m.del_component("obj")

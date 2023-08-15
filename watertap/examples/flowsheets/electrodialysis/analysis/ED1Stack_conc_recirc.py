@@ -69,16 +69,17 @@ def main():
     deci_var_dict = {
         "voltage_applied[0]": 10,
         "recovery_vol_H2O": 0.5,
-       
     }
-   
+
     initarg = make_initarg_list([5])
-    
-    initialize_dof0_system(m=m, initargs=initarg[0],solve_after_init=True, **deci_var_dict)
+
+    initialize_dof0_system(
+        m=m, initargs=initarg[0], solve_after_init=True, **deci_var_dict
+    )
     print("===INITIALIZE OUTCOME")
     print(f"DOF= {mstat.degrees_of_freedom(m)}")
     display_model_metrics(m)
-    
+
     opt_var_dict = {
         "voltage_applied[0]": (10, 0, value(m.fs.voltage_lim)),
         "cell_pair_num": (50, 1, 1000),
@@ -90,7 +91,7 @@ def main():
         print("obj==0 deleted")
     optimize_LCOW_fixed_prod_salinity(m, **opt_var_dict)
     print("===OPTIMIZE OUTCOME")
-    
+
     display_model_metrics(m)
     dh = m_diag.DegeneracyHunter(m)
     dh.check_residuals(tol=1e-8)
@@ -111,23 +112,30 @@ def make_initarg_list(conc_mass_list, mw=0.0585, flow_rate_vol=5.2e-4):
     return initarg
 
 
-def initialize_dof0_system(m=None, solve_after_init=False, terminate_nonoptimal_sol=False, report_bad_scaling= False, initargs={}, **deciargs):
+def initialize_dof0_system(
+    m=None,
+    solve_after_init=False,
+    terminate_nonoptimal_sol=False,
+    report_bad_scaling=False,
+    initargs={},
+    **deciargs,
+):
     """
-    To initialize a system at zero dof and give the option to set up the 
-    decision variables to be controled. 
+    To initialize a system at zero dof and give the option to set up the
+    decision variables to be controled.
 
     Keyword Arguments:
         m : model to be initalized.
         solve_after_init: Bool arg to control whether the model is to be solved after setting
                             all intial values.
-        terminate_nonoptimal_sol: Bool arg to control whether exception is triggered upon a   
-                                    non-optimal solution               
+        terminate_nonoptimal_sol: Bool arg to control whether exception is triggered upon a
+                                    non-optimal solution
         initargs : list of dicts of initial states of the feed solution; the dict
-                    should have the same length to the state vars. 
-        report_bad_scaling: control over whether checking badly scaled vars is performed. 
-        **deciargs: decision vars to be fixed, as a {name: val} dict. 
+                    should have the same length to the state vars.
+        report_bad_scaling: control over whether checking badly scaled vars is performed.
+        **deciargs: decision vars to be fixed, as a {name: val} dict.
 
-    Returns: a list of the fixed decision vars and the solver results if solve_after_init 
+    Returns: a list of the fixed decision vars and the solver results if solve_after_init
                 == True.
     """
     if m == None:
@@ -162,24 +170,24 @@ def initialize_dof0_system(m=None, solve_after_init=False, terminate_nonoptimal_
         _log.warning("Initialization Fails in initialize_dof0_system:{}".format(experr))
         pass
     if solve_after_init:
-        res=solve(m, check_termination=terminate_nonoptimal_sol)
+        res = solve(m, check_termination=terminate_nonoptimal_sol)
         return [deci_comp_list, res]
     else:
         return deci_comp_list
 
 
-def optimize_LCOW_fixed_prod_salinity(m,tee=False,prod_sal=0.1, mw=0.0585, **optargs):
+def optimize_LCOW_fixed_prod_salinity(m, tee=False, prod_sal=0.1, mw=0.0585, **optargs):
     """
-    Function to optimize LCOW of a defined ED system with a definied product water salinity 
-    target.  The system should first be initialized to have zero dof before running this method. 
+    Function to optimize LCOW of a defined ED system with a definied product water salinity
+    target.  The system should first be initialized to have zero dof before running this method.
     Keyword Arguments:
         m : model to be optimized.
-        prod_sal: salinity of product water fixed for optimization 
+        prod_sal: salinity of product water fixed for optimization
         **optargs: dict argument containing vars to be optimized; The dict member should
-                    be in form of {var: (val, lb, ub)}, where (val, lb, ub) passes the initial 
-                    value, lower bound and upper bound of the var to be optimized. The user is 
-                    allowed to skip lb and ub, in which case the var will be optimized with no 
-                    bounds. However, providing lb and ub is encouraged. 
+                    be in form of {var: (val, lb, ub)}, where (val, lb, ub) passes the initial
+                    value, lower bound and upper bound of the var to be optimized. The user is
+                    allowed to skip lb and ub, in which case the var will be optimized with no
+                    bounds. However, providing lb and ub is encouraged.
 
     Returns: solver results of the optimization.
     """
@@ -187,10 +195,8 @@ def optimize_LCOW_fixed_prod_salinity(m,tee=False,prod_sal=0.1, mw=0.0585, **opt
         raise TypeError(
             "A model is expected to be fully defined at zero dof before being optimized."
         )
-    conc_mol= prod_sal/mw 
-    m.fs.prod.properties[0].conc_mol_phase_comp["Liq", "Na_+"].fix(
-        conc_mol
-    )
+    conc_mol = prod_sal / mw
+    m.fs.prod.properties[0].conc_mol_phase_comp["Liq", "Na_+"].fix(conc_mol)
     for opt_var in optargs:
         var = m.fs.find_component(str(opt_var))
         try:
@@ -213,21 +219,21 @@ def optimize_LCOW_fixed_prod_salinity(m,tee=False,prod_sal=0.1, mw=0.0585, **opt
             var.setlb(optargs[opt_var][1])
             var.setub(optargs[opt_var][2])
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
-    print("OPTDOF=",mstat.degrees_of_freedom(m))
+    print("OPTDOF=", mstat.degrees_of_freedom(m))
     assert mstat.degrees_of_freedom(m) == len(optargs) - 1
     result = solve(m, tee=tee)
     if not m.fs.EDstack.cell_pair_num.value.is_integer():
-        _log.warning("The ED cell pair number is not a integer after optimization "
-                     "and the model is to be re-solved at its closest integer value.")
+        _log.warning(
+            "The ED cell pair number is not a integer after optimization "
+            "and the model is to be re-solved at its closest integer value."
+        )
         print("===Outcome of first optimization===")
         display_model_metrics(m)
         m.fs.EDstack.cell_pair_num.fix(round(m.fs.EDstack.cell_pair_num.value))
     result = solve(m, tee=tee)
-    if result.solver.termination_condition=="maxIterations":
-            result=solve(m,tee=tee)
+    if result.solver.termination_condition == "maxIterations":
+        result = solve(m, tee=tee)
     return result
-
-
 
 
 def build():
@@ -315,7 +321,7 @@ def build():
         expr=m.fs.recovery_vol_H2O * m.fs.feed.properties[0].flow_vol_phase["Liq"]
         == m.fs.prod.properties[0].flow_vol_phase["Liq"]
     )
-   
+
     m.fs.eq_electrodialysis_equal_flow = Constraint(
         expr=m.fs.EDstack.diluate.properties[0, 0].flow_vol_phase["Liq"]
         == m.fs.EDstack.concentrate.properties[0, 0].flow_vol_phase["Liq"]
@@ -329,18 +335,18 @@ def build():
     m.fs.disp_salinity = Expression(
         expr=sum(
             m.fs.disp.properties[0].conc_mass_phase_comp["Liq", j]
-            for j in  m.fs.properties.solute_set
+            for j in m.fs.properties.solute_set
         )
     )
 
     m.fs.mem_area = Expression(
-        expr= m.fs.EDstack.cell_width
+        expr=m.fs.EDstack.cell_width
         * m.fs.EDstack.cell_length
         * m.fs.EDstack.cell_pair_num
     )
 
-    m.fs.voltage_lim = Expression( expr=
-        m.fs.EDstack.voltage_x[0, 0].value
+    m.fs.voltage_lim = Expression(
+        expr=m.fs.EDstack.voltage_x[0, 0].value
         / m.fs.EDstack.current_density_x[0, 0].value
         * m.fs.EDstack.current_dens_lim_x[0, 0].value
     )
@@ -368,14 +374,12 @@ def build():
     return m
 
 
-
-
 def _condition_base(m):
-    '''
+    """
     Internal function to set up a base condition of the ED system. This gives a zero dof
-    condition at reasonable values of all variables. Users can set up different intial 
+    condition at reasonable values of all variables. Users can set up different intial
     conditions by the "initialize_dof0_system" function.
-    '''
+    """
     # ---specifications---
     # Here is simulated a scenario of a defined EDstack and
     # specific water recovery and product salinity.
@@ -426,9 +430,7 @@ def _condition_base(m):
     m.fs.EDstack.current_utilization.fix(1)
     m.fs.EDstack.diffus_mass.fix(1.6e-9)
 
-    assert(mstat.degrees_of_freedom(m)==0)
-
-   
+    assert mstat.degrees_of_freedom(m) == 0
 
 
 def solve(blk, solver=None, tee=True, check_termination=False):
@@ -471,7 +473,7 @@ def initialize_system(m, solver=None, report_bad_scaling=False):
     iscale.constraint_scaling_transform(
         m.fs.eq_electrodialysis_equal_flow,
         10 * iscale.get_scaling_factor(m.fs.feed.properties[0].flow_vol_phase["Liq"]),
-    )  
+    )
     # populate intitial properties throughout the system
     m.fs.feed.initialize(optarg=optarg)
     propagate_state(m.fs.arc0)

@@ -52,9 +52,7 @@ from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 from watertap.costing.watertap_costing_package import WaterTAPCosting
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
-    
     ElectricalMobilityCalculation,
-    
 )
 import idaes.core.util.model_diagnostics as m_diag
 
@@ -73,22 +71,24 @@ def main():
     }
     init_arg = {
         ("flow_vol_phase", ("Liq")): 4.74e-4,
-        #("conc_mol_phase_comp", ("Liq", "Na_+")): 34.188, #mol Na per total m3 (mol/s Na divided by m3/s total in feed)
-        #("conc_mol_phase_comp", ("Liq", "Cl_-")): 34.188,
-        ("conc_mol_phase_comp", ("Liq", "Na_+")): 1.968, #mol Na per total m3 (mol/s Na divided by m3/s total in feed)
+        # ("conc_mol_phase_comp", ("Liq", "Na_+")): 34.188, #mol Na per total m3 (mol/s Na divided by m3/s total in feed)
+        # ("conc_mol_phase_comp", ("Liq", "Cl_-")): 34.188,
+        (
+            "conc_mol_phase_comp",
+            ("Liq", "Na_+"),
+        ): 1.968,  # mol Na per total m3 (mol/s Na divided by m3/s total in feed)
         ("conc_mol_phase_comp", ("Liq", "Cl_-")): 1.968,
-        ("conc_mol_phase_comp", ("Liq", "Ca_2+")): 0.178, 
+        ("conc_mol_phase_comp", ("Liq", "Ca_2+")): 0.178,
         ("conc_mol_phase_comp", ("Liq", "SO4_2-")): 0.178,
-        
-    } 
-    #initarg = make_initarg_list([9],flow_rate_vol=1.04e-3)
+    }
+    # initarg = make_initarg_list([9],flow_rate_vol=1.04e-3)
     initialize_dof0_system(
         m=m, initargs=init_arg, solve_after_init=True, **deci_var_dict
     )
     print("===INITIALIZE OUTCOME")
     display_model_metrics(m)
 
-    '''
+    """
     opt_var_dict = {
         "voltage_applied[0]": (10, 0, value(m.fs.voltage_lim)),
         "cell_pair_num": (100, 1, 10000),
@@ -103,7 +103,7 @@ def main():
     print("===OPTIMIZE OUTCOME")
     display_model_metrics(m)
     print(f"Final opt solver condition is {opt_res.solver.termination_condition}.")
-    '''
+    """
     dh = m_diag.DegeneracyHunter(m)
     dh.check_residuals(tol=1e-8)
 
@@ -254,12 +254,26 @@ def build():
     m.fs = FlowsheetBlock(dynamic=False)
     ion_dict = {
         "solute_list": ["Na_+", "Cl_-", "Ca_2+", "SO4_2-"],
-        "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3,"Ca_2+": 40.1e-3, "SO4_2-": 96.1e-3},
-        #"elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8,("Liq", "SO4_2-"): 8.27e-8,},
-        "diffusivity_data": {("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9, ("Liq", "Ca_2+"): 0.793e-9,("Liq", "SO4_2-"): 1.07e-9,},#https://www.aqion.de/site/diffusion-coefficients
+        "mw_data": {
+            "H2O": 18e-3,
+            "Na_+": 23e-3,
+            "Cl_-": 35.5e-3,
+            "Ca_2+": 40.1e-3,
+            "SO4_2-": 96.1e-3,
+        },
+        # "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8,("Liq", "SO4_2-"): 8.27e-8,},
+        "diffusivity_data": {
+            ("Liq", "Na_+"): 1.33e-9,
+            ("Liq", "Cl_-"): 2.03e-9,
+            ("Liq", "Ca_2+"): 0.793e-9,
+            ("Liq", "SO4_2-"): 1.07e-9,
+        },  # https://www.aqion.de/site/diffusion-coefficients
         "charge": {"Na_+": 1, "Cl_-": -1, "Ca_2+": 2, "SO4_2-": -2},
     }
-    m.fs.properties = MCASParameterBlock(**ion_dict, elec_mobility_calculation=ElectricalMobilityCalculation.EinsteinRelation,)
+    m.fs.properties = MCASParameterBlock(
+        **ion_dict,
+        elec_mobility_calculation=ElectricalMobilityCalculation.EinsteinRelation,
+    )
     m.fs.costing = WaterTAPCosting()
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.sepa0 = Separator(

@@ -62,13 +62,15 @@ def main():
     # A fully-defined system simulation, dof=0
     init_arg = {
         ("flow_vol_phase", ("Liq")): 4.74e-4,
-        #("conc_mol_phase_comp", ("Liq", "Na_+")): 34.188, #mol Na per total m3 (mol/s Na divided by m3/s total in feed)
-        #("conc_mol_phase_comp", ("Liq", "Cl_-")): 34.188,
-        ("conc_mol_phase_comp", ("Liq", "Na_+")): 1.968, #mol Na per total m3 (mol/s Na divided by m3/s total in feed)
+        # ("conc_mol_phase_comp", ("Liq", "Na_+")): 34.188, #mol Na per total m3 (mol/s Na divided by m3/s total in feed)
+        # ("conc_mol_phase_comp", ("Liq", "Cl_-")): 34.188,
+        (
+            "conc_mol_phase_comp",
+            ("Liq", "Na_+"),
+        ): 1.968,  # mol Na per total m3 (mol/s Na divided by m3/s total in feed)
         ("conc_mol_phase_comp", ("Liq", "Cl_-")): 1.968,
-        ("conc_mol_phase_comp", ("Liq", "Ca_2+")): 0.178, 
+        ("conc_mol_phase_comp", ("Liq", "Ca_2+")): 0.178,
         ("conc_mol_phase_comp", ("Liq", "SO4_2-")): 0.178,
-        
     }  # Corresponding to C_feed = 2g/L
     m.fs.feed.properties.calculate_state(
         init_arg,
@@ -85,7 +87,7 @@ def main():
     display_model_metrics(m)
 
     # Perform an optimization over cell_length, cell_pair_mum, and voltage_applied
-    '''
+    """
     ed = m.fs.EDstack
     ulim = (
         ed.voltage_x[0, 0].value
@@ -124,7 +126,7 @@ def main():
     solve(m, solver=solver, tee=True)
     print("\n***---Optimization results, Product conc = 100 ppb---***")
     display_model_metrics(m)
-'''
+"""
     return m
 
 
@@ -132,19 +134,34 @@ def build():
     # ---building model---
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-#    ion_dict = {
- #       "solute_list": ["Na_+", "Cl_-"],
-  #      "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
-   #     "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
+    #    ion_dict = {
+    #       "solute_list": ["Na_+", "Cl_-"],
+    #      "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
+    #     "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
     #    "diffusivity_data": {("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9},
-     #   "charge": {"Na_+": 1, "Cl_-": -1},
-    #}
+    #   "charge": {"Na_+": 1, "Cl_-": -1},
+    # }
     ion_dict = {
         "solute_list": ["Na_+", "Cl_-", "Ca_2+", "SO4_2-"],
-        "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3, "Ca_2+": 40.1e-3,
-                    "SO4_2-": 96.1e-3},
-        "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8, ("Liq", "Ca_2+"): 6.17e-8, ("Liq", "SO4_2-"): 8.29e-8},
-        "diffusivity_data": {("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9, ("Liq", "Ca_2+"): 1.33e-9, ("Liq", "SO4_2-"): 2.03e-9}, #FIND FOR Ca and SO4!
+        "mw_data": {
+            "H2O": 18e-3,
+            "Na_+": 23e-3,
+            "Cl_-": 35.5e-3,
+            "Ca_2+": 40.1e-3,
+            "SO4_2-": 96.1e-3,
+        },
+        "elec_mobility_data": {
+            ("Liq", "Na_+"): 5.19e-8,
+            ("Liq", "Cl_-"): 7.92e-8,
+            ("Liq", "Ca_2+"): 6.17e-8,
+            ("Liq", "SO4_2-"): 8.29e-8,
+        },
+        "diffusivity_data": {
+            ("Liq", "Na_+"): 1.33e-9,
+            ("Liq", "Cl_-"): 2.03e-9,
+            ("Liq", "Ca_2+"): 1.33e-9,
+            ("Liq", "SO4_2-"): 2.03e-9,
+        },  # FIND FOR Ca and SO4!
         "charge": {"Na_+": 1, "Cl_-": -1, "Ca_2+": 2, "SO4_2-": -2},
     }
     m.fs.properties = MCASParameterBlock(**ion_dict)
@@ -173,9 +190,9 @@ def build():
         finite_elements=20,
         has_pressure_change=True,
         has_nonohmic_potential_membrane=False,
-        #has_nonohmic_potential_membrane=False,
+        # has_nonohmic_potential_membrane=False,
         has_Nernst_diffusion_layer=False,
-        #has_Nernst_diffusion_layer=False,
+        # has_Nernst_diffusion_layer=False,
         limiting_current_density_method=LimitingCurrentDensityMethod.Theoretical,
         pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
         hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
@@ -331,7 +348,7 @@ def condition_base(m):
     m.fs.EDstack.cell_pair_num.fix(56)
     m.fs.EDstack.channel_height.fix(7.1e-4)
     m.fs.EDstack.cell_width.fix(0.197)
-    #m.fs.EDstack.cell_length.fix(1.68)
+    # m.fs.EDstack.cell_length.fix(1.68)
     m.fs.EDstack.cell_length.fix(5)
 
     # Spacer properties
