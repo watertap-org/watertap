@@ -21,8 +21,6 @@ from idaes.core.solvers import get_solver
 
 from idaes.core.surrogate.pysmo import sampling
 from pyomo.common.deprecation import deprecation_warning
-
-# from pyomo.common.tee import capture_output
 from pyomo.common.config import ConfigValue
 from pyomo.common.modeling import unique_component_name
 from pyomo.core.base import _VarData, _ExpressionData
