@@ -68,8 +68,8 @@ def main():
     m.obj = Objective(expr=0)
     deci_var_dict = {
         "voltage_applied[0]": 10,
-        "recovery_vol_H2O": 0.65,
-        "channel_height": 1e-3,
+        "recovery_vol_H2O": 0.6,
+        "channel_height": 0.7e-3,
     }
     init_arg = {
         ("flow_vol_phase", ("Liq")): 4.74e-4,
@@ -286,9 +286,10 @@ def build():
         operation_mode=ElectricalOperationMode.Constant_Voltage,
         finite_elements=20,
         has_pressure_change=True,
+        calculate_limiting_current_density=True,
         has_nonohmic_potential_membrane=False,
         has_Nernst_diffusion_layer=False,
-        limiting_current_density_method=LimitingCurrentDensityMethod.Theoretical,
+        limiting_current_density_method=LimitingCurrentDensityMethod.InitialValue,
         pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
         hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
         friction_factor_method=FrictionFactorMethod.Gurreri,
