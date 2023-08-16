@@ -41,6 +41,7 @@ class RayIoParallelManager(ParallelManager):
         self.running_futures = dict()
         # TODO: this should be deprciated once max resource option is avaiable
         self.cluster_mode = False
+        create_paramActor_class()
 
     def is_root_process(self):
         return True
@@ -190,4 +191,5 @@ def create_paramActor_class():
                 local_parameters,
                 self.execute(local_parameters),
             )
-     return paramActor
+
+    return paramActor

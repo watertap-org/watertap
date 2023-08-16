@@ -16,10 +16,14 @@ from watertap.tools.parameter_sweep.sampling_types import NormalSample
 from watertap.tools.parameter_sweep.parameter_sweep import (
     _ParameterSweepBase,
     ParameterSweep,
+    return_none,
 )
 from watertap.tools.parallel.single_process_parallel_manager import (
     SingleProcessParallelManager,
 )
+
+
+from pyomo.common.deprecation import deprecation_warning
 
 
 class DifferentialParameterSweep(_ParameterSweepBase):
@@ -322,6 +326,9 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             reinitialize_before_sweep=self.config.reinitialize_before_sweep,
             parallel_manager_class=SingleProcessParallelManager,
         )
+        # pass model_manager from refernce sweep, to diff sweep
+        # so we don't have to reijnit he model
+        diff_ps.model_manager = self.model_manager
 
         _, differential_sweep_output_dict = diff_ps.parameter_sweep(
             model,
@@ -347,7 +354,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             local_output_dict,
         )
         self.differential_sweep_output_dict[k] = self._run_differential_sweep(
-            self.model, local_value_k
+            self.model_manager.model, local_value_k
         )
 
         return run_successful
@@ -368,20 +375,73 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
     def parameter_sweep(
         self,
-        model,
-        sweep_params,
-        outputs=None,
+        build_model,
+        build_sweep_params,
+        build_outputs=None,
+        build_outputs_kwargs=dict(),
         num_samples=None,
         seed=None,
+        build_model_kwargs=dict(),
+        build_sweep_params_kwargs=dict(),
     ):
         # Create a base sweep_params
+        build_model_kwargs = (
+            build_model_kwargs if build_model_kwargs is not None else dict()
+        )
+        build_sweep_params_kwargs = (
+            build_sweep_params_kwargs
+            if build_sweep_params_kwargs is not None
+            else dict()
+        )
+
+        if not callable(build_model):
+            _model = build_model
+            build_model = lambda: _model
+            deprecation_warning(
+                "Passing a model directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+
+        if not callable(build_sweep_params):
+            _sweep_params = build_sweep_params
+            build_sweep_params = lambda model: _sweep_params
+            deprecation_warning(
+                "Passing sweep params directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+
+        if build_outputs is None:
+            build_outputs = return_none
+
+        if not callable(build_outputs):
+            _combined_outputs = build_outputs
+            build_outputs = lambda model: _combined_outputs
+            deprecation_warning(
+                "Passing the output dict directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+        # This should be depreciated in future versions
+        self.config.build_model = build_model
+        self.config.build_sweep_params = build_sweep_params
+        self.config.build_outputs = build_outputs
+        self.config.build_outputs_kwargs = build_outputs_kwargs
+        self.config.build_model_kwargs = build_model_kwargs
+        self.config.build_sweep_params_kwargs = build_sweep_params_kwargs
+
+        model = build_model(**build_model_kwargs)
+        sweep_params = build_sweep_params(model, **build_sweep_params_kwargs)
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
 
         # Check if the keys in the differential sweep specs exist in sweep params
         self._check_differential_sweep_key_validity(sweep_params)
 
         # Define differential sweep outputs
-        self.outputs = outputs
+        self.outputs = self.config.build_outputs(
+            model, *self.config.build_outputs_kwargs
+        )
         self._define_differential_sweep_outputs(sweep_params)
 
         # Set the seed before sampling
@@ -398,8 +458,8 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         self.n_nominal_local = np.shape(local_values)[0]
 
         # Check if the outputs have the name attribute. If not, assign one.
-        if outputs is not None:
-            self.assign_variable_names(model, outputs)
+        if self.outputs is not None:
+            self.assign_variable_names(model, self.outputs)
 
         # Create a dictionary to store all the differential ps_objects
         self.diff_ps_dict = {}
@@ -409,14 +469,14 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             local_results_dict = self._do_param_sweep(
                 model,
                 sweep_params,
-                outputs,
+                self.outputs,
                 local_values,
             )
         else:
             local_results_dict = self.config.custom_do_param_sweep(
                 model,
                 sweep_params,
-                outputs,
+                self.outputs,
                 local_values,
                 **self.config.custom_do_param_sweep_kwargs,
             )

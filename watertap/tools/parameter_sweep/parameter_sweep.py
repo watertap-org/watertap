@@ -31,6 +31,8 @@ from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSa
 
 from watertap.tools.parallel.parallel_manager_factory import create_parallel_manager
 
+from watertap.tools.parameter_sweep.model_manager import ModelManager
+
 
 def _default_optimize(model, options=None, tee=False):
     """
@@ -58,7 +60,7 @@ class _ParameterSweepBase(ABC):
     CONFIG.declare(
         "build_model",
         ConfigValue(
-            default=_default_optimize,
+            default=None,
             # domain=function,
             description="Function for building the model.",
         ),
@@ -248,10 +250,9 @@ class _ParameterSweepBase(ABC):
         **options,
     ):
         parallel_manager_class = options.pop("parallel_manager_class", None)
-
-        self.config = self.CONFIG(options)
         self.model = None
-        self.model_not_initialized = True
+        self.model_manager = None
+        self.config = self.CONFIG(options)
         self.parallel_manager = create_parallel_manager(
             parallel_manager_class=parallel_manager_class,
             number_of_subprocesses=self.config.number_of_subprocesses,
@@ -610,9 +611,6 @@ class _ParameterSweepBase(ABC):
         return global_output_dict
 
     def _param_sweep_kernel(self, sweep_params, local_value_k):
-        optimize_function = self.config.optimize_function
-        optimize_kwargs = self.config.optimize_kwargs
-        build_model = self.config.build_model
         build_model_kwargs = self.config.build_model_kwargs
         initialize_function = self.config.initialize_function
         initialize_kwargs = self.config.initialize_kwargs
@@ -684,6 +682,16 @@ class _ParameterSweepBase(ABC):
         else:
             self.model_not_initialized = False
         return run_successful
+        # if model failed to solve from a pre-solved state, lets try
+        # to re-init and solve again
+        if (
+            self.model_manager.is_solved == False
+            and self.model_manager.is_presolved == True
+        ):
+            self.model_manager.build_and_init(sweep_params, local_value_k)
+            self.model_manager.update_model_params(sweep_params, local_value_k)
+            results = self.model_manager.solve_model()
+        return self.model_manager.is_solved
 
     def _run_sample(
         self,
@@ -693,9 +701,11 @@ class _ParameterSweepBase(ABC):
         local_output_dict,
     ):
         # Update model parmeters for record keeping and probe testing
-        self._update_model_values(self.model, sweep_params, local_value_k)
+        self._update_model_values(self.model_manager.model, sweep_params, local_value_k)
 
-        if self.config.probe_function is None or self.config.probe_function(self.model):
+        if self.config.probe_function is None or self.config.probe_function(
+            self.model_manager.model
+        ):
             run_successful = self._param_sweep_kernel(
                 sweep_params,
                 local_value_k,
@@ -707,7 +717,7 @@ class _ParameterSweepBase(ABC):
 
         # Update the loop based on the reinitialization
         self._update_local_output_dict(
-            self.model,
+            self.model_manager.model,
             sweep_params,
             k,
             run_successful,
@@ -716,25 +726,21 @@ class _ParameterSweepBase(ABC):
         return run_successful
 
     def _do_param_sweep(self, model, sweep_params, outputs, local_values):
-        # Initialize space to hold results
-        # set the model to model being sweeped, if its not created
-        if self.model is None:
-            self.model = model
-            initialize_function = self.config.initialize_function
-            initialize_kwargs = self.config.initialize_kwargs
-            if initialize_function is not None and self.model_not_initialized:
-                try:
-                    initialize_function(self.model, **initialize_kwargs)
-                    self.model_not_initialized = False
-                except TypeError:
-                    raise
-                except:
-                    pass
+        # setup model manager with given model
+        if self.model_manager == None:
+            self.model_manager = ModelManager(self)
+
+        # build and init model, we also pass first set of paramters incase user wants
+        # to update them before initlizeing the model
+        self.model_manager.build_and_init(
+            params=sweep_params, local_value_k=local_values[0, :]
+        )
+
         local_num_cases = np.shape(local_values)[0]
 
         # Create the output skeleton for storing detailed data
         local_output_dict = self._create_local_output_skeleton(
-            self.model, sweep_params, outputs, local_num_cases
+            self.model_manager.model, sweep_params, outputs, local_num_cases
         )
 
         local_solve_successful_list = []

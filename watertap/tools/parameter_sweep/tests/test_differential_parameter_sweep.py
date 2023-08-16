@@ -32,6 +32,10 @@ from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _assert_h5_csv_agreement,
     _optimization,
     _reinitialize,
+    build_model,
+    build_model_for_tps,
+    build_sweep_params_for_tps,
+    build_outputs_for_tps,
 )
 import watertap.tools.MPI as MPI
 
@@ -217,16 +221,16 @@ def test_bad_differential_sweep_specs(model, tmp_path):
         },
     }
 
-    A = m.fs.input["a"]
-    B = m.fs.input["b"]
-    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+    # A = m.fs.input["a"]
+    # B = m.fs.input["b"]
+    # sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
 
     ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
     with pytest.raises(ValueError):
         ps.parameter_sweep(
-            m,
-            sweep_params,
-            outputs=None,
+            build_model,
+            build_sweep_params_for_tps,
+            build_outputs=None,
             seed=0,
         )
 
@@ -285,8 +289,6 @@ def test_differential_parameter_sweep(model, tmp_path):
 
     A = m.fs.input["a"]
     B = m.fs.input["b"]
-    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-
     differential_sweep_specs = {
         A.name: {
             "diff_mode": "sum",
@@ -310,13 +312,14 @@ def test_differential_parameter_sweep(model, tmp_path):
         interpolate_nan_outputs=True,
         optimize_function=_optimization,
         differential_sweep_specs=differential_sweep_specs,
+        initialize_function=_reinitialize,
     )
 
     # Call the parameter_sweep function
     global_results_dict, _ = ps.parameter_sweep(
-        m,
-        sweep_params,
-        outputs=None,
+        build_model,
+        build_sweep_params_for_tps,
+        build_outputs=None,
         seed=0,
     )
 
@@ -753,7 +756,7 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
     global_results_dict, _ = ps.parameter_sweep(
         m,
         sweep_params,
-        outputs=None,
+        build_outputs=None,
         seed=0,
     )
 
@@ -1310,15 +1313,16 @@ def test_differential_parameter_sweep_function(model, tmp_path):
 
     # Call the parameter_sweep function
     global_results_dict, _ = differential_parameter_sweep(
-        model,
-        sweep_params,
+        build_model,
+        build_sweep_params_for_tps,
         differential_sweep_specs,
-        outputs=None,
+        build_outputs=None,
         csv_results_file_name=csv_results_file_name,
         h5_results_file_name=h5_results_file_name,
         debugging_data_dir=tmp_path,
         interpolate_nan_outputs=True,
         optimize_function=_optimization,
+        initialize_function=_reinitialize,
         seed=0,
     )
 
