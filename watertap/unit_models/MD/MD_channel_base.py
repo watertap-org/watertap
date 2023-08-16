@@ -15,8 +15,8 @@ Base constraints and methods for membrane distillation channel
 __author__ = "Elmira Shamlou"
 
 """
+from copy import deepcopy
 from enum import Enum, auto
-from pyomo.common.config import Bool, ConfigDict, ConfigValue, ConfigBlock, In
 from pyomo.environ import (
     Constraint,
     Param,
@@ -26,10 +26,6 @@ from pyomo.environ import (
 )
 from idaes.core import (
     FlowDirection,
-    EnergyBalanceType,
-    MaterialBalanceType,
-    MomentumBalanceType,
-    useDefault,
 )
 from idaes.core.util import scaling as iscale
 from idaes.core.util.config import is_physical_parameter_block
@@ -95,257 +91,6 @@ class FrictionFactor(Enum):
     spiral_wound = auto()
 
 
-CONFIG_Template = ConfigBlock()
-
-CONFIG_Template.declare(
-    "dynamic",
-    ConfigValue(
-        default=False,
-        domain=In([False]),
-        description="Dynamic model flag - must be False",
-        doc="""Indicates whether this model will be dynamic or not.
-**default** - False. Membrane units do not yet support dynamic
-behavior.""",
-    ),
-)
-
-CONFIG_Template.declare(
-    "has_holdup",
-    ConfigValue(
-        default=False,
-        domain=In([False]),
-        description="Holdup construction flag - must be False",
-        doc="""Indicates whether holdup terms should be constructed or not.
-**default** - False. Membrane units do not have defined volume, thus
-this must be False.""",
-    ),
-)
-
-CONFIG_Template.declare(
-    "property_package",
-    ConfigValue(
-        default=useDefault,
-        domain=is_physical_parameter_block,
-        description="Property package to use for control volume",
-        doc="""Property parameter object used to define property calculations,
-**default** - useDefault.
-**Valid values:** {
-**useDefault** - use default package from parent model or flowsheet,
-**PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
-    ),
-)
-
-CONFIG_Template.declare(
-    "property_package_args",
-    ConfigDict(
-        implicit=True,
-        description="Arguments to use for constructing property packages",
-        doc="""A ConfigDict with arguments to be passed to a property block(s)
-and used when constructing these.
-**default** - None.
-**Valid values:** {
-see property package for documentation.}""",
-    ),
-)
-
-CONFIG_Template.declare(
-    "material_balance_type",
-    ConfigValue(
-        default=MaterialBalanceType.useDefault,
-        domain=In(MaterialBalanceType),
-        description="Material balance construction flag",
-        doc="""Indicates what type of mass balance should be constructed,
-**default** - useDefault.
-**Valid values:** {
-**MaterialBalanceType.useDefault** - refer to property package for default
-balance type
-**MaterialBalanceType.none** - exclude material balances,
-**MaterialBalanceType.componentPhase** - use phase component balances,
-**MaterialBalanceType.componentTotal** - use total component balances,
-**MaterialBalanceType.elementTotal** - use total element balances,
-**MaterialBalanceType.total** - use total material balance.}""",
-    ),
-)
-
-CONFIG_Template.declare(
-    "energy_balance_type",
-    ConfigValue(
-        default=EnergyBalanceType.useDefault,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed.
-**default** - useDefault.
-**Valid values:** {
-**EnergyBalanceType.useDefault** - refer to property package for default
-balance type
-**EnergyBalanceType.none** - exclude energy balances,
-**EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
-**EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
-**EnergyBalanceType.energyTotal** - single energy balance for material,
-**EnergyBalanceType.energyPhase** - energy balances for each phase.}""",
-    ),
-)
-
-CONFIG_Template.declare(
-    "momentum_balance_type",
-    ConfigValue(
-        default=MomentumBalanceType.pressureTotal,
-        domain=In(MomentumBalanceType),
-        description="Momentum balance construction flag",
-        doc="""Indicates what type of momentum balance should be constructed,
-**default** - MomentumBalanceType.pressureTotal.
-**Valid values:** {
-**MomentumBalanceType.none** - exclude momentum balances,
-**MomentumBalanceType.pressureTotal** - single pressure balance for material,
-**MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-**MomentumBalanceType.momentumTotal** - single momentum balance for material,
-**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}""",
-    ),
-)
-
-CONFIG_Template.declare(
-    "flow_direction",
-    ConfigValue(
-        default=FlowDirection.forward,
-        domain=In(FlowDirection),
-        description="Direction of flow",
-        doc="""
-        Options for the direction of flow:
-
-        **default** - ``FlowDirection.forward``
-
-    .. csv-table::
-        :header: "Configuration Options", "Description"
-
-        "``FlowDirection.forward``", "Flow is in the forward direction"
-        "``FlowDirection.backward``", "Flow is in the backward direction"
-        """,
-    ),
-)
-
-CONFIG_Template.declare(
-    "temperature_polarization_type",
-    ConfigValue(
-        default=TemperaturePolarizationType.calculated,
-        domain=In(TemperaturePolarizationType),
-        description="External temperature polarization effect",
-        doc="""
-        Options to account for temperature polarization.
-
-        **default** - ``TemperaturePolarizationType.calculated``
-
-    .. csv-table::
-        :header: "Configuration Options", "Description"
-
-        "``TemperaturePolarizationType.none``", "Simplifying assumption to ignore temperature polarization"
-        "``TemperaturePolarizationType.fixed``", "Specify an estimated value for the temperature polarization modulus"
-        "``TemperaturePolarizationType.calculated``", "Allow model to perform calculation of membrane-interface temperature"
-    """,
-    ),
-)
-
-CONFIG_Template.declare(
-    "concentration_polarization_type",
-    ConfigValue(
-        default=ConcentrationPolarizationType.calculated,
-        domain=In(ConcentrationPolarizationType),
-        description="External concentration polarization effect in RO",
-        doc="""
-        Options to account for concentration polarization.
-
-        **default** - ``ConcentrationPolarizationType.calculated``
-
-    .. csv-table::
-        :header: "Configuration Options", "Description"
-
-        "``ConcentrationPolarizationType.none``", "Simplifying assumption to ignore concentration polarization"
-        "``ConcentrationPolarizationType.fixed``", "Specify an estimated value for the concentration polarization modulus"
-        "``ConcentrationPolarizationType.calculated``", "Allow model to perform calculation of membrane-interface concentration"
-    """,
-    ),
-)
-
-CONFIG_Template.declare(
-    "mass_transfer_coefficient",
-    ConfigValue(
-        default=MassTransferCoefficient.calculated,
-        domain=In(MassTransferCoefficient),
-        description="Mass transfer coefficient in RO feed channel",
-        doc="""
-        Options to account for mass transfer coefficient.
-
-        **default** - ``MassTransferCoefficient.calculated``
-
-    .. csv-table::
-        :header: "Configuration Options", "Description"
-
-        "``MassTransferCoefficient.none``", "Mass transfer coefficient not used in calculations"
-        "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
-        "``MassTransferCoefficient.calculated``", "Allow model to perform calculation of mass transfer coefficient"
-    """,
-    ),
-)
-
-CONFIG_Template.declare(
-    "has_pressure_change",
-    ConfigValue(
-        default=False,
-        domain=Bool,
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-constructed,
-**default** - False.
-**Valid values:** {
-**True** - include pressure change terms,
-**False** - exclude pressure change terms.}""",
-    ),
-)
-
-CONFIG_Template.declare(
-    "pressure_change_type",
-    ConfigValue(
-        default=PressureChangeType.fixed_per_stage,
-        domain=In(PressureChangeType),
-        description="Pressure change term construction flag",
-        doc="""
-    Indicates what type of pressure change calculation will be made. To use any of the
-    ``pressure_change_type`` options to account for pressure drop, the configuration keyword
-    ``has_pressure_change`` must also be set to ``True``. Also, if a value is specified for pressure
-    change, it should be negative to represent pressure drop.
-
-    **default** - ``PressureChangeType.fixed_per_stage`` 
-
-    .. csv-table::
-        :header: "Configuration Options", "Description"
-    
-        "``PressureChangeType.fixed_per_stage``", "Specify an estimated value for pressure drop across the membrane feed channel"
-        "``PressureChangeType.fixed_per_unit_length``", "Specify an estimated value for pressure drop per unit length across the membrane feed channel"
-        "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
-    """,
-    ),
-)
-
-CONFIG_Template.declare(
-    "friction_factor",
-    ConfigValue(
-        default=FrictionFactor.flat_sheet,
-        domain=In(FrictionFactor),
-        description="Darcy friction factor correlation",
-        doc="""
-        Options to account for friction factor correlations.
-
-        **default** - ``FrictionFactor.flat_sheet`` 
-
-    .. csv-table::
-        :header: "Configuration Options", "Description"
-
-        "``FrictionFactor.flat_sheet``", "Friction factor correlation for flat-sheet membrane modules"
-        "``FrictionFactor.spiral_wound``", "Friction factor correlation for spiral-wound membranes"
-    """,
-    ),
-)
-
-
 class MDChannelMixin:
     def _skip_element(self, x):
         raise NotImplementedError()
@@ -359,6 +104,33 @@ class MDChannelMixin:
             units=pyunits.dimensionless,
             doc="Number of finite elements",
         )
+
+    def add_total_pressure_balances(
+        self,
+        has_pressure_change=True,
+        pressure_change_type=PressureChangeType.calculated,
+        custom_term=None,
+        friction_factor=FrictionFactor.flat_sheet,
+    ):
+        super().add_total_pressure_balances(
+            has_pressure_change=has_pressure_change, custom_term=custom_term
+        )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.length_domain,
+            doc="Pressure at interface",
+        )
+        def eq_equal_pressure_interface(b, t, x):
+            if b._skip_element(x):
+                return Constraint.Skip
+            return b.properties_interface[t, x].pressure == b.properties[t, x].pressure
+
+        if has_pressure_change:
+            self._add_pressure_change(pressure_change_type=pressure_change_type)
+
+        if pressure_change_type == PressureChangeType.calculated:
+            self._add_calculated_pressure_change(friction_factor=friction_factor)
 
     def add_temperature_polarization(
         self,
@@ -400,7 +172,7 @@ class MDChannelMixin:
             domain=NonNegativeReals,
             units=units_meta("power")
             * units_meta("length") ** -2
-            * units_meta("temperature_difference") ** -1,
+            * units_meta("temperature") ** -1,
             doc="Convective heat transfer coefficient",
         )
 
@@ -811,6 +583,32 @@ class MDChannelMixin:
             **tmp_dict,
         )
 
+    def _add_vapor_stateblock(
+        self,
+        property_package_vapor=None,
+        property_package_args_vapor=None,
+        has_phase_equilibrium=None,
+    ):
+        """
+        This method constructs the vapor state blocks for the
+        control volume.
+        """
+        if property_package_vapor is None or property_package_args_vapor is None:
+            raise ValueError(
+                "Vapor property package and its arguments must be provided."
+            )
+
+        tmp_dict = dict(**property_package_args_vapor)
+        tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
+        tmp_dict["defined_state"] = False  # these blocks are not inlets or outlets
+
+        self.properties_vapor = property_package_vapor.build_state_block(
+            self.flowsheet().config.time,
+            self.length_domain,
+            doc="Material properties of vapor phase",
+            **tmp_dict,
+        )
+
     def add_extensive_flow_to_interface(self):
         # VOLUMETRIC FLOWRATE
         @self.Constraint(
@@ -825,6 +623,87 @@ class MDChannelMixin:
                 b.properties_interface[t, x].flow_vol_phase["Liq"]
                 == b.properties[t, x].flow_vol_phase["Liq"]
             )
+
+    def _get_state_args(self, initialize_guess, state_args):
+        """
+        Arguments:
+            initialize_guess : a dict of guesses for recovery and Temp_change_ratio.
+            state_args : a dict of arguments to be passed to the property
+                        package to provide an initial state for the inlet feed.
+        """
+
+        if initialize_guess is None:
+            initialize_guess = {}
+
+        if "recovery" not in initialize_guess:
+            initialize_guess["recovery"] = 0.5
+
+        Temp_change_ratio = initialize_guess.get("Temp_change_ratio", 3.0)
+
+        # Getting source state
+        if self._flow_direction == FlowDirection.forward:
+            source_idx = self.length_domain.first()
+        else:
+            source_idx = self.length_domain.last()
+        source = self.properties[self.flowsheet().config.time.first(), source_idx]
+
+        if state_args is None:
+            state_args = {}
+            state_dict = source.define_port_members()
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
+        hot_outlet_args = deepcopy(state_args)
+        cold_outlet_args = deepcopy(state_args)
+
+        # Adjust flow based on recovery
+        for j in self.config.property_package.component_set:
+            hot_outlet_args["flow_mass_phase_comp"]["Liq", j] *= (
+                1 - initialize_guess["recovery"]
+            )
+            cold_outlet_args["flow_mass_phase_comp"]["Liq", j] *= (
+                1 + initialize_guess["recovery"]
+            )
+
+        # Adjust temperature based on Temp_change_ratio
+        hot_outlet_args["temperature"] = state_args["temperature"] / Temp_change_ratio
+        cold_outlet_args["temperature"] = state_args["temperature"] * Temp_change_ratio
+
+        return {
+            "inlet": state_args,
+            "hot_outlet": hot_outlet_args,
+            "cold_outlet": cold_outlet_args,
+        }
+
+    def _get_average_state(self, prop_in, prop_out):
+        """Helper function to compute average of two property states"""
+        x = 0.5
+        state_args_tx = {}
+
+        for k in prop_in:
+            if isinstance(prop_in[k], dict):
+                if k not in state_args_tx:
+                    state_args_tx[k] = {}
+                for index in prop_in[k]:
+                    state_args_tx[k][index] = (1.0 - x) * prop_in[k][
+                        index
+                    ] + x * prop_out[k][index]
+            else:
+                state_args_tx[k] = (1.0 - x) * prop_in[k] + x * prop_out[k]
+
+        return state_args_tx
+
+    def _get_state_args_interface(self, prop_in, prop_out):
+        return self._get_average_state(prop_in, prop_out)
+
+    def _get_state_args_vapor(self, prop_in, prop_out):
+        return self._get_average_state(prop_in, prop_out)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
