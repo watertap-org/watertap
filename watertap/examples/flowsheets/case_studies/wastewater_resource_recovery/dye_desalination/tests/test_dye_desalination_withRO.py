@@ -115,7 +115,7 @@ class TestDyewithROFlowsheetwithPretreatment:
     def test_costing(self, system_frame):
         m, include_pretreatment = system_frame
 
-        add_costing(m, include_pretreatment, dye_revenue=False)
+        add_costing(m, include_pretreatment, has_dye_revenue=False)
         initialize_costing(m)
         optimize_operation(m)
 
@@ -205,7 +205,7 @@ class TestDyewithROFlowsheetwithoutPretreatment:
     def test_costing(self, system_frame):
         m, include_pretreatment = system_frame
 
-        add_costing(m, include_pretreatment, dye_revenue=False)
+        add_costing(m, include_pretreatment, has_dye_revenue=False)
         initialize_costing(m)
         optimize_operation(m)
 

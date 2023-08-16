@@ -736,7 +736,7 @@ def build_flowsheet():
     results = solve(m)
     assert_optimal_termination(results)
 
-    add_costing(m, include_pretreatment, dye_revenue=False)
+    add_costing(m, include_pretreatment, has_dye_revenue=False)
     assert_degrees_of_freedom(m, 0)
 
     results = solve(m)

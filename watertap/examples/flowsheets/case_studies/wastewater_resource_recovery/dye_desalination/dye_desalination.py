@@ -56,7 +56,7 @@ def main():
 
     display_results(m)
 
-    add_costing(m, dye_revenue=False)
+    add_costing(m, has_dye_revenue=False)
     assert_degrees_of_freedom(m, 0)
 
     results = solve(m, checkpoint="solve flowsheet after costing")
@@ -149,7 +149,7 @@ def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     return results
 
 
-def add_costing(m, dye_revenue=False):
+def add_costing(m, has_dye_revenue=False):
     # initialize block
     dye_sep = m.fs.dye_separation
 
@@ -186,7 +186,7 @@ def add_costing(m, dye_revenue=False):
         doc="Cost of disposing of saline brine/ NF permeate",
     )
 
-    if dye_revenue == True:
+    if has_dye_revenue == True:
         m.fs.dye_value = Expression(
             expr=(
                 m.fs.zo_costing.utilization_factor
@@ -196,10 +196,10 @@ def add_costing(m, dye_revenue=False):
                     to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
                 )
             ),
-            doc="Profit from recovering dye",
+            doc="Revenue from recovering dye",
         )
     # Note: this is multiplied by -1 since the sign is handled implicitly
-    elif dye_revenue == False:
+    elif has_dye_revenue == False:
         m.fs.dye_value = Expression(
             expr=(
                 -1

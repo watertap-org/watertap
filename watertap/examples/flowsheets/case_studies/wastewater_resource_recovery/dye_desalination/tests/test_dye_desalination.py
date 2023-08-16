@@ -99,7 +99,7 @@ class TestDyeFlowsheet:
     def test_costing(self, system_frame):
         m = system_frame
 
-        add_costing(m, dye_revenue=False)
+        add_costing(m, has_dye_revenue=False)
         results = solve(m)
         assert_optimal_termination(results)
 
