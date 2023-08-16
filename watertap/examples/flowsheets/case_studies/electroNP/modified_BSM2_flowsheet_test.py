@@ -664,13 +664,14 @@ if __name__ == "__main__":
     stream_table = create_stream_table_dataframe(
         {
             "Feed": m.fs.feed.outlet,
-            "Mix": m.fs.R1.inlet,
-            "R1": m.fs.R1.outlet,
-            "R2": m.fs.R2.outlet,
-            "R3": m.fs.R3.outlet,
-            "R4": m.fs.R4.outlet,
+            # "Mix": m.fs.R1.inlet,
+            # "R1": m.fs.R1.outlet,
+            # "R2": m.fs.R2.outlet,
+            # "R3": m.fs.R3.outlet,
+            # "R4": m.fs.R4.outlet,
             "R5": m.fs.R5.outlet,
             "thickener": m.fs.thickener.underflow,
+            "AD liquid inlet": m.fs.AD.inlet,
             "AD liquid outlet": m.fs.AD.liquid_outlet,
             "AD vapor outlet": m.fs.AD.vapor_outlet,
             "dewater": m.fs.dewater.overflow,
@@ -680,4 +681,4 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
-    # display_costing(m)
+    display_costing(m)
