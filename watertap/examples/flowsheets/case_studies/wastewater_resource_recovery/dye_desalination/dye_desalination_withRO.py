@@ -311,20 +311,18 @@ def initialize_system(m):
     solve(m.fs.feed, checkpoint="solve flowsheet after initializing feed")
 
     # initialize pretreatment
-    if hasattr(m.fs, "pretreatment"):
-        propagate_state(m.fs.s_feed)
-        s = SequentialDecomposition()
-        s.options.tear_set = []
-        s.options.iterLim = 1
-        s.run(prtrt, lambda u: u.initialize())
-        propagate_state(prtrt.s01)
-    else:
-        propagate_state(m.fs.s_feed)
-
-    # initialize nf
+    propagate_state(m.fs.s_feed)
     seq = SequentialDecomposition()
     seq.options.tear_set = []
     seq.options.iterLim = 1
+
+    if hasattr(m.fs, "pretreatment"):
+        seq.run(prtrt, lambda u: u.initialize())
+        propagate_state(prtrt.s01)
+    else:
+        pass
+
+    # initialize nf
     seq.run(dye_sep, lambda u: u.initialize())
 
     # initialize ro
