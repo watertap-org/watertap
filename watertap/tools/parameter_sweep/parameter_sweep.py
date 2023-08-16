@@ -611,77 +611,15 @@ class _ParameterSweepBase(ABC):
         return global_output_dict
 
     def _param_sweep_kernel(self, sweep_params, local_value_k):
-        build_model_kwargs = self.config.build_model_kwargs
-        initialize_function = self.config.initialize_function
-        initialize_kwargs = self.config.initialize_kwargs
         initialize_before_sweep = self.config.initialize_before_sweep
-        update_sweep_params_before_init = self.config.update_sweep_params_before_init
-        # Depreciated
-        # reinitialize_function = self.config.reinitialize_function
-        # reinitialize_kwargs = self.config.reinitialize_kwargs
-        run_successful = False  # until proven otherwise
         # Forced reinitialization of the flowsheet if enabled
-        if initialize_before_sweep or self.model_not_initialized:
-            if initialize_before_sweep and initialize_function is None:
-                raise ValueError(
-                    "Initialization function was not specified. The model will not be reinitialized."
-                )
+        # or init if model was not initialized
+        if initialize_before_sweep or self.model_manager.is_intilized == False:
+            self.model_manager.build_and_init(sweep_params, local_value_k)
+        # try to solve our model
+        self.model_manager.update_model_params(sweep_params, local_value_k)
+        results = self.model_manager.solve_model()
 
-            elif initialize_function is not None:
-                try:
-                    self.model = build_model(**build_model_kwargs)
-                    if update_sweep_params_before_init:
-                        self._update_model_values(
-                            self.model, sweep_params, local_value_k
-                        )
-                    initialize_function(self.model, **initialize_kwargs)
-                except TypeError:
-                    # this happens if the reinitialize_kwargs are misspecified,
-                    # which is an error we want to raise
-                    raise
-                except:
-                    pass
-        try:
-            # Simulate/optimize with this set of parameter
-
-            # Update the model values with a single combination from the parameter space
-            self._update_model_values(self.model, sweep_params, local_value_k)
-            results = optimize_function(self.model, **optimize_kwargs)
-            pyo.assert_optimal_termination(results)
-            run_successful = True
-
-        except TypeError:
-            # this happens if the optimize_kwargs are misspecified,
-            # which is an error we want to raise
-            raise
-
-        except:
-            # run_successful remains false. We try to reinitialize and solve again
-            if initialize_function is not None:
-                try:
-                    self.model = build_model(**build_model_kwargs)
-                    if update_sweep_params_before_init:
-                        self._update_model_values(
-                            self.model, sweep_params, local_value_k
-                        )
-                    initialize_function(self.model, **initialize_kwargs)
-                    self._update_model_values(self.model, sweep_params, local_value_k)
-                    results = optimize_function(self.model, **optimize_kwargs)
-                    pyo.assert_optimal_termination(results)
-
-                    run_successful = True
-                except TypeError:
-                    # this happens if the reinitialize_kwargs are misspecified,
-                    # which is an error we want to raise
-                    raise
-
-                except:
-                    pass
-        if run_successful == False:
-            self.model_not_initialized = True
-        else:
-            self.model_not_initialized = False
-        return run_successful
         # if model failed to solve from a pre-solved state, lets try
         # to re-init and solve again
         if (
