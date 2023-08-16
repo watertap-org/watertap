@@ -65,26 +65,26 @@ _log = idaeslog.getLogger(__name__)
 
 
 def main():
-    m, include_pretreatment = build(include_pretreatment=False)
-    set_operating_conditions(m, include_pretreatment)
+    m = build(include_pretreatment=False)
+    set_operating_conditions(m)
 
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
-    initialize_system(m, include_pretreatment)
+    initialize_system(m)
     assert_degrees_of_freedom(m, 0)
 
     results = solve(m, checkpoint="solve flowsheet after initializing system")
 
-    add_costing(m, include_pretreatment, has_dye_revenue=False)
+    add_costing(m, has_dye_revenue=False)
     initialize_costing(m)
     assert_degrees_of_freedom(m, 0)  # ensures problem is square
 
     optimize_operation(m)  # unfixes specific variables for cost optimization
 
     solve(m, checkpoint="solve flowsheet after costing")
-    display_results(m, include_pretreatment)
-    display_costing(m, include_pretreatment)
+    display_results(m)
+    display_costing(m)
 
     return m, results
 
@@ -117,7 +117,7 @@ def build(include_pretreatment=False):
     m.fs.brine = Product(property_package=m.fs.prop_ro)
 
     # pretreatment
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         prtrt.wwtp = SecondaryTreatmentWWTPZO(
             property_package=m.fs.prop_nf, database=m.db, process_subtype="default"
         )
@@ -179,7 +179,7 @@ def build(include_pretreatment=False):
             )
 
     # connections
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         m.fs.s_feed = Arc(source=m.fs.feed.outlet, destination=prtrt.wwtp.inlet)
         prtrt.s01 = Arc(source=prtrt.wwtp.treated, destination=dye_sep.P1.inlet)
         prtrt.s02 = Arc(
@@ -234,11 +234,11 @@ def build(include_pretreatment=False):
 
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
-    return m, include_pretreatment
+    return m
 
 
-def set_operating_conditions(m, include_pretreatment):
-    if include_pretreatment == True:
+def set_operating_conditions(m):
+    if hasattr(m.fs, "pretreatment"):
         prtrt = m.fs.pretreatment
     else:
         pass
@@ -259,7 +259,7 @@ def set_operating_conditions(m, include_pretreatment):
     solve(m.fs.feed, checkpoint="solve feed block")
 
     # pretreatment
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         prtrt.wwtp.load_parameters_from_database(use_default_removal=True)
     else:
         pass
@@ -299,8 +299,8 @@ def set_operating_conditions(m, include_pretreatment):
     return
 
 
-def initialize_system(m, include_pretreatment):
-    if include_pretreatment == True:
+def initialize_system(m):
+    if hasattr(m.fs, "pretreatment"):
         prtrt = m.fs.pretreatment
     else:
         pass
@@ -311,7 +311,7 @@ def initialize_system(m, include_pretreatment):
     solve(m.fs.feed, checkpoint="solve flowsheet after initializing feed")
 
     # initialize pretreatment
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         propagate_state(m.fs.s_feed)
         s = SequentialDecomposition()
         s.options.tear_set = []
@@ -402,8 +402,8 @@ def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     return results
 
 
-def add_costing(m, include_pretreatment, has_dye_revenue=False):
-    if include_pretreatment == True:
+def add_costing(m, has_dye_revenue=False):
+    if hasattr(m.fs, "pretreatment"):
         prtrt = m.fs.pretreatment
     else:
         pass
@@ -420,7 +420,7 @@ def add_costing(m, include_pretreatment, has_dye_revenue=False):
     m.fs.ro_costing = WaterTAPCosting()
 
     # cost nanofiltration module and pump
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         prtrt.wwtp.costing = UnitModelCostingBlock(
             flowsheet_costing_block=m.fs.zo_costing
         )
@@ -482,7 +482,7 @@ def add_costing(m, include_pretreatment, has_dye_revenue=False):
         doc="Cost of disposing of brine waste",
     )
 
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         m.fs.sludge_disposal_cost = Expression(
             expr=(
                 m.fs.zo_costing.utilization_factor
@@ -566,7 +566,7 @@ def add_costing(m, include_pretreatment, has_dye_revenue=False):
 
     @m.fs.Expression(doc="Total cost of water/dye recovered and brine/sludge disposed")
     def total_externalities(b):
-        if include_pretreatment == True:
+        if hasattr(m.fs, "pretreatment"):
             return pyunits.convert(
                 m.fs.water_recovery_revenue
                 + m.fs.dye_value
@@ -615,7 +615,7 @@ def add_costing(m, include_pretreatment, has_dye_revenue=False):
         doc="Levelized cost of water with respect to volumetric permeate flow"
     )
     def LCOW(b):
-        if include_pretreatment == True:
+        if hasattr(m.fs, "pretreatment"):
             return (
                 b.total_capital_cost * b.zo_costing.capital_recovery_factor
                 + b.total_operating_cost
@@ -673,9 +673,9 @@ def initialize_costing(m):
     return
 
 
-def display_results(m, include_pretreatment):
+def display_results(m):
     print("\nUnit models:")
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         m.fs.pretreatment.wwtp.report()
     else:
         pass
@@ -685,7 +685,7 @@ def display_results(m, include_pretreatment):
     m.fs.desalination.RO.report()
 
     print("\nStreams:")
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         flow_list = ["feed", "wwt_retentate", "dye_retentate"]
     else:
         flow_list = ["feed", "dye_retentate"]
@@ -700,7 +700,7 @@ def display_results(m, include_pretreatment):
         )
     )
 
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         wwt_retentate_vol_flowrate = value(
             pyunits.convert(
                 m.fs.wwt_retentate.properties[0].flow_vol,
@@ -732,7 +732,7 @@ def display_results(m, include_pretreatment):
     print(f"\nBrine volumetric flowrate: {brine_vol_flowrate : .3f} m3/hr")
     print(f"Brine salt concentration: {brine_salt_concentration : .3f} g/l")
 
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         print(
             f"\nWastewater volumetric flowrate: {wwt_retentate_vol_flowrate : .3f} m3/hr"
         )
@@ -759,9 +759,9 @@ def display_results(m, include_pretreatment):
     return
 
 
-def display_costing(m, include_pretreatment):
+def display_costing(m):
     capex = value(pyunits.convert(m.fs.total_capital_cost, to_units=pyunits.MUSD_2020))
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         wwtp_capex = value(
             pyunits.convert(
                 m.fs.pretreatment.wwtp.costing.capital_cost, to_units=pyunits.USD_2020
@@ -797,7 +797,7 @@ def display_costing(m, include_pretreatment):
         )
     )
 
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         nf_opex = (
             value(
                 pyunits.convert(
@@ -840,7 +840,7 @@ def display_costing(m, include_pretreatment):
             m.fs.brine_disposal_cost, to_units=pyunits.USD_2020 / pyunits.year
         )
     )
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         sdc = value(
             pyunits.convert(
                 m.fs.sludge_disposal_cost, to_units=pyunits.USD_2020 / pyunits.year
@@ -895,7 +895,7 @@ def display_costing(m, include_pretreatment):
 
     print("\n System costing metrics:")
     print(f"\nTotal Capital Cost: {capex:.4f} M$")
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         print(f"Wastewater Treatment Capital Cost: {wwtp_capex:.4f} $")
     else:
         pass
@@ -919,7 +919,7 @@ def display_costing(m, include_pretreatment):
         )
 
     print(f"\nTotal Operating Cost: {opex:.4f} M$/year")
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         print(f"Wastewater Treatment Operating Cost: {wwtp_opex:.4f} $/yr")
     else:
         pass
@@ -930,7 +930,7 @@ def display_costing(m, include_pretreatment):
     print(f"Water recovery revenue: {wrr: .4f} USD/year")
     print(f"Dye value: {dv: .4f} USD/year")
     print(f"Brine disposal cost: {-1*bdc: .4f} USD/year")
-    if include_pretreatment == True:
+    if hasattr(m.fs, "pretreatment"):
         print(f"Sludge disposal cost: {-1*sdc: .4f} USD/year")
     else:
         pass

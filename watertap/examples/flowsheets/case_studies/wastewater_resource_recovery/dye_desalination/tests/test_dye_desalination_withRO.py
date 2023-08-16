@@ -35,20 +35,20 @@ solver = get_solver()
 class TestDyewithROFlowsheetwithPretreatment:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m, include_pretreatment = build(include_pretreatment=True)
-        return m, include_pretreatment
+        m = build(include_pretreatment=True)
+        return m
 
     @pytest.mark.unit
     def test_build(self, system_frame):
-        m, include_pretreatment = system_frame
+        m = system_frame
         assert_degrees_of_freedom(m, 28)
         assert_units_consistent(m)
 
     @pytest.mark.component
     def test_set_operating_conditions(self, system_frame):
-        m, include_pretreatment = system_frame
-        set_operating_conditions(m, include_pretreatment)
-        initialize_system(m, include_pretreatment)
+        m = system_frame
+        set_operating_conditions(m)
+        initialize_system(m)
 
         # test feed
         assert pytest.approx(77.607, rel=1e-3) == value(
@@ -92,7 +92,7 @@ class TestDyewithROFlowsheetwithPretreatment:
 
     @pytest.mark.component
     def test_solve(self, system_frame):
-        m, include_pretreatment = system_frame
+        m = system_frame
 
         results = solve(m)
 
@@ -113,9 +113,9 @@ class TestDyewithROFlowsheetwithPretreatment:
         )
 
     def test_costing(self, system_frame):
-        m, include_pretreatment = system_frame
+        m = system_frame
 
-        add_costing(m, include_pretreatment, has_dye_revenue=False)
+        add_costing(m, has_dye_revenue=False)
         initialize_costing(m)
         optimize_operation(m)
 
@@ -128,28 +128,28 @@ class TestDyewithROFlowsheetwithPretreatment:
 
     @pytest.mark.component
     def test_display(self, system_frame):
-        m, include_pretreatment = system_frame
-        display_results(m, include_pretreatment)
-        display_costing(m, include_pretreatment)
+        m = system_frame
+        display_results(m)
+        display_costing(m)
 
 
 class TestDyewithROFlowsheetwithoutPretreatment:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m, include_pretreatment = build(include_pretreatment=False)
-        return m, include_pretreatment
+        m = build(include_pretreatment=False)
+        return m
 
     @pytest.mark.unit
     def test_build(self, system_frame):
-        m, include_pretreatment = system_frame
+        m = system_frame
         assert_degrees_of_freedom(m, 24)
         assert_units_consistent(m)
 
     @pytest.mark.component
     def test_set_operating_conditions(self, system_frame):
-        m, include_pretreatment = system_frame
-        set_operating_conditions(m, include_pretreatment)
-        initialize_system(m, include_pretreatment)
+        m = system_frame
+        set_operating_conditions(m)
+        initialize_system(m)
 
         # test feed
         assert pytest.approx(77.607, rel=1e-3) == value(
@@ -185,7 +185,7 @@ class TestDyewithROFlowsheetwithoutPretreatment:
 
     @pytest.mark.component
     def test_solve(self, system_frame):
-        m, include_pretreatment = system_frame
+        m = system_frame
 
         results = solve(m)
 
@@ -203,9 +203,9 @@ class TestDyewithROFlowsheetwithoutPretreatment:
         )
 
     def test_costing(self, system_frame):
-        m, include_pretreatment = system_frame
+        m = system_frame
 
-        add_costing(m, include_pretreatment, has_dye_revenue=False)
+        add_costing(m, has_dye_revenue=False)
         initialize_costing(m)
         optimize_operation(m)
 
@@ -218,6 +218,6 @@ class TestDyewithROFlowsheetwithoutPretreatment:
 
     @pytest.mark.component
     def test_display(self, system_frame):
-        m, include_pretreatment = system_frame
-        display_results(m, include_pretreatment)
-        display_costing(m, include_pretreatment)
+        m = system_frame
+        display_results(m)
+        display_costing(m)
