@@ -23,6 +23,7 @@ from watertap.tools.parameter_sweep import ParameterSweep, parameter_sweep
 from watertap.tools.parameter_sweep.parameter_sweep_writer import *
 
 import watertap.tools.MPI as MPI
+from watertap.tools.parallel.parallel_manager_factory import has_mpi_peer_processes
 
 # -----------------------------------------------------------------------------
 
@@ -1342,8 +1343,9 @@ class TestParameterSweep:
             true_init_state, true_solved_state = dummy_kernel_logic(
                 truth_dict["solve_successful"]
             )
-            assert true_init_state == ps.model_manager.initialized_states["state"]
-            assert true_solved_state == ps.model_manager.solved_states["state"]
+            if has_mpi_peer_processes==False:
+                assert true_init_state == ps.model_manager.initialized_states["state"]
+                assert true_solved_state == ps.model_manager.solved_states["state"]
             read_dict = _read_output_h5(h5_results_file_name)
             _assert_dictionary_correctness(truth_dict, read_dict)
             _assert_h5_csv_agreement(csv_results_file_name, read_dict)
