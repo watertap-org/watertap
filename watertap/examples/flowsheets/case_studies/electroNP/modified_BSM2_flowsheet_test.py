@@ -385,16 +385,24 @@ def build_flowsheet():
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
+            if "thickener.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e5)
             if "translator_asm2d_adm1.properties_in[0.0].flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e5)
-            # if "AD.liquid_phase.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e4)
-            # if "translator_adm1_asm2d.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e4)
-            # if "electroNP.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e4)
+            if "AD.liquid_phase.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e5)
+            if "translator_adm1_asm2d.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e5)
+            if "dewater.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e5)
+            if "electroNP.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e5)
             # if "electroNP.byproduct_state[0.0].flow_vol" in var.name:
             #     iscale.set_scaling_factor(var, 1e7)
+            if "electroNP.electricity" in var.name:
+                iscale.set_scaling_factor(var, 1e2)
+            if "electroNP.MgCl2_flowrate" in var.name:
+                iscale.set_scaling_factor(var, 1e1)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
@@ -681,4 +689,4 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
-    display_costing(m)
+    # display_costing(m)

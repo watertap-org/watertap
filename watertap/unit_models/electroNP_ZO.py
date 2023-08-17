@@ -254,15 +254,15 @@ class ElectroNPZOdata(SeparatorData):
         for t, v in self.electricity.items():
             sf = (
                 iscale.get_scaling_factor(self.energy_electric_flow_mass)
-                * iscale.get_scaling_factor(self.byproduct.flow_vol[t])
-                * iscale.get_scaling_factor(self.byproduct.conc_mass_comp[t, "S_PO4"])
+                # * iscale.get_scaling_factor(self.byproduct.flow_vol[t])
+                # * iscale.get_scaling_factor(self.byproduct.conc_mass_comp[t, "S_PO4"])
             )
             iscale.set_scaling_factor(v, sf)
 
         for t, v in self.MgCl2_flowrate.items():
             sf = (
                 iscale.get_scaling_factor(self.magnesium_chloride_dosage)
-                * iscale.get_scaling_factor(self.byproduct.flow_vol[t])
-                * iscale.get_scaling_factor(self.byproduct.conc_mass_comp[t, "S_PO4"])
+                # * iscale.get_scaling_factor(self.byproduct.flow_vol[t])
+                # * iscale.get_scaling_factor(self.byproduct.conc_mass_comp[t, "S_PO4"])
             )
             iscale.set_scaling_factor(v, sf)
