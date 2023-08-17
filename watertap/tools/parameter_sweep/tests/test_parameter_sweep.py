@@ -1343,7 +1343,7 @@ class TestParameterSweep:
             true_init_state, true_solved_state = dummy_kernel_logic(
                 truth_dict["solve_successful"]
             )
-            if has_mpi_peer_processes==False:
+            if has_mpi_peer_processes == False:
                 assert true_init_state == ps.model_manager.initialized_states["state"]
                 assert true_solved_state == ps.model_manager.solved_states["state"]
             read_dict = _read_output_h5(h5_results_file_name)
