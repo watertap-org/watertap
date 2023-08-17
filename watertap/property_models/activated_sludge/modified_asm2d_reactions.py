@@ -58,6 +58,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
     """
     Property Parameter Block Class
     """
+
     CONFIG = ReactionParameterBlock.CONFIG()
 
     CONFIG.declare(
@@ -79,6 +80,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
        """,
         ),
     )
+
     def build(self):
         """
         Callable method for Block construction.
@@ -283,7 +285,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Nitrogen oxide coefficient for N2",
         )
-        
+
         # Kinetic Parameters
         self.K_H = pyo.Var(
             initialize=2.46,
