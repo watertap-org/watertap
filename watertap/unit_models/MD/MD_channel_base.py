@@ -187,8 +187,8 @@ class MDChannelMixin:
         self.N_Pr = Var(
             self.flowsheet().config.time,
             self.length_domain,
-            initialize=5e2,
-            bounds=(1, 50),
+            initialize=5,
+            bounds=(0, 50),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Prandtl number in membrane channel",

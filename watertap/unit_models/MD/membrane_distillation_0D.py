@@ -452,9 +452,9 @@ see property package for documentation.}""",
         )
         def eq_permeate_production(b, t, p, j):
             if j == "H2O":
-                return b.cold_ch.mass_transfer_term[
-                    t, p, j
-                ] == b.area * b.flux_mass_avg(b, t)
+                return (
+                    b.cold_ch.mass_transfer_term[t, p, j] == b.area * b.flux_mass_avg[t]
+                )
             else:
                 b.cold_ch.mass_transfer_term[t, p, j].fix(0)
                 return Constraint.Skip
@@ -462,11 +462,12 @@ see property package for documentation.}""",
     def _add_heat_transfer(self):
 
         # Enthalpy Transfer Initialization
+        # todo: change the following to general format to different types of vapor
 
         def enthalpy_transfer_initialize(b, t):
-            return -value(
+            return value(
                 self.hot_ch.properties_in[t].get_material_flow_terms("Liq", "H2O")
-                * 0.1
+                * self.recovery_mass_phase_comp[t, "Liq", "H2O"]
                 * self.hot_ch.properties_vapor[t, 0].enth_mass_phase["Vap"]
             )
 
@@ -478,26 +479,23 @@ see property package for documentation.}""",
         )
 
         @self.Constraint(self.flowsheet().config.time)
-        def eq_enthalpy_transfer_hot(b, t):
+        def eq_enthalpy_transfer_hot_initialize(b, t):
             return b.enthalpy_transfer_var[t] == b.hot_ch.enthalpy_transfer[t]
 
         @self.Constraint(self.flowsheet().config.time)
-        def eq_enthalpy_transfer_cold(b, t):
+        def eq_enthalpy_transfer_cold_initialize(b, t):
             return b.enthalpy_transfer_var[t] == b.cold_ch.enthalpy_transfer[t]
 
         # Heat Transfer Initialization
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="Conductive heat transfer from hot channel",
-        )
+
         def heat_transfer_initialize(b, t):
             return (
                 0.5
-                * b.membrane_tc
-                / b.membrane_thickness
+                * self.membrane_tc
+                / self.membrane_thickness
                 * (
-                    b.hot_ch.properties_in[t].temperature
-                    - b.cold_ch.properties_in[t].temperature
+                    self.hot_ch.properties_in[t].temperature
+                    - self.cold_ch.properties_in[t].temperature
                 )
             )
 

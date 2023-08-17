@@ -134,8 +134,8 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         self.add_inlet_port(name="cold_channel_inlet", block=self.cold_ch)
         self.add_outlet_port(name="cold_channel_outlet", block=self.cold_ch)
 
+        self._add_heat_flux()
         self._add_mass_flux()
-        self._add_heat_flux
 
         self.recovery_mass_phase_comp = Var(
             self.flowsheet().config.time,
@@ -187,13 +187,6 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             doc="membrane permeabiity coeffcient",
         )
 
-        self.membrane_thickness = Var(
-            initialize=1e-4,
-            bounds=(1e-5, 1e-2),
-            doc="membrane thickness",
-            units=units_meta("length"),
-        )
-
         self.flux_mass = Var(
             self.flowsheet().config.time,
             self.difference_elements,
@@ -203,15 +196,6 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             * units_meta("time") ** -1
             * units_meta("length") ** -2,
             doc="solvent vapor mass flux across the membrane",
-        )
-
-        self.flux_conduction_heat = Var(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            initialize=1e-3,
-            bounds=(1e-4, 1e-2),
-            units=units_meta("power") * units_meta("length") ** -2,
-            doc="conduction heat flux",
         )
 
         self.flux_enth_hot = Var(
@@ -442,9 +426,15 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         )
 
         # todo: add calculation method for permeability coefficient
+        self.membrane_thickness = Var(
+            initialize=1e-4,
+            bounds=(1e-5, 1e-2),
+            doc="membrane thickness",
+            units=units_meta("length"),
+        )
 
         self.membrane_tc = Var(
-            initialize=0.2,
+            initialize=0.0002,
             bounds=(1e-4, 1e-2),
             units=units_meta("power")
             * units_meta("temperature") ** -1
@@ -466,7 +456,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             self.difference_elements,
             doc="conduction heat flux",
         )
-        def eq_flux_conduction_heat(b, t, x):
+        def eq_flux_heat(b, t, x):
             return b.flux_conduction_heat[
                 t, x
             ] == b.membrane_tc / b.membrane_thickness * (
@@ -539,12 +529,6 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         solver=None,
         optarg=None,
     ):
-        """
-        General wrapper for RO initialization routines
-
-        Keyword Arguments:
-            # ... [Rest of the documentation remains unchanged]
-        """
 
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
