@@ -244,6 +244,14 @@ class _ParameterSweepBase(ABC):
             description="Backend for parallelization, if not useing MPI",
         ),
     )
+    CONFIG.declare(
+        "log_model_states",
+        ConfigValue(
+            default=False,
+            domain=bool,
+            description="Enables loging of model states during serial execution",
+        ),
+    )
 
     def __init__(
         self,

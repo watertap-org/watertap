@@ -74,6 +74,45 @@ def build_outputs_for_tps(model, output_keys):
     return outputs
 
 
+def dummy_kernel_logic(solution_succesful):
+    init_state = [True]
+    solved_state = [False]
+    for sf in solution_succesful:
+        if sf and init_state[-1]:
+            # we solved model from init and/or prior solved state
+            init_state.append(True)
+            solved_state.append(True)
+        elif sf and init_state[-1] == False:
+            # we try to solve ,but first init
+            init_state.append(True)
+            solved_state.append(False)
+            # solve is succesful
+            init_state.append(True)
+            solved_state.append(True)
+        else:
+            if solved_state[-1]:
+                # this means solution failed after
+                # on model that was solved with applied sweep params
+                # we add failed states
+                init_state.append(False)
+                solved_state.append(False)
+                # kernel reinits model and then tries solving again
+                init_state.append(True)
+                solved_state.append(False)
+                # but it fails as again
+                init_state.append(False)
+                solved_state.append(False)
+            else:
+                # we are solving from failed solve, so we reinit
+                init_state.append(True)
+                solved_state.append(False)
+                # but fail again
+                init_state.append(False)
+                solved_state.append(False)
+                # kernel solving from inited state, so we failed we move on
+    return init_state, solved_state
+
+
 class TestParameterSweep:
     @pytest.fixture(scope="class")
     def model(self):
@@ -927,7 +966,6 @@ class TestParameterSweep:
             debugging_data_dir=tmp_path,
             interpolate_nan_outputs=True,
         )
-
         # Call the parameter_sweep function
         _ = ps.parameter_sweep(
             build_model_for_tps,
@@ -1143,7 +1181,7 @@ class TestParameterSweep:
             debugging_data_dir=tmp_path,
             interpolate_nan_outputs=True,
         )
-
+        ps.config.log_model_states = True
         # Call the parameter_sweep function
         _ = ps.parameter_sweep(
             build_model_for_tps,
@@ -1177,7 +1215,6 @@ class TestParameterSweep:
                 np.nan,
             ]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
-
             # H5 dictionary test
             truth_dict = {
                 "outputs": {
@@ -1302,7 +1339,11 @@ class TestParameterSweep:
                     },
                 },
             }
-
+            true_init_state, true_solved_state = dummy_kernel_logic(
+                truth_dict["solve_successful"]
+            )
+            assert true_init_state == ps.model_manager.initialized_states["state"]
+            assert true_solved_state == ps.model_manager.solved_states["state"]
             read_dict = _read_output_h5(h5_results_file_name)
             _assert_dictionary_correctness(truth_dict, read_dict)
             _assert_h5_csv_agreement(csv_results_file_name, read_dict)
@@ -1941,12 +1982,6 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
             for subkey, subitem in item.items():
                 for subsubkey, subsubitem in subitem.items():
                     if subsubkey == "value":
-                        print(
-                            key,
-                            subkey,
-                            test_dict[key][subkey]["value"],
-                            subitem["value"],
-                        )
                         assert np.allclose(
                             test_dict[key][subkey]["value"],
                             subitem["value"],

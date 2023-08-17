@@ -20,16 +20,19 @@ class ModelManager:
         """
         self.ps_conf = ps_instance.config
         self.ps = ps_instance
+
         self.is_intilized = False
         self.is_solved = False
-        self.is_params_updated = False
         self.is_prior_parameter_solved = False
+        self.solved_states = {"state": [], "local_value_k": []}
+        self.initialized_states = {"state": [], "local_value_k": []}
+        self.current_k = None
 
     def build_and_init(self, params=None, local_value_k=None):
         """build and init model, if required by user, update paramaters before init"""
-        print(self.ps_conf.build_model)
+
         self.model = self.ps_conf.build_model(**self.ps_conf.build_model_kwargs)
-        self.is_params_updated = False
+
         if self.ps_conf.initialize_function is not None:
             if (
                 self.ps_conf.update_sweep_params_before_init
@@ -45,33 +48,42 @@ class ModelManager:
             raise ValueError(
                 "Initialization function was not specified. The model will not be reinitialized."
             )
-        self.is_intilized = True
-        self.is_solved = False
+        self.update_initialized_state(True)
+        self.update_solved_state(False)
 
-    def add_initialized_model(self, model):
-        self.model = model
-        self.is_intilized = True
-        self.is_prior_parameter_solved = True
+    def update_initialized_state(self, state):
+        if self.ps_conf.log_model_states:
+            self.initialized_states["state"].append(state)
+            self.initialized_states["local_value_k"].append(self.current_k)
+
+        self.is_intilized = state
+
+    def update_solved_state(self, state):
+        if self.ps_conf.log_model_states:
+            self.solved_states["state"].append(state)
+            self.solved_states["local_value_k"].append(self.current_k)
+        self.is_solved = state
 
     def init_model(self):
         try:
             self.ps_conf.initialize_function(
                 self.model, **self.ps_conf.initialize_kwargs
             )
-            self.is_intilized = True
+            self.update_initialized_state(True)
         except TypeError:
             # this happens if the optimize_kwargs are misspecified,
             # which is an error we want to raise
-            self.is_intilized = False
-            self.is_solved = False
+            self.update_solved_state(False)
+            self.update_initialized_state(False)
             raise
         except:
-            self.is_intilized = False
-            self.is_solved = False
+            self.update_solved_state(False)
+            self.update_initialized_state(False)
+            pass
 
     def update_model_params(self, sweep_params, local_value_k):
         self.ps._update_model_values(self.model, sweep_params, local_value_k)
-        self.is_params_updated = True
+        self.current_k = local_value_k
 
     def solve_model(self):
         # update to determine if we are solving from initilized or pre-solved state
@@ -81,15 +93,17 @@ class ModelManager:
                 self.model, **self.ps_conf.optimize_kwargs
             )
             pyo.assert_optimal_termination(results)
-            self.is_solved = True
+            self.update_solved_state(True)
+            self.update_initialized_state(True)
+            return results
         except TypeError:
             # this happens if the optimize_kwargs are misspecified,
             # which is an error we want to raise
-            self.is_intilized = False
-            self.is_solved = False
+
+            self.update_solved_state(False)
+            self.update_initialized_state(False)
             raise
         except:
-            self.is_intilized = False
-            self.is_solved = False
-
-        return results
+            self.update_solved_state(False)
+            self.update_initialized_state(False)
+        return None
