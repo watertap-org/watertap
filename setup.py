@@ -91,7 +91,7 @@ setup(
         # for parameter_sweep
         "h5py",
         # for watertap.ui.api_model (though may be generally useful)
-        "pydantic",
+        "pydantic<2",
         "numpy",
         # for importlib.metadata.entry_points()
         "importlib_metadata; python_version < '3.8' ",
