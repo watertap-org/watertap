@@ -23,8 +23,10 @@ from watertap.tools.parallel.parallel_manager import (
 try:
     import ray
     from ray.util import ActorPool
-except:
-    print("Ray io module not available")
+
+
+except ModuleNotFoundError:
+    Warning("Ray.io module not available")
 import os
 import platform
 
@@ -41,7 +43,6 @@ class RayIoParallelManager(ParallelManager):
         self.running_futures = dict()
         # TODO: this should be deprciated once max resource option is avaiable
         self.cluster_mode = False
-        create_paramActor_class()
 
     def is_root_process(self):
         return True
@@ -87,7 +88,7 @@ class RayIoParallelManager(ParallelManager):
     ):
         # constrain the number of child processes to the number of unique values to be run
         self.setup_ray_cluster()
-
+        create_paramActor_class()
         # over ride max_number of subprocess if user setus up cluster mode
         # by adding "ip_head" and  "redis_password" to their ENVS
         # and starting ray cluster before running parameter sweep

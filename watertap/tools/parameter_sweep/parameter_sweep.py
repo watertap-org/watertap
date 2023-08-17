@@ -624,7 +624,7 @@ class _ParameterSweepBase(ABC):
         # to re-init and solve again
         if (
             self.model_manager.is_solved == False
-            and self.model_manager.is_presolved == True
+            and self.model_manager.is_prior_parameter_solved == True
         ):
             self.model_manager.build_and_init(sweep_params, local_value_k)
             self.model_manager.update_model_params(sweep_params, local_value_k)
@@ -1011,15 +1011,66 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
     def parameter_sweep(
         self,
-        model,
-        sweep_params,
-        outputs=None,
-        req_num_samples=None,
+        build_model,
+        build_sweep_params,
+        build_outputs=None,
+        build_outputs_kwargs=dict(),
+        num_samples=None,
         seed=None,
+        build_model_kwargs=dict(),
+        build_sweep_params_kwargs=dict(),
+        req_num_samples=None,
     ):
-        # Convert sweep_params to LinearSamples
-        sweep_params, sampling_type = self._process_sweep_params(sweep_params)
+        build_model_kwargs = (
+            build_model_kwargs if build_model_kwargs is not None else dict()
+        )
+        build_sweep_params_kwargs = (
+            build_sweep_params_kwargs
+            if build_sweep_params_kwargs is not None
+            else dict()
+        )
 
+        if not callable(build_model):
+            _model = build_model
+            build_model = lambda: _model
+            deprecation_warning(
+                "Passing a model directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+
+        if not callable(build_sweep_params):
+            _sweep_params = build_sweep_params
+            build_sweep_params = lambda model: _sweep_params
+            deprecation_warning(
+                "Passing sweep params directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+
+        if build_outputs is None:
+            build_outputs = return_none
+
+        if not callable(build_outputs):
+            _combined_outputs = build_outputs
+            build_outputs = lambda model: _combined_outputs
+            deprecation_warning(
+                "Passing the output dict directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+        # This should be depreciated in future versions
+        self.config.build_model = build_model
+        self.config.build_sweep_params = build_sweep_params
+        self.config.build_outputs = build_outputs
+        self.config.build_outputs_kwargs = build_outputs_kwargs
+        self.config.build_model_kwargs = build_model_kwargs
+        self.config.build_sweep_params_kwargs = build_sweep_params_kwargs
+        # create the list of all combinations - needed for some aspects of scattering
+        model = build_model(**build_model_kwargs)
+        sweep_params = build_sweep_params(model, **build_sweep_params_kwargs)
+        sweep_params, sampling_type = self._process_sweep_params(sweep_params)
+        outputs = build_outputs(model, **build_model_kwargs)
         # Set the seed before sampling
         np.random.seed(seed)
 

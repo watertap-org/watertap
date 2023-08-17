@@ -23,7 +23,7 @@ class ModelManager:
         self.is_intilized = False
         self.is_solved = False
         self.is_params_updated = False
-        self.is_presolved = False
+        self.is_prior_parameter_solved = False
 
     def build_and_init(self, params=None, local_value_k=None):
         """build and init model, if required by user, update paramaters before init"""
@@ -51,7 +51,7 @@ class ModelManager:
     def add_initialized_model(self, model):
         self.model = model
         self.is_intilized = True
-        self.is_presolved = True
+        self.is_prior_parameter_solved = True
 
     def init_model(self):
         try:
@@ -75,7 +75,7 @@ class ModelManager:
 
     def solve_model(self):
         # update to determine if we are solving from initilized or pre-solved state
-        self.is_presolved = self.is_solved
+        self.is_prior_parameter_solved = self.is_solved
         try:
             results = self.ps_conf.optimize_function(
                 self.model, **self.ps_conf.optimize_kwargs

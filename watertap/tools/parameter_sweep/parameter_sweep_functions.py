@@ -39,6 +39,7 @@ def parameter_sweep(
     number_of_subprocesses=None,
     build_model_kwargs=None,
     build_sweep_params_kwargs=None,
+    build_outputs_kwargs=None,
 ):
     """
     This function offers a general way to perform repeated optimizations
@@ -176,9 +177,9 @@ def parameter_sweep(
 
 
 def recursive_parameter_sweep(
-    model,
-    sweep_params,
-    outputs=None,
+    build_model,
+    build_sweep_params,
+    build_outputs=None,
     csv_results_file_name=None,
     h5_results_file_name=None,
     h5_parent_group_name=None,
@@ -190,8 +191,10 @@ def recursive_parameter_sweep(
     probe_function=None,
     debugging_data_dir=None,
     interpolate_nan_outputs=False,
-    req_num_samples=None,
+    num_samples=None,
     seed=None,
+    number_of_subprocesses=None,
+    req_num_samples=None,
 ):
     """
     This function is similar to the `parameter_sweep` function for exploring the parameter space while guranteeing a required number of solves.
@@ -302,11 +305,17 @@ def recursive_parameter_sweep(
         kwargs["debugging_data_dir"] = debugging_data_dir
     if interpolate_nan_outputs is not None:
         kwargs["interpolate_nan_outputs"] = interpolate_nan_outputs
+    if number_of_subprocesses is not None:
+        kwargs["number_of_subprocesses"] = number_of_subprocesses
 
     rps = RecursiveParameterSweep(**kwargs)
 
     return rps.parameter_sweep(
-        model, sweep_params, outputs=outputs, req_num_samples=req_num_samples, seed=seed
+        build_model,
+        build_sweep_params,
+        build_outputs=build_outputs,
+        req_num_samples=req_num_samples,
+        seed=seed,
     )
 
 
