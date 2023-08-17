@@ -9,7 +9,15 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-__author__ = "Alejandro Garciadiego, Xinhong Liu"
+'''
+Flowsheet example full Water Resource Recovery Facility 
+(WRRF; a.k.a., wastewater treatment plant) with ASM1 and ADM1.
+
+The flowsheet follows the same formulation as benchmark simulation model no.2 (BSM2)
+but comprises different specifications for default values than BSM2.
+
+'''
+__author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia"
 
 import pyomo.environ as pyo
 
@@ -23,12 +31,7 @@ from watertap.unit_models.translators.translator_asm1_adm1 import Translator_ASM
 from watertap.unit_models.translators.translator_adm1_asm1 import Translator_ADM1_ASM1
 from idaes.models.unit_models import Separator, Mixer
 
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    large_residuals_set,
-)
 import idaes.logger as idaeslog
-from idaes.core.util.initialization import propagate_state
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 
@@ -61,8 +64,34 @@ from watertap.property_models.activated_sludge.asm1_properties import ASM1Parame
 from watertap.property_models.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
+from watertap.core.util.initialization import assert_degrees_of_freedom
+from pyomo.util.check_units import assert_units_consistent
 
 
+def main():
+    m = build_flowsheet()
+    set_operating_conditions(m)
+    assert_degrees_of_freedom(m, 0)
+    assert_units_consistent(m)
+
+    initialize_system(m)
+
+    results = solve(m)
+
+    add_costing(m)
+    # Assert DOF = 0 after adding costing
+    # assert_degrees_of_freedom(m, 0)
+    
+    #TODO: initialize costing after adding to flowsheet
+    #m.fs.costing.initialize()
+
+    # results = solve(m)
+
+    display_results(m)
+
+    return m, results
+
+    
 def build_flowsheet():
     m = pyo.ConcreteModel()
 
@@ -183,71 +212,6 @@ def build_flowsheet():
             * (m.fs.S_O_eq - m.fs.R4.outlet.conc_mass_comp[t, "S_O"])
         )
 
-    # Feed Water Conditions
-    m.fs.FeedWater.flow_vol.fix(20648 * pyo.units.m**3 / pyo.units.day)
-    m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
-    m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
-    m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(27 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_S"].fix(58 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(92 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(363 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_BH"].fix(50 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_BA"].fix(0 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_P"].fix(0 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_O"].fix(0 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_NO"].fix(0 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_NH"].fix(23 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_ND"].fix(5 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_ND"].fix(16 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.alkalinity.fix(7 * pyo.units.mol / pyo.units.m**3)
-
-    # Reactor sizing
-    m.fs.R1.volume.fix(1000 * pyo.units.m**3)
-    m.fs.R2.volume.fix(1000 * pyo.units.m**3)
-    m.fs.R3.volume.fix(1333 * pyo.units.m**3)
-    m.fs.R4.volume.fix(1333 * pyo.units.m**3)
-    m.fs.R5.volume.fix(1333 * pyo.units.m**3)
-
-    # Injection rates to Reactors 3, 4 and 5
-    for j in m.fs.props_ASM1.component_list:
-        if j != "S_O":
-            # All components except S_O have no injection
-            m.fs.R3.injection[:, :, j].fix(0)
-            m.fs.R4.injection[:, :, j].fix(0)
-            m.fs.R5.injection[:, :, j].fix(0)
-    # Then set injections rates for O2
-    m.fs.R3.outlet.conc_mass_comp[:, "S_O"].fix(1.72e-3)
-    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].fix(2.43e-3)
-    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].fix(4.49e-4)
-
-    # Set fraction of outflow from reactor 5 that goes to recycle
-    m.fs.SP5.split_fraction[:, "underflow"].fix(0.6)
-
-    # Clarifier
-    # TODO: Update once more detailed model available
-    m.fs.CL1.split_fraction[0, "effluent", "H2O"].fix(0.48956)
-    m.fs.CL1.split_fraction[0, "effluent", "S_I"].fix(0.48956)
-    m.fs.CL1.split_fraction[0, "effluent", "S_S"].fix(0.48956)
-    m.fs.CL1.split_fraction[0, "effluent", "X_I"].fix(0.00187)
-    m.fs.CL1.split_fraction[0, "effluent", "X_S"].fix(0.00187)
-    m.fs.CL1.split_fraction[0, "effluent", "X_BH"].fix(0.00187)
-    m.fs.CL1.split_fraction[0, "effluent", "X_BA"].fix(0.00187)
-    m.fs.CL1.split_fraction[0, "effluent", "X_P"].fix(0.00187)
-    m.fs.CL1.split_fraction[0, "effluent", "S_O"].fix(0.48956)
-    m.fs.CL1.split_fraction[0, "effluent", "S_NO"].fix(0.48956)
-    m.fs.CL1.split_fraction[0, "effluent", "S_NH"].fix(0.48956)
-    m.fs.CL1.split_fraction[0, "effluent", "S_ND"].fix(0.48956)
-    m.fs.CL1.split_fraction[0, "effluent", "X_ND"].fix(0.00187)
-    m.fs.CL1.split_fraction[0, "effluent", "S_ALK"].fix(0.48956)
-
-    # Sludge purge separator
-    m.fs.SP6.split_fraction[:, "recycle"].fix(0.985)
-
-    # Outlet pressure from recycle pump
-    m.fs.P1.outlet.pressure.fix(101325)
-
-    print(degrees_of_freedom(m), " degrees of freedom before anaerobic digester built")
-
     # ======================================================================
     # Anaerobic digester section
     m.fs.asm_adm = Translator_ASM1_ADM1(
@@ -274,8 +238,6 @@ def build_flowsheet():
         outlet_state_defined=True,
     )
 
-    print(degrees_of_freedom(m), " degrees of freedom after anaerobic digester built")
-
     # ====================================================================
     # Primary Clarifier
     m.fs.CL = Separator(
@@ -299,8 +261,95 @@ def build_flowsheet():
         property_package=m.fs.props_ASM1, inlet_list=["thickener", "clarifier"]
     )
 
-    # Clarifier
-    # TODO: Update once more detailed model available
+    # Make connections related to AD section
+    m.fs.stream2adm = Arc(
+        source=m.fs.RADM.liquid_outlet, destination=m.fs.adm_asm.inlet
+    )
+    m.fs.stream6adm = Arc(source=m.fs.SP6.waste, destination=m.fs.TU.inlet)
+    m.fs.stream3adm = Arc(source=m.fs.TU.underflow, destination=m.fs.MX4.thickener)
+    m.fs.stream7adm = Arc(source=m.fs.TU.overflow, destination=m.fs.MX3.recycle2)
+    m.fs.stream9adm = Arc(source=m.fs.CL.underflow, destination=m.fs.MX4.clarifier)
+    m.fs.stream4adm = Arc(source=m.fs.adm_asm.outlet, destination=m.fs.DU.inlet)
+    m.fs.stream5adm = Arc(source=m.fs.DU.overflow, destination=m.fs.MX2.recycle1)
+    m.fs.stream01 = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX2.feed_water1)
+    m.fs.stream02 = Arc(source=m.fs.MX2.outlet, destination=m.fs.MX3.feed_water2)
+    m.fs.stream03 = Arc(source=m.fs.MX3.outlet, destination=m.fs.CL.inlet)
+    m.fs.stream04 = Arc(source=m.fs.CL.effluent, destination=m.fs.MX1.feed_water)
+    m.fs.stream10adm = Arc(source=m.fs.MX4.outlet, destination=m.fs.asm_adm.inlet)
+    m.fs.stream1adm = Arc(source=m.fs.asm_adm.outlet, destination=m.fs.RADM.inlet)
+
+    pyo.TransformationFactory("network.expand_arcs").apply_to(m)
+
+    iscale.calculate_scaling_factors(m.fs)
+
+    return m
+
+def set_operating_conditions(m):
+    # Feed Water Conditions
+    m.fs.FeedWater.flow_vol.fix(20648 * pyo.units.m**3 / pyo.units.day)
+    m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
+    m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
+    m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(27 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_S"].fix(58 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(92 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(363 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_BH"].fix(50 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_BA"].fix(0 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_P"].fix(0 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_O"].fix(0 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_NO"].fix(0 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_NH"].fix(23 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_ND"].fix(5 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_ND"].fix(16 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.alkalinity.fix(7 * pyo.units.mol / pyo.units.m**3)
+
+    # Reactor sizing in activated sludge process
+    m.fs.R1.volume.fix(1000 * pyo.units.m**3)
+    m.fs.R2.volume.fix(1000 * pyo.units.m**3)
+    m.fs.R3.volume.fix(1333 * pyo.units.m**3)
+    m.fs.R4.volume.fix(1333 * pyo.units.m**3)
+    m.fs.R5.volume.fix(1333 * pyo.units.m**3)
+
+    # Injection rates to Reactors 3, 4 and 5 of the activated sludge process
+    for j in m.fs.props_ASM1.component_list:
+        if j != "S_O":
+            # All components except S_O have no injection
+            m.fs.R3.injection[:, :, j].fix(0)
+            m.fs.R4.injection[:, :, j].fix(0)
+            m.fs.R5.injection[:, :, j].fix(0)
+    # Then set injections rates for O2
+    m.fs.R3.outlet.conc_mass_comp[:, "S_O"].fix(1.72e-3)
+    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].fix(2.43e-3)
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].fix(4.49e-4)
+
+    # Set fraction of outflow from reactor 5 that goes to recycle
+    m.fs.SP5.split_fraction[:, "underflow"].fix(0.6)
+
+    # Secondary clarifier
+    # TODO: Update once secondary clarifier with more detailed model available
+    m.fs.CL1.split_fraction[0, "effluent", "H2O"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_I"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_S"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "X_I"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_S"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_BH"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_BA"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_P"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "S_O"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_NO"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_NH"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_ND"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "X_ND"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "S_ALK"].fix(0.48956)
+
+    # Sludge purge separator
+    m.fs.SP6.split_fraction[:, "recycle"].fix(0.985)
+
+    # Outlet pressure from recycle pump
+    m.fs.P1.outlet.pressure.fix(101325)
+
+    # Primary Clarifier
+    # TODO: Update primary clarifier once more detailed model available
     m.fs.CL.split_fraction[0, "effluent", "H2O"].fix(0.993)
     m.fs.CL.split_fraction[0, "effluent", "S_I"].fix(0.993)
     m.fs.CL.split_fraction[0, "effluent", "S_S"].fix(0.993)
@@ -315,64 +364,16 @@ def build_flowsheet():
     m.fs.CL.split_fraction[0, "effluent", "S_ND"].fix(0.993)
     m.fs.CL.split_fraction[0, "effluent", "X_ND"].fix(0.5192)
     m.fs.CL.split_fraction[0, "effluent", "S_ALK"].fix(0.993)
+    
+    # Anaerobic digester
     m.fs.RADM.volume_liquid.fix(3400)
     m.fs.RADM.volume_vapor.fix(300)
     m.fs.RADM.liquid_outlet.temperature.fix(308.15)
 
-    print(
-        degrees_of_freedom(m),
-        " degrees of freedom after fixing all vars/before final arcs",
-    )
-
-    # Apply scaling
-    m.fs.stream2adm = Arc(
-        source=m.fs.RADM.liquid_outlet, destination=m.fs.adm_asm.inlet
-    )
-    print(degrees_of_freedom(m), "first arc")
-    m.fs.stream6adm = Arc(source=m.fs.SP6.waste, destination=m.fs.TU.inlet)
-    print(degrees_of_freedom(m), "next arc")
-    m.fs.stream3adm = Arc(source=m.fs.TU.underflow, destination=m.fs.MX4.thickener)
-    print(degrees_of_freedom(m), "next arc")
-
-    m.fs.stream7adm = Arc(source=m.fs.TU.overflow, destination=m.fs.MX3.recycle2)
-    print(degrees_of_freedom(m), "next arc")
-
-    m.fs.stream9adm = Arc(source=m.fs.CL.underflow, destination=m.fs.MX4.clarifier)
-    print(degrees_of_freedom(m), "next arc")
-
-    m.fs.stream4adm = Arc(source=m.fs.adm_asm.outlet, destination=m.fs.DU.inlet)
-    print(degrees_of_freedom(m), "next arc")
-
-    m.fs.stream5adm = Arc(source=m.fs.DU.overflow, destination=m.fs.MX2.recycle1)
-    print(degrees_of_freedom(m), "next arc")
-
-    m.fs.stream01 = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX2.feed_water1)
-    print(degrees_of_freedom(m), "next arc")
-
-    m.fs.stream02 = Arc(source=m.fs.MX2.outlet, destination=m.fs.MX3.feed_water2)
-    print(degrees_of_freedom(m), "next arc")
-
-    m.fs.stream03 = Arc(source=m.fs.MX3.outlet, destination=m.fs.CL.inlet)
-    print(degrees_of_freedom(m), "next arc")
-
-    m.fs.stream04 = Arc(source=m.fs.CL.effluent, destination=m.fs.MX1.feed_water)
-    print(degrees_of_freedom(m), "next arc")
-
-    m.fs.stream10adm = Arc(source=m.fs.MX4.outlet, destination=m.fs.asm_adm.inlet)
-    print(degrees_of_freedom(m), "next arc")
-
-    m.fs.stream1adm = Arc(source=m.fs.asm_adm.outlet, destination=m.fs.RADM.inlet)
-    print(degrees_of_freedom(m), "final arc")
-
-    pyo.TransformationFactory("network.expand_arcs").apply_to(m)
-    print(degrees_of_freedom(m), "transform arcs")
-
-    iscale.calculate_scaling_factors(m.fs)
-
+def initialize_system(m):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
-    # seq.options.select_tear_method = "heuristic"
     seq.options.tear_method = "Direct"
     seq.options.iterLim = 1
     seq.options.tear_set = [m.fs.stream2, m.fs.stream10adm]
@@ -436,11 +437,47 @@ def build_flowsheet():
 
     seq.run(m, function)
 
-    solver = get_solver()
-    results = solver.solve(m, tee=True)
+def add_costing(m):
+    #TODO: implement unit model and flowsheet level costing
+    pass
 
+def solve(blk, solver=None):
+    if solver is None:
+        solver = get_solver()
+    results = solver.solve(blk)
     pyo.assert_optimal_termination(results)
+    return results
+
+def display_results(m):
     m.display()
 
-    print(large_residuals_set(m))
-    return m, results
+    unit_list = [
+        "FeedWater",
+        "MX1",
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R5",
+        "SP5",
+        "CL1",
+        "SP6",
+        "MX6",
+        "Treated",
+        "P1",
+        "asm_adm",
+        "RADM",
+        "adm_asm",
+        "CL",
+        "TU",
+        "DU",
+        "MX2",
+        "MX3",
+        "MX4",
+    ]
+    for u in unit_list:
+        m.fs.component(u).report()
+
+
+if __name__ == '__main__':
+    m, results = main()

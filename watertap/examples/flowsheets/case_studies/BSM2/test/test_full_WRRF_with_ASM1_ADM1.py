@@ -12,6 +12,8 @@
 """
 Tests for full Water Resource Recovery Facility 
 (WRRF; a.k.a., wastewater treatment plant) flowsheet example with ASM1 and ADM1.
+The flowsheet follows the same formulation as benchmark simulation model no.2 (BSM2)
+but comprises different specifications for default values than BSM2.
 
 Verified against results from:
 
@@ -22,7 +24,7 @@ Department of Industrial Electrical Engineering and Automation, Lund University,
 """
 
 # Some more information about this module
-__author__ = "Alejandro Garciadiego, Xinhong Liu"
+__author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia"
 
 import pytest
 import pytest
@@ -35,14 +37,14 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from watertap.examples.flowsheets.case_studies.BSM2.full_WRRF_with_ASM1_ADM1 import (
-    build_flowsheet,
+    main,
 )
 
 
 class TestFullFlowsheet:
     @pytest.fixture(scope="class")
     def model(self):
-        m, res = build_flowsheet()
+        m, res = main()
 
         m.results = res
 
