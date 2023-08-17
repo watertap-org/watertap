@@ -66,6 +66,7 @@ from watertap.costing.units.pump import cost_low_pressure_pump, PumpType
 from watertap.core.util.model_diagnostics.infeasible import *
 from idaes.core.util.model_diagnostics import DegeneracyHunter
 
+
 class ERDtype(StrEnum):
     pump_as_turbine = "pump_as_turbine"
 
@@ -78,8 +79,8 @@ def erd_type_not_found(erd_type):
 
 def propagate_state(arc):
     _pro_state(arc)
-    # print(arc.destination.name)
-    # arc.destination.display()
+    print(arc.destination.name)
+    arc.destination.display()
 
 
 def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
@@ -643,8 +644,8 @@ def set_operating_conditions(
         pump.efficiency_pump.fix(0.75)
 
     for idx, pump in m.fs.RecyclePumps.items():
-        # pump.control_volume.properties_out[0].pressure = 1.4e5 + 8e5 / float(idx)
-        pump.control_volume.properties_out[0].pressure = 1.5e5
+        # pump.control_volume.properties_out[0].pressure = 1.5e5 + 8e5 / float(idx)
+        pump.control_volume.properties_out[0].pressure = 5e5
         pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
 
@@ -668,7 +669,8 @@ def set_operating_conditions(
         stage.permeate_side.spacer_porosity.fix(spacer_porosity)
         stage.feed_side.channel_height.fix(2e-3)
         stage.feed_side.spacer_porosity.fix(spacer_porosity)
-        stage.feed_side.velocity[0, 0].fix(0.1)
+        stage.feed_side.N_Re[0, 0].fix(250)
+        # stage.feed_side.velocity[0, 0].fix(0.1)
 
     # RO unit
     A_RO = 4.2e-12
@@ -929,7 +931,111 @@ def optimize_set_up(
         stage.feed_side.velocity[0, 0].setlb(0)
         stage.feed_side.velocity[0, 0].setub(1)
 
+        stage.feed_side.N_Re[0, 0].unfix()
+        stage.feed_side.N_Re[0, 0].setlb(100)
+        stage.feed_side.N_Re[0, 0].setub(2000)
+
+        stage.feed_side.N_Re[0, 1].setlb(100)
+        stage.feed_side.N_Re[0, 1].setub(2000)
+
+        stage.permeate_side.N_Re[0, 0].setlb(100)
+        stage.permeate_side.N_Re[0, 0].setub(2000)
+
+        stage.permeate_side.N_Re[0, 1].setlb(100)
+        stage.permeate_side.N_Re[0, 1].setub(2000)
+
         stage.permeate_outlet.pressure[0].setlb(101325)
+
+        stage.oaro_avg_water_flux_con = Constraint(
+            expr=(
+                0.1,
+                pyunits.convert(
+                    stage.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
+                    / stage.dens_solvent,
+                    to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
+                ),
+                10,
+            )
+        )
+
+        stage.oaro_feed_water_flux_con = Constraint(
+            expr=(
+                0.1 / 5,
+                pyunits.convert(
+                    stage.flux_mass_phase_comp[0, 0, "Liq", "H2O"] / stage.dens_solvent,
+                    to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
+                ),
+                10 * 1.5,
+            )
+        )
+
+        stage.oaro_permeate_water_flux_con = Constraint(
+            expr=(
+                0.1 / 5,
+                pyunits.convert(
+                    stage.flux_mass_phase_comp[0, 1, "Liq", "H2O"] / stage.dens_solvent,
+                    to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
+                ),
+                10 * 1.5,
+            )
+        )
+
+        stage.oaro_avg_salt_flux_con = Constraint(
+            expr=(
+                0,
+                pyunits.convert(
+                    stage.flux_mass_phase_comp_avg[0, "Liq", "NaCl"],
+                    to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
+                ),
+                50,
+            )
+        )
+
+        stage.oaro_inlet_salt_flux_con = Constraint(
+            expr=(
+                0,
+                pyunits.convert(
+                    stage.flux_mass_phase_comp[0, 0, "Liq", "NaCl"],
+                    to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
+                ),
+                50,
+            )
+        )
+
+        stage.oaro_permeate_salt_flux_con = Constraint(
+            expr=(
+                0,
+                pyunits.convert(
+                    stage.flux_mass_phase_comp[0, 1, "Liq", "NaCl"],
+                    to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
+                ),
+                50,
+            )
+        )
+
+        stage.min_permeate_flow_rate_con = Constraint(
+            expr=sum(
+                stage.permeate_inlet.flow_mass_phase_comp[0, "Liq", j]
+                for j in ["H2O", "NaCl"]
+            )
+            >= 0.15
+            * sum(
+                stage.feed_inlet.flow_mass_phase_comp[0, "Liq", j]
+                for j in ["H2O", "NaCl"]
+            )
+        )
+
+        stage.max_permeate_flow_rate_con = Constraint(
+            expr=sum(
+                stage.permeate_inlet.flow_mass_phase_comp[0, "Liq", j]
+                for j in ["H2O", "NaCl"]
+            )
+            <= 0.8
+            * sum(
+                stage.feed_inlet.flow_mass_phase_comp[0, "Liq", j]
+                for j in ["H2O", "NaCl"]
+            )
+        )
 
         # stage.A_comp.unfix()
         # stage.A_comp.setlb(2.78e-12)
@@ -944,7 +1050,88 @@ def optimize_set_up(
     m.fs.RO.width.setlb(0.1)
     m.fs.RO.width.setub(1000)
 
-    m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"].setlb(0)
+    m.fs.RO.feed_side.N_Re[0, 0].setlb(100)
+    m.fs.RO.feed_side.N_Re[0, 0].setub(2000)
+
+    m.fs.RO.feed_side.N_Re[0, 1].setlb(100)
+    m.fs.RO.feed_side.N_Re[0, 1].setub(2000)
+
+    m.fs.RO.feed_side.properties[0, 0].conc_mass_phase_comp["Liq", "NaCl"].setlb(
+        10 * pyunits.g / pyunits.L
+    )
+    m.fs.RO.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"].setlb(
+        10 * pyunits.g / pyunits.L
+    )
+
+    # m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"].setlb(0)
+
+    m.fs.RO.ro_avg_water_flux_con = Constraint(
+        expr=(
+            0.4,
+            pyunits.convert(
+                m.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "H2O"] / stage.dens_solvent,
+                to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
+            ),
+            40,
+        )
+    )
+
+    m.fs.RO.ro_feed_water_flux_con = Constraint(
+        expr=(
+            0.4 / 5,
+            pyunits.convert(
+                m.fs.RO.flux_mass_phase_comp[0.0, 0.0, "Liq", "H2O"]
+                / stage.dens_solvent,
+                to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
+            ),
+            40 * 1.5,
+        )
+    )
+
+    m.fs.RO.ro_permeate_water_flux_con = Constraint(
+        expr=(
+            0.4 / 5,
+            pyunits.convert(
+                m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"]
+                / stage.dens_solvent,
+                to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
+            ),
+            40 * 1.5,
+        )
+    )
+
+    m.fs.RO.ro_avg_salt_flux_con = Constraint(
+        expr=(
+            0,
+            pyunits.convert(
+                m.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "NaCl"],
+                to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
+            ),
+            50,
+        )
+    )
+
+    m.fs.RO.ro_feed_salt_flux_con = Constraint(
+        expr=(
+            0,
+            pyunits.convert(
+                m.fs.RO.flux_mass_phase_comp[0, 0, "Liq", "NaCl"],
+                to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
+            ),
+            50,
+        )
+    )
+
+    m.fs.RO.ro_retentate_salt_flux_con = Constraint(
+        expr=(
+            0,
+            pyunits.convert(
+                m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "NaCl"],
+                to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
+            ),
+            50,
+        )
+    )
 
     # m.fs.RO.A_comp.unfix()
     # m.fs.RO.A_comp.setlb(2.78e-12)
@@ -979,6 +1166,7 @@ def optimize_set_up(
     if water_recovery is not None:
         # product mass flow rate fraction of feed [-]
         m.fs.water_recovery.fix(water_recovery)
+
     m.fs.eq_product_quality = Constraint(
         expr=m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
         <= m.fs.product_salinity
@@ -986,6 +1174,29 @@ def optimize_set_up(
     iscale.constraint_scaling_transform(
         m.fs.eq_product_quality, 1e3
     )  # scaling constraint
+
+    m.fs.purge_rate_con = Constraint(
+        expr=(
+            0,
+            sum(
+                m.fs.Separators[stage].purge.flow_mass_phase_comp[0, "Liq", j]
+                for stage in m.fs.NonFirstStages
+                for j in ["H2O", "NaCl"]
+            )
+            / (
+                sum(
+                    m.fs.OAROUnits[1].permeate_outlet.flow_mass_phase_comp[0, "Liq", j]
+                    for j in ["H2O", "NaCl"]
+                )
+                - sum(
+                    m.fs.OAROUnits[1].permeate_inlet.flow_mass_phase_comp[0, "Liq", j]
+                    for j in ["H2O", "NaCl"]
+                )
+            ),
+            0.2,
+        )
+    )
+
     # m.fs.eq_minimum_water_flux = Constraint(
     #     expr=m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"] >= m.fs.minimum_water_flux
     # )
@@ -996,13 +1207,17 @@ def optimize_set_up(
 
 def display_system(m):
     print("----system metrics----")
+    feed_flow_vol = m.fs.feed.properties[0].flow_vol_phase["Liq"].value * 3600
     feed_flow_mass = sum(
         m.fs.feed.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "NaCl"]
     )
     feed_mass_frac_NaCl = (
         m.fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"].value / feed_flow_mass
     )
-    print("Feed: %.2f kg/s, %.0f ppm" % (feed_flow_mass, feed_mass_frac_NaCl * 1e6))
+    print(
+        "Feed: %.2f m3/h, %.2f kg/s, %.0f ppm"
+        % (feed_flow_vol, feed_flow_mass, feed_mass_frac_NaCl * 1e6)
+    )
 
     prod_flow_mass = sum(
         m.fs.product.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "NaCl"]
@@ -1066,6 +1281,25 @@ def display_design(m):
     print("--decision variables--")
     for stage in m.fs.NonFinalStages:
         print(
+            "OARO Stage %d average water flux: %.1f L/m2/h"
+            % (
+                stage,
+                value(m.fs.OAROUnits[stage].flux_mass_phase_comp_avg[0, "Liq", "H2O"])
+                / 1e3
+                * 1000
+                * 3600,
+            )
+        )
+        print(
+            "OARO Stage %d average salt flux: %.1f g/m2/h"
+            % (
+                stage,
+                value(m.fs.OAROUnits[stage].flux_mass_phase_comp_avg[0, "Liq", "NaCl"])
+                * 1000
+                * 3600,
+            )
+        )
+        print(
             "OARO Stage %d feed operating pressure %.1f bar"
             % (stage, m.fs.OAROUnits[stage].feed_inlet.pressure[0].value / 1e5)
         )
@@ -1077,13 +1311,21 @@ def display_design(m):
             "OARO tage %d membrane area      %.1f m2"
             % (stage, m.fs.OAROUnits[stage].area.value)
         )
+        # print(
+        #     "OARO Stage %d water perm. coeff.  %.3f LMH/bar"
+        #     % (stage, m.fs.OAROUnits[stage].A_comp[0, "H2O"].value * (3.6e11))
+        # )
+        # print(
+        #     "OARO Stage %d salt perm. coeff.  %.3f LMH/bar"
+        #     % (stage, m.fs.OAROUnits[stage].B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
+        # )
         print(
-            "OARO Stage %d water perm. coeff.  %.3f LMH/bar"
-            % (stage, m.fs.OAROUnits[stage].A_comp[0, "H2O"].value * (3.6e11))
+            "OARO Stage %d salt feed-side velocity.  %.3f"
+            % (stage, m.fs.OAROUnits[stage].feed_side.velocity[0, 0].value)
         )
         print(
-            "OARO Stage %d salt perm. coeff.  %.3f LMH/bar"
-            % (stage, m.fs.OAROUnits[stage].B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
+            "OARO Stage %d salt feed-side Reynolds number.  %.3f"
+            % (stage, m.fs.OAROUnits[stage].feed_side.N_Re[0, 0].value)
         )
     print(
         "RO feed operating pressure %.1f bar" % (m.fs.RO.inlet.pressure[0].value / 1e5)
@@ -1093,14 +1335,15 @@ def display_design(m):
         % (m.fs.RO.permeate.pressure[0].value / 1e5)
     )
     print("RO membrane area      %.1f m2" % (m.fs.RO.area.value))
-    print(
-        "RO water perm. coeff.  %.3f LMH/bar"
-        % (m.fs.RO.A_comp[0, "H2O"].value * (3.6e11))
-    )
-    print(
-        "RO salt perm. coeff.  %.3f LMH"
-        % (m.fs.RO.B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
-    )
+    print("RO membrane width      %.1f m" % (m.fs.RO.width.value))
+    # print(
+    #     "RO water perm. coeff.  %.3f LMH/bar"
+    #     % (m.fs.RO.A_comp[0, "H2O"].value * (3.6e11))
+    # )
+    # print(
+    #     "RO salt perm. coeff.  %.3f LMH"
+    #     % (m.fs.RO.B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
+    # )
 
 
 def display_state(m):
@@ -1118,24 +1361,34 @@ def display_state(m):
         pressure_bar = b.pressure[0].value / 1e5
         print(
             s.ljust(20)
-            + ": %.0f, %.3f g/L, %.1f bar"
-            % (normalized_flow_mass, mass_frac_ppm, pressure_bar)
+            + ": %.0f, %.3f g/L, %.1f bar, %.4f kg/s, %.4f kg/s"
+            % (
+                normalized_flow_mass,
+                mass_frac_ppm,
+                pressure_bar,
+                b.flow_mass_phase_comp[0, "Liq", "H2O"].value,
+                b.flow_mass_phase_comp[0, "Liq", "NaCl"].value,
+            )
         )
 
     print_state("Feed", m.fs.feed.outlet)
 
     for stage in m.fs.Stages:
 
-        print_state(f"Primary Pump {stage} out", m.fs.PrimaryPumps[stage].outlet)
-        print_state(
-            f"ERD {stage} out",
-            m.fs.EnergyRecoveryDevices[stage].outlet,
-        )
+        # print_state(f"Primary Pump {stage} out", m.fs.PrimaryPumps[stage].outlet)
+        # print_state(
+        #     f"ERD {stage} out",
+        #     m.fs.EnergyRecoveryDevices[stage].outlet,
+        # )
 
         if stage == m.fs.LastStage:
             pass
         else:
+            print_state(f"OARO {stage} feed inlet", m.fs.OAROUnits[stage].feed_inlet)
             print_state(f"OARO {stage} feed outlet", m.fs.OAROUnits[stage].feed_outlet)
+            print_state(
+                f"OARO {stage} permeate inlet", m.fs.OAROUnits[stage].permeate_inlet
+            )
             print_state(
                 f"OARO {stage} permeate outlet", m.fs.OAROUnits[stage].permeate_outlet
             )
@@ -1143,7 +1396,7 @@ def display_state(m):
         if stage == m.fs.FirstStage:
             pass
         else:
-            print_state(f"Recycle Pump {stage} out", m.fs.RecyclePumps[stage].outlet)
+            # print_state(f"Recycle Pump {stage} out", m.fs.RecyclePumps[stage].outlet)
             print_state(f"Purge {stage} out", m.fs.Separators[stage].purge)
 
         if stage == m.fs.FirstStage or stage == m.fs.LastStage:
@@ -1151,6 +1404,7 @@ def display_state(m):
         else:
             print_state(f"Recycle {stage} out", m.fs.IntermediateMixers[stage].recycle)
 
+    print_state(f"RO inlet", m.fs.RO.inlet)
     print_state(f"RO permeate", m.fs.RO.permeate)
     print_state(f"RO retentate", m.fs.RO.retentate)
 
@@ -1159,4 +1413,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(5, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
+    m = main(4, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
