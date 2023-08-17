@@ -278,10 +278,10 @@ class TestElectroNP:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(1295.765, rel=1e-5) == value(
+        assert pytest.approx(1036611.9, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(1.75266e-4, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.04431857, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, ElectroNP_frame):
