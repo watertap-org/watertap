@@ -120,6 +120,9 @@ class TestParallelManager:
     def test_rayio_multiprocessing(self, number_of_subprocesses):
         all_parameters = [1, 2, 3, 4, 5]
         try:
+            # ensure ray is avaialbe for test
+            import ray
+
             parallel_manager = RayIoParallelManager(number_of_subprocesses)
             # the parallel manager shouldn't kick off more subprocesses than can do work
             number_of_subprocesses_used = min(
@@ -130,7 +133,6 @@ class TestParallelManager:
                 do_build, {"base": 100}, do_execute, all_parameters
             )
             execution_results = parallel_manager.gather()
-            # print(execution_results)
             # running in async, so there should be as many results as parametrs
             assert len(execution_results) == len(all_parameters)
 
@@ -161,8 +163,17 @@ class TestParallelManager:
             parallel_back_end="MultiProcessing",
         )
         assert isinstance(pm, MultiprocessingParallelManager)
+        try:
+            import ray
+
+            ray_avaialble = True
+        except ModuleNotFoundError:
+            ray_avaialble = False
         pm = create_parallel_manager(
             number_of_subprocesses=2,
             parallel_back_end="RayIo",
         )
-        assert isinstance(pm, RayIoParallelManager)
+        if ray_avaialble:
+            assert isinstance(pm, RayIoParallelManager)
+        else:
+            assert isinstance(pm, RayIoParallelManager) == False
