@@ -47,6 +47,7 @@ __author__ = "Xiangyu Bi"
 
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 # Start test class
 class TestElectrodialysisVoltageConst:
@@ -262,7 +263,9 @@ class TestElectrodialysisVoltageConst:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(3.0, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.197, rel=5e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.485, rel=5e-3
@@ -271,7 +274,7 @@ class TestElectrodialysisVoltageConst:
     @pytest.mark.component
     def test_costing(self, electrodialysis_1d_cell1):
         m = electrodialysis_1d_cell1
-        blk = m.fs.unit
+        # blk = m.fs.unit
 
         m.fs.costing = WaterTAPCosting()
 
@@ -288,13 +291,44 @@ class TestElectrodialysisVoltageConst:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(388.6800, rel=1e-3) == value(
+        assert pytest.approx(584.6, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(45.86804, rel=1e-3) == value(
+        assert pytest.approx(153.6471, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(777.3600, rel=1e-3) == value(
+        assert pytest.approx(1169.2, rel=1e-3) == value(m.fs.costing.total_capital_cost)
+
+    @pytest.mark.component
+    def test_costing_with_rectifier(self, electrodialysis_1d_cell1):
+        m = electrodialysis_1d_cell1
+        # blk = m.fs.unit
+
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={
+                "cost_electricity_flow": True,
+                "has_rectifier": True,
+            },
+        )
+        m.fs.costing.cost_process()
+
+        assert_units_consistent(m)
+
+        assert degrees_of_freedom(m) == 0
+
+        results = solver.solve(m, tee=True)
+        assert_optimal_termination(results)
+
+        assert pytest.approx(2979.6988, rel=1e-3) == value(
+            m.fs.costing.aggregate_capital_cost
+        )
+        assert pytest.approx(297.5365, rel=1e-3) == value(
+            m.fs.costing.total_operating_cost
+        )
+        assert pytest.approx(5959.3977, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
 
@@ -505,7 +539,9 @@ class TestElectrodialysisCurrentConst:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(5.83, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.390, rel=5e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.480, rel=5e-3
@@ -731,7 +767,9 @@ class TestElectrodialysis_withNeutralSPecies:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(5.837, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.3896, rel=5e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.480, rel=5e-3
@@ -954,7 +992,9 @@ class Test_ED_MembNonohm_On_ConstV:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(1.4735, rel=1e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.0955, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4925, rel=1e-3
@@ -1166,7 +1206,9 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(1.3907, rel=1e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.0900, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4928, rel=1e-3
@@ -1276,7 +1318,6 @@ class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
     def test_model_solutions(self, edcell_ilim_empi, edcell_ilim_theo):
         model = (edcell_ilim_empi, edcell_ilim_theo)
         for m in model:
-
             m.fs.properties.set_default_scaling(
                 "flow_mol_phase_comp", 1e1, index=("Liq", "H2O")
             )
@@ -1556,7 +1597,9 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(12.904, rel=1e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.8627, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4791, rel=1e-3
