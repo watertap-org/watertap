@@ -16,14 +16,19 @@ import json
 import os
 import pytest
 
+from pyomo.common.dependencies import attempt_import
+
 from watertap.edb import commands
 from watertap.edb.db_api import ElectrolyteDB
 from watertap.edb.validate import validate
 
+mongomock, mongomock_available = attempt_import("mongomock")
+
 
 class MockDB(ElectrolyteDB):
     def __init__(self, db="foo", **kwargs):
-        import mongomock
+        if not mongomock_available:
+            pytest.skip(reason="mongomock (EDB optional dependency) not available")
 
         self._client = mongomock.MongoClient()
         self._db = getattr(self._client, db)
@@ -34,10 +39,7 @@ class MockDB(ElectrolyteDB):
 
 @pytest.fixture
 def mockdb():
-    try:
-        return MockDB()
-    except ModuleNotFoundError:
-        pytest.skip(reason="mongomock (EDB optional dependency) not available")
+    return MockDB()
 
 
 def test_connect(mockdb):

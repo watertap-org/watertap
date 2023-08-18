@@ -26,6 +26,9 @@ from pyomo.common.config import ConfigValue
 from pyomo.common.modeling import unique_component_name
 from pyomo.core.base import _VarData, _ExpressionData
 from pyomo.core.base.param import _ParamData
+from pyomo.common.dependencies import attempt_import
+
+requests, requests_available = attempt_import("requests")
 
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
 from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
@@ -190,9 +193,7 @@ class _ParameterSweepBase(ABC):
                 outputs[output_name] = exprs[output_name]
 
     def _publish_updates(self, iteration, solve_status, solve_time):
-        try:
-            import requests
-        except ModuleNotFoundError:
+        if not requests_available:
             raise ImportError(
                 "requests (parameter_sweep optional dependency) not installed"
             )
