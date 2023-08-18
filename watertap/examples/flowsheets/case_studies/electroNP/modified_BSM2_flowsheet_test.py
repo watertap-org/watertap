@@ -196,7 +196,7 @@ def build_flowsheet():
         has_heat_transfer=True,
         has_pressure_change=False,
     )
-    m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # Dewatering Unit
     m.fs.dewater = DewateringUnit(
@@ -209,11 +209,11 @@ def build_flowsheet():
     m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # Costing
-    m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(
-        m.fs.electroNP.properties_treated[0].flow_vol
-    )
-    m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
+    # m.fs.costing.cost_process()
+    # m.fs.costing.add_annual_water_production(
+    #     m.fs.electroNP.properties_treated[0].flow_vol
+    # )
+    # m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
 
     # Link units
     m.fs.stream1 = Arc(source=m.fs.feed.outlet, destination=m.fs.R1.inlet)
@@ -375,7 +375,7 @@ def build_flowsheet():
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
     # Costing
-    m.fs.costing.electroNP.phosphorus_recovery_value = 0
+    # m.fs.costing.electroNP.phosphorus_recovery_value = 0
 
     # Check degrees of freedom
     print(degrees_of_freedom(m))
@@ -407,10 +407,10 @@ def build_flowsheet():
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
-            # if "conc_mass_comp" in var.name:
-            #     iscale.set_scaling_factor(var, 1e1)
-            if "conc_mass_comp[S_PO4]" in var.name:
+            if "conc_mass_comp" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
+            # if "conc_mass_comp[S_PO4]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e1)
             # if "conc_mass_comp[S_NO3]" in var.name:
             #     iscale.set_scaling_factor(var, 1e7)
             # if "conc_mass_comp[X_AUT]" in var.name:
@@ -562,7 +562,7 @@ def build_flowsheet():
         #     automate_rescale_variables(unit)
 
     seq.run(m, function)
-    m.fs.costing.initialize()
+    # m.fs.costing.initialize()
 
     results = solve(m, tee=True)
 
