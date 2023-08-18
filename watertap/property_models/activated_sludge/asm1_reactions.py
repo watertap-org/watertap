@@ -38,7 +38,7 @@ import idaes.logger as idaeslog
 
 
 # Some more information about this module
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Xinhong Liu"
 
 
 # Set up logger
@@ -465,13 +465,10 @@ class ASM1ReactionBlockData(ReactionBlockDataBase):
                     # R7: Hydrolysis of entrapped organics
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.k_h
-                        * (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_BH"])
+                        * b.conc_mass_comp_ref["X_S"]
                         / (
-                            b.params.K_X
-                            + (
-                                b.conc_mass_comp_ref["X_S"]
-                                / b.conc_mass_comp_ref["X_BH"]
-                            )
+                            b.params.K_X * b.conc_mass_comp_ref["X_BH"]
+                            + b.conc_mass_comp_ref["X_S"]
                         )
                         * (
                             (
@@ -493,7 +490,13 @@ class ASM1ReactionBlockData(ReactionBlockDataBase):
                     # R8: Hydrolysis of entrapped organic nitrogen
                     return b.reaction_rate[r] == (
                         b.reaction_rate["R7"]
-                        * (b.conc_mass_comp_ref["X_ND"] / b.conc_mass_comp_ref["X_S"])
+                        * (
+                            b.conc_mass_comp_ref["X_ND"]
+                            / (
+                                b.conc_mass_comp_ref["X_S"]
+                                + 1e-10 * pyo.units.kg / pyo.units.m**3
+                            )
+                        )
                     )
                 else:
                     raise BurntToast()

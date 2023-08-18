@@ -174,7 +174,7 @@ class TestAsm2dAdm1_decay_on(object):
     @pytest.mark.unit
     def test_build(self, asmadm):
         assert isinstance(asmadm.fs.unit.f_sI_xc, Param)
-        assert value(asmadm.fs.unit.f_sI_xc) == 1e-9
+        assert value(asmadm.fs.unit.f_sI_xc) == 0
         assert isinstance(asmadm.fs.unit.f_xI_xc, Param)
         assert value(asmadm.fs.unit.f_xI_xc) == 0.1
         assert isinstance(asmadm.fs.unit.f_ch_xc, Param)
@@ -459,7 +459,7 @@ class TestAsm2dAdm1_decay_off(object):
     @pytest.mark.unit
     def test_build(self, asmadm):
         assert isinstance(asmadm.fs.unit.f_sI_xc, Param)
-        assert value(asmadm.fs.unit.f_sI_xc) == 1e-9
+        assert value(asmadm.fs.unit.f_sI_xc) == 0
         assert isinstance(asmadm.fs.unit.f_xI_xc, Param)
         assert value(asmadm.fs.unit.f_xI_xc) == 0.1
         assert isinstance(asmadm.fs.unit.f_ch_xc, Param)
