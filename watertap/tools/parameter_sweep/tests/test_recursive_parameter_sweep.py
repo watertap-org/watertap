@@ -28,10 +28,6 @@ from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _read_output_h5,
     _get_rank0_path,
     _assert_dictionary_correctness,
-    build_model,
-    build_model_for_tps,
-    build_sweep_params_for_tps,
-    build_outputs_for_tps,
 )
 
 import watertap.tools.MPI as MPI

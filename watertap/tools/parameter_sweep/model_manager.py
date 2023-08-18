@@ -86,7 +86,6 @@ class ModelManager:
         except:
             self.update_solved_state(False)
             self.update_initialized_state(False)
-            pass
 
     def update_model_params(self, sweep_params, local_value_k):
         """Update local params, and store current local k state"""
