@@ -250,7 +250,6 @@ class TestSaponification(object):
             <= 1e-3
         )
 
-    @pytest.mark.ui
     @pytest.mark.unit
     def test_get_performance_contents(self, sapon):
         perf_dict = sapon.fs.unit._get_performance_contents()

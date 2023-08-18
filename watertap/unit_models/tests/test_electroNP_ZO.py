@@ -16,7 +16,6 @@ from pyomo.environ import (
     assert_optimal_termination,
     value,
     units,
-    Var,
 )
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.electroNP_ZO import ElectroNPZO

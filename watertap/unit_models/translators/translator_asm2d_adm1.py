@@ -37,7 +37,6 @@ from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 from pyomo.environ import (
-    PositiveReals,
     Param,
     units as pyunits,
     check_optimal_termination,
