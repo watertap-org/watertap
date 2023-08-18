@@ -35,6 +35,7 @@ from idaes.core.util.config import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 from idaes.core.util.exceptions import InitializationError
 
@@ -44,7 +45,7 @@ from pyomo.environ import (
     Set,
 )
 
-__author__ = "Chenyu Wang, Marcus Holly"
+__author__ = "Chenyu Wang, Marcus Holly, Xinhong Liu"
 
 
 # Set up logger
@@ -213,8 +214,10 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         def return_zero_flow_comp(blk, t, i):
             return (
                 blk.properties_out[t].conc_mass_comp[i]
-                == 1e-6 * pyunits.kg / pyunits.m**3
+                == 1e-10 * pyunits.kg / pyunits.m**3
             )
+
+        iscale.set_scaling_factor(self.properties_out[0].flow_vol, 1e5)
 
     def initialize_build(
         self,
