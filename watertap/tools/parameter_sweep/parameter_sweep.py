@@ -621,14 +621,14 @@ class _ParameterSweepBase(ABC):
     def _param_sweep_kernel(self, sweep_params, local_value_k):
         initialize_before_sweep = self.config.initialize_before_sweep
         # Forced reinitialization of the flowsheet if enabled
-        # or init if model was not initialized
+        # or init if model was not initialized or prior solved failed (if solved failed, init state is false)
         if initialize_before_sweep or self.model_manager.is_intilized == False:
             self.model_manager.build_and_init(sweep_params, local_value_k)
         # try to solve our model
         self.model_manager.update_model_params(sweep_params, local_value_k)
         results = self.model_manager.solve_model()
 
-        # if model failed to solve from a pre-solved state, lets try
+        # if model failed to solve from a prior paramter solved state, lets try
         # to re-init and solve again
         if (
             self.model_manager.is_solved == False
@@ -637,6 +637,7 @@ class _ParameterSweepBase(ABC):
             self.model_manager.build_and_init(sweep_params, local_value_k)
             self.model_manager.update_model_params(sweep_params, local_value_k)
             results = self.model_manager.solve_model()
+        # return model solved state
         return self.model_manager.is_solved
 
     def _run_sample(
@@ -672,7 +673,8 @@ class _ParameterSweepBase(ABC):
         return run_successful
 
     def _do_param_sweep(self, model, sweep_params, outputs, local_values):
-        # setup model manager with given model
+        # setup model manager if not already specifid (Used in case of diff tool)
+        # or if user wants to specify thier own model_manager before runing param sweep
         if self.model_manager == None:
             self.model_manager = ModelManager(self)
 

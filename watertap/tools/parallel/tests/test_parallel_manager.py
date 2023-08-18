@@ -21,6 +21,10 @@ from watertap.tools.parallel.single_process_parallel_manager import (
 from watertap.tools.parallel.multiprocessing_parallel_manager import (
     MultiprocessingParallelManager,
 )
+from watertap.tools.parallel.ray_io_parallel_manager import (
+    RayIoParallelManager,
+)
+from watertap.tools.parallel.parallel_manager_factory import create_parallel_manager
 
 
 def do_build(base=10):
@@ -91,7 +95,6 @@ class TestParallelManager:
         all_parameters = [1, 2, 3, 4, 5]
 
         parallel_manager = MultiprocessingParallelManager(number_of_subprocesses)
-
         # the parallel manager shouldn't kick off more subprocesses than can do work
         number_of_subprocesses_used = min(number_of_subprocesses, len(all_parameters))
 
@@ -111,3 +114,55 @@ class TestParallelManager:
         # verify that the full list of results matches the expected
         all_results = [r for result in execution_results for r in result.results]
         assert all_results == [-101, -102, -103, -104, -105]
+
+    @pytest.mark.component
+    @pytest.mark.parametrize("number_of_subprocesses", [1, 4])
+    def test_rayio_multiprocessing(self, number_of_subprocesses):
+        all_parameters = [1, 2, 3, 4, 5]
+        try:
+            parallel_manager = RayIoParallelManager(number_of_subprocesses)
+            # the parallel manager shouldn't kick off more subprocesses than can do work
+            number_of_subprocesses_used = min(
+                number_of_subprocesses, len(all_parameters)
+            )
+
+            parallel_manager.scatter(
+                do_build, {"base": 100}, do_execute, all_parameters
+            )
+            execution_results = parallel_manager.gather()
+            # print(execution_results)
+            # running in async, so there should be as many results as parametrs
+            assert len(execution_results) == len(all_parameters)
+
+            # verify that each subprocess did actual work
+            for i in range(len(execution_results)):
+                assert len(execution_results[i].parameters) > 0
+                assert len(execution_results[i].parameters) == len(
+                    execution_results[i].results
+                )
+
+            # verify that the full list of results matches the expected
+            all_results = [r for result in execution_results for r in result.results]
+            assert all_results == [-101, -102, -103, -104, -105]
+        except ModuleNotFoundError:
+            pass
+
+    @pytest.mark.component
+    def test_create_parallel_manager(
+        self,
+    ):
+        pm = create_parallel_manager(
+            number_of_subprocesses=2,
+            parallel_back_end="ConcurrentFutures",
+        )
+        assert isinstance(pm, ConcurrentFuturesParallelManager)
+        pm = create_parallel_manager(
+            number_of_subprocesses=2,
+            parallel_back_end="MultiProcessing",
+        )
+        assert isinstance(pm, MultiprocessingParallelManager)
+        pm = create_parallel_manager(
+            number_of_subprocesses=2,
+            parallel_back_end="RayIo",
+        )
+        assert isinstance(pm, RayIoParallelManager)

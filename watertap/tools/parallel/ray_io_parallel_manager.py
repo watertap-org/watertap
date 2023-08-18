@@ -88,7 +88,6 @@ class RayIoParallelManager(ParallelManager):
     ):
         # constrain the number of child processes to the number of unique values to be run
         self.setup_ray_cluster()
-        create_paramActor_class()
         # over ride max_number of subprocess if user setus up cluster mode
         # by adding "ip_head" and  "redis_password" to their ENVS
         # and starting ray cluster before running parameter sweep
@@ -106,6 +105,7 @@ class RayIoParallelManager(ParallelManager):
         # create queues, run queue will be used to store paramters we want to run
 
         actors = []
+        paramActor = create_paramActor_class()
         # start ray actirs
         for cpu in range(self.actual_number_of_subprocesses):
             actors.append(
@@ -119,9 +119,7 @@ class RayIoParallelManager(ParallelManager):
         # create actor pool for load balancing
         actor_pool = ActorPool(actors)
         # run in async.
-        # run_vars = []
-        # for i, dv in enumerate(divided_parameters):
-        #     run_vars.append([dv, i])
+
         # load intoshared memory space
         run_vars_ray = ray.put(divided_parameters)
         self.results = actor_pool.map_unordered(
@@ -178,9 +176,6 @@ class RayIoParallelManager(ParallelManager):
                 self.cluster_mode = False
 
 
-# Spread ensures that load balancing makes all CPU's nodes work
-# set it so it only uses 1 core per worekers as WT/IPOPT cant multiprocess
-# might be not most efficienct on clusters with long data transfers...
 def create_paramActor_class():
     @ray.remote(num_cpus=1)
     class paramActor(parallelActor):

@@ -1563,14 +1563,14 @@ class TestParameterSweep:
             _assert_h5_csv_agreement(csv_results_file_name, read_dict)
 
     @pytest.mark.component
-    def test_parameter_sweep_bad_force_initialize(self, model, tmp_path):
+    def test_parameter_sweep_bad_sweep_update_before_initialize(self, model, tmp_path):
         ps = ParameterSweep(
             optimize_function=_optimization,
             initialize_before_sweep=True,
             initialize_function=None,
             initialize_kwargs=None,
+            update_sweep_params_before_init=True,
         )
-
         m = model
         m.fs.slack_penalty = 1000.0
         m.fs.slack.setub(0)
