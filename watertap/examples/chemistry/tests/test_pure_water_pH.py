@@ -619,7 +619,6 @@ class TestPureWater:
 
     @pytest.fixture
     def model_solve(self, model, solver):
-        model.write("bah.nl", io_options={"symbolic_solver_labels": True})
         results = solver.solve(model, symbolic_solver_labels=True, tee=True)
         return model, results
 
