@@ -132,7 +132,6 @@ def base_units():
 def solver():
     s = get_solver()
     s.options["max_iter"] = 200
-    # s.options["halt_on_ampl_error"] = "yes"
     return s
 
 
