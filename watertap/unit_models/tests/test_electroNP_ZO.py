@@ -16,6 +16,7 @@ from pyomo.environ import (
     assert_optimal_termination,
     value,
     units,
+    Var,
 )
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
@@ -92,6 +93,15 @@ class TestElectroNP:
     @pytest.mark.unit
     def test_units(self, ElectroNP_frame):
         assert_units_consistent(ElectroNP_frame)
+
+    @pytest.mark.unit
+    def test_object_references(self, ElectroNP_frame):
+        m = ElectroNP_frame
+
+        assert hasattr(m.fs.unit, "properties_in")
+        assert hasattr(m.fs.unit, "properties_treated")
+        assert hasattr(m.fs.unit, "properties_byproduct")
+        assert hasattr(m.fs.unit, "removal_frac_mass_comp")
 
     @pytest.mark.unit
     def test_calculate_scaling(self, ElectroNP_frame):
