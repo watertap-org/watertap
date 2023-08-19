@@ -84,7 +84,7 @@ class ElectroNPZOdata(SeparatorData):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
-        add_object_reference(self, "proerties_in", self.mixed_state)
+        add_object_reference(self, "properties_in", self.mixed_state)
         add_object_reference(self, "properties_treated", self.treated_state)
         add_object_reference(self, "properties_byproduct", self.byproduct_state)
 

@@ -23,16 +23,22 @@ Authors: Chenyu Wang, Marcus Holly, Adam Atia, Xinhong Liu
 
 import pytest
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, Param, log10
+from pyomo.environ import (
+    assert_optimal_termination,
+    ConcreteModel,
+    Param,
+    log10,
+    value,
+    Var,
+    Constraint,
+)
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.anaerobic_digestor import AD
 from idaes.core import MaterialFlowBasis
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
-from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set
-import idaes.logger as idaeslog
-
+from idaes.core.util.model_statistics import degrees_of_freedom
 from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
 )
@@ -43,7 +49,7 @@ from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import
     ModifiedADM1ReactionParameterBlock,
     ModifiedADM1ReactionBlock,
 )
-from watertap.core.util.model_diagnostics.infeasible import *
+from idaes.core.util.testing import initialization_tester
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -635,10 +641,6 @@ class TestReactor:
         unscaled_var_list = list(iscale.unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
-        # TODO: resolving "badly scaled vars" in this case doesn't help resolve; revisit scaling
-        # for _ in iscale.badly_scaled_var_generator(m):
-        #     assert False
-
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -652,11 +654,9 @@ class TestReactor:
     @pytest.mark.requires_idaes_solver
     def test_solve(self, model):
         solver = get_solver()
-        results = solver.solve(model, tee=True)
-        model.display()
-        print(large_residuals_set(model))
+        results = solver.solve(model)
 
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     # TO DO: retest after conversion changes
     @pytest.mark.component

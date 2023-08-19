@@ -94,6 +94,15 @@ class TestElectroNP:
         assert_units_consistent(ElectroNP_frame)
 
     @pytest.mark.unit
+    def test_object_references(self, ElectroNP_frame):
+        m = ElectroNP_frame
+
+        assert hasattr(m.fs.unit, "properties_in")
+        assert hasattr(m.fs.unit, "properties_treated")
+        assert hasattr(m.fs.unit, "properties_byproduct")
+        assert hasattr(m.fs.unit, "removal_frac_mass_comp")
+
+    @pytest.mark.unit
     def test_calculate_scaling(self, ElectroNP_frame):
         m = ElectroNP_frame
         m.fs.properties.set_default_scaling("pressure", 1e-3)
