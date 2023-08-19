@@ -260,7 +260,7 @@ reaction_log_solubility = {
 solver = get_solver()
 
 
-def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
+def run_case1(xA, xB, xAB=1e-25, scaling=True, scaling_ref=1e-3, rxn_config=None):
     print("==========================================================================")
     print("Case 1: A and B are aqueous, AB is solid that forms from reaction")
     print("xA = " + str(xA))
@@ -307,10 +307,12 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     assert_units_consistent(model)
 
     # Scaling
-    _set_eps_vals(model.fs.rxn_params, rxn_config)
-    # NOTE: We skip reaction scaling because we are NOT using the log_solubility_product form in this test
-    # _set_equ_rxn_scaling(model.fs.unit, rxn_config)
-    _set_mat_bal_scaling_FpcTP(model.fs.unit)
+    _set_eps_vals(model.fs.rxn_params, rxn_config, max_k_eq_ref=1e-12)
+    _set_equ_rxn_scaling(
+        model.fs.unit, model.fs.rxn_params, rxn_config, min_k_eq_ref=scaling_ref
+    )
+    _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=scaling_ref * 10)
+    model.fs.rxn_params.reaction_AB_Ksp.s_scale.value = 10
 
     iscale.calculate_scaling_factors(model.fs.unit)
     assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
@@ -322,7 +324,6 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     )
     # End scaling if statement
 
-    solver.options["max_iter"] = 200
     init_options = {**solver.options}
     init_options["bound_relax_factor"] = 1.0e-02
     model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
@@ -390,7 +391,9 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     return model
 
 
-def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None, state="FpcTP"):
+def run_case2(
+    xA, xB, xAB=1e-25, scaling=True, scaling_ref=1e-3, rxn_config=None, state="FpcTP"
+):
     print("==========================================================================")
     print(
         "Case 2 (log form): A and B are aqueous, AB is solid that forms from reaction"
@@ -460,12 +463,14 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None, state="FpcTP"):
     assert_units_consistent(model)
 
     # Scaling
-    _set_eps_vals(model.fs.rxn_params, rxn_config)
-    _set_equ_rxn_scaling(model.fs.unit, rxn_config)
+    _set_eps_vals(model.fs.rxn_params, rxn_config, max_k_eq_ref=1e-12)
+    _set_equ_rxn_scaling(
+        model.fs.unit, model.fs.rxn_params, rxn_config, min_k_eq_ref=scaling_ref
+    )
     if case1_thermo_config["state_definition"] == FpcTP:
-        _set_mat_bal_scaling_FpcTP(model.fs.unit)
+        _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=scaling_ref)
     if case1_thermo_config["state_definition"] == FTPx:
-        _set_mat_bal_scaling_FTPx(model.fs.unit)
+        _set_mat_bal_scaling_FTPx(model.fs.unit, min_mole_frac_comp=scaling_ref)
 
     iscale.calculate_scaling_factors(model.fs.unit)
     assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
@@ -573,17 +578,29 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None, state="FpcTP"):
 
 
 ## ================================= Case 1 Tests ===============================
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case1_low_conc_no_precipitation():
     model = run_case1(
-        xA=1e-9, xB=1e-9, xAB=1e-25, scaling=True, rxn_config=reaction_solubility
+        xA=1e-9,
+        xB=1e-9,
+        xAB=1e-25,
+        scaling=True,
+        scaling_ref=1e-6,
+        rxn_config=reaction_solubility,
     )
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case1_mid_conc_no_precipitation():
     model = run_case1(
-        xA=1e-9, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_solubility
+        xA=1e-9,
+        xB=1e-2,
+        xAB=1e-25,
+        scaling=True,
+        scaling_ref=1e-4,
+        rxn_config=reaction_solubility,
     )
 
 
@@ -618,22 +635,32 @@ def test_case1_high_conc_for_all():
 ## ================================= Case 2 Tests ===============================
 @pytest.mark.component
 def test_case2_low_conc_no_precipitation():
-    model = model = run_case2(
+    model = run_case2(
         xA=1e-9, xB=1e-9, xAB=1e-25, scaling=True, rxn_config=reaction_log_solubility
     )
 
 
 @pytest.mark.component
 def test_case2_mid_conc_no_precipitation():
-    model = model = run_case2(
-        xA=1e-9, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_log_solubility
+    model = run_case2(
+        xA=1e-9,
+        xB=1e-2,
+        xAB=1e-25,
+        scaling=True,
+        scaling_ref=1e-5,
+        rxn_config=reaction_log_solubility,
     )
 
 
 @pytest.mark.component
 def test_case2_high_conc_with_precipitation():
-    model = model = run_case2(
-        xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_log_solubility
+    model = run_case2(
+        xA=1e-2,
+        xB=1e-2,
+        xAB=1e-25,
+        scaling=True,
+        scaling_ref=1e-5,
+        rxn_config=reaction_log_solubility,
     )
 
 
@@ -646,20 +673,20 @@ def test_case2_low_conc_with_dissolution():
 
 @pytest.mark.component
 def test_case2a_mid_conc_with_dissolution():
-    model = model = run_case2(
+    model = run_case2(
         xA=1e-9, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility
     )
 
 
 @pytest.mark.component
 def test_case2b_mid_conc_with_dissolution():
-    model = model = run_case2(
+    model = run_case2(
         xA=1e-2, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility
     )
 
 
 @pytest.mark.component
 def test_case2_high_conc_for_all():
-    model = model = run_case2(
+    model = run_case2(
         xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility
     )
