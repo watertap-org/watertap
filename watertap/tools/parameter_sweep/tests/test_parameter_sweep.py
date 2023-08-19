@@ -13,7 +13,6 @@
 import pytest
 import os
 import numpy as np
-import requests
 import pyomo.environ as pyo
 
 from pyomo.environ import value
@@ -246,6 +245,10 @@ class TestParameterSweep:
 
     @pytest.mark.component
     def test_status_publishing(self):
+        requests = pytest.importorskip(
+            "requests",
+            reason="requests (parameter_sweep optional dependency) not available",
+        )
         ps = ParameterSweep(
             publish_progress=True, publish_address="http://localhost:8888"
         )
