@@ -474,6 +474,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             )
         else:
             local_results_dict = self.config.custom_do_param_sweep(
+                self,
                 model,
                 sweep_params,
                 self.outputs,

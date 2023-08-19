@@ -33,9 +33,14 @@ from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _optimization,
     _reinitialize,
     build_model,
+    build_outputs_for_tps,
     build_sweep_params_for_tps,
 )
 import watertap.tools.MPI as MPI
+
+
+def build_none_outputs(model):
+    return None
 
 
 @pytest.fixture
@@ -228,7 +233,7 @@ def test_bad_differential_sweep_specs(model, tmp_path):
         ps.parameter_sweep(
             build_model,
             build_sweep_params_for_tps,
-            build_outputs=None,
+            build_outputs=build_none_outputs,
             seed=0,
         )
 
@@ -311,6 +316,7 @@ def test_differential_parameter_sweep(model, tmp_path):
         optimize_function=_optimization,
         differential_sweep_specs=differential_sweep_specs,
         initialize_function=_reinitialize,
+        number_of_subprocesses=1,
     )
 
     # Call the parameter_sweep function
@@ -751,10 +757,21 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
     )
 
     # Call the parameter_sweep function
+    outputs = {
+        "fs.input[a]": m.fs.input["a"],
+        "fs.input[b]": m.fs.input["b"],
+        "fs.output[c]": m.fs.output["c"],
+        "fs.output[d]": m.fs.output["d"],
+        "fs.performance": m.fs.performance,
+        "objective": m.objective,
+        "fs.slack[ab_slack]": m.fs.slack["ab_slack"],
+        "fs.slack[cd_slack]": m.fs.slack["cd_slack"],
+        "fs.slack_penalty": m.fs.slack_penalty,
+    }
     global_results_dict, _ = ps.parameter_sweep(
         m,
         sweep_params,
-        build_outputs=None,
+        build_outputs=outputs,
         seed=0,
     )
 
