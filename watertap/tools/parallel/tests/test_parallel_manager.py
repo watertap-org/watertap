@@ -12,6 +12,8 @@
 
 import pytest
 
+from pyomo.common.dependencies import attempt_import
+
 from watertap.tools.parallel.concurrent_futures_parallel_manager import (
     ConcurrentFuturesParallelManager,
 )
@@ -21,10 +23,14 @@ from watertap.tools.parallel.single_process_parallel_manager import (
 from watertap.tools.parallel.multiprocessing_parallel_manager import (
     MultiprocessingParallelManager,
 )
-from watertap.tools.parallel.ray_io_parallel_manager import (
-    RayIoParallelManager,
-)
+
 from watertap.tools.parallel.parallel_manager_factory import create_parallel_manager
+
+ray, ray_available = attempt_import("ray", defer_check=False)
+if ray_available:
+    from watertap.tools.parallel.ray_io_parallel_manager import (
+        RayIoParallelManager,
+    )
 
 
 def do_build(base=10):
@@ -119,10 +125,7 @@ class TestParallelManager:
     @pytest.mark.parametrize("number_of_subprocesses", [1, 4])
     def test_rayio_multiprocessing(self, number_of_subprocesses):
         all_parameters = [1, 2, 3, 4, 5]
-        try:
-            # ensure ray is avaialbe for test
-            import ray
-
+        if ray_available:
             parallel_manager = RayIoParallelManager(number_of_subprocesses)
             # the parallel manager shouldn't kick off more subprocesses than can do work
             number_of_subprocesses_used = min(
@@ -146,7 +149,7 @@ class TestParallelManager:
             # verify that the full list of results matches the expected
             all_results = [r for result in execution_results for r in result.results]
             assert all_results == [-101, -102, -103, -104, -105]
-        except ModuleNotFoundError:
+        else:
             pass
 
     @pytest.mark.component
@@ -163,17 +166,16 @@ class TestParallelManager:
             parallel_back_end="MultiProcessing",
         )
         assert isinstance(pm, MultiprocessingParallelManager)
-        try:
-            import ray
+        if ray_available:
+            pm = create_parallel_manager(
+                number_of_subprocesses=2,
+                parallel_back_end="RayIo",
+            )
 
-            ray_avaialble = True
-        except ModuleNotFoundError:
-            ray_avaialble = False
-        pm = create_parallel_manager(
-            number_of_subprocesses=2,
-            parallel_back_end="RayIo",
-        )
-        if ray_avaialble:
             assert isinstance(pm, RayIoParallelManager)
         else:
-            assert isinstance(pm, RayIoParallelManager) == False
+            with pytest.raises(ModuleNotFoundError):
+                pm = create_parallel_manager(
+                    number_of_subprocesses=2,
+                    parallel_back_end="RayIo",
+                )

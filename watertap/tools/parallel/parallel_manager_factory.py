@@ -18,15 +18,17 @@ from watertap.tools.parallel.concurrent_futures_parallel_manager import (
 from watertap.tools.parallel.single_process_parallel_manager import (
     SingleProcessParallelManager,
 )
-from watertap.tools.parallel.ray_io_parallel_manager import (
-    RayIoParallelManager,
-)
 from watertap.tools.parallel.multiprocessing_parallel_manager import (
     MultiprocessingParallelManager,
 )
 
 
 MPI, mpi4py_available = attempt_import("mpi4py.MPI", defer_check=False)
+ray, ray_avaialble = attempt_import("ray", defer_check=False)
+if ray_avaialble:
+    from watertap.tools.parallel.ray_io_parallel_manager import (
+        RayIoParallelManager,
+    )
 
 
 def create_parallel_manager(parallel_manager_class=None, **kwargs):
@@ -51,12 +53,11 @@ def create_parallel_manager(parallel_manager_class=None, **kwargs):
         elif parallel_backend == "MultiProcessing":
             return MultiprocessingParallelManager(number_of_subprocesses)
         elif parallel_backend == "RayIo":
-            try:
-                import ray
-
+            if ray_avaialble:
                 return RayIoParallelManager(number_of_subprocesses)
-            except:
-                print("Ray io not available, please install to use")
+            else:
+                raise ModuleNotFoundError("Ray is not available")
+
         else:
             raise NotImplementedError(
                 f"ParallelManager {parallel_backend} is not yet implemented"

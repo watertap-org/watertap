@@ -16,17 +16,13 @@ import numpy
 from watertap.tools.parallel.results import LocalResults
 from watertap.tools.parallel.parallel_manager import (
     parallelActor,
-    build_and_execute,
     ParallelManager,
 )
+from pyomo.common.dependencies import attempt_import
 
-try:
-    import ray
+ray, ray_available = attempt_import("ray", defer_check=False)
+if ray_available:
     from ray.util import ActorPool
-
-
-except ModuleNotFoundError:
-    Warning("Ray.io module not available")
 import os
 import platform
 

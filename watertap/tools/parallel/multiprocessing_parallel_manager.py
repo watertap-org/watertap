@@ -16,7 +16,6 @@ import numpy
 from watertap.tools.parallel.results import LocalResults
 from watertap.tools.parallel.parallel_manager import (
     parallelActor,
-    build_and_execute,
     ParallelManager,
 )
 import multiprocessing
