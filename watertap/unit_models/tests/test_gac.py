@@ -413,7 +413,7 @@ class TestGACRobust:
 
     @pytest.mark.component
     def test_robust_costing_gravity(self, gac_frame_robust):
-        mr_grav = gac_frame_robust.clone()
+        mr_grav = gac_frame_robust
 
         mr_grav.fs.costing = WaterTAPCosting()
         mr_grav.fs.costing.base_currency = pyo.units.USD_2020

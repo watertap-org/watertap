@@ -806,7 +806,7 @@ class TestChlorination:
         model = chlorination_obj
 
         _set_inherent_rxn_scaling(model.fs.unit, thermo_config)
-        _set_equ_rxn_scaling(model.fs.unit, reaction_config)
+        _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, reaction_config)
         _set_mat_bal_scaling_FTPx(model.fs.unit)
         _set_ene_bal_scaling(model.fs.unit)
 

@@ -204,7 +204,7 @@ jobs:
     - name: Install watertap and testing dependencies
       run: |
         echo '::group::Output of "pip install" commands'
-        pip install --progress-bar off "watertap[testing] @ ${_install_url}"
+        pip install --progress-bar off "watertap @ ${_install_url}" pytest
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
@@ -258,10 +258,6 @@ jobs:
         echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --verbose
         echo '::endgroup::'
-    - name: Exclude notebooks that cause errors on Windows
-      if: startswith(matrix.os, 'win')
-      run: |
-        rm tutorials/nawi_spring_meeting2023.ipynb
     - name: Run pytest with nbmake
       run:
         pytest --nbmake **/*.ipynb
@@ -304,4 +300,4 @@ jobs:
         pyomo build-extensions || python -c "from pyomo.contrib.pynumero.asl import AmplInterface; exit(0) if AmplInterface.available() else exit(1)"
     - name: Run pytest
       run: |
-        pytest --pyargs watertap -k 'not nf_dspmde.nf_ui'
+        pytest --pyargs watertap -k 'not (nf_dspmde.nf_ui or nf_dspmde.nf_with_bypass_ui)'
