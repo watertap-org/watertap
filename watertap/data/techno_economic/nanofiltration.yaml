@@ -121,11 +121,11 @@ rHGO_dye_rejection:
     units: dimensionless
   removal_frac_mass_comp:
     dye:
-      value: 0.99
+      value: 0.9917
       units: dimensionless
       constituent_longform: Dye
     tds:
-      value: 0.05
+      value: 0.2117357
       units: dimensionless
       constituent_longform: Total Suspended Solids (TSS)
   applied_pressure:
