@@ -40,7 +40,6 @@ import idaes.core.util.scaling as iscale
 
 from pyomo.environ import (
     Param,
-    PositiveReals,
     NonNegativeReals,
     Var,
     units as pyunits,
