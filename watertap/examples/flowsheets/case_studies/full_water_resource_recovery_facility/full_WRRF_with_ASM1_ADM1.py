@@ -9,14 +9,14 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-'''
+"""
 Flowsheet example full Water Resource Recovery Facility 
 (WRRF; a.k.a., wastewater treatment plant) with ASM1 and ADM1.
 
 The flowsheet follows the same formulation as benchmark simulation model no.2 (BSM2)
 but comprises different specifications for default values than BSM2.
 
-'''
+"""
 __author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia"
 
 import pyomo.environ as pyo
@@ -81,9 +81,9 @@ def main():
     add_costing(m)
     # Assert DOF = 0 after adding costing
     # assert_degrees_of_freedom(m, 0)
-    
-    #TODO: initialize costing after adding to flowsheet
-    #m.fs.costing.initialize()
+
+    # TODO: initialize costing after adding to flowsheet
+    # m.fs.costing.initialize()
 
     # results = solve(m)
 
@@ -91,7 +91,6 @@ def main():
 
     return m, results
 
-    
 def build_flowsheet():
     m = pyo.ConcreteModel()
 
@@ -364,7 +363,7 @@ def set_operating_conditions(m):
     m.fs.CL.split_fraction[0, "effluent", "S_ND"].fix(0.993)
     m.fs.CL.split_fraction[0, "effluent", "X_ND"].fix(0.5192)
     m.fs.CL.split_fraction[0, "effluent", "S_ALK"].fix(0.993)
-    
+
     # Anaerobic digester
     m.fs.RADM.volume_liquid.fix(3400)
     m.fs.RADM.volume_vapor.fix(300)
@@ -438,7 +437,7 @@ def initialize_system(m):
     seq.run(m, function)
 
 def add_costing(m):
-    #TODO: implement unit model and flowsheet level costing
+    # TODO: implement unit model and flowsheet level costing
     pass
 
 def solve(blk, solver=None):
@@ -479,5 +478,5 @@ def display_results(m):
         m.fs.component(u).report()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     m, results = main()

@@ -204,7 +204,7 @@ jobs:
     - name: Install watertap and testing dependencies
       run: |
         echo '::group::Output of "pip install" commands'
-        pip install --progress-bar off "watertap[testing] @ ${_install_url}"
+        pip install --progress-bar off "watertap @ ${_install_url}" pytest
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
