@@ -8,7 +8,7 @@ defined_flows:
     value: 1
     units: USD_2020/m**3
   dye_disposal:
-    value: 1
+    value: 120
     units: USD_2020/m**3
   dye_mass:
     value: 0.1
@@ -17,7 +17,7 @@ defined_flows:
     value: 0.12
     units: USD_2020/m**3
   recovered_water:
-    value: 0.1
+    value: 1.25
     units: USD_2020/m**3
 global_parameters:
   plant_lifetime:
