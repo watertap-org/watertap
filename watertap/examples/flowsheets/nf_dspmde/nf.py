@@ -415,7 +415,7 @@ def set_NF_feed_scaling(blk):
         scale = calc_scale(blk.feed.properties[0].flow_mol_phase_comp[index].value)
         print(f"{index} flow_mol_phase_comp scaling factor = {10**(scale+_add)}")
         blk.properties.set_default_scaling(
-            "flow_mol_phase_comp", 10 ** (scale + 0), index=index
+            "flow_mol_phase_comp", 10 ** (scale + _add), index=index
         )
 
 
