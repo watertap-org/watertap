@@ -21,7 +21,6 @@ from watertap.tools.parallel.parallel_manager import (
 from pyomo.common.dependencies import attempt_import
 
 ray, ray_available = attempt_import("ray", defer_check=False)
-
 import os
 import platform
 
@@ -100,7 +99,7 @@ class RayIoParallelManager(ParallelManager):
         # create queues, run queue will be used to store paramters we want to run
 
         actors = []
-        paramActor, ActorPool = create_paramActor_class()
+        paramActor = create_paramActor_class()
         # start ray actirs
         for cpu in range(self.actual_number_of_subprocesses):
             actors.append(
@@ -112,7 +111,7 @@ class RayIoParallelManager(ParallelManager):
                 )
             )
         # create actor pool for load balancing
-        actor_pool = ActorPool(actors)
+        actor_pool = ray.util.ActorPool(actors)
         # run in async.
 
         # load intoshared memory space
@@ -172,8 +171,6 @@ class RayIoParallelManager(ParallelManager):
 
 
 def create_paramActor_class():
-    from ray.util import ActorPool
-
     @ray.remote(num_cpus=1)
     class paramActor(parallelActor):
         # this lets us track the order in execution
@@ -185,4 +182,4 @@ def create_paramActor_class():
                 self.execute(local_parameters),
             )
 
-    return paramActor, ActorPool
+    return paramActor
