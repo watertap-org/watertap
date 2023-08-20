@@ -546,9 +546,14 @@ class _ParameterSweepBase(ABC):
         if run_successful:
             for var_name, specs in output_dict["outputs"].items():
                 pyo_obj = model.find_component(specs["full_name"])
-                output_dict["outputs"][var_name]["value"][case_number] = pyo.value(
-                    pyo_obj
-                )
+                # incase value is not initlized or can't be evalauted
+                # typical case, is a var is created, but not initlized or touched, such is 0 index vars in 1D RO
+                try:
+                    output_dict["outputs"][var_name]["value"][case_number] = pyo.value(
+                        pyo_obj
+                    )
+                except ValueError:
+                    pass
 
         else:
             for label, specs in output_dict["outputs"].items():
