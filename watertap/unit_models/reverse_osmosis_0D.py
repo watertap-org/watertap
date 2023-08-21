@@ -48,6 +48,21 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
 
     _add_has_full_reporting(CONFIG)
 
+    # CONFIG.declare(
+    #     "transport_model",
+    #     ConfigValue(
+    #         default='soultion-diffusion',
+    #         description="Mass transfer model in RO feed channel",
+    #         doc="""
+    #         Options to account for mass transfer model.
+
+    #         **default** - ``solution-diffusion``
+
+    #         """,
+    #     ),
+    # )
+
+
     def _add_feed_side_membrane_channel_and_geometry(self):
         # Build membrane channel control volume
         self.feed_side = MembraneChannel0DBlock(

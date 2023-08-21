@@ -234,6 +234,20 @@ CONFIG_Template.declare(
 )
 
 CONFIG_Template.declare(
+    "transport_model",
+    ConfigValue(
+        default='soultion-diffusion',
+        description="Mass transfer model in RO feed channel",
+        doc="""
+        Options to account for mass transfer model.
+
+        **default** - ``solution-diffusion``
+
+        """,
+    ),
+)
+
+CONFIG_Template.declare(
     "has_pressure_change",
     ConfigValue(
         default=False,
