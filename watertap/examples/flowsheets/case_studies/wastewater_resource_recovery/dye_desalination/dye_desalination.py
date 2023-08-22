@@ -172,18 +172,18 @@ def add_costing(m, has_dye_revenue=False):
     m.fs.zo_costing.cost_process()
 
     # create system level cost metrics
-    m.fs.brine_disposal_cost = Expression(
+    m.fs.brine_recovery_revenue = Expression(
         expr=(
             m.fs.zo_costing.utilization_factor
             * (
-                m.fs.zo_costing.waste_disposal_cost
+                m.fs.zo_costing.brine_recovery_cost
                 * pyunits.convert(
                     m.fs.permeate.properties[0].flow_vol,
                     to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
                 )
             )
         ),
-        doc="Cost of disposing of saline brine/ NF permeate",
+        doc="Revenue from recovering saline brine/ NF permeate",
     )
 
     if has_dye_revenue == True:
@@ -230,10 +230,10 @@ def add_costing(m, has_dye_revenue=False):
             to_units=pyunits.USD_2020 / pyunits.year,
         )
 
-    @m.fs.Expression(doc="Total cost of dye recovered and brine disposed")
+    @m.fs.Expression(doc="Total cost of dye recovery/disposal and brine recovery")
     def total_externalities(b):
         return pyunits.convert(
-            b.dye_value - b.brine_disposal_cost,
+            b.dye_value + b.brine_recovery_revenue,
             to_units=pyunits.USD_2020 / pyunits.year,
         )
 
@@ -292,12 +292,12 @@ def display_costing(m):
             m.fs.total_externalities, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
-    bdc = value(
+    brr = value(
         pyunits.convert(
-            m.fs.brine_disposal_cost, to_units=pyunits.USD_2020 / pyunits.year
+            m.fs.brine_recovery_revenue, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
-    print(f"Brine disposal cost: {-1*bdc: .4f} USD/year")
+    print(f"Brine recovery revenue: {brr: .4f} M$/year")
     print(f"Total Externalities: {total_externalities:.4f} M$/year")
 
     levelized_cost_treatment = value(
