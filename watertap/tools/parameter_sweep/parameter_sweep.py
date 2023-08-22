@@ -634,7 +634,7 @@ class _ParameterSweepBase(ABC):
         initialize_before_sweep = self.config.initialize_before_sweep
         # Forced reinitialization of the flowsheet if enabled
         # or init if model was not initialized or prior solved failed (if solved failed, init state is false)
-        if initialize_before_sweep or self.model_manager.is_intialized == False:
+        if initialize_before_sweep or self.model_manager.is_initialized == False:
             self.model_manager.build_and_init(sweep_params, local_value_k)
         # try to solve our model
         self.model_manager.update_model_params(sweep_params, local_value_k)
@@ -867,15 +867,16 @@ class ParameterSweep(_ParameterSweepBase):
         build_model,
         build_sweep_params,
         build_outputs=None,
-        build_outputs_kwargs=dict(),
+        build_outputs_kwargs=None,
         num_samples=None,
         seed=None,
-        build_model_kwargs=dict(),
-        build_sweep_params_kwargs=dict(),
+        build_model_kwargs=None,
+        build_sweep_params_kwargs=None,
     ):
         build_model_kwargs = (
             build_model_kwargs if build_model_kwargs is not None else dict()
         )
+        build_outputs = build_outputs if build_outputs is not None else dict()
         build_sweep_params_kwargs = (
             build_sweep_params_kwargs
             if build_sweep_params_kwargs is not None
@@ -1036,16 +1037,17 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         build_model,
         build_sweep_params,
         build_outputs=None,
-        build_outputs_kwargs=dict(),
+        build_outputs_kwargs=None,
         num_samples=None,
         seed=None,
-        build_model_kwargs=dict(),
-        build_sweep_params_kwargs=dict(),
+        build_model_kwargs=None,
+        build_sweep_params_kwargs=None,
         req_num_samples=None,
     ):
         build_model_kwargs = (
             build_model_kwargs if build_model_kwargs is not None else dict()
         )
+        build_outputs = build_outputs if build_outputs is not None else dict()
         build_sweep_params_kwargs = (
             build_sweep_params_kwargs
             if build_sweep_params_kwargs is not None

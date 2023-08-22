@@ -91,7 +91,7 @@ class ModelManager:
 
     def update_model_params(self, sweep_params, local_value_k):
         """Update local params, and store current local k state"""
-        print(self.model, sweep_params, local_value_k)
+        # print(self.model, sweep_params, local_value_k)
         self.ps._update_model_values(self.model, sweep_params, local_value_k)
         self.current_k = local_value_k
 
