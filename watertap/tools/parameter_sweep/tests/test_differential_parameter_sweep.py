@@ -223,9 +223,6 @@ def test_bad_differential_sweep_specs(model, tmp_path):
         },
     }
 
-    # A = m.fs.input["a"]
-    # B = m.fs.input["b"]
-    # sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
 
     ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
     with pytest.raises(ValueError):
