@@ -117,7 +117,6 @@ class MultiprocessingParallelManager(ParallelManager):
 
                 results.append(LocalResults(i, values, result))
         # sort the results by the process number to keep a deterministic ordering
-        # results.sort(key=lambda result: result.process_number)
         results.sort(key=lambda result: result.process_number)
         return results
 
