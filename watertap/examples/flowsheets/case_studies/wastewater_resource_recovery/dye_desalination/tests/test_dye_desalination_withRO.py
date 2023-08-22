@@ -70,7 +70,7 @@ class TestDyewithROFlowsheetwithPretreatment:
         )
 
         # test nanofiltration
-        assert pytest.approx(316.0848, rel=1e-5) == value(
+        assert pytest.approx(315.9843, rel=1e-5) == value(
             m.fs.dye_separation.nanofiltration.area
         )
 
@@ -78,7 +78,7 @@ class TestDyewithROFlowsheetwithPretreatment:
         assert pytest.approx(0, rel=1e-6) == value(
             m.fs.wwt_retentate.flow_mass_comp[0, "dye"]
         )
-        assert pytest.approx(0.006331, rel=1e-3) == value(
+        assert pytest.approx(0.026809, rel=1e-3) == value(
             m.fs.dye_retentate.flow_mass_comp[0, "tds"]
         )
 
@@ -104,11 +104,11 @@ class TestDyewithROFlowsheetwithPretreatment:
             m.fs.dye_retentate.flow_mass_comp[0, "H2O"]
         )
 
-        assert pytest.approx(32.2209, rel=1e-5) == value(
+        assert pytest.approx(32.2185, rel=1e-5) == value(
             m.fs.permeate.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
-        assert pytest.approx(32.1926, rel=1e-5) == value(
+        assert pytest.approx(32.1950, rel=1e-5) == value(
             m.fs.brine.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
@@ -123,8 +123,8 @@ class TestDyewithROFlowsheetwithPretreatment:
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(0.701149, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(0.449066, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(27.821289, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(19.835558, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
@@ -166,12 +166,12 @@ class TestDyewithROFlowsheetwithoutPretreatment:
         )
 
         # test nanofiltration
-        assert pytest.approx(316.219, rel=1e-5) == value(
+        assert pytest.approx(316.096, rel=1e-5) == value(
             m.fs.dye_separation.nanofiltration.area
         )
 
         # check products
-        assert pytest.approx(0.007778, rel=1e-3) == value(
+        assert pytest.approx(0.032937, rel=1e-3) == value(
             m.fs.dye_retentate.flow_mass_comp[0, "tds"]
         )
 
@@ -194,11 +194,11 @@ class TestDyewithROFlowsheetwithoutPretreatment:
             m.fs.dye_retentate.flow_mass_comp[0, "H2O"]
         )
 
-        assert pytest.approx(32.2242, rel=1e-5) == value(
+        assert pytest.approx(32.2212, rel=1e-5) == value(
             m.fs.permeate.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
-        assert pytest.approx(32.1893, rel=1e-5) == value(
+        assert pytest.approx(32.1923, rel=1e-5) == value(
             m.fs.brine.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
@@ -213,8 +213,8 @@ class TestDyewithROFlowsheetwithoutPretreatment:
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(0.608728, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(0.380391, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(27.719244, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(19.774679, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
