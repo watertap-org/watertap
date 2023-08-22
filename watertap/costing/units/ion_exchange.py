@@ -11,7 +11,6 @@
 #################################################################################
 
 import pyomo.environ as pyo
-from idaes.core.util.exceptions import ConfigurationError
 from ..util import (
     register_costing_parameter_block,
     make_capital_cost_var,
@@ -132,8 +131,8 @@ def build_ion_exhange_cost_param_block(blk):
         units=pyo.units.USD_2020 / pyo.units.gal,
         doc="Ion exchange pressure vessel cost equation - C coeff., Carbon steel w/ plastic internals",
     )
-    # Ion exchange pressure vessels costed with 3rd order polynomial:
-    #   pv_cost = A * col_vol^3 + B * col_vol^2 + C * col_vol + intercept
+    # Ion exchange backwash/rinse tank costed with 3rd order polynomial:
+    #   pv_cost = A * tank_vol^3 + B * tank_vol^2 + C * tank_vol + intercept
 
     blk.backwash_tank_A_coeff = pyo.Var(
         initialize=1e-9,
@@ -153,7 +152,7 @@ def build_ion_exhange_cost_param_block(blk):
     blk.backwash_tank_intercept = pyo.Var(
         initialize=4717.255,
         units=pyo.units.USD_2020,
-        doc="Ion exchange backwash tank cost equation - exponent, Fiberglass tank",
+        doc="Ion exchange backwash tank cost equation - intercept, Fiberglass tank",
     )
     # Ion exchange regeneration solution tank costed with 2nd order polynomial:
     #   regen_tank_cost = A * tank_vol^2 + B * tank_vol + intercept
@@ -161,7 +160,7 @@ def build_ion_exhange_cost_param_block(blk):
     blk.regen_tank_intercept = pyo.Var(
         initialize=4408.327,
         units=pyo.units.USD_2020,
-        doc="Ion exchange regen tank cost equation - C coeff. Stainless steel",
+        doc="Ion exchange regen tank cost equation - intercept. Stainless steel",
     )
     blk.regen_tank_A_coeff = pyo.Var(
         initialize=-3.258e-5,
@@ -193,6 +192,16 @@ def build_ion_exhange_cost_param_block(blk):
         units=pyo.units.USD_2020 * pyo.units.gal**-1,
         doc="Hazardous liquid disposal cost - EPA",
     )
+    blk.regen_recycle = pyo.Var(
+        initialize=1,
+        units=pyo.units.dimensionless,
+        doc="Number of cycles the regenerant can be reused before disposal",
+    )
+    blk.total_installed_cost_factor = pyo.Var(
+        initialize=1.65,
+        units=pyo.units.dimensionless,
+        doc="Costing factor to account for total installed cost of equipment",
+    )
 
 
 @register_costing_parameter_block(
@@ -221,7 +230,9 @@ def cost_ion_exchange(blk):
     """
     make_capital_cost_var(blk)
     make_fixed_operating_cost_var(blk)
+    ion_exchange_params = blk.costing_package.ion_exchange
     # Conversions to use units from cost equations in reference
+    tot_num_col = blk.unit_model.number_columns + blk.unit_model.number_columns_redund
     col_vol_gal = pyo.units.convert(blk.unit_model.col_vol_per, to_units=pyo.units.gal)
     bed_vol_ft3 = pyo.units.convert(blk.unit_model.bed_vol, to_units=pyo.units.ft**3)
     bed_mass_ton = pyo.units.convert(
@@ -236,14 +247,11 @@ def cost_ion_exchange(blk):
         to_units=pyo.units.gal,
     )
     regen_tank_vol = pyo.units.convert(
-        (
-            blk.unit_model.properties_regen[0].flow_vol_phase["Liq"]
-            * blk.unit_model.t_regen
-        ),
+        blk.unit_model.regen_tank_vol,
         to_units=pyo.units.gal,
     )
     ix_type = blk.unit_model.ion_exchange_type
-    TIC = 1.65
+
     blk.capital_cost_vessel = pyo.Var(
         initialize=1e5,
         domain=pyo.NonNegativeReals,
@@ -274,20 +282,24 @@ def cost_ion_exchange(blk):
         units=blk.costing_package.base_currency / blk.costing_package.base_period,
         doc="Operating cost for hazardous waste disposal",
     )
+    blk.regen_soln_flow = pyo.Var(
+        initialize=1,
+        bounds=(0, None),
+        units=pyo.units.kg / pyo.units.year,
+        doc="Regeneration solution flow",
+    )
+    blk.total_pumping_power = pyo.Var(
+        initialize=1,
+        bounds=(0, None),
+        units=pyo.units.kilowatt,
+        doc="Total pumping power required",
+    )
 
-    ion_exchange_params = blk.costing_package.ion_exchange
-
-    # TODO: add way to have other regen chemicals
     if ix_type == "cation":
         resin_cost = ion_exchange_params.cation_exchange_resin_cost
 
     elif ix_type == "anion":
         resin_cost = ion_exchange_params.anion_exchange_resin_cost
-
-    elif ix_type == "mixed":
-        raise ConfigurationError(
-            "IonExchangeOD model for IonExchangeType.mixed has not been implemented yet."
-        )
 
     blk.capital_cost_vessel_constraint = pyo.Constraint(
         expr=blk.capital_cost_vessel
@@ -328,24 +340,30 @@ def cost_ion_exchange(blk):
         expr=blk.capital_cost
         == pyo.units.convert(
             (
-                (blk.capital_cost_vessel + blk.capital_cost_resin)
-                * (blk.unit_model.number_columns + blk.unit_model.number_columns_redund)
+                ((blk.capital_cost_vessel + blk.capital_cost_resin) * tot_num_col)
                 + blk.capital_cost_backwash_tank
                 + blk.capital_cost_regen_tank
             )
-            * TIC,
+            * ion_exchange_params.total_installed_cost_factor,
             to_units=blk.costing_package.base_currency,
         )
     )
     if blk.unit_model.config.hazardous_waste:
+        blk.regen_dens = 1000 * pyo.units.kg / pyo.units.m**3
+        blk.regen_soln_vol_flow = pyo.units.convert(
+            blk.regen_soln_flow / blk.regen_dens,
+            to_units=pyo.units.gal / pyo.units.year,
+        )
         blk.operating_cost_hazardous_constraint = pyo.Constraint(
             expr=blk.operating_cost_hazardous
             == pyo.units.convert(
                 (
-                    bw_tank_vol * ion_exchange_params.hazardous_regen_disposal
-                    + bed_mass_ton * ion_exchange_params.hazardous_resin_disposal
+                    +bed_mass_ton
+                    * tot_num_col
+                    * ion_exchange_params.hazardous_resin_disposal
                 )
                 * ion_exchange_params.annual_resin_replacement_factor
+                + blk.regen_soln_vol_flow * ion_exchange_params.hazardous_regen_disposal
                 + ion_exchange_params.hazardous_min_cost,
                 to_units=blk.costing_package.base_currency
                 / blk.costing_package.base_period,
@@ -359,6 +377,7 @@ def cost_ion_exchange(blk):
             (
                 (
                     bed_vol_ft3
+                    * tot_num_col
                     * ion_exchange_params.annual_resin_replacement_factor
                     * resin_cost
                 )
@@ -369,21 +388,27 @@ def cost_ion_exchange(blk):
         + blk.operating_cost_hazardous
     )
 
-    regen_soln_flow = (
-        (
-            blk.unit_model.regen_dose
-            * blk.unit_model.bed_vol
-            * (blk.unit_model.number_columns + blk.unit_model.number_columns_redund)
+    blk.regen_soln_flow_constr = pyo.Constraint(
+        expr=blk.regen_soln_flow
+        == pyo.units.convert(
+            (
+                (blk.unit_model.regen_dose * blk.unit_model.bed_vol * tot_num_col)
+                / (blk.unit_model.t_cycle)
+            )
+            / ion_exchange_params.regen_recycle,
+            to_units=pyo.units.kg / pyo.units.year,
         )
-        / (blk.unit_model.t_cycle)
-    ) / blk.unit_model.regen_recycle
-
-    electricity_flow = (
-        blk.unit_model.main_pump_power
-        + blk.unit_model.regen_pump_power
-        + blk.unit_model.bw_pump_power
-        + blk.unit_model.rinse_pump_power
     )
 
-    blk.costing_package.cost_flow(electricity_flow, "electricity")
-    blk.costing_package.cost_flow(regen_soln_flow, blk.unit_model.regen_chem)
+    blk.total_pumping_power_constr = pyo.Constraint(
+        expr=blk.total_pumping_power
+        == (
+            blk.unit_model.main_pump_power
+            + blk.unit_model.regen_pump_power
+            + blk.unit_model.bw_pump_power
+            + blk.unit_model.rinse_pump_power
+        )
+    )
+
+    blk.costing_package.cost_flow(blk.regen_soln_flow, blk.unit_model.config.regenerant)
+    blk.costing_package.cost_flow(blk.total_pumping_power, "electricity")

@@ -162,7 +162,9 @@ class TestECZO_AL:
             value(m.fs.costing.electrocoagulation.electrode_material_cost[None]) == 2.23
         )
         assert isinstance(m.fs.costing.electrocoagulation, Block)
-        assert isinstance(m.fs.costing.electrocoagulation.ec_power_supply_base, Var)
+        assert isinstance(
+            m.fs.costing.electrocoagulation.ec_power_supply_base_slope, Var
+        )
         assert isinstance(m.fs.costing.electrocoagulation.ec_reactor_cap_base, Var)
         assert isinstance(m.fs.unit.costing.capital_cost, Var)
         assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
@@ -171,17 +173,17 @@ class TestECZO_AL:
 
         results = solver.solve(m)
         check_optimal_termination(results)
-        assert pytest.approx(0.693654, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.46010867626495217, rel=1e-5) == value(m.fs.costing.LCOW)
         assert pytest.approx(0.645923, rel=1e-5) == value(
             m.fs.costing.electricity_intensity
         )
         assert pytest.approx(84416.7283, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost_reactor
         )
-        assert pytest.approx(5129670.2511, rel=1e-5) == value(
+        assert pytest.approx(1075482.669992602, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost_power_supply
         )
-        assert pytest.approx(63417.3398, rel=1e-5) == value(
+        assert pytest.approx(126834.6796650618, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost_electrodes
         )
 
@@ -317,7 +319,9 @@ class TestECZO_FE:
             value(m.fs.costing.electrocoagulation.electrode_material_cost[None]) == 3.41
         )
         assert isinstance(m.fs.costing.electrocoagulation, Block)
-        assert isinstance(m.fs.costing.electrocoagulation.ec_power_supply_base, Var)
+        assert isinstance(
+            m.fs.costing.electrocoagulation.ec_power_supply_base_slope, Var
+        )
         assert isinstance(m.fs.costing.electrocoagulation.ec_reactor_cap_base, Var)
         assert isinstance(m.fs.unit.costing.capital_cost, Var)
         assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
@@ -326,17 +330,17 @@ class TestECZO_FE:
 
         results = solver.solve(m)
         check_optimal_termination(results)
-        assert pytest.approx(0.8111897, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.7040073125275583, rel=1e-5) == value(m.fs.costing.LCOW)
         assert pytest.approx(0.2076181, rel=1e-5) == value(
             m.fs.costing.electricity_intensity
         )
         assert pytest.approx(3031119.4946, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost_reactor
         )
-        assert pytest.approx(2001679.723, rel=1e-5) == value(
+        assert pytest.approx(134894.12528139338, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost_power_supply
         )
-        assert pytest.approx(35277.712, rel=1e-5) == value(
+        assert pytest.approx(70555.42416704558, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost_electrodes
         )
 

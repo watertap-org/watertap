@@ -26,14 +26,14 @@ class TestSOPProperty(PropertyTestHarness):
             ("flow_mass_phase_comp", ("Liq", "oil")): 1e2,
         }
         self.stateblock_statistics = {
-            "number_variables": 15,
-            "number_total_constraints": 11,
+            "number_variables": 16,
+            "number_total_constraints": 12,
             "number_unused_variables": 2,
             "default_degrees_of_freedom": 2,
         }
         self.default_solution = {
             ("visc_d_phase_comp", ("Liq", "H2O")): 1e-3,
-            ("visc_d_phase_comp", ("Liq", "oil")): 3.5e-3,
+            ("visc_d_phase_comp", ("Liq", "oil")): 3.56e-3,
             ("dens_mass_phase_comp", ("Liq", "H2O")): 1e3,
             ("dens_mass_phase_comp", ("Liq", "oil")): 780,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.990099,
@@ -41,6 +41,7 @@ class TestSOPProperty(PropertyTestHarness):
             ("flow_vol_phase_comp", ("Liq", "H2O")): 1e-3,
             ("flow_vol_phase_comp", ("Liq", "oil")): 1.28205e-5,
             ("flow_vol_phase", "Liq"): 1.01282e-3,
+            ("flow_vol", None): 1.01282e-3,
             ("flow_mass_phase", "Liq"): 1.01,
             ("dens_mass_phase", "Liq"): 997.215,
             ("vol_frac_phase_comp", ("Liq", "H2O")): 0.98734,
@@ -66,7 +67,7 @@ class TestSOPPropertySolution(PropertyRegressionTest):
         }
         self.regression_solution = {
             ("visc_d_phase_comp", ("Liq", "H2O")): 1e-3,
-            ("visc_d_phase_comp", ("Liq", "oil")): 3.5e-3,
+            ("visc_d_phase_comp", ("Liq", "oil")): 3.56e-3,
             ("dens_mass_phase_comp", ("Liq", "H2O")): 1e3,
             ("dens_mass_phase_comp", ("Liq", "oil")): 780,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.5,
@@ -74,6 +75,7 @@ class TestSOPPropertySolution(PropertyRegressionTest):
             ("flow_vol_phase_comp", ("Liq", "H2O")): 5e-4,
             ("flow_vol_phase_comp", ("Liq", "oil")): 6.41026e-4,
             ("flow_vol_phase", "Liq"): 1.141025641025641e-3,
+            ("flow_vol", None): 1.141025641025641e-3,
             ("flow_mass_phase", "Liq"): 1,
             ("dens_mass_phase", "Liq"): 876.404,
             ("vol_frac_phase_comp", ("Liq", "H2O")): 0.4382,

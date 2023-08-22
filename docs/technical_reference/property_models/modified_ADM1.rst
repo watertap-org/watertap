@@ -86,10 +86,15 @@ State variables
    "Total volumetric flowrate", ":math:`Q`", "flow_vol", "None", ":math:`\text{m}^3\text{/s}`"
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
-   "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[p]", ":math:`\text{kg/}\text{m}^3`"
+   "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[j]", ":math:`\text{kg/}\text{m}^3`"
    "Anions in molar concentrations", ":math:`M_a`", "anions", "None", ":math:`\text{kmol/}\text{m}^3`"
    "Cations in molar concentrations", ":math:`M_c`", "cations", "None", ":math:`\text{kmol/}\text{m}^3`"
-   "Component pressure", ":math:`P_{j,sat}`", "pressure_sat", "[p]", ":math:`\text{Pa}`"
+   "Component carbon content", ":math:`Ci`", "Ci_dict", "[j]", ":math:`\text{kmol/}\text{kg}`"
+   "Component nitrogen content", ":math:`Ni`", "Ni_dict", "[j]", ":math:`\text{kmol/}\text{kg}`"
+   "Component phosphorus content", ":math:`Pi`", "Pi_dict", "[j]", ":math:`\text{kmol/}\text{kg}`"
+   "Component pressure", ":math:`P_{j,sat}`", "pressure_sat", "[j]", ":math:`\text{Pa}`"
+   "Reference temperature", ":math:`T_{ref}`", "temperature_ref", "None", ":math:`\text{K}`"
+   "Reference component mass concentrations", ":math:`C_{j,ref}`", "conc_mass_comp_ref", "[j]", ":math:`\text{kg/}\text{m}^3`"
 
 Stoichiometric Parameters
 -------------------------
@@ -174,7 +179,7 @@ Kinetic Parameters
    "First-order decay rate for X_pro, k_dec_X_pro", ":math:`k_{dec,X_{pro}}`", "k_dec_X_pro", 0.02, ":math:`\text{d}^{-1}`"
    "First-order decay rate for X_ac, k_dec_X_ac", ":math:`k_{dec,X_{ac}}`", "k_dec_X_ac", 0.02, ":math:`\text{d}^{-1}`"
    "First-order decay rate for X_h2, k_dec_X_h2", ":math:`k_{dec,X_{h2}}`", "k_dec_X_h2", 0.02, ":math:`\text{d}^{-1}`"
-   "Dissociation constant, KW", ":math:`KW`", "KW", 2.08e-14, ":math:`(\text{kmol/}\text{m}^3)^2`"
+   "Water dissociation constant, KW", ":math:`KW`", "KW", 2.08e-14, ":math:`(\text{kmol/}\text{m}^3)^2`"
    "Valerate acid-base equilibrium constant, K_a_va", ":math:`K_{a,va}`", "K_a_va", 1.38e-5, ":math:`\text{kmol/}\text{m}^3`"
    "Butyrate acid-base equilibrium constant, K_a_bu", ":math:`K_{a,bu}`", "K_a_bu", 1.5e-5, ":math:`\text{kmol/}\text{m}^3`"
    "Propionate acid-base equilibrium constant, K_a_pro", ":math:`K_{a,pro}`", "K_a_bu", 1.32e-5, ":math:`\text{kmol/}\text{m}^3`"
@@ -242,30 +247,76 @@ Process Rate Equations
    ":lime:`Lysis of X_PP`", ":math:`\rho_{24} = b_{PP} C_{X_{PP}}`"
    ":lime:`Lysis of X_PHA`", ":math:`\rho_{25} = b_{PHA} C_{X_{PHA}}`"
 
+Additional Variables
+--------------------
+.. csv-table::
+ :header: "Description", "Symbol", "Parameter", "Value at 20 C", "Units"
 
-The rules for pH inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH,aa}`), acetate-utilizing microorganisms (:math:`I_{pH,ac}`), hydrogen-utilizing microorganisms (:math:`I_{pH,h2}`) are:
+   "Molar concentration of hydrogen, S_H", ":math:`S_{H}`", "S_H", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
+   "Molar concentration of hydroxide, S_OH", ":math:`S_{OH}`", "S_OH", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
+
+Additional Constraints
+----------------------
+:lime:`Lime` text indicates the equation has been added, and :blue:`blue` text indicates the equation has been modified from its base ADM1 implementation.
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Water dissociation constant constraint", ":math:`KW = 10^{-14} exp{(\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
+   "CO2 acid-base equilibrium constraint", ":math:`K_{a,co2} = 10^{-6.35} exp{(\frac{7646}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
+   "Nitrogen acid-base equilibrium constraint", ":math:`K_{a,IN} = 10^{-9.25} exp{(\frac{51965}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
+   "Mass concentration of valerate, va-", ":math:`C_{va} = \frac{K_{a,va} * C_{va,ref}}{K_{a,va} + S_{H}}`"
+   "Mass concentration of butyrate, bu-", ":math:`C_{bu} = \frac{K_{a,bu} * C_{bu,ref}}{K_{a,bu} + S_{H}}`"
+   "Mass concentration of propionate, pro-", ":math:`C_{pro} = \frac{K_{a,pro} * C_{pro,ref}}{K_{a,pro} + S_{H}}`"
+   "Mass concentration of acetate, ac-", ":math:`C_{ac} = \frac{K_{a,ac} * C_{ac,ref}}{K_{a,ac} + S_{H}}`"
+   "Molar concentration of bicarbonate, HCO3", ":math:`M_{hco3} = \frac{K_{a,co2} * \frac{C_{S_{IC},ref}}{12}}{K_{a,co2} + S_{H}}`"
+   "Molar concentration of ammonia, NH3", ":math:`M_{nh3} = \frac{K_{a,IN} * \frac{C_{S_{IN},ref}}{14}}{K_{a,IN} + S_{H}}`"
+   "Molar concentration of carbon dioxide, CO2", ":math:`M_{co2} = \frac{C_{S_{IC},ref}}{12} - M_{hco3}`"
+   "Molar concentration of ammonium, NH4+", ":math:`M_{nh4} = \frac{C_{S_{IN},ref}}{14} - M_{nh3}`"
+   ":lime:`Molar concentration of magnesium, Mg`", ":math:`M_{Mg} = \frac{C_{X_{PP},ref}}{300.41}`"
+   ":lime:`Molar concentration of potassium, K`", ":math:`M_{K} = \frac{C_{X_{PP},ref}}{300.41}`"
+   ":blue:`Molar concentration of hydrogen, H+`", ":math:`S_{H} = M_{hco3} + \frac{C_{ac}}{64} + \frac{C_{pro}}{112} + \frac{C_{bu}}{160} + \frac{C_{va}}{208} + S_{OH} + M_{a} - M_{c} - M_{nh4} - M_{Mg} - M_{K}`"
+   "Molar concentration of hydroxide, OH-", ":math:`S_{OH} = \frac{KW}{S_{H}}`"
+   "pH of solution", ":math:`pH = -log_{10}(S_{H})`"
+
+The rules for inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH,aa}`), acetate-utilizing microorganisms (:math:`I_{pH,ac}`), hydrogen-utilizing microorganisms (:math:`I_{pH,h2}`) are:
 
     .. math::
 
        I_{pH,aa}=
        \begin{cases}
-         \exp{-3 (\frac{pH - pH_{UL,aa}}{pH_{UL,aa} - pH_{LL,aa}})^2} & \text{for } pH \le pH_{UL,aa}\\
+         \exp{(-3 (\frac{pH - pH_{UL,aa}}{pH_{UL,aa} - pH_{LL,aa}})^2)} & \text{for } pH \le pH_{UL,aa}\\
          1 & \text{for } pH > pH_{UL,aa}
        \end{cases}
 
        I_{pH,ac}=
        \begin{cases}
-         \exp{-3 (\frac{pH - pH_{UL,ac}}{pH_{UL,ac} - pH_{LL,ac}})^2} & \text{for } pH \le pH_{UL,ac}\\
+         \exp{(-3 (\frac{pH - pH_{UL,ac}}{pH_{UL,ac} - pH_{LL,ac}})^2)} & \text{for } pH \le pH_{UL,ac}\\
          1 & \text{for } pH > pH_{UL,ac}
        \end{cases}
 
-       I_{pH,aa}=
+       I_{pH,h2}=
        \begin{cases}
-         \exp{-3 (\frac{pH - pH_{UL,h2}}{pH_{UL,h2} - pH_{LL,h2}})^2} & \text{for } pH \le pH_{UL,h2}\\
+         \exp{(-3 (\frac{pH - pH_{UL,h2}}{pH_{UL,h2} - pH_{LL,h2}})^2)} & \text{for } pH \le pH_{UL,h2}\\
          1 & \text{for } pH > pH_{UL,h2}
        \end{cases}
 
-The rules for hydrogen sulfide inhibition factors are shown below; however, since :math:`Z_{h2s}` is assumed to be 0, all of these inhibition factors are negligible
+
+The rules for inhibition related to secondary substrate (:math:`I_{IN,lim}`), hydrogen inhibition attributed to long chain fatty acids (:math:`I_{h2,fa}`), hydrogen inhibition attributed to valerate and butyrate uptake (:math:`I_{h2,c4}`), hydrogen inhibition attributed to propionate uptake (:math:`I_{h2,pro}`), ammonia inibition attributed to acetate uptake (:math:`I_{nh3}`),  are:
+
+    .. math::
+
+       I_{IN,lim} = \frac{1}{1 + \frac{K_{S_{IN}}}{C_{S_{IN}}/14}}
+
+       I_{h2, fa}= \frac{1}{1 + \frac{C_{S_{h2}}}{K_{I,h2,fa}}}
+
+       I_{h2, c4}= \frac{1}{1 + \frac{C_{S_{h2}}}{K_{I,h2,c4}}}
+
+       I_{h2, pro}= \frac{1}{1 + \frac{C_{S_{h2}}}{K_{I,h2,pro}}}
+
+       I_{nh3}= \frac{1}{1 + \frac{M_{nh3}}{K_{I,nh3}}}
+
+:lime:`The rules for hydrogen sulfide inhibition factors are shown below; however, since` :math:`Z_{h2s}` :lime:`is assumed to be 0, all of these inhibition factors are negligible.`
 
     .. math::
 
@@ -277,8 +328,8 @@ The rules for hydrogen sulfide inhibition factors are shown below; however, sinc
 
        I_{h2s, pro}= \frac{1}{1 + \frac{Z_{h2s}}{K_{I,h2s,pro}}}
 
-Classes
--------
+Class Documentation
+-------------------
 .. currentmodule:: watertap.property_models.anaerobic_digestion.modified_adm1_properties
 
 .. autoclass:: ModifiedADM1ParameterBlock

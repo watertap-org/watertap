@@ -81,16 +81,20 @@ class TestSelectiveOilPermeation:
 
         # fully specify system
         m.fs.unit.feed_side.properties_in[0].temperature.fix(298.15)  # temp in K
-        m.fs.unit.feed_side.properties_in[0].pressure.fix(1.48 * units.bar)
-        # The below feed data corresponds roughly to 3.8 L/min flow with 500 ppm oil
+        m.fs.unit.feed_side.properties_in[0].pressure.fix(2.52 * units.bar)
         m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix(
-            6.3e-2
+            6.27e-2
         )  # H2O flow in kg/s
         m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "oil"].fix(
-            3.2e-5
+            4.94e-4
         )  # oil flow in kg/s
-        m.fs.unit.feed_side.properties_out[0].pressure.fix(1.20 * units.bar)
+        m.fs.unit.feed_side.properties_out[0].pressure.fix(2.24 * units.bar)
         m.fs.unit.area.fix(1.4)  # membrane area in m^2
+        m.fs.unit.pore_diameter.fix(4.7e-8)
+        m.fs.unit.porosity.fix(0.4)
+        m.fs.unit.membrane_thickness.fix(4e-5)
+        m.fs.unit.permeability_constant.fix(150)
+        m.fs.unit.module_diameter.fix(0.064)
         m.fs.unit.properties_permeate[0].pressure.fix(1 * units.bar)
 
         return m
@@ -108,8 +112,8 @@ class TestSelectiveOilPermeation:
             )  # number of state variables for SOP property package
             assert isinstance(port, Port)
 
-        assert number_variables(m) == 28
-        assert number_total_constraints(m) == 20
+        assert number_variables(m) == 35
+        assert number_total_constraints(m) == 22
         assert number_unused_variables(m) == 0
         assert_units_consistent(m)
 
@@ -192,25 +196,31 @@ class TestSelectiveOilPermeation:
     @pytest.mark.component
     def test_solution(self, unit_frame):
         m = unit_frame
-        assert pytest.approx(6.1178e-6, rel=1e-3) == value(
+        assert pytest.approx(3.32237e-4, rel=1e-3) == value(
             m.fs.unit.properties_permeate[0].flow_mass_phase_comp["Liq", "oil"]
         )
-        assert pytest.approx(3.4e4, rel=1e-3) == value(
+        assert pytest.approx(1.38e5, rel=1e-3) == value(
             m.fs.unit.pressure_transmemb_avg[0]
         )
         assert pytest.approx(-2.8e4, rel=1e-3) == value(m.fs.unit.deltaP[0])
-        assert pytest.approx(5.6024e-9, rel=1e-3) == value(m.fs.unit.flux_vol_oil[0])
-        assert pytest.approx(6.0346e-7, rel=1e-3) == value(
+        assert pytest.approx(3.0425e-07, rel=1e-3) == value(m.fs.unit.flux_vol_oil[0])
+        assert pytest.approx(3.3246e-06, rel=1e-3) == value(
             m.fs.unit.flux_vol_oil_pure[0]
         )
-        assert pytest.approx(9.2802e-3, rel=1e-3) == value(
+        assert pytest.approx(0.091512, rel=1e-3) == value(
             m.fs.unit.effective_area_ratio[0]
         )
-        assert pytest.approx(0.19118, rel=1e-3) == value(m.fs.unit.recovery_frac_oil[0])
-        assert pytest.approx(1.9596e-2, rel=1e-3) == value(
+        assert pytest.approx(0.10799, rel=1e-3) == value(
+            m.fs.unit.effective_area_ratio_num[0]
+        )
+        assert pytest.approx(1.1801, rel=1e-3) == value(
+            m.fs.unit.effective_area_ratio_den[0]
+        )
+        assert pytest.approx(0.67254, rel=1e-3) == value(m.fs.unit.recovery_frac_oil[0])
+        assert pytest.approx(0.019687, rel=1e-3) == value(
             m.fs.unit.liquid_velocity_in[0]
         )
-        assert pytest.approx(6.1178e-6, rel=1e-3) == value(
+        assert pytest.approx(3.32237e-4, rel=1e-3) == value(
             m.fs.unit.mass_transfer_oil[0]
         )
 

@@ -16,7 +16,10 @@ import pyomo.environ as pyo
 from pyomo.environ import ConcreteModel
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util.scaling import unscaled_constraints_generator
+from idaes.core.util.scaling import (
+    unscaled_constraints_generator,
+    calculate_scaling_factors,
+)
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 
@@ -87,7 +90,7 @@ class TestScaling:
 
     @pytest.mark.unit
     def test_logger_warning(self, model, caplog):
-        caplog.set_level(idaeslog.INFO, logger=("watertap.core.util.scaling"))
+        caplog.set_level(idaeslog.INFO, logger="watertap.core.util.scaling")
 
         m = model
 
@@ -128,3 +131,16 @@ class TestScaling:
                     "constraint associated with the {var_str}, this warning can be ignored."
                     in caplog.text
                 )
+
+    @pytest.mark.unit
+    def test_no_logger_warning_for_params_set_as_fixed_vars(self, model, caplog):
+        caplog.set_level(idaeslog.INFO, logger="watertap.core.util.scaling")
+
+        m = model
+
+        calculate_scaling_factors(m.fs.stream[0])
+
+        assert (
+            "If there was a property constraint written for the variable"
+            not in caplog.text
+        )
