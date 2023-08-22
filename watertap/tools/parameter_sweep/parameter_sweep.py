@@ -684,7 +684,7 @@ class _ParameterSweepBase(ABC):
         )
         return run_successful
 
-    def _do_param_sweep(self, model, sweep_params, outputs, local_values):
+    def _do_param_sweep(self, sweep_params, outputs, local_values):
         # setup model manager if not already specifid (Used in case of diff tool)
         # or if user wants to specify thier own model_manager before runing param sweep
         if self.model_manager == None:
@@ -876,7 +876,9 @@ class ParameterSweep(_ParameterSweepBase):
         build_model_kwargs = (
             build_model_kwargs if build_model_kwargs is not None else dict()
         )
-        build_outputs = build_outputs if build_outputs is not None else dict()
+        build_outputs_kwargs = (
+            build_outputs_kwargs if build_outputs_kwargs is not None else dict()
+        )
         build_sweep_params_kwargs = (
             build_sweep_params_kwargs
             if build_sweep_params_kwargs is not None
@@ -1047,7 +1049,9 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         build_model_kwargs = (
             build_model_kwargs if build_model_kwargs is not None else dict()
         )
-        build_outputs = build_outputs if build_outputs is not None else dict()
+        build_outputs_kwargs = (
+            build_outputs_kwargs if build_outputs_kwargs is not None else dict()
+        )
         build_sweep_params_kwargs = (
             build_sweep_params_kwargs
             if build_sweep_params_kwargs is not None
@@ -1263,11 +1267,11 @@ def do_execute(
 
     if param_sweep_instance.config.custom_do_param_sweep is not None:
         return param_sweep_instance.config.custom_do_param_sweep(
-            param_sweep_instance, model, sweep_params, outputs, local_combo_array
+            param_sweep_instance, sweep_params, outputs, local_combo_array
         )
 
     return param_sweep_instance._do_param_sweep(
-        model, sweep_params, outputs, local_combo_array
+        sweep_params, outputs, local_combo_array
     )
 
 

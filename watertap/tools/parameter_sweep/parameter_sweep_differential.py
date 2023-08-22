@@ -388,7 +388,9 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         build_model_kwargs = (
             build_model_kwargs if build_model_kwargs is not None else dict()
         )
-        build_outputs = build_outputs if build_outputs is not None else dict()
+        build_outputs_kwargs = (
+            build_outputs_kwargs if build_outputs_kwargs is not None else dict()
+        )
         build_sweep_params_kwargs = (
             build_sweep_params_kwargs
             if build_sweep_params_kwargs is not None
