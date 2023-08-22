@@ -378,11 +378,11 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         build_model,
         build_sweep_params,
         build_outputs=None,
-        build_outputs_kwargs=dict(),
+        build_outputs_kwargs=None,
         num_samples=None,
         seed=None,
-        build_model_kwargs=dict(),
-        build_sweep_params_kwargs=dict(),
+        build_model_kwargs=None,
+        build_sweep_params_kwargs=None,
     ):
         # Create a base sweep_params
         build_model_kwargs = (
