@@ -11,7 +11,7 @@
 #################################################################################
 
 import numpy
-
+import logging
 
 from watertap.tools.parallel.results import LocalResults
 from watertap.tools.parallel.parallel_manager import (
@@ -23,6 +23,11 @@ from pyomo.common.dependencies import attempt_import
 ray, ray_available = attempt_import("ray", defer_check=False)
 import os
 import platform
+
+
+__author__ = "Alexander V. Dudchenko (SLAC)"
+
+_log = logging.getLogger(__name__)
 
 
 class RayIoParallelManager(ParallelManager):
@@ -37,6 +42,9 @@ class RayIoParallelManager(ParallelManager):
         self.running_futures = dict()
         # TODO: this should be deprciated once max resource option is avaiable
         self.cluster_mode = False
+        if ray_available:
+            # constrain the number of child processes to the number of unique values to be run
+            self.setup_ray_cluster()
 
     def is_root_process(self):
         return True
@@ -80,8 +88,6 @@ class RayIoParallelManager(ParallelManager):
         do_execute,
         all_parameters,
     ):
-        # constrain the number of child processes to the number of unique values to be run
-        self.setup_ray_cluster()
         # over ride max_number of subprocess if user setus up cluster mode
         # by adding "ip_head" and  "redis_password" to their ENVS
         # and starting ray cluster before running parameter sweep
@@ -144,25 +150,29 @@ class RayIoParallelManager(ParallelManager):
                 # the parllel manaager will connect to this cluster
                 # useing ip_head addres of head node, and its password
                 # if these are not found it will reveret to local mode.
-                print(os.environ["ip_head"], os.environ["redis_password"])
+                _log.info(
+                    "Connected to IP: {}, redis password: {}".format(
+                        os.environ["ip_head"], os.environ["redis_password"]
+                    )
+                )
 
                 ray.init(
                     include_dashboard=False,
                     address=os.environ["ip_head"],
                     _redis_password=os.environ["redis_password"],
                 )
-                print("Nodes in the Ray cluster:")
-                print(ray.nodes())
-                print(ray.cluster_resources())
+                _log.info("Nodes in ray cluster {}".format(ray.nodes()))
+                _log.info("Resources, {}".format(ray.cluster_resources()))
                 self.cluster_mode = True
             except KeyError:
-                print("Did not find ray cluster address, running in local mode")
+                _log.info("Did not find ray cluster address, running in local mode")
                 if ray.is_initialized() == False:
                     # ray.shutdown()
                     ray.init(include_dashboard=False)
                 self.cluster_mode = False
         else:
             if platform.system() != "Linux" and self.cluster_mode == False:
+                _log.info("Restarting ray")
                 # restart ray on windows machine to deal with memoery issues
                 if ray.is_initialized():
                     ray.shutdown()

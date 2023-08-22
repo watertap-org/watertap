@@ -9,8 +9,10 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
 import pyomo.environ as pyo
+
+
+__author__ = "Alexander V. Dudchenko (SLAC)"
 
 
 class ModelManager:
