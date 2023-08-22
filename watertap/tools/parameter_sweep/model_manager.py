@@ -24,7 +24,7 @@ class ModelManager:
         self.ps_conf = ps_instance.config
         self.ps = ps_instance
 
-        self.is_intilized = False
+        self.is_initialized = False
         self.is_solved = False
         self.is_prior_parameter_solved = False
         # this is isused for loggin states if enabled
@@ -63,7 +63,7 @@ class ModelManager:
             self.initialized_states["state"].append(state)
             self.initialized_states["local_value_k"].append(self.current_k)
 
-        self.is_intilized = state
+        self.is_initialized = state
 
     def update_solved_state(self, state):
         """used to update and if requested log solved state"""
@@ -91,6 +91,7 @@ class ModelManager:
 
     def update_model_params(self, sweep_params, local_value_k):
         """Update local params, and store current local k state"""
+        print(self.model, sweep_params, local_value_k)
         self.ps._update_model_values(self.model, sweep_params, local_value_k)
         self.current_k = local_value_k
 
