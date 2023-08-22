@@ -16,6 +16,7 @@ from pyomo.environ import (
     units,
     value,
     assert_optimal_termination,
+    units as pyunits,
 )
 from pyomo.network import Arc
 from idaes.core import (
@@ -35,11 +36,11 @@ from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
 from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import (
     ModifiedADM1ReactionParameterBlock,
 )
-from watertap.property_models.activated_sludge.simple_modified_asm2d_properties import (
-    SimpleModifiedASM2dParameterBlock,
+from watertap.property_models.activated_sludge.modified_asm2d_properties import (
+    ModifiedASM2dParameterBlock,
 )
-from watertap.unit_models.translators.translator_adm1_simple_asm2d import (
-    Translator_ADM1_Simple_ASM2D,
+from watertap.unit_models.translators.translator_adm1_asm2d import (
+    Translator_ADM1_ASM2D,
 )
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
 from idaes.core.util.tables import (
@@ -47,6 +48,7 @@ from idaes.core.util.tables import (
     stream_table_dataframe_to_string,
 )
 from idaes.core.util.initialization import propagate_state
+from watertap.core.util.initialization import check_solve
 from watertap.costing import WaterTAPCosting
 
 # Set up logger
@@ -56,7 +58,6 @@ _log = idaeslog.getLogger(__name__)
 def build_flowsheet():
     # flowsheet set up
     m = pyo.ConcreteModel()
-
     m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
@@ -64,11 +65,10 @@ def build_flowsheet():
     m.fs.rxn_props_ADM1 = ModifiedADM1ReactionParameterBlock(
         property_package=m.fs.props_ADM1
     )
-    m.fs.props_ASM2D = SimpleModifiedASM2dParameterBlock(
-        additional_solute_list=["S_K", "S_Mg"]
-    )
+    m.fs.props_ASM2D = ModifiedASM2dParameterBlock()
     m.fs.costing = WaterTAPCosting()
 
+    # Unit models
     m.fs.AD = AD(
         liquid_property_package=m.fs.props_ADM1,
         vapor_property_package=m.fs.props_vap_ADM1,
@@ -78,7 +78,7 @@ def build_flowsheet():
     )
     m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
-    m.fs.translator_adm1_asm2d = Translator_ADM1_Simple_ASM2D(
+    m.fs.translator_adm1_asm2d = Translator_ADM1_ASM2D(
         inlet_property_package=m.fs.props_ADM1,
         outlet_property_package=m.fs.props_ASM2D,
         reaction_package=m.fs.rxn_props_ADM1,
@@ -90,10 +90,8 @@ def build_flowsheet():
     m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(
-        m.fs.electroNP.properties_treated[0].flow_vol
-    )
-    m.fs.costing.add_LCOW(m.fs.electroNP.properties_treated[0].flow_vol)
+    m.fs.costing.add_annual_water_production(m.fs.electroNP.treated.flow_vol[0])
+    m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
 
     # connections
     m.fs.stream_adm1_translator = Arc(
@@ -105,7 +103,7 @@ def build_flowsheet():
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     # Feed conditions based on mass balance in Flores-Alsina, where 0 terms are expressed as 1e-9
-    m.fs.AD.inlet.flow_vol.fix(
+    m.fs.AD.inlet.flow_vol[0].fix(
         170 * units.m**3 / units.day
     )  # Double check this value
     m.fs.AD.inlet.temperature.fix(308.15)
@@ -153,6 +151,9 @@ def build_flowsheet():
     m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * units.kWh / units.kg)
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
+    # Costing
+    m.fs.costing.electroNP.phosphorus_recovery_value = 0
+
     # scaling
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
         if "flow_vol" in var.name:
@@ -177,68 +178,11 @@ def build_flowsheet():
             iscale.set_scaling_factor(var, 1e-1)
         if "conc_mass_comp[X_I]" in var.name:
             iscale.set_scaling_factor(var, 1e-1)
-        if "conc_mass_comp[S_O2]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[S_N2]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[S_NO3]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[X_H]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[X_PAO]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[X_AUT]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[X_MeOH]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[X_MeP]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[X_TSS]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[S_ch4]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[X_su]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[X_fa]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[X_c4]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[X_pro]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[X_ac]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
-        if "conc_mass_comp[X_h2]" in var.name:
-            iscale.set_scaling_factor(var, 1e4)
 
     iscale.calculate_scaling_factors(m)
 
-    iscale.set_scaling_factor(m.fs.electroNP.properties_byproduct[0.0].flow_vol, 1e7)
+    iscale.set_scaling_factor(m.fs.electroNP.byproduct.flow_vol[0.0], 1e7)
     iscale.set_scaling_factor(m.fs.AD.vapor_phase[0].pressure_sat, 1e-3)
-
-    skip_constraint = [
-        "S_O2",
-        "S_N2",
-        "X_AUT",
-        "X_PHA",
-        "S_I",
-        "S_NO3",
-        "S_Mg",
-        "X_MeP",
-        "X_MeOH",
-        "X_PAO",
-        "X_TSS",
-        "S_F",
-        "S_K",
-        "S_A",
-        "X_I",
-        "X_H",
-        "X_PP",
-        "X_S",
-    ]
-
-    for i in skip_constraint:
-        m.fs.electroNP.solute_removal_equation[0.0, "Liq", i].deactivate()
-        m.fs.electroNP.solute_treated_equation[0.0, "Liq", i].deactivate()
 
     m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH)
     propagate_state(m.fs.stream_adm1_translator)
@@ -247,55 +191,88 @@ def build_flowsheet():
     m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH)
     m.fs.costing.initialize()
 
-    solver = get_solver()
-
-    results = solver.solve(m, tee=True)
+    results = solve(m, tee=True)
     return m, results
 
 
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
+    if solver is None:
+        solver = get_solver()
+    results = solver.solve(blk, tee=tee)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
+    return results
+
+
 def display_costing(m):
-    print("\nUnit Capital Costs\n")
+    print("\n----------Capital Cost----------")
+    total_capital_cost = value(
+        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.USD_2018)
+    )
+    normalized_capex = total_capital_cost / value(
+        pyunits.convert(m.fs.AD.inlet.flow_vol[0], to_units=pyunits.m**3 / pyunits.hr)
+    )
+    print(f"Total Capital Costs: {total_capital_cost:.3f} $")
+    print(f"Normalized Capital Costs: {normalized_capex:.3f} $/m3/hr")
+    print("Capital Cost Breakdown")
     for u in m.fs.costing._registered_unit_costing:
         print(
             u.name,
-            " :   ",
-            value(units.convert(u.capital_cost, to_units=units.USD_2018)),
+            " : {price:0.3f} $".format(
+                price=value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018))
+            ),
         )
+    print("\n----------Operation Cost----------")
+    total_operating_cost = value(
+        pyunits.convert(
+            m.fs.costing.total_operating_cost, to_units=pyunits.USD_2018 / pyunits.year
+        )
+    )
+    print(f"Total Operating Cost: {total_operating_cost:.3f} $/year")
 
-    print("\nUtility Costs\n")
+    opex_fraction = value(
+        pyunits.convert(
+            m.fs.costing.total_operating_cost, to_units=pyunits.USD_2018 / pyunits.year
+        )
+        / pyunits.convert(
+            m.fs.AD.inlet.flow_vol[0], to_units=pyunits.m**3 / pyunits.year
+        )
+        / m.fs.costing.LCOW
+    )
+    print(f"Operating cost fraction: {opex_fraction:.3f} $ opex / $ LCOW")
+
+    print("Operating Cost Breakdown")
     for f in m.fs.costing.used_flows:
         print(
-            f,
-            " :   ",
-            value(
-                units.convert(
-                    m.fs.costing.aggregate_flow_costs[f],
-                    to_units=units.USD_2018 / units.year,
+            f.title(),
+            " :    {price:0.3f} $/m3 feed".format(
+                price=value(
+                    pyunits.convert(
+                        m.fs.costing.aggregate_flow_costs[f],
+                        to_units=pyunits.USD_2018 / pyunits.year,
+                    )
+                    / pyunits.convert(
+                        m.fs.AD.inlet.flow_vol[0],
+                        to_units=pyunits.m**3 / pyunits.year,
+                    )
                 )
             ),
         )
 
-    print("")
-    total_capital_cost = value(
-        units.convert(m.fs.costing.total_capital_cost, to_units=units.USD_2018)
-    )
-    print(f"Total Capital Costs: {total_capital_cost:.2f} $")
-    total_operating_cost = value(
-        units.convert(
-            m.fs.costing.total_operating_cost, to_units=units.USD_2018 / units.year
-        )
-    )
-    print(f"Total Operating Costs: {total_operating_cost:.2f} $/year")
+    print("\n----------Energy----------")
+
     electricity_intensity = value(
-        units.convert(
-            m.fs.electroNP.energy_electric_flow_mass, to_units=units.kWh / units.kg
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_electricity / m.fs.AD.inlet.flow_vol[0],
+            to_units=units.kWh / units.m**3,
         )
     )
-    print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/kg - P")
+    print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/m3")
+
+    print("\n----------Levelized Cost----------")
     LCOW = value(
-        units.convert(m.fs.costing.LCOW, to_units=units.USD_2018 / units.m**3)
+        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
     )
-    print(f"Levelized Cost of Water: {LCOW:.4f} $/m^3")
+    print(f"Levelized Cost of Water: {LCOW:.3f} $/m^3")
 
 
 if __name__ == "__main__":
@@ -305,6 +282,7 @@ if __name__ == "__main__":
         {
             "AD inlet": m.fs.AD.inlet,
             "AD liquid outlet": m.fs.AD.liquid_outlet,
+            "AD vapor outlet": m.fs.AD.vapor_outlet,
             "Translator outlet": m.fs.translator_adm1_asm2d.outlet,
             "ElectroNP treated": m.fs.electroNP.treated,
             "ElectroNP byproduct": m.fs.electroNP.byproduct,

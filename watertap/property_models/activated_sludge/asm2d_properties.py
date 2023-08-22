@@ -41,7 +41,7 @@ from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
 
 # Some more information about this module
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Adam Atia, Xinhong Liu"
 
 
 # Set up logger
@@ -102,6 +102,37 @@ class ASM2dParameterData(PhysicalParameterBlock):
         self.X_PP = Solute(doc="Poly-phosphate. [kg P/m^3]")
         self.X_S = Solute(doc="Slowly biodegradable substrates. [kg COD/m^3]")
         self.X_TSS = Solute(doc="Total suspended solids, TSS. [kg TSS/m^3]")
+
+        # Create sets for use across ASM models and associated unit models
+        self.non_particulate_component_set = pyo.Set(
+            initialize=[
+                "S_A",
+                "S_F",
+                "S_I",
+                "S_N2",
+                "S_NH4",
+                "S_NO3",
+                "S_O2",
+                "S_PO4",
+                "S_ALK",
+                "H2O",
+            ]
+        )
+        self.particulate_component_set = pyo.Set(
+            initialize=[
+                "X_AUT",
+                "X_H",
+                "X_I",
+                "X_MeOH",
+                "X_MeP",
+                "X_PAO",
+                "X_PHA",
+                "X_PP",
+                "X_S",
+                "X_TSS",
+            ]
+        )
+        self.tss_component_set = pyo.Set(initialize=["X_TSS"])
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(
@@ -288,7 +319,7 @@ class ASM2dStateBlockData(StateBlockData):
         self.temperature = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=298.15,
-            bounds=(298.14, 323.15),
+            bounds=(273.15, 323.15),
             doc="Temperature",
             units=pyo.units.K,
         )

@@ -13,7 +13,6 @@
 import pytest
 import os
 import numpy as np
-import requests
 import pyomo.environ as pyo
 
 from pyomo.environ import value
@@ -27,34 +26,59 @@ import watertap.tools.MPI as MPI
 # -----------------------------------------------------------------------------
 
 
-class TestParallelManager:
+def build_model():
+    m = pyo.ConcreteModel()
+    m.fs = fs = pyo.Block()
+
+    fs.input = pyo.Var(["a", "b"], within=pyo.UnitInterval, initialize=0.5)
+    fs.output = pyo.Var(["c", "d"], within=pyo.UnitInterval, initialize=0.5)
+
+    fs.slack = pyo.Var(["ab_slack", "cd_slack"], bounds=(0, 0), initialize=0.0)
+    fs.slack_penalty = pyo.Param(default=1000.0, mutable=True, within=pyo.PositiveReals)
+
+    fs.ab_constr = pyo.Constraint(
+        expr=(fs.output["c"] + fs.slack["ab_slack"] == 2 * fs.input["a"])
+    )
+    fs.cd_constr = pyo.Constraint(
+        expr=(fs.output["d"] + fs.slack["cd_slack"] == 3 * fs.input["b"])
+    )
+
+    fs.performance = pyo.Expression(expr=pyo.summation(fs.output))
+
+    m.objective = pyo.Objective(
+        expr=m.fs.performance - m.fs.slack_penalty * pyo.summation(m.fs.slack),
+        sense=pyo.maximize,
+    )
+    return m
+
+
+def build_model_for_tps():
+    model = build_model()
+    model.fs.slack_penalty = 1000.0
+    model.fs.slack.setub(0)
+    return model
+
+
+def build_sweep_params_for_tps(model):
+    A = model.fs.input["a"]
+    B = model.fs.input["b"]
+    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+    return sweep_params
+
+
+def build_outputs_for_tps(model, sweep_params):
+    outputs = {
+        "output_c": model.fs.output["c"],
+        "output_d": model.fs.output["d"],
+        "performance": model.fs.performance,
+    }
+    return outputs
+
+
+class TestParameterSweep:
     @pytest.fixture(scope="class")
     def model(self):
-        m = pyo.ConcreteModel()
-        m.fs = fs = pyo.Block()
-
-        fs.input = pyo.Var(["a", "b"], within=pyo.UnitInterval, initialize=0.5)
-        fs.output = pyo.Var(["c", "d"], within=pyo.UnitInterval, initialize=0.5)
-
-        fs.slack = pyo.Var(["ab_slack", "cd_slack"], bounds=(0, 0), initialize=0.0)
-        fs.slack_penalty = pyo.Param(
-            default=1000.0, mutable=True, within=pyo.PositiveReals
-        )
-
-        fs.ab_constr = pyo.Constraint(
-            expr=(fs.output["c"] + fs.slack["ab_slack"] == 2 * fs.input["a"])
-        )
-        fs.cd_constr = pyo.Constraint(
-            expr=(fs.output["d"] + fs.slack["cd_slack"] == 3 * fs.input["b"])
-        )
-
-        fs.performance = pyo.Expression(expr=pyo.summation(fs.output))
-
-        m.objective = pyo.Objective(
-            expr=m.fs.performance - m.fs.slack_penalty * pyo.summation(m.fs.slack),
-            sense=pyo.maximize,
-        )
-        return m
+        return build_model()
 
     @pytest.mark.unit
     def test_single_index_unrolled(self):
@@ -183,6 +207,10 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_status_publishing(self):
+        requests = pytest.importorskip(
+            "requests",
+            reason="requests (parameter_sweep optional dependency) not available",
+        )
         ps = ParameterSweep(
             publish_progress=True, publish_address="http://localhost:8888"
         )
@@ -274,8 +302,8 @@ class TestParallelManager:
             param_dict, SamplingType.FIXED, None
         )
 
-        num_procs = ps.parallel_manager.number_of_processes()
-        rank = ps.rank
+        num_procs = ps.parallel_manager.number_of_worker_processes()
+        rank = ps.parallel_manager.get_rank()
         test = np.array_split(global_combo_array, num_procs, axis=0)[rank]
 
         local_combo_array = ps._divide_combinations(global_combo_array)
@@ -321,18 +349,6 @@ class TestParallelManager:
 
         input_dict = {
             "outputs": {
-                "fs.input[a]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.input[b]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
                 "fs.output[c]": {
                     "lower bound": 0,
                     "units": "None",
@@ -380,15 +396,15 @@ class TestParallelManager:
 
         reference_results_arr = np.array(
             [
-                [0.0, 0.0, 0.2, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.2, 0.75, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.75, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.2, 0.0, 0.0, 0.0],
+                [0.2, 0.75, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0, 0.0],
+                [1.0, 0.75, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
             ]
         )
 
@@ -406,11 +422,11 @@ class TestParallelManager:
             "input_a": (m.fs.input["a"], 0.1, 0.9, 3),
             "input_b": (m.fs.input["b"], 0.0, 0.5, 3),
         }
-        outputs = {
-            "output_c": m.fs.output["c"],
-            "output_d": m.fs.output["d"],
-            "performance": m.fs.performance,
-        }
+        # outputs = {
+        #     "output_c": m.fs.output["c"],
+        #     "output_d": m.fs.output["d"],
+        #     "performance": m.fs.performance,
+        # }
 
         sweep_params, sampling_type = ps._process_sweep_params(sweep_params)
         values = ps._build_combinations(sweep_params, sampling_type, None)
@@ -421,45 +437,72 @@ class TestParallelManager:
 
         truth_dict = {
             "outputs": {
-                "fs.output[c]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.output[d]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.performance": {
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-                },
-                "fs.slack[ab_slack]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 0,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.slack[cd_slack]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 0,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "objective": {
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-                },
-            },
-            "sweep_params": {
                 "input_a": {
+                    "full_name": "fs.input[a]",
                     "lower bound": 0,
                     "units": "None",
                     "upper bound": 1,
                     "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
                 },
                 "input_b": {
+                    "full_name": "fs.input[b]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.output[c]": {
+                    "full_name": "fs.output[c]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.output[d]": {
+                    "full_name": "fs.output[d]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.performance": {
+                    "full_name": "fs.performance",
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.slack[ab_slack]": {
+                    "full_name": "fs.slack[ab_slack]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 0,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.slack[cd_slack]": {
+                    "full_name": "fs.slack[cd_slack]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 0,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.slack_penalty": {
+                    "full_name": "fs.slack_penalty",
+                    "units": "None",
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "objective": {
+                    "full_name": "objective",
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+            },
+            "sweep_params": {
+                "input_a": {
+                    "full_name": "fs.input[a]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "input_b": {
+                    "full_name": "fs.input[b]",
                     "lower bound": 0,
                     "units": "None",
                     "upper bound": 1,
@@ -478,7 +521,7 @@ class TestParallelManager:
         m.fs.slack_penalty = 1000.0
         m.fs.slack.setub(0)
 
-        global_num_cases = 2 * ps.parallel_manager.number_of_processes()
+        global_num_cases = 2 * ps.parallel_manager.number_of_worker_processes()
         sweep_params = {
             "input_a": NormalSample(m.fs.input["a"], 0.1, 0.9, global_num_cases),
             "input_b": NormalSample(m.fs.input["b"], 0.0, 0.5, global_num_cases),
@@ -506,7 +549,7 @@ class TestParallelManager:
         # Manually update the values in the numpy array
         for key, value in local_output_dict.items():
             for subkey, subvalue in value.items():
-                subvalue["value"][:] = ps.rank
+                subvalue["value"][:] = ps.parallel_manager.get_rank()
 
         # Local output dict also contains the solve_successful. The solve status is
         # based on the
@@ -517,11 +560,14 @@ class TestParallelManager:
             local_output_dict, global_num_cases
         )
 
-        if ps.rank > 0:
+        if ps.parallel_manager.get_rank() > 0:
             assert global_output_dict == local_output_dict
         else:
             test_array = np.repeat(
-                np.arange(0, ps.parallel_manager.number_of_processes(), dtype=float), 2
+                np.arange(
+                    0, ps.parallel_manager.number_of_worker_processes(), dtype=float
+                ),
+                2,
             )
             test_list = [True] * global_num_cases
             for key, value in global_output_dict.items():
@@ -530,10 +576,10 @@ class TestParallelManager:
                         assert np.allclose(subvalue["value"], test_array)
                 elif key == "solve_successful":
                     assert list(value) == test_list
-        ps.comm.Barrier()
 
     @pytest.mark.component
-    def test_parameter_sweep(self, model, tmp_path):
+    @pytest.mark.parametrize("number_of_subprocesses", [1, 2, 3])
+    def test_parameter_sweep(self, model, tmp_path, number_of_subprocesses):
 
         comm = MPI.COMM_WORLD
 
@@ -544,39 +590,26 @@ class TestParallelManager:
         h5_results_file_name = str(results_fname) + ".h5"
 
         ps = ParameterSweep(
-            comm=comm,
             optimize_function=_optimization,
             csv_results_file_name=csv_results_file_name,
             h5_results_file_name=h5_results_file_name,
             debugging_data_dir=tmp_path,
             interpolate_nan_outputs=True,
+            number_of_subprocesses=number_of_subprocesses,
         )
-
-        m = model
-        m.fs.slack_penalty = 1000.0
-        m.fs.slack.setub(0)
-
-        A = m.fs.input["a"]
-        B = m.fs.input["b"]
-        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-        outputs = {
-            "output_c": m.fs.output["c"],
-            "output_d": m.fs.output["d"],
-            "performance": m.fs.performance,
-        }
 
         # Call the parameter_sweep function
         _ = ps.parameter_sweep(
-            m,
-            sweep_params,
-            combined_outputs=outputs,
+            build_model_for_tps,
+            build_sweep_params_for_tps,
+            build_outputs=build_outputs_for_tps,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
             assert os.path.isfile(
@@ -584,7 +617,7 @@ class TestParallelManager:
             )
 
             # Check that all local output files have been created
-            for k in range(ps.parallel_manager.number_of_processes()):
+            for k in range(ps.parallel_manager.number_of_worker_processes()):
                 assert os.path.isfile(
                     os.path.join(tmp_path, f"local_results_{k:03}.h5")
                 )
@@ -600,7 +633,7 @@ class TestParallelManager:
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
         # Check for the h5 output
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             truth_dict = {
                 "outputs": {
                     "output_c": {
@@ -684,7 +717,11 @@ class TestParallelManager:
             import ast
 
             truth_txt_dict = {
-                "outputs": ["output_c", "output_d", "performance"],
+                "outputs": [
+                    "output_c",
+                    "output_d",
+                    "performance",
+                ],
                 "sweep_params": ["fs.input[a]", "fs.input[b]"],
             }
 
@@ -736,14 +773,14 @@ class TestParallelManager:
         ps.parameter_sweep(
             m,
             sweep_params,
-            combined_outputs=outputs,
+            build_outputs=outputs,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -761,7 +798,7 @@ class TestParallelManager:
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
         # Check the h5
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
 
             truth_dict = {
                 "outputs": {
@@ -869,7 +906,7 @@ class TestParallelManager:
             _ = ps.parameter_sweep(
                 m,
                 sweep_params,
-                combined_outputs=None,
+                build_outputs=None,
             )
 
     @pytest.mark.component
@@ -903,14 +940,14 @@ class TestParallelManager:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            combined_outputs=None,
+            build_outputs=None,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -1126,14 +1163,14 @@ class TestParallelManager:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            combined_outputs=None,
+            build_outputs=None,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -1314,14 +1351,14 @@ class TestParallelManager:
         _ = ps.parameter_sweep(
             m,
             sweep_params,
-            combined_outputs=None,
+            build_outputs=None,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -1529,7 +1566,7 @@ class TestParallelManager:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                combined_outputs=None,
+                build_outputs=None,
             )
 
     @pytest.mark.component
@@ -1553,7 +1590,7 @@ class TestParallelManager:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                combined_outputs=None,
+                build_outputs=None,
             )
 
     @pytest.mark.component
@@ -1581,7 +1618,7 @@ class TestParallelManager:
             ps.parameter_sweep(
                 m,
                 sweep_params,
-                combined_outputs=None,
+                build_outputs=None,
             )
 
     @pytest.mark.component
@@ -1625,14 +1662,14 @@ class TestParallelManager:
         ps.parameter_sweep(
             m,
             sweep_params,
-            combined_outputs=outputs,
+            build_outputs=outputs,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if ps.rank == 0:
+        if ps.parallel_manager.is_root_process():
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -1724,13 +1761,12 @@ class TestParallelManager:
         parameter_sweep(
             m,
             sweep_params,
-            outputs=outputs,
+            build_outputs=outputs,
             csv_results_file_name=csv_results_file_name,
             h5_results_file_name=h5_results_file_name,
             optimize_function=_optimization,
             debugging_data_dir=tmp_path,
             interpolate_nan_outputs=True,
-            mpi_comm=comm,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1845,7 +1881,11 @@ class TestParallelManager:
             import ast
 
             truth_txt_dict = {
-                "outputs": ["output_c", "output_d", "performance"],
+                "outputs": [
+                    "output_c",
+                    "output_d",
+                    "performance",
+                ],
                 "sweep_params": ["fs.input[a]", "fs.input[b]"],
             }
 
@@ -1860,8 +1900,6 @@ class TestParallelManager:
     def test_parameter_sweep_custom_do_param_sweep(self, model, tmp_path):
         def custom_do_param_sweep(model, sweep_params, outputs, local_values, **kwargs):
             return kwargs
-
-        comm = MPI.COMM_WORLD
 
         custom_kwargs = {"val1": 2.0}
         ps = ParameterSweep(
@@ -1932,7 +1970,7 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
     assert truth_dict.keys() == test_dict.keys()
 
     for key, item in truth_dict.items():
-        if key != "solve_successful":
+        if key in ["sweep_params", "outputs"]:
             for subkey, subitem in item.items():
                 for subsubkey, subsubitem in subitem.items():
                     if subsubkey == "value":
@@ -1945,6 +1983,8 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
                         assert subsubitem == test_dict[key][subkey][subsubkey]
         elif key == "solve_successful":
             assert item == test_dict[key]
+        elif key in ["nominal_idx", "differential_idx"]:
+            assert np.allclose(test_dict[key], item, equal_nan=True)
 
 
 def _assert_h5_csv_agreement(csv_filename, h5_dict):
@@ -1994,7 +2034,7 @@ def _read_output_h5(filevar):
     l1_keys = list(f.keys())
     output_dict = {}
     for key in l1_keys:  # Input or Output
-        if key != "solve_successful":
+        if key in ["sweep_params", "outputs"]:  #  "solve_successful":
             output_dict[key] = {}
             l2_keys = list(f[key].keys())
             for subkey in l2_keys:  # Variable name
@@ -2009,6 +2049,8 @@ def _read_output_h5(filevar):
                         ].decode("utf-8")
         elif key == "solve_successful":
             output_dict[key] = list(f[key]["solve_successful"][()])
+        elif key in ["nominal_idx", "differential_idx"]:
+            output_dict[key] = f[key][key][()]
 
     if isinstance(filevar, str):
         f.close()

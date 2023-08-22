@@ -107,7 +107,9 @@ class EDBClientFactory:
 
 @pytest.fixture(scope="function")
 def mock_edb(monkeypatch) -> EDBClientFactory:
-    import mongomock
+    mongomock = pytest.importorskip(
+        "mongomock", reason="mongomock (EDB optional dependency) not available"
+    )
 
     # NOTE since mongomock clients store data in memory,
     # the same MongoClient instance must be kept and used for the lifetime of the fixture

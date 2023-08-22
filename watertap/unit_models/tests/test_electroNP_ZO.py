@@ -25,10 +25,7 @@ from watertap.property_models.activated_sludge.simple_modified_asm2d_properties 
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util.scaling import (
-    calculate_scaling_factors,
-    badly_scaled_var_generator,
-)
+from idaes.core.util.scaling import calculate_scaling_factors
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
@@ -97,6 +94,15 @@ class TestElectroNP:
         assert_units_consistent(ElectroNP_frame)
 
     @pytest.mark.unit
+    def test_object_references(self, ElectroNP_frame):
+        m = ElectroNP_frame
+
+        assert hasattr(m.fs.unit, "properties_in")
+        assert hasattr(m.fs.unit, "properties_treated")
+        assert hasattr(m.fs.unit, "properties_byproduct")
+        assert hasattr(m.fs.unit, "removal_frac_mass_comp")
+
+    @pytest.mark.unit
     def test_calculate_scaling(self, ElectroNP_frame):
         m = ElectroNP_frame
         m.fs.properties.set_default_scaling("pressure", 1e-3)
@@ -126,19 +132,15 @@ class TestElectroNP:
 
         calculate_scaling_factors(m)
 
-        # check that all variables have scaling factors
-        unscaled_var_list = list(iscale.unscaled_variables_generator(m))
-        assert len(unscaled_var_list) == 0
-
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i[0]) for i in badly_scaled_var_lst]
-        assert badly_scaled_var_lst == []
-
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, ElectroNP_frame):
         initialization_tester(ElectroNP_frame)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(iscale.unscaled_variables_generator(ElectroNP_frame))
+        assert len(unscaled_var_list) == 0
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -278,10 +280,10 @@ class TestElectroNP:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(1295.765, rel=1e-5) == value(
+        assert pytest.approx(1036611.9, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(1.75266e-4, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.04431857, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, ElectroNP_frame):
