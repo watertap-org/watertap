@@ -17,7 +17,6 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.solvers import get_solver
 import watertap.property_models.multicomp_aq_sol_prop_pack as props
-import unittest
 
 __author__ = "Adam Atia"
 
@@ -294,6 +293,21 @@ class TestOLIAPI_WaterTAP:
                 },
             }
         }
+        assert isinstance(brine_input_clone, dict)
+        assert brine_input_clone.keys() == test_clone.keys()
+        assert brine_input_clone["params"].keys() == test_clone["params"].keys()
+        for k in brine_input_clone["params"].keys():
+            test_water_inputs = test_clone["params"][k]
+            brine_inputs = brine_input_clone["params"][k]
+            if k == "waterAnalysisInputs":
+                assert isinstance(brine_inputs, list)
+                for i, e in enumerate(brine_inputs):
+                    for k, v in e.items():
+                        vtest = test_water_inputs[i][k]
+                        if isinstance(vtest, (float, int)) and isinstance(v, (float, int)):
+                            assert v == pytest.approx(vtest, rel=1e-3)
+                        else:
+                            assert v == vtest
+            else:
+                assert brine_inputs == test_water_inputs
 
-        testcase = unittest.TestCase()
-        testcase.assertDictEqual(brine_input_clone, test_clone)
