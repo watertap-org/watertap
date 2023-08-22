@@ -634,7 +634,7 @@ class _ParameterSweepBase(ABC):
         initialize_before_sweep = self.config.initialize_before_sweep
         # Forced reinitialization of the flowsheet if enabled
         # or init if model was not initialized or prior solved failed (if solved failed, init state is false)
-        if initialize_before_sweep or self.model_manager.is_intilized == False:
+        if initialize_before_sweep or self.model_manager.is_intialized == False:
             self.model_manager.build_and_init(sweep_params, local_value_k)
         # try to solve our model
         self.model_manager.update_model_params(sweep_params, local_value_k)
