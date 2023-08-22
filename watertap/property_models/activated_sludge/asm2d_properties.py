@@ -41,7 +41,7 @@ from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
 
 # Some more information about this module
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Adam Atia, Xinhong Liu"
 
 
 # Set up logger
@@ -102,6 +102,37 @@ class ASM2dParameterData(PhysicalParameterBlock):
         self.X_PP = Solute(doc="Poly-phosphate. [kg P/m^3]")
         self.X_S = Solute(doc="Slowly biodegradable substrates. [kg COD/m^3]")
         self.X_TSS = Solute(doc="Total suspended solids, TSS. [kg TSS/m^3]")
+
+        # Create sets for use across ASM models and associated unit models
+        self.non_particulate_component_set = pyo.Set(
+            initialize=[
+                "S_A",
+                "S_F",
+                "S_I",
+                "S_N2",
+                "S_NH4",
+                "S_NO3",
+                "S_O2",
+                "S_PO4",
+                "S_ALK",
+                "H2O",
+            ]
+        )
+        self.particulate_component_set = pyo.Set(
+            initialize=[
+                "X_AUT",
+                "X_H",
+                "X_I",
+                "X_MeOH",
+                "X_MeP",
+                "X_PAO",
+                "X_PHA",
+                "X_PP",
+                "X_S",
+                "X_TSS",
+            ]
+        )
+        self.tss_component_set = pyo.Set(initialize=["X_TSS"])
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(
@@ -179,27 +210,24 @@ class _ASM2dStateBlock(StateBlock):
         Initialization routine for property package.
 
         Keyword Arguments:
-        state_args : Dictionary with initial guesses for the state vars
-                     chosen. Note that if this method is triggered
-                     through the control volume, and if initial guesses
-                     were not provied at the unit model level, the
-                     control volume passes the inlet values as initial
-                     guess.The keys for the state_args dictionary are:
-
-                     flow_mol_comp : value at which to initialize component
-                                     flows (default=None)
-                     pressure : value at which to initialize pressure
-                                (default=None)
-                     temperature : value at which to initialize temperature
-                                  (default=None)
+            state_args : Dictionary with initial guesses for the state vars
+                         chosen. Note that if this method is triggered
+                         through the control volume, and if initial guesses
+                         were not provided at the unit model level, the
+                         control volume passes the inlet values as initial
+                         guess.The keys for the state_args dictionary are:
+            flow_vol : value at which to initialize total volumetric flow (default=None)
+            alkalinity: value of alkalinity expressed as molar concentration
+            conc_mass_comp : value at which to initialize component concentrations (default=None)
+            pressure : value at which to initialize pressure (default=None)
+            temperature : value at which to initialize temperature (default=None)
             outlvl : sets output level of initialization routine
-            state_vars_fixed: Flag to denote if state vars have already been
-                              fixed.
-                              - True - states have already been fixed and
-                                       initialization does not need to worry
-                                       about fixing and unfixing variables.
-                             - False - states have not been fixed. The state
-                                       block will deal with fixing/unfixing.
+            state_vars_fixed: Flag to denote if state vars have already been fixed.
+                              True - states have already been fixed and
+                              initialization does not need to worry
+                              about fixing and unfixing variables.
+                              False - states have not been fixed. The state
+                              block will deal with fixing/unfixing.
             optarg : solver options dictionary object (default=None, use
                      default solver options)
             solver : str indicating which solver to use during
@@ -207,13 +235,11 @@ class _ASM2dStateBlock(StateBlock):
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
-                                 a dict of returned containing flags for
-                                 which states were fixed during
-                                 initialization.
-                        - False - state variables are unfixed after
-                                 initialization by calling the
-                                 relase_state method
+                         True - states variables are not unfixed, and
+                         a dict of returned containing flags for
+                         which states were fixed during initialization.
+                         False - state variables are unfixed after
+                         initialization by calling the release_state method.
 
         Returns:
             If hold_states is True, returns a dict containing flags for
@@ -293,7 +319,7 @@ class ASM2dStateBlockData(StateBlockData):
         self.temperature = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=298.15,
-            bounds=(298.14, 323.15),
+            bounds=(273.15, 323.15),
             doc="Temperature",
             units=pyo.units.K,
         )

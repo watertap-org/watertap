@@ -12,7 +12,7 @@
 
 import pytest
 
-from pyomo.environ import ConcreteModel, Var, Constraint, Block, SolverFactory
+from pyomo.environ import ConcreteModel, Var, Constraint
 
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError

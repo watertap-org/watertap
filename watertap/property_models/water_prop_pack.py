@@ -42,7 +42,7 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.components import Component
 from idaes.core.base.phases import LiquidPhase, VaporPhase
 from idaes.core.util.initialization import (
     fix_state_vars,
@@ -397,6 +397,21 @@ class _WaterStateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        # Fix state variables
+        fix_state_vars(self)
+
+        # Constraint on water concentration at outlet - unfix in these cases
+        for b in self.values():
+            if b.config.defined_state is False:
+                b.conc_mol_comp["H2O"].unfix()
 
     def initialize(
         self,

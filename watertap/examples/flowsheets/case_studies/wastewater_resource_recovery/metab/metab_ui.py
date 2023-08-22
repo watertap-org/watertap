@@ -19,7 +19,6 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.meta
     add_costing,
     adjust_default_parameters,
 )
-from idaes.core.solvers import get_solver
 from pyomo.environ import units as pyunits, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
 
@@ -909,7 +908,7 @@ def build_flowsheet():
 
     results = solve(m)
     assert_optimal_termination(results)
-    return m.fs
+    return m
 
 
 def solve_flowsheet(flowsheet=None):

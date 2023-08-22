@@ -26,7 +26,7 @@ from idaes.core import (
 from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.core import (
+from watertap.core import (  # noqa # pylint: disable=unused-import
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     MembraneChannel1DBlock,
@@ -125,7 +125,6 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
                 )
 
     def _add_mass_transfer(self):
-
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         def mass_transfer_phase_comp_initialize(b, t, x, p, j):

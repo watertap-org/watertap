@@ -23,10 +23,10 @@ Towards an ASM1 - ADM1 State Variable Interface for Plant-Wide Wastewater Treatm
 """
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.core import declare_process_block_class
 from idaes.models.unit_models.translator import TranslatorData
 from idaes.core.util.config import (
     is_reaction_parameter_block,
@@ -34,18 +34,18 @@ from idaes.core.util.config import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 from idaes.core.util.exceptions import InitializationError
 
 from pyomo.environ import (
-    Constraint,
     Param,
     units as pyunits,
     check_optimal_termination,
     Set,
 )
 
-__author__ = "Alejandro Garciadiego, Andrew Lee"
+__author__ = "Alejandro Garciadiego, Andrew Lee, Xinhong Liu"
 
 
 # Set up logger
@@ -263,8 +263,10 @@ see reaction package for documentation.}""",
         def return_zero_flow_comp(blk, t, i):
             return (
                 blk.properties_out[t].conc_mass_comp[i]
-                == 1e-6 * pyunits.kg / pyunits.m**3
+                == 1e-10 * pyunits.kg / pyunits.m**3
             )
+
+        iscale.set_scaling_factor(self.properties_out[0].flow_vol, 1e5)
 
     def initialize_build(
         self,

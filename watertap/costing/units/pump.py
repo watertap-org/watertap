@@ -53,6 +53,7 @@ def build_high_pressure_pump_cost_param_block(blk):
 
     blk.cost = pyo.Var(
         initialize=53 / 1e5 * 3600,
+        bounds=(0, None),
         doc="High pressure pump cost",
         units=pyo.units.USD_2018 / pyo.units.watt,
     )
@@ -84,12 +85,18 @@ def cost_high_pressure_pump(blk, cost_electricity_flow=True):
         )
     )
     if cost_electricity_flow:
+        # grab lower bound of mechanical work
+        lb = blk.unit_model.work_mechanical[t0].lb
+        # set lower bound to 0 to avoid negative defined flow warning when lb is not >= 0
+        blk.unit_model.work_mechanical.setlb(0)
         blk.costing_package.cost_flow(
             pyo.units.convert(
                 blk.unit_model.work_mechanical[t0], to_units=pyo.units.kW
             ),
             "electricity",
         )
+        # set lower bound back to its original value that was assigned to lb
+        blk.unit_model.work_mechanical.setlb(lb)
 
 
 def build_low_pressure_pump_cost_param_block(blk):

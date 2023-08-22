@@ -29,7 +29,7 @@ from watertap.examples.flowsheets.full_treatment_train.util import (
 import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_single_stage as single_stage
 from watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_single_stage import (
     build,
-    build_components,
+    build_components as build_components_single_stage,
     scale,
     initialize,
     report,
@@ -45,6 +45,8 @@ desal_kwargs = {
     "RO_base": "TDS",
     "RO_level": "detailed",
 }
+
+build_components = build_components_single_stage
 
 
 def set_optimization_components(m, system_recovery, **kwargs):

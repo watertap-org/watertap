@@ -322,6 +322,7 @@ class TestCrystallization:
         for _ in badly_scaled_var_generator(m):
             assert False
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, Crystallizer_frame):
         # Add costing function, then initialize
@@ -342,6 +343,7 @@ class TestCrystallization:
     #     badly_scaled_var_lst = list(badly_scaled_var_generator(m))
     #     assert badly_scaled_var_lst == []
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, Crystallizer_frame):
         m = Crystallizer_frame
@@ -351,6 +353,7 @@ class TestCrystallization:
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, Crystallizer_frame):
         m = Crystallizer_frame
@@ -411,6 +414,7 @@ class TestCrystallization:
             <= 1e-2
         )
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, Crystallizer_frame):
         m = Crystallizer_frame
@@ -454,6 +458,7 @@ class TestCrystallization:
             m.fs.costing.aggregate_capital_cost
         )
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution2_capcosting_by_mass(self, Crystallizer_frame):
         m = Crystallizer_frame

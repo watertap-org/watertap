@@ -20,7 +20,6 @@ from typing import List, Optional, Tuple, Union, Any
 import pytest
 from click import Command
 from click.testing import CliRunner, Result
-from _pytest.monkeypatch import MonkeyPatch
 import pymongo
 
 from watertap.edb import commands, ElectrolyteDB
@@ -108,7 +107,9 @@ class EDBClientFactory:
 
 @pytest.fixture(scope="function")
 def mock_edb(monkeypatch) -> EDBClientFactory:
-    import mongomock
+    mongomock = pytest.importorskip(
+        "mongomock", reason="mongomock (EDB optional dependency) not available"
+    )
 
     # NOTE since mongomock clients store data in memory,
     # the same MongoClient instance must be kept and used for the lifetime of the fixture

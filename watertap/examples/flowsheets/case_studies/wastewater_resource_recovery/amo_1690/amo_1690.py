@@ -142,6 +142,8 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "acetic_acid"].fix(conc_mass_aa)
     m.fs.feed.conc_mass_comp[0, "ammonium_as_nitrogen"].fix(conc_mass_nh4)
 
+    m.fs.feed.initialize()
+
     solve(m.fs.feed, checkpoint="solve feed block")
 
     m.fs.cmf.load_parameters_from_database(use_default_removal=True)

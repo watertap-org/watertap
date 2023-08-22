@@ -20,7 +20,7 @@ from idaes.core.util import scaling as iscale
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 
 # Import specific pyomo objects
-from pyomo.environ import value, Suffix
+from pyomo.environ import value
 
 __author__ = "Austin Ladshaw"
 

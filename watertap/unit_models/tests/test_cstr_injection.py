@@ -15,7 +15,7 @@ Authors: Andrew Lee, Vibhav Dabadghao
 """
 
 import pytest
-from pyomo.environ import check_optimal_termination, ConcreteModel, units, value, Var
+from pyomo.environ import check_optimal_termination, ConcreteModel, units, value
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
@@ -250,7 +250,6 @@ class TestSaponification(object):
             <= 1e-3
         )
 
-    @pytest.mark.ui
     @pytest.mark.unit
     def test_get_performance_contents(self, sapon):
         perf_dict = sapon.fs.unit._get_performance_contents()

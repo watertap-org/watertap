@@ -1172,7 +1172,6 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         )
 
         m.fs.unit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
-        b = m.fs.unit
         mass_flow_in = 1 * pyunits.kg / pyunits.s
         feed_mass_frac = {
             "Ca_2+": 2 * 382e-6,

@@ -88,7 +88,9 @@ class ModelExport(BaseModel):
     fixed: bool = True
     lb: Union[None, float] = 0.0
     ub: Union[None, float] = 0.0
+    num_samples: int = 2
     has_bounds: bool = True
+    is_sweep: bool = False
 
     class Config:
         arbitrary_types_allowed = True
@@ -182,6 +184,7 @@ class ModelExport(BaseModel):
 class FlowsheetExport(BaseModel):
     """A flowsheet and its contained exported model objects."""
 
+    m: object = Field(default=None, exclude=True)
     obj: object = Field(default=None, exclude=True)
     name: str = ""
     description: str = ""
@@ -189,6 +192,7 @@ class FlowsheetExport(BaseModel):
     version: int = 2
     requires_idaes_solver: bool = False
     dof: int = 0
+    sweep_results: Union[None, dict] = {}
 
     # set name dynamically from object
     @validator("name", always=True)
@@ -316,6 +320,7 @@ class FlowsheetInterface:
         do_build: Callable = None,
         do_export: Callable = None,
         do_solve: Callable = None,
+        custom_do_param_sweep_kwargs: Dict = None,
         **kwargs,
     ):
         """Constructor.
@@ -332,6 +337,8 @@ class FlowsheetInterface:
                 This will be called automatically by :meth:`build()`. **Required**
             do_solve: Function to solve the model. It should return the result
                 that the solver itself returns. **Required**
+            custom_do_param_sweep_kwargs: Option for setting up parallel solver using
+                custom solve function.
             **kwargs: See `fs` arg. If the `fs` arg *is* provided, these are ignored.
         """
         if fs is None:
@@ -350,6 +357,7 @@ class FlowsheetInterface:
                 self.add_action(getattr(Actions, name), arg)
             else:
                 raise ValueError(f"'do_{name}' argument is required")
+        self._actions["custom_do_param_sweep_kwargs"] = custom_do_param_sweep_kwargs
 
     def build(self, **kwargs):
         """Build flowsheet
@@ -427,7 +435,8 @@ class FlowsheetInterface:
 
                 dst.obj.fixed = src.fixed
                 dst.fixed = src.fixed
-
+                dst.is_sweep = src.is_sweep
+                dst.num_samples = src.num_samples
                 # update bounds
                 if src.lb is None or src.lb == "":
                     dst.obj.lb = None
@@ -474,7 +483,9 @@ class FlowsheetInterface:
                         f"Flowsheet `{Actions.build}` action failed. "
                         f"See logs for details."
                     )
-                self.fs_exp.obj = action_result
+                self.fs_exp.obj = action_result.fs
+                self.fs_exp.m = action_result
+
                 # [re-]create exports (new model object)
                 if Actions.export not in self._actions:
                     raise KeyError(
@@ -541,6 +552,7 @@ class FlowsheetInterface:
         """
         _log.info("Exporting values from flowsheet model to UI")
         u = pyo.units
+        self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         for key, mo in self.fs_exp.model_objects.items():
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
             if not isinstance(
@@ -565,6 +577,7 @@ class FlowsheetInterface:
                     tmp = pyo.Var(initialize=mo.obj.lb, units=u.get_units(mo.obj))
                     tmp.construct()
                     mo.lb = pyo.value(u.convert(tmp, to_units=mo.ui_units))
+                mo.fixed = mo.obj.fixed
             else:
                 mo.has_bounds = False
 

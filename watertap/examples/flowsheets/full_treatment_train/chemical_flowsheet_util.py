@@ -18,7 +18,6 @@
 """
 
 from pyomo.network import SequentialDecomposition
-from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 from pyomo.environ import value
 

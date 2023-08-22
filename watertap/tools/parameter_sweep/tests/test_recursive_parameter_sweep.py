@@ -215,16 +215,20 @@ def test_recursive_parameter_sweep(model, tmp_path):
         ]
     )
 
+    import pprint
+
+    print("data = ")
+    pprint.pprint(data)
     assert np.shape(data) == (10, 2)
     assert np.allclose(reference_save_data, data, equal_nan=True)
     assert np.allclose(np.sum(data, axis=1), value(m.fs.success_prob))
 
-    if ps.rank == 0:
+    if ps.parallel_manager.is_root_process():
         # Check that the global results file is created
         assert os.path.isfile(csv_results_file)
 
         # Check that all local output files have been created
-        for k in range(ps.num_procs):
+        for k in range(ps.parallel_manager.number_of_worker_processes()):
             assert os.path.isfile(os.path.join(tmp_path, f"local_results_{k:03}.h5"))
             assert os.path.isfile(os.path.join(tmp_path, f"local_results_{k:03}.csv"))
 
@@ -268,7 +272,7 @@ def test_recursive_parameter_sweep(model, tmp_path):
                 True,
             ],
             "sweep_params": {
-                "fs.a": {
+                "a_val": {
                     "units": "None",
                     "value": np.array(
                         [
@@ -301,7 +305,7 @@ def test_recursive_parameter_sweep(model, tmp_path):
 
         truth_txt_dict = {
             "outputs": ["x_val"],
-            "sweep_params": ["fs.a"],
+            "sweep_params": ["a_val"],
         }
 
         with open(txt_fpath, "r") as f:
@@ -414,7 +418,7 @@ def test_recursive_parameter_sweep_function(model, tmp_path):
                 True,
             ],
             "sweep_params": {
-                "fs.a": {
+                "a_val": {
                     "units": "None",
                     "value": np.array(
                         [
@@ -446,7 +450,7 @@ def test_recursive_parameter_sweep_function(model, tmp_path):
 
         truth_txt_dict = {
             "outputs": ["x_val"],
-            "sweep_params": ["fs.a"],
+            "sweep_params": ["a_val"],
         }
 
         with open(txt_fpath, "r") as f:
