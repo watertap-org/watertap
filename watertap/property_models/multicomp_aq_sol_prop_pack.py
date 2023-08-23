@@ -74,6 +74,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError, 
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
 
+__author__ = "Adam Atia, Hunter Barber, Xiangyu Bi"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
