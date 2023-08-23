@@ -223,7 +223,6 @@ def test_bad_differential_sweep_specs(model, tmp_path):
         },
     }
 
-
     ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
     with pytest.raises(ValueError):
         ps.parameter_sweep(
