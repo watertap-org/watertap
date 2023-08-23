@@ -13,7 +13,6 @@ import numpy as np
 import pyomo.environ as pyo
 import warnings
 import copy
-import requests
 import time
 
 from abc import abstractmethod, ABC
@@ -27,6 +26,9 @@ from pyomo.common.config import ConfigValue
 from pyomo.common.modeling import unique_component_name
 from pyomo.core.base import _VarData, _ExpressionData
 from pyomo.core.base.param import _ParamData
+from pyomo.common.dependencies import attempt_import
+
+requests, requests_available = attempt_import("requests")
 
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
 from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
@@ -191,6 +193,11 @@ class _ParameterSweepBase(ABC):
                 outputs[output_name] = exprs[output_name]
 
     def _publish_updates(self, iteration, solve_status, solve_time):
+        if not requests_available:
+            raise ImportError(
+                "requests (parameter_sweep optional dependency) not installed"
+            )
+
         if self.config.publish_progress:
             publish_dict = {
                 "worker_number": self.parallel_manager.get_rank(),
@@ -361,8 +368,8 @@ class _ParameterSweepBase(ABC):
         sweep_param_objs = ComponentSet()
 
         # Store the inputs
-        for param_name, sweep_param in sweep_params.items():
-            var = sweep_param.pyomo_object
+        for param_name, sampling_obj in sweep_params.items():
+            var = sampling_obj.pyomo_object
             sweep_param_objs.add(var)
             output_dict["sweep_params"][
                 param_name
@@ -373,9 +380,16 @@ class _ParameterSweepBase(ABC):
             for pyo_obj in model.component_data_objects(
                 (pyo.Var, pyo.Expression, pyo.Objective, pyo.Param), active=True
             ):
-                output_dict["outputs"][
-                    pyo_obj.name
-                ] = self._create_component_output_skeleton(pyo_obj, num_samples)
+                # We do however need to make sure that the short name for the inputs is used here
+                for param_name, sampling_obj in sweep_params.items():
+                    if pyo_obj.name == sampling_obj.pyomo_object.name:
+                        output_dict["outputs"][
+                            param_name
+                        ] = self._create_component_output_skeleton(pyo_obj, num_samples)
+                    else:
+                        output_dict["outputs"][
+                            pyo_obj.name
+                        ] = self._create_component_output_skeleton(pyo_obj, num_samples)
 
         else:
             # Save only the outputs specified in the outputs dictionary
@@ -452,7 +466,7 @@ class _ParameterSweepBase(ABC):
             global_output_dict = copy.deepcopy(local_output_dict)
             # Create a global value array of inputs in the dictionary
             for key, item in global_output_dict.items():
-                if key != "solve_successful":
+                if key in ["sweep_params", "outputs"]:
                     for subkey, subitem in item.items():
                         subitem["value"] = np.zeros(num_total_samples, dtype=float)
 
@@ -461,7 +475,7 @@ class _ParameterSweepBase(ABC):
 
         # Finally collect the values
         for key, item in local_output_dict.items():
-            if key != "solve_successful":
+            if key in ["sweep_params", "outputs"]:
                 for subkey, subitem in item.items():
                     self.parallel_manager.gather_arrays_to_root(
                         sendbuf=subitem["value"],
@@ -711,7 +725,7 @@ class ParameterSweep(_ParameterSweepBase):
     one process's run.
     """
 
-    def _combine_outputs(self, gathered_results):
+    def _combine_output_array(self, gathered_results):
         outputs = gathered_results["outputs"]
         if len(outputs) == 0:
             return []
@@ -814,6 +828,9 @@ class ParameterSweep(_ParameterSweepBase):
                 version="0.10.0",
             )
 
+        if build_outputs is None:
+            build_outputs = return_none
+
         if not callable(build_outputs):
             _combined_outputs = build_outputs
             build_outputs = lambda model, sweep_params: _combined_outputs
@@ -847,8 +864,8 @@ class ParameterSweep(_ParameterSweepBase):
             all_parameter_combinations,
         )
 
-        global_sweep_results = self._combine_gather_results(all_results)
-        combined_outputs = self._combine_outputs(global_sweep_results)
+        global_sweep_results_dict = self._combine_gather_results(all_results)
+        combined_output_arr = self._combine_output_array(global_sweep_results_dict)
 
         # save the results for all simulations run by this process and its children
         for results in self.parallel_manager.results_from_local_tree(all_results):
@@ -857,14 +874,14 @@ class ParameterSweep(_ParameterSweepBase):
                 results.parameters,
                 all_parameter_combinations,
                 results.results,
-                global_sweep_results,
-                combined_outputs,
+                global_sweep_results_dict,
+                combined_output_arr,
                 process_number=results.process_number,
             )
 
-        global_save_data = np.hstack((all_parameter_combinations, combined_outputs))
+        global_save_data = np.hstack((all_parameter_combinations, combined_output_arr))
 
-        return global_save_data, global_sweep_results
+        return global_save_data, global_sweep_results_dict
 
 
 class RecursiveParameterSweep(_ParameterSweepBase):
@@ -1136,3 +1153,11 @@ def do_execute(
     return param_sweep_instance._do_param_sweep(
         model, sweep_params, outputs, local_combo_array
     )
+
+
+def return_none(model, sweep_params):
+    """
+    Used so that build_outputs=None is a valid usage of the parameter sweep tool
+    without requiring the user to wrap it in a function.
+    """
+    return None

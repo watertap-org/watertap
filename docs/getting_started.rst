@@ -112,11 +112,11 @@ Next, we can obtain Ipopt and CBC from conda-forge:
 Running the test suite
 ----------------------
 
-To run the WaterTAP test suite, first install the optional testing dependencies using pip:
+To run the WaterTAP test suite, first install the ``pytest`` test framework:
 
 .. code-block:: shell
 
-   pip install "watertap[testing]"
+   pip install pytest
 
 Then, run the following command to run the complete WaterTAP test suite:
 

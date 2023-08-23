@@ -41,7 +41,7 @@ from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
 
 # Some more information about this module
-__author__ = "Andrew Lee, Adam Atia"
+__author__ = "Andrew Lee, Adam Atia, Xinhong Liu"
 
 
 # Set up logger
@@ -319,7 +319,7 @@ class ASM2dStateBlockData(StateBlockData):
         self.temperature = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=298.15,
-            bounds=(298.14, 323.15),
+            bounds=(273.15, 323.15),
             doc="Temperature",
             units=pyo.units.K,
         )
