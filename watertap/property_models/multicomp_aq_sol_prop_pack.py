@@ -14,8 +14,9 @@ This property package computes a multi-component aqueous solution that can
 contain ionic and/or neutral solute species. It supports basic calculation 
 of component quanitities and some physical, chemical and electrical properties. 
 
-This property package was formerly named as "ion_DSPMDE_prop_pack" for its use of
-Donnan Steric Pore Model with Dielectric Exclusion (DSPMDE).
+This property package was formerly named the "ion_DSPMDE_prop_pack" for its originally 
+intended use with the Donnan Steric Pore Model with Dielectric Exclusion (DSPMDE) for
+nanofiltration.
 """
 
 # TODO:
@@ -69,7 +70,7 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables,
 )
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError, PropertyPackageError
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
 
@@ -290,21 +291,22 @@ class MCASParameterData(PhysicalParameterBlock):
     )
 
     CONFIG.declare(
-        "flow_basis",
+        "material_flow_basis",
         ConfigValue(
-            default=FlowBasis.molar,
-            domain=In(FlowBasis),
-            description="Flow basis",
+            default=MaterialFlowBasis.molar,
+            domain=In(MaterialFlowBasis),
+            description="Material flow basis",
             doc="""
-           Flow basis options.
+           Material flow basis options.
 
-           **default** - ``FlowBasis.molar``
+           **default** - ``MaterialFlowBasis.molar``
 
        .. csv-table::
            :header: "Configuration Options", "Description"
 
-           "``FlowBasis.molar``", "molar flowrate as the state variable"
-           "``FlowBasis.mass``", "mass flowrate as the state variable"
+           "``MaterialFlowBasis.molar``", "molar flowrate as the state variable"
+           "``MaterialFlowBasis.mass``", "mass flowrate as the state variable"
+           "``MaterialFlowBasis.other``", "other material flowrate as the state variable"
        """,
         ),
         )
@@ -539,7 +541,7 @@ class MCASParameterData(PhysicalParameterBlock):
         """Define properties supported and units."""
         obj.add_properties(
             {
-                "flow_mol_phase_comp": {"method": None},
+                "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "temperature": {"method": None},
                 "pressure": {"method": None},
                 "flow_mass_phase_comp": {"method": "_flow_mass_phase_comp"},
@@ -967,27 +969,6 @@ class MCASStateBlockData(StateBlockData):
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         # Add state variables
-        if self.config.flow_basis == FlowBasis.molar:
-            self.flow_mol_phase_comp = Var(
-                self.params.phase_list,
-                self.params.component_list,
-                initialize=0.1,  # todo: revisit
-                bounds=(0, None),
-                domain=NonNegativeReals,
-                units=pyunits.mol / pyunits.s,
-                doc="Mole flow rate",
-            )
-        elif self.config.flow_basis == FlowBasis.mass:
-            self.flow_mass_phase_comp = Var(
-                self.params.phase_list,
-                self.params.component_list,
-                initialize=0.1,  # todo: revisit
-                bounds=(0, None),
-                domain=NonNegativeReals,
-                units=pyunits.kg / pyunits.s,
-                doc="Mass flow rate",
-            )
-
         self.temperature = Var(
             initialize=298.15,
             bounds=(273.15, 373.15),
@@ -1003,9 +984,56 @@ class MCASStateBlockData(StateBlockData):
             units=pyunits.Pa,
             doc="State pressure",
         )
-
+        
     # -----------------------------------------------------------------------------
     # Property Methods
+    # Material flow state variables generated via on-demand props
+    def _flow_mol_phase_comp(self):
+        self.flow_mol_phase_comp = Var(
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=0.1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.mol / pyunits.s,
+            doc="Component molar flow rate",
+        )
+        if self.config.material_flow_basis == MaterialFlowBasis.mass:
+            def rule_flow_mol_phase_comp(b, p, j):
+                return (
+                    b.flow_mass_phase_comp[p, j]
+                    == b.flow_mol_phase_comp[p, j] * b.params.mw_comp[j]
+                )
+
+            self.eq_flow_mol_phase_comp = Constraint(
+                self.params.phase_list,
+                self.params.component_list,
+                rule=rule_flow_mol_phase_comp,
+            )
+
+    def _flow_mass_phase_comp(self):
+        self.flow_mass_phase_comp = Var(
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=0.5,
+            bounds=(0, None),
+            units=pyunits.kg / pyunits.s,
+            doc="Component Mass flowrate",
+        )
+        if self.config.material_flow_basis == MaterialFlowBasis.molar:
+            def rule_flow_mass_phase_comp(b, p, j):
+                return (
+                    b.flow_mass_phase_comp[p, j]
+                    == b.flow_mol_phase_comp[p, j] * b.params.mw_comp[j]
+                )
+
+            self.eq_flow_mass_phase_comp = Constraint(
+                self.params.phase_list,
+                self.params.component_list,
+                rule=rule_flow_mass_phase_comp,
+                )
+    
+    
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.params.phase_list,
@@ -1152,51 +1180,6 @@ class MCASStateBlockData(StateBlockData):
             rule=rule_conc_mass_phase_comp,
         )
 
-    if self.config.flow_basis == FlowBasis.molar:
-        def _flow_mass_phase_comp(self):
-            self.flow_mass_phase_comp = Var(
-                self.params.phase_list,
-                self.params.component_list,
-                initialize=0.5,
-                bounds=(0, None),
-                units=pyunits.kg / pyunits.s,
-                doc="Component Mass flowrate",
-            )
-
-            def rule_flow_mass_phase_comp(b, p, j):
-                return (
-                    b.flow_mass_phase_comp[p, j]
-                    == b.flow_mol_phase_comp[p, j] * b.params.mw_comp[j]
-                )
-
-            self.eq_flow_mass_phase_comp = Constraint(
-                self.params.phase_list,
-                self.params.component_list,
-                rule=rule_flow_mass_phase_comp,
-            )
-    
-    elif self.config.flow_basis == FlowBasis.mass:
-        def _flow_mol_phase_comp(self):
-            self.flow_mol_phase_comp = Var(
-                self.params.phase_list,
-                self.params.component_list,
-                initialize=0.1,
-                bounds=(0, None),
-                units=pyunits.mol / pyunits.s,
-                doc="Component molar flowrate",
-            )
-
-            def rule_flow_mol_phase_comp(b, p, j):
-                return (
-                    b.flow_mass_phase_comp[p, j]
-                    == b.flow_mol_phase_comp[p, j] * b.params.mw_comp[j]
-                )
-
-            self.eq_flow_mol_phase_comp = Constraint(
-                self.params.phase_list,
-                self.params.component_list,
-                rule=rule_flow_mol_phase_comp,
-            )
     def _flow_equiv_phase_comp(self):
         self.flow_equiv_phase_comp = Var(
             self.params.phase_list,
@@ -1799,15 +1782,30 @@ class MCASStateBlockData(StateBlockData):
         return EnergyBalanceType.none
 
     def get_material_flow_basis(self):
-        return MaterialFlowBasis.molar
+        if self.config.material_flow_basis == MaterialFlowBasis.molar:
+            return MaterialFlowBasis.molar
+        elif self.config.material_flow_basis == MaterialFlowBasis.mass:
+            return MaterialFlowBasis.mass
+        else:
+            raise PropertyPackageError(f"{self.name} MCAS Property Package set to use unsupported material flow basis: {self.get_material_flow_basis()}")
+                    
 
     def define_state_vars(self):
         """Define state vars."""
-        return {
-            "flow_mol_phase_comp": self.flow_mol_phase_comp,
-            "temperature": self.temperature,
-            "pressure": self.pressure,
-        }
+        if self.config.material_flow_basis == MaterialFlowBasis.molar:
+            return {
+                "flow_mol_phase_comp": self.flow_mol_phase_comp,
+                "temperature": self.temperature,
+                "pressure": self.pressure,
+            }
+        elif self.config.material_flow_basis == MaterialFlowBasis.mass:
+            return {
+                "flow_mass_phase_comp": self.flow_mass_phase_comp,
+                "temperature": self.temperature,
+                "pressure": self.pressure,
+            }
+        else:
+            raise PropertyPackageError(f"{self.name} MCAS Property Package set to use unsupported material flow basis: {self.get_material_flow_basis()}")
 
     def assert_electroneutrality(
         self,
