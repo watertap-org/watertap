@@ -33,19 +33,25 @@ from pyomo.environ import (
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.exceptions import InitializationError
+from idaes.core.util.model_statistics import degrees_of_freedom, fixed_variables_set
 from idaes.core.util.initialization import (
+    solve_indexed_blocks,
+    # propagate_state,
     propagate_state as _pro_state,
 )
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
 
 import watertap.property_models.NaCl_prop_pack as props
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
+    MassTransferCoefficient,
+    PressureChangeType,
 )
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
     OsmoticallyAssistedReverseOsmosis0D,
@@ -53,8 +59,12 @@ from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
     PressureChangeType,
 )
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
+from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
-from watertap.costing.units.pump import cost_low_pressure_pump
+from watertap.costing.units.pump import cost_low_pressure_pump, PumpType
+
+from watertap.core.util.model_diagnostics.infeasible import *
+from idaes.core.util.model_diagnostics import DegeneracyHunter
 
 
 class ERDtype(StrEnum):
@@ -82,12 +92,26 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     set_operating_conditions(m, number_of_stages=number_of_stages)
     initialize_system(m, number_of_stages, solver=solver)
 
+    # solve(m, solver=solver)
+    # print("\n***---Simulation results---***")
+    # display_system(m)
+    # display_design(m)
+    # if erd_type == ERDtype.pump_as_turbine:
+    #     display_state(m)
+    # else:
+    #     pass
+    # print_close_to_bounds(m)
+    # print_infeasible_constraints(m)
+
     optimize_set_up(
         m, number_of_stages=number_of_stages, water_recovery=system_recovery
     )
 
     results = solve(m, solver=solver)
     assert_optimal_termination(results)
+
+    print_close_to_bounds(m)
+    print_infeasible_constraints(m)
 
     print("\n***---Optimization results---***")
     display_system(m)
@@ -711,6 +735,15 @@ def recycle_pump_initializer(pump, oaro, solvent_multiplier, solute_multiplier):
     )
 
 
+# def solve(blk, solver=None, tee=True):
+#     if solver is None:
+#         solver = get_solver(options={"bound_push": 1e-2})
+#     results = solver.solve(blk, tee=tee)
+#     if not check_optimal_termination(results):
+#         results = solver.solve(blk, tee=tee)
+#     return results
+
+
 def solve(model, solver=None, tee=False, raise_on_failure=False):
     # ---solving---
     if solver is None:
@@ -841,6 +874,12 @@ def optimize_set_up(
                     m.fs.ro_max_pressure,
                 )
             )
+            iscale.constraint_scaling_transform(
+                pump.max_ro_pressure_con,
+                iscale.get_scaling_factor(
+                    pump.control_volume.properties_out[0].pressure
+                ),
+            )
         else:
             pump.max_oaro_pressure_con = Constraint(
                 expr=(
@@ -849,6 +888,12 @@ def optimize_set_up(
                     m.fs.oaro_max_pressure,
                 )
             )
+            # iscale.constraint_scaling_transform(
+            #     pump.max_oaro_pressure_con,
+            #     iscale.get_scaling_factor(
+            #         pump.control_volume.properties_out[0].pressure
+            #     ),
+            # )
 
     # Recycle pumps
     for idx, pump in m.fs.RecyclePumps.items():
@@ -865,6 +910,12 @@ def optimize_set_up(
             iscale.get_scaling_factor(pump.control_volume.properties_out[0].pressure),
         )
         pump.deltaP.setlb(0)
+
+    # ERD Units
+    # for erd in m.fs.EnergyRecoveryDevices.values():
+    #     erd.control_volume.properties_out[0].pressure.unfix()
+    #     erd.control_volume.properties_out[0].pressure.setlb(101325)
+    #     erd.deltaP.setub(0)
 
     # OARO Units
     for stage in m.fs.OAROUnits.values():
@@ -986,6 +1037,10 @@ def optimize_set_up(
             )
         )
 
+        # stage.A_comp.unfix()
+        # stage.A_comp.setlb(2.78e-12)
+        # stage.A_comp.setub(4.2e-11)
+
     # RO
     m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(1)
@@ -1007,6 +1062,8 @@ def optimize_set_up(
     m.fs.RO.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"].setlb(
         10 * pyunits.g / pyunits.L
     )
+
+    # m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"].setlb(0)
 
     m.fs.RO.ro_avg_water_flux_con = Constraint(
         expr=(
@@ -1076,6 +1133,10 @@ def optimize_set_up(
         )
     )
 
+    # m.fs.RO.A_comp.unfix()
+    # m.fs.RO.A_comp.setlb(2.78e-12)
+    # m.fs.RO.A_comp.setub(4.2e-11)
+
     # Separator
     for sep in m.fs.Separators.values():
         sep.split_fraction[:, "treat"].unfix()
@@ -1097,6 +1158,9 @@ def optimize_set_up(
     m.fs.product_salinity = Param(
         initialize=500e-6, mutable=True
     )  # product NaCl mass fraction [-]
+    # m.fs.minimum_water_flux = Param(
+    #     initialize=1.0 / 3600.0, mutable=True
+    # )  # minimum water flux [kg/m2-s]
 
     # additional constraints
     if water_recovery is not None:
@@ -1132,6 +1196,13 @@ def optimize_set_up(
             0.2,
         )
     )
+
+    # m.fs.eq_minimum_water_flux = Constraint(
+    #     expr=m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"] >= m.fs.minimum_water_flux
+    # )
+
+    # ---checking model---
+    # assert_degrees_of_freedom(m, 2 * m.fs.NumberOfStages)
 
 
 def display_system(m):
@@ -1240,14 +1311,14 @@ def display_design(m):
             "OARO tage %d membrane area      %.1f m2"
             % (stage, m.fs.OAROUnits[stage].area.value)
         )
-        print(
-            "OARO Stage %d water perm. coeff.  %.3f LMH/bar"
-            % (stage, m.fs.OAROUnits[stage].A_comp[0, "H2O"].value * (3.6e11))
-        )
-        print(
-            "OARO Stage %d salt perm. coeff.  %.3f LMH/bar"
-            % (stage, m.fs.OAROUnits[stage].B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
-        )
+        # print(
+        #     "OARO Stage %d water perm. coeff.  %.3f LMH/bar"
+        #     % (stage, m.fs.OAROUnits[stage].A_comp[0, "H2O"].value * (3.6e11))
+        # )
+        # print(
+        #     "OARO Stage %d salt perm. coeff.  %.3f LMH/bar"
+        #     % (stage, m.fs.OAROUnits[stage].B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
+        # )
         print(
             "OARO Stage %d salt feed-side velocity.  %.3f"
             % (stage, m.fs.OAROUnits[stage].feed_side.velocity[0, 0].value)
@@ -1265,14 +1336,14 @@ def display_design(m):
     )
     print("RO membrane area      %.1f m2" % (m.fs.RO.area.value))
     print("RO membrane width      %.1f m" % (m.fs.RO.width.value))
-    print(
-        "RO water perm. coeff.  %.3f LMH/bar"
-        % (m.fs.RO.A_comp[0, "H2O"].value * (3.6e11))
-    )
-    print(
-        "RO salt perm. coeff.  %.3f LMH"
-        % (m.fs.RO.B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
-    )
+    # print(
+    #     "RO water perm. coeff.  %.3f LMH/bar"
+    #     % (m.fs.RO.A_comp[0, "H2O"].value * (3.6e11))
+    # )
+    # print(
+    #     "RO salt perm. coeff.  %.3f LMH"
+    #     % (m.fs.RO.B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
+    # )
 
 
 def display_state(m):
@@ -1304,11 +1375,11 @@ def display_state(m):
 
     for stage in m.fs.Stages:
 
-        print_state(f"Primary Pump {stage} out", m.fs.PrimaryPumps[stage].outlet)
-        print_state(
-            f"ERD {stage} out",
-            m.fs.EnergyRecoveryDevices[stage].outlet,
-        )
+        # print_state(f"Primary Pump {stage} out", m.fs.PrimaryPumps[stage].outlet)
+        # print_state(
+        #     f"ERD {stage} out",
+        #     m.fs.EnergyRecoveryDevices[stage].outlet,
+        # )
 
         if stage == m.fs.LastStage:
             pass
@@ -1325,7 +1396,7 @@ def display_state(m):
         if stage == m.fs.FirstStage:
             pass
         else:
-            print_state(f"Recycle Pump {stage} out", m.fs.RecyclePumps[stage].outlet)
+            # print_state(f"Recycle Pump {stage} out", m.fs.RecyclePumps[stage].outlet)
             print_state(f"Purge {stage} out", m.fs.Separators[stage].purge)
 
         if stage == m.fs.FirstStage or stage == m.fs.LastStage:
@@ -1342,5 +1413,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    # NOTE: This flowsheet only works for 2 and 3 stages
     m = main(3, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
