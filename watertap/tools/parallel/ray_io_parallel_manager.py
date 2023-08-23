@@ -133,7 +133,9 @@ class RayIoParallelManager(ParallelManager):
             results.append(LocalResults(i, values, result))
         # sort the results by the process number to keep a deterministic ordering
         # results.sort(key=lambda result: result.process_number)
+
         results.sort(key=lambda result: result.process_number)
+        self.shut_down_ray()
         return results
 
     def results_from_local_tree(self, results):
@@ -143,13 +145,13 @@ class RayIoParallelManager(ParallelManager):
     def setup_ray_cluster(self):
         if ray.is_initialized() == False:
             try:
-                # This will try to connect ot existing ray
-                # cluster, typical usage is for a cluster
-                # where ray needs to be started as head, with additional
-                # workers started on each node
-                # the parllel manaager will connect to this cluster
-                # useing ip_head addres of head node, and its password
-                # if these are not found it will reveret to local mode.
+                """This will try to connect ot existing ray
+                cluster, typical usage is for a cluster
+                where ray needs to be started as head, with additional
+                workers started on each node
+                the parllel manaager will connect to this cluster
+                useing ip_head address of head node, and its password
+                if these are not found it will reveret to local mode."""
                 _log.info(
                     "Connected to IP: {}, redis password: {}".format(
                         os.environ["ip_head"], os.environ["redis_password"]
@@ -178,6 +180,14 @@ class RayIoParallelManager(ParallelManager):
                     ray.shutdown()
                 ray.init(include_dashboard=False)
                 self.cluster_mode = False
+
+    def shut_down_ray(self):
+        """used to shutdown ray instance after run only in local mode
+        if running on cluster or with head, we assume external head script will shut it down
+        as all we do here is connect to it"""
+        if self.cluster_mode == False:
+            if ray.is_initialized():
+                ray.shutdown()
 
 
 def create_paramActor_class():

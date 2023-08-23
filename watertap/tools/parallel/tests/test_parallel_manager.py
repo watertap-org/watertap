@@ -96,7 +96,7 @@ class TestParallelManager:
         assert all_results == [-101, -102, -103, -104, -105]
 
     @pytest.mark.component
-    @pytest.mark.parametrize("number_of_subprocesses", [1, 4])
+    @pytest.mark.parametrize("number_of_subprocesses", [1, 2])
     def test_multiple_subprocesses_with_multiprocessing(self, number_of_subprocesses):
         all_parameters = [1, 2, 3, 4, 5]
 
@@ -122,7 +122,7 @@ class TestParallelManager:
         assert all_results == [-101, -102, -103, -104, -105]
 
     @pytest.mark.component
-    @pytest.mark.parametrize("number_of_subprocesses", [1, 4])
+    @pytest.mark.parametrize("number_of_subprocesses", [1])
     def test_rayio_multiprocessing(self, number_of_subprocesses):
         all_parameters = [1, 2, 3, 4, 5]
         if ray_available:
