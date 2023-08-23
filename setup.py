@@ -60,7 +60,6 @@ setup(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
@@ -75,7 +74,7 @@ setup(
     packages=find_packages(
         include=("watertap*",),
     ),
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=[
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
