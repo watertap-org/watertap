@@ -9,9 +9,6 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-"""
-
-"""
 
 # Some more information about this module
 __author__ = "Chenyu Wang"
@@ -19,10 +16,7 @@ __author__ = "Chenyu Wang"
 import pyomo.environ as pyo
 from pyomo.environ import (
     value,
-    assert_optimal_termination,
     units as pyunits,
-    Objective,
-    SolverFactory,
 )
 from pyomo.network import Arc, SequentialDecomposition
 
@@ -62,7 +56,6 @@ from watertap.property_models.activated_sludge.modified_asm2d_properties import 
 )
 from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
-    DecaySwitch,
 )
 from watertap.unit_models.translators.translator_adm1_asm2d import (
     Translator_ADM1_ASM2D,
@@ -80,10 +73,6 @@ from watertap.unit_models.thickener import (
 )
 from watertap.core.util.initialization import check_solve
 from watertap.costing import WaterTAPCosting
-
-from watertap.core.util.model_diagnostics.infeasible import *
-from idaes.core.util.model_diagnostics import DegeneracyHunter
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -109,8 +98,8 @@ def build_flowsheet():
 
     # Feed water stream
     m.fs.feed = Feed(property_package=m.fs.props_ASM2D)
-    # Mixer for feed water and recycled sludge
-    # m.fs.MX1 = Mixer(property_package=m.fs.props_ASM2D, inlet_list=["feed_water", "recycle"])
+
+    # Activated sludge process
     # First reactor (anoxic) - standard CSTR
     m.fs.R1 = CSTR(
         property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
@@ -147,13 +136,10 @@ def build_flowsheet():
         outlet_list=["recycle", "waste"],
         split_basis=SplittingType.totalFlow,
     )
-    # Mixing sludge recycle and R5 underflow
-    # m.fs.MX6 = Mixer(property_package=m.fs.props_ASM2D, inlet_list=["clarifier", "reactor"])
+
     # Product Blocks
     m.fs.Treated = Product(property_package=m.fs.props_ASM2D)
     m.fs.Sludge = Product(property_package=m.fs.props_ASM2D)
-    # Recycle pressure changer - use a simple isothermal unit for now
-    # m.fs.P1 = PressureChanger(property_package=m.fs.props_ASM2D)
 
     # Thickener
     m.fs.thickener = Thickener(
@@ -353,9 +339,6 @@ def build_flowsheet():
     # Sludge purge separator
     m.fs.SP6.split_fraction[:, "recycle"].fix(0.65)
 
-    # Outlet pressure from recycle pump
-    # m.fs.P1.outlet.pressure.fix(101325)
-
     # AD
     m.fs.AD.volume_liquid.fix(3400)
     m.fs.AD.volume_vapor.fix(300)
@@ -376,128 +359,13 @@ def build_flowsheet():
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
-            # if "thickener.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-            # if "translator_asm2d_adm1.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-            # if "AD.liquid_phase.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-            # if "translator_adm1_asm2d.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-            # if "dewater.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-            # if "electroNP.mixed_state[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-            # if "electroNP.byproduct_state[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e7)
-            # if "electroNP.electricity" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-            # if "electroNP.MgCl2_flowrate" in var.name:
-            #     iscale.set_scaling_factor(var, 1e1)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
-            # if "conc_mass_comp" in var.name:
-            #     iscale.set_scaling_factor(var, 1e1)
-            # if "conc_mass_comp[S_PO4]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e1)
-            # if "conc_mass_comp[S_NO3]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e7)
-            # if "conc_mass_comp[X_AUT]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e7)
-            # if "conc_mass_comp[X_PAO]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e7)
-            # if "electroNP.electricity[0.0]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-            # if "electroNP.MgCl2_flowrate[0.0]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e1)
-            # if "enth_mol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e-4)
-            # if "conc_mass_comp[S_F]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[S_A]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[S_NH4]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[S_I]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[S_N2]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[X_I]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[X_S]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e1)
-            # if "conc_mass_comp[X_H]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[S_IC]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[S_O2]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-            # if "conc_mass_comp[S_NO3]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-            # if "conc_mass_comp[X_PAO]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-            # if "conc_mass_comp[X_PP]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-            # if "conc_mass_comp[X_PHA]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-            # if "conc_mass_comp[X_AUT]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
-            # if "conc_mass_comp[S_K]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-            # if "conc_mass_comp[S_Mg]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-
-            # if "conc_mass_comp[S_su]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
-            # if "conc_mass_comp[S_aa]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
-            # if "conc_mass_comp[S_fa]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e0)
-            # if "conc_mass_comp[S_va]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e0)
-            # if "conc_mass_comp[S_bu]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e0)
-            # if "conc_mass_comp[S_pro]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e0)
-            # if "conc_mass_comp[S_ac]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[S_h2]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
-            # if "conc_mass_comp[S_ch4]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[S_IN]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e0)
-            # if "conc_mass_comp[S_IP]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e1)
-            # if "conc_mass_comp[X_ch]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e-1)
-            # if "conc_mass_comp[X_pr]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e-1)
-            # if "conc_mass_comp[X_li]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e-1)
-            # if "conc_mass_comp[X_su]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e1)
-            # if "conc_mass_comp[X_aa]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e1)
-            # if "conc_mass_comp[X_fa]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e4)
-            # if "conc_mass_comp[X_c4]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e4)
-            # if "conc_mass_comp[X_pro]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e4)
-            # if "conc_mass_comp[X_ac]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e1)
-            # if "conc_mass_comp[X_h2]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e5)
-            # if "conc_mass_comp[X_I]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e0)
 
     scale_variables(m)
     iscale.calculate_scaling_factors(m.fs)
-    # iscale.set_scaling_factor(m.fs.electroNP.electricity[0.0], 1e2)
-    # iscale.set_scaling_factor(m.fs.electroNP.MgCl2_flowrate[0.0], 1e1)
 
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
@@ -506,46 +374,6 @@ def build_flowsheet():
     seq.options.tear_method = "Wegstein"
     seq.options.iterLim = 0
 
-    G = seq.create_graph(m)
-
-    # # Uncomment this code to see tear set and initialization order
-    # heuristic_tear_set = seq.tear_set_arcs(G, method="heuristic")
-    # order = seq.calculation_order(G)
-    # for o in heuristic_tear_set:
-    #     print(o.name)
-    # for o in order:
-    #     print(o[0].name)
-
-    # Initial guesses for flow into first reactor
-    # tear_guesses = {
-    #     "flow_vol": {0: 0.31},
-    #     "conc_mass_comp": {
-    #         (0, "S_O2"): 0.14,
-    #         (0, "S_F"): 0.021,
-    #         (0, "S_A"): 0.014,
-    #         (0, "S_NH4"): 0.016,
-    #         (0, "S_NO3"): 1e-6,
-    #         (0, "S_PO4"): 0.0035,
-    #         (0, "S_I"): 0.030,
-    #         (0, "S_IC"): 0.030,
-    #         (0, "S_K"): 0.030,
-    #         (0, "S_Mg"): 0.030,
-    #         (0, "S_N2"): 0.015,
-    #         (0, "X_I"): 0.050,
-    #         (0, "X_S"): 0.138,
-    #         (0, "X_H"): 0.014,
-    #         (0, "X_PAO"): 1e-6,
-    #         (0, "X_PP"): 1e-6,
-    #         (0, "X_PHA"): 1e-6,
-    #         (0, "X_AUT"): 1e-6,
-    #     },
-    #     "temperature": {0: 298.15},
-    #     "pressure": {0: 101325},
-    # }
-    #
-    # # Pass the tear_guess to the SD tool
-    # seq.set_guesses_for(m.fs.R1.inlet, tear_guesses)
-
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
 
@@ -553,23 +381,6 @@ def build_flowsheet():
     m.fs.costing.initialize()
 
     results = solve(m, tee=True)
-
-    # Use of Degeneracy Hunter for troubleshooting model.
-    # m.obj = pyo.Objective(expr=0)
-    # solver = get_solver()
-    # solver.options["max_iter"] = 10000
-    # results = solver.solve(m, tee=False)
-    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(
-    #     m, large=1e1, small=1e-1
-    # )
-    # for x in badly_scaled_var_list:
-    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    # dh.check_residuals(tol=1e-8)
-    # dh.check_variable_bounds(tol=1e-8)
-    # dh.check_rank_equality_constraints(dense=True)
-    # ds = dh.find_candidate_equations(verbose=True, tee=True)
-    # ids = dh.find_irreducible_degenerate_sets(verbose=True)
 
     return m, results
 
