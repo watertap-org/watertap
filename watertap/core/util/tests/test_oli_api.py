@@ -304,10 +304,11 @@ class TestOLIAPI_WaterTAP:
                 for i, e in enumerate(brine_inputs):
                     for k, v in e.items():
                         vtest = test_water_inputs[i][k]
-                        if isinstance(vtest, (float, int)) and isinstance(v, (float, int)):
+                        if isinstance(vtest, (float, int)) and isinstance(
+                            v, (float, int)
+                        ):
                             assert v == pytest.approx(vtest, rel=1e-3)
                         else:
                             assert v == vtest
             else:
                 assert brine_inputs == test_water_inputs
-
