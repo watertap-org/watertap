@@ -221,6 +221,15 @@ def run_analysis(
             m.fs.desalination.RO.recovery_vol_phase[0, "Liq"], 0.1, 0.75, nx
         )
 
+    elif case_num == 17:
+        m.fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0].unfix()
+        sweep_params["water_recovery"] = LinearSample(
+            m.fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0],
+            0.5,
+            0.95,
+            nx,
+        )
+
     else:
         raise ValueError("case_num = %d not recognized." % (case_num))
 
@@ -345,7 +354,19 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     # )
     # ax.set_xlabel("Waste Disposal Cost ($/m3)")
     # ax.set_ylabel("Dye Disposal Cost ($/m3)")
+    # ax.set_xlim([1, 10])
+    # ax.set_ylim([120, 150])
     # ax.set_title("LCOT ($/m3)")
+
+    # case 17
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="line",
+    #     xlabel="# water_recovery",
+    #     ylabel="LCOT",
+    # )
+    # ax.set_xlabel("Water Recovery Fraction")
+    # ax.set_ylabel("LCOT ($/m3)")
 
     return global_results, m
 
