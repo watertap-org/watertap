@@ -14,7 +14,7 @@
 """
 
 # Some more information about this module
-__author__ = "Alejandro Garciadiego, Andrew Lee"
+__author__ = "Chenyu Wang"
 
 import pyomo.environ as pyo
 from pyomo.environ import (
@@ -87,15 +87,6 @@ from idaes.core.util.model_diagnostics import DegeneracyHunter
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-
-
-def automate_rescale_variables(m):
-    for var, sv in iscale.badly_scaled_var_generator(m):
-        if iscale.get_scaling_factor(var) is None:
-            continue
-        sf = iscale.get_scaling_factor(var)
-        iscale.set_scaling_factor(var, sf / sv)
-        iscale.calculate_scaling_factors(m)
 
 
 def build_flowsheet():
@@ -196,7 +187,7 @@ def build_flowsheet():
         has_heat_transfer=True,
         has_pressure_change=False,
     )
-    # m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # Dewatering Unit
     m.fs.dewater = DewateringUnit(
@@ -209,11 +200,11 @@ def build_flowsheet():
     m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # Costing
-    # m.fs.costing.cost_process()
-    # m.fs.costing.add_annual_water_production(
-    #     m.fs.electroNP.properties_treated[0].flow_vol
-    # )
-    # m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(
+        m.fs.electroNP.properties_treated[0].flow_vol
+    )
+    m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
 
     # Link units
     m.fs.stream1 = Arc(source=m.fs.feed.outlet, destination=m.fs.R1.inlet)
@@ -375,7 +366,7 @@ def build_flowsheet():
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
     # Costing
-    # m.fs.costing.electroNP.phosphorus_recovery_value = 0
+    m.fs.costing.electroNP.phosphorus_recovery_value = 0
 
     # Check degrees of freedom
     print(degrees_of_freedom(m))
@@ -385,30 +376,30 @@ def build_flowsheet():
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
-            if "thickener.properties_in[0.0].flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e5)
-            if "translator_asm2d_adm1.properties_in[0.0].flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e5)
-            if "AD.liquid_phase.properties_in[0.0].flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e5)
-            if "translator_adm1_asm2d.properties_in[0.0].flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e5)
-            if "dewater.properties_in[0.0].flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e5)
-            if "electroNP.properties_in[0.0].flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e5)
+            # if "thickener.properties_in[0.0].flow_vol" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
+            # if "translator_asm2d_adm1.properties_in[0.0].flow_vol" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
+            # if "AD.liquid_phase.properties_in[0.0].flow_vol" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
+            # if "translator_adm1_asm2d.properties_in[0.0].flow_vol" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
+            # if "dewater.properties_in[0.0].flow_vol" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
+            # if "electroNP.mixed_state[0.0].flow_vol" in var.name:
+            #     iscale.set_scaling_factor(var, 1e5)
             # if "electroNP.byproduct_state[0.0].flow_vol" in var.name:
             #     iscale.set_scaling_factor(var, 1e7)
-            if "electroNP.electricity" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
-            if "electroNP.MgCl2_flowrate" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
+            # if "electroNP.electricity" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "electroNP.MgCl2_flowrate" in var.name:
+            #     iscale.set_scaling_factor(var, 1e1)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
-            if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
+            # if "conc_mass_comp" in var.name:
+            #     iscale.set_scaling_factor(var, 1e1)
             # if "conc_mass_comp[S_PO4]" in var.name:
             #     iscale.set_scaling_factor(var, 1e1)
             # if "conc_mass_comp[S_NO3]" in var.name:
@@ -557,12 +548,9 @@ def build_flowsheet():
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
-        # badly_scaled_vars = list(iscale.badly_scaled_var_generator(unit))
-        # if len(badly_scaled_vars) > 0:
-        #     automate_rescale_variables(unit)
 
     seq.run(m, function)
-    # m.fs.costing.initialize()
+    m.fs.costing.initialize()
 
     results = solve(m, tee=True)
 
@@ -672,21 +660,16 @@ if __name__ == "__main__":
     stream_table = create_stream_table_dataframe(
         {
             "Feed": m.fs.feed.outlet,
-            # "Mix": m.fs.R1.inlet,
-            # "R1": m.fs.R1.outlet,
-            # "R2": m.fs.R2.outlet,
-            # "R3": m.fs.R3.outlet,
-            # "R4": m.fs.R4.outlet,
-            "R5": m.fs.R5.outlet,
-            "thickener": m.fs.thickener.underflow,
+            "ASP outlet": m.fs.R5.outlet,
+            "thickener outlet": m.fs.thickener.underflow,
             "AD liquid inlet": m.fs.AD.inlet,
             "AD liquid outlet": m.fs.AD.liquid_outlet,
             "AD vapor outlet": m.fs.AD.vapor_outlet,
-            "dewater": m.fs.dewater.overflow,
+            "dewater outlet": m.fs.dewater.overflow,
             "ElectroNP treated": m.fs.electroNP.treated,
             "ElectroNP byproduct": m.fs.electroNP.byproduct,
         },
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
-    # display_costing(m)
+    display_costing(m)
