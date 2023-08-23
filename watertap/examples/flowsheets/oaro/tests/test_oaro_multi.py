@@ -43,7 +43,7 @@ solver = get_solver()
 class TestOAROwithTurbine:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m = build(number_of_stages=2, erd_type=ERDtype.pump_as_turbine)
+        m = build(number_of_stages=3, erd_type=ERDtype.pump_as_turbine)
 
         return m
 
@@ -55,21 +55,8 @@ class TestOAROwithTurbine:
         assert isinstance(m.fs, FlowsheetBlock)
         assert isinstance(m.fs.properties, props.NaClParameterBlock)
 
-        # unit models
-        fs = m.fs
-        # assert isinstance(fs.feed, Feed)
-        # assert isinstance(fs.P1, Pump)
-        # assert isinstance(fs.P2, Pump)
-        # assert isinstance(fs.P3, Pump)
-        # assert isinstance(fs.ERD1, EnergyRecoveryDevice)
-        # assert isinstance(fs.ERD2, EnergyRecoveryDevice)
-        # assert isinstance(fs.OARO, OsmoticallyAssistedReverseOsmosis0D)
-        # assert isinstance(fs.RO, ReverseOsmosis0D)
-        # assert isinstance(fs.product, Product)
-        # assert isinstance(fs.disposal, Product)
-
         # additional variables
-        assert isinstance(fs.water_recovery, Var)
+        assert isinstance(m.fs.water_recovery, Var)
 
     @pytest.mark.component
     def test_units(self, system_frame):
@@ -78,13 +65,13 @@ class TestOAROwithTurbine:
     @pytest.mark.component
     def test_set_operating_conditions(self, system_frame):
         m = system_frame
-        set_operating_conditions(m)
+        set_operating_conditions(m, number_of_stages=3)
         assert degrees_of_freedom(m) == 0
 
     @pytest.mark.component
     def test_initialize_system(self, system_frame):
         m = system_frame
-        initialize_system(m, number_of_stages=2, solver=solver)
+        initialize_system(m, number_of_stages=3, solver=solver)
         assert degrees_of_freedom(m) == 0
 
     @pytest.mark.component
@@ -92,10 +79,10 @@ class TestOAROwithTurbine:
         m = system_frame
         solve(m, solver=solver)
         fs = m.fs
-        assert pytest.approx(2.54546e-4, rel=1e-5) == value(
+        assert pytest.approx(9.95868e-4, rel=1e-5) == value(
             fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]
         )
-        assert pytest.approx(0.262719, rel=1e-5) == value(fs.water_recovery)
+        assert pytest.approx(0.044197, rel=1e-5) == value(fs.water_recovery)
 
     @pytest.mark.component
     def test_config_error(self, system_frame):
@@ -104,4 +91,4 @@ class TestOAROwithTurbine:
 
     @pytest.mark.component
     def test_main(self):
-        main(number_of_stages=2, system_recovery=0.5)
+        main(number_of_stages=3, system_recovery=0.5)
