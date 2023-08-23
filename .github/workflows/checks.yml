@@ -143,6 +143,17 @@ jobs:
         echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --edb-no-mock" >> $GITHUB_ENV
     - name: Test EDB client
       run: pytest --pyargs watertap -k test_edb_client
+    - name: Add coverage report pytest options
+      if: matrix.cov_report
+      run:
+        |
+        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-report=xml" >> $GITHUB_ENV
+    - name: Test with pytest
+      run: |
+        pytest --pyargs watertap
+    - name: Upload coverage report to Codecov
+      if: matrix.cov_report
+      uses: codecov/codecov-action@v2
     - name: Test documentation code
       run: |
         make -C docs doctest -d
@@ -152,3 +163,140 @@ jobs:
       if: 'false'
       run: |
         make -C docs linkcheck -d
+
+  user-mode-pytest:
+    name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.7'
+          - '3.10'
+        os:
+          - linux
+          - win64
+        include:
+          - os: linux
+            os-version: ubuntu-20.04
+          - os: win64
+            os-version: windows-2019
+    steps:
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: watertap
+        python-version: ${{ matrix.python-version }}
+    - name: Define install URL (default)
+      env:
+        _repo_full_name: watertap-org/watertap
+        _ref_to_install: main
+      run: |
+        echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
+    - name: Define install URL (for PRs)
+      if: github.event.pull_request
+      env:
+        _repo_full_name: ${{ github.event.pull_request.head.repo.full_name }}
+        _ref_to_install: ${{ github.event.pull_request.head.sha }}
+      run:
+        echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
+    - name: Install watertap and testing dependencies
+      run: |
+        echo '::group::Output of "pip install" commands'
+        pip install --progress-bar off "watertap @ ${_install_url}" pytest
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --verbose
+        echo '::endgroup::'
+    - name: Run pytest
+      run: |
+        pytest --pyargs watertap
+
+  notebooks:
+    name: Test notebooks (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.7'
+          - '3.10'
+        os:
+          - linux
+          - win64
+        include:
+          - os: linux
+            os-version: ubuntu-20.04
+          - os: win64
+            os-version: windows-2019
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: watertap-dev
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        echo '::group::Output of "conda install" commands'
+        conda install --quiet --yes pip setuptools wheel pandoc
+        echo '::endgroup::'
+        echo '::group::Output of "pip install" commands'
+        pip install --progress-bar off -r requirements-dev.txt
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --verbose
+        echo '::endgroup::'
+    - name: Run pytest with nbmake
+      run:
+        pytest --nbmake **/*.ipynb
+
+  macos:
+    name: macOS setup (EXPERIMENTAL)
+    runs-on: macos-11
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.8'
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: watertap
+        python-version: ${{ matrix.python-version }}
+    - name: Install WaterTAP (dev) without idaes get-extensions
+      run: |
+        echo '::group::Output of "conda install" commands'
+        conda install --quiet --yes pip=21.1 wheel setuptools pandoc
+        echo '::endgroup::'
+        echo '::group::Output of "pip install" commands'
+        pip install --progress-bar off -r requirements-dev.txt
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show pyomo idaes-pse
+        echo '::endgroup::'
+    - name: Install Ipopt from conda-forge
+      run:
+        conda install --quiet --yes -c conda-forge ipopt=3.14.11
+    - name: Build Pyomo extensions
+      run: |
+        conda install --quiet --yes cmake
+        # some failures are expected, but this should succeed as long as pynumero is built correctly
+        pyomo build-extensions || python -c "from pyomo.contrib.pynumero.asl import AmplInterface; exit(0) if AmplInterface.available() else exit(1)"
+    - name: Run pytest
+      run: |
+        pytest --pyargs watertap -k 'not (nf_dspmde.nf_ui or nf_dspmde.nf_with_bypass_ui)'

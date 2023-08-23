@@ -1,0 +1,52 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: MPI tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os-version }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.8]
+        os:
+          - linux
+          - win64
+          # - macos
+        include:
+          - os: linux
+            os-version: ubuntu-20.04
+          - os: win64
+            os-version: windows-2019
+          # - os: macos
+          #   os-version: macos-10.15
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        conda install --quiet --yes -c conda-forge mpi4py
+        python -m pip install --progress-bar off --upgrade pip
+        pip install --progress-bar off -r requirements-dev.txt
+        idaes get-extensions --verbose
+    - name: Conda info
+      run: conda info
+    - name: Test parallel pytest
+      run: |
+        mpiexec -n 2 pytest watertap/tools/parameter_sweep/tests/test*parameter_sweep.py --no-cov
