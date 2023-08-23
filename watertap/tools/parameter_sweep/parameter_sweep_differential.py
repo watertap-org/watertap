@@ -314,7 +314,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         return global_output_dict
 
-    def _run_differential_sweep(self, model, local_value):
+    def _run_differential_sweep(self, local_value):
         diff_sweep_param_dict = self._create_differential_sweep_params(local_value)
 
         # We want this instance of the parameter sweep to run in serial
@@ -331,7 +331,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         diff_ps.model_manager = self.model_manager
 
         _, differential_sweep_output_dict = diff_ps.parameter_sweep(
-            model,
+            diff_ps.model_manager.model,
             diff_sweep_param_dict,
             build_outputs=self.differential_outputs,
             num_samples=self.config.num_diff_samples,
@@ -354,17 +354,15 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             local_output_dict,
         )
         self.differential_sweep_output_dict[k] = self._run_differential_sweep(
-            self.model_manager.model, local_value_k
+            local_value_k
         )
 
         return run_successful
 
-    def _do_param_sweep(self, model, sweep_params, outputs, local_values):
+    def _do_param_sweep(self, sweep_params, outputs, local_values):
         self.differential_sweep_output_dict = {}
 
-        local_output_dict = super()._do_param_sweep(
-            model, sweep_params, outputs, local_values
-        )
+        local_output_dict = super()._do_param_sweep(sweep_params, outputs, local_values)
 
         # Now append the outputs of the differential solves
         self._append_differential_results(
@@ -470,7 +468,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         # Do the Loop
         if self.config.custom_do_param_sweep is None:
             local_results_dict = self._do_param_sweep(
-                model,
                 sweep_params,
                 self.outputs,
                 local_values,
@@ -478,7 +475,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         else:
             local_results_dict = self.config.custom_do_param_sweep(
                 self,
-                model,
                 sweep_params,
                 self.outputs,
                 local_values,

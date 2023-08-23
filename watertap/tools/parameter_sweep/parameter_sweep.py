@@ -1131,7 +1131,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
             if self.config.custom_do_param_sweep is None:
                 local_output_collection[loop_ctr] = self._do_param_sweep(
-                    model,
                     sweep_params,
                     outputs,
                     local_values,
@@ -1140,7 +1139,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
                 local_output_collection[
                     loop_ctr
                 ] = self.self.config.custom_do_param_sweep(
-                    model,
                     sweep_params,
                     outputs,
                     local_values,
