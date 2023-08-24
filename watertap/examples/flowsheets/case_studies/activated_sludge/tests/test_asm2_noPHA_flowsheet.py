@@ -43,6 +43,7 @@ class TestASM2DFlowsheet:
         assert degrees_of_freedom(model) == 0
         assert_optimal_termination(model.results)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.integration
     def test_results(self, model):
         # Treated water
