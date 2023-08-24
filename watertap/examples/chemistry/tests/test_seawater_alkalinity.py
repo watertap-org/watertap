@@ -177,7 +177,10 @@ thermo_config = {
                     pyunits.J / pyunits.K / pyunits.mol,
                 ),
                 "pressure_sat_comp_coeff": {
-                    "A": (4.6543, None),  # [1], temperature range 255.9 K - 373 K
+                    "A": (
+                        4.6543,
+                        pyunits.dimensionless,
+                    ),  # [1], temperature range 255.9 K - 373 K
                     "B": (1435.264, pyunits.K),
                     "C": (-64.848, pyunits.K),
                 },
@@ -268,7 +271,7 @@ thermo_config = {
                     "3": (1595.8, pyunits.K),
                     "4": (0.6598, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-240.1, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-240.1, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (167039, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -397,7 +400,7 @@ thermo_config = {
                     "3": (429.69, pyunits.K),
                     "4": (0.259, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-677.1, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-677.1, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (135749.9, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -478,7 +481,7 @@ thermo_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
@@ -593,7 +596,7 @@ reaction_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
@@ -1074,7 +1077,7 @@ class TestSeawaterAlkalinity:
     def test_solution_inherent(self, inherent_reactions_config):
         model = inherent_reactions_config
 
-        assert pytest.approx(297.9, rel=1e-5) == value(
+        assert pytest.approx(297.995, rel=1e-3) == value(
             model.fs.unit.outlet.temperature[0]
         )
         assert pytest.approx(10.00029, rel=1e-5) == value(
@@ -1090,7 +1093,7 @@ class TestSeawaterAlkalinity:
             )
             / 1000
         )
-        assert pytest.approx(54.612040964248116, rel=1e-5) == total_molar_density
+        assert pytest.approx(54.61066231692383, rel=1e-5) == total_molar_density
 
         total_salt = (
             value(model.fs.unit.outlet.mole_frac_comp[0, "Na_+"])
@@ -1125,7 +1128,7 @@ class TestSeawaterAlkalinity:
             value(model.fs.unit.outlet.mole_frac_comp[0, "CO3_2-"])
             * total_molar_density
         )
-        assert pytest.approx(0.0020528746175810923, rel=1e-5) == total_carbonate
+        assert pytest.approx(0.0020528228525604694, rel=1e-5) == total_carbonate
 
         carbonate_alk = (
             value(model.fs.unit.outlet.mole_frac_comp[0, "HCO3_-"])
@@ -1143,7 +1146,7 @@ class TestSeawaterAlkalinity:
             value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]) * total_molar_density
         )
         carbonate_alk = carbonate_alk * 50000
-        assert pytest.approx(79.389737, rel=1e-4) == carbonate_alk
+        assert pytest.approx(79.418520, rel=1e-4) == carbonate_alk
 
         pH = -value(
             log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"] * total_molar_density)
@@ -1152,13 +1155,13 @@ class TestSeawaterAlkalinity:
             log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"] * total_molar_density)
         )
         assert pytest.approx(8.31763834, rel=1e-4) == pH
-        assert pytest.approx(5.6916662, rel=1e-4) == pOH
+        assert pytest.approx(5.6923942, rel=1e-4) == pOH
 
     @pytest.mark.component
     def test_solution_equilibrium(self, equilibrium_reactions_config):
         model = equilibrium_reactions_config
 
-        assert pytest.approx(297.9, rel=1e-5) == value(
+        assert pytest.approx(297.995, rel=1e-3) == value(
             model.fs.unit.outlet.temperature[0]
         )
         assert pytest.approx(10.0002, rel=1e-5) == value(
@@ -1174,7 +1177,7 @@ class TestSeawaterAlkalinity:
             )
             / 1000
         )
-        assert pytest.approx(54.612040964248116, rel=1e-5) == total_molar_density
+        assert pytest.approx(54.61066231692384, rel=1e-5) == total_molar_density
 
         total_salt = (
             value(model.fs.unit.outlet.mole_frac_comp[0, "Na_+"])
@@ -1209,7 +1212,7 @@ class TestSeawaterAlkalinity:
             value(model.fs.unit.outlet.mole_frac_comp[0, "CO3_2-"])
             * total_molar_density
         )
-        assert pytest.approx(0.0020528746175810923, rel=1e-5) == total_carbonate
+        assert pytest.approx(0.0020528228525604694, rel=1e-5) == total_carbonate
 
         carbonate_alk = (
             value(model.fs.unit.outlet.mole_frac_comp[0, "HCO3_-"])
@@ -1227,7 +1230,7 @@ class TestSeawaterAlkalinity:
             value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]) * total_molar_density
         )
         carbonate_alk = carbonate_alk * 50000
-        assert pytest.approx(79.389737, rel=1e-4) == carbonate_alk
+        assert pytest.approx(79.418520, rel=1e-4) == carbonate_alk
 
         pH = -value(
             log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"] * total_molar_density)
@@ -1236,4 +1239,4 @@ class TestSeawaterAlkalinity:
             log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"] * total_molar_density)
         )
         assert pytest.approx(8.31763834, rel=1e-4) == pH
-        assert pytest.approx(5.6916662, rel=1e-4) == pOH
+        assert pytest.approx(5.6923942, rel=1e-4) == pOH

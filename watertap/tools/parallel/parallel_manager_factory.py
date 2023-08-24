@@ -18,8 +18,17 @@ from watertap.tools.parallel.concurrent_futures_parallel_manager import (
 from watertap.tools.parallel.single_process_parallel_manager import (
     SingleProcessParallelManager,
 )
+from watertap.tools.parallel.multiprocessing_parallel_manager import (
+    MultiprocessingParallelManager,
+)
+
 
 MPI, mpi4py_available = attempt_import("mpi4py.MPI", defer_check=False)
+ray, ray_avaialble = attempt_import("ray", defer_check=False)
+if ray_avaialble:
+    from watertap.tools.parallel.ray_io_parallel_manager import (
+        RayIoParallelManager,
+    )
 
 
 def create_parallel_manager(parallel_manager_class=None, **kwargs):
@@ -38,7 +47,21 @@ def create_parallel_manager(parallel_manager_class=None, **kwargs):
 
     number_of_subprocesses = kwargs.get("number_of_subprocesses", 1)
     if should_fan_out(number_of_subprocesses):
-        return ConcurrentFuturesParallelManager(number_of_subprocesses)
+        parallel_backend = kwargs.get("parallel_back_end", "ConcurrentFutures")
+        if parallel_backend == "ConcurrentFutures":
+            return ConcurrentFuturesParallelManager(number_of_subprocesses)
+        elif parallel_backend == "MultiProcessing":
+            return MultiprocessingParallelManager(number_of_subprocesses)
+        elif parallel_backend == "RayIo":
+            if ray_avaialble:
+                return RayIoParallelManager(number_of_subprocesses)
+            else:
+                raise ModuleNotFoundError("Ray is not available")
+
+        else:
+            raise NotImplementedError(
+                f"ParallelManager {parallel_backend} is not yet implemented"
+            )
 
     return SingleProcessParallelManager()
 
