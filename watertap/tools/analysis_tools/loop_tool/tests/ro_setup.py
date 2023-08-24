@@ -31,7 +31,6 @@ def ro_build(**kwargs):
 
     # ro_erd.set_operating_conditions(m)
     # ro_erd.optimize_set_up(m)
-    ro_init(m, None)
     return m
 
 

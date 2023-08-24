@@ -28,11 +28,12 @@ from watertap.tools.parameter_sweep.parameter_sweep_differential import (
     DifferentialParameterSweep,
 )
 
+# from watertap.tools.analysis_tools.loop_tool.data_merging_tool import *
 from watertap.tools.analysis_tools.loop_tool.data_merging_tool import *
 
 from watertap.tools.parallel.parallel_manager_factory import (
     has_mpi_peer_processes,
-    get_mpi_comm_process,
+    # get_mpi_comm_process,
 )
 import copy
 import os
@@ -41,8 +42,7 @@ import numpy as np
 
 import watertap.tools.MPI as MPI
 
-
-import multiprocessing
+__author__ = "Alexander V. Dudchenko (SLAC)"
 
 
 def get_working_dir():
@@ -59,6 +59,7 @@ class loopTool:
         initialize_function=None,
         optimize_function=None,
         number_of_subprocesses=None,
+        parallel_back_end="MultiProcessing",
         probe_function=None,
         save_name=None,
         saving_dir=None,
@@ -101,6 +102,7 @@ class loopTool:
         self.data_dir = saving_dir
 
         self.number_of_subprocesses = number_of_subprocesses
+        self.parallel_back_end = parallel_back_end
 
         self.test_mode = False
 
@@ -475,10 +477,19 @@ class loopTool:
         by those in the loops, overriding any defaults or adding new
         options to kwargs"""
         # check if user wants to reinit befoure sweep.
-        if "reinitialize_before_sweep" in self.options:
-            self.reinitialize_before_sweep = self.options["reinitialize_before_sweep"]
-        else:
-            self.reinitialize_before_sweep = False
+
+        self.initialize_before_sweep = self.options.get(
+            "initialize_before_sweep", False
+        )
+        self.number_of_subprocesses = self.options.get(
+            "number_of_subprocesses", self.number_of_subprocesses
+        )
+        self.parallel_back_end = self.options.get(
+            "parallel_back_end", self.parallel_back_end
+        )
+        self.update_sweep_params_before_init = self.options.get(
+            "update_sweep_params_before_init", False
+        )
         # generated combined build kwargs (default + loop)
         self.combined_build_defaults = {}  # self.build_default
         self.combined_build_defaults.update(self.options.get("build_defaults", {}))
@@ -584,9 +595,14 @@ class loopTool:
         ps_kwargs["optimize_function"] = self.optimize_function
         ps_kwargs["optimize_kwargs"] = self.combined_optimize_defaults
 
-        ps_kwargs["reinitialize_function"] = self.initialize_function
-        ps_kwargs["reinitialize_kwargs"] = self.combined_init_defaults
-        ps_kwargs["reinitialize_before_sweep"] = self.reinitialize_before_sweep
+        ps_kwargs["initialize_function"] = self.initialize_function
+        ps_kwargs["initialize_kwargs"] = self.combined_init_defaults
+        ps_kwargs["initialize_before_sweep"] = self.initialize_before_sweep
+        ps_kwargs["initialize_before_sweep"] = self.initialize_before_sweep
+
+        ps_kwargs[
+            "update_sweep_params_before_init"
+        ] = self.update_sweep_params_before_init
 
         ps_kwargs["custom_do_param_sweep"] = self.custom_do_param_sweep
         ps_kwargs["custom_do_param_sweep_kwargs"] = self.custom_do_param_sweep_kwargs
@@ -594,6 +610,7 @@ class loopTool:
         ps_kwargs["probe_function"] = self.probe_function
 
         ps_kwargs["number_of_subprocesses"] = self.number_of_subprocesses
+        ps_kwargs["parallel_back_end"] = self.parallel_back_end
 
         ps = ParameterSweep(**ps_kwargs)
         ps.parameter_sweep(
@@ -631,14 +648,22 @@ class loopTool:
         ps_kwargs["optimize_function"] = self.optimize_function
         ps_kwargs["optimize_kwargs"] = self.combined_optimize_defaults
 
-        ps_kwargs["reinitialize_function"] = self.initialize_function
-        ps_kwargs["reinitialize_kwargs"] = self.combined_init_defaults
-        ps_kwargs["reinitialize_before_sweep"] = self.reinitialize_before_sweep
+        ps_kwargs["initialize_function"] = self.initialize_function
+        ps_kwargs["initialize_kwargs"] = self.combined_init_defaults
+        ps_kwargs["initialize_before_sweep"] = self.initialize_before_sweep
+        ps_kwargs["initialize_before_sweep"] = self.initialize_before_sweep
+
+        ps_kwargs[
+            "update_sweep_params_before_init"
+        ] = self.update_sweep_params_before_init
 
         ps_kwargs["custom_do_param_sweep"] = self.custom_do_param_sweep
         ps_kwargs["custom_do_param_sweep_kwargs"] = self.custom_do_param_sweep_kwargs
 
         ps_kwargs["probe_function"] = self.probe_function
+
+        ps_kwargs["number_of_subprocesses"] = self.number_of_subprocesses
+        ps_kwargs["parallel_back_end"] = self.parallel_back_end
 
         # ps_kwargs["number_of_subprocesses"] = self.number_of_subprocesses
         # LEGACY will need to change when parallmanage radded to diff
@@ -655,9 +680,9 @@ class loopTool:
         ps.build_sweep_params_kwargs = {"input_dict": self.sweep_params}
 
         ps.parameter_sweep(
-            m,
-            ParameterSweepReader()._dict_to_params(m, input_dict=self.sweep_params),
+            self.build_function,
+            ParameterSweepReader()._dict_to_params,
             num_samples=self.num_samples,
-            # build_model_kwargs=self.combined_build_defaults,
-            # build_sweep_params_kwargs={"input_dict": self.sweep_params},
+            build_model_kwargs=self.combined_build_defaults,
+            build_sweep_params_kwargs={"input_dict": self.sweep_params},
         )

@@ -129,8 +129,8 @@ class ParameterSweepReader:
                     "diff_sample_type": UniformSample,
                     "relative_lb": values["relative_lb"],
                     "relative_ub": values["relative_ub"],
-                    "nominal_lb": values["nominal_lb"],
-                    "nominal_ub": values["nominal_ub"],
+                    "nominal_lb": nominal_lb,
+                    "nominal_ub": nominal_ub,
                     "pyomo_object": component,
                 }
             elif values["diff_sample_type"] == "LinearSample":
@@ -145,8 +145,8 @@ class ParameterSweepReader:
                     "diff_sample_type": LinearSample,
                     "relative_lb": values["relative_lb"],
                     "relative_ub": values["relative_ub"],
-                    "nominal_lb": values["nominal_lb"],
-                    "nominal_ub": values["nominal_ub"],
+                    "nominal_lb": nominal_lb,
+                    "nominal_ub": nominal_ub,
                     "pyomo_object": component,
                 }
 

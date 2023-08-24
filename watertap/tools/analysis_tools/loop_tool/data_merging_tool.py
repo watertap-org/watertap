@@ -18,6 +18,8 @@ import os
 import datetime
 from datetime import datetime
 
+__author__ = "Alexander V. Dudchenko (SLAC)"
+
 
 def merge_data_into_file(
     file_name,
