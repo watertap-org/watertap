@@ -22,7 +22,7 @@ Setting up a flowsheet for use with loopTool
 The loopTool requires similar functional setup as PS tool kit. Here we will setup RO_with_energy_recovery.py exmaple flowsheet for use with PS and loopTool.The RO_with_energy_recovery has an option 
 that pass in erd_type allowing user to select type of ERD device (either a pressure_exchanger, pump_as_turbine, or None). The user likely would want to run parameter sweep across these options, and we wil setup the loopTool to do so. 
 
-*The user will need to setup the following three function, description and example are shown below:*
+*The user will need to setup the following three functions (description and example are shown below):*
 
 1. The *build_function* that builds the flowsheet (ro_build)- This function should build the flowsheet, and accept any kwargs for its configuration. Here we pass explicitly erd_type, but also include *kwargs* incase we want to pass in another options in the future. When loopTool runs, it will pass selectd *kwargs* into this function before running the sweep. 
 2. The *initialization_function* (ro_init)- this function will initialize the model. This is in general optional, as initialization can be done in build function as well, but it is useful for PS tool, as it can use it to reinitialize the model in case a solve fails and try again. 
