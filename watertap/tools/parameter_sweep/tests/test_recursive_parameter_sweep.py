@@ -215,6 +215,10 @@ def test_recursive_parameter_sweep(model, tmp_path):
         ]
     )
 
+    import pprint
+
+    print("data = ")
+    pprint.pprint(data)
     assert np.shape(data) == (10, 2)
     assert np.allclose(reference_save_data, data, equal_nan=True)
     assert np.allclose(np.sum(data, axis=1), value(m.fs.success_prob))

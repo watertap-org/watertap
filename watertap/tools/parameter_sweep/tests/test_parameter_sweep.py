@@ -13,7 +13,6 @@
 import pytest
 import os
 import numpy as np
-import requests
 import pyomo.environ as pyo
 
 from pyomo.environ import value
@@ -208,6 +207,10 @@ class TestParameterSweep:
 
     @pytest.mark.component
     def test_status_publishing(self):
+        requests = pytest.importorskip(
+            "requests",
+            reason="requests (parameter_sweep optional dependency) not available",
+        )
         ps = ParameterSweep(
             publish_progress=True, publish_address="http://localhost:8888"
         )
@@ -346,18 +349,6 @@ class TestParameterSweep:
 
         input_dict = {
             "outputs": {
-                "fs.input[a]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.input[b]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
                 "fs.output[c]": {
                     "lower bound": 0,
                     "units": "None",
@@ -405,15 +396,15 @@ class TestParameterSweep:
 
         reference_results_arr = np.array(
             [
-                [0.0, 0.0, 0.2, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.2, 0.75, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.75, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.2, 0.0, 0.0, 0.0],
+                [0.2, 0.75, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0, 0.0],
+                [1.0, 0.75, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
             ]
         )
 
@@ -431,11 +422,11 @@ class TestParameterSweep:
             "input_a": (m.fs.input["a"], 0.1, 0.9, 3),
             "input_b": (m.fs.input["b"], 0.0, 0.5, 3),
         }
-        outputs = {
-            "output_c": m.fs.output["c"],
-            "output_d": m.fs.output["d"],
-            "performance": m.fs.performance,
-        }
+        # outputs = {
+        #     "output_c": m.fs.output["c"],
+        #     "output_d": m.fs.output["d"],
+        #     "performance": m.fs.performance,
+        # }
 
         sweep_params, sampling_type = ps._process_sweep_params(sweep_params)
         values = ps._build_combinations(sweep_params, sampling_type, None)
@@ -446,45 +437,72 @@ class TestParameterSweep:
 
         truth_dict = {
             "outputs": {
-                "fs.output[c]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.output[d]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.performance": {
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-                },
-                "fs.slack[ab_slack]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 0,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.slack[cd_slack]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 0,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "objective": {
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-                },
-            },
-            "sweep_params": {
                 "input_a": {
+                    "full_name": "fs.input[a]",
                     "lower bound": 0,
                     "units": "None",
                     "upper bound": 1,
                     "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
                 },
                 "input_b": {
+                    "full_name": "fs.input[b]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.output[c]": {
+                    "full_name": "fs.output[c]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.output[d]": {
+                    "full_name": "fs.output[d]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.performance": {
+                    "full_name": "fs.performance",
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.slack[ab_slack]": {
+                    "full_name": "fs.slack[ab_slack]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 0,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.slack[cd_slack]": {
+                    "full_name": "fs.slack[cd_slack]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 0,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.slack_penalty": {
+                    "full_name": "fs.slack_penalty",
+                    "units": "None",
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "objective": {
+                    "full_name": "objective",
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+            },
+            "sweep_params": {
+                "input_a": {
+                    "full_name": "fs.input[a]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "input_b": {
+                    "full_name": "fs.input[b]",
                     "lower bound": 0,
                     "units": "None",
                     "upper bound": 1,
@@ -699,7 +717,11 @@ class TestParameterSweep:
             import ast
 
             truth_txt_dict = {
-                "outputs": ["output_c", "output_d", "performance"],
+                "outputs": [
+                    "output_c",
+                    "output_d",
+                    "performance",
+                ],
                 "sweep_params": ["fs.input[a]", "fs.input[b]"],
             }
 
@@ -1859,7 +1881,11 @@ class TestParameterSweep:
             import ast
 
             truth_txt_dict = {
-                "outputs": ["output_c", "output_d", "performance"],
+                "outputs": [
+                    "output_c",
+                    "output_d",
+                    "performance",
+                ],
                 "sweep_params": ["fs.input[a]", "fs.input[b]"],
             }
 
@@ -1944,7 +1970,7 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
     assert truth_dict.keys() == test_dict.keys()
 
     for key, item in truth_dict.items():
-        if key != "solve_successful":
+        if key in ["sweep_params", "outputs"]:
             for subkey, subitem in item.items():
                 for subsubkey, subsubitem in subitem.items():
                     if subsubkey == "value":
@@ -1957,6 +1983,8 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
                         assert subsubitem == test_dict[key][subkey][subsubkey]
         elif key == "solve_successful":
             assert item == test_dict[key]
+        elif key in ["nominal_idx", "differential_idx"]:
+            assert np.allclose(test_dict[key], item, equal_nan=True)
 
 
 def _assert_h5_csv_agreement(csv_filename, h5_dict):
@@ -2006,7 +2034,7 @@ def _read_output_h5(filevar):
     l1_keys = list(f.keys())
     output_dict = {}
     for key in l1_keys:  # Input or Output
-        if key != "solve_successful":
+        if key in ["sweep_params", "outputs"]:  #  "solve_successful":
             output_dict[key] = {}
             l2_keys = list(f[key].keys())
             for subkey in l2_keys:  # Variable name
@@ -2021,6 +2049,8 @@ def _read_output_h5(filevar):
                         ].decode("utf-8")
         elif key == "solve_successful":
             output_dict[key] = list(f[key]["solve_successful"][()])
+        elif key in ["nominal_idx", "differential_idx"]:
+            output_dict[key] = f[key][key][()]
 
     if isinstance(filevar, str):
         f.close()
