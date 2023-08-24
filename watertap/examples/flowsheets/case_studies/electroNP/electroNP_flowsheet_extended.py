@@ -358,13 +358,23 @@ def build_flowsheet():
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
+                iscale.set_scaling_factor(var, 1e1)
+            if "thickener.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e5)
+            if "translator_asm2d_adm1.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e5)
+            if "AD.liquid_phase.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e5)
+            if "translator_adm1_asm2d.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e5)
+            if "dewater.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e5)
+            if "electroNP.mixed_state[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e5)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
-            if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
 
     scale_variables(m)
     iscale.calculate_scaling_factors(m.fs)
