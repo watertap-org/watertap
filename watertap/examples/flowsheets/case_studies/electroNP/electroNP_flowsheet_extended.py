@@ -27,9 +27,7 @@ from idaes.core import (
 from idaes.models.unit_models import (
     CSTR,
     Feed,
-    Mixer,
     Separator,
-    PressureChanger,
     Product,
 )
 from idaes.models.unit_models.separator import SplittingType
@@ -384,7 +382,7 @@ def build_flowsheet():
     seq = SequentialDecomposition()
     seq.options.select_tear_method = "heuristic"
     seq.options.tear_method = "Wegstein"
-    seq.options.iterLim = 0
+    seq.options.iterLim = 1
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
