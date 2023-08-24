@@ -6,7 +6,7 @@ Loop Tool
 
 .. currentmodule:: watertap.tools.analysis_tools.loop_tool
 
-The loopTool is a wrapper for the parameter sweep (PS) tool set, and is designed to simplify setting up parametric sweeps, enabling sweeping over discreet design choices, and providing a structured data management.  
+The loopTool is a wrapper for the parameter sweep (PS) tool set, and is designed to simplify setting up parametric sweeps, enabling sweeping over discrete design choices, and providing structured data management.  
 The loopTool uses the full features of PS tool set, including standard PS tool and differential PS tool, but brings in the ability to run iteratively over different build options, initialization options, and solve options that might be required for full flowsheet analysis. A common example is solving processes with multiple stages such as LSRRO flow sheet, or options where different design choices need to be evaluated such as different pressure exchanger types in RO. Other examples, could be exploring different initialization guess, or setting up different solve constraints. All of these options can be run in nested configuration (e.g. for every stage simulate N number of build configurations) 
 The loopTool uses h5 format for structured data management, and campion tool dataImporter provides a simple interface to explore these files (coming soon TM). The h5 format enables saving data in a file using path, such that each unique simulation run with parameter sweep is stored in its own address, enabling one file to store large number of different simulations. The loopTool does not support storing data in CSV format due to its limitations. 
 
