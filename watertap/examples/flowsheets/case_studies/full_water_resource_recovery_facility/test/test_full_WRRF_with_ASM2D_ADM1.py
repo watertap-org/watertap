@@ -27,10 +27,13 @@ Department of Industrial Electrical Engineering and Automation, Lund University,
 __author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia"
 
 import pytest
+import pytest
+
 from pyomo.environ import assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core.util.model_statistics import degrees_of_freedom
-from watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.full_WRRF_with_ASM1_ADM1 import (
+from watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.full_WRRF_with_ASM2D_ADM1 import (
     main,
 )
 
