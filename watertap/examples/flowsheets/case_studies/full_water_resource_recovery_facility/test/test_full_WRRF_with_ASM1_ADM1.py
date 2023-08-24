@@ -34,7 +34,6 @@ from watertap.examples.flowsheets.case_studies.full_water_resource_recovery_faci
     main,
 )
 
-
 class TestFullFlowsheet:
     @pytest.fixture(scope="class")
     def model(self):

@@ -24,10 +24,10 @@ import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.anaerobic_digestor import AD
-from watertap.unit_models.thickener import Thickener, ActivatedSludgeModelType
-from watertap.unit_models.dewatering import DewateringUnit
+from watertap.unit_models.thickener import Thickener, ActivatedSludgeModelType as tu_asm
+from watertap.unit_models.dewatering import DewateringUnit, ActivatedSludgeModelType as du_asm
 
-from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2D_ADM1
+from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2d_ADM1
 from watertap.unit_models.translators.translator_adm1_asm2d import Translator_ADM1_ASM2D
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
@@ -37,10 +37,10 @@ from watertap.property_models.anaerobic_digestion.modified_adm1_properties impor
     ModifiedADM1ParameterBlock,
 )
 from watertap.property_models.activated_sludge.modified_asm2d_properties import (
-    ModifiedASM2DParameterBlock,
+    ModifiedASM2dParameterBlock,
 )
 from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
-    ModifiedASM2DReactionParameterBlock,
+    ModifiedASM2dReactionParameterBlock,
 )
 from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import (
     ModifiedADM1ReactionParameterBlock,
@@ -72,20 +72,21 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m)
-
-    add_costing(m)
-    # Assert DOF = 0 after adding costing
-    # assert_degrees_of_freedom(m, 0)
-
-    # TODO: initialize costing after adding to flowsheet
-    # m.fs.costing.initialize()
-
     # results = solve(m)
 
-    display_results(m)
+    # add_costing(m)
+    # # Assert DOF = 0 after adding costing
+    # # assert_degrees_of_freedom(m, 0)
 
-    return m, results
+    # # TODO: initialize costing after adding to flowsheet
+    # # m.fs.costing.initialize()
+
+    # # results = solve(m)
+
+    # display_results(m)
+
+    return m
+# , results
 
 
 def build_flowsheet():
@@ -93,11 +94,11 @@ def build_flowsheet():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.props_ASM2D = ModifiedASM2DParameterBlock()
+    m.fs.props_ASM2D = ModifiedASM2dParameterBlock()
     m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
     m.fs.props_vap = ADM1_vaporParameterBlock()
     m.fs.ADM1_rxn_props = ModifiedADM1ReactionParameterBlock(property_package=m.fs.props_ADM1)
-    m.fs.ASM2D_rxn_props = ModifiedASM2DReactionParameterBlock(property_package=m.fs.props_ASM2D)
+    m.fs.ASM2D_rxn_props = ModifiedASM2dReactionParameterBlock(property_package=m.fs.props_ASM2D)
     # Feed water stream
     m.fs.FeedWater = Feed(property_package=m.fs.props_ASM2D)
 
@@ -191,32 +192,34 @@ def build_flowsheet():
     @m.fs.R3.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
     def mass_transfer_R3(self, t):
         return pyo.units.convert(
-            m.fs.R3.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
+            m.fs.R3.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
         ) == (
             m.fs.R3.KLa
             * m.fs.R3.volume[t]
-            * (m.fs.S_O_eq - m.fs.R3.outlet.conc_mass_comp[t, "S_O"])
+            * (m.fs.S_O_eq - m.fs.R3.outlet.conc_mass_comp[t, "S_O2"])
         )
 
     @m.fs.R4.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
     def mass_transfer_R4(self, t):
         return pyo.units.convert(
-            m.fs.R4.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
+            m.fs.R4.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
         ) == (
             m.fs.R4.KLa
             * m.fs.R4.volume[t]
-            * (m.fs.S_O_eq - m.fs.R4.outlet.conc_mass_comp[t, "S_O"])
+            * (m.fs.S_O_eq - m.fs.R4.outlet.conc_mass_comp[t, "S_O2"])
         )
 
     # ======================================================================
     # Anaerobic digester section
-    m.fs.asm_adm = Translator_ASM2D_ADM1(
+    m.fs.asm_adm = Translator_ASM2d_ADM1(
         inlet_property_package=m.fs.props_ASM2D,
         outlet_property_package=m.fs.props_ADM1,
-        reaction_package=m.fs.ADM1_rxn_props,
+        inlet_reaction_package=m.fs.ASM2D_rxn_props,
+        outlet_reaction_package=m.fs.ADM1_rxn_props,
         has_phase_equilibrium=False,
         outlet_state_defined=True,
     )
+       
 
     m.fs.RADM = AD(
         liquid_property_package=m.fs.props_ADM1,
@@ -244,10 +247,10 @@ def build_flowsheet():
 
     # Thickener
     m.fs.TU = Thickener(property_package=m.fs.props_ASM2D, 
-                        activated_sludge_model=ActivatedSludgeModelType.ASM2D)
+                        activated_sludge_model=tu_asm.modified_ASM2D)
     # Dewaterer
     m.fs.DU = DewateringUnit(property_package=m.fs.props_ASM2D,
-                             activated_sludge_model=ActivatedSludgeModelType.ASM2D)
+                             activated_sludge_model=du_asm.modified_ASM2D)
 
     m.fs.MX2 = Mixer(
         property_package=m.fs.props_ASM2D, inlet_list=["feed_water1", "recycle1"]
@@ -288,19 +291,25 @@ def set_operating_conditions(m):
     m.fs.FeedWater.flow_vol.fix(20648 * pyo.units.m**3 / pyo.units.day)
     m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
-    m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(27 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_S"].fix(58 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(92 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(363 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_BH"].fix(50 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_BA"].fix(0 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_P"].fix(0 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_O"].fix(0 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_NO"].fix(0 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_NH"].fix(23 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_ND"].fix(5 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_ND"].fix(16 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.alkalinity.fix(7 * pyo.units.mol / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_O2"].fix(0.001 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(4.9269 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(15.1297 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(26.5963 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_NH4"].fix(18.3884 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_N2"].fix(8.7476 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_NO3"].fix(0.0549 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(24.6577 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_IC"].fix(78.5868 * pyo.units.g / pyo.units.m**3)
+
+    m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(1823.9623 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(131.8040 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_H"].fix(1850.8924 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_PAO"].fix(1009.3055 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(278.5364 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_PHA"].fix(44.2673 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_AUT"].fix(112.8643 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_K"].fix(28.9963 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_Mg"].fix(101.9855 * pyo.units.g / pyo.units.m**3)
 
     # Reactor sizing in activated sludge process
     m.fs.R1.volume.fix(1000 * pyo.units.m**3)
@@ -311,15 +320,15 @@ def set_operating_conditions(m):
 
     # Injection rates to Reactors 3, 4 and 5 of the activated sludge process
     for j in m.fs.props_ASM2D.component_list:
-        if j != "S_O":
+        if j != "S_O2":
             # All components except S_O have no injection
             m.fs.R3.injection[:, :, j].fix(0)
             m.fs.R4.injection[:, :, j].fix(0)
             m.fs.R5.injection[:, :, j].fix(0)
     # Then set injections rates for O2
-    m.fs.R3.outlet.conc_mass_comp[:, "S_O"].fix(1.72e-3)
-    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].fix(2.43e-3)
-    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].fix(4.49e-4)
+    m.fs.R3.outlet.conc_mass_comp[:, "S_O2"].fix(1.72e-3)
+    m.fs.R4.outlet.conc_mass_comp[:, "S_O2"].fix(2.43e-3)
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].fix(4.49e-4)
 
     # Set fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP5.split_fraction[:, "underflow"].fix(0.6)
@@ -327,19 +336,25 @@ def set_operating_conditions(m):
     # Secondary clarifier
     # TODO: Update once secondary clarifier with more detailed model available
     m.fs.CL1.split_fraction[0, "effluent", "H2O"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_O2"].fix(0.48956)
     m.fs.CL1.split_fraction[0, "effluent", "S_I"].fix(0.48956)
-    m.fs.CL1.split_fraction[0, "effluent", "S_S"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_F"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_A"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_NH4"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_N2"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_NO3"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_PO4"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_IC"].fix(0.48956)
+
     m.fs.CL1.split_fraction[0, "effluent", "X_I"].fix(0.00187)
     m.fs.CL1.split_fraction[0, "effluent", "X_S"].fix(0.00187)
-    m.fs.CL1.split_fraction[0, "effluent", "X_BH"].fix(0.00187)
-    m.fs.CL1.split_fraction[0, "effluent", "X_BA"].fix(0.00187)
-    m.fs.CL1.split_fraction[0, "effluent", "X_P"].fix(0.00187)
-    m.fs.CL1.split_fraction[0, "effluent", "S_O"].fix(0.48956)
-    m.fs.CL1.split_fraction[0, "effluent", "S_NO"].fix(0.48956)
-    m.fs.CL1.split_fraction[0, "effluent", "S_NH"].fix(0.48956)
-    m.fs.CL1.split_fraction[0, "effluent", "S_ND"].fix(0.48956)
-    m.fs.CL1.split_fraction[0, "effluent", "X_ND"].fix(0.00187)
-    m.fs.CL1.split_fraction[0, "effluent", "S_ALK"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "X_H"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_PAO"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_PP"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_PHA"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_AUT"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "S_K"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_Mg"].fix(0.48956)
 
     # Sludge purge separator
     m.fs.SP6.split_fraction[:, "recycle"].fix(0.985)
@@ -350,19 +365,25 @@ def set_operating_conditions(m):
     # Primary Clarifier
     # TODO: Update primary clarifier once more detailed model available
     m.fs.CL.split_fraction[0, "effluent", "H2O"].fix(0.993)
+    m.fs.CL.split_fraction[0, "effluent", "S_O2"].fix(0.993)
     m.fs.CL.split_fraction[0, "effluent", "S_I"].fix(0.993)
-    m.fs.CL.split_fraction[0, "effluent", "S_S"].fix(0.993)
+    m.fs.CL.split_fraction[0, "effluent", "S_F"].fix(0.993)
+    m.fs.CL.split_fraction[0, "effluent", "S_A"].fix(0.993)
+    m.fs.CL.split_fraction[0, "effluent", "S_NH4"].fix(0.993)
+    m.fs.CL.split_fraction[0, "effluent", "S_N2"].fix(0.993)
+    m.fs.CL.split_fraction[0, "effluent", "S_NO3"].fix(0.993)
+    m.fs.CL.split_fraction[0, "effluent", "S_PO4"].fix(0.993)
+    m.fs.CL.split_fraction[0, "effluent", "S_IC"].fix(0.993)
+
     m.fs.CL.split_fraction[0, "effluent", "X_I"].fix(0.5192)
     m.fs.CL.split_fraction[0, "effluent", "X_S"].fix(0.5192)
-    m.fs.CL.split_fraction[0, "effluent", "X_BH"].fix(0.5192)
-    m.fs.CL.split_fraction[0, "effluent", "X_BA"].fix(0.5192)
-    m.fs.CL.split_fraction[0, "effluent", "X_P"].fix(0.5192)
-    m.fs.CL.split_fraction[0, "effluent", "S_O"].fix(0.993)
-    m.fs.CL.split_fraction[0, "effluent", "S_NO"].fix(0.993)
-    m.fs.CL.split_fraction[0, "effluent", "S_NH"].fix(0.993)
-    m.fs.CL.split_fraction[0, "effluent", "S_ND"].fix(0.993)
-    m.fs.CL.split_fraction[0, "effluent", "X_ND"].fix(0.5192)
-    m.fs.CL.split_fraction[0, "effluent", "S_ALK"].fix(0.993)
+    m.fs.CL.split_fraction[0, "effluent", "X_H"].fix(0.5192)
+    m.fs.CL.split_fraction[0, "effluent", "X_PAO"].fix(0.5192)
+    m.fs.CL.split_fraction[0, "effluent", "X_PP"].fix(0.5192)
+    m.fs.CL.split_fraction[0, "effluent", "X_PHA"].fix(0.5192)
+    m.fs.CL.split_fraction[0, "effluent", "X_AUT"].fix(0.5192)
+    m.fs.CL.split_fraction[0, "effluent", "S_K"].fix(0.993)
+    m.fs.CL.split_fraction[0, "effluent", "S_Mg"].fix(0.993)
 
     # Anaerobic digester
     m.fs.RADM.volume_liquid.fix(3400)
@@ -396,7 +417,7 @@ def initialize_system(m):
             (0, "X_BH"): 2.233,
             (0, "X_BA"): 0.167,
             (0, "X_P"): 0.964,
-            (0, "S_O"): 0.0011,
+            (0, "S_O2"): 0.0011,
             (0, "S_NO"): 0.0073,
             (0, "S_NH"): 0.0072,
             (0, "S_ND"): 0.0016,
@@ -417,7 +438,7 @@ def initialize_system(m):
             (0, "X_BH"): 10.210,
             (0, "X_BA"): 0.553,
             (0, "X_P"): 3.204,
-            (0, "S_O"): 0.00025,
+            (0, "S_O2"): 0.00025,
             (0, "S_NO"): 0.00169,
             (0, "S_NH"): 0.0289,
             (0, "S_ND"): 0.00468,
@@ -483,4 +504,6 @@ def display_results(m):
 
 
 if __name__ == "__main__":
-    m, results = main()
+    # m, results = main()
+    m = main()
+

@@ -24,9 +24,8 @@ Department of Industrial Electrical Engineering and Automation, Lund University,
 """
 
 # Some more information about this module
-__author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia"
+__author__ = "Adam Atia, Alejandro Garciadiego"
 
-import pytest
 import pytest
 
 from pyomo.environ import assert_optimal_termination
