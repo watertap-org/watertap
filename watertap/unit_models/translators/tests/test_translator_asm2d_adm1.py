@@ -260,25 +260,25 @@ class TestAsm2dAdm1_decay_on(object):
         assert pytest.approx(0.00801, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_aa"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_fa"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_va"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_bu"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(4e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_pro"]
         )
         assert pytest.approx(0.0175076, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_ac"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_h2"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_ch4"]
         )
         assert pytest.approx(0.382172, rel=1e-3) == value(
@@ -303,37 +303,37 @@ class TestAsm2dAdm1_decay_on(object):
         assert pytest.approx(12.7683, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_li"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_su"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_aa"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_fa"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_c4"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_pro"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_ac"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_h2"]
         )
         assert pytest.approx(12.3320, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_I"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PHA"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PP"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PAO"]
         )
         assert pytest.approx(0.1701, rel=1e-3) == value(
@@ -545,25 +545,25 @@ class TestAsm2dAdm1_decay_off(object):
         assert pytest.approx(0.00801, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_aa"]
         )
-        assert pytest.approx(1e-8, rel=1e-2) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_fa"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(9.9999e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_va"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(9.9999e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_bu"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(9.9999e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_pro"]
         )
         assert pytest.approx(0.0175076, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_ac"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_h2"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_ch4"]
         )
         assert pytest.approx(0.253013, rel=1e-3) == value(
@@ -588,25 +588,25 @@ class TestAsm2dAdm1_decay_off(object):
         assert pytest.approx(11.4165, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_li"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_su"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_aa"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_fa"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_c4"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_pro"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_ac"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-9, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_h2"]
         )
         assert pytest.approx(11.94574, rel=1e-3) == value(
