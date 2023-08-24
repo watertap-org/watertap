@@ -87,7 +87,7 @@ where the ``spacer_porosity`` attribute will be randomly selected from a uniform
 
 .. testcode::
 
-    def build_outputs(model, sweep_params):
+    def build_outputs(model,  **kwargs):
         outputs = dict()
         outputs['EC'] = model.fs.costing.specific_energy_consumption
         outputs['LCOW'] = model.fs.costing.LCOW

@@ -19,9 +19,7 @@ from abc import abstractmethod, ABC
 from idaes.core.solvers import get_solver
 
 from idaes.core.surrogate.pysmo import sampling
-from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.deprecation import deprecation_warning
-from pyomo.common.tee import capture_output
 from pyomo.common.config import ConfigValue
 from pyomo.common.modeling import unique_component_name
 from pyomo.core.base import _VarData, _ExpressionData
@@ -34,6 +32,8 @@ from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweep
 from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
 
 from watertap.tools.parallel.parallel_manager_factory import create_parallel_manager
+
+from watertap.tools.parameter_sweep.model_manager import ModelManager
 
 
 def _default_optimize(model, options=None, tee=False):
@@ -60,6 +60,57 @@ class _ParameterSweepBase(ABC):
     CONFIG = ParameterSweepWriter.CONFIG()
 
     CONFIG.declare(
+        "build_model",
+        ConfigValue(
+            default=None,
+            # domain=function,
+            description="Function for building the model.",
+        ),
+    )
+
+    CONFIG.declare(
+        "build_model_kwargs",
+        ConfigValue(
+            default=dict(),
+            domain=dict,
+            description="Keyword argument for the model build function for the parameter sweep.",
+        ),
+    )
+    CONFIG.declare(
+        "build_sweep_params",
+        ConfigValue(
+            default=None,
+            # domain=function,
+            description="Function for building the sweep_paramters",
+        ),
+    )
+    CONFIG.declare(
+        "build_sweep_params_kwargs",
+        ConfigValue(
+            default=dict(),
+            domain=dict,
+            description="Keyword argument for the build sweep params function for the parameter sweep.",
+        ),
+    )
+
+    CONFIG.declare(
+        "build_outputs",
+        ConfigValue(
+            default=None,
+            # domain=function,
+            description="Function for building outputs",
+        ),
+    )
+    CONFIG.declare(
+        "build_outputs_kwargs",
+        ConfigValue(
+            default=dict(),
+            domain=dict,
+            description="Keyword argument for the build outputs function for the parameter sweep.",
+        ),
+    )
+
+    CONFIG.declare(
         "optimize_function",
         ConfigValue(
             default=_default_optimize,
@@ -76,6 +127,39 @@ class _ParameterSweepBase(ABC):
             description="Keyword argument for the optimization function for the parameter sweep.",
         ),
     )
+    CONFIG.declare(
+        "initialize_function",
+        ConfigValue(
+            default=None,
+            # domain=function,
+            description="Function to reinitialize a flowsheet",
+        ),
+    )
+    CONFIG.declare(
+        "update_sweep_params_before_init",
+        ConfigValue(
+            default=False,
+            # domain=function,
+            description="Enables update of vars to sweep values before initilization (only enabled if init_before_sweep=True)",
+        ),
+    )
+    CONFIG.declare(
+        "initialize_kwargs",
+        ConfigValue(
+            default=dict(),
+            domain=dict,
+            description="Keyword arguments for the initialization function.",
+        ),
+    )
+
+    CONFIG.declare(
+        "initialize_before_sweep",
+        ConfigValue(
+            default=False,
+            domain=bool,
+            description="Initializing a model before every iteration.",
+        ),
+    )
 
     CONFIG.declare(
         "reinitialize_function",
@@ -85,7 +169,6 @@ class _ParameterSweepBase(ABC):
             description="Function to reinitialize a flowsheet",
         ),
     )
-
     CONFIG.declare(
         "reinitialize_kwargs",
         ConfigValue(
@@ -155,18 +238,35 @@ class _ParameterSweepBase(ABC):
             description="Number of processes to fan out to locally - ignored if running under MPI.",
         ),
     )
+    CONFIG.declare(
+        "parallel_back_end",
+        ConfigValue(
+            default="ConcurrentFutures",
+            domain=str,
+            description="Backend for parallelization, if not useing MPI",
+        ),
+    )
+    CONFIG.declare(
+        "log_model_states",
+        ConfigValue(
+            default=False,
+            domain=bool,
+            description="Enables loging of model states during serial execution",
+        ),
+    )
 
     def __init__(
         self,
         **options,
     ):
         parallel_manager_class = options.pop("parallel_manager_class", None)
-
+        self.model = None
+        self.model_manager = None
         self.config = self.CONFIG(options)
-
         self.parallel_manager = create_parallel_manager(
             parallel_manager_class=parallel_manager_class,
             number_of_subprocesses=self.config.number_of_subprocesses,
+            parallel_back_end=self.config.parallel_back_end,
         )
 
         # Initialize the writer
@@ -312,10 +412,21 @@ class _ParameterSweepBase(ABC):
 
         return local_combo_array
 
+    def _get_object(self, model, pyomo_object):
+        name = pyomo_object.name
+
+        # seems to be a bug, as indexed var with [None] exists
+        # but can't be found by find_component
+        if "[None]" in name:
+            name = name.replace("[None]", "")
+            return model.find_component(name)[None]
+        else:
+            return model.find_component(name)
+
     def _update_model_values(self, m, param_dict, values):
         for k, item in enumerate(param_dict.values()):
-            param = item.pyomo_object
-
+            name = self._get_object(m, item.pyomo_object)
+            param = m.find_component(name)
             if param.is_variable_type():
                 # Fix the single value to values[k]
                 param.fix(values[k])
@@ -365,12 +476,9 @@ class _ParameterSweepBase(ABC):
         output_dict["sweep_params"] = {}
         output_dict["outputs"] = {}
 
-        sweep_param_objs = ComponentSet()
-
         # Store the inputs
         for param_name, sampling_obj in sweep_params.items():
             var = sampling_obj.pyomo_object
-            sweep_param_objs.add(var)
             output_dict["sweep_params"][
                 param_name
             ] = self._create_component_output_skeleton(var, num_samples)
@@ -396,13 +504,16 @@ class _ParameterSweepBase(ABC):
             for short_name, pyo_obj in outputs.items():
                 output_dict["outputs"][
                     short_name
-                ] = self._create_component_output_skeleton(pyo_obj, num_samples)
+                ] = self._create_component_output_skeleton(
+                    self._get_object(model, pyo_obj), num_samples
+                )
 
         return output_dict
 
     def _create_component_output_skeleton(self, component, num_samples):
         comp_dict = {}
         comp_dict["value"] = np.zeros(num_samples, dtype=float)
+
         if hasattr(component, "lb"):
             comp_dict["lower bound"] = component.lb
         if hasattr(component, "ub"):
@@ -426,15 +537,23 @@ class _ParameterSweepBase(ABC):
         # Get the inputs
         op_ps_dict = output_dict["sweep_params"]
         for key, item in sweep_params.items():
-            op_ps_dict[key]["value"][case_number] = item.pyomo_object.value
+            # stores value actually applied to model, rather one assumed to be applied
+            op_ps_dict[key]["value"][case_number] = self._get_object(
+                model, item.pyomo_object
+            ).value
 
         # Get the outputs from model
         if run_successful:
             for var_name, specs in output_dict["outputs"].items():
                 pyo_obj = model.find_component(specs["full_name"])
-                output_dict["outputs"][var_name]["value"][case_number] = pyo.value(
-                    pyo_obj
-                )
+                # incase value is not initlized or can't be evalauted
+                # typical case, is a var is created, but not initlized or touched, such is 0 index vars in 1D RO
+                try:
+                    output_dict["outputs"][var_name]["value"][case_number] = pyo.value(
+                        pyo_obj
+                    )
+                except ValueError:
+                    pass
 
         else:
             for label, specs in output_dict["outputs"].items():
@@ -511,114 +630,80 @@ class _ParameterSweepBase(ABC):
 
         return global_output_dict
 
-    def _param_sweep_kernel(self, model, reinitialize_values):
-        optimize_function = self.config.optimize_function
-        optimize_kwargs = self.config.optimize_kwargs
-        reinitialize_before_sweep = self.config.reinitialize_before_sweep
-        reinitialize_function = self.config.reinitialize_function
-        reinitialize_kwargs = self.config.reinitialize_kwargs
-
-        run_successful = False  # until proven otherwise
-
+    def _param_sweep_kernel(self, sweep_params, local_value_k):
+        initialize_before_sweep = self.config.initialize_before_sweep
         # Forced reinitialization of the flowsheet if enabled
-        if reinitialize_before_sweep:
-            if reinitialize_function is None:
-                raise ValueError(
-                    "Reinitialization function was not specified. The model will not be reinitialized."
-                )
-            else:
-                for v, val in reinitialize_values.items():
-                    if not v.fixed:
-                        v.set_value(val, skip_validation=True)
-                reinitialize_function(model, **reinitialize_kwargs)
+        # or init if model was not initialized or prior solved failed (if solved failed, init state is false)
+        if initialize_before_sweep or self.model_manager.is_initialized == False:
+            self.model_manager.build_and_init(sweep_params, local_value_k)
+        # try to solve our model
+        self.model_manager.update_model_params(sweep_params, local_value_k)
+        results = self.model_manager.solve_model()
 
-        try:
-            # Simulate/optimize with this set of parameter
-            with capture_output():
-                results = optimize_function(model, **optimize_kwargs)
-            pyo.assert_optimal_termination(results)
-
-        except TypeError:
-            # this happens if the optimize_kwargs are misspecified,
-            # which is an error we want to raise
-            raise
-
-        except:
-            # run_successful remains false. We try to reinitialize and solve again
-            if reinitialize_function is not None:
-                for v, val in reinitialize_values.items():
-                    if not v.fixed:
-                        v.set_value(val, skip_validation=True)
-                try:
-                    reinitialize_function(model, **reinitialize_kwargs)
-                    with capture_output():
-                        results = optimize_function(model, **optimize_kwargs)
-                    pyo.assert_optimal_termination(results)
-
-                except TypeError:
-                    # this happens if the reinitialize_kwargs are misspecified,
-                    # which is an error we want to raise
-                    raise
-
-                except:
-                    pass  # run_successful is still False
-                else:
-                    run_successful = True
-
-        else:
-            # If the simulation suceeds, report stats
-            run_successful = True
-
-        return run_successful
+        # if model failed to solve from a prior paramter solved state, lets try
+        # to re-init and solve again
+        if (
+            self.model_manager.is_solved == False
+            and self.model_manager.is_prior_parameter_solved == True
+        ):
+            self.model_manager.build_and_init(sweep_params, local_value_k)
+            self.model_manager.update_model_params(sweep_params, local_value_k)
+            results = self.model_manager.solve_model()
+        # return model solved state
+        return self.model_manager.is_solved
 
     def _run_sample(
         self,
-        model,
-        reinitialize_values,
         local_value_k,
         k,
         sweep_params,
         local_output_dict,
     ):
-        # Update the model values with a single combination from the parameter space
-        self._update_model_values(model, sweep_params, local_value_k)
+        # Update model parmeters for record keeping and probe testing
+        self._update_model_values(self.model_manager.model, sweep_params, local_value_k)
 
-        if self.config.probe_function is None or self.config.probe_function(model):
+        if self.config.probe_function is None or self.config.probe_function(
+            self.model_manager.model
+        ):
             run_successful = self._param_sweep_kernel(
-                model,
-                reinitialize_values,
+                sweep_params,
+                local_value_k,
             )
         else:
             run_successful = False
+            # makes sure that if model was build,, but failed to init
+            # we store the pars that were run
 
         # Update the loop based on the reinitialization
         self._update_local_output_dict(
-            model,
+            self.model_manager.model,
             sweep_params,
             k,
             run_successful,
             local_output_dict,
         )
-
         return run_successful
 
-    def _do_param_sweep(self, model, sweep_params, outputs, local_values):
-        # Initialize space to hold results
+    def _do_param_sweep(self, sweep_params, outputs, local_values):
+        # setup model manager if not already specifid (Used in case of diff tool)
+        # or if user wants to specify thier own model_manager before runing param sweep
+        if self.model_manager == None:
+            self.model_manager = ModelManager(self)
+
+        # build and init model, we also pass first set of paramters incase user wants
+        # to update them before initlizeing the model
+        self.model_manager.build_and_init(
+            params=sweep_params, local_value_k=local_values[0, :]
+        )
+
         local_num_cases = np.shape(local_values)[0]
 
         # Create the output skeleton for storing detailed data
         local_output_dict = self._create_local_output_skeleton(
-            model, sweep_params, outputs, local_num_cases
+            self.model_manager.model, sweep_params, outputs, local_num_cases
         )
 
         local_solve_successful_list = []
-
-        if self.config["reinitialize_function"] is not None:
-            reinitialize_values = ComponentMap()
-            for v in model.component_data_objects(pyo.Var):
-                reinitialize_values[v] = v.value
-        else:
-            reinitialize_values = None
 
         # ================================================================
         # Run all optimization cases
@@ -627,8 +712,6 @@ class _ParameterSweepBase(ABC):
         for k in range(local_num_cases):
             start_time = time.time()
             run_successful = self._run_sample(
-                model,
-                reinitialize_values,
                 local_values[k, :],
                 k,
                 sweep_params,
@@ -757,11 +840,6 @@ class ParameterSweep(_ParameterSweepBase):
 
     def run_scatter_gather(
         self,
-        build_model,
-        build_model_kwargs,
-        build_sweep_params,
-        build_sweep_params_kwargs,
-        build_outputs,
         all_parameter_combinations,
     ):
         # save a reference to the parallel manager since it will be removed
@@ -769,14 +847,7 @@ class ParameterSweep(_ParameterSweepBase):
         parallel_manager = self.parallel_manager
         saved_state = ParameterSweep.remove_unpicklable_state(self)
 
-        do_build_kwargs = {
-            "param_sweep_instance": self,
-            "build_model": build_model,
-            "build_model_kwargs": build_model_kwargs,
-            "build_sweep_params": build_sweep_params,
-            "build_sweep_params_kwargs": build_sweep_params_kwargs,
-            "build_outputs": build_outputs,
-        }
+        do_build_kwargs = {"param_sweep_instance": self}
 
         parallel_manager.scatter(
             do_build,
@@ -796,6 +867,7 @@ class ParameterSweep(_ParameterSweepBase):
         build_model,
         build_sweep_params,
         build_outputs=None,
+        build_outputs_kwargs=None,
         num_samples=None,
         seed=None,
         build_model_kwargs=None,
@@ -803,6 +875,9 @@ class ParameterSweep(_ParameterSweepBase):
     ):
         build_model_kwargs = (
             build_model_kwargs if build_model_kwargs is not None else dict()
+        )
+        build_outputs_kwargs = (
+            build_outputs_kwargs if build_outputs_kwargs is not None else dict()
         )
         build_sweep_params_kwargs = (
             build_sweep_params_kwargs
@@ -833,19 +908,19 @@ class ParameterSweep(_ParameterSweepBase):
 
         if not callable(build_outputs):
             _combined_outputs = build_outputs
-            build_outputs = lambda model, sweep_params: _combined_outputs
+            build_outputs = lambda model: _combined_outputs
             deprecation_warning(
                 "Passing the output dict directly to the parameter_sweep function is deprecated \
                                 and will not work with future implementations of parallelism.",
                 version="0.10.0",
             )
-        # add build functions and kwargs to instance for use with custom function
-        # this might be better to move all of these to Config instead
-        self.build_model = build_model
-        self.build_sweep_params = build_sweep_params
-        self.build_outputs = build_outputs
-        self.build_model_kwargs = build_model_kwargs
-        self.build_sweep_params_kwargs = build_sweep_params_kwargs
+        # This should be depreciated in future versions
+        self.config.build_model = build_model
+        self.config.build_sweep_params = build_sweep_params
+        self.config.build_outputs = build_outputs
+        self.config.build_outputs_kwargs = build_outputs_kwargs
+        self.config.build_model_kwargs = build_model_kwargs
+        self.config.build_sweep_params_kwargs = build_sweep_params_kwargs
         # create the list of all combinations - needed for some aspects of scattering
         model = build_model(**build_model_kwargs)
         sweep_params = build_sweep_params(model, **build_sweep_params_kwargs)
@@ -856,11 +931,6 @@ class ParameterSweep(_ParameterSweepBase):
         )
 
         all_results = self.run_scatter_gather(
-            build_model,
-            build_model_kwargs,
-            build_sweep_params,
-            build_sweep_params_kwargs,
-            build_outputs,
             all_parameter_combinations,
         )
 
@@ -966,15 +1036,69 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
     def parameter_sweep(
         self,
-        model,
-        sweep_params,
-        outputs=None,
-        req_num_samples=None,
+        build_model,
+        build_sweep_params,
+        build_outputs=None,
+        build_outputs_kwargs=None,
+        num_samples=None,
         seed=None,
+        build_model_kwargs=None,
+        build_sweep_params_kwargs=None,
+        req_num_samples=None,
     ):
-        # Convert sweep_params to LinearSamples
-        sweep_params, sampling_type = self._process_sweep_params(sweep_params)
+        build_model_kwargs = (
+            build_model_kwargs if build_model_kwargs is not None else dict()
+        )
+        build_outputs_kwargs = (
+            build_outputs_kwargs if build_outputs_kwargs is not None else dict()
+        )
+        build_sweep_params_kwargs = (
+            build_sweep_params_kwargs
+            if build_sweep_params_kwargs is not None
+            else dict()
+        )
 
+        if not callable(build_model):
+            _model = build_model
+            build_model = lambda: _model
+            deprecation_warning(
+                "Passing a model directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+
+        if not callable(build_sweep_params):
+            _sweep_params = build_sweep_params
+            build_sweep_params = lambda model: _sweep_params
+            deprecation_warning(
+                "Passing sweep params directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+
+        if build_outputs is None:
+            build_outputs = return_none
+
+        if not callable(build_outputs):
+            _combined_outputs = build_outputs
+            build_outputs = lambda model: _combined_outputs
+            deprecation_warning(
+                "Passing the output dict directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism.",
+                version="0.10.0",
+            )
+        # This should be depreciated in future versions
+        self.config.build_model = build_model
+        self.config.build_sweep_params = build_sweep_params
+        self.config.build_outputs = build_outputs
+        self.config.build_outputs_kwargs = build_outputs_kwargs
+        self.config.build_model_kwargs = build_model_kwargs
+        self.config.build_sweep_params_kwargs = build_sweep_params_kwargs
+        # create the list of all combinations - needed for some aspects of scattering
+        model = build_model(**build_model_kwargs)
+        sweep_params = build_sweep_params(model, **build_sweep_params_kwargs)
+        sweep_params, sampling_type = self._process_sweep_params(sweep_params)
+        outputs = build_outputs(model, **build_model_kwargs)
         # Set the seed before sampling
         np.random.seed(seed)
 
@@ -1007,7 +1131,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
             if self.config.custom_do_param_sweep is None:
                 local_output_collection[loop_ctr] = self._do_param_sweep(
-                    model,
                     sweep_params,
                     outputs,
                     local_values,
@@ -1016,7 +1139,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
                 local_output_collection[
                     loop_ctr
                 ] = self.self.config.custom_do_param_sweep(
-                    model,
                     sweep_params,
                     outputs,
                     local_values,
@@ -1108,24 +1230,20 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
 def do_build(
     param_sweep_instance,
-    build_model,
-    build_model_kwargs,
-    build_sweep_params,
-    build_sweep_params_kwargs,
-    build_outputs,
 ):
     """
     Used to pass into the parallel manager to build the parameters necessary
     for the sweep function. Defined at the top level so it's picklable.
     """
-
-    model = build_model(**build_model_kwargs)
-    sweep_params = build_sweep_params(model, **build_sweep_params_kwargs)
-    outputs = build_outputs(model, sweep_params)
-
+    ps_config = param_sweep_instance.config
+    model = ps_config.build_model(**ps_config.build_model_kwargs)
+    sweep_params = ps_config.build_sweep_params(
+        model, **ps_config.build_sweep_params_kwargs
+    )
     sweep_params, sampling_type = param_sweep_instance._process_sweep_params(
         sweep_params
     )
+    outputs = ps_config.build_outputs(model, **ps_config.build_outputs_kwargs)
 
     if outputs is not None:
         param_sweep_instance.assign_variable_names(model, outputs)
@@ -1147,15 +1265,15 @@ def do_execute(
 
     if param_sweep_instance.config.custom_do_param_sweep is not None:
         return param_sweep_instance.config.custom_do_param_sweep(
-            param_sweep_instance, model, sweep_params, outputs, local_combo_array
+            param_sweep_instance, sweep_params, outputs, local_combo_array
         )
 
     return param_sweep_instance._do_param_sweep(
-        model, sweep_params, outputs, local_combo_array
+        sweep_params, outputs, local_combo_array
     )
 
 
-def return_none(model, sweep_params):
+def return_none(model, outputkeys=None):
     """
     Used so that build_outputs=None is a valid usage of the parameter sweep tool
     without requiring the user to wrap it in a function.
