@@ -41,7 +41,7 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
 # Some more information about this module
-__author__ = "Marcus Holly, Adam Atia"
+__author__ = "Marcus Holly, Adam Atia, Xinhong Liu"
 
 
 # Set up logger
@@ -373,7 +373,7 @@ class ModifiedASM2dStateBlockData(StateBlockData):
         self.temperature = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=298.15,
-            bounds=(298.14, 323.15),
+            bounds=(273.15, 323.15),
             doc="Temperature",
             units=pyo.units.K,
         )
