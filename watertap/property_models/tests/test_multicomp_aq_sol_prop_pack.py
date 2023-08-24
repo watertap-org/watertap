@@ -144,6 +144,7 @@ def test_parameter_block(model):
         model.fs.properties.config.activity_coefficient_model
         == ActivityCoefficientModel.ideal
     )
+    assert model.fs.properties.config.material_flow_basis == MaterialFlowBasis.molar
 
 
 @pytest.mark.component
@@ -326,10 +327,13 @@ def test_build(model3):
     for v in metadata.list_supported_properties():
         if metadata[v.name].method is not None:
             if m.fs.stream[0].is_property_constructed(v.name):
-                raise PropertyAttributeError(
-                    "Property {v_name} is an on-demand property, but was found "
-                    "on the stateblock without being demanded".format(v_name=v.name)
-                )
+                if m.fs.properties.config.material_flow_basis == MaterialFlowBasis.molar and v.name == "flow_mol_phase_comp":
+                    continue
+                else:
+                    raise PropertyAttributeError(
+                        "Property {v_name} is an on-demand property, but was found "
+                        "on the stateblock without being demanded".format(v_name=v.name)
+                    )
 
     # check that properties are built if demanded
     for v in metadata.list_supported_properties():
@@ -1474,4 +1478,23 @@ def test_solute_list_longer_than_diff_data():
     m.fs.properties.visc_d_phase["Liq"] = 1.0e-3
 
     m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
+    calculate_scaling_factors(m.fs)
+
+
+@pytest.mark.component
+def test_flow_mass_basis():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["A"],
+        material_flow_basis = MaterialFlowBasis.mass
+    )
+
+    m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
+
+    assert m.fs.properties.config.material_flow_basis == MaterialFlowBasis.mass
+
+    m.fs.sb[0].assert_electroneutrality(defined_state=False)
+    assert m.fs.properties.get_material_flow_terms()
+
     calculate_scaling_factors(m.fs)

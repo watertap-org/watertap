@@ -999,7 +999,7 @@ class MCASStateBlockData(StateBlockData):
             units=pyunits.mol / pyunits.s,
             doc="Component molar flow rate",
         )
-        if self.config.material_flow_basis == MaterialFlowBasis.mass:
+        if self.params.config.material_flow_basis == MaterialFlowBasis.mass:
             def rule_flow_mol_phase_comp(b, p, j):
                 return (
                     b.flow_mass_phase_comp[p, j]
@@ -1021,7 +1021,7 @@ class MCASStateBlockData(StateBlockData):
             units=pyunits.kg / pyunits.s,
             doc="Component Mass flowrate",
         )
-        if self.config.material_flow_basis == MaterialFlowBasis.molar:
+        if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
             def rule_flow_mass_phase_comp(b, p, j):
                 return (
                     b.flow_mass_phase_comp[p, j]
@@ -1762,7 +1762,10 @@ class MCASStateBlockData(StateBlockData):
 
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
-        return self.flow_mol_phase_comp[p, j]
+        if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
+            return self.flow_mol_phase_comp[p, j]
+        elif self.params.config.material_flow_basis == MaterialFlowBasis.mass:
+            return self.flow_mass_phase_comp[p, j]
 
     # TODO: add enthalpy terms later
     # def get_enthalpy_flow_terms(self, p):
@@ -1783,9 +1786,9 @@ class MCASStateBlockData(StateBlockData):
         return EnergyBalanceType.none
 
     def get_material_flow_basis(self):
-        if self.config.material_flow_basis == MaterialFlowBasis.molar:
+        if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
             return MaterialFlowBasis.molar
-        elif self.config.material_flow_basis == MaterialFlowBasis.mass:
+        elif self.params.config.material_flow_basis == MaterialFlowBasis.mass:
             return MaterialFlowBasis.mass
         else:
             raise PropertyPackageError(f"{self.name} MCAS Property Package set to use unsupported material flow basis: {self.get_material_flow_basis()}")
@@ -1793,13 +1796,13 @@ class MCASStateBlockData(StateBlockData):
 
     def define_state_vars(self):
         """Define state vars."""
-        if self.config.material_flow_basis == MaterialFlowBasis.molar:
+        if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
             return {
                 "flow_mol_phase_comp": self.flow_mol_phase_comp,
                 "temperature": self.temperature,
                 "pressure": self.pressure,
             }
-        elif self.config.material_flow_basis == MaterialFlowBasis.mass:
+        elif self.params.config.material_flow_basis == MaterialFlowBasis.mass:
             return {
                 "flow_mass_phase_comp": self.flow_mass_phase_comp,
                 "temperature": self.temperature,
