@@ -17,7 +17,7 @@ The flowsheet follows the same formulation as benchmark simulation model no.2 (B
 but comprises different specifications for default values than BSM2.
 
 """
-__author__ = "Adam Atia"
+__author__ = "Adam Atia, Alejandro Garciadiego, Xinhong Liu"
 
 import pyomo.environ as pyo
 
@@ -50,7 +50,6 @@ from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
 )
 
-from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import (
     CSTR,
     Feed,
@@ -62,7 +61,8 @@ from idaes.models.unit_models import (
 from watertap.unit_models.cstr_injection import CSTR_Injection
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
-
+from idaes.core.util.exceptions import InitializationError
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 def main():
     m = build_flowsheet()
@@ -70,23 +70,27 @@ def main():
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
-    initialize_system(m)
+    try:
+        initialize_system(m)
+    except InitializationError:
+        pass
+
+    print("Degrees of freedom", degrees_of_freedom(m))
+    assert_degrees_of_freedom(m, 0)
+    results = solve(m, tee=True)
+
+    # add_costing(m)
+    # Assert DOF = 0 after adding costing
+    # assert_degrees_of_freedom(m, 0)
+
+    # TODO: initialize costing after adding to flowsheet
+    # m.fs.costing.initialize()
 
     # results = solve(m)
 
-    # add_costing(m)
-    # # Assert DOF = 0 after adding costing
-    # # assert_degrees_of_freedom(m, 0)
+    display_results(m)
 
-    # # TODO: initialize costing after adding to flowsheet
-    # # m.fs.costing.initialize()
-
-    # # results = solve(m)
-
-    # display_results(m)
-
-    return m
-# , results
+    return m, results
 
 
 def build_flowsheet():
@@ -396,7 +400,7 @@ def initialize_system(m):
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
     seq.options.tear_method = "Direct"
-    seq.options.iterLim = 1
+    seq.options.iterLim = 5
     seq.options.tear_set = [m.fs.stream2, m.fs.stream10adm]
 
     G = seq.create_graph(m)
@@ -410,20 +414,26 @@ def initialize_system(m):
     tear_guesses1 = {
         "flow_vol": {0: 103531 / 24 / 3600},
         "conc_mass_comp": {
-            (0, "S_I"): 0.028,
-            (0, "S_S"): 0.012,
-            (0, "X_I"): 1.532,
-            (0, "X_S"): 0.069,
-            (0, "X_BH"): 2.233,
-            (0, "X_BA"): 0.167,
-            (0, "X_P"): 0.964,
-            (0, "S_O2"): 0.0011,
-            (0, "S_NO"): 0.0073,
-            (0, "S_NH"): 0.0072,
-            (0, "S_ND"): 0.0016,
-            (0, "X_ND"): 0.0040,
-        },
-        "alkalinity": {0: 0.0052},
+            (0, "S_O2"): 0.001,
+            (0, "S_F"): 0.005,
+            (0, "S_A"): 0.015,
+            (0, "S_I"): 0.027,
+            (0, "S_NH4"): 0.018,
+            (0, "S_N2"): 0.009,
+            (0, "S_NO3"): 5.49e-5,
+            (0, "S_PO4"): 0.025,
+            (0, "S_IC"): 0.079,
+
+            (0, "X_I"): 1.824,
+            (0, "X_S"): 0.132,
+            (0, "X_H"): 1.851,
+            (0, "X_PAO"): 1.009,
+            (0, "X_PP"): 0.279,
+            (0, "X_PHA"): 0.044,
+            (0, "X_AUT"): 0.113,
+            (0, "S_K"): 0.029,
+            (0, "S_Mg"): 0.102,
+            },
         "temperature": {0: 308.15},
         "pressure": {0: 101325},
     }
@@ -431,30 +441,36 @@ def initialize_system(m):
     tear_guesses2 = {
         "flow_vol": {0: 178 / 24 / 3600},
         "conc_mass_comp": {
-            (0, "S_I"): 0.028,
-            (0, "S_S"): 0.048,
-            (0, "X_I"): 10.362,
-            (0, "X_S"): 20.375,
-            (0, "X_BH"): 10.210,
-            (0, "X_BA"): 0.553,
-            (0, "X_P"): 3.204,
-            (0, "S_O2"): 0.00025,
-            (0, "S_NO"): 0.00169,
-            (0, "S_NH"): 0.0289,
-            (0, "S_ND"): 0.00468,
-            (0, "X_ND"): 0.906,
-        },
-        "alkalinity": {0: 0.00715},
+            (0, "S_O2"): 0.001,
+            (0, "S_F"): 0.005,
+            (0, "S_A"): 0.015,
+            (0, "S_I"): 0.027,
+            (0, "S_NH4"): 0.018,
+            (0, "S_N2"): 0.009,
+            (0, "S_NO3"): 5.49e-5,
+            (0, "S_PO4"): 0.025,
+            (0, "S_IC"): 0.079,
+
+            (0, "X_I"): 1.824,
+            (0, "X_S"): 0.132,
+            (0, "X_H"): 1.851,
+            (0, "X_PAO"): 1.009,
+            (0, "X_PP"): 0.279,
+            (0, "X_PHA"): 0.044,
+            (0, "X_AUT"): 0.113,
+            (0, "S_K"): 0.029,
+            (0, "S_Mg"): 0.102,
+            },
         "temperature": {0: 308.15},
         "pressure": {0: 101325},
     }
 
-    # Pass the tear_guess to the SD tool
-    seq.set_guesses_for(m.fs.R1.inlet, tear_guesses1)
-    seq.set_guesses_for(m.fs.asm_adm.inlet, tear_guesses2)
+    # # Pass the tear_guess to the SD tool
+    # seq.set_guesses_for(m.fs.R1.inlet, tear_guesses1)
+    # seq.set_guesses_for(m.fs.asm_adm.inlet, tear_guesses2)
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO_HIGH)
+        unit.initialize(outlvl=idaeslog.DEBUG)
 
     seq.run(m, function)
 
@@ -464,10 +480,10 @@ def add_costing(m):
     pass
 
 
-def solve(blk, solver=None):
+def solve(blk, solver=None, tee=False):
     if solver is None:
         solver = get_solver()
-    results = solver.solve(blk)
+    results = solver.solve(blk, tee=tee)
     pyo.assert_optimal_termination(results)
     return results
 
@@ -504,6 +520,6 @@ def display_results(m):
 
 
 if __name__ == "__main__":
-    # m, results = main()
-    m = main()
+    m, results = main()
+
 
