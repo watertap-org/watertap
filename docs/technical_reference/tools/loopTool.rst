@@ -404,7 +404,7 @@ All the parameters will use thier parm names or object keys as reference (e.g. i
 
 **Backup management**
 
-The loopTool includes a naïve data management schema to prevent overwriting existing files and minimize simulations runs through creation of backups from existing files. When the loopTool starts it will check if a file with same name already exists, if it does it will rename that file to include a data and time (file_name+_M_D-H_M-S.bak).  
+The loopTool includes a naïve data management schema to prevent overwriting existing files and minimize simulation runs through creation of backups from existing files. When the loopTool starts it will check if a file with same name already exists, if it does it will rename that file to include a data and time (file_name+_M_D-H_M-S.bak).  
 
 The backup file will be used to check if existing completed simulations exists, before running a simulation it will check if the backup file contains a complete simulation for current run, (this only checks number of successfully solved samples, but does not check if the sweep_parameters match), if the all of simulations were succesfull solved in backup file, it will copy over the data from back up file into new file, otherwise it will re-run the simulations. The user can specify the expected number of samples if it differs from num_samples by passing additional  expected_num_samples along num_samples. 
 
