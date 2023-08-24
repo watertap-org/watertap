@@ -25,7 +25,7 @@ that pass in erd_type allowing user to select type of ERD device (either a press
 *The user will need to setup the following three functions (description and example are shown below):*
 
 1. The *build_function* that builds the flowsheet (ro_build)- This function should build the flowsheet, and accept any kwargs for its configuration. Here we pass explicitly erd_type, but also include *kwargs* in case we want to pass in other options in the future. When loopTool runs, it will pass selected *kwargs* into this function before running the sweep. 
-2. The *initialization_function* (ro_init)- this function will initialize the model. This is in general optional, as initialization can be done in build function as well, but it is useful for PS tool, as it can use it to reinitialize the model in case a solve fails and try again. 
+2. The *initialization_function* (ro_init)- this function will initialize the model. This is optional, as initialization can be done in build function as well, but it is useful for the Parameter Sweep tool, as it can use it to reinitialize the model in case a solve fails and try again. 
    
    Additionally, the PS tool (and loopTool) will update the parameters on model tree we are sweep across before calling initialize as well as before calling the solve function. It is critical that in initialize function, we fix or unfix any variable we are sweeping over to their required values for initialize routine unless, that routine can leverage changes in sweeped parameters. 
    
