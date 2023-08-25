@@ -711,12 +711,12 @@ class TestMembraneDistillation:
 
         # Adjusted the flux value to 12 LMH
         assert pytest.approx(0.0033, rel=1e-3) == value(
-            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
+            m.fs.unit.flux_mass[0, "Liq", "H2O"]
         )
 
         # Replaced NaCl with TDS
         assert pytest.approx(0.5873e-8, rel=1e-3) == value(
-            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "TDS"]
+            m.fs.unit.flux_mass[0, "Liq", "TDS"]
         )
 
         # Replaced feed_side with hot_ch
