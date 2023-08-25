@@ -14,7 +14,6 @@ from abc import abstractmethod, ABC
 
 
 class ParallelManager(ABC):
-
     ROOT_PROCESS_RANK = 0
 
     @abstractmethod
@@ -111,7 +110,6 @@ class ParallelManager(ABC):
         do_execute,
         all_parameters,
     ):
-
         """
         Scatter the specified execution out, as defined by the implementation's parallelism, for
         a list of parameters.
@@ -147,6 +145,9 @@ class ParallelManager(ABC):
         raise NotImplementedError
 
 
+# TODO this probably should be owned by parameer sweep as its PS specific
+
+
 def build_and_execute(do_build, do_build_kwargs, do_execute, local_parameters):
     """
     Entrypoint for implementations of the parallel manager to use for running the
@@ -155,6 +156,25 @@ def build_and_execute(do_build, do_build_kwargs, do_execute, local_parameters):
     For a description of the first three arguments, see the scatter() function above.
     The fourth argument is the list of local parameters that should be run by this process.
     """
-    execute_args = do_build(**do_build_kwargs)
-    results = do_execute(local_parameters, *execute_args)
+    pa = parallelActor(do_build, do_build_kwargs, do_execute, local_parameters)
+    results = pa.execute(local_parameters)
+    # execute_args = do_build(**do_build_kwargs)
+    # results = do_execute(local_parameters, *execute_args)
     return results
+
+
+# TODO this probably should be owned by parameer sweep as its PS specific
+class parallelActor:
+    def __init__(self, do_build, do_build_kwargs, do_execute, local_parameters):
+        self.do_build = do_build
+        self.do_build_kwargs = do_build_kwargs
+        self.do_execute = do_execute
+        self.local_parameters = local_parameters
+        self.build_model()
+
+    def build_model(self):
+        self.exec_args = self.do_build(**self.do_build_kwargs)
+
+    def execute(self, local_parameters):
+        result = self.do_execute(local_parameters, *self.exec_args)
+        return result

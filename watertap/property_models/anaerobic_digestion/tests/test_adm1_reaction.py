@@ -18,7 +18,7 @@ Rosen, C. and Jeppsson, U., 2006.
 Aspects on ADM1 Implementation within the BSM2 Framework.
 Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
 
-Authors: Alejandro Garciadiego, Adam Atia
+Authors: Alejandro Garciadiego, Adam Atia, Xinhong Liu
 """
 
 import pytest
@@ -29,6 +29,7 @@ from pyomo.environ import (
     Constraint,
     value,
     Var,
+    log10,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -105,8 +106,8 @@ class TestParamBlock(object):
             ("R1", "Liq", "X_pr"): 0.20,
             ("R1", "Liq", "X_li"): 0.30,
             ("R1", "Liq", "X_I"): 0.2,
-            ("R1", "Liq", "S_IC"): 1.46907e-5 * mw_c,
-            ("R1", "Liq", "S_IN"): -1e-18 * mw_n,
+            ("R1", "Liq", "S_IC"): -8e-19 * mw_c,
+            ("R1", "Liq", "S_IN"): -2e-19 * mw_n,
             # R2: Hydrolysis of carbohydrates
             ("R2", "Liq", "S_su"): 1,
             ("R2", "Liq", "X_ch"): -1,
@@ -118,7 +119,7 @@ class TestParamBlock(object):
             ("R4", "Liq", "S_fa"): 0.95,
             ("R4", "Liq", "X_li"): -1,
             ("R4", "Liq", "S_IN"): 0,
-            ("R4", "Liq", "S_IC"): -0.00023192 * mw_c,
+            ("R4", "Liq", "S_IC"): -0.00018 * mw_c,
             # R5:  Uptake of sugars
             ("R5", "Liq", "S_su"): -1,
             ("R5", "Liq", "S_bu"): 0.1170,
@@ -142,23 +143,23 @@ class TestParamBlock(object):
             ("R7", "Liq", "S_fa"): -1,
             ("R7", "Liq", "S_ac"): 0.6580,
             ("R7", "Liq", "S_h2"): 0.2820,
-            ("R7", "Liq", "S_IC"): -0.00068224 * mw_c,
-            ("R7", "Liq", "S_IN"): -0.000342 * mw_n,
+            ("R7", "Liq", "S_IC"): -0.0007734 * mw_c,
+            ("R7", "Liq", "S_IN"): -0.0003429 * mw_n,
             ("R7", "Liq", "X_fa"): 0.06,
             # R8:  Uptake of valerate
             ("R8", "Liq", "S_va"): -1,
             ("R8", "Liq", "S_pro"): 0.5076,
             ("R8", "Liq", "S_ac"): 0.2914,
             ("R8", "Liq", "S_h2"): 0.1410,
-            ("R8", "Liq", "S_IC"): -0.00053371 * mw_c,
+            ("R8", "Liq", "S_IC"): -0.0006025 * mw_c,
             ("R8", "Liq", "S_IN"): -0.0003428 * mw_n,
             ("R8", "Liq", "X_c4"): 0.06,
             # R9:  Uptake of butyrate
             ("R9", "Liq", "S_bu"): -1,
             ("R9", "Liq", "S_ac"): 0.7520,
             ("R9", "Liq", "S_h2"): 0.1880,
-            ("R9", "Liq", "S_IC"): -0.00035613 * mw_c,
-            ("R9", "Liq", "S_IN"): -0.0003428 * mw_n,
+            ("R9", "Liq", "S_IC"): -0.0004156 * mw_c,
+            ("R9", "Liq", "S_IN"): -0.0003429 * mw_n,
             ("R9", "Liq", "X_c4"): 0.06,
             # R10: Uptake of propionate
             ("R10", "Liq", "S_pro"): -1,
@@ -177,49 +178,47 @@ class TestParamBlock(object):
             ("R12", "Liq", "S_h2"): -1,
             ("R12", "Liq", "S_ch4"): 0.94,
             ("R12", "Liq", "S_IN"): -0.0003428 * mw_n,
-            # ("R12", "Liq", "S_IC"): -0.01654, #Todo this is real
-            ("R12", "Liq", "S_IC"): -0.014663 * mw_c,
+            ("R12", "Liq", "S_IC"): -0.01654 * mw_c,
             ("R12", "Liq", "X_h2"): 0.06,
             # R13: Decay of X_su
             ("R13", "Liq", "S_IC"): 0.00344 * mw_c,
-            ("R13", "Liq", "S_IN"): 0.003028 * mw_n,
+            ("R13", "Liq", "S_IN"): 0.003029 * mw_n,
             ("R13", "Liq", "X_c"): 1,
             ("R13", "Liq", "X_su"): -1,
             # R14: Decay of X_aa
             ("R14", "Liq", "S_IC"): 0.00344 * mw_c,
-            ("R14", "Liq", "S_IN"): 0.003028 * mw_n,
+            ("R14", "Liq", "S_IN"): 0.003029 * mw_n,
             ("R14", "Liq", "X_c"): 1,
             ("R14", "Liq", "X_aa"): -1,
             # R15: Decay of X_fa
             ("R15", "Liq", "S_IC"): 0.00344 * mw_c,
-            ("R15", "Liq", "S_IN"): 0.003028 * mw_n,
+            ("R15", "Liq", "S_IN"): 0.003029 * mw_n,
             ("R15", "Liq", "X_c"): 1,
             ("R15", "Liq", "X_fa"): -1,
             # R16: Decay of X_c4
             ("R16", "Liq", "S_IC"): 0.00344 * mw_c,
-            ("R16", "Liq", "S_IN"): 0.003028 * mw_n,
+            ("R16", "Liq", "S_IN"): 0.003029 * mw_n,
             ("R16", "Liq", "X_c"): 1,
             ("R16", "Liq", "X_c4"): -1,
             # R17: Decay of X_pro
             ("R17", "Liq", "S_IC"): 0.00344 * mw_c,
-            ("R17", "Liq", "S_IN"): 0.003028 * mw_n,
+            ("R17", "Liq", "S_IN"): 0.003029 * mw_n,
             ("R17", "Liq", "X_c"): 1,
             ("R17", "Liq", "X_pro"): -1,
             # R18: Decay of X_ac
             ("R18", "Liq", "S_IC"): 0.00344 * mw_c,
-            ("R18", "Liq", "S_IN"): 0.003028 * mw_n,
+            ("R18", "Liq", "S_IN"): 0.003029 * mw_n,
             ("R18", "Liq", "X_c"): 1,
             ("R18", "Liq", "X_ac"): -1,
             # R19: Decay of X_h2
             ("R19", "Liq", "S_IC"): 0.00344 * mw_c,
-            ("R19", "Liq", "S_IN"): 0.003028 * mw_n,
+            ("R19", "Liq", "S_IN"): 0.003029 * mw_n,
             ("R19", "Liq", "X_c"): 1,
             ("R19", "Liq", "X_h2"): -1,
         }
 
         assert len(model.rparams.rate_reaction_stoichiometry) == 19 * 27
         for i, v in model.rparams.rate_reaction_stoichiometry.items():
-
             assert i[0] in [
                 "R1",
                 "R2",
@@ -382,13 +381,13 @@ class TestParamBlock(object):
         assert value(model.rparams.k_dec_X_h2) == 0.02
 
         assert isinstance(model.rparams.K_a_va, Var)
-        assert value(model.rparams.K_a_va) == 1.38e-5
+        assert value(model.rparams.K_a_va) == 10 ** (-4.86)
         assert isinstance(model.rparams.K_a_bu, Var)
-        assert value(model.rparams.K_a_bu) == 1.5e-5
+        assert value(model.rparams.K_a_bu) == 10 ** (-4.82)
         assert isinstance(model.rparams.K_a_pro, Var)
-        assert value(model.rparams.K_a_pro) == 1.32e-5
+        assert value(model.rparams.K_a_pro) == 10 ** (-4.88)
         assert isinstance(model.rparams.K_a_ac, Var)
-        assert value(model.rparams.K_a_ac) == 1.74e-5
+        assert value(model.rparams.K_a_ac) == 10 ** (-4.76)
 
 
 class TestReactionBlock(object):
@@ -453,7 +452,7 @@ class TestReactor:
         m.fs.unit.inlet.temperature.fix(308.15)
         m.fs.unit.inlet.pressure.fix(101325)
 
-        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.01)
         m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.001)
         m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(0.001)
         m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(0.001)
@@ -470,7 +469,7 @@ class TestReactor:
         m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(5)
         m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(20)
         m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(5)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(0.0)
         m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0.010)
         m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0.010)
         m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0.010)
@@ -498,7 +497,6 @@ class TestReactor:
 
     @pytest.mark.unit
     def test_scaling_factors(self, model):
-
         m = model
         iscale.calculate_scaling_factors(m)
 
@@ -506,20 +504,20 @@ class TestReactor:
         unscaled_var_list = list(iscale.unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
-        for _ in iscale.badly_scaled_var_generator(m):
+        for _ in iscale.badly_scaled_var_generator(m, large=1e5, small=1e-4):
             assert False
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-        model.fs.unit.initialize(optarg={"bound_push": 1e-8})
+        model.fs.unit.initialize()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
-        solver = get_solver(options={"bound_push": 1e-8})
+        solver = get_solver()
         results = solver.solve(model, tee=True)
 
         assert check_optimal_termination(results)
@@ -538,7 +536,7 @@ class TestReactor:
         )
         assert value(
             model.fs.unit.liquid_outlet.conc_mass_comp[0, "S_su"]
-        ) == pytest.approx(1.193e-2, rel=1e-2)
+        ) == pytest.approx(1.195e-2, rel=1e-2)
         assert value(
             model.fs.unit.liquid_outlet.conc_mass_comp[0, "S_aa"]
         ) == pytest.approx(5.31e-3, rel=1e-2)
@@ -556,25 +554,25 @@ class TestReactor:
         ) == pytest.approx(0.01578, rel=1e-2)
         assert value(
             model.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ac"]
-        ) == pytest.approx(0.17319, rel=1e-2)
+        ) == pytest.approx(0.19763, rel=1e-2)
         assert value(
             model.fs.unit.liquid_outlet.conc_mass_comp[0, "S_h2"]
-        ) == pytest.approx(2.35e-7, rel=1e-2)
+        ) == pytest.approx(2.36e-7, rel=1e-2)
         assert value(
             model.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ch4"]
-        ) == pytest.approx(0.0541, rel=1e-2)
+        ) == pytest.approx(0.05508, rel=1e-2)
         assert value(
             model.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IC"]
-        ) == pytest.approx(0.15436 * 12, rel=1e-2)
+        ) == pytest.approx(0.15268 * 12, rel=1e-2)
         assert value(
             model.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IN"]
-        ) == pytest.approx(0.13022 * 14, rel=1e-2)
+        ) == pytest.approx(0.13023 * 14, rel=1e-2)
         assert value(
             model.fs.unit.liquid_outlet.conc_mass_comp[0, "S_I"]
         ) == pytest.approx(0.32869, rel=1e-2)
         assert value(
             model.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c"]
-        ) == pytest.approx(0.3086, rel=1e-2)
+        ) == pytest.approx(0.30869, rel=1e-2)
         assert value(
             model.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ch"]
         ) == pytest.approx(0.02794, rel=1e-2)
@@ -623,7 +621,7 @@ class TestReactor:
         ) == pytest.approx(1.322e-2, rel=1e-2)
         assert value(
             model.fs.unit.liquid_phase.reactions[0].conc_mass_ac
-        ) == pytest.approx(1.728e-1, rel=1e-2)
+        ) == pytest.approx(1.972e-1, rel=1e-2)
         assert value(
             model.fs.unit.liquid_phase.reactions[0].conc_mass_pro
         ) == pytest.approx(1.574e-2, rel=1e-2)
@@ -632,26 +630,23 @@ class TestReactor:
         ) == pytest.approx(0.14277, rel=1e-2)
         assert value(
             model.fs.unit.liquid_phase.reactions[0].conc_mol_nh3
-        ) == pytest.approx(3.760e-3, rel=1e-2)
+        ) == pytest.approx(4.091e-3, rel=1e-2)
         assert value(
             model.fs.unit.liquid_phase.reactions[0].conc_mol_co2
-        ) == pytest.approx(1.08e-2, rel=1e-2)
+        ) == pytest.approx(9.878e-3, rel=1e-2)
         assert value(
             model.fs.unit.liquid_phase.reactions[0].conc_mol_nh4
         ) == pytest.approx(1.261e-1, rel=1e-2)
 
         assert value(model.fs.unit.liquid_phase.reactions[0].S_H) == pytest.approx(
-            3.734e-8, rel=1e-2
+            3.423e-8, rel=1e-2
         )
-        assert value(model.fs.unit.liquid_phase.reactions[0].S_OH) == pytest.approx(
-            5.570e-7, rel=1e-2
-        )
-        assert value(model.fs.unit.liquid_phase.reactions[0].KW, Var) == pytest.approx(
-            2.08e-14, rel=1e-2
+        assert value(model.fs.unit.liquid_phase.reactions[0].pKW, Var) == pytest.approx(
+            -log10(2.08e-14), rel=1e-2
         )
         assert value(
-            model.fs.unit.liquid_phase.reactions[0].K_a_co2, Var
-        ) == pytest.approx(4.94e-7, rel=1e-2)
+            model.fs.unit.liquid_phase.reactions[0].pK_a_co2, Var
+        ) == pytest.approx(-log10(4.94e-7), rel=1e-2)
         assert value(
-            model.fs.unit.liquid_phase.reactions[0].K_a_IN, Var
-        ) == pytest.approx(1.11e-9, rel=1e-2)
+            model.fs.unit.liquid_phase.reactions[0].pK_a_IN, Var
+        ) == pytest.approx(-log10(1.11e-9), rel=1e-2)

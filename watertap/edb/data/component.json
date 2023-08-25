@@ -116,7 +116,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -542.83,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -208,7 +208,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -677.1,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -538,7 +538,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -1292.1,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -764,7 +764,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -240.1,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -1132,7 +1132,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -1277.4,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -1178,7 +1178,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -909.2,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -1853,7 +1853,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -48.5,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -1899,7 +1899,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -229.4,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -1945,7 +1945,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -446.7,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -1991,7 +1991,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -830.0,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -2040,7 +2040,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -638.5,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -2133,7 +2133,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -466.8,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -2179,7 +2179,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -1344,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -2228,7 +2228,7 @@
       "enth_mol_form_liq_comp_ref": [
         {
           "v": -1072,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],

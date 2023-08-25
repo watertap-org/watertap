@@ -172,7 +172,7 @@ class TestAsm1Adm1(object):
         assert hasattr(asmadm.fs.unit.outlet, "pressure")
         assert hasattr(asmadm.fs.unit.outlet, "alkalinity")
 
-        assert number_variables(asmadm) == 129
+        assert number_variables(asmadm) == 132
         assert number_total_constraints(asmadm) == 16
 
         assert number_unused_variables(asmadm.fs.unit) == 4
@@ -221,19 +221,19 @@ class TestAsm1Adm1(object):
         assert pytest.approx(3.2375, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_S"]
         )
-        assert pytest.approx(1e-6, rel=1e-2) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_BH"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_BA"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_P"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_O"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_NO"]
         )
         assert pytest.approx(1.322, rel=1e-3) == value(

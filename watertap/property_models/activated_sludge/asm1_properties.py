@@ -36,8 +36,7 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
 # Some more information about this module
-__author__ = "Andrew Lee, Adam Atia"
-
+__author__ = "Andrew Lee, Adam Atia, Xinhong Liu"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -283,7 +282,7 @@ class ASM1StateBlockData(StateBlockData):
         self.temperature = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=298.15,
-            bounds=(293.15, 323.15),
+            bounds=(273.15, 323.15),
             doc="Temperature",
             units=pyo.units.K,
         )
@@ -358,6 +357,11 @@ class ASM1StateBlockData(StateBlockData):
         self.energy_density_expression = pyo.Expression(
             rule=energy_density_expression, doc="Energy density term"
         )
+
+        iscale.set_scaling_factor(self.flow_vol, 1e1)
+        iscale.set_scaling_factor(self.temperature, 1e-1)
+        iscale.set_scaling_factor(self.pressure, 1e-6)
+        iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
 
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]
