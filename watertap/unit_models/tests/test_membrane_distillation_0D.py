@@ -700,32 +700,26 @@ class TestMembraneDistillation:
     def test_solution(self, MD_frame):
         m = MD_frame
 
-        
         assert pytest.approx(0.0033, rel=1e-3) == value(
             m.fs.unit.flux_mass[0, "Liq", "H2O"]
         )
 
-        
         assert pytest.approx(0.5873e-8, rel=1e-3) == value(
             m.fs.unit.flux_mass[0, "Liq", "TDS"]
         )
 
-       
         assert pytest.approx(0.9545, rel=1e-3) == value(
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
-       
         assert pytest.approx(0.03423, rel=1e-3) == value(
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
 
-       
         assert pytest.approx(300, rel=1e-3) == value(
             m.fs.unit.hot_ch_outlet.temperature[273.15 + 77]
         )
 
-      
         assert pytest.approx(280, rel=1e-3) == value(
             m.fs.unit.cold_ch_outlet.temperature[273.15 + 15.6]
         )
