@@ -400,7 +400,7 @@ def initialize_system(m):
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
     seq.options.tear_method = "Direct"
-    seq.options.iterLim = 5
+    seq.options.iterLim = 0
     seq.options.tear_set = [m.fs.stream2, m.fs.stream10adm]
 
     G = seq.create_graph(m)
