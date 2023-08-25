@@ -7,16 +7,8 @@ from pyomo.environ import (
     Constraint,
     assert_optimal_termination,
 )
-from pyomo.environ import (
-    NonNegativeReals,
-    Param,
-    Var,
-    check_optimal_termination,
-    exp,
-    units as pyunits,
-)
+
 from idaes.core.solvers import get_solver
-from .model_diagnostics import DiagnosticsToolbox
 from pyomo.environ import *
 from pyomo.util.infeasible import log_infeasible_constraints
 from pyomo.network import Port
@@ -684,7 +676,7 @@ class TestMembraneDistillation:
 
         m.fs.unit.hot_ch.h_conv.fix(2400)
         m.fs.unit.cold_ch.h_conv.fix(2400)
-        
+
     @pytest.mark.component
     def test_initialize(self, MD_frame):
         initialization_tester(MD_frame, outlvl=idaeslog.DEBUG)
@@ -702,9 +694,8 @@ class TestMembraneDistillation:
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert_optimal_termination(results) 
+        assert_optimal_termination(results)
 
-    
     @pytest.mark.component
     def test_solution(self, MD_frame):
         m = MD_frame
@@ -731,11 +722,10 @@ class TestMembraneDistillation:
 
         # Added assertion for outlet temperature of hot_ch
         assert pytest.approx(300, rel=1e-3) == value(
-            m.fs.unit.hot_ch_outlet.temperature[273.15+77]
+            m.fs.unit.hot_ch_outlet.temperature[273.15 + 77]
         )
 
         # Added assertion for outlet temperature of cold_ch
         assert pytest.approx(280, rel=1e-3) == value(
-            m.fs.unit.cold_ch_outlet.temperature[273.15+15.6]
+            m.fs.unit.cold_ch_outlet.temperature[273.15 + 15.6]
         )
-

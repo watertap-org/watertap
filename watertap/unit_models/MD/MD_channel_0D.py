@@ -60,7 +60,7 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
         self._set_nfe()
 
         # Determine flow direction from the argument or from the configuration
-        
+
         self.flow_direction = flow_direction
 
         if self.flow_direction == FlowDirection.forward:
@@ -141,10 +141,9 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
             raise ConfigurationError(
                 f"Unrecognized pressure_change_type {pressure_change_type}"
             )
-        
-    def set_config(self, config):
-            self.config = config
 
+    def set_config(self, config):
+        self.config = config
 
     def initialize(
         self,
@@ -154,7 +153,7 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
         solver=None,
         hold_state=True,
         initialize_guess=None,
-        type= None
+        type=None,
     ):
         """
         Initialization routine for the membrane channel control volume
@@ -177,7 +176,7 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
                      during initialization, **False** - state variables are
                      unfixed after initialization by calling the release_state
                      method.
-            initialize_guess : a dict of guesses 
+            initialize_guess : a dict of guesses
         Returns:
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
@@ -190,8 +189,6 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
         state_args = self._get_state_args(initialize_guess, state_args)
         state_args_properties_in = state_args["inlet"]
 
-     
-
         source_flags = self.properties_in.initialize(
             state_args=state_args_properties_in,
             outlvl=outlvl,
@@ -201,7 +198,7 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
         )
 
         # Differentiate between hot and cold channels for properties_out
-        if type == 'hot_ch':
+        if type == "hot_ch":
             state_args_properties_out = state_args["hot_outlet"]
 
             self.properties_out.initialize(
@@ -210,7 +207,7 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
                 optarg=optarg,
                 solver=solver,
             )
-        elif type == 'cold_ch':
+        elif type == "cold_ch":
             state_args_properties_out = state_args["cold_outlet"]
 
             self.properties_out.initialize(
@@ -223,7 +220,8 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
             raise ConfigurationError(
                 "Either hot_ch or cold_ch must be set in the configuration."
             )
-        state_args_interface = self._get_state_args_interface( state_args_properties_in, state_args_properties_out
+        state_args_interface = self._get_state_args_interface(
+            state_args_properties_in, state_args_properties_out
         )
         self.properties_interface.initialize(
             outlvl=outlvl,
@@ -232,7 +230,8 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
             state_args=state_args_interface,
         )
 
-        state_args_vapor = self._get_state_args_vapor( state_args_properties_in, state_args_properties_out
+        state_args_vapor = self._get_state_args_vapor(
+            state_args_properties_in, state_args_properties_out
         )
         self.properties_vapor.initialize(
             outlvl=outlvl,

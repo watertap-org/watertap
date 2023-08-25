@@ -16,7 +16,6 @@ from pyomo.common.config import Bool, ConfigDict, ConfigValue, ConfigBlock, In
 from idaes.core import FlowDirection
 from pyomo.environ import (
     NonNegativeReals,
-    Param,
     Var,
     check_optimal_termination,
     exp,
@@ -40,7 +39,11 @@ from idaes.core import (
 
 from idaes.core import declare_process_block_class
 from idaes.core.util import scaling as iscale
-from .MD_channel_base import TemperaturePolarizationType, MassTransferCoefficient, PressureChangeType
+from .MD_channel_base import (
+    TemperaturePolarizationType,
+    MassTransferCoefficient,
+    PressureChangeType,
+)
 from .MD_channel_0D import MDChannel0DBlock
 from .membrane_distillation_base import (
     MembraneDistillationBaseData,
@@ -499,10 +502,6 @@ see property package for documentation.}""",
 
         # Heat Transfer Initialization
 
-        
-
-        
-
         def eq_conductive_heat_transfer_hot(b, t):
             return b.hot_ch.heat[t] == -b.area * b.flux_conduction_heat_avg[t]
 
@@ -552,7 +551,7 @@ see property package for documentation.}""",
         # Scaling factors for heat transfer
         for t in self.flowsheet().config.time:
             sf_vap = 1e4
-        
+
             # If scaling factor has not been set for heat transfer, set it to sf_vap
             if iscale.get_scaling_factor(self.hot_ch.heat[t]) is None:
                 iscale.set_scaling_factor(self.hot_ch.heat[t], sf_vap)
@@ -566,5 +565,3 @@ see property package for documentation.}""",
                 iscale.set_scaling_factor(self.cold_ch.enthalpy_transfer_var[t], sf_vap)
             if iscale.get_scaling_factor(self.enthalpy_transfer_var[t]) is None:
                 iscale.set_scaling_factor(self.enthalpy_transfer_var[t], sf_vap)
-            
-               

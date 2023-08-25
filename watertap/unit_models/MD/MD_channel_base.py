@@ -703,25 +703,28 @@ class MDChannelMixin:
         return self._get_average_state(prop_in, prop_out)
 
     def _get_state_args_vapor(self, prop_in, prop_out):
-        state_args = self._get_average_state(prop_in, prop_out)  # or however you decide to get these
-        
+        state_args = self._get_average_state(
+            prop_in, prop_out
+        )  # or however you decide to get these
+
         # Create a new dictionary for vapor state arguments
         state_args_vapor = {}
-        
+
         # Map the pressure and temperature directly
-        #state_args_vapor["pressure"] = state_args["pressure"]
+        # state_args_vapor["pressure"] = state_args["pressure"]
         state_args_vapor["temperature"] = state_args["temperature"]
-        
+
         # Map the flow_mass_phase_comp variables
         state_args_vapor["flow_mass_phase_comp"] = {
-            ("Liq", "H2O"): self.properties_vapor[0,0].flow_mass_phase_comp["Liq", "H2O"].lb,
-            ("Vap", "H2O"): state_args["flow_mass_phase_comp"][("Liq", "H2O")]/20
+            ("Liq", "H2O"): self.properties_vapor[0, 0]
+            .flow_mass_phase_comp["Liq", "H2O"]
+            .lb,
+            ("Vap", "H2O"): state_args["flow_mass_phase_comp"][("Liq", "H2O")] / 20,
         }
-    
-    # Add any other mappings you need here...
-    
-        return state_args_vapor
 
+        # Add any other mappings you need here...
+
+        return state_args_vapor
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
