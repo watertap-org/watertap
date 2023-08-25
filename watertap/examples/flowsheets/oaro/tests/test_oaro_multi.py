@@ -61,12 +61,14 @@ class TestOAROwithTurbine:
         set_operating_conditions(m, number_of_stages=3)
         assert degrees_of_freedom(m) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize_system(self, system_frame):
         m = system_frame
         initialize_system(m, number_of_stages=3, solver=solver)
         assert degrees_of_freedom(m) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, system_frame):
         m = system_frame
@@ -82,6 +84,7 @@ class TestOAROwithTurbine:
         with pytest.raises(Exception):
             build(number_of_stages=3, erd_type="not_a_configuration")
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_main(self):
         main(number_of_stages=3, system_recovery=0.5)
