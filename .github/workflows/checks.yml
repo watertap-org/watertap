@@ -9,6 +9,15 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  # NOTE: the value of `group` should be chosen carefully,
+  # otherwise we might end up over- or under-canceling workflow runs
+  # github.head_ref is only defined for pull request events
+  # so, if it's not present (i.e. event was triggered by push)
+  # we use github.ref instead
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 defaults:
   run:
     # important to make sure that all commands on Windows are run using Bash
