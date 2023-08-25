@@ -22,6 +22,29 @@ _this_file_path = os.path.dirname(os.path.abspath(__file__))
 
 
 @pytest.fixture()
+def loop_test_options_setup():
+    cwd = get_working_dir()
+    lp = loopTool(
+        _this_file_path + "/test_all_options.yaml",
+        build_function=ro_setup.ro_build,
+        initialize_function=ro_setup.ro_init,
+        optimize_function=ro_setup.ro_solve,
+        saving_dir=_this_file_path,
+        save_name="ro_with_erd",
+        execute_simulations=False,
+        number_of_subprocesses=1,
+    )
+    lp.build_run_dict()
+    """ used to generate test file"""
+    # with open("test_expected_option_directory.yaml", "w") as file:
+    #     documents = yaml.dump(lp.sweep_directory, file)
+    with open(_this_file_path + "/test_expected_option_directory.yaml", "r") as infile:
+        expected_run_dict = yaml.safe_load(infile)
+
+    return lp, expected_run_dict
+
+
+@pytest.fixture()
 def loop_sweep_setup():
     cwd = get_working_dir()
     lp = loopTool(
@@ -32,7 +55,7 @@ def loop_sweep_setup():
         saving_dir=_this_file_path,
         save_name="ro_with_erd",
         execute_simulations=False,
-        number_of_subprocesses=False,
+        number_of_subprocesses=1,
     )
     lp.build_run_dict()
     """ used to generate test file"""
@@ -57,7 +80,7 @@ def loop_diff_setup():
         saving_dir=_this_file_path,
         save_name="ro_with_erd",
         execute_simulations=False,
-        number_of_subprocesses=False,
+        number_of_subprocesses=1,
     )
     lp.build_run_dict()
     """ used to generate test file"""
@@ -69,6 +92,29 @@ def loop_diff_setup():
     return lp, expected_run_dict
 
 
+@pytest.mark.component
+def test_options_setups(loop_test_options_setup):
+    lp, expected_run_dict = loop_test_options_setup
+    lp.build_run_dict()
+
+    def test_diff_dict(dicta, dictb):
+        for key in dicta:
+            if key != "dir":
+                if isinstance(dicta[key], dict):
+                    test_diff_dict(dicta[key], dictb[key])
+
+                elif dicta[key] != dictb[key]:
+                    # print(dicta[key], dictb[key])
+                    return False
+                # else:
+                #   break
+
+        return True
+
+    assert test_diff_dict(lp.sweep_directory, expected_run_dict)
+
+
+@pytest.mark.component
 def test_sweep_setup(loop_sweep_setup):
     lp, expected_run_dict = loop_sweep_setup
     lp.build_run_dict()
@@ -90,6 +136,7 @@ def test_sweep_setup(loop_sweep_setup):
     assert test_diff_dict(lp.sweep_directory, expected_run_dict)
 
 
+@pytest.mark.component
 def test_diff_setup(loop_diff_setup):
     lp, expected_run_dict = loop_diff_setup
     lp.build_run_dict()
@@ -111,6 +158,7 @@ def test_diff_setup(loop_diff_setup):
     assert test_diff_dict(lp.sweep_directory, expected_run_dict)
 
 
+@pytest.mark.component
 def test_sweep_run(loop_sweep_setup):
     lp, test_file = loop_sweep_setup
     lp.build_run_dict()
@@ -147,6 +195,7 @@ def test_sweep_run(loop_sweep_setup):
     """
 
 
+@pytest.mark.component
 def test_sweep_backup(loop_sweep_setup):
     """test that backup works, will not run actual simulation ,create a back up file, and
     load data from it into sim file. The lp.back_file_name should not be None
@@ -186,6 +235,7 @@ def test_sweep_backup(loop_sweep_setup):
         pass
 
 
+@pytest.mark.component
 def test_diff_run(loop_diff_setup):
     lp, test_file = loop_diff_setup
     lp.build_run_dict()

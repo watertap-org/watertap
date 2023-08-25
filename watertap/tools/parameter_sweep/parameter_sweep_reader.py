@@ -121,7 +121,7 @@ class ParameterSweepReader:
                 if values["diff_mode"] == "percentile":
                     nominal_lb = values["nominal_lb"]
                     nominal_ub = values["nominal_ub"]
-                else:
+                elif values["diff_mode"] == "sum" or values["diff_mode"] == "product":
                     nominal_lb = None
                     nominal_ub = None
                 diff_spec[param] = {
@@ -137,7 +137,7 @@ class ParameterSweepReader:
                 if values["diff_mode"] == "percentile":
                     nominal_lb = values["nominal_lb"]
                     nominal_ub = values["nominal_ub"]
-                else:
+                elif values["diff_mode"] == "sum" or values["diff_mode"] == "product":
                     nominal_lb = None
                     nominal_ub = None
                 diff_spec[param] = {

@@ -1,0 +1,37 @@
+explicit_disable:
+  reinitialize_before_sweep: False
+  number_of_subprocesses: 1
+  parallel_back_end: 'MultiProcessing'
+  update_sweep_params_before_init: False
+  build_defaults:
+    erd_type: pump_as_turbine
+  build_loop:
+    erd_type:
+      - pump_as_turbine
+      - pressure_exchanger
+    sweep_param_loop:
+      membrane_cost:
+        type: LinearSample
+        param: fs.costing.reverse_osmosis.membrane_cost
+        lower_limit: 20
+        upper_limit: 30
+        num_samples: 3
+
+explicit_enable:
+  reinitialize_before_sweep: True
+  number_of_subprocesses: 10
+  parallel_back_end: 'ConcurrentFutures'
+  update_sweep_params_before_init: True
+  build_defaults:
+    erd_type: pump_as_turbine
+  build_loop:
+    erd_type:
+      - pump_as_turbine
+      - pressure_exchanger
+    sweep_param_loop:
+      membrane_cost:
+        type: LinearSample
+        param: fs.costing.reverse_osmosis.membrane_cost
+        lower_limit: 20
+        upper_limit: 30
+        num_samples: 3

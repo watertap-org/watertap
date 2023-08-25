@@ -37,10 +37,6 @@ def ro_build(**kwargs):
 def ro_init(m, solver=None, **kwargs):
     # make sure these are fixed by init routine instad..
     print("INITIALIZING MODEL")
-    print("----------------------------------------------------------------")
-    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
-    m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
-
     ro_erd.set_operating_conditions(
         m, water_recovery=0.5, over_pressure=0.3, solver=solver
     )

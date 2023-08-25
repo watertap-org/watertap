@@ -33,7 +33,7 @@ from watertap.tools.analysis_tools.loop_tool.data_merging_tool import *
 
 from watertap.tools.parallel.parallel_manager_factory import (
     has_mpi_peer_processes,
-    # get_mpi_comm_process,
+    get_mpi_comm_process,
 )
 import copy
 import os
@@ -507,7 +507,7 @@ class loopTool:
 
     def test_setup(self, value):
         """test if passed in kawrgs will work
-        ToDO: add parmas in paramters sweep to test"""
+        #TODO: add parmas in paramters sweep to test"""
 
         self.setup_param_sweep(value)
         self.build_sim_kwargs()
@@ -586,7 +586,7 @@ class loopTool:
         # add solver to optimize kwarg
         self.combined_optimize_defaults.update({"solver": solver})
 
-        # setup parmater sweep tool
+        # setup parameter sweep tool
         ps_kwargs = {}
         ps_kwargs["csv_results_file_name"] = None
         ps_kwargs["h5_results_file_name"] = self.cur_h5_file[0]
@@ -665,8 +665,6 @@ class loopTool:
         ps_kwargs["number_of_subprocesses"] = self.number_of_subprocesses
         ps_kwargs["parallel_back_end"] = self.parallel_back_end
 
-        # ps_kwargs["number_of_subprocesses"] = self.number_of_subprocesses
-        # LEGACY will need to change when parallmanage radded to diff
         ps_kwargs[
             "differential_sweep_specs"
         ] = ParameterSweepReader()._dict_to_diff_spec(m, self.differential_sweep_specs)

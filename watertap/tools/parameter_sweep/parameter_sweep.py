@@ -693,7 +693,7 @@ class _ParameterSweepBase(ABC):
         # build and init model, we also pass first set of paramters incase user wants
         # to update them before initlizeing the model
         self.model_manager.build_and_init(
-            params=sweep_params, local_value_k=local_values[0, :]
+            sweep_params=sweep_params, local_value_k=local_values[0, :]
         )
 
         local_num_cases = np.shape(local_values)[0]
