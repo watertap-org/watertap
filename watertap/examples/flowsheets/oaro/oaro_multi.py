@@ -50,7 +50,7 @@ from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
 )
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.costing import WaterTAPCosting
-from watertap.costing.units.pump import cost_low_pressure_pump, PumpType
+from watertap.costing.units.pump import cost_low_pressure_pump
 
 
 class ERDtype(StrEnum):
@@ -685,13 +685,12 @@ def set_operating_conditions(
 
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:
-        print(
+        raise RuntimeError(
             "The set_operating_conditions function resulted in {} "
             "degrees of freedom rather than 0. This error suggests "
             "that too many or not enough variables are fixed for a "
             "simulation.".format(degrees_of_freedom(m))
         )
-        raise
 
 
 def recycle_pump_initializer(pump, oaro, solvent_multiplier, solute_multiplier):

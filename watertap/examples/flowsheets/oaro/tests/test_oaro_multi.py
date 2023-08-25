@@ -19,15 +19,8 @@ from pyomo.environ import (
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from pyomo.util.check_units import assert_units_consistent
 import watertap.property_models.NaCl_prop_pack as props
-from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
-from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
-    OsmoticallyAssistedReverseOsmosis0D,
-)
-
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.examples.flowsheets.oaro.oaro_multi import (
     main,
     build,
@@ -87,7 +80,7 @@ class TestOAROwithTurbine:
     @pytest.mark.component
     def test_config_error(self, system_frame):
         with pytest.raises(Exception):
-            build(erd_type="not_a_configuration")
+            build(number_of_stages=3, erd_type="not_a_configuration")
 
     @pytest.mark.component
     def test_main(self):
