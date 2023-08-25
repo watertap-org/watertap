@@ -705,37 +705,37 @@ class TestMembraneDistillation:
         assert_optimal_termination(results) 
 
     
-@pytest.mark.component
-def test_solution(self, MD_frame):
-    m = MD_frame
+    @pytest.mark.component
+    def test_solution(self, MD_frame):
+        m = MD_frame
 
-    # Adjusted the flux value to 12 LMH
-    assert pytest.approx(0.0033, rel=1e-3) == value(
-        m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
-    )
+        # Adjusted the flux value to 12 LMH
+        assert pytest.approx(0.0033, rel=1e-3) == value(
+            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
+        )
 
-    # Replaced NaCl with TDS
-    assert pytest.approx(0.5873e-8, rel=1e-3) == value(
-        m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "TDS"]
-    )
+        # Replaced NaCl with TDS
+        assert pytest.approx(0.5873e-8, rel=1e-3) == value(
+            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "TDS"]
+        )
 
-    # Replaced feed_side with hot_ch
-    assert pytest.approx(0.9545, rel=1e-3) == value(
-        m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-    )
+        # Replaced feed_side with hot_ch
+        assert pytest.approx(0.9545, rel=1e-3) == value(
+            m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        )
 
-    # Replaced NaCl with TDS and feed_side with hot_ch
-    assert pytest.approx(0.03423, rel=1e-3) == value(
-        m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
-    )
+        # Replaced NaCl with TDS and feed_side with hot_ch
+        assert pytest.approx(0.03423, rel=1e-3) == value(
+            m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+        )
 
-    # Added assertion for outlet temperature of hot_ch
-    assert pytest.approx(300, rel=1e-3) == value(
-        m.fs.unit.hot_ch_outlet.temperature[273.15+77]
-    )
+        # Added assertion for outlet temperature of hot_ch
+        assert pytest.approx(300, rel=1e-3) == value(
+            m.fs.unit.hot_ch_outlet.temperature[273.15+77]
+        )
 
-    # Added assertion for outlet temperature of cold_ch
-    assert pytest.approx(280, rel=1e-3) == value(
-        m.fs.unit.cold_ch_outlet.temperature[273.15+15.6]
-    )
+        # Added assertion for outlet temperature of cold_ch
+        assert pytest.approx(280, rel=1e-3) == value(
+            m.fs.unit.cold_ch_outlet.temperature[273.15+15.6]
+        )
 
