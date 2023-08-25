@@ -78,7 +78,7 @@ def main():
 
     print("Degrees of freedom", degrees_of_freedom(m))
     assert_degrees_of_freedom(m, 0)
-    results = solve(m, tee=True)
+    results = solve(m, tee=True, repeat_solve=True)
 
     # add_costing(m)
     # Assert DOF = 0 after adding costing
@@ -400,7 +400,7 @@ def initialize_system(m):
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
     seq.options.tear_method = "Direct"
-    seq.options.iterLim = 0
+    seq.options.iterLim = 1
     seq.options.tear_set = [m.fs.stream2, m.fs.stream10adm]
 
     G = seq.create_graph(m)
@@ -480,11 +480,15 @@ def add_costing(m):
     pass
 
 
-def solve(blk, solver=None, tee=False):
+def solve(blk, solver=None, tee=False, repeat_solve=False):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
+    if not pyo.check_optimal_termination(results) and repeat_solve:
+        results = solver.solve(blk, tee=tee)
+
     pyo.assert_optimal_termination(results)
+
     return results
 
 
