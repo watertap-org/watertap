@@ -163,21 +163,21 @@ def run_analysis(
             m.fs.zo_costing.waste_disposal_cost, 1, 10, nx
         )
         sweep_params["dye_disposal_cost"] = LinearSample(
-            m.fs.zo_costing.dye_disposal_cost, 1, 10, nx
+            m.fs.zo_costing.dye_disposal_cost, 50, 200, nx
         )
     elif case_num == 12:
         m.fs.zo_costing.recovered_water_cost.unfix()
         sweep_params["recovered_water_value"] = LinearSample(
-            m.fs.zo_costing.recovered_water_cost, 0.0, 1.5, nx
+            m.fs.zo_costing.recovered_water_cost, 0.0, 2, nx
         )
         m.fs.zo_costing.dye_mass_cost.unfix()
         sweep_params["recovered_dye_value"] = LinearSample(
-            m.fs.zo_costing.dye_mass_cost, 0.0, 1, nx
+            m.fs.zo_costing.dye_mass_cost, 0.0, 2, nx
         )
     elif case_num == 13:
         m.fs.zo_costing.recovered_water_cost.unfix()
         sweep_params["recovered_water_value"] = LinearSample(
-            m.fs.zo_costing.recovered_water_cost, 0.0, 1.5, nx
+            m.fs.zo_costing.recovered_water_cost, 0.0, 2, nx
         )
         m.fs.zo_costing.waste_disposal_cost.unfix()
         sweep_params["waste_disposal_cost"] = LinearSample(
@@ -187,7 +187,7 @@ def run_analysis(
         m.fs.zo_costing.electricity_cost.unfix()
         m.fs.zo_costing.recovered_water_cost.unfix()
         sweep_params["recovered_water_value"] = LinearSample(
-            m.fs.zo_costing.recovered_water_cost, 0.0, 1.5, nx
+            m.fs.zo_costing.recovered_water_cost, 0.0, 2, nx
         )
         sweep_params["electricity_cost"] = LinearSample(
             m.fs.zo_costing.electricity_cost, 0.0, 0.25, nx
@@ -223,11 +223,44 @@ def run_analysis(
 
     elif case_num == 17:
         m.fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0].unfix()
-        sweep_params["water_recovery"] = LinearSample(
+        m.fs.zo_costing.dye_disposal_cost.unfix()
+        sweep_params["NF_water_recovery"] = LinearSample(
             m.fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0],
             0.5,
-            0.95,
+            1,
             nx,
+        )
+        sweep_params["dye_disposal_cost"] = LinearSample(
+            m.fs.zo_costing.dye_disposal_cost, 50, 200, nx
+        )
+
+    elif case_num == 18:
+        m.fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0].unfix()
+        m.fs.dye_separation.nanofiltration.water_permeability_coefficient[0].unfix()
+        sweep_params["NF_water_recovery"] = LinearSample(
+            m.fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0],
+            0.5,
+            1,
+            nx,
+        )
+        sweep_params["NF_water_permeability"] = LinearSample(
+            m.fs.dye_separation.nanofiltration.water_permeability_coefficient[0],
+            1,
+            150,
+            nx,
+        )
+
+    elif case_num == 19:
+        m.fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0].unfix()
+        m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"].unfix()
+        sweep_params["NF_water_recovery"] = LinearSample(
+            m.fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0],
+            0.5,
+            1,
+            nx,
+        )
+        sweep_params["NF_dye_rejection"] = LinearSample(
+            m.fs.dye_separation.nanofiltration.rejection_comp[0, "dye"], 0, 1, nx
         )
 
     else:
@@ -303,17 +336,17 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     # visualize results
 
     # case 8
-    fig, ax = visualize_results(
-        case_num,
-        plot_type="contour",
-        xlabel="# membrane_cost",
-        ylabel="water_permeability",
-        zlabel="LCOT",
-        cmap="GnBu",
-    )
-    ax.set_xlabel("Membrane Cost ($/m2)")
-    ax.set_ylabel("Water Permeability (LMH/bar)")
-    ax.set_title("LCOT ($/m3)")
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# membrane_cost",
+    #     ylabel="water_permeability",
+    #     zlabel="LCOT",
+    #     cmap="GnBu",
+    # )
+    # ax.set_xlabel("Membrane Cost ($/m2)")
+    # ax.set_ylabel("Water Permeability (LMH/bar)")
+    # ax.set_title("LCOT ($/m3)")
 
     # case 9
     # fig, ax = visualize_results(
@@ -361,16 +394,45 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     # case 17
     # fig, ax = visualize_results(
     #     case_num,
-    #     plot_type="line",
-    #     xlabel="# water_recovery",
-    #     ylabel="LCOT",
+    #     plot_type="contour",
+    #     xlabel="# NF_water_recovery",
+    #     ylabel="dye_disposal_cost",
+    #     zlabel="LCOT",
+    #     cmap="GnBu",
     # )
-    # ax.set_xlabel("Water Recovery Fraction")
-    # ax.set_ylabel("LCOT ($/m3)")
+    # ax.set_xlabel("NF Water Recovery Fraction")
+    # ax.set_ylabel("Dye Disposal Cost ($/m3)")
+    # ax.set_title("LCOT ($/m3)")
+
+    # case 18
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# NF_water_recovery",
+    #     ylabel="NF_water_permeability",
+    #     zlabel="LCOT",
+    #     cmap="GnBu",
+    # )
+    # ax.set_xlabel("NF Water Recovery Fraction")
+    # ax.set_ylabel("NF Water Permeability (LMH/bar)")
+    # ax.set_title("LCOT ($/m3)")
+
+    # case 19
+    fig, ax = visualize_results(
+        case_num,
+        plot_type="contour",
+        xlabel="# NF_water_recovery",
+        ylabel="NF_dye_rejection",
+        zlabel="LCOT",
+        cmap="GnBu",
+    )
+    ax.set_xlabel("NF Water Recovery Fraction")
+    ax.set_ylabel("NF Dye Rejection Fraction")
+    ax.set_title("LCOT ($/m3)")
 
     return global_results, m
 
 
 if __name__ == "__main__":
-    results, model = main(case_num=8, nx=17)
+    results, model = main(case_num=19, nx=17)
     # results, sweep_params, m = run_analysis()
