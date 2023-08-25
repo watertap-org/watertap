@@ -167,8 +167,8 @@ class MDChannelMixin:
         self.h_conv = Var(
             self.flowsheet().config.time,
             self.length_domain,
-            initialize=50,
-            bounds=(1, 1000),
+            initialize=2000,
+            bounds=(1, 1e4),
             domain=NonNegativeReals,
             units=units_meta("power")
             * units_meta("length") ** -2
@@ -638,10 +638,10 @@ class MDChannelMixin:
         if "recovery" not in initialize_guess:
             initialize_guess["recovery"] = 0.5
 
-        Temp_change_ratio = initialize_guess.get("Temp_change_ratio", 3.0)
+        Temp_change_ratio = initialize_guess.get("Temp_change_ratio", 1.1)
 
         # Getting source state
-        if self._flow_direction == FlowDirection.forward:
+        if self.flow_direction == FlowDirection.forward:
             source_idx = self.length_domain.first()
         else:
             source_idx = self.length_domain.last()
@@ -663,7 +663,7 @@ class MDChannelMixin:
         cold_outlet_args = deepcopy(state_args)
 
         # Adjust flow based on recovery
-        for j in self.config.property_package.component_set:
+        for j in self.config.property_package.component_list:
             hot_outlet_args["flow_mass_phase_comp"]["Liq", j] *= (
                 1 - initialize_guess["recovery"]
             )
@@ -703,7 +703,25 @@ class MDChannelMixin:
         return self._get_average_state(prop_in, prop_out)
 
     def _get_state_args_vapor(self, prop_in, prop_out):
-        return self._get_average_state(prop_in, prop_out)
+        state_args = self._get_average_state(prop_in, prop_out)  # or however you decide to get these
+        
+        # Create a new dictionary for vapor state arguments
+        state_args_vapor = {}
+        
+        # Map the pressure and temperature directly
+        #state_args_vapor["pressure"] = state_args["pressure"]
+        state_args_vapor["temperature"] = state_args["temperature"]
+        
+        # Map the flow_mass_phase_comp variables
+        state_args_vapor["flow_mass_phase_comp"] = {
+            ("Liq", "H2O"): self.properties_vapor[0,0].flow_mass_phase_comp["Liq", "H2O"].lb,
+            ("Vap", "H2O"): state_args["flow_mass_phase_comp"][("Liq", "H2O")]/20
+        }
+    
+    # Add any other mappings you need here...
+    
+        return state_args_vapor
+
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

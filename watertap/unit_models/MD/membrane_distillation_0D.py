@@ -14,6 +14,14 @@
 from pyomo.environ import Var, NonNegativeReals, value, Constraint
 from pyomo.common.config import Bool, ConfigDict, ConfigValue, ConfigBlock, In
 from idaes.core import FlowDirection
+from pyomo.environ import (
+    NonNegativeReals,
+    Param,
+    Var,
+    check_optimal_termination,
+    exp,
+    units as pyunits,
+)
 
 from .MD_channel_base import (
     ConcentrationPolarizationType,
@@ -32,8 +40,7 @@ from idaes.core import (
 
 from idaes.core import declare_process_block_class
 from idaes.core.util import scaling as iscale
-from watertap.core import MassTransferCoefficient, PressureChangeType
-from .MD_channel_base import TemperaturePolarizationType
+from .MD_channel_base import TemperaturePolarizationType, MassTransferCoefficient, PressureChangeType
 from .MD_channel_0D import MDChannel0DBlock
 from .membrane_distillation_base import (
     MembraneDistillationBaseData,
@@ -460,6 +467,9 @@ see property package for documentation.}""",
                 return Constraint.Skip
 
     def _add_heat_transfer(self):
+        units_meta = (
+            self.config.hot_ch.property_package.get_metadata().get_derived_units
+        )
 
         # Enthalpy Transfer Initialization
         # todo: change the following to general format to different types of vapor
@@ -475,6 +485,7 @@ see property package for documentation.}""",
             self.flowsheet().config.time,
             initialize=enthalpy_transfer_initialize,
             domain=NonNegativeReals,
+            units=pyunits.J * pyunits.s**-1,
             doc="Intermediate variable for enthalpy transfer",
         )
 
@@ -488,31 +499,9 @@ see property package for documentation.}""",
 
         # Heat Transfer Initialization
 
-        def heat_transfer_initialize(b, t):
-            return (
-                0.5
-                * self.membrane_tc
-                / self.membrane_thickness
-                * (
-                    self.hot_ch.properties_in[t].temperature
-                    - self.cold_ch.properties_in[t].temperature
-                )
-            )
+        
 
-        self.heat_transfer = Var(
-            self.flowsheet().config.time,
-            initialize=heat_transfer_initialize,
-            domain=NonNegativeReals,
-            doc="Heat transfer between channels",
-        )
-
-        @self.Constraint(self.flowsheet().config.time)
-        def eq_heat_transfer_hot(b, t):
-            return b.heat_transfer[t] == b.hot_ch.heat[t]
-
-        @self.Constraint(self.flowsheet().config.time)
-        def eq_heat_transfer_cold(b, t):
-            return b.heat_transfer[t] == b.cold_ch.heat[t]
+        
 
         def eq_conductive_heat_transfer_hot(b, t):
             return b.hot_ch.heat[t] == -b.area * b.flux_conduction_heat_avg[t]
@@ -559,16 +548,23 @@ see property package for documentation.}""",
                 iscale.set_scaling_factor(v, sf)
 
         # Get scaling factor from vapor enthalpy flow
-        sf_vap = iscale.get_scaling_factor(
-            self.properties_vapor[0].enth_flow_phase["Vap"], default=1
-        )
 
         # Scaling factors for heat transfer
         for t in self.flowsheet().config.time:
+            sf_vap = 1e4
+        
             # If scaling factor has not been set for heat transfer, set it to sf_vap
             if iscale.get_scaling_factor(self.hot_ch.heat[t]) is None:
                 iscale.set_scaling_factor(self.hot_ch.heat[t], sf_vap)
+            if iscale.get_scaling_factor(self.cold_ch.heat[t]) is None:
+                iscale.set_scaling_factor(self.cold_ch.heat[t], sf_vap)
             if iscale.get_scaling_factor(self.hot_ch.enthalpy_transfer[t]) is None:
                 iscale.set_scaling_factor(self.hot_ch.enthalpy_transfer[t], sf_vap)
             if iscale.get_scaling_factor(self.cold_ch.enthalpy_transfer[t]) is None:
                 iscale.set_scaling_factor(self.cold_ch.enthalpy_transfer[t], sf_vap)
+            if iscale.get_scaling_factor(self.cold_ch.enthalpy_transfer[t]) is None:
+                iscale.set_scaling_factor(self.cold_ch.enthalpy_transfer_var[t], sf_vap)
+            if iscale.get_scaling_factor(self.enthalpy_transfer_var[t]) is None:
+                iscale.set_scaling_factor(self.enthalpy_transfer_var[t], sf_vap)
+            
+               

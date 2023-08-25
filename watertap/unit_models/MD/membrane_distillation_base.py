@@ -32,6 +32,7 @@ import idaes.logger as idaeslog
 from .MD_channel_base import (
     ConcentrationPolarizationType,
     TemperaturePolarizationType,
+    MassTransferCoefficient,
 )
 
 
@@ -56,6 +57,8 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             property_package_args_vapor=self.config.hot_ch.property_package_args_vapor,
         )
 
+        #self.hot_ch.set_config(self.config.hot_ch)
+
         self.hot_ch.add_material_balances(
             balance_type=self.config.hot_ch.material_balance_type,
             has_mass_transfer=True,
@@ -63,7 +66,9 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         self.hot_ch.add_momentum_balances(
             balance_type=self.config.hot_ch.momentum_balance_type,
+            pressure_change_type=self.config.hot_ch.pressure_change_type,
             has_pressure_change=self.config.hot_ch.has_pressure_change,
+            friction_factor=self.config.hot_ch.friction_factor,
         )
 
         self.hot_ch.add_energy_balances(
@@ -96,6 +101,8 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             property_package_args_vapor=self.config.cold_ch.property_package_args_vapor,
         )
 
+        #self.cold_ch.set_config(self.config.cold_ch)
+
         self.cold_ch.add_material_balances(
             balance_type=self.config.cold_ch.material_balance_type,
             has_mass_transfer=True,
@@ -103,7 +110,9 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         self.cold_ch.add_momentum_balances(
             balance_type=self.config.cold_ch.momentum_balance_type,
+            pressure_change_type=self.config.cold_ch.pressure_change_type,
             has_pressure_change=self.config.cold_ch.has_pressure_change,
+            friction_factor=self.config.cold_ch.friction_factor,
         )
 
         self.cold_ch.add_energy_balances(
@@ -117,6 +126,10 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         # Concentration polarization constraint is not accounted for in the below method; it is
         # written later in the base model (eq_concentration_polarization)
+        self.cold_ch.add_concentration_polarization(
+            concentration_polarization_type=ConcentrationPolarizationType.none,
+            mass_transfer_coefficient=MassTransferCoefficient.none,
+        )
 
         self.cold_ch.add_temperature_polarization(
             temperature_polarization_type=self.config.cold_ch.temperature_polarization_type,
@@ -129,10 +142,10 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         add_object_reference(self, "nfe", self.hot_ch.nfe)
 
         # Add Ports
-        self.add_inlet_port(name="hot_channel_inlet", block=self.hot_ch)
-        self.add_outlet_port(name="hot_channel_outlet", block=self.hot_ch)
-        self.add_inlet_port(name="cold_channel_inlet", block=self.cold_ch)
-        self.add_outlet_port(name="cold_channel_outlet", block=self.cold_ch)
+        self.add_inlet_port(name="hot_ch_inlet", block=self.hot_ch)
+        self.add_outlet_port(name="hot_ch_outlet", block=self.hot_ch)
+        self.add_inlet_port(name="cold_ch_inlet", block=self.cold_ch)
+        self.add_outlet_port(name="cold_ch_outlet", block=self.cold_ch)
 
         self._add_heat_flux()
         self._add_mass_flux()
@@ -191,7 +204,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             self.difference_elements,
             initialize=1e-3,
-            bounds=(1e-4, 1e-2),
+            bounds=(1e-6, 10),
             units=units_meta("mass")
             * units_meta("time") ** -1
             * units_meta("length") ** -2,
@@ -201,18 +214,18 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         self.flux_enth_hot = Var(
             self.flowsheet().config.time,
             self.difference_elements,
-            initialize=1e-3,
-            bounds=(1e-4, 1e-2),
-            units=units_meta("power") * units_meta("length") ** -2,
+            initialize=1e3,
+            bounds=(1e-4, 1e5),
+            units=pyunits.J * pyunits.s**-1  * pyunits.m**-2,
             doc="hot side evaporation enthalpy flux",
         )
 
         self.flux_enth_cold = Var(
             self.flowsheet().config.time,
             self.difference_elements,
-            initialize=1e-3,
-            bounds=(1e-4, 1e-2),
-            units=units_meta("power") * units_meta("length") ** -2,
+            initialize=1e3,
+            bounds=(1e-4, 1e5),
+            units=pyunits.J * pyunits.s**-1  * pyunits.m**-2,
             doc="cold side condensation enthalpy flux",
         )
 
@@ -361,6 +374,19 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 b.hot_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"]
                 == b.flux_mass[t, x] * b.area / self.nfe
             )
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.difference_elements,
+            doc="Equal vapor flow rate between hot_ch and cold_ch",
+        )
+        def eq_vapor_flow_equal(b, t, x):
+            lb = b.hot_ch.properties_vapor[t, x].flow_mass_phase_comp["Liq", "H2O"].lb
+            b.hot_ch.properties_vapor[t, x].flow_mass_phase_comp["Liq", "H2O"].fix(lb)
+            return (
+                b.hot_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"]
+                == b.cold_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"]
+            )
+
 
         # Check for hot channel temperature polarization type
         if (
@@ -430,15 +456,13 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             initialize=1e-4,
             bounds=(1e-5, 1e-2),
             doc="membrane thickness",
-            units=units_meta("length"),
+            units=pyunits.m,
         )
 
         self.membrane_tc = Var(
-            initialize=0.0002,
+            initialize=0.2,
             bounds=(1e-4, 1e-2),
-            units=units_meta("power")
-            * units_meta("temperature") ** -1
-            * units_meta("length") ** -1,
+            units=pyunits.J * pyunits.s**-1 *  pyunits.K **-1 * pyunits.m**-1,
             doc="Thermal conductivity coefficient of the membrane",
         )
 
@@ -446,8 +470,8 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             self.difference_elements,
             initialize=1e-3,
-            bounds=(1e-4, 1e-2),
-            units=units_meta("power") * units_meta("length") ** -2,
+            bounds=(1e-4, 1e4),
+            units=pyunits.J * pyunits.s**-1  * pyunits.m**-2,
             doc="conduction heat flux",
         )
 
@@ -504,7 +528,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 initialize=10,
                 bounds=(1e-1, 1e3),
                 domain=NonNegativeReals,
-                units=units_meta("length") ** 2,
+                units=pyunits.m** 2,
                 doc="Total Membrane area",
             )
 
@@ -539,6 +563,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             optarg=optarg,
             solver=solver,
             initialize_guess=initialize_guess,
+            type = 'hot_ch'
         )
 
         init_log.info_high("Initialization Step 1a (hot channel) Complete")
@@ -549,6 +574,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             optarg=optarg,
             solver=solver,
             initialize_guess=initialize_guess,
+            type = 'cold_ch'
         )
 
         init_log.info_high("Initialization Step 1b (cold channel) Complete")
@@ -588,10 +614,10 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
-                "Hot channel Inlet": self.hot_channel_inlet,
-                "Hot channel Outlet": self.hot_channel_outlet,
-                "Cold channel Inlet": self.cold_channel_inlet,
-                "Cold channel Outlet": self.cold_channel_outlet,
+                "Hot channel Inlet": self.hot_ch_inlet,
+                "Hot channel Outlet": self.hot_ch_outlet,
+                "Cold channel Inlet": self.cold_ch_inlet,
+                "Cold channel Outlet": self.cold_ch_outlet,
             },
             time_point=time_point,
         )
@@ -600,11 +626,18 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(
-                self.feed_side.properties[0, self.first_element].dens_mass_phase["Liq"]
+                self.hot_ch.properties[0, self.first_element].dens_mass_phase["Liq"]
             )
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
         super().calculate_scaling_factors()
+        for (t, p, j), v in self.recovery_mass_phase_comp.items():
+            if j in self.config.hot_ch.property_package.solvent_set:
+                sf = 1
+            elif j in self.config.hot_ch.property_package.solute_set:
+                sf = 100
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
 
         if iscale.get_scaling_factor(self.area) is None:
             sf = iscale.get_scaling_factor(self.area, default=10, warning=True)
@@ -631,3 +664,8 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         for t, v in self.flux_enth_cold.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, 1e3)
+        for t, v in self.flux_conduction_heat.items():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, 1e3)
+
+       
