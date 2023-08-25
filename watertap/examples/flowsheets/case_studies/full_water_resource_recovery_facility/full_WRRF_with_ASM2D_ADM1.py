@@ -69,6 +69,7 @@ def main():
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
+    iscale.calculate_scaling_factors(m.fs)
 
     try:
         initialize_system(m)
@@ -285,7 +286,6 @@ def build_flowsheet():
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
-    iscale.calculate_scaling_factors(m.fs)
 
     return m
 
@@ -451,13 +451,13 @@ def initialize_system(m):
             (0, "S_PO4"): 0.025,
             (0, "S_IC"): 0.079,
 
-            (0, "X_I"): 1.824,
-            (0, "X_S"): 0.132,
-            (0, "X_H"): 1.851,
-            (0, "X_PAO"): 1.009,
-            (0, "X_PP"): 0.279,
-            (0, "X_PHA"): 0.044,
-            (0, "X_AUT"): 0.113,
+            (0, "X_I"): 10.824,
+            (0, "X_S"): 10.132,
+            (0, "X_H"): 10.851,
+            (0, "X_PAO"): 10.009,
+            (0, "X_PP"): 10.279,
+            (0, "X_PHA"): 10.044,
+            (0, "X_AUT"): 10.113,
             (0, "S_K"): 0.029,
             (0, "S_Mg"): 0.102,
             },
@@ -466,8 +466,8 @@ def initialize_system(m):
     }
 
     # # Pass the tear_guess to the SD tool
-    # seq.set_guesses_for(m.fs.R1.inlet, tear_guesses1)
-    # seq.set_guesses_for(m.fs.asm_adm.inlet, tear_guesses2)
+    seq.set_guesses_for(m.fs.R1.inlet, tear_guesses1)
+    seq.set_guesses_for(m.fs.asm_adm.inlet, tear_guesses2)
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.DEBUG)
