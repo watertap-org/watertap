@@ -263,7 +263,7 @@ def build_flowsheet():
 
     # Feed inlet
     m.fs.feed.flow_vol.fix(20648 * pyo.units.m**3 / pyo.units.day)
-    m.fs.feed.temperature.fix(298.15 * pyo.units.K)
+    m.fs.feed.temperature.fix(308.15 * pyo.units.K)
     m.fs.feed.pressure.fix(1 * pyo.units.atm)
     m.fs.feed.conc_mass_comp[0, "S_O2"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.feed.conc_mass_comp[0, "S_F"].fix(30 * pyo.units.g / pyo.units.m**3)
@@ -340,7 +340,7 @@ def build_flowsheet():
     # AD
     m.fs.AD.volume_liquid.fix(3400)
     m.fs.AD.volume_vapor.fix(300)
-    m.fs.AD.liquid_outlet.temperature.fix(298.15)
+    m.fs.AD.liquid_outlet.temperature.fix(308.15)
 
     # ElectroNP
     m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * pyunits.kWh / pyunits.kg)
@@ -370,7 +370,7 @@ def build_flowsheet():
             if "electroNP.mixed_state[0.0].flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e5)
             if "temperature" in var.name:
-                iscale.set_scaling_factor(var, 1e-1)
+                iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
 
@@ -381,11 +381,11 @@ def build_flowsheet():
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
     seq.options.select_tear_method = "heuristic"
-    seq.options.tear_method = "Wegstein"
+    seq.options.tear_method = "Direct"
     seq.options.iterLim = 1
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
+        unit.initialize(outlvl=idaeslog.INFO)
 
     seq.run(m, function)
     m.fs.costing.initialize()
