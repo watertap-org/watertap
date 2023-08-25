@@ -73,6 +73,7 @@ jobs:
           - '3.8'
           - '3.9'
           - '3.10'
+          - '3.11'
         os:
           - linux
           - win64
@@ -104,6 +105,9 @@ jobs:
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
         pip install --progress-bar off -r requirements-dev.txt
+        echo '::endgroup::'
+        echo '::group::Output of "pip install -U ray" command'
+        pip install -U ray
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
@@ -172,7 +176,7 @@ jobs:
       matrix:
         python-version:
           - '3.8'
-          - '3.10'
+          - '3.11'
         os:
           - linux
           - win64
@@ -225,7 +229,7 @@ jobs:
       matrix:
         python-version:
           - '3.8'
-          - '3.10'
+          - '3.11'
         os:
           - linux
           - win64
