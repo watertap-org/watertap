@@ -22,6 +22,7 @@ env:
   # --color=yes needed for colorized output to be shown in GHA logs
   # --pyargs watertap is needed to be able to define CLI options in watertap/conftest.py
   PYTEST_ADDOPTS: "--color=yes"
+  PIP_PROGRESS_BAR: "off"
 
 jobs:
   build:
@@ -56,8 +57,8 @@ jobs:
     - name: Install dependencies
       run: |
         conda install --quiet --yes -c conda-forge mpi4py
-        python -m pip install --progress-bar off --upgrade pip
-        pip install --progress-bar off -r requirements-dev.txt
+        python -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
         idaes get-extensions --verbose
     - name: Conda info
       run: conda info

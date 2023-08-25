@@ -28,6 +28,7 @@ env:
   # --color=yes needed for colorized output to be shown in GHA logs
   # --pyargs watertap is needed to be able to define CLI options in watertap/conftest.py
   PYTEST_ADDOPTS: "--color=yes"
+  PIP_PROGRESS_BAR: "off"
 
 jobs:
 
@@ -46,7 +47,7 @@ jobs:
         # so we extract the relevant line and pass it to a simple `pip install`
         run: |
           black_requirement="$(grep '^black==' requirements-dev.txt)"
-          pip --no-cache-dir install --progress-bar off "$black_requirement"
+          pip --no-cache-dir install "$black_requirement"
       - name: Run Black to verify that the committed code is formatted
         run: |
           black --check .
@@ -62,7 +63,7 @@ jobs:
           python-version: '3.8'
       - name: Install dev dependencies
         run: |
-          pip install --progress-bar off -r requirements-dev.txt
+          pip install -r requirements-dev.txt
           pip list
       - name: Run pylint
         run: |
@@ -113,7 +114,7 @@ jobs:
         conda install --quiet --yes pip setuptools wheel pandoc
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
-        pip install --progress-bar off -r requirements-dev.txt
+        pip install -r requirements-dev.txt
         echo '::endgroup::'
         echo '::group::Output of "pip install -U ray" command'
         pip install -U ray
@@ -216,7 +217,7 @@ jobs:
     - name: Install watertap and testing dependencies
       run: |
         echo '::group::Output of "pip install" commands'
-        pip install --progress-bar off "watertap @ ${_install_url}" pytest
+        pip install "watertap @ ${_install_url}" pytest
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
@@ -260,7 +261,7 @@ jobs:
         conda install --quiet --yes pip setuptools wheel pandoc
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
-        pip install --progress-bar off -r requirements-dev.txt
+        pip install -r requirements-dev.txt
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
@@ -295,7 +296,7 @@ jobs:
         conda install --quiet --yes pip=21.1 wheel setuptools pandoc
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
-        pip install --progress-bar off -r requirements-dev.txt
+        pip install -r requirements-dev.txt
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
