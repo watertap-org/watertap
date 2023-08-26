@@ -16,14 +16,13 @@ import numpy as np
 from watertap.tools.analysis_tools.loop_tool import (
     data_merging_tool,
 )
-import yaml
 import h5py
 
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 
 
 def create_test_h5_file():
-    f_name = _this_file_path + "/output/test_h5_file.h5"
+    f_name = _this_file_path + "/test_h5_file.h5"
     test_group = "test_vals"
     h5file = h5py.File(f_name, "w")
     h5file[test_group + "/solve_successful/solve_successful"] = np.ones(10)
