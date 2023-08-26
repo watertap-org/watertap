@@ -63,23 +63,27 @@ from watertap.core.util.initialization import assert_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
+from watertap.core.util.debugging_tools import *
 
 def main():
     m = build_flowsheet()
+
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
     iscale.calculate_scaling_factors(m.fs)
 
-    try:
-        initialize_system(m)
-    except InitializationError:
-        pass
+    initialize_system(m)
 
+    display_results(m)
+    check_jac(m)
+    assert False
     print("Degrees of freedom", degrees_of_freedom(m))
     assert_degrees_of_freedom(m, 0)
-    results = solve(m, tee=True, repeat_solve=True)
-
+    try:
+        results = solve(m, tee=True, repeat_solve=True)
+    except RuntimeError:
+        results = solve(m, tee=True)
     # add_costing(m)
     # Assert DOF = 0 after adding costing
     # assert_degrees_of_freedom(m, 0)
@@ -295,7 +299,7 @@ def set_operating_conditions(m):
     m.fs.FeedWater.flow_vol.fix(20648 * pyo.units.m**3 / pyo.units.day)
     m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
-    m.fs.FeedWater.conc_mass_comp[0, "S_O2"].fix(0.001 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_O2"].fix(0.001e-3 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(4.9269 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(15.1297 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(26.5963 * pyo.units.g / pyo.units.m**3)

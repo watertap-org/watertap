@@ -515,3 +515,26 @@ class ModifiedASM2dStateBlockData(StateBlockData):
         if self.is_property_constructed("TSS"):
             if iscale.get_scaling_factor(self.TSS) is None:
                 iscale.set_scaling_factor(self.TSS, 1)
+
+        
+        sf_F = iscale.get_scaling_factor(self.flow_vol, default=1e2, warning=True)
+        sf_T = iscale.get_scaling_factor(self.temperature, default=1e-2, warning=True)
+
+        # Mass flow and density terms
+        for j in self.component_list:
+            if j == "H2O":
+                sf_C = pyo.value(1 / self.params.dens_mass)
+            else:
+                sf_C = iscale.get_scaling_factor(
+                    self.conc_mass_comp[j], default=1e2, warning=True
+                )
+
+            iscale.set_scaling_factor(self.material_flow_expression[j], sf_F * sf_C)
+            iscale.set_scaling_factor(self.material_density_expression[j], sf_C)
+
+        # Enthalpy and energy terms
+        sf_rho_cp = pyo.value(1 / (self.params.dens_mass * self.params.cp_mass))
+        iscale.set_scaling_factor(
+            self.enthalpy_flow_expression, sf_F * sf_rho_cp * sf_T
+        )
+        iscale.set_scaling_factor(self.energy_density_expression, sf_rho_cp * sf_T)
