@@ -9,7 +9,6 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
 import pytest
 from pyomo.environ import value
 from watertap.examples.flowsheets.nf_dspmde.nf_with_bypass import main
