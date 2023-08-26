@@ -76,7 +76,9 @@ def main():
     initialize_system(m)
 
     display_results(m)
-    check_jac(m)
+    # check_jac(m)
+    check_initial_point(m)
+    print("BSM2-P")
     assert False
     print("Degrees of freedom", degrees_of_freedom(m))
     assert_degrees_of_freedom(m, 0)

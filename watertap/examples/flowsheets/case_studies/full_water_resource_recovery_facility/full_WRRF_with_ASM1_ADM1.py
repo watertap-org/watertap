@@ -66,7 +66,7 @@ from watertap.property_models.activated_sludge.asm1_reactions import (
 )
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
-
+from watertap.core.util.debugging_tools import *
 
 def main():
     m = build_flowsheet()
@@ -76,6 +76,9 @@ def main():
 
     initialize_system(m)
 
+    check_initial_point(m)
+    print("BSM2")
+    assert False
     results = solve(m)
 
     add_costing(m)

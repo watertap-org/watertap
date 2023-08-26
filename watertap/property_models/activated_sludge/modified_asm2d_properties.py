@@ -385,6 +385,11 @@ class ModifiedASM2dStateBlockData(StateBlockData):
             units=pyo.units.kg / pyo.units.m**3,
         )
 
+        iscale.set_scaling_factor(self.flow_vol, 1e1)
+        iscale.set_scaling_factor(self.temperature, 1e-1)
+        iscale.set_scaling_factor(self.pressure, 1e-6)
+        iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
+
     # On-demand properties
     def _VSS(self):
         self.VSS = pyo.Var(
@@ -529,12 +534,12 @@ class ModifiedASM2dStateBlockData(StateBlockData):
                     self.conc_mass_comp[j], default=1e2, warning=True
                 )
 
-            iscale.set_scaling_factor(self.material_flow_expression[j], sf_F * sf_C)
-            iscale.set_scaling_factor(self.material_density_expression[j], sf_C)
+            # iscale.set_scaling_factor(self.material_flow_expression[j], sf_F * sf_C)
+            # iscale.set_scaling_factor(self.material_density_expression[j], sf_C)
 
         # Enthalpy and energy terms
-        sf_rho_cp = pyo.value(1 / (self.params.dens_mass * self.params.cp_mass))
-        iscale.set_scaling_factor(
-            self.enthalpy_flow_expression, sf_F * sf_rho_cp * sf_T
-        )
-        iscale.set_scaling_factor(self.energy_density_expression, sf_rho_cp * sf_T)
+        # sf_rho_cp = pyo.value(1 / (self.params.dens_mass * self.params.cp_mass))
+        # iscale.set_scaling_factor(
+        #     self.enthalpy_flow_expression, sf_F * sf_rho_cp * sf_T
+        # )
+        # iscale.set_scaling_factor(self.energy_density_expression, sf_rho_cp * sf_T)
