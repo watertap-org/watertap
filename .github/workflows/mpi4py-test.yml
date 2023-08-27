@@ -71,7 +71,7 @@ jobs:
         coverage xml
     - name: Test parallel loopTop w/MPI
       run: |
-        mpiexec -n 2 pytest watertap/tools/analysis_tools/loop_tool/tests/test*loop_tool.py --no-cov 
+        mpiexec -n 2 coverage run --parallel-mode -m mpi4py -m pytest watertap/tools/analysis_tools/loop_tool/tests/test*loop_tool.py --no-cov 
         # single report
         coverage combine
         # convert to XML
