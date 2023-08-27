@@ -1,5 +1,5 @@
-Loop Tool
-====================
+How to use loopTool to explore flowsheets
+=========================================
 
 .. index::
    pair: watertap.tools.analysis_tools.loop_tool;loop_tool
@@ -33,10 +33,13 @@ that selects the type of ERD used, by passing erd_type option at build (either a
 2. The *initialization_function* (ro_init)- This function should initialize the model and set it up for optimization or simulation run.
    
    If the user enables update_sweep_params_before_init option (default: False), the Parameter Sweep tool (and loopTool) will update the parameters on the model tree that are being swept across before calling initialize as well as before solving the model. In the current example, we will use the default setting. 
-      Your initialization function should also be used to prepare the model for solving or optimization run, and thus should call on any additional functions to do so. In our example, a function “optimize_set_up” needs to be called before we run actual optimization. This function unfixes variables we want to optimize and fixes those that should be fixed. For PS/LoopTool, it does not matter if you are planning to do optimization (>0 DOFS) or simulation (0 DOFs) and as such you can setup the model to do either here in. 
+   
+   *Your initialization function should also be used to prepare the model for solving or optimization run, and thus should call on any additional functions to do so. In our example, a function “optimize_set_up” needs to be called before we run actual optimization. This function unfixes variables we want to optimize and fixes those that should be fixed. For PS/LoopTool, it does not matter if you are planning to do optimization (>0 DOFS) or simulation (0 DOFs) and as such you can setup the model to do either here in.*
 
 3. The *optimize_function* this function will run your optimization or simulation, and should return the result. In general, you are free to include tests to see if result is optimal, but PS/loopTool will do that check before saving data from the solution. A common error is to have an optimization function that does not return a result, resulting in all of the solves failing during run, even if the model is successfully solved. 
    
+   *The optimize function can include complex solution steps beyond just running the solve call. For example, a user can specify in the optimize function to first solve a model using a continuous approach, followed by a resolve with discrete choices. The user just needs to remember that PS tool will update the sweep parameters only before the call, but not verify that they were applied.*
+
 An example of the functions setup for use with loopTool for RO_with_energy_recovery flowsheet example.  
 
 .. code-block::
@@ -62,12 +65,13 @@ Setting up the .yaml configuration file
 The loopTool uses a yaml file to generate all sweep configurations, define variables to sweep over, and other options. 
 This enables user to have multiple setup files that can be used to run simulations with out having to change any underlying code, except changing which yaml file the loopTool uses. 
 
-The loopTool yaml file accepts two types of configurations:
+**The loopTool .yaml configuration file accepts two types of options:**
+
    * *default options* - these configure simulation defaults that either define PS tool behavior, loopTool behavior, or default keys that are passed into build, initialize, or optimize functions unless they are overridden by loop options 
-   
    * *loop options* - these define options that build iterative loops, and will override existing default values or be included with them. 
 
-**default options**:
+**default options:**
+
    * *initialize_before_sweep* –(default: False) option to force run initialization_function before every optimize_function call 
    * *update_sweep_params_before_init* –(default: False)  option if set to true, will result in parameters being swept over to be updated before the initlalize call. 
    * *number_of_subprocesses* –(default: 1)  Number of logical cores to use if running in parallel manner (not used wit MPI), default: 1
@@ -77,7 +81,8 @@ The loopTool yaml file accepts two types of configurations:
    * *optimize_defaults* - defaults for optimize_function, same behavior as build or init defaults, but for optimize function. 
 
 
-**loop options**:
+**loop options:**
+
    * *build_loop* - defines list of keywords arguments to loop over for the *build_function*
    * *init_loop* - defines list of keywords arguments to loop over for the *initialization_function*
    * *optimize_loop* - defines list of keywords arguments to loop over for the *optimize_function*
@@ -85,7 +90,8 @@ The loopTool yaml file accepts two types of configurations:
    * *sweep_param_loop* - defines sweep parameters to loop over 
    * *diff_param_loop* - defines differential parameter sweep, the first set of sweep_params define differential sweep parameters, and second key in has to be *sweep_reference_params* - which defines the parameters to use for generation of references simulations, from which differential simulations are performed. 
 
-**Defining sweep_param_loop**:
+**Defining sweep_param_loop and diff_param_loop:**
+
 The sweep_param_loop and diff_param_loop define the parameters to perform sweeps over using PS tool kit, and support standard configurations in the following structure.
 
 These configuration arguments are designed to be defined and set up in a yaml file. The general structure for yaml file structure should be as follows:
@@ -112,7 +118,7 @@ These configuration arguments are designed to be defined and set up in a yaml fi
          sd: standard deviation
          num_samples: number of samples to run 
 
-The sweep_param_loop parameters will be iterated over one by one, to sweep over multiple parameter at onese you can define a group as follows:
+The sweep_param_loop parameters will be iterated over one by one, to sweep over multiple parameter at once you can define a group as follows:
 
 .. code-block::
 
@@ -138,6 +144,7 @@ The sweep_param_loop parameters will be iterated over one by one, to sweep over 
             lower_limit: lower value for sampling
             upper_limit: upper value for sampling
             num_samples: number of samples to run 
+
 
 **Defining diff_param_loop**
 
@@ -173,7 +180,7 @@ The diff_param_loop defines a run for parameter_sweep_differential tool and requ
             sd: standard deviation
             num_samples: number of samples to run 
 
-**General yaml structure:**
+**General .yaml configuration file structure:**
 
 The general structure starts with analysis name, which will be used in the file name when saving, followed by default options and configurations, and finally by loops options. The general structure is shown below: 
 

@@ -18,6 +18,8 @@ from watertap.tools.analysis_tools.loop_tool import (
 )
 import h5py
 
+__author__ = "Alexander V. Dudchenko (SLAC)"
+
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 
 

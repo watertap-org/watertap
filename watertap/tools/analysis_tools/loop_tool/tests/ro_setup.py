@@ -23,6 +23,8 @@ from watertap.tools.parameter_sweep.parameter_sweep_differential import (
 from idaes.core.solvers import get_solver
 import os
 
+__author__ = "Alexander V. Dudchenko (SLAC)"
+
 
 def ro_build(**kwargs):
     m = ro_erd.build(**kwargs)

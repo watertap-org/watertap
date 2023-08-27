@@ -142,7 +142,7 @@ class loopTool:
                 self.execute_sweep(self.sweep_directory[key], False)
 
     def run_simulations(self):
-        """runs the simulations crated in build_run_dict"""
+        """runs the simulations created in build_run_dict"""
 
         self.execute_sweep(self.sweep_directory)
 
@@ -521,7 +521,7 @@ class loopTool:
             results = np.empty(mpi_comm.Get_size(), dtype=bool)
 
             results[:] = True
-            if mpi_comm.rank == 0:
+            if mpi_comm.Get_rank() == 0:
                 success = self._check_solution_exists()
                 results[:] = success
 
@@ -563,7 +563,6 @@ class loopTool:
 
         ps_kwargs["initialize_function"] = self.initialize_function
         ps_kwargs["initialize_kwargs"] = self.combined_init_defaults
-        ps_kwargs["initialize_before_sweep"] = self.initialize_before_sweep
         ps_kwargs["initialize_before_sweep"] = self.initialize_before_sweep
 
         ps_kwargs[
@@ -616,7 +615,6 @@ class loopTool:
 
         ps_kwargs["initialize_function"] = self.initialize_function
         ps_kwargs["initialize_kwargs"] = self.combined_init_defaults
-        ps_kwargs["initialize_before_sweep"] = self.initialize_before_sweep
         ps_kwargs["initialize_before_sweep"] = self.initialize_before_sweep
 
         ps_kwargs[
