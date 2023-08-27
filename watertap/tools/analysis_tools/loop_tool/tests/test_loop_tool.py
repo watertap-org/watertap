@@ -44,7 +44,7 @@ def loop_test_options_setup():
     # with open("test_expected_option_directory.yaml", "w") as file:
     #     documents = yaml.dump(lp.sweep_directory, file)
     if has_mpi_peer_processes() == False or (
-        has_mpi_peer_processes() and get_mpi_comm_process == 0
+        has_mpi_peer_processes() and get_mpi_comm_process().rank == 0
     ):
         with open(
             _this_file_path + "/test_expected_option_directory.yaml", "r"
@@ -73,7 +73,7 @@ def loop_sweep_setup():
     # with open("test_expected_sweep_directory.yaml", "w") as file:
     #     documents = yaml.dump(lp.sweep_directory, file)
     if has_mpi_peer_processes() == False or (
-        has_mpi_peer_processes() and get_mpi_comm_process == 0
+        has_mpi_peer_processes() and get_mpi_comm_process().rank == 0
     ):
         with open(
             _this_file_path + "/test_expected_sweep_directory.yaml", "r"
@@ -104,7 +104,7 @@ def loop_diff_setup():
     # with open("test_expected_diff_directory.yaml", "w") as file:
     #     documents = yaml.dump(lp.sweep_directory, file)
     if has_mpi_peer_processes() == False or (
-        has_mpi_peer_processes() and get_mpi_comm_process == 0
+        has_mpi_peer_processes() and get_mpi_comm_process().rank == 0
     ):
         with open(
             _this_file_path + "/test_expected_diff_directory.yaml", "r"
@@ -118,7 +118,7 @@ def loop_diff_setup():
 @pytest.mark.component
 def test_options_setups(loop_test_options_setup):
     if has_mpi_peer_processes() == False or (
-        has_mpi_peer_processes() and get_mpi_comm_process == 0
+        has_mpi_peer_processes() and get_mpi_comm_process().rank == 0
     ):
         lp, expected_run_dict = loop_test_options_setup
         lp.build_run_dict()
@@ -143,7 +143,7 @@ def test_options_setups(loop_test_options_setup):
 @pytest.mark.component
 def test_sweep_setup(loop_sweep_setup):
     if has_mpi_peer_processes() == False or (
-        has_mpi_peer_processes() and get_mpi_comm_process == 0
+        has_mpi_peer_processes() and get_mpi_comm_process().rank == 0
     ):
         lp, expected_run_dict = loop_sweep_setup
         lp.build_run_dict()
@@ -168,7 +168,7 @@ def test_sweep_setup(loop_sweep_setup):
 @pytest.mark.component
 def test_diff_setup(loop_diff_setup):
     if has_mpi_peer_processes() == False or (
-        has_mpi_peer_processes() and get_mpi_comm_process == 0
+        has_mpi_peer_processes() and get_mpi_comm_process().rank == 0
     ):
         lp, expected_run_dict = loop_diff_setup
         lp.build_run_dict()
@@ -196,14 +196,14 @@ def test_sweep_run(loop_sweep_setup):
     lp.build_run_dict()
     # remove any existing file before test
     if has_mpi_peer_processes() == False or (
-        has_mpi_peer_processes() and get_mpi_comm_process == 0
+        has_mpi_peer_processes() and get_mpi_comm_process().rank == 0
     ):
         if os.path.isfile(lp.h5_file_location_default + "_analysisType_ro_analysis.h5"):
             os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
 
     lp.run_simulations()
     if has_mpi_peer_processes() == False or (
-        has_mpi_peer_processes() and get_mpi_comm_process == 0
+        has_mpi_peer_processes() and get_mpi_comm_process().rank == 0
     ):
         h5file = h5py.File(
             lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
@@ -266,7 +266,7 @@ def test_sweep_backup(loop_sweep_setup):
     lp.build_run_dict()
     lp.run_simulations()
     if has_mpi_peer_processes() == False or (
-        has_mpi_peer_processes() and get_mpi_comm_process == 0
+        has_mpi_peer_processes() and get_mpi_comm_process().rank == 0
     ):
         assert lp.h5_backup_location != None
 
@@ -302,7 +302,7 @@ def test_diff_run(loop_diff_setup):
     lp.build_run_dict()
     # clean up any files from prior failed test
     if has_mpi_peer_processes() == False or (
-        has_mpi_peer_processes() and get_mpi_comm_process == 0
+        has_mpi_peer_processes() and get_mpi_comm_process().rank == 0
     ):
         if os.path.isfile(
             lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5"
@@ -310,7 +310,7 @@ def test_diff_run(loop_diff_setup):
             os.remove(lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5")
     lp.run_simulations()
     if has_mpi_peer_processes() == False or (
-        has_mpi_peer_processes() and get_mpi_comm_process == 0
+        has_mpi_peer_processes() and get_mpi_comm_process().rank == 0
     ):
         h5file = h5py.File(
             lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5", "r"

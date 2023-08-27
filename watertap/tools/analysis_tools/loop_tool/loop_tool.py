@@ -501,35 +501,30 @@ class loopTool:
         create_h5_file(self.h5_file_location)
 
         sucess_feasible = self.expected_num_samples
-        if self.force_rerun == True:
-            print("Forceing rerun", self.force_rerun)
-            run_sweep = True
-        else:
-            run_sweep = merge_data_into_file(
-                self.h5_file_location,
-                self.h5_backup_location,
-                self.h5_directory,
-                expected_solved_values=self.expected_num_samples,
-                min_solve_values=self.min_num_samples,
-                force_rerun=self.force_rerun,
-            )
+        run_sweep = merge_data_into_file(
+            self.h5_file_location,
+            self.h5_backup_location,
+            self.h5_directory,
+            expected_solved_values=self.expected_num_samples,
+            min_solve_values=self.min_num_samples,
+            force_rerun=self.force_rerun,
+        )
         return run_sweep
 
     def check_solution_exists(self):
         """check if solution exists, ensuring to use only
         rank 0 if user running MPI, otherwise do direct
         solution check"""
-        print("Checking if solution exists", self.h5_file_location, self.h5_directory)
         self.cur_h5_file = (self.h5_file_location, self.h5_directory)
         if has_mpi_peer_processes():
             mpi_comm = get_mpi_comm_process()
             results = np.empty(mpi_comm.Get_size(), dtype=bool)
 
             results[:] = True
-            if mpi_comm.Get_rank() == 0:
+            if mpi_comm.rank == 0:
                 success = self._check_solution_exists()
                 results[:] = success
-                print("Got test_result", results)
+
             mpi_comm.Bcast(results, root=0)
             success = results[mpi_comm.Get_rank()]
         else:
