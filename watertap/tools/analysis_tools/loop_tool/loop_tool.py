@@ -523,7 +523,6 @@ class loopTool:
         self.cur_h5_file = (self.h5_file_location, self.h5_directory)
         if has_mpi_peer_processes():
             mpi_comm = get_mpi_comm_process()
-            mpi_comm.Barrier()
             results = np.empty(mpi_comm.Get_size(), dtype=bool)
 
             results[:] = True
@@ -532,8 +531,6 @@ class loopTool:
                 results[:] = success
                 print("Got test_result", results)
             mpi_comm.Bcast(results, root=0)
-            mpi_comm.Barrier()
-
             success = results[mpi_comm.Get_rank()]
         else:
             success = self._check_solution_exists()

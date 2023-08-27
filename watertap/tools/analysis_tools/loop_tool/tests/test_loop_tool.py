@@ -18,6 +18,11 @@ from watertap.tools.analysis_tools.loop_tool.loop_tool import loopTool, get_work
 import yaml
 import h5py
 
+from watertap.tools.parallel.parallel_manager_factory import (
+    has_mpi_peer_processes,
+    get_mpi_comm_process,
+)
+
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -38,8 +43,13 @@ def loop_test_options_setup():
     """ used to generate test file"""
     # with open("test_expected_option_directory.yaml", "w") as file:
     #     documents = yaml.dump(lp.sweep_directory, file)
-    with open(_this_file_path + "/test_expected_option_directory.yaml", "r") as infile:
-        expected_run_dict = yaml.safe_load(infile)
+    if has_mpi_peer_processes() == False or (
+        has_mpi_peer_processes() and get_mpi_comm_process == 0
+    ):
+        with open(
+            _this_file_path + "/test_expected_option_directory.yaml", "r"
+        ) as infile:
+            expected_run_dict = yaml.safe_load(infile)
 
     return lp, expected_run_dict
 
@@ -61,8 +71,13 @@ def loop_sweep_setup():
     """ used to generate test file"""
     # with open("test_expected_sweep_directory.yaml", "w") as file:
     #     documents = yaml.dump(lp.sweep_directory, file)
-    with open(_this_file_path + "/test_expected_sweep_directory.yaml", "r") as infile:
-        expected_run_dict = yaml.safe_load(infile)
+    if has_mpi_peer_processes() == False or (
+        has_mpi_peer_processes() and get_mpi_comm_process == 0
+    ):
+        with open(
+            _this_file_path + "/test_expected_sweep_directory.yaml", "r"
+        ) as infile:
+            expected_run_dict = yaml.safe_load(infile)
 
     return lp, expected_run_dict
 
@@ -86,8 +101,13 @@ def loop_diff_setup():
     """ used to generate test file"""
     # with open("test_expected_diff_directory.yaml", "w") as file:
     #     documents = yaml.dump(lp.sweep_directory, file)
-    with open(_this_file_path + "/test_expected_diff_directory.yaml", "r") as infile:
-        expected_run_dict = yaml.safe_load(infile)
+    if has_mpi_peer_processes() == False or (
+        has_mpi_peer_processes() and get_mpi_comm_process == 0
+    ):
+        with open(
+            _this_file_path + "/test_expected_diff_directory.yaml", "r"
+        ) as infile:
+            expected_run_dict = yaml.safe_load(infile)
 
     return lp, expected_run_dict
 
@@ -167,60 +187,59 @@ def test_sweep_run(loop_sweep_setup):
         os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
 
     lp.run_simulations()
+    if has_mpi_peer_processes() == False or (
+        has_mpi_peer_processes() and get_mpi_comm_process == 0
+    ):
+        h5file = h5py.File(
+            lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
+        )
+        data = h5file[
+            "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
+        ]
 
-    h5file = h5py.File(
-        lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
-    )
-    data = h5file[
-        "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
-    ]
+        true_vals = [0.37203417, 0.39167574, 0.41117995]
+        d = data[()]
+        # print(true_vals, d)
+        for i, tv in enumerate(true_vals):
+            assert d[i] == pytest.approx(tv, rel=1e-2)
+        data = h5file[
+            "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
+        ]
 
-    true_vals = [0.37203417, 0.39167574, 0.41117995]
-    d = data[()]
-    # print(true_vals, d)
-    for i, tv in enumerate(true_vals):
-        assert d[i] == pytest.approx(tv, rel=1e-2)
-    data = h5file[
-        "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
-    ]
+        true_vals = [0.50886109, 0.52850266, 0.54814424]
+        d = data[()]
+        # print(true_vals, d)
+        for i, tv in enumerate(true_vals):
+            assert d[i] == pytest.approx(tv, rel=1e-2)
+        data = h5file[
+            "ro_analysis/erd_type/pressure_exchanger/membrane_group/outputs/fs.costing.LCOW/value"
+        ]
 
-    true_vals = [0.50886109, 0.52850266, 0.54814424]
-    d = data[()]
-    # print(true_vals, d)
-    for i, tv in enumerate(true_vals):
-        assert d[i] == pytest.approx(tv, rel=1e-2)
-    data = h5file[
-        "ro_analysis/erd_type/pressure_exchanger/membrane_group/outputs/fs.costing.LCOW/value"
-    ]
+        true_vals = [
+            0.3810009713006634,
+            0.3916757385992817,
+            0.3985075912766517,
+            0.4111799488092862,
+        ]
+        d = data[()]
+        # print(true_vals, d)
+        for i, tv in enumerate(true_vals):
+            assert d[i] == pytest.approx(tv, rel=1e-2)
+        data = h5file[
+            "ro_analysis/erd_type/pump_as_turbine/membrane_group/outputs/fs.costing.LCOW/value"
+        ]
 
-    true_vals = [
-        0.3810009713006634,
-        0.3916757385992817,
-        0.3985075912766517,
-        0.4111799488092862,
-    ]
-    d = data[()]
-    # print(true_vals, d)
-    for i, tv in enumerate(true_vals):
-        assert d[i] == pytest.approx(tv, rel=1e-2)
-    data = h5file[
-        "ro_analysis/erd_type/pump_as_turbine/membrane_group/outputs/fs.costing.LCOW/value"
-    ]
-
-    true_vals = [
-        0.5178278972844322,
-        0.5285026645830471,
-        0.5353345156541605,
-        0.5481442364124981,
-    ]
-    d = data[()]
-    # print(true_vals, d)
-    for i, tv in enumerate(true_vals):
-        assert d[i] == pytest.approx(tv, rel=1e-2)
-    h5file.close()
-    """test that backup works, will not run actual simulation ,create a back up file, and
-    load data from it into sim file. The lp.back_file_name should not be None
-    """
+        true_vals = [
+            0.5178278972844322,
+            0.5285026645830471,
+            0.5353345156541605,
+            0.5481442364124981,
+        ]
+        d = data[()]
+        # print(true_vals, d)
+        for i, tv in enumerate(true_vals):
+            assert d[i] == pytest.approx(tv, rel=1e-2)
+        h5file.close()
 
 
 @pytest.mark.component
@@ -231,33 +250,35 @@ def test_sweep_backup(loop_sweep_setup):
     lp, test_file = loop_sweep_setup
     lp.build_run_dict()
     lp.run_simulations()
+    if has_mpi_peer_processes() == False or (
+        has_mpi_peer_processes() and get_mpi_comm_process == 0
+    ):
+        assert lp.h5_backup_location != None
 
-    assert lp.h5_backup_location != None
+        h5file = h5py.File(
+            lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
+        )
+        data = h5file[
+            "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
+        ]
 
-    h5file = h5py.File(
-        lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
-    )
-    data = h5file[
-        "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
-    ]
+        true_vals = [0.37203417, 0.39167574, 0.41117995]
+        d = data[()]
+        for i, tv in enumerate(true_vals):
+            assert d[i] == pytest.approx(tv, rel=1e-2)
+        data = h5file[
+            "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
+        ]
+        true_vals = [0.50886109, 0.52850266, 0.54814424]
+        d = data[()]
 
-    true_vals = [0.37203417, 0.39167574, 0.41117995]
-    d = data[()]
-    for i, tv in enumerate(true_vals):
-        assert d[i] == pytest.approx(tv, rel=1e-2)
-    data = h5file[
-        "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
-    ]
-    true_vals = [0.50886109, 0.52850266, 0.54814424]
-    d = data[()]
+        for i, tv in enumerate(true_vals):
+            assert d[i] == pytest.approx(tv, rel=1e-2)
+        h5file.close()
 
-    for i, tv in enumerate(true_vals):
-        assert d[i] == pytest.approx(tv, rel=1e-2)
-    h5file.close()
-
-    os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
-    # try:
-    os.remove(lp.h5_backup_location)
+        os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
+        # try:
+        os.remove(lp.h5_backup_location)
 
 
 @pytest.mark.component
@@ -265,26 +286,31 @@ def test_diff_run(loop_diff_setup):
     lp, test_file = loop_diff_setup
     lp.build_run_dict()
     lp.run_simulations()
-    h5file = h5py.File(
-        lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5", "r"
-    )
+    if has_mpi_peer_processes() == False or (
+        has_mpi_peer_processes() and get_mpi_comm_process == 0
+    ):
+        h5file = h5py.File(
+            lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5", "r"
+        )
 
-    data = h5file["ro_diff_analysis/membrane_cost/outputs/fs.costing.LCOW/value"][()]
+        data = h5file["ro_diff_analysis/membrane_cost/outputs/fs.costing.LCOW/value"][
+            ()
+        ]
 
-    # for i, tv in enumerate(true_vals):
-    assert len(data) == 4
+        # for i, tv in enumerate(true_vals):
+        assert len(data) == 4
 
-    data_a = h5file[
-        "ro_diff_analysis/membrane_group/sweep_params/fs.costing.reverse_osmosis.factor_membrane_replacement/value"
-    ][()]
-    data_b = h5file[
-        "ro_diff_analysis/membrane_group/sweep_params/fs.costing.reverse_osmosis.membrane_cost/value"
-    ][()]
-    # for i, tv in enumerate(true_vals):
-    assert len(data_a) == 4
-    assert len(data_b) == 4
-    h5file.close()
-    # try:
-    os.remove(lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5")
+        data_a = h5file[
+            "ro_diff_analysis/membrane_group/sweep_params/fs.costing.reverse_osmosis.factor_membrane_replacement/value"
+        ][()]
+        data_b = h5file[
+            "ro_diff_analysis/membrane_group/sweep_params/fs.costing.reverse_osmosis.membrane_cost/value"
+        ][()]
+        # for i, tv in enumerate(true_vals):
+        assert len(data_a) == 4
+        assert len(data_b) == 4
+        h5file.close()
+        # try:
+        os.remove(lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5")
     # except OSError:
     #     pass
