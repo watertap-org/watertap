@@ -12,6 +12,25 @@ ro_diff_analysis:
       nominal_lb: 25
       nominal_ub: 30
       num_samples: 1 
+    membrane_group:
+      membrane_cost:
+        diff_mode: percentile
+        diff_sample_type: UniformSample
+        param: fs.costing.reverse_osmosis.membrane_cost
+        relative_lb: -0.01
+        relative_ub: -0.01
+        nominal_lb: 25
+        nominal_ub: 30
+        num_samples: 1   
+      factor_membrane_replacement:
+        diff_mode: percentile
+        diff_sample_type: UniformSample
+        param: fs.costing.reverse_osmosis.factor_membrane_replacement
+        relative_lb: -0.01
+        relative_ub: -0.01
+        nominal_lb: 0.15
+        nominal_ub: 0.2
+        num_samples: 1 
     sweep_reference_params:
       membrane_cost:
         type: UniformSample

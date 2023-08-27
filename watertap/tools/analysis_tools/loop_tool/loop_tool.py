@@ -244,8 +244,7 @@ class loopTool:
                                 "original_options_dict": copy.deepcopy(self.options),
                             }
                         }
-                    else:
-                        print("loop empty did not add", loop_value)
+
         return sweep_directory, cur_dir
 
     def update_dir_path(self, cur_dir, key, value):
@@ -323,13 +322,13 @@ class loopTool:
             min_num_samples = loop_value[key].get("min_num_samples")
             force_rerun = loop_value[key].get("rerun")
         else:
+            expected_num_samples = loop_value.get("expected_num_samples", None)
+            min_num_samples = loop_value.get("min_num_samples", None)
+            force_rerun = loop_value.get("force_rerun", None)
             for key, values in loop_value[key].items():
-                # print(values)
-                diff_samples = values["num_samples"]
-                diff_params[values["param"]] = values
-                expected_num_samples = values["num_samples"]
-                min_num_samples = loop_value[key].get("min_num_samples")
-                force_rerun = loop_value[key].get("rerun")
+                if isinstance(values, dict) and "diff_mode" in values:
+                    diff_samples = values["num_samples"]
+                    diff_params[values["param"]] = values
         sweep_samples = loop_value["sweep_reference_params"]["num_samples"]
         for key, values in loop_value["sweep_reference_params"].items():
             if key != "num_samples" and key != "min_num_samples":
@@ -355,42 +354,30 @@ class loopTool:
                 expected_num_samples = num_samples
             # try:
             min_num_samples = loop_value[key].get("min_num_samples")
-            force_rerun = loop_value[key].get("rerun")
+            force_rerun = loop_value[key].get("force_rerun")
             param = loop_value[key]["param"]
             # except:
-            return (
-                {param: loop_value[key]},
-                num_samples,
-                expected_num_samples,
-                min_num_samples,
-                force_rerun,
-            )
+            params = {param: loop_value[key]}
         else:
             params = {}
             num_samples = 1
-            expected_num_samples = None
-            min_num_samples = None
-            force_rerun = None
+            expected_num_samples = loop_value.get("expected_num_samples", None)
+            min_num_samples = loop_value.get("min_num_samples", None)
+            force_rerun = loop_value.get("force_rerun", None)
             for key, values in loop_value[key].items():
-                if key == "expected_num_samples":
-                    expected_num_samples = values
-                elif key == "min_num_samples":
-                    min_num_samples = values
-                elif key == "rerun":
-                    force_rerun = values
-                else:
+                if isinstance(values, dict) and "type" in values:
                     param = values["param"]
                     params[param] = values
                     num_samples = num_samples * values["num_samples"]
             if expected_num_samples == None:
                 expected_num_samples = num_samples
-            return (
-                params,
-                num_samples,
-                expected_num_samples,
-                min_num_samples,
-                force_rerun,
-            )
+        return (
+            params,
+            num_samples,
+            expected_num_samples,
+            min_num_samples,
+            force_rerun,
+        )
 
     def init_sim_options(self):
         """resets simulations options"""
@@ -437,7 +424,7 @@ class loopTool:
             self.build_sim_kwargs()
             self.sweep_params = value["sweep_params"]
             if value["diff_params"] == {}:
-                self.run_class_parameter_sweep()
+                self.run_parameter_sweep()
             else:
                 self.differential_sweep_specs = value["diff_params"]
                 self.diff_samples = value["diff_samples"]
@@ -505,19 +492,6 @@ class loopTool:
         self.combined_init_defaults.update(self.options.get("init_defaults", {}))
         self.combined_init_defaults.update(self.init_defaults)
 
-    def test_setup(self, value):
-        """test if passed in kawrgs will work
-        #TODO: add parmas in paramters sweep to test"""
-
-        self.setup_param_sweep(value)
-        self.build_sim_kwargs()
-        solver = get_solver()
-        reinit_kwarg = {"solver": solver}
-        reinit_kwarg.update(self.combined_init_defaults)
-        m = self.build(**self.combined_build_defaults)
-        self.initialize_system(m, **reinit_kwarg)
-        self.solve(m, solver=solver)
-
     def _check_solution_exists(self):
         """hidden function to check if solution
         exists, and create and h5 file for data storage"""
@@ -572,7 +546,7 @@ class loopTool:
         except OSError as error:
             pass
 
-    def run_class_parameter_sweep(self):
+    def run_parameter_sweep(self):
         """setup and run paramer sweep"""
 
         # get solver if not provided by user
