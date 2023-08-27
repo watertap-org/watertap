@@ -50,7 +50,8 @@ def loop_test_options_setup():
             _this_file_path + "/test_expected_option_directory.yaml", "r"
         ) as infile:
             expected_run_dict = yaml.safe_load(infile)
-
+    else:
+        expected_run_dict = None
     return lp, expected_run_dict
 
 
@@ -78,7 +79,8 @@ def loop_sweep_setup():
             _this_file_path + "/test_expected_sweep_directory.yaml", "r"
         ) as infile:
             expected_run_dict = yaml.safe_load(infile)
-
+    else:
+        expected_run_dict = None
     return lp, expected_run_dict
 
 
@@ -108,74 +110,84 @@ def loop_diff_setup():
             _this_file_path + "/test_expected_diff_directory.yaml", "r"
         ) as infile:
             expected_run_dict = yaml.safe_load(infile)
-
+    else:
+        expected_run_dict = None
     return lp, expected_run_dict
 
 
 @pytest.mark.component
 def test_options_setups(loop_test_options_setup):
-    lp, expected_run_dict = loop_test_options_setup
-    lp.build_run_dict()
+    if has_mpi_peer_processes() == False or (
+        has_mpi_peer_processes() and get_mpi_comm_process == 0
+    ):
+        lp, expected_run_dict = loop_test_options_setup
+        lp.build_run_dict()
 
-    def test_diff_dict(dicta, dictb):
-        for key in dicta:
-            if key != "dir":
-                if isinstance(dicta[key], dict):
-                    test_diff_dict(dicta[key], dictb[key])
+        def test_diff_dict(dicta, dictb):
+            for key in dicta:
+                if key != "dir":
+                    if isinstance(dicta[key], dict):
+                        test_diff_dict(dicta[key], dictb[key])
 
-                elif dicta[key] != dictb[key]:
-                    # print(dicta[key], dictb[key])
-                    return False
-                # else:
-                #   break
+                    elif dicta[key] != dictb[key]:
+                        # print(dicta[key], dictb[key])
+                        return False
+                    # else:
+                    #   break
 
-        return True
+            return True
 
-    assert test_diff_dict(lp.sweep_directory, expected_run_dict)
+        assert test_diff_dict(lp.sweep_directory, expected_run_dict)
 
 
 @pytest.mark.component
 def test_sweep_setup(loop_sweep_setup):
-    lp, expected_run_dict = loop_sweep_setup
-    lp.build_run_dict()
+    if has_mpi_peer_processes() == False or (
+        has_mpi_peer_processes() and get_mpi_comm_process == 0
+    ):
+        lp, expected_run_dict = loop_sweep_setup
+        lp.build_run_dict()
 
-    def test_diff_dict(dicta, dictb):
-        for key in dicta:
-            if key != "dir":
-                if isinstance(dicta[key], dict):
-                    test_diff_dict(dicta[key], dictb[key])
+        def test_diff_dict(dicta, dictb):
+            for key in dicta:
+                if key != "dir":
+                    if isinstance(dicta[key], dict):
+                        test_diff_dict(dicta[key], dictb[key])
 
-                elif dicta[key] != dictb[key]:
-                    # print(dicta[key], dictb[key])
-                    return False
-                # else:
-                #   break
+                    elif dicta[key] != dictb[key]:
+                        # print(dicta[key], dictb[key])
+                        return False
+                    # else:
+                    #   break
 
-        return True
+            return True
 
-    assert test_diff_dict(lp.sweep_directory, expected_run_dict)
+        assert test_diff_dict(lp.sweep_directory, expected_run_dict)
 
 
 @pytest.mark.component
 def test_diff_setup(loop_diff_setup):
-    lp, expected_run_dict = loop_diff_setup
-    lp.build_run_dict()
+    if has_mpi_peer_processes() == False or (
+        has_mpi_peer_processes() and get_mpi_comm_process == 0
+    ):
+        lp, expected_run_dict = loop_diff_setup
+        lp.build_run_dict()
 
-    def test_diff_dict(dicta, dictb):
-        for key in dicta:
-            if key != "dir":
-                if isinstance(dicta[key], dict):
-                    test_diff_dict(dicta[key], dictb[key])
+        def test_diff_dict(dicta, dictb):
+            for key in dicta:
+                if key != "dir":
+                    if isinstance(dicta[key], dict):
+                        test_diff_dict(dicta[key], dictb[key])
 
-                elif dicta[key] != dictb[key]:
-                    # print(dicta[key], dictb[key])
-                    return False
-                # else:
-                #   break
+                    elif dicta[key] != dictb[key]:
+                        # print(dicta[key], dictb[key])
+                        return False
+                    # else:
+                    #   break
 
-        return True
+            return True
 
-    assert test_diff_dict(lp.sweep_directory, expected_run_dict)
+        assert test_diff_dict(lp.sweep_directory, expected_run_dict)
 
 
 @pytest.mark.component
@@ -183,8 +195,11 @@ def test_sweep_run(loop_sweep_setup):
     lp, test_file = loop_sweep_setup
     lp.build_run_dict()
     # remove any existing file before test
-    if os.path.isfile(lp.h5_file_location_default + "_analysisType_ro_analysis.h5"):
-        os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
+    if has_mpi_peer_processes() == False or (
+        has_mpi_peer_processes() and get_mpi_comm_process == 0
+    ):
+        if os.path.isfile(lp.h5_file_location_default + "_analysisType_ro_analysis.h5"):
+            os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
 
     lp.run_simulations()
     if has_mpi_peer_processes() == False or (
@@ -285,6 +300,14 @@ def test_sweep_backup(loop_sweep_setup):
 def test_diff_run(loop_diff_setup):
     lp, test_file = loop_diff_setup
     lp.build_run_dict()
+    # clean up any files from prior failed test
+    if has_mpi_peer_processes() == False or (
+        has_mpi_peer_processes() and get_mpi_comm_process == 0
+    ):
+        if os.path.isfile(
+            lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5"
+        ):
+            os.remove(lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5")
     lp.run_simulations()
     if has_mpi_peer_processes() == False or (
         has_mpi_peer_processes() and get_mpi_comm_process == 0
@@ -312,5 +335,3 @@ def test_diff_run(loop_diff_setup):
         h5file.close()
         # try:
         os.remove(lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5")
-    # except OSError:
-    #     pass
