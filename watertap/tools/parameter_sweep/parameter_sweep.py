@@ -1098,7 +1098,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         model = build_model(**build_model_kwargs)
         sweep_params = build_sweep_params(model, **build_sweep_params_kwargs)
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
-        outputs = build_outputs(model, **build_model_kwargs)
+        outputs = build_outputs(model, **build_outputs_kwargs)
         # Set the seed before sampling
         np.random.seed(seed)
 

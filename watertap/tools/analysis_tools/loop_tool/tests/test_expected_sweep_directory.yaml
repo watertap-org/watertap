@@ -7,7 +7,6 @@ ro_analysis:
             erd_type: pressure_exchanger
           diff_params: {}
           diff_samples: 0
-          dir: D:\OneDrive\NAWI_work\Analysis\WaterTAP\watertap-dev\watertap\tools\analysis_tools\loop_tool\tests/output/ro_with_erd/ro_analysis/erd_type/pressure_exchanger/membrane_cost
           expected_num_samples: 3
           force_rerun: null
           h5dir: ro_analysis/erd_type/pressure_exchanger/membrane_cost
@@ -32,17 +31,19 @@ ro_analysis:
                 membrane_group:
                   factor_membrane_replacement:
                     lower_limit: 0.15
-                    num_samples: 1
+                    num_samples: 2
                     param: fs.costing.reverse_osmosis.factor_membrane_replacement
-                    type: UniformSample
+                    type: LinearSample
                     upper_limit: 0.2
                   membrane_cost:
                     lower_limit: 25
-                    num_samples: 1
+                    num_samples: 2
                     param: fs.costing.reverse_osmosis.membrane_cost
-                    type: UniformSample
+                    type: LinearSample
                     upper_limit: 30
-            reinitialize_before_sweep: false
+            build_outputs_kwargs:
+              LCOW: fs.costing.LCOW
+            initialize_before_sweep: false
           sweep_params:
             fs.costing.reverse_osmosis.membrane_cost:
               lower_limit: 20
@@ -56,13 +57,12 @@ ro_analysis:
             erd_type: pressure_exchanger
           diff_params: {}
           diff_samples: 0
-          dir: D:\OneDrive\NAWI_work\Analysis\WaterTAP\watertap-dev\watertap\tools\analysis_tools\loop_tool\tests/output/ro_with_erd/ro_analysis/erd_type/pressure_exchanger/membrane_group
-          expected_num_samples: 1
+          expected_num_samples: 4
           force_rerun: null
           h5dir: ro_analysis/erd_type/pressure_exchanger/membrane_group
           init_defaults: {}
           min_num_samples: null
-          num_samples: 1
+          num_samples: 4
           optimize_defaults: {}
           original_options_dict:
             build_defaults:
@@ -81,29 +81,31 @@ ro_analysis:
                 membrane_group:
                   factor_membrane_replacement:
                     lower_limit: 0.15
-                    num_samples: 1
+                    num_samples: 2
                     param: fs.costing.reverse_osmosis.factor_membrane_replacement
-                    type: UniformSample
+                    type: LinearSample
                     upper_limit: 0.2
                   membrane_cost:
                     lower_limit: 25
-                    num_samples: 1
+                    num_samples: 2
                     param: fs.costing.reverse_osmosis.membrane_cost
-                    type: UniformSample
+                    type: LinearSample
                     upper_limit: 30
-            reinitialize_before_sweep: false
+            build_outputs_kwargs:
+              LCOW: fs.costing.LCOW
+            initialize_before_sweep: false
           sweep_params:
             fs.costing.reverse_osmosis.factor_membrane_replacement:
               lower_limit: 0.15
-              num_samples: 1
+              num_samples: 2
               param: fs.costing.reverse_osmosis.factor_membrane_replacement
-              type: UniformSample
+              type: LinearSample
               upper_limit: 0.2
             fs.costing.reverse_osmosis.membrane_cost:
               lower_limit: 25
-              num_samples: 1
+              num_samples: 2
               param: fs.costing.reverse_osmosis.membrane_cost
-              type: UniformSample
+              type: LinearSample
               upper_limit: 30
     pump_as_turbine:
       membrane_cost:
@@ -137,17 +139,19 @@ ro_analysis:
                 membrane_group:
                   factor_membrane_replacement:
                     lower_limit: 0.15
-                    num_samples: 1
+                    num_samples: 2
                     param: fs.costing.reverse_osmosis.factor_membrane_replacement
-                    type: UniformSample
+                    type: LinearSample
                     upper_limit: 0.2
                   membrane_cost:
                     lower_limit: 25
-                    num_samples: 1
+                    num_samples: 2
                     param: fs.costing.reverse_osmosis.membrane_cost
-                    type: UniformSample
+                    type: LinearSample
                     upper_limit: 30
-            reinitialize_before_sweep: false
+            build_outputs_kwargs:
+              LCOW: fs.costing.LCOW
+            initialize_before_sweep: false
           sweep_params:
             fs.costing.reverse_osmosis.membrane_cost:
               lower_limit: 20
@@ -162,12 +166,12 @@ ro_analysis:
           diff_params: {}
           diff_samples: 0
           dir: D:\OneDrive\NAWI_work\Analysis\WaterTAP\watertap-dev\watertap\tools\analysis_tools\loop_tool\tests/output/ro_with_erd/ro_analysis/erd_type/pump_as_turbine/membrane_group
-          expected_num_samples: 1
+          expected_num_samples: 4
           force_rerun: null
           h5dir: ro_analysis/erd_type/pump_as_turbine/membrane_group
           init_defaults: {}
           min_num_samples: null
-          num_samples: 1
+          num_samples: 4
           optimize_defaults: {}
           original_options_dict:
             build_defaults:
@@ -186,27 +190,29 @@ ro_analysis:
                 membrane_group:
                   factor_membrane_replacement:
                     lower_limit: 0.15
-                    num_samples: 1
+                    num_samples: 2
                     param: fs.costing.reverse_osmosis.factor_membrane_replacement
-                    type: UniformSample
+                    type: LinearSample
                     upper_limit: 0.2
                   membrane_cost:
                     lower_limit: 25
-                    num_samples: 1
+                    num_samples: 2
                     param: fs.costing.reverse_osmosis.membrane_cost
-                    type: UniformSample
+                    type: LinearSample
                     upper_limit: 30
-            reinitialize_before_sweep: false
+            build_outputs_kwargs:
+              LCOW: fs.costing.LCOW
+            initialize_before_sweep: false
           sweep_params:
             fs.costing.reverse_osmosis.factor_membrane_replacement:
               lower_limit: 0.15
-              num_samples: 1
+              num_samples: 2
               param: fs.costing.reverse_osmosis.factor_membrane_replacement
-              type: UniformSample
+              type: LinearSample
               upper_limit: 0.2
             fs.costing.reverse_osmosis.membrane_cost:
               lower_limit: 25
-              num_samples: 1
+              num_samples: 2
               param: fs.costing.reverse_osmosis.membrane_cost
-              type: UniformSample
+              type: LinearSample
               upper_limit: 30

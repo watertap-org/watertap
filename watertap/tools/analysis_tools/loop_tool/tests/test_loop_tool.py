@@ -211,7 +211,7 @@ def test_sweep_run(loop_sweep_setup):
             lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
         )
         data = h5file[
-            "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
+            "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/LCOW/value"
         ]
 
         true_vals = [0.37203417, 0.39167574, 0.41117995]
@@ -220,7 +220,7 @@ def test_sweep_run(loop_sweep_setup):
         for i, tv in enumerate(true_vals):
             assert d[i] == pytest.approx(tv, rel=1e-2)
         data = h5file[
-            "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
+            "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/LCOW/value"
         ]
 
         true_vals = [0.50886109, 0.52850266, 0.54814424]
@@ -229,7 +229,7 @@ def test_sweep_run(loop_sweep_setup):
         for i, tv in enumerate(true_vals):
             assert d[i] == pytest.approx(tv, rel=1e-2)
         data = h5file[
-            "ro_analysis/erd_type/pressure_exchanger/membrane_group/outputs/fs.costing.LCOW/value"
+            "ro_analysis/erd_type/pressure_exchanger/membrane_group/outputs/LCOW/value"
         ]
 
         true_vals = [
@@ -243,7 +243,7 @@ def test_sweep_run(loop_sweep_setup):
         for i, tv in enumerate(true_vals):
             assert d[i] == pytest.approx(tv, rel=1e-2)
         data = h5file[
-            "ro_analysis/erd_type/pump_as_turbine/membrane_group/outputs/fs.costing.LCOW/value"
+            "ro_analysis/erd_type/pump_as_turbine/membrane_group/outputs/LCOW/value"
         ]
 
         true_vals = [
@@ -275,7 +275,7 @@ def test_sweep_backup(loop_sweep_setup):
             lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
         )
         data = h5file[
-            "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.costing.LCOW/value"
+            "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/LCOW/value"
         ]
 
         true_vals = [0.37203417, 0.39167574, 0.41117995]
@@ -283,7 +283,7 @@ def test_sweep_backup(loop_sweep_setup):
         for i, tv in enumerate(true_vals):
             assert d[i] == pytest.approx(tv, rel=1e-2)
         data = h5file[
-            "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/fs.costing.LCOW/value"
+            "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/LCOW/value"
         ]
         true_vals = [0.50886109, 0.52850266, 0.54814424]
         d = data[()]

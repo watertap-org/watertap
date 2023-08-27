@@ -58,6 +58,7 @@ class loopTool:
         build_function=None,
         initialize_function=None,
         optimize_function=None,
+        build_outputs=None,
         number_of_subprocesses=None,
         parallel_back_end="MultiProcessing",
         probe_function=None,
@@ -77,6 +78,7 @@ class loopTool:
             build_function : function to build unit model
             initialize_function : function for intilization of th eunit model
             optimize_function : function for solving model
+            build_outputs : function to build selected outputs
             probe_function : Function to probe if a solution should be attempted or not
             save_name : name to use when saving the file with
             save_dir : directory to save the file in
@@ -84,6 +86,7 @@ class loopTool:
             max number of logical cores, if set to False, will disable MPI and set number_of_subpressess to 0
             custom_do_param_sweep : custom param function (refer to parameter sweep tool)
             custom_do_param_sweep_kwargs : custom parm kwargs (refer to parameter sweep tool)
+
             execute_simulations : of looptool should execute simulations upon setup,
                                     other user can call build_run_dict, and run_simulations call manually
             h5_backup : Set location for back up file, if set to False, no backup will be created, otherwise backup will be autocreated
@@ -108,6 +111,8 @@ class loopTool:
 
         self.custom_do_param_sweep = custom_do_param_sweep
         self.custom_do_param_sweep_kwargs = custom_do_param_sweep_kwargs
+
+        self.build_outputs = build_outputs
         self.h5_backup_location = h5_backup
         if execute_simulations:
             self.build_run_dict()
@@ -385,7 +390,6 @@ class loopTool:
         self.build_defaults = {}
         self.init_defaults = {}
         self.optimize_defaults = {}
-        self.outputs = None
         self.sweep_params = {}
         self.diff_params = {}
         self.diff_samples = 0
@@ -436,7 +440,6 @@ class loopTool:
         self.init_sim_options()
         self.options = value["original_options_dict"]
         self.build_default = value["build_defaults"]
-        self.outputs = self.options.get("outputs")
         self.optimize_defaults = value["optimize_defaults"]
 
         self.init_defaults = value["init_defaults"]
@@ -477,6 +480,7 @@ class loopTool:
         self.update_sweep_params_before_init = self.options.get(
             "update_sweep_params_before_init", False
         )
+        self.build_outputs_kwargs = self.options.get("build_outputs_kwargs", None)
         # generated combined build kwargs (default + loop)
         self.combined_build_defaults = {}  # self.build_default
         self.combined_build_defaults.update(self.options.get("build_defaults", {}))
@@ -538,6 +542,12 @@ class loopTool:
         except OSError as error:
             pass
 
+    def _default_build_ouptuts(self, model, output_keys):
+        outputs = {}
+        for key, pyo_object in output_keys.items():
+            outputs[key] = model.find_component(pyo_object)
+        return outputs
+
     def run_parameter_sweep(self):
         """setup and run paramer sweep"""
 
@@ -573,6 +583,14 @@ class loopTool:
         ps_kwargs["custom_do_param_sweep_kwargs"] = self.custom_do_param_sweep_kwargs
 
         ps_kwargs["probe_function"] = self.probe_function
+        if self.build_outputs_kwargs is not None and self.build_outputs == None:
+            ps_kwargs["build_outputs"] = self._default_build_ouptuts
+            ps_kwargs["build_outputs_kwargs"] = {
+                "output_keys": self.build_outputs_kwargs
+            }
+        else:
+            ps_kwargs["build_outputs"] = self.build_outputs
+            ps_kwargs["build_outputs_kwargs"] = self.build_outputs_kwargs
 
         ps_kwargs["number_of_subprocesses"] = self.number_of_subprocesses
         ps_kwargs["parallel_back_end"] = self.parallel_back_end
@@ -581,7 +599,8 @@ class loopTool:
         ps.parameter_sweep(
             self.build_function,
             ParameterSweepReader()._dict_to_params,
-            build_outputs=None,
+            build_outputs=ps_kwargs["build_outputs"],
+            build_outputs_kwargs=ps_kwargs["build_outputs_kwargs"],
             num_samples=self.num_samples,
             build_model_kwargs=self.combined_build_defaults,
             build_sweep_params_kwargs={"input_dict": self.sweep_params},
@@ -629,6 +648,15 @@ class loopTool:
         ps_kwargs["number_of_subprocesses"] = self.number_of_subprocesses
         ps_kwargs["parallel_back_end"] = self.parallel_back_end
 
+        if self.build_outputs_kwargs is not None and self.build_outputs == None:
+            ps_kwargs["build_outputs"] = self._default_build_ouptuts
+            ps_kwargs["build_outputs_kwargs"] = {
+                "output_keys": self.build_outputs_kwargs
+            }
+        else:
+            ps_kwargs["build_outputs"] = self.build_outputs
+            ps_kwargs["build_outputs_kwargs"] = self.build_outputs_kwargs
+
         ps_kwargs[
             "differential_sweep_specs"
         ] = ParameterSweepReader()._dict_to_diff_spec(m, self.differential_sweep_specs)
@@ -647,4 +675,6 @@ class loopTool:
             num_samples=self.num_samples,
             build_model_kwargs=self.combined_build_defaults,
             build_sweep_params_kwargs={"input_dict": self.sweep_params},
+            build_outputs=ps_kwargs["build_outputs"],
+            build_outputs_kwargs=ps_kwargs["build_outputs_kwargs"],
         )
