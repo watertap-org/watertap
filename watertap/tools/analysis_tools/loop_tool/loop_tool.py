@@ -114,6 +114,26 @@ class loopTool:
 
         self.build_outputs = build_outputs
         self.h5_backup_location = h5_backup
+
+        """ supported keys for yaml config file. please update as new options are added"""
+        self._supported_default_options = [
+            "initialize_before_sweep",
+            "update_sweep_params_before_init",
+            "number_of_subprocesses",
+            "parallel_back_end",
+            "build_defaults",
+            "init_defaults",
+            "optimize_defaults",
+            "build_outputs_kwargs",
+        ]
+        self._supported_loop_options = [
+            "build_loop",
+            "init_loop",
+            "optimize_loop",
+        ]
+        self._reserved_loop_options = ["sim_cases"]
+        self._supported_sweep_options = ["sweep_param_loop", "diff_param_loop"]
+
         if execute_simulations:
             self.build_run_dict()
             self.run_simulations()
@@ -124,19 +144,19 @@ class loopTool:
 
         Arguments:
             test_setups : test if configuraiton will intilaize, but not run the simulatuons
-            create_directories : if save directories should be created on the fly
         """
 
         loop_dict = ParameterSweepReader()._yaml_to_dict(self.loop_file)
         self.sweep_directory = {}
         for key, loop in loop_dict.items():
+            self.check_dict_keys(loop)
             self.sweep_directory[key] = {}
             self.init_sim_options()
             self.save_dir = self.save_dir + "/" + key
             self.h5_directory = key
             loop_type = self.get_loop_type(loop)
             self.options = loop
-            self.sweep_directory[key], dir = self.build_sweep_directories(
+            self.sweep_directory[key], _ = self.build_sweep_directories(
                 loop[loop_type],
                 loop_type,
                 self.sweep_directory[key],
@@ -145,6 +165,42 @@ class loopTool:
             )
             if test_setups:
                 self.execute_sweep(self.sweep_directory[key], False)
+
+    def check_dict_keys(self, test_dict):
+        """used to test supported key in provided .yaml file"""
+        for key in test_dict:
+            if key not in self._supported_default_options:
+                if (
+                    key not in self._supported_loop_options
+                    and key not in self._supported_sweep_options
+                ):
+                    raise KeyError("Unsupported key {}".format(key))
+                elif key in self._supported_sweep_options:
+                    test_result = True
+                else:
+                    test_result = self.check_loop_keys(test_dict[key])
+        if test_result == False:
+            raise KeyError(
+                "sweep_param_loop or diff_param_loop not found in config file!"
+            )
+
+    def check_loop_keys(self, loop_keys):
+        """tests loop keys"""
+        test_result = False
+        for key in loop_keys:
+            if key in self._reserved_loop_options:
+                test_result = self.check_loop_keys(loop_keys[key])
+                if test_result == True:
+                    raise KeyError(
+                        "Incorrect usage of sim_cases, which is a reserved options for loop option, review docs"
+                    )
+            elif key in self._supported_loop_options:
+                test_result = self.check_loop_keys(loop_keys[key])
+        for key in loop_keys:
+            if key in self._supported_sweep_options:
+                test_result = True
+
+        return test_result
 
     def run_simulations(self):
         """runs the simulations created in build_run_dict"""
@@ -299,7 +355,7 @@ class loopTool:
                 ) = self.get_diff_params(loop_key, loop_value)
 
     def get_loop_params(self, key, loop_value, loop):
-        if "case" in key:
+        if "sim_cases" in key:
             return loop[key][loop_value]
         elif ":" in str(loop_value):
             lp = loop_value.split(":")

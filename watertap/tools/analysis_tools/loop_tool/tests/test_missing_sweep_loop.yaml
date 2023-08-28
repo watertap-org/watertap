@@ -1,0 +1,10 @@
+ro_analysis:
+  initialize_before_sweep: False
+  build_defaults:
+    erd_type: pump_as_turbine
+  build_outputs_kwargs:
+    LCOW: fs.costing.LCOW
+  build_loop:
+    erd_type:
+      - pump_as_turbine
+      - pressure_exchanger

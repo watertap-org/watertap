@@ -1,5 +1,5 @@
 ro_diff_analysis:
-  reinitialize_before_sweep: False
+  initialize_before_sweep: False
   build_defaults:
     erd_type: pump_as_turbine
   diff_param_loop:

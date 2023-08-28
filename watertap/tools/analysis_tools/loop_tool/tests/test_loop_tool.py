@@ -118,6 +118,38 @@ def loop_diff_setup():
 
 
 @pytest.mark.component
+def test_failed_setup():
+    with pytest.raises(KeyError, match=r"Unsupported key random_key"):
+        cdw = get_working_dir()
+        lp = loopTool(
+            _this_file_path + "/test_bad_default.yaml",
+            build_function=ro_setup.ro_build,
+            initialize_function=ro_setup.ro_init,
+            optimize_function=ro_setup.ro_solve,
+            saving_dir=_this_file_path,
+            save_name="ro_with_erd",
+            execute_simulations=False,
+            number_of_subprocesses=1,
+        )
+        lp.build_run_dict()
+    with pytest.raises(
+        KeyError, match=r"sweep_param_loop or diff_param_loop not found in config file!"
+    ):
+        cdw = get_working_dir()
+        lp = loopTool(
+            _this_file_path + "/test_missing_sweep_loop.yaml",
+            build_function=ro_setup.ro_build,
+            initialize_function=ro_setup.ro_init,
+            optimize_function=ro_setup.ro_solve,
+            saving_dir=_this_file_path,
+            save_name="ro_with_erd",
+            execute_simulations=False,
+            number_of_subprocesses=1,
+        )
+        lp.build_run_dict()
+
+
+@pytest.mark.component
 def test_options_setups(loop_test_options_setup):
     if has_mpi_peer_processes() == False or (
         has_mpi_peer_processes() and get_mpi_comm_process().Get_rank() == 0

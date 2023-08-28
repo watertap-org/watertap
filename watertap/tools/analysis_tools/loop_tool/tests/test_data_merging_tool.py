@@ -49,7 +49,6 @@ def test_new_file_run():
         os.remove(h5_file)
     except OSError:
         pass
-
     assert run_sweep == True
 
 

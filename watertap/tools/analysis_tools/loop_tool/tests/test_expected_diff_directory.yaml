@@ -66,7 +66,7 @@ ro_diff_analysis:
               type: UniformSample
               upper_limit: 30
             num_samples: 2
-        reinitialize_before_sweep: false
+        initialize_before_sweep: false
       sweep_params:
         fs.costing.reverse_osmosis.factor_membrane_replacement:
           lower_limit: 0.15
@@ -156,7 +156,7 @@ ro_diff_analysis:
               type: UniformSample
               upper_limit: 30
             num_samples: 2
-        reinitialize_before_sweep: false
+        initialize_before_sweep: false
       sweep_params:
         fs.costing.reverse_osmosis.factor_membrane_replacement:
           lower_limit: 0.15

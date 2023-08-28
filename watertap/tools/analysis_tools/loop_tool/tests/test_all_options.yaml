@@ -1,5 +1,5 @@
 sweep_tests:
-  reinitialize_before_sweep: True
+  initialize_before_sweep: True
   number_of_subprocesses: 10
   parallel_back_end: 'RayIo'
   update_sweep_params_before_init: True
@@ -9,35 +9,41 @@ sweep_tests:
     erd_type:
       - pump_as_turbine
       - pressure_exchanger
-    sweep_param_loop:
-      membrane_cost:
-        type: LinearSample
-        param: fs.costing.reverse_osmosis.membrane_cost
-        lower_limit: 20
-        upper_limit: 30
-        num_samples: 3
-        min_num_samples: 10
-        expected_num_samples: 20
-        force_rerun: True
-      membrane_group:
+    init_loop:
+      sim_cases:
+        case_a:
+          erd_type: pump_as_turbine
+        case_b:
+          erd_type: pressure_exchanger
+      sweep_param_loop:
         membrane_cost:
-          type: UniformSample
+          type: LinearSample
           param: fs.costing.reverse_osmosis.membrane_cost
-          lower_limit: 25
+          lower_limit: 20
           upper_limit: 30
-          num_samples: 2
-        factor_membrane_replacement:
-          type: UniformSample
-          param: fs.costing.reverse_osmosis.factor_membrane_replacement
-          lower_limit: 0.15
-          upper_limit: 0.2
-          num_samples: 2
-        min_num_samples: 10
-        expected_num_samples: 20
-        force_rerun: True
+          num_samples: 3
+          min_num_samples: 10
+          expected_num_samples: 20
+          force_rerun: True
+        membrane_group:
+          membrane_cost:
+            type: UniformSample
+            param: fs.costing.reverse_osmosis.membrane_cost
+            lower_limit: 25
+            upper_limit: 30
+            num_samples: 2
+          factor_membrane_replacement:
+            type: UniformSample
+            param: fs.costing.reverse_osmosis.factor_membrane_replacement
+            lower_limit: 0.15
+            upper_limit: 0.2
+            num_samples: 2
+          min_num_samples: 10
+          expected_num_samples: 20
+          force_rerun: True
 
 diff_tests:
-  reinitialize_before_sweep: True
+  initialize_before_sweep: True
   number_of_subprocesses: 10
   parallel_back_end: 'RayIo'
   update_sweep_params_before_init: True

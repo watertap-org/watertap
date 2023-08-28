@@ -87,7 +87,7 @@ This enables user to have multiple setup files that can be used to run simulatio
    * *build_loop* - defines list of keywords arguments to loop over for the *build_function*
    * *init_loop* - defines list of keywords arguments to loop over for the *initialization_function*
    * *optimize_loop* - defines list of keywords arguments to loop over for the *optimize_function*
-   * *cases* - defines specific cases to run for given build_loop, init_loop, or optimize_loop.  
+   * *sim_cases* - defines specific cases to run for given build_loop, init_loop, or optimize_loop.  
    * *sweep_param_loop* - defines sweep parameters to loop over 
    * *diff_param_loop* - defines differential parameter sweep, the first set of sweep_params define differential sweep parameters, and second key has to be *sweep_reference_params* - which defines the parameters to use for generation of references simulations, from which differential simulations are performed. 
 
@@ -258,14 +258,14 @@ Here we setup a simple run on RO erd flowsheet, requesting loopTool to run PS to
                   upper_limit: 0.5
                   num_samples: 3 
 
-Example using cases, here we assume ro_build function takes in 2 options, a water type, and erd type.
+Example using sim_case, here we assume ro_build function takes in 2 options, a water type, and erd type.
 The loop tool will ran a parameter sweep over each case.
 
 .. code-block::
 
    ro_erd_analysis_simple:
       build_loop:
-         cases:
+         sim_cases:
             BGW_with_erd:
                water_type: BGW
                erd_type: pump_as_turbine
