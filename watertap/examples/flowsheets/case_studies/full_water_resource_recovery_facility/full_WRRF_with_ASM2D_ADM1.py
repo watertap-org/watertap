@@ -64,6 +64,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from watertap.core.util.debugging_tools import *
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 def main():
     m = build_flowsheet()
@@ -71,21 +72,34 @@ def main():
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
-    iscale.calculate_scaling_factors(m.fs)
-
+    scale_flowsheet(m) 
     initialize_system(m)
 
     display_results(m)
     # check_jac(m)
     check_initial_point(m)
+    # iscale.report_scaling_issues(m)
     print("BSM2-P")
-    assert False
+    # solve_ad = solve(m.fs.RADM, tee=True)
+    check_initial_point(m)
+
+    # assert False
     print("Degrees of freedom", degrees_of_freedom(m))
     assert_degrees_of_freedom(m, 0)
     try:
-        results = solve(m, tee=True, repeat_solve=True)
+        results = solve_flowsheet(m, 
+                                  solver=None, 
+                                  optargs={
+                                      'output_file':"logfile.txt",
+                                    #   'max_iter': 1
+                                                    
+                                   },
+                                  tee=True, repeat_solve=False)
     except RuntimeError:
-        results = solve(m, tee=True)
+        results = None
+    print_close_to_bounds(m)
+    print_infeasible_constraints(m)
+    #     results = solve(m, tee=True)
     # add_costing(m)
     # Assert DOF = 0 after adding costing
     # assert_degrees_of_freedom(m, 0)
@@ -95,7 +109,7 @@ def main():
 
     # results = solve(m)
 
-    display_results(m)
+    # display_results(m)
 
     return m, results
 
@@ -400,23 +414,47 @@ def set_operating_conditions(m):
     m.fs.RADM.volume_vapor.fix(300)
     m.fs.RADM.liquid_outlet.temperature.fix(308.15)
 
+def scale_flowsheet(m):
+    # for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+    #     if "flow_vol" in var.name:
+    #         iscale.set_scaling_factor(var, 1e1)
+    #     if "TU.properties_in[0.0].flow_vol" in var.name:
+    #         iscale.set_scaling_factor(var, 1e5)
+    #     if "asm_adm.properties_in[0.0].flow_vol" in var.name:
+    #         iscale.set_scaling_factor(var, 1e5)
+    #     if "RADM.liquid_phase.properties_in[0.0].flow_vol" in var.name:
+    #         iscale.set_scaling_factor(var, 1e5)
+    #     if "adm_asm.properties_in[0.0].flow_vol" in var.name:
+    #         iscale.set_scaling_factor(var, 1e5)
+    #     if "DU.properties_in[0.0].flow_vol" in var.name:
+    #         iscale.set_scaling_factor(var, 1e5)       
+    #     if "temperature" in var.name:
+    #         iscale.set_scaling_factor(var, 1e-2)
+        # if "pressure" in var.name:
+        #     iscale.set_scaling_factor(var, 1e-4)
+
+    iscale.calculate_scaling_factors(m)
+    # iscale.constraint_scaling_transform(m.fs.RADM.liquid_phase.material_balances[0,'Liq', 'S_IN'],1e5)
+    # iscale.constraint_scaling_transform(m.fs.RADM.liquid_phase.material_balances[0,'Liq', 'S_IP'],1e5)
+    # iscale.constraint_scaling_transform(m.fs.MX4.enthalpy_mixing_equations[0], 1e-3)
 
 def initialize_system(m):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
-    seq = SequentialDecomposition()
+    seq = SequentialDecomposition(tear_solver='cbc')
     seq.options.tear_method = "Direct"
+    seq.options.select_tear_method = "heuristic"
     seq.options.iterLim = 1
     seq.options.tear_set = [m.fs.stream2, m.fs.stream10adm]
 
-    G = seq.create_graph(m)
-    # Uncomment this code to see tear set and initialization order
-    order = seq.calculation_order(G)
-    print("Initialization Order")
-    for o in order:
-        print(o[0].name)
+    # G = seq.create_graph(m)
+    # # Uncomment this code to see tear set and initialization order
+    # order = seq.calculation_order(G)
+    # print("Initialization Order")
+    # for o in order:
+    #     print(o[0].name)
 
-    # Initial guesses for flow into first reactor
+    # # Initial guesses for flow into first reactor
     tear_guesses1 = {
         "flow_vol": {0: 103531 / 24 / 3600},
         "conc_mass_comp": {
@@ -486,9 +524,11 @@ def add_costing(m):
     pass
 
 
-def solve(blk, solver=None, tee=False, repeat_solve=False):
+def solve_flowsheet(blk, solver, optargs=None, tee=False, repeat_solve=False, ):
+    if optargs is None:
+        optargs = {}
     if solver is None:
-        solver = get_solver()
+        solver = get_solver(solver, optargs)
     results = solver.solve(blk, tee=tee)
     if not pyo.check_optimal_termination(results) and repeat_solve:
         results = solver.solve(blk, tee=tee)
