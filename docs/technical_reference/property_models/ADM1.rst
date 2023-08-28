@@ -139,7 +139,7 @@ Kinetic Parameters
    "First-order decay rate for X_pro, k_dec_X_pro", ":math:`k_{dec,X_{pro}}`", "k_dec_X_pro", 0.02, ":math:`\text{d}^{-1}`"
    "First-order decay rate for X_ac, k_dec_X_ac", ":math:`k_{dec,X_{ac}}`", "k_dec_X_ac", 0.02, ":math:`\text{d}^{-1}`"
    "First-order decay rate for X_h2, k_dec_X_h2", ":math:`k_{dec,X_{h2}}`", "k_dec_X_h2", 0.02, ":math:`\text{d}^{-1}`"
-   "Water dissociation constant, pKW", ":math:`pKW`", "pKW", 14, ":math:`\text{dimensionless}`"
+   "Water dissociation constant, pK_W", ":math:`pK_W`", "pKW", 14, ":math:`\text{dimensionless}`"
    "Process inhibition term, I", ":math:`I`", "I", 1, ":math:`\text{dimensionless}`"
    "Valerate acid-base equilibrium constant, K_a_va", ":math:`K_{a,va}`", "K_a_va", 1.38e-5, ":math:`\text{kmol/}\text{m}^3`"
    "Butyrate acid-base equilibrium constant, K_a_bu", ":math:`K_{a,bu}`", "K_a_bu", 1.5e-5, ":math:`\text{kmol/}\text{m}^3`"
@@ -202,19 +202,19 @@ Additional Constraints
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Water dissociation constant constraint", ":math:`log(10^{-pKW}) = log(1e-14) + (\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))`"
+   "Water dissociation constant constraint", ":math:`log(10^{-pK_{W}}) = log(10^{-14}) + (\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))`"
    "CO2 acid-base equilibrium constraint", ":math:`log(10^{-pK_{a,co2}}) = log(10^{-6.35}) + (\frac{7646}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))`"
    "Nitrogen acid-base equilibrium constraint", ":math:`log(10^{-pK_{a,IN}}) = log(10^{-9.25}) + (\frac{51965}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))`"
    "pH of solution", ":math:`pH = -log(S_{H})`"
-   "Mass concentration of valerate, va-", ":math:`C_{va,ref} = C_{va} (1 + \frac{S_{H}}{K_a_va})`"
-   "Mass concentration of butyrate, bu-", ":math:`C_{bu,ref} = C_{bu} (1 + \frac{S_{H}}{K_a_bu})`"
-   "Mass concentration of propionate, pro-", ":math:`C_{pro,ref} = C_{pro} (1 + \frac{S_{H}}{K_a_pro})`"
-   "Mass concentration of acetate, ac-", ":math:`C_{ac,ref} = C_{ac} (1 + \frac{S_{H}}{K_a_ac})`"
-   "Molar concentration of bicarbonate, HCO3", ":math:`pK_a_co2 = log(M_{co2}) - log(M_{hco3}) + pH`"
-   "Molar concentration of ammonia, NH3", ":math:`pK_a_IN = log(M_{nh4}) - log(M_{nh3}) + pH`"
+   "Mass concentration of valerate, va-", ":math:`C_{va,ref} = C_{va} (1 + \frac{S_{H}}{K_{a,va}})`"
+   "Mass concentration of butyrate, bu-", ":math:`C_{bu,ref} = C_{bu} (1 + \frac{S_{H}}{K_{a,bu}})`"
+   "Mass concentration of propionate, pro-", ":math:`C_{pro,ref} = C_{pro} (1 + \frac{S_{H}}{K_{a,pro}})`"
+   "Mass concentration of acetate, ac-", ":math:`C_{ac,ref} = C_{ac} (1 + \frac{S_{H}}{K_{a,ac}})`"
+   "Molar concentration of bicarbonate, HCO3", ":math:`pK_{a,co2} = log(M_{co2}) - log(M_{hco3}) + pH`"
+   "Molar concentration of ammonia, NH3", ":math:`pK_{a,IN} = log(M_{nh4}) - log(M_{nh3}) + pH`"
    "Molar concentration of carbon dioxide, CO2", ":math:`M_{co2} = \frac{C_{S_{IC},ref}}{12} - M_{hco3}`"
    "Molar concentration of ammonium, NH4+", ":math:`M_{nh4} = \frac{C_{S_{IN},ref}}{14} - M_{nh3}`"
-   "Molar concentration of hydrogen, H+", ":math:`S_{H} = M_{hco3} + \frac{C_{ac}}{64} + \frac{C_{pro}}{112} + \frac{C_{bu}}{160} + \frac{C_{va}}{208} + 10^{pH - pKW} + M_{a} - M_{c} - M_{nh4}`"
+   "Molar concentration of hydrogen, H+", ":math:`S_{H} = M_{hco3} + \frac{C_{ac}}{64} + \frac{C_{pro}}{112} + \frac{C_{bu}}{160} + \frac{C_{va}}{208} + 10^{pH - pK_{W}} + M_{a} - M_{c} - M_{nh4}`"
 
 The rules for pH inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH,aa}`), acetate-utilizing microorganisms (:math:`I_{pH,ac}`), and hydrogen-utilizing microorganisms (:math:`I_{pH,h2}`) are:
 
