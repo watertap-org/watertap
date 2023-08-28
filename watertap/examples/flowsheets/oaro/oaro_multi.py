@@ -76,7 +76,11 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     # build, set, and initialize
     m = build(number_of_stages=number_of_stages, erd_type=erd_type)
     set_operating_conditions(m, number_of_stages=number_of_stages)
-    initialize_system(m, number_of_stages, solver=solver)
+    # initialize_system(m, number_of_stages, solver=solver)
+    try:
+        initialize_system(m, number_of_stages, solver=solver)
+    except:
+        pass
 
     optimize_set_up(
         m, number_of_stages=number_of_stages, water_recovery=system_recovery
@@ -121,6 +125,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
+    m.fs.MakeupStreams = Feed(m.fs.NonFirstStages, property_package=m.fs.properties)
 
     # --- Main pump ---
     m.fs.PrimaryPumps = Pump(m.fs.Stages, property_package=m.fs.properties)
@@ -191,13 +196,13 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         outlet_list=["treat", "purge"],
     )
 
-    if number_of_stages > 2:
-        separator_list = ["waste"]
-        for i in range(2, number_of_stages):
-            separator_list.append("recycle" + str(i))
-        m.fs.WasteSeparator = Separator(
-            property_package=m.fs.properties, outlet_list=separator_list
-        )
+    # if number_of_stages > 2:
+    #     separator_list = ["waste"]
+    #     for i in range(2, number_of_stages):
+    #         separator_list.append("recycle" + str(i))
+    #     m.fs.WasteSeparator = Separator(
+    #         property_package=m.fs.properties, outlet_list=separator_list
+    #     )
 
     # --- Mixers ---
     if number_of_stages > 1:
@@ -206,12 +211,18 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
             mixer_list.append("purge" + str(i))
         m.fs.WasteMixer = Mixer(property_package=m.fs.properties, inlet_list=mixer_list)
 
-    if number_of_stages > 2:
-        m.fs.IntermediateMixers = Mixer(
-            m.fs.IntermediateStages,
+        m.fs.Mixers = Mixer(
+            m.fs.NonFirstStages,
             property_package=m.fs.properties,
-            inlet_list=["treat", "recycle"],
+            inlet_list=["treat", "makeup"],
         )
+
+    # if number_of_stages > 2:
+    #     m.fs.IntermediateMixers = Mixer(
+    #         m.fs.IntermediateStages,
+    #         property_package=m.fs.properties,
+    #         inlet_list=["treat", "recycle"],
+    #     )
 
     m.fs.recovered_pump_work = Expression(
         expr=sum(
@@ -451,28 +462,39 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
             },
         )
 
-        if number_of_stages > 2:
-            m.fs.separator_to_intermediatemixer = Arc(
-                m.fs.IntermediateStages,
+        if number_of_stages > 1:
+            m.fs.separator_to_mixer = Arc(
+                m.fs.NonFirstStages,
                 rule=lambda fs, n: {
                     "source": fs.Separators[n].treat,
-                    "destination": fs.IntermediateMixers[n].treat,
+                    "destination": fs.Mixers[n].treat,
                 },
             )
 
-            m.fs.intermediatemixer_to_recyclepump = Arc(
-                m.fs.IntermediateStages,
+            m.fs.makeup_to_mixer = Arc(
+                m.fs.NonFirstStages,
                 rule=lambda fs, n: {
-                    "source": fs.IntermediateMixers[n].outlet,
+                    "source": fs.MakeupStreams[n].outlet,
+                    "destination": fs.Mixers[n].makeup,
+                },
+            )
+
+            m.fs.mixer_to_recyclepump = Arc(
+                m.fs.NonFirstStages,
+                rule=lambda fs, n: {
+                    "source": fs.Mixers[n].outlet,
                     "destination": fs.RecyclePumps[n].inlet,
                 },
             )
 
-        # Connect last Separator to last RecyclePump
-        m.fs.separator_to_recyclepump = Arc(
-            source=m.fs.Separators[last_stage].treat,
-            destination=m.fs.RecyclePumps[last_stage].inlet,
-        )
+        # Connect Separator n to RecyclePump n
+        # m.fs.separator_to_recyclepump = Arc(
+        #     m.fs.NonFirstStages,
+        #     rule=lambda fs, n: {
+        #         "source": fs.Separators[n].treat,
+        #         "destination": fs.RecyclePumps[n].inlet,
+        #     },
+        # )
 
         # Connect RecyclePumps n to OARO n-1 permeate_inlet
         m.fs.recyclepump_to_OARO = Arc(
@@ -508,33 +530,40 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
             },
         )
 
-        if number_of_stages > 2:
-            # Connect waste mixer to waste separator
-            m.fs.wastemixer_to_wasteseparator = Arc(
-                source=m.fs.WasteMixer.outlet,
-                destination=m.fs.WasteSeparator.inlet,
-            )
-
-            # Connect recycle streams
-            m.fs.recycle_to_intermediatemixer = Arc(
-                m.fs.IntermediateStages,
-                rule=lambda fs, n: {
-                    "source": getattr(fs.WasteSeparator, "recycle" + str(n)),
-                    "destination": fs.IntermediateMixers[n].recycle,
-                },
-            )
-
-            # Connect waste separator to disposal
-            m.fs.wasteseparator_to_disposal = Arc(
-                source=m.fs.WasteSeparator.waste,
-                destination=m.fs.disposal.inlet,
-            )
-        else:
+        if number_of_stages > 1:
             # Connect waste mixer to disposal
             m.fs.wastemixer_to_disposal = Arc(
                 source=m.fs.WasteMixer.outlet,
                 destination=m.fs.disposal.inlet,
             )
+
+        # if number_of_stages > 2:
+        #     # Connect waste mixer to waste separator
+        #     m.fs.wastemixer_to_wasteseparator = Arc(
+        #         source=m.fs.WasteMixer.outlet,
+        #         destination=m.fs.WasteSeparator.inlet,
+        #     )
+        #
+        #     # Connect recycle streams
+        #     m.fs.recycle_to_intermediatemixer = Arc(
+        #         m.fs.IntermediateStages,
+        #         rule=lambda fs, n: {
+        #             "source": getattr(fs.WasteSeparator, "recycle" + str(n)),
+        #             "destination": fs.IntermediateMixers[n].recycle,
+        #         },
+        #     )
+        #
+        #     # Connect waste separator to disposal
+        #     m.fs.wasteseparator_to_disposal = Arc(
+        #         source=m.fs.WasteSeparator.waste,
+        #         destination=m.fs.disposal.inlet,
+        #     )
+        # else:
+        #     # Connect waste mixer to disposal
+        #     m.fs.wastemixer_to_disposal = Arc(
+        #         source=m.fs.WasteMixer.outlet,
+        #         destination=m.fs.disposal.inlet,
+        #     )
 
     else:
         # this case should be caught in the previous conditional
@@ -672,14 +701,22 @@ def set_operating_conditions(
         sep.split_fraction[:, "treat"] = 0.999
         sep.split_fraction[:, "treat"].fix()
 
-    if number_of_stages > 2:
-        split_fraction = 0.999
-        m.fs.WasteSeparator.split_fraction[:, "waste"].fix(split_fraction)
-        if number_of_stages > 3:
-            for i in range(2, number_of_stages - 1):
-                m.fs.WasteSeparator.split_fraction[:, "recycle" + str(i)].fix(
-                    (1 - split_fraction) / (number_of_stages - 2)
-                )
+    # Makeup
+    if number_of_stages > 1:
+        for makeup in m.fs.MakeupStreams.values():
+            makeup.pressure.fix(pressure_atmospheric)  # feed pressure [Pa]
+            makeup.temperature.fix(feed_temperature)
+            makeup.properties[0].flow_vol_phase["Liq"].fix(0)
+            makeup.properties[0].mass_frac_phase_comp["Liq", "NaCl"].fix(0)
+
+    # if number_of_stages > 2:
+    #     split_fraction = 0.999
+    #     m.fs.WasteSeparator.split_fraction[:, "waste"].fix(split_fraction)
+    #     if number_of_stages > 3:
+    #         for i in range(2, number_of_stages - 1):
+    #             m.fs.WasteSeparator.split_fraction[:, "recycle" + str(i)].fix(
+    #                 (1 - split_fraction) / (number_of_stages - 2)
+    #             )
 
     print(f"DOF after set: {degrees_of_freedom(m)}")
 
@@ -745,9 +782,10 @@ def initialize_loop(m, solver):
 
         propagate_state(m.fs.ERD_to_separator[stage])
         m.fs.Separators[stage].initialize()
-        propagate_state(m.fs.separator_to_intermediatemixer[stage])
-        m.fs.IntermediateMixers[stage].initialize()
-        propagate_state(m.fs.intermediatemixer_to_recyclepump[stage])
+        propagate_state(m.fs.separator_to_mixer[stage])
+        propagate_state(m.fs.makeup_to_mixer[stage])
+        m.fs.Mixers[stage].initialize()
+        propagate_state(m.fs.mixer_to_recyclepump[stage])
         m.fs.RecyclePumps[stage].initialize()
 
         propagate_state(m.fs.recyclepump_to_OARO[stage])
@@ -799,7 +837,10 @@ def initialize_system(m, number_of_stages=None, solver=None, verbose=True):
 
         propagate_state(m.fs.ERD_to_separator[last_stage])
         m.fs.Separators[last_stage].initialize()
-        propagate_state(m.fs.separator_to_recyclepump)
+        propagate_state(m.fs.separator_to_mixer[last_stage])
+        propagate_state(m.fs.makeup_to_mixer[last_stage])
+        m.fs.Mixers[last_stage].initialize()
+        propagate_state(m.fs.mixer_to_recyclepump[last_stage])
         m.fs.RecyclePumps[last_stage].initialize()
 
         propagate_state(m.fs.recyclepump_to_OARO[last_stage])
@@ -811,6 +852,15 @@ def initialize_system(m, number_of_stages=None, solver=None, verbose=True):
         m.fs.EnergyRecoveryDevices[first_stage].initialize()
 
     print(f"DOF: {degrees_of_freedom(m)}")
+
+    # Now that the units are initialized, we can fix the
+    # permeate side outlet pressure and unfix the RO pump
+    # (which allows for control over the flow mass composition
+    # into the OARO permeate_side).
+    # m.fs.OAROUnits[1].permeate_side.properties_out[0].pressure.fix(101325)
+    # m.fs.PrimaryPumps[2].control_volume.properties_out[0].pressure.unfix()
+    # m.fs.OAROUnits[2].permeate_side.properties_out[0].pressure.fix(101325)
+    # m.fs.PrimaryPumps[3].control_volume.properties_out[0].pressure.unfix()
 
     m.fs.costing.initialize()
 
@@ -1076,16 +1126,22 @@ def optimize_set_up(
         sep.split_fraction[:, "treat"].setlb(0)
         sep.split_fraction[:, "treat"].setub(1)
 
-    if number_of_stages > 2:
-        m.fs.WasteSeparator.split_fraction[:, "waste"].unfix()
-        m.fs.WasteSeparator.split_fraction[:, "waste"].setlb(0)
-        m.fs.WasteSeparator.split_fraction[:, "waste"].setub(1)
+    # Makeup
+    for makeup in m.fs.MakeupStreams.values():
+        makeup.properties[0].flow_vol_phase["Liq"].unfix()
+        makeup.properties[0].flow_vol_phase["Liq"].setlb(0)
+        makeup.properties[0].flow_vol_phase["Liq"].setub(None)
 
-        if number_of_stages > 3:
-            for i in range(2, number_of_stages - 1):
-                m.fs.WasteSeparator.split_fraction[:, "recycle" + str(i)].unfix()
-                m.fs.WasteSeparator.split_fraction[:, "recycle" + str(i)].setlb(0)
-                m.fs.WasteSeparator.split_fraction[:, "recycle" + str(i)].setub(1)
+    # if number_of_stages > 2:
+    #     m.fs.WasteSeparator.split_fraction[:, "waste"].unfix()
+    #     m.fs.WasteSeparator.split_fraction[:, "waste"].setlb(0)
+    #     m.fs.WasteSeparator.split_fraction[:, "waste"].setub(1)
+    #
+    #     if number_of_stages > 3:
+    #         for i in range(2, number_of_stages - 1):
+    #             m.fs.WasteSeparator.split_fraction[:, "recycle" + str(i)].unfix()
+    #             m.fs.WasteSeparator.split_fraction[:, "recycle" + str(i)].setlb(0)
+    #             m.fs.WasteSeparator.split_fraction[:, "recycle" + str(i)].setub(1)
 
     # additional specifications
     m.fs.product_salinity = Param(
@@ -1322,10 +1378,10 @@ def display_state(m):
             print_state(f"Recycle Pump {stage} out", m.fs.RecyclePumps[stage].outlet)
             print_state(f"Purge {stage} out", m.fs.Separators[stage].purge)
 
-        if stage == m.fs.FirstStage or stage == m.fs.LastStage:
-            pass
-        else:
-            print_state(f"Recycle {stage} out", m.fs.IntermediateMixers[stage].recycle)
+        # if stage == m.fs.FirstStage or stage == m.fs.LastStage:
+        #     pass
+        # else:
+        #     print_state(f"Recycle {stage} out", m.fs.IntermediateMixers[stage].recycle)
 
     print_state(f"RO inlet", m.fs.RO.inlet)
     print_state(f"RO permeate", m.fs.RO.permeate)
@@ -1337,4 +1393,4 @@ def display_state(m):
 
 if __name__ == "__main__":
     # NOTE: this flowsheet only works for 2 and 3 stages
-    m = main(3, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
+    m = main(5, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
