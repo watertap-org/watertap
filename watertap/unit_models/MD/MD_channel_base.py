@@ -170,9 +170,7 @@ class MDChannelMixin:
             initialize=2000,
             bounds=(1, 1e4),
             domain=NonNegativeReals,
-            units=units_meta("power")
-            * units_meta("length") ** -2
-            * units_meta("temperature") ** -1,
+            units=pyunits.J * pyunits.s**-1 * pyunits.K**-1 * pyunits.m**-2,
             doc="Convective heat transfer coefficient",
         )
 
@@ -638,7 +636,7 @@ class MDChannelMixin:
         if "recovery" not in initialize_guess:
             initialize_guess["recovery"] = 0.5
 
-        Temp_change_ratio = initialize_guess.get("Temp_change_ratio", 1.1)
+        Temp_change_ratio = initialize_guess.get("Temp_change_ratio", 40)
 
         # Getting source state
         if self.flow_direction == FlowDirection.forward:
@@ -672,8 +670,8 @@ class MDChannelMixin:
             )
 
         # Adjust temperature based on Temp_change_ratio
-        hot_outlet_args["temperature"] = state_args["temperature"] / Temp_change_ratio
-        cold_outlet_args["temperature"] = state_args["temperature"] * Temp_change_ratio
+        hot_outlet_args["temperature"] = state_args["temperature"] - Temp_change_ratio
+        cold_outlet_args["temperature"] = state_args["temperature"] + Temp_change_ratio
 
         return {
             "inlet": state_args,
@@ -705,16 +703,15 @@ class MDChannelMixin:
     def _get_state_args_vapor(self, prop_in, prop_out):
         state_args = self._get_average_state(
             prop_in, prop_out
-        )  # or however you decide to get these
+        )  
 
-        # Create a new dictionary for vapor state arguments
         state_args_vapor = {}
 
-        # Map the pressure and temperature directly
+        
         # state_args_vapor["pressure"] = state_args["pressure"]
         state_args_vapor["temperature"] = state_args["temperature"]
 
-        # Map the flow_mass_phase_comp variables
+       
         state_args_vapor["flow_mass_phase_comp"] = {
             ("Liq", "H2O"): self.properties_vapor[0, 0]
             .flow_mass_phase_comp["Liq", "H2O"]
@@ -722,7 +719,7 @@ class MDChannelMixin:
             ("Vap", "H2O"): state_args["flow_mass_phase_comp"][("Liq", "H2O")] / 20,
         }
 
-        # Add any other mappings you need here...
+        
 
         return state_args_vapor
 

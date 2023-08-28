@@ -411,12 +411,12 @@ see property package for documentation.}""",
         units_meta = (
             self.config.hot_ch.property_package.get_metadata().get_derived_units
         )
-
+        """
         # mass transfer
         def mass_transfer_phase_comp_initialize(b, t, p, j):
             return value(
-                self.hot_ch.properties_in[t].get_material_flow_terms("Liq", j)
-                * self.recovery_mass_phase_comp[t, "Liq", j]
+                self.hot_ch.properties_in[t].get_material_flow_terms("Liq", "H2O")
+                * self.recovery_mass_phase_comp[t]
             )
 
         self.mass_transfer_phase_comp = Var(
@@ -441,6 +441,7 @@ see property package for documentation.}""",
                 self.mass_transfer_phase_comp[t, p, j]
                 == -self.hot_ch.mass_transfer_term[t, p, j]
             )
+            """
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -476,32 +477,36 @@ see property package for documentation.}""",
 
         # Enthalpy Transfer Initialization
         # todo: change the following to general format to different types of vapor
+        """
+                def enthalpy_transfer_initialize(b, t):
+                    return value(
+                        self.hot_ch.properties_in[t].get_material_flow_terms("Liq", "H2O")
+                        * self.recovery_mass_phase_comp[t, "Liq", "H2O"]
+                        * self.hot_ch.properties_vapor[t, 0].enth_mass_phase["Vap"]
+                    )
 
-        def enthalpy_transfer_initialize(b, t):
-            return value(
-                self.hot_ch.properties_in[t].get_material_flow_terms("Liq", "H2O")
-                * self.recovery_mass_phase_comp[t, "Liq", "H2O"]
-                * self.hot_ch.properties_vapor[t, 0].enth_mass_phase["Vap"]
-            )
+                self.enthalpy_transfer_var = Var(
+                    self.flowsheet().config.time,
+                    initialize=enthalpy_transfer_initialize,
+                    domain=NonNegativeReals,
+                    units=pyunits.J * pyunits.s**-1,
+                    doc="Intermediate variable for enthalpy transfer",
+                )
 
-        self.enthalpy_transfer_var = Var(
+                @self.Constraint(self.flowsheet().config.time)
+                def eq_enthalpy_transfer_hot_initialize(b, t):
+                    return b.enthalpy_transfer_var[t] == b.hot_ch.enthalpy_transfer[t]
+
+                @self.Constraint(self.flowsheet().config.time)
+                def eq_enthalpy_transfer_cold_initialize(b, t):
+                    return b.enthalpy_transfer_var[t] == b.cold_ch.enthalpy_transfer[t]
+
+                # Heat Transfer Initialization
+            """    
+        @self.Constraint(
             self.flowsheet().config.time,
-            initialize=enthalpy_transfer_initialize,
-            domain=NonNegativeReals,
-            units=pyunits.J * pyunits.s**-1,
-            doc="Intermediate variable for enthalpy transfer",
+            doc="Conductive heat transfer to cold channel",
         )
-
-        @self.Constraint(self.flowsheet().config.time)
-        def eq_enthalpy_transfer_hot_initialize(b, t):
-            return b.enthalpy_transfer_var[t] == b.hot_ch.enthalpy_transfer[t]
-
-        @self.Constraint(self.flowsheet().config.time)
-        def eq_enthalpy_transfer_cold_initialize(b, t):
-            return b.enthalpy_transfer_var[t] == b.cold_ch.enthalpy_transfer[t]
-
-        # Heat Transfer Initialization
-
         def eq_conductive_heat_transfer_hot(b, t):
             return b.hot_ch.heat[t] == -b.area * b.flux_conduction_heat_avg[t]
 
@@ -547,7 +552,7 @@ see property package for documentation.}""",
                 iscale.set_scaling_factor(v, sf)
 
         # Get scaling factor from vapor enthalpy flow
-
+ 
         # Scaling factors for heat transfer
         for t in self.flowsheet().config.time:
             sf_vap = 1e4

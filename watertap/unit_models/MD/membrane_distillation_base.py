@@ -152,8 +152,8 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         self.recovery_mass_phase_comp = Var(
             self.flowsheet().config.time,
-            self.config.hot_ch.property_package.phase_list,
-            self.config.hot_ch.property_package.component_list,
+            #self.config.hot_ch.property_package.phase_list,
+            #self.config.hot_ch.property_package.component_list,
             initialize=0.1,
             bounds=(1e-11, 0.99),
             units=pyunits.dimensionless,
@@ -162,18 +162,18 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            self.config.hot_ch.property_package.component_list,
+            #self.config.hot_ch.property_package.component_list,
         )
-        def eq_recovery_mass_phase_comp(b, t, j):
+        def eq_recovery_mass_phase_comp(b, t):
             return (
-                b.recovery_mass_phase_comp[t, "Liq", j]
-                * b.hot_ch.properties[t, b.first_element].flow_mass_phase_comp["Liq", j]
+                b.recovery_mass_phase_comp[t]
+                * b.hot_ch.properties[t, b.first_element].flow_mass_phase_comp["Liq", "H2O"]
                 == b.cold_ch.properties[t, b.first_element].flow_mass_phase_comp[
-                    "Liq", j
+                    "Liq",  "H2O"
                 ]
                 - b.cold_ch.properties[
                     t, b.cold_ch.length_domain.last()
-                ].flow_mass_phase_comp["Liq", j]
+                ].flow_mass_phase_comp["Liq", "H2O"]
             )
 
         self._add_mass_transfer()
@@ -203,8 +203,8 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         self.flux_mass = Var(
             self.flowsheet().config.time,
             self.difference_elements,
-            initialize=1e-3,
-            bounds=(1e-6, 10),
+            initialize=1e-10,
+            bounds=(1e-12, 1e-1),
             units=units_meta("mass")
             * units_meta("time") ** -1
             * units_meta("length") ** -2,
@@ -215,7 +215,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             self.difference_elements,
             initialize=1e3,
-            bounds=(1e-4, 1e5),
+            bounds=(1e-10, 1e5),
             units=pyunits.J * pyunits.s**-1 * pyunits.m**-2,
             doc="hot side evaporation enthalpy flux",
         )
@@ -224,7 +224,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             self.difference_elements,
             initialize=1e3,
-            bounds=(1e-4, 1e5),
+            bounds=(1e-10, 1e5),
             units=pyunits.J * pyunits.s**-1 * pyunits.m**-2,
             doc="cold side condensation enthalpy flux",
         )
@@ -461,7 +461,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         self.membrane_tc = Var(
             initialize=0.2,
-            bounds=(1e-4, 1e-2),
+            bounds=(0, 1),
             units=pyunits.J * pyunits.s**-1 * pyunits.K**-1 * pyunits.m**-1,
             doc="Thermal conductivity coefficient of the membrane",
         )
@@ -469,8 +469,8 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         self.flux_conduction_heat = Var(
             self.flowsheet().config.time,
             self.difference_elements,
-            initialize=1e-3,
-            bounds=(1e-4, 1e4),
+            initialize=1e-4,
+            bounds=(0, 1e10),
             units=pyunits.J * pyunits.s**-1 * pyunits.m**-2,
             doc="conduction heat flux",
         )
@@ -588,7 +588,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         # Create solver
         opt = get_solver(solver, optarg)
 
-        # Solve unit *without* flux equations
+        # Solve unit *without* flux equationsc
         self.eq_flux_mass.deactivate()
         self.eq_flux_heat.deactivate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -596,8 +596,9 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}")
 
         # Solve unit *with* flux equations
-        self.eq_flux_mass.activate()
         self.eq_flux_heat.activate()
+        self.eq_flux_mass.activate()
+        
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
         init_log.info_high(f"Initialization Step 3 {idaeslog.condition(res)}")
@@ -631,11 +632,8 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
         super().calculate_scaling_factors()
-        for (t, p, j), v in self.recovery_mass_phase_comp.items():
-            if j in self.config.hot_ch.property_package.solvent_set:
-                sf = 1
-            elif j in self.config.hot_ch.property_package.solute_set:
-                sf = 100
+        for t, v in self.recovery_mass_phase_comp.items():
+            sf = 1
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
 
@@ -649,12 +647,50 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.membrane_thickness) is None:
             iscale.set_scaling_factor(self.membrane_thickness, 1e4)
 
-        if iscale.get_scaling_factor(self.flux_mass) is None:
-            iscale.set_scaling_factor(self.flux_mass, 1e3)
+        for (t, x) in self.flux_mass.items():
+            if iscale.get_scaling_factor(self.flux_mass[t, x]) is None:
 
-        for t, v in self.flux_mass.items():
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(v, 1e3)
+                # Debugging Checks (Place them here)
+                print(f"Type of t: {type(t)}, Value: {t}")
+                print(f"Type of x: {type(x)}, Value: {x}")
+
+                try:
+                    hash(t)
+                    print("t is hashable")
+                except TypeError:
+                    print("t is not hashable")
+
+                try:
+                    hash(x)
+                    print("x is hashable")
+                except TypeError:
+                    print("x is not hashable")
+
+                print(f"Type of self.hot_ch.properties: {type(self.hot_ch.properties)}")
+
+                try:
+                    hash(self.hot_ch.properties[t, x])
+                    print("self.hot_ch.properties[t, x] is hashable")
+                except TypeError:
+                    print("self.hot_ch.properties[t, x] is not gooz hashable")
+                
+                pressure_hot = self.hot_ch.properties[t, x].pressure
+                sf_pressure_hot = iscale.get_scaling_factor(pressure_hot)
+
+                sf_permeability = iscale.get_scaling_factor(self.permeability_coef)
+                sf_thickness = iscale.get_scaling_factor(self.membrane_thickness)
+                #sf_pressure_hot = iscale.get_scaling_factor(self.hot_ch.properties[t, x].pressure)
+                #sf_pressure_cold = iscale.get_scaling_factor(self.cold_ch.properties[t, x].pressure)
+                
+            
+                sf_flux = sf_permeability * (sf_pressure_hot) / sf_thickness
+                
+                # Set the scaling factor for flux_mass
+                iscale.set_scaling_factor(self.flux_mass[t, x], sf_flux)
+                
+                # Apply the scaling factor to the constraint
+                iscale.constraint_scaling_transform(self.eq_flux_mass[t, x], sf_flux)
+
 
         # Scaling for flux_enth_hot and flux_enth_cold
         for t, v in self.flux_enth_hot.items():

@@ -142,9 +142,6 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
                 f"Unrecognized pressure_change_type {pressure_change_type}"
             )
 
-    def set_config(self, config):
-        self.config = config
-
     def initialize(
         self,
         state_args=None,
