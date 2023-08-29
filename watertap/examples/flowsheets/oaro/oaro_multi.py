@@ -76,15 +76,15 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     # build, set, and initialize
     m = build(number_of_stages=number_of_stages, erd_type=erd_type)
     set_operating_conditions(m, number_of_stages=number_of_stages)
-    # initialize_system(m, number_of_stages, solver=solver)
-    try:
-        initialize_system(m, number_of_stages, solver=solver)
-    except:
-        pass
+    initialize_system(m, number_of_stages, solver=solver)
+    # try:
+    #     initialize_system(m, number_of_stages, solver=solver)
+    # except:
+    #     pass
 
-    optimize_set_up(
-        m, number_of_stages=number_of_stages, water_recovery=system_recovery
-    )
+    # optimize_set_up(
+    #     m, number_of_stages=number_of_stages, water_recovery=system_recovery
+    # )
 
     results = solve(m, solver=solver)
     assert_optimal_termination(results)
@@ -647,8 +647,8 @@ def set_operating_conditions(
     for idx, pump in m.fs.RecyclePumps.items():
         # pump.control_volume.properties_out[0].pressure = 1.5e5 + 8e5 / float(idx)
         pump.control_volume.properties_out[0].pressure = 5e5
-        pump.efficiency_pump.fix(0.75)
         pump.control_volume.properties_out[0].pressure.fix()
+        pump.efficiency_pump.fix(0.75)
 
     # Initialize OARO
     width = 5 * Qin / 1e-3  # effective membrane width [m]
@@ -857,10 +857,17 @@ def initialize_system(m, number_of_stages=None, solver=None, verbose=True):
     # permeate side outlet pressure and unfix the RO pump
     # (which allows for control over the flow mass composition
     # into the OARO permeate_side).
-    # m.fs.OAROUnits[1].permeate_side.properties_out[0].pressure.fix(101325)
-    # m.fs.PrimaryPumps[2].control_volume.properties_out[0].pressure.unfix()
-    # m.fs.OAROUnits[2].permeate_side.properties_out[0].pressure.fix(101325)
-    # m.fs.PrimaryPumps[3].control_volume.properties_out[0].pressure.unfix()
+    for stage in m.fs.OAROUnits.values():
+        stage.permeate_side.properties_out[0].pressure.fix(101325)
+    for idx, pump in m.fs.PrimaryPumps.items():
+        if idx != m.fs.Stages.first():
+            pump.control_volume.properties_out[0].pressure.unfix()
+    # for makeup in m.fs.MakeupStreams.values():
+    #     makeup.properties[0].flow_vol_phase["Liq"].unfix()
+    #     makeup.properties[0].flow_vol_phase["Liq"].setlb(0)
+    #     makeup.properties[0].flow_vol_phase["Liq"].setub(0.1*5.416667e-3)
+
+    print(f"DOF: {degrees_of_freedom(m)}")
 
     m.fs.costing.initialize()
 
@@ -1130,7 +1137,7 @@ def optimize_set_up(
     for makeup in m.fs.MakeupStreams.values():
         makeup.properties[0].flow_vol_phase["Liq"].unfix()
         makeup.properties[0].flow_vol_phase["Liq"].setlb(0)
-        makeup.properties[0].flow_vol_phase["Liq"].setub(None)
+        makeup.properties[0].flow_vol_phase["Liq"].setub(0.1 * 5.416667e-3)
 
     # if number_of_stages > 2:
     #     m.fs.WasteSeparator.split_fraction[:, "waste"].unfix()
@@ -1354,11 +1361,11 @@ def display_state(m):
 
     for stage in m.fs.Stages:
 
-        print_state(f"Primary Pump {stage} out", m.fs.PrimaryPumps[stage].outlet)
-        print_state(
-            f"ERD {stage} out",
-            m.fs.EnergyRecoveryDevices[stage].outlet,
-        )
+        # print_state(f"Primary Pump {stage} out", m.fs.PrimaryPumps[stage].outlet)
+        # print_state(
+        #     f"ERD {stage} out",
+        #     m.fs.EnergyRecoveryDevices[stage].outlet,
+        # )
 
         if stage == m.fs.LastStage:
             pass
@@ -1375,13 +1382,9 @@ def display_state(m):
         if stage == m.fs.FirstStage:
             pass
         else:
-            print_state(f"Recycle Pump {stage} out", m.fs.RecyclePumps[stage].outlet)
+            # print_state(f"Recycle Pump {stage} out", m.fs.RecyclePumps[stage].outlet)
             print_state(f"Purge {stage} out", m.fs.Separators[stage].purge)
-
-        # if stage == m.fs.FirstStage or stage == m.fs.LastStage:
-        #     pass
-        # else:
-        #     print_state(f"Recycle {stage} out", m.fs.IntermediateMixers[stage].recycle)
+            print_state(f"Make-up {stage} out", m.fs.MakeupStreams[stage].outlet)
 
     print_state(f"RO inlet", m.fs.RO.inlet)
     print_state(f"RO permeate", m.fs.RO.permeate)
@@ -1393,4 +1396,4 @@ def display_state(m):
 
 if __name__ == "__main__":
     # NOTE: this flowsheet only works for 2 and 3 stages
-    m = main(5, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
+    m = main(2, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
