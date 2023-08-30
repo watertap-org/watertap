@@ -152,8 +152,8 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         self.recovery_mass_phase_comp = Var(
             self.flowsheet().config.time,
-            #self.config.hot_ch.property_package.phase_list,
-            #self.config.hot_ch.property_package.component_list,
+            # self.config.hot_ch.property_package.phase_list,
+            # self.config.hot_ch.property_package.component_list,
             initialize=0.1,
             bounds=(1e-11, 0.99),
             units=pyunits.dimensionless,
@@ -162,14 +162,16 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            #self.config.hot_ch.property_package.component_list,
+            # self.config.hot_ch.property_package.component_list,
         )
         def eq_recovery_mass_phase_comp(b, t):
             return (
                 b.recovery_mass_phase_comp[t]
-                * b.hot_ch.properties[t, b.first_element].flow_mass_phase_comp["Liq", "H2O"]
+                * b.hot_ch.properties[t, b.first_element].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
                 == b.cold_ch.properties[t, b.first_element].flow_mass_phase_comp[
-                    "Liq",  "H2O"
+                    "Liq", "H2O"
                 ]
                 - b.cold_ch.properties[
                     t, b.cold_ch.length_domain.last()
@@ -391,9 +393,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         # Check for hot channel temperature polarization type
         if (
             self.config.hot_ch.temperature_polarization_type
-            == TemperaturePolarizationType.calculated
-            or self.config.hot_ch.temperature_polarization_type
-            == TemperaturePolarizationType.fixed
+            != TemperaturePolarizationType.none
         ):
 
             @self.Constraint(
@@ -416,10 +416,8 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         # Check for cold channel temperature polarization type
         if (
-            self.config.cold_ch.temperature_polarization_type
-            == TemperaturePolarizationType.calculated
-            or self.config.cold_ch.temperature_polarization_type
-            == TemperaturePolarizationType.fixed
+            self.config.hot_ch.temperature_polarization_type
+            != TemperaturePolarizationType.none
         ):
 
             @self.Constraint(
@@ -598,7 +596,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         # Solve unit *with* flux equations
         self.eq_flux_heat.activate()
         self.eq_flux_mass.activate()
-        
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
         init_log.info_high(f"Initialization Step 3 {idaeslog.condition(res)}")
@@ -647,59 +645,52 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.membrane_thickness) is None:
             iscale.set_scaling_factor(self.membrane_thickness, 1e4)
 
-        for (t, x) in self.flux_mass.items():
-            if iscale.get_scaling_factor(self.flux_mass[t, x]) is None:
+        if iscale.get_scaling_factor(self.membrane_tc) is None:
+            iscale.set_scaling_factor(self.membrane_tc, 10)
 
-                # Debugging Checks (Place them here)
-                print(f"Type of t: {type(t)}, Value: {t}")
-                print(f"Type of x: {type(x)}, Value: {x}")
+        for (t, x), v in self.flux_mass.items():
+            if iscale.get_scaling_factor(v) is None:
 
-                try:
-                    hash(t)
-                    print("t is hashable")
-                except TypeError:
-                    print("t is not hashable")
-
-                try:
-                    hash(x)
-                    print("x is hashable")
-                except TypeError:
-                    print("x is not hashable")
-
-                print(f"Type of self.hot_ch.properties: {type(self.hot_ch.properties)}")
-
-                try:
-                    hash(self.hot_ch.properties[t, x])
-                    print("self.hot_ch.properties[t, x] is hashable")
-                except TypeError:
-                    print("self.hot_ch.properties[t, x] is not gooz hashable")
-                
-                pressure_hot = self.hot_ch.properties[t, x].pressure
-                sf_pressure_hot = iscale.get_scaling_factor(pressure_hot)
+                # pressure_hot = self.hot_ch.properties[t, x].pressure
+                sf_pressure_hot = iscale.get_scaling_factor(
+                    self.hot_ch.properties_interface[t, x].pressure_sat
+                )
 
                 sf_permeability = iscale.get_scaling_factor(self.permeability_coef)
                 sf_thickness = iscale.get_scaling_factor(self.membrane_thickness)
-                #sf_pressure_hot = iscale.get_scaling_factor(self.hot_ch.properties[t, x].pressure)
-                #sf_pressure_cold = iscale.get_scaling_factor(self.cold_ch.properties[t, x].pressure)
-                
-            
+                # sf_pressure_hot = iscale.get_scaling_factor(self.hot_ch.properties[t, x].pressure)
+                # sf_pressure_cold = iscale.get_scaling_factor(self.cold_ch.properties[t, x].pressure)
+
                 sf_flux = sf_permeability * (sf_pressure_hot) / sf_thickness
-                
+
                 # Set the scaling factor for flux_mass
-                iscale.set_scaling_factor(self.flux_mass[t, x], sf_flux)
-                
+                iscale.set_scaling_factor(v, sf_flux)
+
                 # Apply the scaling factor to the constraint
                 iscale.constraint_scaling_transform(self.eq_flux_mass[t, x], sf_flux)
 
-
         # Scaling for flux_enth_hot and flux_enth_cold
-        for t, v in self.flux_enth_hot.items():
+        for (t, x), v in self.flux_enth_hot.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(v, 1e3)
+                sf_flux_enth = sf_flux * iscale.get_scaling_factor(
+                    self.hot_ch.properties_vapor[t, x].enth_mass_phase["Vap"]
+                )
+                iscale.set_scaling_factor(v, sf_flux_enth)
 
-        for t, v in self.flux_enth_cold.items():
+        for (t, x), v in self.flux_enth_cold.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(v, 1e3)
-        for t, v in self.flux_conduction_heat.items():
+                sf_flux_enth = sf_flux * iscale.get_scaling_factor(
+                    self.cold_ch.properties_vapor[t, x].enth_mass_phase["Vap"]
+                )
+                iscale.set_scaling_factor(v, sf_flux_enth)
+
+        for (t, x), v in self.flux_conduction_heat.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(v, 1e3)
+                sf_flux_cond = (
+                    iscale.get_scaling_factor(self.membrane_tc)
+                    / iscale.get_scaling_factor(self.membrane_thickness)
+                    * iscale.get_scaling_factor(
+                        self.hot_ch.properties_interface[t, x].temperature
+                    )
+                )
+                iscale.set_scaling_factor(v, sf_flux_cond)

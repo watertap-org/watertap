@@ -492,7 +492,7 @@ class TestMembraneDistillation:
                 "property_package_vapor": m.fs.properties_vapor,
                 "has_pressure_change": True,
                 "temperature_polarization_type": TemperaturePolarizationType.fixed,
-                "concentration_polarization_type": ConcentrationPolarizationType.fixed,
+                "concentration_polarization_type": ConcentrationPolarizationType.none,
                 "mass_transfer_coefficient": MassTransferCoefficient.none,
                 "pressure_change_type": PressureChangeType.fixed_per_stage,
                 "flow_direction": FlowDirection.forward,
@@ -529,7 +529,7 @@ class TestMembraneDistillation:
         m.fs.unit.permeability_coef.fix(1e-10)
         m.fs.unit.membrane_thickness.fix(1e-4)
         m.fs.unit.membrane_tc.fix(0.2)
-        m.fs.unit.hot_ch.cp_modulus.fix(1)
+        # m.fs.unit.hot_ch.cp_modulus.fix(1)
 
         m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
             hot_ch_flow_mass
@@ -562,15 +562,15 @@ class TestMembraneDistillation:
         assert isinstance(m.fs.unit.cold_ch, MDChannel0DBlock)
 
         # test statistics
-        assert number_variables(m) == 380
+        assert number_variables(m) == 378
         assert number_total_constraints(m) == 128
         assert number_unused_variables(m) == 138
 
     @pytest.mark.unit
     def test_dof(self, MD_frame):
         m = MD_frame
-        assert degrees_of_freedom(m) == 0  # your original assertion
-    
+        assert degrees_of_freedom(m) == 0
+
     @pytest.mark.unit
     def test_calculate_scaling(self, MD_frame):
         m = MD_frame
@@ -599,7 +599,7 @@ class TestMembraneDistillation:
         m.fs.properties_vapor.set_default_scaling(
             "flow_mass_phase_comp", 1, index=("Liq", "H2O")
         )
-        """
+
         iscale.calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
@@ -611,7 +611,7 @@ class TestMembraneDistillation:
 
         for i in badly_scaled_var_generator(m):
             print(i[0].name, i[1])
-           """         
+
     @pytest.mark.component
     def test_initialize(self, MD_frame):
         initialization_tester(MD_frame, outlvl=idaeslog.DEBUG)
@@ -663,7 +663,7 @@ class TestMembraneDistillation:
         m.fs.unit.permeability_coef.fix(1e-10)
         m.fs.unit.membrane_thickness.fix(1e-4)
         m.fs.unit.membrane_tc.fix(0.2)
-        m.fs.unit.hot_ch.cp_modulus.fix(1)
+        # m.fs.unit.hot_ch.cp_modulus.fix(1)
 
         m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
             hot_ch_flow_mass
@@ -673,17 +673,14 @@ class TestMembraneDistillation:
         m.fs.unit.cold_ch_inlet.temperature[0].fix(273.15 + 25)
 
         m.fs.unit.hot_ch.deltaP.fix(0)
-        # m.fs.unit.cold_ch.deltaP.fix(0)
+        m.fs.unit.cold_ch.deltaP.fix(0)
 
-        m.fs.unit.hot_ch.h_conv.fix(2400)
-        m.fs.unit.cold_ch.h_conv.fix(2400)
+        # m.fs.unit.hot_ch.h_conv.fix(2400)
+        # m.fs.unit.cold_ch.h_conv.fix(2400)
 
     @pytest.mark.component
     def test_initialize(self, MD_frame):
         initialization_tester(MD_frame, outlvl=idaeslog.DEBUG)
-
-    """
-      
 
     @pytest.mark.component
     def test_var_scaling(self, MD_frame):
@@ -691,7 +688,7 @@ class TestMembraneDistillation:
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         [print(i[0], i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
-    """
+
     @pytest.mark.component
     def test_solve(self, MD_frame):
         m = MD_frame
@@ -703,10 +700,6 @@ class TestMembraneDistillation:
     @pytest.mark.component
     def test_solution(self, MD_frame):
         m = MD_frame
-
-        #assert pytest.approx(0.0033, rel=1e-3) == value(
-           # m.fs.flux_mass_avg[0]
-        #)
 
         assert pytest.approx(0.92471851, rel=1e-3) == value(
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
@@ -720,6 +713,215 @@ class TestMembraneDistillation:
             m.fs.unit.hot_ch_outlet.temperature[0]
         )
 
-        assert pytest.approx( 343.401843712127, rel=1e-3) == value(
+        assert pytest.approx(343.401843712127, rel=1e-3) == value(
             m.fs.unit.cold_ch_outlet.temperature[0]
         )
+
+        assert pytest.approx(0.003356790, rel=1e-3) == value(m.fs.unit.flux_mass_avg[0])
+
+    @pytest.mark.component
+    def test_temperature_polarization_fixed(self):
+
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
+        m.fs.properties_cold_ch = props_sw.SeawaterParameterBlock()
+        m.fs.properties_vapor = props_w.WaterParameterBlock()
+        m.fs.unit = MembraneDistillation0D(
+            hot_ch={
+                "property_package": m.fs.properties_hot_ch,
+                "property_package_vapor": m.fs.properties_vapor,
+                "has_pressure_change": True,
+                "temperature_polarization_type": TemperaturePolarizationType.fixed,
+                "concentration_polarization_type": ConcentrationPolarizationType.none,
+                "mass_transfer_coefficient": MassTransferCoefficient.none,
+                "pressure_change_type": PressureChangeType.fixed_per_stage,
+                "flow_direction": FlowDirection.forward,
+            },
+            cold_ch={
+                "property_package": m.fs.properties_cold_ch,
+                "property_package_vapor": m.fs.properties_vapor,
+                "has_pressure_change": True,
+                "temperature_polarization_type": TemperaturePolarizationType.fixed,
+                "mass_transfer_coefficient": MassTransferCoefficient.none,
+                "concentration_polarization_type": ConcentrationPolarizationType.none,
+                "pressure_change_type": PressureChangeType.fixed_per_stage,
+                "flow_direction": FlowDirection.backward,
+            },
+        )
+
+        # fully specify system
+        hot_ch_flow_mass = 1
+        hot_ch_mass_frac_TDS = 0.035
+        hot_ch_pressure = 7e5
+        membrane_pressure_drop = -0.5e5
+        membrane_area = 12
+        hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
+        m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+            hot_ch_flow_mass * hot_ch_mass_frac_TDS
+        )
+        m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            hot_ch_flow_mass * hot_ch_mass_frac_H2O
+        )
+
+        m.fs.unit.hot_ch_inlet.pressure[0].fix(hot_ch_pressure)
+        m.fs.unit.hot_ch_inlet.temperature[0].fix(273.15 + 90)
+        m.fs.unit.area.fix(membrane_area)
+        m.fs.unit.permeability_coef.fix(1e-10)
+        m.fs.unit.membrane_thickness.fix(1e-4)
+        m.fs.unit.membrane_tc.fix(0.2)
+        # m.fs.unit.hot_ch.cp_modulus.fix(1)
+
+        m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            hot_ch_flow_mass
+        )
+        m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0)
+        m.fs.unit.cold_ch_inlet.pressure[0].fix(7e5)
+        m.fs.unit.cold_ch_inlet.temperature[0].fix(273.15 + 25)
+
+        m.fs.unit.hot_ch.deltaP.fix(0)
+        m.fs.unit.cold_ch.deltaP.fix(0)
+
+        m.fs.unit.hot_ch.h_conv.fix(2400)
+        m.fs.unit.cold_ch.h_conv.fix(2400)
+
+        # # test initialization
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
+
+        # test variable scaling
+        """
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        print("gooz")
+        [print(i[0], i[1]) for i in badly_scaled_var_lst]
+        assert badly_scaled_var_lst == []
+        """
+        # test solve
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+        assert pytest.approx(0.92471851, rel=1e-3) == value(
+            m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        )
+
+        assert pytest.approx(0.035, rel=1e-3) == value(
+            m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+        )
+
+        assert pytest.approx(312.652577449503, rel=1e-3) == value(
+            m.fs.unit.hot_ch_outlet.temperature[0]
+        )
+
+        assert pytest.approx(343.401843712127, rel=1e-3) == value(
+            m.fs.unit.cold_ch_outlet.temperature[0]
+        )
+
+        assert pytest.approx(0.003356790, rel=1e-3) == value(m.fs.unit.flux_mass_avg[0])
+
+    @pytest.mark.component
+    def test_temperature_polarization_calculated(self):
+
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
+        m.fs.properties_cold_ch = props_sw.SeawaterParameterBlock()
+        m.fs.properties_vapor = props_w.WaterParameterBlock()
+        m.fs.unit = MembraneDistillation0D(
+            hot_ch={
+                "property_package": m.fs.properties_hot_ch,
+                "property_package_vapor": m.fs.properties_vapor,
+                "has_pressure_change": True,
+                "temperature_polarization_type": TemperaturePolarizationType.calculated,
+                "concentration_polarization_type": ConcentrationPolarizationType.none,
+                "mass_transfer_coefficient": MassTransferCoefficient.none,
+                "pressure_change_type": PressureChangeType.fixed_per_stage,
+                "flow_direction": FlowDirection.forward,
+            },
+            cold_ch={
+                "property_package": m.fs.properties_cold_ch,
+                "property_package_vapor": m.fs.properties_vapor,
+                "has_pressure_change": True,
+                "temperature_polarization_type": TemperaturePolarizationType.calculated,
+                "mass_transfer_coefficient": MassTransferCoefficient.none,
+                "concentration_polarization_type": ConcentrationPolarizationType.none,
+                "pressure_change_type": PressureChangeType.fixed_per_stage,
+                "flow_direction": FlowDirection.backward,
+            },
+        )
+
+        # fully specify system
+        hot_ch_flow_mass = 1
+        hot_ch_mass_frac_TDS = 0.035
+        hot_ch_pressure = 7e5
+        membrane_pressure_drop = -0.5e5
+        membrane_area = 12
+        hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
+        m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+            hot_ch_flow_mass * hot_ch_mass_frac_TDS
+        )
+        m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            hot_ch_flow_mass * hot_ch_mass_frac_H2O
+        )
+
+        m.fs.unit.hot_ch_inlet.pressure[0].fix(hot_ch_pressure)
+        m.fs.unit.hot_ch_inlet.temperature[0].fix(273.15 + 90)
+        m.fs.unit.area.fix(membrane_area)
+        m.fs.unit.permeability_coef.fix(1e-10)
+        m.fs.unit.membrane_thickness.fix(1e-4)
+        m.fs.unit.membrane_tc.fix(0.2)
+        # m.fs.unit.hot_ch.cp_modulus.fix(1)
+
+        m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            hot_ch_flow_mass
+        )
+        m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0)
+        m.fs.unit.cold_ch_inlet.pressure[0].fix(7e5)
+        m.fs.unit.cold_ch_inlet.temperature[0].fix(273.15 + 25)
+
+        m.fs.unit.hot_ch.deltaP.fix(0)
+        m.fs.unit.cold_ch.deltaP.fix(0)
+
+        m.fs.unit.length.fix(8)
+        m.fs.unit.hot_ch.channel_height.fix(0.0019)
+        m.fs.unit.hot_ch.spacer_porosity.fix(0.77)
+        m.fs.unit.cold_ch.channel_height.fix(0.0019)
+        m.fs.unit.cold_ch.spacer_porosity.fix(0.77)
+
+        # m.fs.unit.hot_ch.h_conv.fix(2400)
+        # m.fs.unit.cold_ch.h_conv.fix(2400)
+
+        # # test initialization
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
+
+        # test variable scaling
+        """
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        print("gooz")
+        [print(i[0], i[1]) for i in badly_scaled_var_lst]
+        assert badly_scaled_var_lst == []
+        """
+
+        # test solve
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+        assert pytest.approx(0.908971, rel=1e-3) == value(
+            m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        )
+
+        assert pytest.approx(0.035, rel=1e-3) == value(
+            m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+        )
+
+        assert pytest.approx(305.92407, rel=1e-3) == value(
+            m.fs.unit.hot_ch_outlet.temperature[0]
+        )
+
+        assert pytest.approx(348.504663, rel=1e-3) == value(
+            m.fs.unit.cold_ch_outlet.temperature[0]
+        )
+
+        assert pytest.approx(0.004669079, rel=1e-3) == value(m.fs.unit.flux_mass_avg[0])

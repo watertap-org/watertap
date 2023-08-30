@@ -28,7 +28,6 @@ from idaes.core import (
     FlowDirection,
 )
 from idaes.core.util import scaling as iscale
-from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -701,25 +700,19 @@ class MDChannelMixin:
         return self._get_average_state(prop_in, prop_out)
 
     def _get_state_args_vapor(self, prop_in, prop_out):
-        state_args = self._get_average_state(
-            prop_in, prop_out
-        )  
+        state_args = self._get_average_state(prop_in, prop_out)
 
         state_args_vapor = {}
 
-        
         # state_args_vapor["pressure"] = state_args["pressure"]
         state_args_vapor["temperature"] = state_args["temperature"]
 
-       
         state_args_vapor["flow_mass_phase_comp"] = {
             ("Liq", "H2O"): self.properties_vapor[0, 0]
             .flow_mass_phase_comp["Liq", "H2O"]
             .lb,
             ("Vap", "H2O"): state_args["flow_mass_phase_comp"][("Liq", "H2O")] / 20,
         }
-
-        
 
         return state_args_vapor
 
