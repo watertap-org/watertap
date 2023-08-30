@@ -209,7 +209,10 @@ def thermo_config(base_units):
                         pyunits.J / pyunits.K / pyunits.mol,
                     ),
                     "pressure_sat_comp_coeff": {
-                        "A": (4.6543, None),  # [1], temperature range 255.9 K - 373 K
+                        "A": (
+                            4.6543,
+                            pyunits.dimensionless,
+                        ),  # [1], temperature range 255.9 K - 373 K
                         "B": (1435.264, pyunits.K),
                         "C": (-64.848, pyunits.K),
                     },
@@ -290,7 +293,7 @@ def thermo_config(base_units):
         "state_definition": FTPx,
         "state_bounds": {
             "flow_mol": (0, 50, 100),
-            "temperature": (273.15, 300, 650),
+            "temperature": (273.15, 300, 647),
             "pressure": (5e4, 1e5, 1e6),
         },
         "pressure_ref": 1e5,
@@ -308,7 +311,7 @@ def thermo_config(base_units):
                 "equilibrium_form": log_power_law_equil,
                 "concentration_form": ConcentrationForm.moleFraction,
                 "parameter_data": {
-                    "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                    "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                     "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                     "T_eq_ref": (298, pyunits.K),
                     # By default, reaction orders follow stoichiometry
@@ -344,7 +347,7 @@ def water_reaction_config(base_units):
                 "equilibrium_form": log_power_law_equil,
                 "concentration_form": ConcentrationForm.moleFraction,
                 "parameter_data": {
-                    "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                    "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                     "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                     "T_eq_ref": (298, pyunits.K),
                     # By default, reaction orders follow stoichiometry
@@ -492,13 +495,13 @@ class TestPureWater:
         scale_func(model)
 
         # Next, try adding scaling for species
-        min = 1e-3
+        min_scale = 1e-3
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
-            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min_scale:
                 scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
             else:
-                scale = min
+                scale = min_scale
             iscale.set_scaling_factor(
                 model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]],
                 10 / scale,
@@ -507,7 +510,7 @@ class TestPureWater:
                 model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[
                     i
                 ],
-                10 / scale,
+                100 / scale,
             )
             iscale.set_scaling_factor(
                 model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i],
@@ -522,6 +525,37 @@ class TestPureWater:
             iscale.constraint_scaling_transform(
                 model.fs.unit.control_volume.material_balances[0.0, i[1]], 10 / scale
             )
+
+        max_enth_mol_phase = 1
+        min_scale = 1
+        for phase in model.fs.unit.control_volume.properties_in[0.0].enth_mol_phase:
+            val = max(
+                min_scale,
+                abs(
+                    value(
+                        model.fs.unit.control_volume.properties_in[0.0]
+                        .enth_mol_phase[phase]
+                        .expr
+                    )
+                ),
+            )
+            max_enth_mol_phase = max(val, max_enth_mol_phase)
+            iscale.set_scaling_factor(
+                model.fs.unit.control_volume.properties_in[0.0]._enthalpy_flow_term[
+                    phase
+                ],
+                1 / val,
+            )
+            iscale.set_scaling_factor(
+                model.fs.unit.control_volume.properties_out[0.0]._enthalpy_flow_term[
+                    phase
+                ],
+                1 / val,
+            )
+
+        iscale.constraint_scaling_transform(
+            model.fs.unit.control_volume.enthalpy_balances[0.0], 1 / max_enth_mol_phase
+        )
 
         iscale.calculate_scaling_factors(model.fs.unit)
         return model
@@ -585,7 +619,7 @@ class TestPureWater:
 
     @pytest.fixture
     def model_solve(self, model, solver):
-        results = solver.solve(model, tee=True)
+        results = solver.solve(model, symbolic_solver_labels=True, tee=True)
         return model, results
 
     @pytest.mark.component

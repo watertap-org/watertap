@@ -71,7 +71,6 @@ class ConcurrentFuturesParallelManager(ParallelManager):
         do_execute,
         all_parameters,
     ):
-
         # constrain the number of child processes to the number of unique values to be run
         self.actual_number_of_subprocesses = min(
             self.max_number_of_subprocesses, len(all_parameters)

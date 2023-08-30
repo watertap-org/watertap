@@ -18,7 +18,6 @@ from ..util import (
 
 
 def build_electroNP_cost_param_block(blk):
-
     blk.HRT = pyo.Var(
         initialize=1.3333,
         doc="Hydraulic retention time",
@@ -104,7 +103,7 @@ def cost_electroNP_capital(blk, HRT, sizing_cost):
     blk.sizing_cost = pyo.Expression(expr=sizing_cost)
 
     flow_in = pyo.units.convert(
-        blk.unit_model.properties_in[0].flow_vol,
+        blk.unit_model.mixed_state[0].flow_vol,
         to_units=pyo.units.m**3 / pyo.units.hr,
     )
 
