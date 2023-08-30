@@ -41,7 +41,7 @@ from .MD_channel_0D import MDChannel0DBlock
 from .membrane_distillation_base import (
     MembraneDistillationBaseData,
 )
-from idaes.core.util.config import is_physical_parameter_block, DefaultBool
+from idaes.core.util.config import is_physical_parameter_block
 
 # __author__ = "Elmira Shamlou"
 

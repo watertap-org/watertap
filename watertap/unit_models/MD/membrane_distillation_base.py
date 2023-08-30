@@ -28,6 +28,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
+from watertap.core import InitializationMixin
 
 from .MD_channel_base import (
     ConcentrationPolarizationType,
@@ -36,7 +37,7 @@ from .MD_channel_base import (
 )
 
 
-from watertap.core import InitializationMixin
+
 
 
 class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
