@@ -39,8 +39,8 @@ def parameter_sweep(
     number_of_subprocesses=None,
     build_model_kwargs=None,
     build_sweep_params_kwargs=None,
+    build_outputs_kwargs=None,
 ):
-
     """
     This function offers a general way to perform repeated optimizations
     of a model for the purposes of exploring a parameter space while
@@ -177,9 +177,9 @@ def parameter_sweep(
 
 
 def recursive_parameter_sweep(
-    model,
-    sweep_params,
-    outputs=None,
+    build_model,
+    build_sweep_params,
+    build_outputs=None,
     csv_results_file_name=None,
     h5_results_file_name=None,
     h5_parent_group_name=None,
@@ -191,10 +191,11 @@ def recursive_parameter_sweep(
     probe_function=None,
     debugging_data_dir=None,
     interpolate_nan_outputs=False,
-    req_num_samples=None,
+    num_samples=None,
     seed=None,
+    number_of_subprocesses=None,
+    req_num_samples=None,
 ):
-
     """
     This function is similar to the `parameter_sweep` function for exploring the parameter space while guranteeing a required number of solves.
     If provided, writes single CSV file to ``results_file`` with all inputs and resulting outputs.
@@ -304,27 +305,33 @@ def recursive_parameter_sweep(
         kwargs["debugging_data_dir"] = debugging_data_dir
     if interpolate_nan_outputs is not None:
         kwargs["interpolate_nan_outputs"] = interpolate_nan_outputs
+    if number_of_subprocesses is not None:
+        kwargs["number_of_subprocesses"] = number_of_subprocesses
 
     rps = RecursiveParameterSweep(**kwargs)
 
     return rps.parameter_sweep(
-        model, sweep_params, outputs=outputs, req_num_samples=req_num_samples, seed=seed
+        build_model,
+        build_sweep_params,
+        build_outputs=build_outputs,
+        req_num_samples=req_num_samples,
+        seed=seed,
     )
 
 
 def differential_parameter_sweep(
-    model,
-    sweep_params,
+    build_model,
+    build_sweep_params,
     differential_sweep_specs,
-    outputs=None,
+    build_outputs=None,
     csv_results_file_name=None,
     h5_results_file_name=None,
     h5_parent_group_name=None,
     optimize_function=None,
     optimize_kwargs=None,
-    reinitialize_function=None,
-    reinitialize_kwargs=None,
-    reinitialize_before_sweep=False,
+    initialize_function=None,
+    initialize_kwargs=None,
+    initialize_before_sweep=False,
     probe_function=None,
     debugging_data_dir=None,
     interpolate_nan_outputs=False,
@@ -333,7 +340,6 @@ def differential_parameter_sweep(
     seed=None,
     guarantee_solves=False,
 ):
-
     """
     This function is similar to the `parameter_sweep` function for exploring the parameter space while guranteeing a required number of solves.
     If provided, writes single CSV file to ``results_file`` with all inputs and resulting outputs.
@@ -459,11 +465,11 @@ def differential_parameter_sweep(
         kwargs["optimize_function"] = optimize_function
     if optimize_kwargs is not None:
         kwargs["optimize_kwargs"] = optimize_kwargs
-    if reinitialize_function is not None:
-        kwargs["reinitialize_function"] = reinitialize_function
-    if reinitialize_kwargs is not None:
-        kwargs["reinitialize_kwargs"] = reinitialize_kwargs
-    kwargs["reinitialize_before_sweep"] = reinitialize_before_sweep
+    if initialize_function is not None:
+        kwargs["initialize_function"] = initialize_function
+    if initialize_kwargs is not None:
+        kwargs["initialize_kwargs"] = initialize_kwargs
+    kwargs["initialize_before_sweep"] = initialize_before_sweep
     if probe_function is not None:
         kwargs["probe_function"] = probe_function
     if debugging_data_dir is not None:
@@ -476,5 +482,9 @@ def differential_parameter_sweep(
     dps = DifferentialParameterSweep(**kwargs)
 
     return dps.parameter_sweep(
-        model, sweep_params, outputs=outputs, seed=seed, num_samples=num_samples
+        build_model,
+        build_sweep_params,
+        build_outputs=build_outputs,
+        seed=seed,
+        num_samples=num_samples,
     )

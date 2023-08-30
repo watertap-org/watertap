@@ -60,10 +60,10 @@ setup(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",
@@ -75,7 +75,7 @@ setup(
     packages=find_packages(
         include=("watertap*",),
     ),
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=[
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
@@ -110,7 +110,7 @@ setup(
         "dev": [
             "nbsphinx",  # jupyter notebook support for sphinx
             "jinja2<3.1.0",  # see watertap-org/watertap#449
-            "Sphinx",  # docs
+            "Sphinx==7.1.*",  # docs
             "sphinx_rtd_theme",  # docs
             "urllib3 < 2",  # see watertap-org/watertap#1021,
             # other requirements
