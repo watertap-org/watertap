@@ -66,21 +66,6 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         """
         super().build()
 
-        # self.config.declare(
-        #     "transport_model",
-        #     ConfigValue(
-        #         default='soultion-diffusion',
-        #         description="Mass transfer model in RO feed channel",
-        #         doc="""
-        #         Options to account for mass transfer model.
-
-        #         **default** - ``solution-diffusion``
-
-        #         """,
-        #     ),
-        # )
-
-
         if len(self.config.property_package.solvent_set) > 1:
             raise ConfigurationError(
                 "Membrane models only support one solvent component,"
