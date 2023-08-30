@@ -37,9 +37,6 @@ from .MD_channel_base import (
 )
 
 
-
-
-
 class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
     def build(self):
         """
