@@ -78,9 +78,6 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         # Add constraint for volumetric flow equality between interface and bulk
         self.hot_ch.add_extensive_flow_to_interface()
 
-        # Concentration polarization constraint is not accounted for in the below method; it is
-        # written later in the base model (eq_concentration_polarization)
-
         self.hot_ch.add_concentration_polarization(
             concentration_polarization_type=self.config.hot_ch.concentration_polarization_type,
             mass_transfer_coefficient=self.config.hot_ch.mass_transfer_coefficient,
@@ -649,25 +646,19 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         for (t, x), v in self.flux_mass.items():
             if iscale.get_scaling_factor(v) is None:
 
-                # pressure_hot = self.hot_ch.properties[t, x].pressure
                 sf_pressure_hot = iscale.get_scaling_factor(
                     self.hot_ch.properties_interface[t, x].pressure_sat
                 )
 
                 sf_permeability = iscale.get_scaling_factor(self.permeability_coef)
                 sf_thickness = iscale.get_scaling_factor(self.membrane_thickness)
-                # sf_pressure_hot = iscale.get_scaling_factor(self.hot_ch.properties[t, x].pressure)
-                # sf_pressure_cold = iscale.get_scaling_factor(self.cold_ch.properties[t, x].pressure)
 
                 sf_flux = sf_permeability * (sf_pressure_hot) / sf_thickness
 
-                # Set the scaling factor for flux_mass
                 iscale.set_scaling_factor(v, sf_flux)
 
-                # Apply the scaling factor to the constraint
                 iscale.constraint_scaling_transform(self.eq_flux_mass[t, x], sf_flux)
 
-        # Scaling for flux_enth_hot and flux_enth_cold
         for (t, x), v in self.flux_enth_hot.items():
             if iscale.get_scaling_factor(v) is None:
                 sf_flux_enth = sf_flux * iscale.get_scaling_factor(
@@ -692,3 +683,11 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                     )
                 )
                 iscale.set_scaling_factor(v, sf_flux_cond)
+
+        if hasattr(self, "length"):
+            if iscale.get_scaling_factor(self.length) is None:
+                iscale.set_scaling_factor(self.length, 1)
+
+        if hasattr(self, "width"):
+            if iscale.get_scaling_factor(self.width) is None:
+                iscale.set_scaling_factor(self.width, 1)

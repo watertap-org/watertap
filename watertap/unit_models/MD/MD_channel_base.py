@@ -762,9 +762,19 @@ class MDChannelMixin:
                     iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, "h_conv"):
-            for v in self.h_conv.values():
-                if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, 1)
+            for (t, x), v in self.h_conv.items():
+                if hasattr(self, "N_Nu"):
+                    if iscale.get_scaling_factor(v) is None:
+                        sf_hconv = (
+                            iscale.get_scaling_factor(
+                                self.properties[t, x].therm_cond_phase["Liq"]
+                            )
+                            * iscale.get_scaling_factor(self.N_Nu[t, x])
+                            / iscale.get_scaling_factor(self.dh)
+                        )
+                        iscale.set_scaling_factor(v, sf_hconv)
+                else:
+                    iscale.set_scaling_factor(v, 1e3)
 
         if hasattr(self, "velocity"):
             for v in self.velocity.values():

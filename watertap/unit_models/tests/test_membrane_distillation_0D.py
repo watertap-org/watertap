@@ -32,9 +32,7 @@ from idaes.core import (
     FlowDirection,
 )
 from pyomo.common.config import ConfigBlock
-import pyomo.environ as pyo
 import idaes.logger as idaeslog
-from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 import watertap.property_models.seawater_prop_pack as props_sw
@@ -49,8 +47,6 @@ from watertap.unit_models.MD.MD_channel_base import (
     FrictionFactor,
 )
 
-import idaes.core.util.scaling as iscale
-from pyomo.core.base.units_container import units as pyunits
 from pyomo.environ import Constraint, Var
 
 solver = get_solver()
@@ -574,31 +570,6 @@ class TestMembraneDistillation:
     def test_calculate_scaling(self, MD_frame):
         m = MD_frame
 
-        m.fs.properties_hot_ch.set_default_scaling(
-            "flow_mass_phase_comp", 1, index=("Liq", "H2O")
-        )
-        m.fs.properties_hot_ch.set_default_scaling(
-            "flow_mass_phase_comp", 1e2, index=("Liq", "TDS")
-        )
-
-        m.fs.properties_cold_ch.set_default_scaling(
-            "flow_mass_phase_comp", 1, index=("Liq", "H2O")
-        )
-        m.fs.properties_cold_ch.set_default_scaling(
-            "flow_mass_phase_comp", 1e2, index=("Liq", "TDS")
-        )
-
-        m.fs.properties_cold_ch.set_default_scaling(
-            "flow_mass_phase_comp", 1e2, index=("Liq", "TDS")
-        )
-
-        m.fs.properties_vapor.set_default_scaling(
-            "flow_mass_phase_comp", 1, index=("Vap", "H2O")
-        )
-        m.fs.properties_vapor.set_default_scaling(
-            "flow_mass_phase_comp", 1, index=("Liq", "H2O")
-        )
-
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
@@ -784,16 +755,22 @@ class TestMembraneDistillation:
         m.fs.unit.hot_ch.h_conv.fix(2400)
         m.fs.unit.cold_ch.h_conv.fix(2400)
 
+        calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors.
+        unscaled_var_list = list(
+            unscaled_variables_generator(m.fs.unit, include_fixed=True)
+        )
+        [print(i) for i in unscaled_var_list]
+        assert len(unscaled_var_list) == 0
+
         # # test initialization
         initialization_tester(m, outlvl=idaeslog.DEBUG)
 
-        # test variable scaling
-        """
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        print("gooz")
         [print(i[0], i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
-        """
+
         # test solve
         results = solver.solve(m)
 
@@ -889,17 +866,23 @@ class TestMembraneDistillation:
 
         # m.fs.unit.hot_ch.h_conv.fix(2400)
         # m.fs.unit.cold_ch.h_conv.fix(2400)
+        calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors.
+        unscaled_var_list = list(
+            unscaled_variables_generator(m.fs.unit, include_fixed=True)
+        )
+        [print(i) for i in unscaled_var_list]
+        assert len(unscaled_var_list) == 0
 
         # # test initialization
         initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         # test variable scaling
-        """
+
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        print("gooz")
         [print(i[0], i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
-        """
 
         # test solve
         results = solver.solve(m)
