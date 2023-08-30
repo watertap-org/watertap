@@ -10,7 +10,6 @@ from pyomo.environ import (
 
 from idaes.core.solvers import get_solver
 from pyomo.environ import *
-from pyomo.util.infeasible import log_infeasible_constraints
 from pyomo.network import Port
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
