@@ -260,9 +260,7 @@ def param_sweep():
         flux_results.append(value(units.convert(m.fs.flux_mass_phase_comp / m.fs.perm[0].dens_mass_solvent, to_units=pyunits.liter * pyunits.m ** -2 * pyunits.hour ** -1)))
         leaky_flux_results.append(value(units.convert(m.fs.leaky_flux_mass_phase_comp / m.fs.perm[0].dens_mass_solvent, to_units=pyunits.liter * pyunits.m ** -2 * pyunits.hour ** -1)))
 
-    plot_data(molar_range, flux_results, flux_results, ax, label=f'{mol*54.88*100:.0f} g/L')
-    plt.show()
-
+ 
 def reflection_sensitivity():
     solver = get_solver()
     m = build(membrane_type='Leaky')
@@ -285,11 +283,9 @@ def reflection_sensitivity():
         reports.append(create_report(m))
 
     report = pd.concat(reports)
-    report.to_csv('/Users/zbinger/leaky_RO_alpha.csv')
     print(report)
-    plot_data(alpha_range, flux_results, salt_flux_results, rejection_results, ax, xlabel=r'Alpha $(\frac{1-\sigma}{\omega^\prime})$', ylabel=r'Water Flux $(\frac{L}{m^{2}  hr})$', ylabel2=r'Salt Flux $(\frac{kg}{m^{2}  hr})$')
+    plot_data(alpha_range, flux_results, salt_flux_results, rejection_results, ax=ax, xlabel=r'Alpha $(\frac{1-\sigma}{\omega^\prime})$', ylabel=r'Water Flux $(\frac{L}{m^{2}  hr})$', ylabel2=r'Salt Flux $(\frac{kg}{m^{2}  hr})$')
     fig.tight_layout()
-    fig.savefig('/Users/zbinger/leaky_RO_alpha.png', dpi=900)
     plt.show()
 
 def main():
@@ -307,5 +303,5 @@ def main():
 
 if __name__ == "__main__":
 #     main()
-    # param_sweep()
+#     param_sweep()
     reflection_sensitivity()

@@ -131,7 +131,7 @@ def automate_rescale_variables(self, rescale_factor=1, default=1):
             set_scaling_factor(var, sf / sv * rescale_factor)
             calculate_scaling_factors(self)
 
-def plot_data(x, y1, y2, y3, ax, xlabel=None, ylabel=None, ylabel2=None, label=None):
+def plot_data(x, y1, y2, y3, ax=None, xlabel=None, ylabel=None, ylabel2=None, label=None):
     colors = ["#2f5c8c", "#c07432", "#474747"]
     ax.plot(x,y1,'--',linewidth=2, c=colors[0])
     ax.plot(x,y1,'o',label=ylabel,linewidth=0, mfc=colors[0], mec=colors[0])
@@ -158,6 +158,7 @@ def plot_data(x, y1, y2, y3, ax, xlabel=None, ylabel=None, ylabel2=None, label=N
     ax3.set_ylabel('Rejection (%)', fontsize=16)
     ax3.tick_params(axis="y", labelsize=16)
     ax3.yaxis.label.set_color('k')
+    ax3.set_ylim(99, 100)
 
     plt.figlegend(loc='upper left', fontsize=12, frameon = False, bbox_to_anchor=(0.1, 0.98), ncols=2)
     # ax.set_xlim(min(x), max(x))
@@ -165,7 +166,7 @@ def plot_data(x, y1, y2, y3, ax, xlabel=None, ylabel=None, ylabel2=None, label=N
 
     ax.set_ylim(0, 30)
     ax2.set_ylim(0, 1)
-    ax3.set_ylim(99, 100)
+    
 
     annote_lat = 0.28
     annote_long = 0.03
