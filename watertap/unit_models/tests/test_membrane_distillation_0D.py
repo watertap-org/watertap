@@ -600,7 +600,7 @@ class TestMembraneDistillation:
             "flow_mass_phase_comp", 1, index=("Liq", "H2O")
         )
 
-        iscale.calculate_scaling_factors(m)
+        calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
