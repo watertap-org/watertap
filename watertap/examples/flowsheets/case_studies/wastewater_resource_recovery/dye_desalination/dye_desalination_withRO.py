@@ -470,10 +470,10 @@ def add_costing(m, has_dye_revenue=False):
         expr=(
             m.fs.zo_costing.utilization_factor
             * (
-                m.fs.zo_costing.waste_disposal_cost
+                m.fs.zo_costing.waste_mass_disposal_cost
                 * pyunits.convert(
-                    m.fs.brine.properties[0].flow_vol,
-                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                    m.fs.brine.flow_mass_phase_comp[0, "Liq", "TDS"],
+                    to_units=pyunits.kg / m.fs.zo_costing.base_period,
                 )
             )
         ),
@@ -501,10 +501,10 @@ def add_costing(m, has_dye_revenue=False):
         m.fs.dye_value = Expression(
             expr=(
                 m.fs.zo_costing.utilization_factor
-                * m.fs.zo_costing.dye_recovery_cost
+                * m.fs.zo_costing.dye_mass_recovery_cost
                 * pyunits.convert(
-                    m.fs.dye_retentate.properties[0].flow_vol,
-                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                    m.fs.dye_retentate.flow_mass_comp[0, "dye"],
+                    to_units=pyunits.kg / m.fs.zo_costing.base_period,
                 )
             ),
             doc="Revenue from recovering dye",
@@ -515,10 +515,10 @@ def add_costing(m, has_dye_revenue=False):
             expr=(
                 -1
                 * m.fs.zo_costing.utilization_factor
-                * m.fs.zo_costing.dye_disposal_cost
+                * m.fs.zo_costing.dye_mass_disposal_cost
                 * pyunits.convert(
-                    m.fs.dye_retentate.properties[0].flow_vol,
-                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                    m.fs.dye_retentate.flow_mass_comp[0, "dye"],
+                    to_units=pyunits.kg / m.fs.zo_costing.base_period,
                 )
             ),
             doc="Cost of disposing of dye waste",

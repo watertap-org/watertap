@@ -338,7 +338,7 @@ def export_variables(flowsheet=None, exports=None):
         input_category="System Costs",
         is_output=False,
     )
-    v = fs.zo_costing.dye_mass_cost
+    v = fs.zo_costing.dye_mass_recovery_cost
     exports.add(
         obj=v,
         name="Value of recovered dye",
