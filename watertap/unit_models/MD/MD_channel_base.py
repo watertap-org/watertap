@@ -624,7 +624,7 @@ class MDChannelMixin:
     def _get_state_args(self, initialize_guess, state_args):
         """
         Arguments:
-            initialize_guess : a dict of guesses for recovery and Temp_change_ratio.
+            initialize_guess : a dict of guesses for recovery, Temp_change, and deltaP.
             state_args : a dict of arguments to be passed to the property
                         package to provide an initial state for the inlet feed.
         """
@@ -633,9 +633,12 @@ class MDChannelMixin:
             initialize_guess = {}
 
         if "recovery" not in initialize_guess:
-            initialize_guess["recovery"] = 0.5
+            initialize_guess["recovery"] = 0.1
 
-        Temp_change_ratio = initialize_guess.get("Temp_change_ratio", 40)
+        if "deltaP" not in initialize_guess:
+            initialize_guess["deltaP"] = -5e5
+
+        Temp_change = initialize_guess.get("Temp_change", 40)
 
         # Getting source state
         if self.flow_direction == FlowDirection.forward:
@@ -669,8 +672,8 @@ class MDChannelMixin:
             )
 
         # Adjust temperature based on Temp_change_ratio
-        hot_outlet_args["temperature"] = state_args["temperature"] - Temp_change_ratio
-        cold_outlet_args["temperature"] = state_args["temperature"] + Temp_change_ratio
+        hot_outlet_args["temperature"] = state_args["temperature"] - Temp_change
+        cold_outlet_args["temperature"] = state_args["temperature"] + Temp_change
 
         return {
             "inlet": state_args,
@@ -763,8 +766,8 @@ class MDChannelMixin:
 
         if hasattr(self, "h_conv"):
             for (t, x), v in self.h_conv.items():
-                if hasattr(self, "N_Nu"):
-                    if iscale.get_scaling_factor(v) is None:
+                if iscale.get_scaling_factor(v) is None:
+                    if hasattr(self, "N_Nu"):
                         sf_hconv = (
                             iscale.get_scaling_factor(
                                 self.properties[t, x].therm_cond_phase["Liq"]
@@ -773,8 +776,8 @@ class MDChannelMixin:
                             / iscale.get_scaling_factor(self.dh)
                         )
                         iscale.set_scaling_factor(v, sf_hconv)
-                else:
-                    iscale.set_scaling_factor(v, 1e3)
+                    else:
+                        iscale.set_scaling_factor(v, 1e3)
 
         if hasattr(self, "velocity"):
             for v in self.velocity.values():
