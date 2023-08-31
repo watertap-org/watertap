@@ -225,7 +225,7 @@ def run_analysis(
 
     elif case_num == 17:
         m.fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0].unfix()
-        m.fs.zo_costing.dye_disposal_cost.unfix()
+        m.fs.zo_costing.dye_mass_disposal_cost.unfix()
         sweep_params["NF_water_recovery"] = LinearSample(
             m.fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0],
             0.5,
@@ -233,7 +233,7 @@ def run_analysis(
             nx,
         )
         sweep_params["dye_disposal_cost"] = LinearSample(
-            m.fs.zo_costing.dye_disposal_cost, 50, 200, nx
+            m.fs.zo_costing.dye_mass_disposal_cost, 50, 200, nx
         )
 
     elif case_num == 18:
