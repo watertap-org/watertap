@@ -453,69 +453,20 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
             },
         )
 
-        # if number_of_stages > 1:
-        #     # Connect EnergyRecoveryDevice n to Separator n
-        #     m.fs.ERD_to_separator = Arc(
-        #         m.fs.NonFirstStages,
-        #         rule=lambda fs, n: {
-        #             "source": fs.EnergyRecoveryDevices[n].outlet,
-        #             "destination": fs.Separators[n].inlet,
-        #         },
-        #     )
-        #
-        #     m.fs.separator_to_mixer = Arc(
-        #         m.fs.NonFirstStages,
-        #         rule=lambda fs, n: {
-        #             "source": fs.Separators[n].treat,
-        #             "destination": fs.Mixers[n].treat,
-        #         },
-        #     )
-        #
-        #     m.fs.makeup_to_mixer = Arc(
-        #         m.fs.NonFirstStages,
-        #         rule=lambda fs, n: {
-        #             "source": fs.MakeupStreams[n].outlet,
-        #             "destination": fs.Mixers[n].makeup,
-        #         },
-        #     )
-        #
-        #     m.fs.mixer_to_recyclepump = Arc(
-        #         m.fs.NonFirstStages,
-        #         rule=lambda fs, n: {
-        #             "source": fs.Mixers[n].outlet,
-        #             "destination": fs.RecyclePumps[n].inlet,
-        #         },
-        #     )
-        #
-        #     # Connect RecyclePumps n to OARO n-1 permeate_inlet
-        #     m.fs.recyclepump_to_OARO = Arc(
-        #         m.fs.NonFirstStages,
-        #         rule=lambda fs, n: {
-        #             "source": fs.RecyclePumps[n].outlet,
-        #             "destination": fs.OAROUnits[n - 1].permeate_inlet,
-        #         },
-        #     )
-        #
-        #     # Connect purge streams to waste mixer
-        #     m.fs.purge_to_wastemixer = Arc(
-        #         m.fs.NonFirstStages,
-        #         rule=lambda fs, n: {
-        #             "source": fs.Separators[n].purge,
-        #             "destination": getattr(fs.WasteMixer, "purge" + str(n)),
-        #         },
-        #     )
-        #
-        #     # Connect waste mixer to disposal
-        #     m.fs.wastemixer_to_disposal = Arc(
-        #         source=m.fs.WasteMixer.outlet,
-        #         destination=m.fs.disposal.inlet,
-        #     )
-
         if number_of_stages > 1:
-            m.fs.ERD_to_mixer = Arc(
+            # Connect EnergyRecoveryDevice n to Separator n
+            m.fs.ERD_to_separator = Arc(
                 m.fs.NonFirstStages,
                 rule=lambda fs, n: {
                     "source": fs.EnergyRecoveryDevices[n].outlet,
+                    "destination": fs.Separators[n].inlet,
+                },
+            )
+
+            m.fs.separator_to_mixer = Arc(
+                m.fs.NonFirstStages,
+                rule=lambda fs, n: {
+                    "source": fs.Separators[n].treat,
                     "destination": fs.Mixers[n].treat,
                 },
             )
@@ -528,18 +479,10 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
                 },
             )
 
-            m.fs.mixer_to_separator = Arc(
+            m.fs.mixer_to_recyclepump = Arc(
                 m.fs.NonFirstStages,
                 rule=lambda fs, n: {
                     "source": fs.Mixers[n].outlet,
-                    "destination": fs.Separators[n].inlet,
-                },
-            )
-
-            m.fs.separator_to_recyclepump = Arc(
-                m.fs.NonFirstStages,
-                rule=lambda fs, n: {
-                    "source": fs.Separators[n].treat,
                     "destination": fs.RecyclePumps[n].inlet,
                 },
             )
@@ -667,7 +610,7 @@ def set_operating_conditions(
 
     for idx, pump in m.fs.RecyclePumps.items():
         # pump.control_volume.properties_out[0].pressure = 1.5e5 + 8e5 / float(idx)
-        pump.control_volume.properties_out[0].pressure = 5e5
+        pump.control_volume.properties_out[0].pressure = 20e5
         pump.control_volume.properties_out[0].pressure.fix()
         pump.efficiency_pump.fix(0.75)
 
@@ -693,7 +636,8 @@ def set_operating_conditions(
         stage.permeate_side.spacer_porosity.fix(spacer_porosity)
         stage.feed_side.channel_height.fix(2e-3)
         stage.feed_side.spacer_porosity.fix(spacer_porosity)
-        stage.feed_side.N_Re[0, 0].fix(250)
+        # stage.feed_side.N_Re[0, 0].fix(250)
+        stage.feed_side.velocity[0, 0].fix(0.1)
 
     # RO unit
     A_RO = 4.2e-12
@@ -726,14 +670,23 @@ def set_operating_conditions(
         for makeup in m.fs.MakeupStreams.values():
             makeup.pressure.fix(pressure_atmospheric)  # feed pressure [Pa]
             makeup.temperature.fix(feed_temperature)
-            makeup.properties[0].flow_vol_phase["Liq"].fix(0)
-            makeup.properties[0].mass_frac_phase_comp["Liq", "NaCl"].fix(0)
+            # makeup.properties[0].flow_vol_phase["Liq"].fix(0)
+            # makeup.properties[0].mass_frac_phase_comp["Liq", "NaCl"].fix(0)
+            makeup.properties.calculate_state(
+                var_args={
+                    ("mass_frac_phase_comp", ("Liq", "NaCl")): value(
+                        0
+                    ),  # makeup mass concentration
+                    ("flow_vol_phase", "Liq"): 0,
+                },  # makeup volumetric feed flowrate [-]
+                hold_state=True,  # fixes the calculated component mass flow rates
+            )
 
     print(f"DOF after make-up: {degrees_of_freedom(m)}")
 
     # Separator
     for sep in m.fs.Separators.values():
-        sep.split_fraction[:, "treat"] = 0.999
+        sep.split_fraction[:, "treat"] = 1
         sep.split_fraction[:, "treat"].fix()
 
     print(f"DOF after separator: {degrees_of_freedom(m)}")
@@ -757,6 +710,22 @@ def set_operating_conditions(
             "that too many or not enough variables are fixed for a "
             "simulation.".format(degrees_of_freedom(m))
         )
+
+
+def purge_initializer(sep, oaro, solute_multiplier):
+    sep.split_fraction[:, "purge"].value = (
+        oaro.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+        * solute_multiplier
+        / sep.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+    )
+
+
+def makeup_initializer(makeup, oaro, mixer, solvent_multiplier):
+    makeup.properties[0].flow_mass_phase_comp["Liq", "H2O"].value = (
+        oaro.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"] * solvent_multiplier
+        - mixer.treat.flow_mass_phase_comp[0, "Liq", "H2O"]
+    )
+    makeup.properties[0].flow_mass_phase_comp["Liq", "NaCl"].value = 0
 
 
 def recycle_pump_initializer(pump, oaro, solvent_multiplier, solute_multiplier):
@@ -809,20 +778,21 @@ def initialize_loop(m, solver):
         propagate_state(m.fs.OARO_to_ERD[stage])
         m.fs.EnergyRecoveryDevices[stage].initialize()
 
-        # propagate_state(m.fs.ERD_to_separator[stage])
-        # m.fs.Separators[stage].initialize()
-        # propagate_state(m.fs.separator_to_mixer[stage])
-        # propagate_state(m.fs.makeup_to_mixer[stage])
-        # m.fs.Mixers[stage].initialize()
-        # propagate_state(m.fs.mixer_to_recyclepump[stage])
-        # m.fs.RecyclePumps[stage].initialize()
-
-        propagate_state(m.fs.ERD_to_mixer[stage])
+        purge_initializer(
+            m.fs.Separators[stage], m.fs.OAROUnits[stage - 1], solute_multiplier=0.5
+        )
+        propagate_state(m.fs.ERD_to_separator[stage])
+        m.fs.Separators[stage].initialize()
+        propagate_state(m.fs.separator_to_mixer[stage])
+        makeup_initializer(
+            m.fs.MakeupStreams[stage],
+            m.fs.OAROUnits[stage - 1],
+            m.fs.Mixers[stage],
+            solvent_multiplier=0.8,
+        )
         propagate_state(m.fs.makeup_to_mixer[stage])
         m.fs.Mixers[stage].initialize()
-        propagate_state(m.fs.mixer_to_separator[stage])
-        m.fs.Separators[stage].initialize()
-        propagate_state(m.fs.separator_to_recyclepump[stage])
+        propagate_state(m.fs.mixer_to_recyclepump[stage])
         m.fs.RecyclePumps[stage].initialize()
 
         propagate_state(m.fs.recyclepump_to_OARO[stage])
@@ -871,21 +841,24 @@ def initialize_system(m, number_of_stages=None, solver=None, verbose=True):
     m.fs.EnergyRecoveryDevices[last_stage].initialize()
 
     if number_of_stages > int(1):
-
-        # propagate_state(m.fs.ERD_to_separator[last_stage])
-        # m.fs.Separators[last_stage].initialize()
-        # propagate_state(m.fs.separator_to_mixer[last_stage])
-        # propagate_state(m.fs.makeup_to_mixer[last_stage])
-        # m.fs.Mixers[last_stage].initialize()
-        # propagate_state(m.fs.mixer_to_recyclepump[last_stage])
-        # m.fs.RecyclePumps[last_stage].initialize()
-
-        propagate_state(m.fs.ERD_to_mixer[last_stage])
+        purge_initializer(
+            m.fs.Separators[last_stage],
+            m.fs.OAROUnits[last_stage - 1],
+            solute_multiplier=0.5,
+        )
+        propagate_state(m.fs.ERD_to_separator[last_stage])
+        m.fs.Separators[last_stage].initialize()
+        propagate_state(m.fs.separator_to_mixer[last_stage])
+        # m.fs.MakeupStreams[last_stage].initialize()
+        makeup_initializer(
+            m.fs.MakeupStreams[last_stage],
+            m.fs.OAROUnits[last_stage - 1],
+            m.fs.Mixers[last_stage],
+            solvent_multiplier=0.8,
+        )
         propagate_state(m.fs.makeup_to_mixer[last_stage])
         m.fs.Mixers[last_stage].initialize()
-        propagate_state(m.fs.mixer_to_separator[last_stage])
-        m.fs.Separators[last_stage].initialize()
-        propagate_state(m.fs.separator_to_recyclepump[last_stage])
+        propagate_state(m.fs.mixer_to_recyclepump[last_stage])
         m.fs.RecyclePumps[last_stage].initialize()
 
         propagate_state(m.fs.recyclepump_to_OARO[last_stage])
@@ -1182,9 +1155,10 @@ def optimize_set_up(
 
     # Makeup
     for makeup in m.fs.MakeupStreams.values():
-        makeup.properties[0].flow_vol_phase["Liq"].unfix()
+        makeup.properties[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
+        # makeup.properties[0].flow_vol_phase["Liq"].unfix()
         makeup.properties[0].flow_vol_phase["Liq"].setlb(0)
-        makeup.properties[0].flow_vol_phase["Liq"].setub(0.1 * 5.416667e-3)
+        makeup.properties[0].flow_vol_phase["Liq"].setub(0.01 * 5.416667e-3)
 
     # if number_of_stages > 2:
     #     m.fs.WasteSeparator.split_fraction[:, "waste"].unfix()
@@ -1443,4 +1417,4 @@ def display_state(m):
 
 if __name__ == "__main__":
     # NOTE: this flowsheet only works for 2 and 3 stages
-    m = main(2, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
+    m = main(5, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
