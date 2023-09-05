@@ -1517,7 +1517,7 @@ def test_flow_mass_basis():
     )
 
 
-@pytest.mark.component
+@pytest.mark.unit
 def test_compatibility_with_mixer():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -1536,3 +1536,11 @@ def test_compatibility_with_mixer():
         m.fs.mixer2 = Mixer(
             property_package=m.fs.properties,
         )
+
+@pytest.mark.component
+def test_no_solute_list_provided():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    with pytest.raises(ConfigurationError,
+                       match="Must provide a list of solutes in solute_list"):
+        m.fs.properties = MCASParameterBlock()

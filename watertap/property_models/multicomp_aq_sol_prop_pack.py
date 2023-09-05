@@ -336,6 +336,11 @@ class MCASParameterData(PhysicalParameterBlock):
         self.neutral_set = Set(dimen=1)  # Components with charge =0
         self.ion_set = Set(dimen=1)  # All Ion Components (cations + anions)
 
+        # Check that solute_list was not left empty
+        if self.config.solute_list is None:
+            raise ConfigurationError(
+                "Must provide a list of solutes in solute_list"
+            )
         # Group components into different sets
         for j in self.config.solute_list:
             if j == "H2O":
@@ -354,7 +359,7 @@ class MCASParameterData(PhysicalParameterBlock):
                     )
                 if self.config.charge[j] > 0:
                     # Run a "del_component" and "add_component" to move ion j from IDAES's Solute to Cation class.
-                    # Ion j has to be added into Solute to be registered in the compolist and solute_set.
+                    # Ion j has to be added into Solute to be registered in the component_list and solute_set.
                     # Reference to idaes.core.base.components.
                     self.del_component(j)
                     self.add_component(
@@ -363,7 +368,7 @@ class MCASParameterData(PhysicalParameterBlock):
                     )
                     self.ion_set.add(j)
                 else:
-                    # The same to the notes above goes for anions.
+                    # The same comments above apply to anions.
                     self.del_component(j)
                     self.add_component(
                         j,
@@ -546,8 +551,6 @@ class MCASParameterData(PhysicalParameterBlock):
                 "temperature": {"method": None},
                 "pressure": {"method": None},
                 "flow_mass_phase_comp": {"method": "_flow_mass_phase_comp"},
-                "flow_equiv_phase_comp": {"method": "_flow_equiv_phase_comp"},
-                "conc_equiv_phase_comp": {"method": "_conc_equiv_phase_comp"},
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
                 "flow_vol": {"method": "_flow_vol"},
@@ -556,28 +559,30 @@ class MCASParameterData(PhysicalParameterBlock):
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
                 "molality_phase_comp": {"method": "_molality_phase_comp"},
-                "molar_volume_phase_comp": {"method": "_molar_volume_phase_comp"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
                 "visc_k_phase": {"method": "_visc_k_phase"},
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
-                "radius_stokes_comp": {"method": "_radius_stokes_comp"},
                 "mw_comp": {"method": "_mw_comp"},
-                "elec_mobility_phase_comp": {"method": "_elec_mobility_phase_comp"},
-                "trans_num_phase_comp": {"method": "_trans_num_phase_comp"},
-                "equiv_conductivity_phase": {"method": "_equiv_conductivity_phase"},
-                "elec_cond_phase": {"method": "_elec_cond_phase"},
-                "charge_comp": {"method": "_charge_comp"},
                 "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
             }
         )
 
         obj.define_custom_properties(
             {
+                "flow_equiv_phase_comp": {"method": "_flow_equiv_phase_comp"},
+                "charge_comp": {"method": "_charge_comp"},
+                "conc_equiv_phase_comp": {"method": "_conc_equiv_phase_comp"},
+                "equiv_conductivity_phase": {"method": "_equiv_conductivity_phase"},
+                "elec_cond_phase": {"method": "_elec_cond_phase"},
                 "dens_mass_solvent": {"method": "_dens_mass_solvent"},
                 "dielectric_constant": {"method": "_dielectric_constant"},
                 "debye_huckel_constant": {"method": "_debye_huckel_constant"},
                 "ionic_strength_molal": {"method": "_ionic_strength_molal"},
+                "molar_volume_phase_comp": {"method": "_molar_volume_phase_comp"},
+                "radius_stokes_comp": {"method": "_radius_stokes_comp"},
+                "elec_mobility_phase_comp": {"method": "_elec_mobility_phase_comp"},
+                "trans_num_phase_comp": {"method": "_trans_num_phase_comp"},
                 "total_hardness": {"method": "_total_hardness"},
             }
         )
