@@ -65,6 +65,11 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 
+# Import idaes mixer to check compatibility in absence of get_enthalpy_flow_terms()
+from idaes.models.unit_models import Mixer
+from idaes.models.unit_models.mixer import MomentumMixingType, MixingType
+
+
 solver = get_solver()
 # -----------------------------------------------------------------------------
 
@@ -327,7 +332,11 @@ def test_build(model3):
     for v in metadata.list_supported_properties():
         if metadata[v.name].method is not None:
             if m.fs.stream[0].is_property_constructed(v.name):
-                if m.fs.properties.config.material_flow_basis == MaterialFlowBasis.molar and v.name == "flow_mol_phase_comp":
+                if (
+                    m.fs.properties.config.material_flow_basis
+                    == MaterialFlowBasis.molar
+                    and v.name == "flow_mol_phase_comp"
+                ):
                     continue
                 else:
                     raise PropertyAttributeError(
@@ -1486,8 +1495,7 @@ def test_flow_mass_basis():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
-        solute_list=["A"],
-        material_flow_basis = MaterialFlowBasis.mass
+        solute_list=["A"], material_flow_basis=MaterialFlowBasis.mass
     )
 
     m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
@@ -1495,6 +1503,36 @@ def test_flow_mass_basis():
     assert m.fs.properties.config.material_flow_basis == MaterialFlowBasis.mass
 
     m.fs.sb[0].assert_electroneutrality(defined_state=False)
-    assert m.fs.properties.get_material_flow_terms()
+    assert hasattr(m.fs.sb[0], "get_material_flow_terms")
 
-    calculate_scaling_factors(m.fs)
+    A = m.fs.sb[0].get_material_flow_terms("Liq", "A")
+    print(A)
+    A.pprint()
+    assert_units_equivalent(
+        m.fs.sb[0].get_material_flow_terms("Liq", "A"), pyunits.kg / pyunits.s
+    )
+    assert (
+        m.fs.sb[0].get_material_flow_terms("Liq", "A")
+        == m.fs.sb[0].flow_mass_phase_comp["Liq", "A"]
+    )
+
+
+@pytest.mark.component
+def test_compatibility_with_mixer():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["Na_+", "Cl_-"],
+    )
+
+    m.fs.mixer1 = Mixer(
+        property_package=m.fs.properties, energy_mixing_type=MixingType.none
+    )
+
+    with pytest.raises(
+        NotImplementedError,
+        match="property package has not implemented the get_enthalpy_flow_terms method. Please contact the property package developer.",
+    ):
+        m.fs.mixer2 = Mixer(
+            property_package=m.fs.properties,
+        )
