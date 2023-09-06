@@ -13,7 +13,7 @@
 
 from idaes.core.solvers import get_solver
 
-from watertap.tools.parameter_sweep.parameter_sweep import (
+from watertap.tools.parameter_sweep import (
     ParameterSweep,
     RecursiveParameterSweep,
 )
