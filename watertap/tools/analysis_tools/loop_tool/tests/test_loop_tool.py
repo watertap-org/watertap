@@ -97,8 +97,6 @@ def loop_sweep_setup():
 
 @pytest.fixture()
 def loop_diff_setup():
-    # Test without parallel implementation as its broken in
-    # water tap paramtersweep tool
     lp = loopTool(
         _this_file_path + "/test_diff.yaml",
         build_function=ro_setup.ro_build,
