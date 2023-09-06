@@ -64,7 +64,7 @@ class TestADM1Flowsheet:
         )
         assert value(
             model.fs.R1.liquid_outlet.conc_mass_comp[0, "S_su"]
-        ) == pytest.approx(1.193e-2, rel=1e-2)
+        ) == pytest.approx(1.195e-2, rel=1e-2)
         assert value(
             model.fs.R1.liquid_outlet.conc_mass_comp[0, "S_aa"]
         ) == pytest.approx(5.31e-3, rel=1e-2)
@@ -82,25 +82,25 @@ class TestADM1Flowsheet:
         ) == pytest.approx(0.01578, rel=1e-2)
         assert value(
             model.fs.R1.liquid_outlet.conc_mass_comp[0, "S_ac"]
-        ) == pytest.approx(0.17319, rel=1e-2)
+        ) == pytest.approx(0.19763, rel=1e-2)
         assert value(
             model.fs.R1.liquid_outlet.conc_mass_comp[0, "S_h2"]
-        ) == pytest.approx(2.35e-7, rel=1e-2)
+        ) == pytest.approx(2.36e-7, rel=1e-2)
         assert value(
             model.fs.R1.liquid_outlet.conc_mass_comp[0, "S_ch4"]
-        ) == pytest.approx(0.0541, rel=1e-2)
+        ) == pytest.approx(0.05508, rel=1e-2)
         assert value(
             model.fs.R1.liquid_outlet.conc_mass_comp[0, "S_IC"]
-        ) == pytest.approx(0.15436 * 12, rel=1e-2)
+        ) == pytest.approx(0.15268 * 12, rel=1e-2)
         assert value(
             model.fs.R1.liquid_outlet.conc_mass_comp[0, "S_IN"]
-        ) == pytest.approx(0.13022 * 14, rel=1e-2)
+        ) == pytest.approx(0.13023 * 14, rel=1e-2)
         assert value(
             model.fs.R1.liquid_outlet.conc_mass_comp[0, "S_I"]
         ) == pytest.approx(0.32869, rel=1e-2)
         assert value(
             model.fs.R1.liquid_outlet.conc_mass_comp[0, "X_c"]
-        ) == pytest.approx(0.3086, rel=1e-2)
+        ) == pytest.approx(0.30869, rel=1e-2)
         assert value(
             model.fs.R1.liquid_outlet.conc_mass_comp[0, "X_ch"]
         ) == pytest.approx(0.02794, rel=1e-2)

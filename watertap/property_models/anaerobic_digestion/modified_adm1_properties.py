@@ -36,7 +36,7 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
 # Some more information about this module
-__author__ = "Chenyu Wang, Marcus Holly, Adam Atia"
+__author__ = "Chenyu Wang, Marcus Holly, Adam Atia, Xinhong Liu"
 # Using Andrew Lee's formulation of ASM1 as a template
 
 # Set up logger
@@ -343,14 +343,45 @@ class ModifiedADM1StateBlockData(StateBlockData):
         self.temperature = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=298.15,
-            bounds=(298.15, 323.15),
+            bounds=(273.15, 323.15),
             doc="Temperature",
             units=pyo.units.K,
         )
+        Comp_dict = {
+            "S_su": 8.7,
+            "S_aa": 0.0053,
+            "S_fa": 10.7,
+            "S_va": 0.016,
+            "S_bu": 0.016,
+            "S_pro": 0.036,
+            "S_ac": 0.043,
+            "S_h2": 0.011,
+            "S_ch4": 1e-9,
+            "S_IC": 0.15 * 12,
+            "S_IN": 0.15 * 14,
+            "S_IP": 0.1 * 31,
+            "S_I": 0.027,
+            "X_ch": 0.041,
+            "X_pr": 0.042,
+            "X_li": 0.057,
+            "X_su": 1e-9,
+            "X_aa": 0.49,
+            "X_fa": 1e-9,
+            "X_c4": 1e-9,
+            "X_pro": 1e-9,
+            "X_ac": 1e-9,
+            "X_h2": 0.32,
+            "X_I": 13,
+            "X_PHA": 7.28,
+            "X_PP": 0.11,
+            "X_PAO": 0.69,
+            "S_K": 0.33,
+            "S_Mg": 0.34,
+        }
         self.conc_mass_comp = pyo.Var(
             self.params.solute_set,
             domain=pyo.NonNegativeReals,
-            initialize=0.001,
+            initialize=Comp_dict,
             doc="Component mass concentrations",
             units=pyo.units.kg / pyo.units.m**3,
         )
@@ -430,12 +461,12 @@ class ModifiedADM1StateBlockData(StateBlockData):
             rule=energy_density_expression, doc="Energy density term"
         )
 
-        iscale.set_scaling_factor(self.flow_vol, 1e1)
+        iscale.set_scaling_factor(self.flow_vol, 1e5)
         iscale.set_scaling_factor(self.temperature, 1e-1)
-        iscale.set_scaling_factor(self.pressure, 1e-3)
-        iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
-        iscale.set_scaling_factor(self.anions, 1e1)
-        iscale.set_scaling_factor(self.cations, 1e1)
+        iscale.set_scaling_factor(self.pressure, 1e-6)
+        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
+        iscale.set_scaling_factor(self.anions, 1e2)
+        iscale.set_scaling_factor(self.cations, 1e2)
 
     # On-demand properties
     def _VSS(self):

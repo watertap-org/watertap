@@ -500,7 +500,7 @@ class TestIonExchangeFreundlich:
             "flow_mol_phase_comp", 1e-4, index=("Liq", "H2O")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e5, index=("Liq", "Cl_-")
+            "flow_mol_phase_comp", 1e6, index=("Liq", "Cl_-")
         )
         calculate_scaling_factors(m)
 
@@ -508,11 +508,13 @@ class TestIonExchangeFreundlich:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, IX_fr):
         m = IX_fr
         initialization_tester(m, unit=m.fs.ix, outlvl=idaeslog.DEBUG)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, IX_fr):
         m = IX_fr
@@ -521,6 +523,7 @@ class TestIonExchangeFreundlich:
         # Check for optimal solution
         assert_optimal_termination(results)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, IX_fr):
         m = IX_fr

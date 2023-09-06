@@ -92,14 +92,13 @@ class ParameterSweepWriter:
         else:
             return file_name, None
 
-    @staticmethod
-    def _process_results_filename(results_file_name):
+    def _process_results_filename(self, results_file_name):
         # Get the directory path
         dirname = os.path.dirname(results_file_name)
         # Get the file name without the extension
         known_extensions = [".h5", ".csv"]
         for ext in known_extensions:
-            fname_no_ext, extension = _strip_extension(results_file_name, ext)
+            fname_no_ext, extension = self._strip_extension(results_file_name, ext)
             if extension is not None:
                 break
 
@@ -193,7 +192,7 @@ class ParameterSweepWriter:
             elif txt_options == "keys":
                 my_dict = {}
                 for key, value in output_dict.items():
-                    if key != "solve_successful":
+                    if key in ["sweep_params", "outputs"]:
                         my_dict[key] = list(value.keys())
             else:
                 my_dict = output_dict
@@ -219,7 +218,7 @@ class ParameterSweepWriter:
 
         for key, item in output_dict.items():
             grp = parent_grp.create_group(key)
-            if key != "solve_successful":
+            if key in ["sweep_params", "outputs"]:
                 for subkey, subitem in item.items():
                     subgrp = grp.create_group(subkey)
                     for subsubkey, subsubitem in subitem.items():
@@ -230,7 +229,7 @@ class ParameterSweepWriter:
                                 subgrp.create_dataset(subsubkey, data=np.finfo("d").max)
                             else:
                                 subgrp.create_dataset(subsubkey, data=subsubitem)
-            elif key == "solve_successful":
+            elif key in ["solve_successful", "nominal_idx", "differential_idx"]:
                 grp.create_dataset(key, data=output_dict[key])
 
         f.close()
