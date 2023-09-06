@@ -18,7 +18,7 @@ from watertap.tools.parameter_sweep import (
     RecursiveParameterSweep,
 )
 
-from watertap.tools.parameter_sweep.parameter_sweep_differential import (
+from watertap.tools.parameter_sweep import (
     DifferentialParameterSweep,
 )
 
