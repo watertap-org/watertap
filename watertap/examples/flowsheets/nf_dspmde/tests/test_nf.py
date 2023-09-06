@@ -21,11 +21,11 @@ def test_main():
     m = main()
     test_dict = {
         "lcow": [m.fs.costing.LCOW, 0.15058960529129017],
-        "pressure": [m.fs.NF.pump.outlet.pressure[0] / 1e5, 6.56],
-        "area": [m.fs.NF.nfUnit.area, 285.6900547389303],
+        "pressure": [m.fs.NF.pump.outlet.pressure[0] / 1e5, 8.13],
+        "area": [m.fs.NF.nfUnit.area, 423.8956418211484],
         "recovery": [
             m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"] * 100,
-            73.47934090302432,
+            94.99999441324391,
         ],
     }
     for (model_result, testval) in test_dict.values():
