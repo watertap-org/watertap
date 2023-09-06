@@ -164,7 +164,6 @@ def test_options_setups(loop_test_options_setup):
                         test_diff_dict(dicta[key], dictb[key])
 
                     elif dicta[key] != dictb[key]:
-                        # print(dicta[key], dictb[key])
                         return False
                     # else:
                     #   break
