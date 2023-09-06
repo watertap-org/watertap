@@ -36,7 +36,7 @@ from watertap.examples.flowsheets.full_treatment_train.util import check_dof
 from pyomo.environ import TransformationFactory
 from pyomo.network import Arc
 
-__author__ = "Austin Ladshaw"
+__author__ = "Austin Ladshaw, Xinhong Liu"
 
 
 @pytest.mark.component
@@ -67,28 +67,29 @@ def test_ideal_naocl_chlorination():
     ].value == pytest.approx(5.6407676871845223e-11, rel=1e-3)
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_ideal_naocl_chlorination_full_block():
     model = run_chlorination_block_example(fix_free_chlorine=True)
     assert model.fs.ideal_naocl_mixer_unit.dosing_rate.value == pytest.approx(
-        1.72961133116e-9, rel=1e-3
+        1.7296113311683092e-09, rel=1e-3
     )
     assert model.fs.ideal_naocl_mixer_unit.outlet.flow_mol[0].value == pytest.approx(
         25.000025535888078, rel=1e-3
     )
     assert model.fs.ideal_naocl_mixer_unit.outlet.mole_frac_comp[
         0, "OCl_-"
-    ].value == pytest.approx(5.107172398859054e-07, rel=1e-3)
+    ].value == pytest.approx(1.6123004572288052e-07, rel=1e-3)
 
     assert model.fs.ideal_naocl_chlorination_unit.free_chlorine.value == pytest.approx(
         2, rel=1e-3
     )
     assert model.fs.ideal_naocl_chlorination_unit.outlet.mole_frac_comp[
         0, "OCl_-"
-    ].value == pytest.approx(4.508812116261189e-07, rel=1e-3)
+    ].value == pytest.approx(5.0027242332010015e-08, rel=1e-3)
     assert model.fs.ideal_naocl_chlorination_unit.outlet.mole_frac_comp[
         0, "H_+"
-    ].value == pytest.approx(5.47976004923939e-11, rel=1e-3)
+    ].value == pytest.approx(1.49011416785194e-10, rel=1e-3)
 
 
 @pytest.mark.component

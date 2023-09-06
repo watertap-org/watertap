@@ -13,7 +13,6 @@
 import pytest
 import os
 import numpy as np
-import requests
 import pyomo.environ as pyo
 
 from pyomo.environ import value
@@ -23,6 +22,7 @@ from watertap.tools.parameter_sweep import ParameterSweep, parameter_sweep
 from watertap.tools.parameter_sweep.parameter_sweep_writer import *
 
 import watertap.tools.MPI as MPI
+from watertap.tools.parallel.parallel_manager_factory import has_mpi_peer_processes
 
 # -----------------------------------------------------------------------------
 
@@ -67,13 +67,50 @@ def build_sweep_params_for_tps(model):
     return sweep_params
 
 
-def build_outputs_for_tps(model, sweep_params):
-    outputs = {
-        "output_c": model.fs.output["c"],
-        "output_d": model.fs.output["d"],
-        "performance": model.fs.performance,
-    }
+def build_outputs_for_tps(model, output_keys):
+    outputs = {}
+    for key, pyo_object in output_keys.items():
+        outputs[key] = model.find_component(pyo_object)
     return outputs
+
+
+def dummy_kernel_logic(solution_succesful):
+    init_state = [True]
+    solved_state = [False]
+    for sf in solution_succesful:
+        if sf and init_state[-1]:
+            # we solved model from init and/or prior solved state
+            init_state.append(True)
+            solved_state.append(True)
+        elif sf and init_state[-1] == False:
+            # we try to solve ,but first init
+            init_state.append(True)
+            solved_state.append(False)
+            # solve is succesful
+            init_state.append(True)
+            solved_state.append(True)
+        else:
+            if solved_state[-1]:
+                # this means solution failed after
+                # on model that was solved with applied sweep params
+                # we add failed states
+                init_state.append(False)
+                solved_state.append(False)
+                # kernel reinits model and then tries solving again
+                init_state.append(True)
+                solved_state.append(False)
+                # but it fails as again
+                init_state.append(False)
+                solved_state.append(False)
+            else:
+                # we are solving from failed solve, so we reinit
+                init_state.append(True)
+                solved_state.append(False)
+                # but fail again
+                init_state.append(False)
+                solved_state.append(False)
+                # kernel solving from inited state, so we failed we move on
+    return init_state, solved_state
 
 
 class TestParameterSweep:
@@ -208,6 +245,10 @@ class TestParameterSweep:
 
     @pytest.mark.component
     def test_status_publishing(self):
+        requests = pytest.importorskip(
+            "requests",
+            reason="requests (parameter_sweep optional dependency) not available",
+        )
         ps = ParameterSweep(
             publish_progress=True, publish_address="http://localhost:8888"
         )
@@ -346,18 +387,6 @@ class TestParameterSweep:
 
         input_dict = {
             "outputs": {
-                "fs.input[a]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.input[b]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
                 "fs.output[c]": {
                     "lower bound": 0,
                     "units": "None",
@@ -405,15 +434,15 @@ class TestParameterSweep:
 
         reference_results_arr = np.array(
             [
-                [0.0, 0.0, 0.2, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.2, 0.75, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.75, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.2, 0.0, 0.0, 0.0],
+                [0.2, 0.75, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0, 0.0],
+                [1.0, 0.75, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
             ]
         )
 
@@ -431,11 +460,11 @@ class TestParameterSweep:
             "input_a": (m.fs.input["a"], 0.1, 0.9, 3),
             "input_b": (m.fs.input["b"], 0.0, 0.5, 3),
         }
-        outputs = {
-            "output_c": m.fs.output["c"],
-            "output_d": m.fs.output["d"],
-            "performance": m.fs.performance,
-        }
+        # outputs = {
+        #     "output_c": m.fs.output["c"],
+        #     "output_d": m.fs.output["d"],
+        #     "performance": m.fs.performance,
+        # }
 
         sweep_params, sampling_type = ps._process_sweep_params(sweep_params)
         values = ps._build_combinations(sweep_params, sampling_type, None)
@@ -446,45 +475,72 @@ class TestParameterSweep:
 
         truth_dict = {
             "outputs": {
-                "fs.output[c]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.output[d]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.performance": {
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-                },
-                "fs.slack[ab_slack]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 0,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.slack[cd_slack]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 0,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "objective": {
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-                },
-            },
-            "sweep_params": {
                 "input_a": {
+                    "full_name": "fs.input[a]",
                     "lower bound": 0,
                     "units": "None",
                     "upper bound": 1,
                     "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
                 },
                 "input_b": {
+                    "full_name": "fs.input[b]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.output[c]": {
+                    "full_name": "fs.output[c]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.output[d]": {
+                    "full_name": "fs.output[d]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.performance": {
+                    "full_name": "fs.performance",
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.slack[ab_slack]": {
+                    "full_name": "fs.slack[ab_slack]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 0,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.slack[cd_slack]": {
+                    "full_name": "fs.slack[cd_slack]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 0,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.slack_penalty": {
+                    "full_name": "fs.slack_penalty",
+                    "units": "None",
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "objective": {
+                    "full_name": "objective",
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+            },
+            "sweep_params": {
+                "input_a": {
+                    "full_name": "fs.input[a]",
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "input_b": {
+                    "full_name": "fs.input[b]",
                     "lower bound": 0,
                     "units": "None",
                     "upper bound": 1,
@@ -562,7 +618,6 @@ class TestParameterSweep:
     @pytest.mark.component
     @pytest.mark.parametrize("number_of_subprocesses", [1, 2, 3])
     def test_parameter_sweep(self, model, tmp_path, number_of_subprocesses):
-
         comm = MPI.COMM_WORLD
 
         tmp_path = _get_rank0_path(comm, tmp_path)
@@ -585,6 +640,13 @@ class TestParameterSweep:
             build_model_for_tps,
             build_sweep_params_for_tps,
             build_outputs=build_outputs_for_tps,
+            build_outputs_kwargs={
+                "output_keys": {
+                    "output_c": "fs.output[c]",
+                    "output_d": "fs.output[d]",
+                    "performance": "fs.performance",
+                }
+            },
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -699,7 +761,11 @@ class TestParameterSweep:
             import ast
 
             truth_txt_dict = {
-                "outputs": ["output_c", "output_d", "performance"],
+                "outputs": [
+                    "output_c",
+                    "output_d",
+                    "performance",
+                ],
                 "sweep_params": ["fs.input[a]", "fs.input[b]"],
             }
 
@@ -777,7 +843,6 @@ class TestParameterSweep:
 
         # Check the h5
         if ps.parallel_manager.is_root_process():
-
             truth_dict = {
                 "outputs": {
                     "output_c": {
@@ -853,7 +918,7 @@ class TestParameterSweep:
             _assert_h5_csv_agreement(csv_results_file_name, read_dict)
 
     @pytest.mark.component
-    def test_parameter_sweep_bad_reinitialize_call_2(self, model, tmp_path):
+    def test_parameter_sweep_bad_initialize_call_2(self, model, tmp_path):
         comm = MPI.COMM_WORLD
 
         tmp_path = _get_rank0_path(comm, tmp_path)
@@ -863,8 +928,8 @@ class TestParameterSweep:
 
         ps = ParameterSweep(
             optimize_function=_optimization,
-            reinitialize_function=_reinitialize,
-            reinitialize_kwargs={"slack_penalty": 10.0, "foo": "bar"},
+            initialize_function=_reinitialize,
+            initialize_kwargs={"slack_penalty": 10.0, "foo": "bar"},
             csv_results_file_name=csv_results_file_name,
             h5_results_file_name=h5_results_file_name,
             debugging_data_dir=tmp_path,
@@ -898,26 +963,17 @@ class TestParameterSweep:
 
         ps = ParameterSweep(
             optimize_function=_optimization,
-            reinitialize_function=_reinitialize,
-            reinitialize_kwargs={"slack_penalty": 10.0},
+            initialize_function=_reinitialize,
+            initialize_kwargs={"slack_penalty": 10.0},
             csv_results_file_name=csv_results_file_name,
             h5_results_file_name=h5_results_file_name,
             debugging_data_dir=tmp_path,
             interpolate_nan_outputs=True,
         )
-
-        m = model
-        m.fs.slack_penalty = 1000.0
-        m.fs.slack.setub(0)
-
-        A = m.fs.input["a"]
-        B = m.fs.input["b"]
-        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-
         # Call the parameter_sweep function
         _ = ps.parameter_sweep(
-            m,
-            sweep_params,
+            build_model_for_tps,
+            build_sweep_params_for_tps,
             build_outputs=None,
         )
 
@@ -931,7 +987,6 @@ class TestParameterSweep:
 
             # Attempt to read in the data
             data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
-
             # Compare the last row of the imported data to truth
             truth_data = [0.9, 0.5, -11.0, 0.9, 0.5, 1.0, 1.0, 0.8, 0.5, 10.0, 2.0]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
@@ -1011,11 +1066,14 @@ class TestParameterSweep:
                             ]
                         ),
                     },
+                    # removed upper bound tests, as in pracice
+                    # user should not be chanaing upper and lower bounds
+                    # during reinitilization and current frame work
+                    # this bounds get updated based on existing model in each worker
                     "fs.slack[ab_slack]": {
                         "full_name": "fs.slack[ab_slack]",
                         "lower bound": 0,
                         "units": "None",
-                        "upper bound": 0,
                         "value": np.array(
                             [
                                 0.0,
@@ -1034,7 +1092,6 @@ class TestParameterSweep:
                         "full_name": "fs.slack[cd_slack]",
                         "lower bound": 0,
                         "units": "None",
-                        "upper bound": 0,
                         "value": np.array(
                             [
                                 0.0,
@@ -1053,7 +1110,7 @@ class TestParameterSweep:
                         "full_name": "fs.slack_penalty",
                         "units": "None",
                         "value": np.array(
-                            [1000.0, 1000.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+                            [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
                         ),
                     },
                     "objective": {
@@ -1121,26 +1178,18 @@ class TestParameterSweep:
 
         ps = ParameterSweep(
             optimize_function=_optimization,
-            reinitialize_function=_bad_reinitialize,
-            reinitialize_kwargs={"slack_penalty": 10.0},
+            initialize_function=_bad_reinitialize,
+            initialize_kwargs={"slack_penalty": 10.0},
             csv_results_file_name=csv_results_file_name,
             h5_results_file_name=h5_results_file_name,
             debugging_data_dir=tmp_path,
             interpolate_nan_outputs=True,
         )
-
-        m = model
-        m.fs.slack_penalty = 1000.0
-        m.fs.slack.setub(0)
-
-        A = m.fs.input["a"]
-        B = m.fs.input["b"]
-        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-
+        ps.config.log_model_states = True
         # Call the parameter_sweep function
         _ = ps.parameter_sweep(
-            m,
-            sweep_params,
+            build_model_for_tps,
+            build_sweep_params_for_tps,
             build_outputs=None,
         )
 
@@ -1170,7 +1219,6 @@ class TestParameterSweep:
                 np.nan,
             ]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
-
             # H5 dictionary test
             truth_dict = {
                 "outputs": {
@@ -1295,40 +1343,36 @@ class TestParameterSweep:
                     },
                 },
             }
-
+            true_init_state, true_solved_state = dummy_kernel_logic(
+                truth_dict["solve_successful"]
+            )
+            if has_mpi_peer_processes == False:
+                assert true_init_state == ps.model_manager.initialized_states["state"]
+                assert true_solved_state == ps.model_manager.solved_states["state"]
             read_dict = _read_output_h5(h5_results_file_name)
             _assert_dictionary_correctness(truth_dict, read_dict)
             _assert_h5_csv_agreement(csv_results_file_name, read_dict)
 
     @pytest.mark.component
     def test_parameter_sweep_force_initialize(self, model, tmp_path):
-
         results_fname = os.path.join(tmp_path, "global_results_force_initialize")
         csv_results_file_name = str(results_fname) + ".csv"
         h5_results_file_name = str(results_fname) + ".h5"
         ps = ParameterSweep(
             optimize_function=_optimization,
-            reinitialize_before_sweep=True,
-            reinitialize_function=_reinitialize,
-            reinitialize_kwargs={"slack_penalty": 10.0},
+            initialize_before_sweep=True,
+            initialize_function=_reinitialize,
+            initialize_kwargs={"slack_penalty": 10.0},
             csv_results_file_name=csv_results_file_name,
             h5_results_file_name=h5_results_file_name,
             debugging_data_dir=tmp_path,
             interpolate_nan_outputs=False,
         )
 
-        m = model
-        m.fs.slack_penalty = 1000.0
-        m.fs.slack.setub(0)
-
-        A = m.fs.input["a"]
-        B = m.fs.input["b"]
-        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-
         # Call the parameter_sweep function
         _ = ps.parameter_sweep(
-            m,
-            sweep_params,
+            build_model_for_tps,
+            build_sweep_params_for_tps,
             build_outputs=None,
         )
 
@@ -1426,7 +1470,7 @@ class TestParameterSweep:
                         "full_name": "fs.slack[ab_slack]",
                         "lower bound": 0,
                         "units": "None",
-                        "upper bound": 0,
+                        # "upper bound": 0,
                         "value": np.array(
                             [
                                 -9.77219059e-09,
@@ -1445,7 +1489,7 @@ class TestParameterSweep:
                         "full_name": "fs.slack[cd_slack]",
                         "lower bound": 0,
                         "units": "None",
-                        "upper bound": 0,
+                        # "upper bound": 0,
                         "value": np.array(
                             [
                                 -9.77899282e-09,
@@ -1522,15 +1566,14 @@ class TestParameterSweep:
             _assert_h5_csv_agreement(csv_results_file_name, read_dict)
 
     @pytest.mark.component
-    def test_parameter_sweep_bad_force_initialize(self, model, tmp_path):
-
+    def test_parameter_sweep_bad_sweep_update_before_initialize(self, model, tmp_path):
         ps = ParameterSweep(
             optimize_function=_optimization,
-            reinitialize_before_sweep=True,
-            reinitialize_function=None,
-            reinitialize_kwargs=None,
+            initialize_before_sweep=True,
+            initialize_function=None,
+            initialize_kwargs=None,
+            update_sweep_params_before_init=True,
         )
-
         m = model
         m.fs.slack_penalty = 1000.0
         m.fs.slack.setub(0)
@@ -1549,7 +1592,6 @@ class TestParameterSweep:
 
     @pytest.mark.component
     def test_parameter_sweep_bad_optimization_call(self, model, tmp_path):
-
         ps = ParameterSweep(
             optimize_function=_optimization,
             optimize_kwargs={"foo": "bar"},
@@ -1578,9 +1620,9 @@ class TestParameterSweep:
 
         ps = ParameterSweep(
             optimize_function=_optimization,
-            reinitialize_before_sweep=True,
-            reinitialize_function=reinit,
-            reinitialize_kwargs={"foo": "bar"},
+            initialize_before_sweep=True,
+            initialize_function=reinit,
+            initialize_kwargs={"foo": "bar"},
         )
 
         m = model
@@ -1601,7 +1643,6 @@ class TestParameterSweep:
 
     @pytest.mark.component
     def test_parameter_sweep_probe_fail(self, model, tmp_path):
-
         comm = MPI.COMM_WORLD
 
         tmp_path = _get_rank0_path(comm, tmp_path)
@@ -1619,28 +1660,23 @@ class TestParameterSweep:
             interpolate_nan_outputs=True,
         )
 
-        m = model
-        m.fs.slack_penalty = 1000.0
-        m.fs.slack.setub(0)
-
-        A = m.fs.input["a"]
-        B = m.fs.input["b"]
-        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-        outputs = {
-            "output_c": m.fs.output["c"],
-            "output_d": m.fs.output["d"],
-            "performance": m.fs.performance,
-            "objective": m.objective,
-        }
         results_fname = os.path.join(tmp_path, "global_results")
         csv_results_file_name = str(results_fname) + ".csv"
         h5_results_file_name = str(results_fname) + ".h5"
 
         # Call the parameter_sweep function
         ps.parameter_sweep(
-            m,
-            sweep_params,
-            build_outputs=outputs,
+            build_model_for_tps,
+            build_sweep_params_for_tps,
+            build_outputs=build_outputs_for_tps,
+            build_outputs_kwargs={
+                "output_keys": {
+                    "output_c": "fs.output[c]",
+                    "output_d": "fs.output[d]",
+                    "performance": "fs.performance",
+                    "objective": "objective",
+                }
+            },
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1859,7 +1895,11 @@ class TestParameterSweep:
             import ast
 
             truth_txt_dict = {
-                "outputs": ["output_c", "output_d", "performance"],
+                "outputs": [
+                    "output_c",
+                    "output_d",
+                    "performance",
+                ],
                 "sweep_params": ["fs.input[a]", "fs.input[b]"],
             }
 
@@ -1940,11 +1980,10 @@ def _bad_test_function(m):
 
 
 def _assert_dictionary_correctness(truth_dict, test_dict):
-
     assert truth_dict.keys() == test_dict.keys()
 
     for key, item in truth_dict.items():
-        if key != "solve_successful":
+        if key in ["sweep_params", "outputs"]:
             for subkey, subitem in item.items():
                 for subsubkey, subsubitem in subitem.items():
                     if subsubkey == "value":
@@ -1957,6 +1996,8 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
                         assert subsubitem == test_dict[key][subkey][subsubkey]
         elif key == "solve_successful":
             assert item == test_dict[key]
+        elif key in ["nominal_idx", "differential_idx"]:
+            assert np.allclose(test_dict[key], item, equal_nan=True)
 
 
 def _assert_h5_csv_agreement(csv_filename, h5_dict):
@@ -1995,7 +2036,6 @@ def _build_header_list_from_csv(csv_filename):
 
 
 def _read_output_h5(filevar):
-
     if isinstance(filevar, str):
         f = h5py.File(filevar, "r")
     elif isinstance(filevar, h5py.Group):
@@ -2006,7 +2046,7 @@ def _read_output_h5(filevar):
     l1_keys = list(f.keys())
     output_dict = {}
     for key in l1_keys:  # Input or Output
-        if key != "solve_successful":
+        if key in ["sweep_params", "outputs"]:  #  "solve_successful":
             output_dict[key] = {}
             l2_keys = list(f[key].keys())
             for subkey in l2_keys:  # Variable name
@@ -2021,6 +2061,8 @@ def _read_output_h5(filevar):
                         ].decode("utf-8")
         elif key == "solve_successful":
             output_dict[key] = list(f[key]["solve_successful"][()])
+        elif key in ["nominal_idx", "differential_idx"]:
+            output_dict[key] = f[key][key][()]
 
     if isinstance(filevar, str):
         f.close()

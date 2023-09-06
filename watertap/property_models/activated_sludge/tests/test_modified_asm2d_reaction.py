@@ -812,7 +812,7 @@ class TestAnoxicPHA:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            14.339e-3, rel=1e-4
+            14.338e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
             9.7237e-4, rel=1e-2
@@ -869,4 +869,4 @@ class TestAnoxicPHA:
             1
             - model.fs.R1.control_volume.properties_out[0].TSS
             / model.fs.R1.control_volume.properties_in[0].TSS
-        ) * 100 == pytest.approx(0.20374, rel=1e-4)
+        ) * 100 == pytest.approx(0.20371, rel=1e-4)

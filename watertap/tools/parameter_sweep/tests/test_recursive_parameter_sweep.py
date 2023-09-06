@@ -37,7 +37,6 @@ import watertap.tools.MPI as MPI
 
 @pytest.fixture
 def model():
-
     """
     # Example Usage:
     # Set the number of trials
@@ -82,7 +81,6 @@ def model():
 
 @pytest.mark.component
 def test_aggregate_filtered_input_arr():
-
     ps = RecursiveParameterSweep()
 
     input_dict = {
@@ -161,7 +159,6 @@ def test_aggregate_filtered_input_arr():
 
 @pytest.mark.component
 def test_recursive_parameter_sweep(model, tmp_path):
-
     comm = MPI.COMM_WORLD
 
     tmp_path = _get_rank0_path(comm, tmp_path)
@@ -195,7 +192,7 @@ def test_recursive_parameter_sweep(model, tmp_path):
     data = ps.parameter_sweep(
         m,
         sweep_params,
-        outputs=outputs,
+        build_outputs=outputs,
         req_num_samples=num_samples,
         seed=seed,
     )
@@ -215,6 +212,10 @@ def test_recursive_parameter_sweep(model, tmp_path):
         ]
     )
 
+    import pprint
+
+    print("data = ")
+    pprint.pprint(data)
     assert np.shape(data) == (10, 2)
     assert np.allclose(reference_save_data, data, equal_nan=True)
     assert np.allclose(np.sum(data, axis=1), value(m.fs.success_prob))
@@ -337,7 +338,7 @@ def test_recursive_parameter_sweep_function(model, tmp_path):
     data = recursive_parameter_sweep(
         m,
         sweep_params,
-        outputs=outputs,
+        build_outputs=outputs,
         csv_results_file_name=csv_results_file,
         h5_results_file_name=h5_results_file,
         req_num_samples=num_samples,

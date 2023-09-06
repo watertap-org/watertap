@@ -197,7 +197,7 @@ water_thermo_config = {
                     "3": (647.13, pyunits.K),
                     "4": (0.081, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -288,7 +288,7 @@ water_thermo_config = {
                 #        1e-14 is defined on a molar basis. Thus, we must
                 #        divide by the total (~55.2 M) concentration raised to the
                 #        net reaction order (i.e., 2 in this case).
-                "dh_rxn_ref": (0, pyunits.kJ / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2**2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
@@ -594,7 +594,7 @@ carbonic_thermo_config = {
                     "3": (647.13, pyunits.K),
                     "4": (0.081, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -726,7 +726,7 @@ carbonic_thermo_config = {
                     "3": (429.69, pyunits.K),
                     "4": (0.259, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-677.1, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-677.1, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (135749.9, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -759,7 +759,7 @@ carbonic_thermo_config = {
                     "3": (1595.8, pyunits.K),
                     "4": (0.6598, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-240.1, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-240.1, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (167039, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -814,7 +814,7 @@ carbonic_thermo_config = {
                 #        1e-14 is defined on a molar basis. Thus, we must
                 #        divide by the total (~55.2 M) concentration raised to the
                 #        net reaction order (i.e., 2 in this case).
-                "dh_rxn_ref": (0, pyunits.kJ / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2**2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry

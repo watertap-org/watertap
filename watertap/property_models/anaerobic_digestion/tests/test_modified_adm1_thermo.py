@@ -11,7 +11,7 @@
 #################################################################################
 """
 Tests for ADM1 thermo property package.
-Authors: Chenyu Wang, Marcus Holly
+Authors: Chenyu Wang, Marcus Holly, Xinhong Liu
 """
 
 import pytest
@@ -169,6 +169,37 @@ class TestStateBlock(object):
         assert isinstance(model.props[1].conc_mass_comp, Var)
 
         assert len(model.props[1].conc_mass_comp) == 29
+        Comp_dict = {
+            "S_su": 8.7,
+            "S_aa": 0.0053,
+            "S_fa": 10.7,
+            "S_va": 0.016,
+            "S_bu": 0.016,
+            "S_pro": 0.036,
+            "S_ac": 0.043,
+            "S_h2": 0.011,
+            "S_ch4": 1e-9,
+            "S_IC": 0.15 * 12,
+            "S_IN": 0.15 * 14,
+            "S_IP": 0.1 * 31,
+            "S_I": 0.027,
+            "X_ch": 0.041,
+            "X_pr": 0.042,
+            "X_li": 0.057,
+            "X_su": 1e-9,
+            "X_aa": 0.49,
+            "X_fa": 1e-9,
+            "X_c4": 1e-9,
+            "X_pro": 1e-9,
+            "X_ac": 1e-9,
+            "X_h2": 0.32,
+            "X_I": 13,
+            "X_PHA": 7.28,
+            "X_PP": 0.11,
+            "X_PAO": 0.69,
+            "S_K": 0.33,
+            "S_Mg": 0.34,
+        }
         for i in model.props[1].conc_mass_comp:
             assert i in [
                 "S_su",
@@ -201,7 +232,7 @@ class TestStateBlock(object):
                 "S_K",
                 "S_Mg",
             ]
-            assert value(model.props[1].conc_mass_comp[i]) == 0.001
+            assert value(model.props[1].conc_mass_comp[i]) == Comp_dict[i]
 
         metadata = model.params.get_metadata().properties
 
