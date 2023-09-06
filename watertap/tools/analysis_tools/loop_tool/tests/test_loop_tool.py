@@ -28,6 +28,21 @@ __author__ = "Alexander V. Dudchenko (SLAC)"
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 
 
+def test_diff_dict(dicta, dictb):
+    for key in dicta:
+        if key != "dir":
+            if isinstance(dicta[key], dict):
+                test_diff_dict(dicta[key], dictb[key])
+
+            elif dicta[key] != dictb[key]:
+                # print(dicta[key], dictb[key])
+                return False
+            # else:
+            #   break
+
+    return True
+
+
 @pytest.fixture()
 def loop_test_options_setup():
     cwd = get_working_dir()
@@ -157,20 +172,6 @@ def test_options_setups(loop_test_options_setup):
         lp, expected_run_dict = loop_test_options_setup
         lp.build_run_dict()
 
-        def test_diff_dict(dicta, dictb):
-            for key in dicta:
-                if key != "dir":
-                    if isinstance(dicta[key], dict):
-                        test_diff_dict(dicta[key], dictb[key])
-
-                    elif dicta[key] != dictb[key]:
-                        # print(dicta[key], dictb[key])
-                        return False
-                    # else:
-                    #   break
-
-            return True
-
         assert test_diff_dict(lp.sweep_directory, expected_run_dict)
 
 
@@ -182,20 +183,6 @@ def test_sweep_setup(loop_sweep_setup):
         lp, expected_run_dict = loop_sweep_setup
         lp.build_run_dict()
 
-        def test_diff_dict(dicta, dictb):
-            for key in dicta:
-                if key != "dir":
-                    if isinstance(dicta[key], dict):
-                        test_diff_dict(dicta[key], dictb[key])
-
-                    elif dicta[key] != dictb[key]:
-                        # print(dicta[key], dictb[key])
-                        return False
-                    # else:
-                    #   break
-
-            return True
-
         assert test_diff_dict(lp.sweep_directory, expected_run_dict)
 
 
@@ -206,20 +193,6 @@ def test_diff_setup(loop_diff_setup):
     ):
         lp, expected_run_dict = loop_diff_setup
         lp.build_run_dict()
-
-        def test_diff_dict(dicta, dictb):
-            for key in dicta:
-                if key != "dir":
-                    if isinstance(dicta[key], dict):
-                        test_diff_dict(dicta[key], dictb[key])
-
-                    elif dicta[key] != dictb[key]:
-                        # print(dicta[key], dictb[key])
-                        return False
-                    # else:
-                    #   break
-
-            return True
 
         assert test_diff_dict(lp.sweep_directory, expected_run_dict)
 

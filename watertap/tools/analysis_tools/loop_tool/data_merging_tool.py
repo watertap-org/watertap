@@ -36,7 +36,7 @@ def merge_data_into_file(
 ):
     """
     This function checks if there is a sim file, and a back up file.
-    if there is a sim file, it backs it up, and checks if full solution set already exsts and copies it over
+    if there is a sim file, it backs it up, and checks if full solution set already exsts and copies it over,
     other wise it creates a new group in actual file, and adds new solved data set to it
     """
     run_sweep = True

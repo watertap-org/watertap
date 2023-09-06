@@ -40,8 +40,6 @@ import os
 import h5py
 import numpy as np
 
-import watertap.tools.MPI as MPI
-
 __author__ = "Alexander V. Dudchenko (SLAC)"
 
 
