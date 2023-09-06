@@ -375,7 +375,6 @@ class loopTool:
         sweep_samples = 1
         min_num_samples = None
         force_rerun = None
-        # print(loop_value, key)
         if "diff_mode" in loop_value[key]:
             diff_samples = loop_value[key]["num_samples"]
             diff_params[loop_value[key]["param"]] = loop_value[key]
