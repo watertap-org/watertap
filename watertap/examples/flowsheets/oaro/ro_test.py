@@ -33,8 +33,8 @@ from idaes.core import (
     MomentumBalanceType,
     FlowDirection,
 )
-from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
-    OsmoticallyAssistedReverseOsmosis0D,
+from watertap.unit_models.reverse_osmosis_0D import (
+    ReverseOsmosis0D,
 )
 import watertap.property_models.NaCl_prop_pack as props
 
@@ -76,7 +76,7 @@ def main():
     # solver = get_solver()
 
     # build, set, and initialize
-    m = build(water_recovery=0.5)
+    m = build(water_recovery=None)
     # model_debug(m)
     # print_close_to_bounds(m)
     # print_infeasible_constraints(m)
@@ -102,67 +102,49 @@ def build(water_recovery=None):
 
     m.fs.properties = props.NaClParameterBlock()
 
-    m.fs.unit = OsmoticallyAssistedReverseOsmosis0D(
+    m.fs.unit = ReverseOsmosis0D(
         property_package=m.fs.properties,
         has_pressure_change=True,
-        concentration_polarization_type=ConcentrationPolarizationType.calculated,
-        mass_transfer_coefficient=MassTransferCoefficient.calculated,
         pressure_change_type=PressureChangeType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        has_full_reporting=True,
     )
 
     # fully specify system
-    feed_pressure = 65e5
+    feed_pressure = 85e5
     feed_temperature = 273.15 + 25
 
-    A = 1e-12
-    B = 8e-8
+    A = 4.2e-12
+    B = 3.5e-8
 
     Qin = 5.416667e-3
-    area = 400 * Qin / 1e-3  # membrane area [m^2]
-    membrane_area = area / 1
+    area = 400 * Qin / 1e-3 / 2  # membrane area [m^2]
+    width = 10 * Qin / 1e-3 / 2
 
-    m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(5.2694555326075)
-    m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(0.42725315129249997)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(3.68861887282525)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(0.22219353092070893)
 
-    m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
-    m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+    m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+    m.fs.unit.inlet.temperature[0].fix(feed_temperature)
 
-    m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
-        1.844309436412625
-    )
-    m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
-        0.21362657564624998
-    )
-    m.fs.unit.permeate_inlet.pressure[0].fix(2e5)
-    m.fs.unit.permeate_inlet.temperature[0].fix(feed_temperature)
+    m.fs.unit.permeate.pressure[0].fix(101325)
 
-    m.fs.unit.area.fix(membrane_area)
+    m.fs.unit.area.fix(area)
+    m.fs.unit.width.fix(width)
 
     m.fs.unit.A_comp.fix(A)
     m.fs.unit.B_comp.fix(B)
 
-    m.fs.unit.structural_parameter.fix(1200e-6)
-
-    m.fs.unit.permeate_side.channel_height.fix(2e-3)
-    m.fs.unit.permeate_side.spacer_porosity.fix(0.75)
     m.fs.unit.feed_side.channel_height.fix(2e-3)
     m.fs.unit.feed_side.spacer_porosity.fix(0.75)
-    m.fs.unit.feed_side.velocity[0, 0].fix(0.1)
-    # m.fs.unit.feed_side.N_Re[0, 0].fix(250)
-
-    # m.fs.unit.feed_side.K[0.0, 0.0, "NaCl"].setlb(0)
-    # m.fs.unit.feed_side.K[0.0, 1.0, "NaCl"].setlb(0)
-    # m.fs.unit.permeate_side.K[0.0, 0.0, "NaCl"].setlb(0)
-    # m.fs.unit.permeate_side.K[0.0, 1.0, "NaCl"].setlb(0)
-    # m.fs.unit.feed_side.dP_dx[0.0, 0.0].setub(None)
-    # m.fs.unit.feed_side.dP_dx[0.0, 1.0].setub(None)
-    # m.fs.unit.permeate_side.dP_dx[0.0, 0.0].setub(None)
-    # m.fs.unit.permeate_side.dP_dx[0.0, 1.0].setub(None)
 
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
+
+    print(f"DOF: {degrees_of_freedom(m)}")
 
     iscale.set_scaling_factor(m.fs.unit.area, 1e-2)
     calculate_scaling_factors(m)
@@ -171,8 +153,8 @@ def build(water_recovery=None):
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
-    m.fs.unit.permeate_inlet.pressure[0].unfix()
-    m.fs.unit.permeate_outlet.pressure[0].fix(1e5)
+    # m.fs.unit.permeate_inlet.pressure[0].unfix()
+    # m.fs.unit.permeate_outlet.pressure[0].fix(1e5)
 
     # m.fs.unit.feed_side.velocity[0, 0].unfix()
     # m.fs.unit.feed_side.velocity[0, 0].setlb(0)
