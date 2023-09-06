@@ -377,7 +377,7 @@ Example of code for setting up our example of RO with ERD
         optimize_function=ro_setup.ro_solve, # our solve function
         saving_dir=get_working_dir(), # this gets working directory for script so we can save files in same dirctory
         save_name="ro_with_erd", # this will be the name of this loop run
-	parallel_backe_end=”RayIo”, #backend we want to use for parallel runs
+	parallel_back_end=”RayIo”, # backend we want to use for parallel runs
 	number_of_subprocesses = 8, #use 8 logical cores on our computer
     )
 
@@ -428,7 +428,7 @@ The loopTool will store data in h5 file, with a structure similar to that of the
             |-solve_successful 
             |-sweep_params 
 
-We can readely access the data for processing by using h5py. 
+We can readily access the data for processing by using h5py. 
 To visually explore the h5 file, use HDFviewer ( https://www.hdfgroup.org/downloads/hdfview/ )
 All the parameters will use their parm names or object keys as reference (e.g. if you set up yaml file to sweep over 'RO_recovery' for which param is 'fs.ro.ro_recovery', the file will store data for RO_recovery under key 'fs.ro.ro_recovery'. Alternatively, if you provided build_outputs_kwargs, and specified a name for a key (e.g., *RO recovery: fs.ro.ro_recovery* than this result will be saved under *RO recovery*.
 

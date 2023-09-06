@@ -13,22 +13,21 @@
 
 from idaes.core.solvers import get_solver
 
-from watertap.tools.parameter_sweep.parameter_sweep import (
+from watertap.tools.parameter_sweep import (
     ParameterSweep,
     RecursiveParameterSweep,
 )
 
+from watertap.tools.parameter_sweep import (
+    DifferentialParameterSweep,
+)
+
+from watertap.tools.parameter_sweep import ParameterSweepReader
+
 from watertap.tools.parameter_sweep.parameter_sweep_differential import (
     DifferentialParameterSweep,
 )
 
-from watertap.tools.parameter_sweep.parameter_sweep_reader import ParameterSweepReader
-
-from watertap.tools.parameter_sweep.parameter_sweep_differential import (
-    DifferentialParameterSweep,
-)
-
-# from watertap.tools.analysis_tools.loop_tool.data_merging_tool import *
 from watertap.tools.analysis_tools.loop_tool.data_merging_tool import *
 
 from watertap.tools.parallel.parallel_manager_factory import (
@@ -373,7 +372,6 @@ class loopTool:
         sweep_samples = 1
         min_num_samples = None
         force_rerun = None
-        # print(loop_value, key)
         if "diff_mode" in loop_value[key]:
             diff_samples = loop_value[key]["num_samples"]
             diff_params[loop_value[key]["param"]] = loop_value[key]
