@@ -377,7 +377,7 @@ Example of code for setting up our example of RO with ERD
         optimize_function=ro_setup.ro_solve, # our solve function
         saving_dir=get_working_dir(), # this gets working directory for script so we can save files in same dirctory
         save_name="ro_with_erd", # this will be the name of this loop run
-	parallel_backe_end=”RayIo”, #backend we want to use for parallel runs
+	parallel_back_end=”RayIo”, # backend we want to use for parallel runs
 	number_of_subprocesses = 8, #use 8 logical cores on our computer
     )
 
