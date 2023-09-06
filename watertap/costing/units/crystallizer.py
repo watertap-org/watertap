@@ -93,8 +93,8 @@ def build_crystallizer_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.add_defined_flow("steam", blk.steam_cost)
-    costing.add_defined_flow("NaCl", blk.NaCl_recovery_value)
+    costing.register_flow_type("steam", blk.steam_cost)
+    costing.register_flow_type("NaCl", blk.NaCl_recovery_value)
 
 
 def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):

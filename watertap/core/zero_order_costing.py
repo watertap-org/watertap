@@ -20,10 +20,8 @@ from pyomo.common.config import ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import declare_process_block_class
-from idaes.core.base.costing_base import (
-    FlowsheetCostingBlockData,
-    register_idaes_currency_units,
-)
+from idaes.core.base.costing_base import register_idaes_currency_units
+from watertap.core.costing_base import WaterTAPCostingBlockData
 
 global_params = [
     "plant_lifetime",
@@ -42,12 +40,12 @@ global_params = [
 
 
 @declare_process_block_class("ZeroOrderCosting")
-class ZeroOrderCostingData(FlowsheetCostingBlockData):
+class ZeroOrderCostingData(WaterTAPCostingBlockData):
     """
     General costing package for zero-order processes.
     """
 
-    CONFIG = FlowsheetCostingBlockData.CONFIG()
+    CONFIG = WaterTAPCostingBlockData.CONFIG()
     CONFIG.declare(
         "case_study_definition",
         ConfigValue(
@@ -78,7 +76,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         self.base_period = getattr(pyo.units, cs_def["base_period"])
 
         # Define expected flows
-        self.defined_flows = {}
         for f, v in cs_def["defined_flows"].items():
             self.defined_flows[f] = v["value"] * getattr(pyo.units, v["units"])
 
@@ -317,16 +314,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             ),
             doc="Overall electricity intensity",
         )
-
-    def _get_costing_method_for(self, unit_model):
-        """
-        Allow the unit model to register its default costing method,
-        either through an attribute named "default_costing_method"
-        or by naming the default costing method "default_costing_method"
-        """
-        if hasattr(unit_model, "default_costing_method"):
-            return unit_model.default_costing_method
-        return super()._get_costing_method_for(unit_model)
 
 
 def _load_case_study_definition(self):

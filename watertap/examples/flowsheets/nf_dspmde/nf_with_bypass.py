@@ -133,7 +133,7 @@ def build():
         units=pyunits.USD_2020 / pyunits.m**3,
     )
     m.fs.costing.disposal_cost.fix()
-    m.fs.costing.add_defined_flow("disposal cost", m.fs.costing.disposal_cost)
+    m.fs.costing.register_flow_type("disposal cost", m.fs.costing.disposal_cost)
     m.fs.costing.cost_flow(
         pyunits.convert(
             m.fs.disposal.properties[0].flow_vol_phase["Liq"],

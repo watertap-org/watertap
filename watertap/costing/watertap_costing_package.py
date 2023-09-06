@@ -10,19 +10,15 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from collections.abc import MutableMapping
-
 import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import declare_process_block_class
-from idaes.core.base.costing_base import (
-    FlowsheetCostingBlockData,
-    register_idaes_currency_units,
-)
+from idaes.core.base.costing_base import register_idaes_currency_units
 
 from idaes.models.unit_models import Mixer, HeatExchanger
+from watertap.core.costing_base import WaterTAPCostingBlockData
 
 from watertap.unit_models import (
     AD,
@@ -68,29 +64,8 @@ from .units.heat_exchanger import cost_heat_exchanger
 from .units.electroNP import cost_electroNP
 
 
-class _DefinedFlowsDict(MutableMapping, dict):
-    # use dict methods
-    __getitem__ = dict.__getitem__
-    __iter__ = dict.__iter__
-    __len__ = dict.__len__
-
-    def _setitem(self, key, value):
-        if key in self and self[key] is not value:
-            raise KeyError(f"{key} has already been defined as a flow")
-        dict.__setitem__(self, key, value)
-
-    def __setitem__(self, key, value):
-        raise KeyError(
-            "Please use the `WaterTAPCosting.add_defined_flow` "
-            "method to add defined flows."
-        )
-
-    def __delitem__(self, key):
-        raise KeyError("defined flows cannot be removed")
-
-
 @declare_process_block_class("WaterTAPCosting")
-class WaterTAPCostingData(FlowsheetCostingBlockData):
+class WaterTAPCostingData(WaterTAPCostingBlockData):
     # Define default mapping of costing methods to unit models
     unit_mapping = {
         AD: cost_anaerobic_digestor,
@@ -130,14 +105,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         # Set a base period for all operating costs
         self.base_period = pyo.units.year
 
-        # Define standard material flows and costs
-        # The WaterTAP costing package creates flows
-        # in a lazy fashion, the first time `cost_flow`
-        # is called for a flow. The `_DefinedFlowsDict`
-        # prevents defining more than one flow with
-        # the same name.
-        self.defined_flows = _DefinedFlowsDict()
-
         # Build flowsheet level costing components
         # These are the global parameters
         self.utilization_factor = pyo.Var(
@@ -167,7 +134,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Electricity cost",
             units=pyo.units.USD_2018 / pyo.units.kWh,
         )
-        self.add_defined_flow("electricity", self.electricity_cost)
+        self.defined_flows["electricity"] = self.electricity_cost
 
         self.electrical_carbon_intensity = pyo.Param(
             mutable=True,
@@ -178,64 +145,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         # fix the parameters
         self.fix_all_vars()
-
-    def add_defined_flow(self, flow_name, flow_cost):
-        """
-        This method adds a defined flow to the costing block.
-
-        NOTE: Use this method to add `defined_flows` to the costing block
-              to ensure updates to `flow_cost` get propagated in the model.
-              See https://github.com/IDAES/idaes-pse/pull/1014 for details.
-
-        Args:
-            flow_name: string containing the name of the flow to register
-            flow_cost: Pyomo expression that represents the flow unit cost
-
-        Returns:
-            None
-        """
-        flow_cost_name = flow_name + "_cost"
-        current_flow_cost = self.component(flow_cost_name)
-        if current_flow_cost is None:
-            self.add_component(flow_cost_name, pyo.Expression(expr=flow_cost))
-            self.defined_flows._setitem(flow_name, self.component(flow_cost_name))
-        elif current_flow_cost is flow_cost:
-            self.defined_flows._setitem(flow_name, current_flow_cost)
-        else:
-            # if we get here then there's an attribute named
-            # flow_cost_name on the block, which is an error
-            raise RuntimeError(
-                f"Attribute {flow_cost_name} already exists "
-                f"on the costing block, but is not {flow_cost}"
-            )
-
-    def cost_flow(self, flow_expr, flow_type):
-        """
-        This method registers a given flow component (Var or expression) for
-        costing. All flows are required to be bounded to be non-negative (i.e.
-        a lower bound equal to or greater than 0).
-
-        Args:
-            flow_expr: Pyomo Var or expression that represents a material flow
-                that should be included in the process costing. Units are
-                expected to be on a per time basis.
-            flow_type: string identifying the material this flow represents.
-                This string must be available to the FlowsheetCostingBlock
-                as a known flow type.
-
-        Raises:
-            ValueError if flow_type is not recognized.
-            TypeError if flow_expr is an indexed Var.
-        """
-        if flow_type not in self.defined_flows:
-            raise ValueError(
-                f"{flow_type} is not a recognized flow type. Please check "
-                "your spelling and that the flow type has been available to"
-                " the FlowsheetCostingBlock."
-            )
-        if flow_type not in self.flow_types:
-            self.register_flow_type(flow_type, self.defined_flows[flow_type])
-        super().cost_flow(flow_expr, flow_type)
 
     def build_process_costs(self):
         self.total_capital_cost = pyo.Var(

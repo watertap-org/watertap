@@ -129,7 +129,7 @@ Custom Capital Cost Methods
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There are several zero order models that have costing relationships that do not follow this general form. If that is the case, a custom costing method can
-be added to this base class to perform that calculation.
+be added to the unit model class to perform that calculation.
 
 Zero order models that have custom capital costing methods include:
 
@@ -161,10 +161,8 @@ Zero order models that have custom capital costing methods include:
 * UV + AOP - ``cost_uv_aop()``
 * Well field - ``cost_well_field()``
 
-To add a custom capital calculation method, the unit module class must be part of the ``import`` statement at the top of this file
-and there must be an entry in the ``unit_mapping`` dictionary that maps the unit model class to the costing method. Convention is to name the method
-``cost_unit_class_name`` without the "ZO" at the end of the class. For example, if the unit model class is ``MyUnitZO``, the custom cost method would be
-``cost_my_unit`` and ``MyUnitZO: cost_my_unit`` would be an entry in the ``unit_mapping`` dictionary found in this file.
+To add a custom capital calculation method, the unit model class must register its custom costing method by setting its `default_costing_method` attribute.
+
 
 Operating Cost Calculations
 +++++++++++++++++++++++++++
