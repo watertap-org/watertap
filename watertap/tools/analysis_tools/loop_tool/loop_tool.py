@@ -28,7 +28,6 @@ from watertap.tools.parameter_sweep.parameter_sweep_differential import (
     DifferentialParameterSweep,
 )
 
-# from watertap.tools.analysis_tools.loop_tool.data_merging_tool import *
 from watertap.tools.analysis_tools.loop_tool.data_merging_tool import *
 
 from watertap.tools.parallel.parallel_manager_factory import (
