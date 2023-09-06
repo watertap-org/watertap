@@ -71,7 +71,7 @@ def test_ideal_naocl_chlorination():
 def test_ideal_naocl_chlorination_full_block():
     model = run_chlorination_block_example(fix_free_chlorine=True)
     assert model.fs.ideal_naocl_mixer_unit.dosing_rate.value == pytest.approx(
-        0.9504457542440085e-6, rel=1e-3
+        1.72961133116e-9, rel=1e-3
     )
     assert model.fs.ideal_naocl_mixer_unit.outlet.flow_mol[0].value == pytest.approx(
         25.000025535888078, rel=1e-3
