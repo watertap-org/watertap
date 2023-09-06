@@ -22,7 +22,7 @@ from watertap.tools.parameter_sweep.parameter_sweep_differential import (
     DifferentialParameterSweep,
 )
 
-from watertap.tools.parameter_sweep.parameter_sweep_reader import ParameterSweepReader
+from watertap.tools.parameter_sweep import ParameterSweepReader
 
 from watertap.tools.parameter_sweep.parameter_sweep_differential import (
     DifferentialParameterSweep,
