@@ -76,11 +76,11 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     # build, set, and initialize
     m = build(number_of_stages=number_of_stages, erd_type=erd_type)
     set_operating_conditions(m, number_of_stages=number_of_stages)
-    initialize_system(m, number_of_stages, solver=solver)
-    # try:
-    #     initialize_system(m, number_of_stages, solver=solver)
-    # except:
-    #     pass
+    # initialize_system(m, number_of_stages, solver=solver)
+    try:
+        initialize_system(m, number_of_stages, solver=solver)
+    except:
+        pass
 
     optimize_set_up(
         m, number_of_stages=number_of_stages, water_recovery=system_recovery
@@ -196,33 +196,17 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         outlet_list=["treat", "purge"],
     )
 
-    # if number_of_stages > 2:
-    #     separator_list = ["waste"]
-    #     for i in range(2, number_of_stages):
-    #         separator_list.append("recycle" + str(i))
-    #     m.fs.WasteSeparator = Separator(
-    #         property_package=m.fs.properties, outlet_list=separator_list
-    #     )
-
     # --- Mixers ---
+    m.fs.Mixers = Mixer(
+        m.fs.NonFirstStages,
+        property_package=m.fs.properties,
+        inlet_list=["treat", "makeup"],
+    )
     if number_of_stages > 1:
         mixer_list = []
         for i in range(1, number_of_stages + 1):
             mixer_list.append("purge" + str(i))
         m.fs.WasteMixer = Mixer(property_package=m.fs.properties, inlet_list=mixer_list)
-
-        m.fs.Mixers = Mixer(
-            m.fs.NonFirstStages,
-            property_package=m.fs.properties,
-            inlet_list=["treat", "makeup"],
-        )
-
-    # if number_of_stages > 2:
-    #     m.fs.IntermediateMixers = Mixer(
-    #         m.fs.IntermediateStages,
-    #         property_package=m.fs.properties,
-    #         inlet_list=["treat", "recycle"],
-    #     )
 
     m.fs.recovered_pump_work = Expression(
         expr=sum(
@@ -414,46 +398,41 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     # connections
     if erd_type == ERDtype.pump_as_turbine:
         last_stage = m.fs.LastStage
+        first_stage = m.fs.FirstStage
 
         # Connect the feed to the first pump
         m.fs.feed_to_pump = Arc(
-            source=m.fs.feed.outlet, destination=m.fs.PrimaryPumps[1].inlet
-        )
-
-        # Connect first EnergyRecoveryDevice to Mixer
-        m.fs.ERD_to_mixer = Arc(
-            source=m.fs.EnergyRecoveryDevices[1].outlet,
-            destination=m.fs.WasteMixer.purge1,
-        )
-
-        # Connect the Pump n to OARO n
-        m.fs.pump_to_OARO = Arc(
-            m.fs.NonFinalStages,
-            rule=lambda fs, n: {
-                "source": fs.PrimaryPumps[n].outlet,
-                "destination": fs.OAROUnits[n].feed_inlet,
-            },
-        )
-
-        # Connect OARO n permeate outlet to Pump n+1
-        m.fs.OARO_to_pump = Arc(
-            m.fs.NonFinalStages,
-            rule=lambda fs, n: {
-                "source": fs.OAROUnits[n].permeate_outlet,
-                "destination": fs.PrimaryPumps[n + 1].inlet,
-            },
-        )
-
-        # Connect OARO n feed outlet to EnergyRecoveryDevice n
-        m.fs.OARO_to_ERD = Arc(
-            m.fs.NonFinalStages,
-            rule=lambda fs, n: {
-                "source": fs.OAROUnits[n].feed_outlet,
-                "destination": fs.EnergyRecoveryDevices[n].inlet,
-            },
+            source=m.fs.feed.outlet, destination=m.fs.PrimaryPumps[first_stage].inlet
         )
 
         if number_of_stages > 1:
+            # Connect the Pump n to OARO n
+            m.fs.pump_to_OARO = Arc(
+                m.fs.NonFinalStages,
+                rule=lambda fs, n: {
+                    "source": fs.PrimaryPumps[n].outlet,
+                    "destination": fs.OAROUnits[n].feed_inlet,
+                },
+            )
+
+            # Connect OARO n permeate outlet to Pump n+1
+            m.fs.OARO_to_pump = Arc(
+                m.fs.NonFinalStages,
+                rule=lambda fs, n: {
+                    "source": fs.OAROUnits[n].permeate_outlet,
+                    "destination": fs.PrimaryPumps[n + 1].inlet,
+                },
+            )
+
+            # Connect OARO n feed outlet to EnergyRecoveryDevice n
+            m.fs.OARO_to_ERD = Arc(
+                m.fs.NonFinalStages,
+                rule=lambda fs, n: {
+                    "source": fs.OAROUnits[n].feed_outlet,
+                    "destination": fs.EnergyRecoveryDevices[n].inlet,
+                },
+            )
+
             # Connect EnergyRecoveryDevice n to Separator n
             m.fs.ERD_to_separator = Arc(
                 m.fs.NonFirstStages,
@@ -505,9 +484,21 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
                 },
             )
 
+        if number_of_stages > 1:
+            # Connect first EnergyRecoveryDevice to Mixer
+            m.fs.ERD_to_wastemixer = Arc(
+                source=m.fs.EnergyRecoveryDevices[first_stage].outlet,
+                destination=m.fs.WasteMixer.purge1,
+            )
+
             # Connect waste mixer to disposal
             m.fs.wastemixer_to_disposal = Arc(
                 source=m.fs.WasteMixer.outlet,
+                destination=m.fs.disposal.inlet,
+            )
+        else:
+            m.fs.ERD_to_disposal = Arc(
+                source=m.fs.EnergyRecoveryDevices[first_stage].outlet,
                 destination=m.fs.disposal.inlet,
             )
 
@@ -668,21 +659,20 @@ def set_operating_conditions(
     print(f"DOF before make-up: {degrees_of_freedom(m)}")
 
     # Makeup
-    if number_of_stages > 1:
-        for makeup in m.fs.MakeupStreams.values():
-            makeup.pressure.fix(pressure_atmospheric)  # feed pressure [Pa]
-            makeup.temperature.fix(feed_temperature)
-            # makeup.properties[0].flow_vol_phase["Liq"].fix(0)
-            # makeup.properties[0].mass_frac_phase_comp["Liq", "NaCl"].fix(0)
-            makeup.properties.calculate_state(
-                var_args={
-                    ("mass_frac_phase_comp", ("Liq", "NaCl")): value(
-                        0
-                    ),  # makeup mass concentration
-                    ("flow_vol_phase", "Liq"): 0,
-                },  # makeup volumetric feed flowrate [-]
-                hold_state=True,  # fixes the calculated component mass flow rates
-            )
+    for makeup in m.fs.MakeupStreams.values():
+        makeup.pressure.fix(pressure_atmospheric)  # feed pressure [Pa]
+        makeup.temperature.fix(feed_temperature)
+        # makeup.properties[0].flow_vol_phase["Liq"].fix(0)
+        # makeup.properties[0].mass_frac_phase_comp["Liq", "NaCl"].fix(0)
+        makeup.properties.calculate_state(
+            var_args={
+                ("mass_frac_phase_comp", ("Liq", "NaCl")): value(
+                    0
+                ),  # makeup mass concentration
+                ("flow_vol_phase", "Liq"): 0,
+            },  # makeup volumetric feed flowrate [-]
+            hold_state=True,  # fixes the calculated component mass flow rates
+        )
 
     print(f"DOF after make-up: {degrees_of_freedom(m)}")
 
@@ -825,7 +815,7 @@ def initialize_system(
     m.fs.PrimaryPumps[first_stage].initialize()
 
     # ---initialize first OARO unit---
-    if number_of_stages > int(1):
+    if number_of_stages > 1:
         propagate_state(m.fs.pump_to_OARO[first_stage])
         recycle_pump_initializer(
             m.fs.RecyclePumps[first_stage + 1],
@@ -851,7 +841,7 @@ def initialize_system(
     propagate_state(m.fs.ro_to_ERD)
     m.fs.EnergyRecoveryDevices[last_stage].initialize()
 
-    if number_of_stages > int(1):
+    if number_of_stages > 1:
         purge_initializer(
             m.fs.Separators[last_stage],
             m.fs.OAROUnits[last_stage - 1],
@@ -1098,7 +1088,8 @@ def optimize_set_up(
         expr=(
             0.4,
             pyunits.convert(
-                m.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "H2O"] / stage.dens_solvent,
+                m.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
+                / m.fs.RO.dens_solvent,
                 to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
             ),
             40,
@@ -1110,7 +1101,7 @@ def optimize_set_up(
             0.4 / 5,
             pyunits.convert(
                 m.fs.RO.flux_mass_phase_comp[0.0, 0.0, "Liq", "H2O"]
-                / stage.dens_solvent,
+                / m.fs.RO.dens_solvent,
                 to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
             ),
             40 * 1.5,
@@ -1122,7 +1113,7 @@ def optimize_set_up(
             0.4 / 5,
             pyunits.convert(
                 m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"]
-                / stage.dens_solvent,
+                / m.fs.RO.dens_solvent,
                 to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
             ),
             40 * 1.5,
@@ -1204,27 +1195,32 @@ def optimize_set_up(
         m.fs.eq_product_quality, 1e3
     )  # scaling constraint
 
-    m.fs.purge_rate_con = Constraint(
-        expr=(
-            0,
-            sum(
-                m.fs.Separators[stage].purge.flow_mass_phase_comp[0, "Liq", j]
-                for stage in m.fs.NonFirstStages
-                for j in ["H2O", "NaCl"]
-            )
-            / (
+    if number_of_stages > 1:
+        m.fs.purge_rate_con = Constraint(
+            expr=(
+                0,
                 sum(
-                    m.fs.OAROUnits[1].permeate_outlet.flow_mass_phase_comp[0, "Liq", j]
+                    m.fs.Separators[stage].purge.flow_mass_phase_comp[0, "Liq", j]
+                    for stage in m.fs.NonFirstStages
                     for j in ["H2O", "NaCl"]
                 )
-                - sum(
-                    m.fs.OAROUnits[1].permeate_inlet.flow_mass_phase_comp[0, "Liq", j]
-                    for j in ["H2O", "NaCl"]
-                )
-            ),
-            0.2,
+                / (
+                    sum(
+                        m.fs.OAROUnits[1].permeate_outlet.flow_mass_phase_comp[
+                            0, "Liq", j
+                        ]
+                        for j in ["H2O", "NaCl"]
+                    )
+                    - sum(
+                        m.fs.OAROUnits[1].permeate_inlet.flow_mass_phase_comp[
+                            0, "Liq", j
+                        ]
+                        for j in ["H2O", "NaCl"]
+                    )
+                ),
+                0.2,
+            )
         )
-    )
 
 
 def display_system(m):
@@ -1442,5 +1438,5 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    # NOTE: this flowsheet only works for 2 and 3 stages
-    m = main(5, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
+    # NOTE: this flowsheet works up to 5 stages
+    m = main(3, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
