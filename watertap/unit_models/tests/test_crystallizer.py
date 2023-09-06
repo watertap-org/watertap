@@ -600,7 +600,7 @@ class TestCrystallization:
     def test_solution2_operatingcost_NaCl_revenue(self, Crystallizer_frame):
         m = Crystallizer_frame
         m.fs.costing.crystallizer.steam_pressure.fix(3)
-        m.fs.costing.crystallizer.NaCl_recovery_value.fix(-0.015)
+        m.fs.costing.crystallizer.NaCl_recovery_value.fix(-0.07)
 
         results = solver.solve(m)
 
@@ -615,6 +615,6 @@ class TestCrystallization:
         assert pytest.approx(30666.67, rel=1e-3) == value(
             m.fs.costing.aggregate_flow_costs["steam"]
         )
-        assert pytest.approx(-40255.3, rel=1e-3) == value(
+        assert pytest.approx(-187858.2, rel=1e-3) == value(
             m.fs.costing.aggregate_flow_costs["NaCl"]
         )
