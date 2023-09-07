@@ -36,7 +36,7 @@ from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
     ConcentrationPolarizationType,
 )
-from watertap.costing.units.reverse_osmosis import cost_reverse_osmosis
+from watertap.costing.unit_models.reverse_osmosis import cost_reverse_osmosis
 
 
 def _add_has_full_reporting(config_obj):

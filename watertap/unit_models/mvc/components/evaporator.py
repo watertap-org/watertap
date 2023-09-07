@@ -37,7 +37,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
-from watertap.costing.units.evaporator import cost_evaporator
+from watertap.costing.unit_models.evaporator import cost_evaporator
 
 
 _log = idaeslog.getLogger(__name__)

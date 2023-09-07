@@ -40,7 +40,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
-from watertap.costing.units.gac import cost_gac
+from watertap.costing.unit_models.gac import cost_gac
 
 __author__ = "Hunter Barber"
 

@@ -37,7 +37,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from watertap.core import ControlVolume0DBlock, InitializationMixin
-from watertap.costing.units.electrolyzer import cost_electrolyzer
+from watertap.costing.unit_models.electrolyzer import cost_electrolyzer
 
 __author__ = "Hunter Barber"
 

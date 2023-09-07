@@ -38,7 +38,7 @@ from watertap.core.membrane_channel_base import (
 )
 
 from watertap.core import InitializationMixin
-from watertap.costing.units.osmotically_assisted_reverse_osmosis import (
+from watertap.costing.unit_models.osmotically_assisted_reverse_osmosis import (
     cost_osmotically_assisted_reverse_osmosis,
 )
 

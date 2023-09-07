@@ -53,7 +53,7 @@ from watertap.core.util.initialization import check_dof
 import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
-from watertap.costing.units.nanofiltration import cost_nanofiltration
+from watertap.costing.unit_models.nanofiltration import cost_nanofiltration
 
 __author__ = "Adam Atia"
 

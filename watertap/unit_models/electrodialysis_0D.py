@@ -47,7 +47,7 @@ from idaes.core.util.constants import Constants
 from enum import Enum
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
-from watertap.costing.units.electrodialysis import cost_electrodialysis
+from watertap.costing.unit_models.electrodialysis import cost_electrodialysis
 
 __author__ = " Xiangyu Bi, Austin Ladshaw,"
 

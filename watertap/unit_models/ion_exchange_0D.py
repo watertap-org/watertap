@@ -45,7 +45,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
-from watertap.costing.units.ion_exchange import cost_ion_exchange
+from watertap.costing.unit_models.ion_exchange import cost_ion_exchange
 
 __author__ = "Kurban Sitterley"
 

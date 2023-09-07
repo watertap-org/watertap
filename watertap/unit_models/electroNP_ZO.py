@@ -31,7 +31,7 @@ from idaes.core.util.misc import add_object_reference
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.costing.units.electroNP import cost_electroNP
+from watertap.costing.unit_models.electroNP import cost_electroNP
 
 __author__ = "Chenyu Wang"
 

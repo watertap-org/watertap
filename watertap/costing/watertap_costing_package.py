@@ -20,8 +20,8 @@ from idaes.core.base.costing_base import register_idaes_currency_units
 from idaes.models.unit_models import Mixer, HeatExchanger
 from watertap.core.costing_base import WaterTAPCostingBlockData
 
-from .units.mixer import cost_mixer
-from .units.heat_exchanger import cost_heat_exchanger
+from watertap.costing.unit_models.mixer import cost_mixer
+from watertap.costing.unit_models.heat_exchanger import cost_heat_exchanger
 
 
 @declare_process_block_class("WaterTAPCosting")

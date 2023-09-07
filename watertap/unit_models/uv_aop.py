@@ -46,7 +46,7 @@ import idaes.logger as idaeslog
 from idaes.core.util.misc import add_object_reference
 
 from watertap.core import InitializationMixin
-from watertap.costing.units.uv_aop import cost_uv_aop
+from watertap.costing.unit_models.uv_aop import cost_uv_aop
 
 _log = idaeslog.getLogger(__name__)
 
