@@ -50,6 +50,7 @@ import idaes.logger as idaeslog
 from enum import Enum
 
 from watertap.core import ControlVolume1DBlock, InitializationMixin
+from watertap.costing.units.electrodialysis import cost_electrodialysis
 
 __author__ = "Xiangyu Bi, Austin Ladshaw"
 
@@ -2881,3 +2882,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         return self.diluate.power_electrical_x[
             time_point, self.diluate.length_domain.last()
         ]
+
+    @property
+    def default_costing_method(self):
+        return cost_electrodialysis
