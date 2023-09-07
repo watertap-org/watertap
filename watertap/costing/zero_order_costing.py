@@ -21,7 +21,7 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import declare_process_block_class
 from idaes.core.base.costing_base import register_idaes_currency_units
-from watertap.core.costing_base import WaterTAPCostingBlockData
+from watertap.costing.costing_base import WaterTAPCostingBlockData
 
 global_params = [
     "plant_lifetime",

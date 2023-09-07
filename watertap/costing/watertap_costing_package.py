@@ -17,21 +17,11 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core import declare_process_block_class
 from idaes.core.base.costing_base import register_idaes_currency_units
 
-from idaes.models.unit_models import Mixer, HeatExchanger
-from watertap.core.costing_base import WaterTAPCostingBlockData
-
-from watertap.costing.unit_models.mixer import cost_mixer
-from watertap.costing.unit_models.heat_exchanger import cost_heat_exchanger
+from watertap.costing.costing_base import WaterTAPCostingBlockData
 
 
 @declare_process_block_class("WaterTAPCosting")
 class WaterTAPCostingData(WaterTAPCostingBlockData):
-    # Define default mapping of costing methods to unit models
-    unit_mapping = {
-        Mixer: cost_mixer,
-        HeatExchanger: cost_heat_exchanger,
-    }
-
     def build(self):
         super().build()
         self._registered_LCOWs = {}

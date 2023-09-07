@@ -13,8 +13,12 @@
 import pyomo.environ as pyo
 from idaes.core import declare_process_block_class
 from idaes.core.base.costing_base import FlowsheetCostingBlockData
+from idaes.models.unit_models import Mixer, HeatExchanger
 
 from watertap.core.util.misc import is_constant_up_to_units
+
+from watertap.costing.unit_models.mixer import cost_mixer
+from watertap.costing.unit_models.heat_exchanger import cost_heat_exchanger
 
 
 @declare_process_block_class("WaterTAPCostingBlock")
@@ -24,6 +28,12 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
     unit models to "self-register" their default costing methods,
     and for anonymous expressions in flow costs.
     """
+
+    # Define default mapping of costing methods to unit models
+    unit_mapping = {
+        Mixer: cost_mixer,
+        HeatExchanger: cost_heat_exchanger,
+    }
 
     def _get_costing_method_for(self, unit_model):
         """

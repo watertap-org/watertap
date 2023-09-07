@@ -16,7 +16,7 @@ import pyomo.environ as pyo
 import idaes.core as idc
 
 from idaes.core.base.costing_base import register_idaes_currency_units
-from watertap.core.costing_base import WaterTAPCostingBlockData
+from watertap.costing.costing_base import WaterTAPCostingBlockData
 
 
 @idc.declare_process_block_class("TestWaterTAPCostingBlock")
