@@ -39,6 +39,9 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.misc import StrEnum
 
 import watertap.property_models.NaCl_prop_pack as props
+from watertap.core.util.initialization import (
+    assert_degrees_of_freedom,
+)
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
@@ -75,12 +78,14 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
 
     # build, set, and initialize
     m = build(number_of_stages=number_of_stages, erd_type=erd_type)
-    set_operating_conditions(m, number_of_stages=number_of_stages)
-    # initialize_system(m, number_of_stages, solver=solver)
-    try:
-        initialize_system(m, number_of_stages, solver=solver)
-    except:
-        pass
+    set_operating_conditions(m)
+    initialize_system(
+        m,
+        number_of_stages,
+        solvent_multiplier=0.35,
+        solute_multiplier=0.5,
+        solver=solver,
+    )
 
     optimize_set_up(
         m, number_of_stages=number_of_stages, water_recovery=system_recovery
@@ -559,7 +564,6 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
 
 def set_operating_conditions(
     m,
-    number_of_stages,
     solver=None,
 ):
 
@@ -569,7 +573,6 @@ def set_operating_conditions(
     # ---specifications---
     # feed
     # state variables
-    print(f"DOF before set: {degrees_of_freedom(m)}")
     pressure_atmospheric = 101325
     feed_temperature = 273.15 + 25
     m.fs.feed.properties[0].pressure.fix(pressure_atmospheric)  # feed pressure [Pa]
@@ -587,8 +590,6 @@ def set_operating_conditions(
         hold_state=True,  # fixes the calculated component mass flow rates
     )
 
-    print(f"DOF after feed: {degrees_of_freedom(m)}")
-
     # primary pumps
     for idx, pump in m.fs.PrimaryPumps.items():
         # pump.control_volume.properties_out[0].pressure = 10e5 + 65e5 / float(idx)
@@ -605,19 +606,12 @@ def set_operating_conditions(
         pump.control_volume.properties_out[0].pressure.fix()
         pump.efficiency_pump.fix(0.75)
 
-    print(f"DOF after pumps: {degrees_of_freedom(m)}")
-
     # Initialize OARO
-    width = 5 * Qin / 1e-3  # effective membrane width [m]
-    area = 100 * Qin / 1e-3  # membrane area [m^2]
     A_OARO = 1.0e-12
     B_OARO = 8.0e-8
     spacer_porosity = 0.75
 
     for idx, stage in m.fs.OAROUnits.items():
-
-        # stage.area.fix(area / float(idx))
-
         stage.A_comp.fix(A_OARO)
         stage.B_comp.fix(B_OARO)
 
@@ -627,13 +621,13 @@ def set_operating_conditions(
         stage.permeate_side.spacer_porosity.fix(spacer_porosity)
         stage.feed_side.channel_height.fix(2e-3)
         stage.feed_side.spacer_porosity.fix(spacer_porosity)
-        # stage.feed_side.N_Re[0, 0].fix(250)
         stage.feed_side.velocity[0, 0].fix(0.1)
         stage.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(0.3)
 
     # RO unit
     A_RO = 4.2e-12
     B_RO = 3.5e-8
+    width = 5 * Qin / 1e-3  # effective membrane width [m]
     m.fs.RO.A_comp.fix(A_RO)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO.B_comp.fix(B_RO)  # membrane salt permeability coefficient [m/s]
     m.fs.RO.feed_side.channel_height.fix(2e-3)  # channel height in membrane stage [m]
@@ -642,9 +636,6 @@ def set_operating_conditions(
     )  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO.width.fix(width / float(m.fs.NumberOfStages))  # stage width [m]
-    # m.fs.RO.area.fix(
-    #     area / float(m.fs.NumberOfStages)
-    # )  # guess area for RO initialization
     m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(0.3)
 
     # ERD unit
@@ -656,14 +647,10 @@ def set_operating_conditions(
     else:
         erd_type_not_found(m.fs.erd_type)
 
-    print(f"DOF before make-up: {degrees_of_freedom(m)}")
-
     # Makeup
     for makeup in m.fs.MakeupStreams.values():
         makeup.pressure.fix(pressure_atmospheric)  # feed pressure [Pa]
         makeup.temperature.fix(feed_temperature)
-        # makeup.properties[0].flow_vol_phase["Liq"].fix(0)
-        # makeup.properties[0].mass_frac_phase_comp["Liq", "NaCl"].fix(0)
         makeup.properties.calculate_state(
             var_args={
                 ("mass_frac_phase_comp", ("Liq", "NaCl")): value(
@@ -674,25 +661,10 @@ def set_operating_conditions(
             hold_state=True,  # fixes the calculated component mass flow rates
         )
 
-    print(f"DOF after make-up: {degrees_of_freedom(m)}")
-
     # Separator
     for sep in m.fs.Separators.values():
         sep.split_fraction[:, "treat"] = 1
         sep.split_fraction[:, "treat"].fix()
-
-    print(f"DOF after separator: {degrees_of_freedom(m)}")
-
-    # if number_of_stages > 2:
-    #     split_fraction = 0.999
-    #     m.fs.WasteSeparator.split_fraction[:, "waste"].fix(split_fraction)
-    #     if number_of_stages > 3:
-    #         for i in range(2, number_of_stages - 1):
-    #             m.fs.WasteSeparator.split_fraction[:, "recycle" + str(i)].fix(
-    #                 (1 - split_fraction) / (number_of_stages - 2)
-    #             )
-
-    print(f"DOF after set: {degrees_of_freedom(m)}")
 
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:
@@ -750,7 +722,7 @@ def solve(model, solver=None, tee=False, raise_on_failure=False):
         return results
 
 
-def initialize_loop(m, solvent_multiplier, solute_multiplier, solver):
+def initialize_loop(m, solvent_multiplier, solute_multiplier):
 
     for stage in m.fs.IntermediateStages:
         propagate_state(m.fs.OARO_to_pump[stage - 1])
@@ -800,7 +772,6 @@ def initialize_system(
     solvent_multiplier=0.35,
     solute_multiplier=0.5,
     solver=None,
-    verbose=True,
 ):
     if solver is None:
         solver = get_solver()
@@ -827,9 +798,7 @@ def initialize_system(
         m.fs.OAROUnits[first_stage].initialize()
 
         if number_of_stages > 2:
-            print(f"DOF before loop: {degrees_of_freedom(m)}")
-            initialize_loop(m, solvent_multiplier, solute_multiplier, solver)
-            print(f"DOF after loop: {degrees_of_freedom(m)}")
+            initialize_loop(m, solvent_multiplier, solute_multiplier)
 
         # ---initialize RO loop---
         propagate_state(m.fs.OARO_to_pump[last_stage - 1])
@@ -869,25 +838,6 @@ def initialize_system(
         # ---initialize first ERD---
         propagate_state(m.fs.OARO_to_ERD[first_stage])
         m.fs.EnergyRecoveryDevices[first_stage].initialize()
-
-    print(f"DOF: {degrees_of_freedom(m)}")
-
-    # Now that the units are initialized, we can fix the
-    # permeate side outlet pressure and unfix the RO pump
-    # (which allows for control over the flow mass composition
-    # into the OARO permeate_side).
-    # for stage in m.fs.OAROUnits.values():
-    #     stage.permeate_side.properties_out[0].pressure.fix(101325)
-    # for idx, pump in m.fs.PrimaryPumps.items():
-    #     if idx != m.fs.Stages.first():
-    #         pump.control_volume.properties_out[0].pressure.unfix()
-
-    # for makeup in m.fs.MakeupStreams.values():
-    #     makeup.properties[0].flow_vol_phase["Liq"].unfix()
-    #     makeup.properties[0].flow_vol_phase["Liq"].setlb(0)
-    #     makeup.properties[0].flow_vol_phase["Liq"].setub(0.1*5.416667e-3)
-
-    print(f"DOF: {degrees_of_freedom(m)}")
 
     m.fs.costing.initialize()
 
@@ -953,7 +903,6 @@ def optimize_set_up(
         stage.feed_side.velocity[0, 0].setlb(0)
         stage.feed_side.velocity[0, 0].setub(1)
 
-        stage.feed_side.N_Re[0, 0].unfix()
         stage.feed_side.N_Re[0, 0].setlb(100)
         stage.feed_side.N_Re[0, 0].setub(2000)
 
@@ -1063,7 +1012,6 @@ def optimize_set_up(
     # RO
     m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
 
-    m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(1)
     m.fs.RO.area.setub(20000)
 
@@ -1166,17 +1114,6 @@ def optimize_set_up(
         makeup.properties[0].flow_vol_phase["Liq"].setlb(0)
         makeup.properties[0].flow_vol_phase["Liq"].setub(0.1 * 5.416667e-3)
 
-    # if number_of_stages > 2:
-    #     m.fs.WasteSeparator.split_fraction[:, "waste"].unfix()
-    #     m.fs.WasteSeparator.split_fraction[:, "waste"].setlb(0)
-    #     m.fs.WasteSeparator.split_fraction[:, "waste"].setub(1)
-    #
-    #     if number_of_stages > 3:
-    #         for i in range(2, number_of_stages - 1):
-    #             m.fs.WasteSeparator.split_fraction[:, "recycle" + str(i)].unfix()
-    #             m.fs.WasteSeparator.split_fraction[:, "recycle" + str(i)].setlb(0)
-    #             m.fs.WasteSeparator.split_fraction[:, "recycle" + str(i)].setub(1)
-
     # additional specifications
     m.fs.product_salinity = Param(
         initialize=500e-6, mutable=True
@@ -1220,6 +1157,13 @@ def optimize_set_up(
                 ),
                 0.2,
             )
+        )
+
+        assert_degrees_of_freedom(
+            m,
+            6 * (m.fs.NumberOfStages - 1)
+            + 3
+            - (1 if (water_recovery is not None) else 0),
         )
 
 
@@ -1404,11 +1348,11 @@ def display_state(m):
 
     for stage in m.fs.Stages:
 
-        # print_state(f"Primary Pump {stage} out", m.fs.PrimaryPumps[stage].outlet)
-        # print_state(
-        #     f"ERD {stage} out",
-        #     m.fs.EnergyRecoveryDevices[stage].outlet,
-        # )
+        print_state(f"Primary Pump {stage} out", m.fs.PrimaryPumps[stage].outlet)
+        print_state(
+            f"ERD {stage} out",
+            m.fs.EnergyRecoveryDevices[stage].outlet,
+        )
 
         if stage == m.fs.LastStage:
             pass
@@ -1425,7 +1369,7 @@ def display_state(m):
         if stage == m.fs.FirstStage:
             pass
         else:
-            # print_state(f"Recycle Pump {stage} out", m.fs.RecyclePumps[stage].outlet)
+            print_state(f"Recycle Pump {stage} out", m.fs.RecyclePumps[stage].outlet)
             print_state(f"Purge {stage} out", m.fs.Separators[stage].purge)
             print_state(f"Make-up {stage} out", m.fs.MakeupStreams[stage].outlet)
 
@@ -1439,4 +1383,4 @@ def display_state(m):
 
 if __name__ == "__main__":
     # NOTE: this flowsheet works up to 5 stages
-    m = main(3, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
+    m = main(number_of_stages=3, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
