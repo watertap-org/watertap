@@ -597,8 +597,8 @@ class TestCrystallization:
         )
 
     @pytest.mark.component
-    def test_solution2_operatingcost_NaCl_revenue(self, Crystallizer_frame):
-        m = Crystallizer_frame
+    def test_solution2_operatingcost_NaCl_revenue(self, Crystallizer_frame_2):
+        m = Crystallizer_frame_2
         m.fs.costing.crystallizer.steam_pressure.fix(3)
         m.fs.costing.crystallizer.NaCl_recovery_value.fix(-0.07)
 
