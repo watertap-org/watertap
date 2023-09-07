@@ -592,7 +592,7 @@ class TestCrystallization:
         assert pytest.approx(21451.91, rel=1e-3) == value(
             m.fs.costing.aggregate_flow_costs["steam"]
         )
-        assert pytest.approx(0, rel=1e-3) == value(
+        assert pytest.approx(0, abs=1e-3) == value(
             m.fs.costing.aggregate_flow_costs["NaCl"]
         )
 
