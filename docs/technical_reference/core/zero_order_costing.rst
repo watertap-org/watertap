@@ -3,7 +3,7 @@
 Zero Order Costing Package
 ==========================
 
-.. currentmodule:: watertap.core.zero_order_costing
+.. currentmodule:: watertap.costing.zero_order_costing
 
 The zero order costing module contains the costing package used for zero order models. Technoeconomic data used for zero order models is contained in the
 ``.yaml`` file for that model located in the data/techno_economic folder.
@@ -22,7 +22,7 @@ The code below shows an outline of how the ZeroOrderCostingData class is intende
 
   from idaes.core import FlowsheetBlock
 
-  from watertap.core.zero_order_costing import ZeroOrderCosting
+  from watertap.costing.zero_order_costing import ZeroOrderCosting
   from watertap.core.wt_database import Database
   from watertap.core.zero_order_properties import WaterParameterBlock
   from watertap.unit_models.zero_order import MyZOUnit

@@ -37,7 +37,7 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.misc import add_object_reference
 
-from watertap.core.zero_order_costing import (
+from watertap.costing.zero_order_costing import (
     ZeroOrderCosting,
     _load_case_study_definition,
 )
