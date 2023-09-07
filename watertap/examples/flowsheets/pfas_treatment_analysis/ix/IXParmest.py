@@ -840,7 +840,6 @@ class IXParmest:
         ix.c_breakthru[self.target_ion].fix(value(c_b))
         ix.resin_bulk_dens.fix(self.resin_dens)
         ix.resin_diam.fix(self.resin_diam)
-        ix.regen_dose.fix()  # only used for costing, value is irrelevant for this model
         ix.bed_porosity.fix(0.4)
         ix.bed_depth.fix(self.bed_depth)
         ix.vel_bed.fix(self.vel_bed)
