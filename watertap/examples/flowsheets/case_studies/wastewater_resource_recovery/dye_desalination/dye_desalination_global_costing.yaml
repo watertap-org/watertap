@@ -7,19 +7,13 @@ defined_flows:
   waste_disposal:
     value: 1
     units: USD_2020/m**3
-  waste_mass_disposal:
-    value: 0.054 # Converted using waste_disposal and salt mass concentration of brine stream of NF+RO flowsheet
-    units: USD_2020/kg
   dye_disposal:
     value: 120
     units: USD_2020/m**3
-  dye_mass_disposal:
-    value: 103 # Converted using dye_disposal and mass concentration of dye_retentate stream of NF+RO flowsheet
-    units: USD_2020/kg
-  dye_mass_recovery:
+  dye_mass:
     value: 0.1
     units: USD_2020/kg
-  dye_recovery: # Converted using dye_mass_recovery and mass_concentration of dye_retentate stream of NF+RO flowsheet
+  dye_recovery: # Converted using dye_mass and mass_concentration of dye_retentate stream
     value: 0.12
     units: USD_2020/m**3
   brine_recovery:
