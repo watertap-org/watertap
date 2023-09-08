@@ -223,7 +223,7 @@ def run_analysis(
 
     elif case_num == 17:
         m.fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0].unfix()
-        m.fs.zo_costing.dye_mass_disposal_cost.unfix()
+        m.fs.zo_costing.dye_disposal_cost.unfix()
         sweep_params["NF_water_recovery"] = LinearSample(
             m.fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0],
             0.5,
@@ -231,7 +231,7 @@ def run_analysis(
             nx,
         )
         sweep_params["dye_disposal_cost"] = LinearSample(
-            m.fs.zo_costing.dye_mass_disposal_cost, 50, 200, nx
+            m.fs.zo_costing.dye_disposal_cost, 50, 200, nx
         )
 
     elif case_num == 18:
@@ -392,17 +392,17 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     # ax.set_title("LCOT ($/m3)")
 
     # case 17
-    # fig, ax = visualize_results(
-    #     case_num,
-    #     plot_type="contour",
-    #     xlabel="# NF_water_recovery",
-    #     ylabel="dye_disposal_cost",
-    #     zlabel="LCOT",
-    #     cmap="GnBu",
-    # )
-    # ax.set_xlabel("NF Water Recovery Fraction")
-    # ax.set_ylabel("Dye Disposal Cost ($/m3)")
-    # ax.set_title("LCOT ($/m3)")
+    fig, ax = visualize_results(
+        case_num,
+        plot_type="contour",
+        xlabel="# NF_water_recovery",
+        ylabel="dye_disposal_cost",
+        zlabel="LCOT",
+        cmap="GnBu",
+    )
+    ax.set_xlabel("NF Water Recovery Fraction")
+    ax.set_ylabel("Dye Disposal Cost ($/m3)")
+    ax.set_title("LCOT ($/m3)")
 
     # case 18
     # fig, ax = visualize_results(
@@ -418,21 +418,21 @@ def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
     # ax.set_title("LCOT ($/m3)")
 
     # case 19
-    fig, ax = visualize_results(
-        case_num,
-        plot_type="contour",
-        xlabel="# NF_water_recovery",
-        ylabel="NF_dye_rejection",
-        zlabel="LCOT",
-        cmap="GnBu",
-    )
-    ax.set_xlabel("NF Water Recovery Fraction")
-    ax.set_ylabel("NF Dye Rejection Fraction")
-    ax.set_title("LCOT ($/m3)")
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# NF_water_recovery",
+    #     ylabel="NF_dye_rejection",
+    #     zlabel="LCOT",
+    #     cmap="GnBu",
+    # )
+    # ax.set_xlabel("NF Water Recovery Fraction")
+    # ax.set_ylabel("NF Dye Rejection Fraction")
+    # ax.set_title("LCOT ($/m3)")
 
     return global_results, m
 
 
 if __name__ == "__main__":
-    results, model = main(case_num=19, nx=17)
+    results, model = main(case_num=17, nx=17)
     # results, sweep_params, m = run_analysis()
