@@ -69,7 +69,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 
 def main():
-    m = build_flowsheet()
+    m = build()
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
@@ -92,7 +92,7 @@ def main():
     return m, results
 
 
-def build_flowsheet():
+def build():
     m = pyo.ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
