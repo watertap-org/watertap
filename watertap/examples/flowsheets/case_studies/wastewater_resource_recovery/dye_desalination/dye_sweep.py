@@ -13,8 +13,6 @@ from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination as dye_desalination
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination_withRO as dye_desalination_withRO
 
-import os
-
 
 def set_up_sensitivity(m, withRO):
     outputs = {}
@@ -34,7 +32,7 @@ def set_up_sensitivity(m, withRO):
 
 
 def run_analysis(
-    case_num, nx, interpolate_nan_outputs=True, withRO=True, output_filename=None
+    case_num=8, nx=11, interpolate_nan_outputs=True, withRO=True, output_filename=None
 ):
 
     if output_filename is None:
