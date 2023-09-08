@@ -23,6 +23,7 @@ from idaes.core import declare_process_block_class
 from idaes.core.base.costing_base import register_idaes_currency_units
 from watertap.costing.costing_base import WaterTAPCostingBlockData
 
+# NOTE: some of these are defined in WaterTAPCostingBlockData
 global_params = [
     "plant_lifetime",
     "utilization_factor",
@@ -70,6 +71,8 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
         else:
             register_idaes_currency_units()
 
+        self._build_common_global_params()
+
         # Set the base year for all costs
         self.base_currency = getattr(pyo.units, cs_def["base_currency"])
         # Set a base period for all operating costs
@@ -77,13 +80,15 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
 
         # Define expected flows
         for f, v in cs_def["defined_flows"].items():
-            self.defined_flows[f] = v["value"] * getattr(pyo.units, v["units"])
+            value = v["value"]
+            units = getattr(pyo.units, v["units"])
+            if self.component(f + "_cost") is not None:
+                self.component(f + "_cost").fix(value * units)
+            else:
+                self.defined_flows[f] = value * units
 
         # Costing factors
         self.plant_lifetime = pyo.Var(units=self.base_period, doc="Plant lifetime")
-        self.utilization_factor = pyo.Var(
-            units=pyo.units.dimensionless, doc="Plant capacity utilization [%]"
-        )
 
         self.land_cost_percent_FCI = pyo.Var(
             units=pyo.units.dimensionless, doc="Land cost as % FCI"
@@ -110,22 +115,10 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
         self.wacc = pyo.Var(
             units=pyo.units.dimensionless, doc="Weighted Average Cost of Capital (WACC)"
         )
-        self.capital_recovery_factor = pyo.Expression(
-            expr=(
-                (
-                    self.wacc
-                    * (1 + self.wacc) ** (self.plant_lifetime / self.base_period)
-                )
-                / (((1 + self.wacc) ** (self.plant_lifetime / self.base_period)) - 1)
-                / self.base_period
-            )
-        )
-
-        self.TPEC = pyo.Var(
-            units=pyo.units.dimensionless, doc="Total Purchased Equipment Cost (TPEC)"
-        )
-        self.TIC = pyo.Var(
-            units=pyo.units.dimensionless, doc="Total Installed Cost (TIC)"
+        self.capital_recovery_factor.expr = (
+            (self.wacc * (1 + self.wacc) ** (self.plant_lifetime / self.base_period))
+            / (((1 + self.wacc) ** (self.plant_lifetime / self.base_period)) - 1)
+            / self.base_period
         )
 
         # Fix all Vars from database
@@ -144,6 +137,9 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
         """
         Calculating process wide costs.
         """
+        # add total_captial_cost and total_operating_cost
+        self._build_common_process_costs()
+
         # Other capital costs
         self.land_cost = pyo.Var(
             initialize=0,
@@ -154,9 +150,6 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
             initialize=0,
             units=self.base_currency,
             doc="Working capital - based on aggregate capital costs",
-        )
-        self.total_capital_cost = pyo.Var(
-            initialize=0, units=self.base_currency, doc="Total capital cost of process"
         )
 
         self.land_cost_constraint = pyo.Constraint(
@@ -242,8 +235,9 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
             doc="Total variable operating cost of process per operating period",
         )
 
-        self.total_operating_cost = pyo.Expression(
-            expr=(self.total_fixed_operating_cost + self.total_variable_operating_cost),
+        self.total_operating_cost_constraint = pyo.Constraint(
+            expr=self.total_operating_cost
+            == (self.total_fixed_operating_cost + self.total_variable_operating_cost),
             doc="Total operating cost of process per operating period",
         )
 
@@ -279,41 +273,8 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
             self.total_fixed_operating_cost, self.total_fixed_operating_cost_constraint
         )
 
-    def add_LCOW(self, flow_rate):
-        """
-        Add Levelized Cost of Water (LCOW) to costing block.
-        Args:
-            flow_rate - flow rate of water (volumetric) to be used in
-                        calculating LCOW
-        """
-        self.LCOW = pyo.Expression(
-            expr=(
-                self.total_capital_cost * self.capital_recovery_factor
-                + self.total_operating_cost
-            )
-            / (
-                pyo.units.convert(
-                    flow_rate, to_units=pyo.units.m**3 / self.base_period
-                )
-                * self.utilization_factor
-            ),
-            doc="Levelized Cost of Water",
-        )
-
-    def add_electricity_intensity(self, flow_rate):
-        """
-        Add calculation of overall electricity intensity to costing block.
-        Args:
-            flow_rate - flow rate of water (volumetric) to be used in
-                        calculating electricity intensity
-        """
-        self.electricity_intensity = pyo.Expression(
-            expr=pyo.units.convert(
-                self.aggregate_flow_electricity / flow_rate,
-                to_units=pyo.units.kWh / pyo.units.m**3,
-            ),
-            doc="Overall electricity intensity",
-        )
+        for var, con in self._registered_LCOWs.values():
+            calculate_variable_from_constraint(var, con)
 
 
 def _load_case_study_definition(self):

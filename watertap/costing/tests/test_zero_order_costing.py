@@ -426,7 +426,8 @@ class TestWorkflow:
     def test_add_LCOW(self, model):
         model.fs.costing.add_LCOW(model.fs.unit1.properties_in[0].flow_vol)
 
-        assert isinstance(model.fs.costing.LCOW, Expression)
+        assert isinstance(model.fs.costing.LCOW, Var)
+        assert isinstance(model.fs.costing.LCOW_constraint, Constraint)
 
         assert_units_consistent(model.fs)
         assert degrees_of_freedom(model.fs) == 0
