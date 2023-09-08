@@ -169,7 +169,6 @@ def build():
     m.fs.properties = MCASParameterBlock(**default)
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
-    m.fs.feed.properties[0].conc_mol_phase_comp[...]
     m.fs.feed.properties[0].flow_mass_phase_comp[...]
 
     m.fs.product = Product(property_package=m.fs.properties)
@@ -325,6 +324,8 @@ def init_system(m, solver):
     propagate_state(m.fs.nfUnit_product_to_product)
     m.fs.NF.product.initialize(optarg=solver.options)
     m.fs.NF.retentate.initialize(optarg=solver.options)
+
+    m.fs.costing.initialize()
 
 
 def init_nf_block(blk, solver):

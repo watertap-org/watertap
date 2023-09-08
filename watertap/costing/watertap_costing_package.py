@@ -79,19 +79,16 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
     def build_process_costs(self):
         self.total_capital_cost = pyo.Var(
             initialize=1e3,
-            domain=pyo.NonNegativeReals,
             doc="Total capital cost",
             units=self.base_currency,
         )
         self.maintenance_labor_chemical_operating_cost = pyo.Var(
             initialize=1e3,
-            domain=pyo.NonNegativeReals,
             doc="Maintenance-labor-chemical operating cost",
             units=self.base_currency / self.base_period,
         )
         self.total_operating_cost = pyo.Var(
             initialize=1e3,
-            domain=pyo.Reals,
             doc="Total operating cost",
             units=self.base_currency / self.base_period,
         )
