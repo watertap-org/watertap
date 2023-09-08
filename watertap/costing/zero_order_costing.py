@@ -241,6 +241,14 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
             doc="Total operating cost of process per operating period",
         )
 
+        self.total_annualized_cost = pyo.Expression(
+            expr=(
+                self.total_capital_cost * self.capital_recovery_factor
+                + self.total_operating_cost
+            ),
+            doc="Total annualized cost of operation",
+        )
+
     def initialize_build(self):
         """
         Basic initialization for flowsheet level quantities

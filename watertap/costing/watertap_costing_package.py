@@ -96,6 +96,14 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
                 + sum(self.aggregate_flow_costs.values()) * self.utilization_factor
             )
 
+        self.total_annualized_cost = pyo.Expression(
+            expr=(
+                self.total_capital_cost * self.capital_recovery_factor
+                + self.total_operating_cost
+            ),
+            doc="Total annualized cost of operation",
+        )
+
     def initialize_build(self):
         calculate_variable_from_constraint(
             self.total_capital_cost, self.total_capital_cost_constraint
