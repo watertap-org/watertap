@@ -714,13 +714,6 @@ class loopTool:
         ] = ParameterSweepReader()._dict_to_diff_spec(m, self.differential_sweep_specs)
         ps = DifferentialParameterSweep(**ps_kwargs)
 
-        # these are added for custom function access
-        ps.build_model = self.build_function
-        ps.build_sweep_params = ParameterSweepReader()._dict_to_params
-        ps.build_outputs = None
-        ps.build_model_kwargs = self.combined_build_defaults
-        ps.build_sweep_params_kwargs = {"input_dict": self.sweep_params}
-
         ps.parameter_sweep(
             self.build_function,
             ParameterSweepReader()._dict_to_params,
