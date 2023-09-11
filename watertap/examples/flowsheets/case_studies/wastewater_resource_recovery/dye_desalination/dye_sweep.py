@@ -62,9 +62,9 @@ def run_analysis(
     sweep_params = {}
 
     if case_num == 1:
-        m.fs.zo_costing.dye_mass_cost.unfix()
-        sweep_params["dye_mass_cost"] = LinearSample(
-            m.fs.zo_costing.dye_mass_cost, 0.1, 5, nx
+        m.fs.zo_costing.dye_disposal_cost.unfix()
+        sweep_params["dye_disposal_cost"] = LinearSample(
+            m.fs.zo_costing.dye_disposal_cost, 0.1, 5, nx
         )
 
     elif case_num == 2:
@@ -104,10 +104,12 @@ def run_analysis(
             m.fs.zo_costing.nanofiltration.membrane_cost, 1, 100, nx
         )
     elif case_num == 6:
-        m.fs.zo_costing.dye_mass_cost.unfix()
+        m.fs.zo_costing.dye_disposal_cost.unfix()
         m.fs.zo_costing.waste_disposal_cost.unfix()
 
-        sweep_params["dye_cost"] = LinearSample(m.fs.zo_costing.dye_mass_cost, 0, 1, nx)
+        sweep_params["dye_cost"] = LinearSample(
+            m.fs.zo_costing.dye_disposal_cost, 0, 1, nx
+        )
         sweep_params["waste_disposal"] = LinearSample(
             m.fs.zo_costing.waste_disposal_cost, 0, 10, nx
         )
@@ -167,9 +169,9 @@ def run_analysis(
         sweep_params["recovered_water_value"] = LinearSample(
             m.fs.zo_costing.recovered_water_cost, 0.0, 2, nx
         )
-        m.fs.zo_costing.dye_mass_cost.unfix()
+        m.fs.zo_costing.dye_disposal_cost.unfix()
         sweep_params["recovered_dye_value"] = LinearSample(
-            m.fs.zo_costing.dye_mass_cost, 0.0, 2, nx
+            m.fs.zo_costing.dye_disposal_cost, 0.0, 2, nx
         )
     elif case_num == 13:
         m.fs.zo_costing.recovered_water_cost.unfix()

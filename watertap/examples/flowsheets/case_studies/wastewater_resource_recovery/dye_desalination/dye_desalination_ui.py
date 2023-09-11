@@ -352,17 +352,6 @@ def export_variables(flowsheet=None, exports=None):
         input_category="System Costs",
         is_output=False,
     )
-    v = fs.zo_costing.dye_mass_cost
-    exports.add(
-        obj=v,
-        name="Value of recovered dye",
-        ui_units=getattr(pyunits, str(v._units)),
-        display_units=str(v._units),
-        rounding=2,
-        is_input=True,
-        input_category="System Costs",
-        is_output=False,
-    )
     v = fs.zo_costing.recovered_water_cost
     exports.add(
         obj=v,
@@ -707,7 +696,7 @@ def export_variables(flowsheet=None, exports=None):
     else:
         pass
     # Revenue
-    total_revenue = fs.water_recovery_revenue + fs.dye_value
+    total_revenue = fs.water_recovery_revenue - fs.dye_disposal_cost
     exports.add(
         obj=total_revenue,
         name="Total",
@@ -720,12 +709,12 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Revenue",
     )
     exports.add(
-        obj=fs.dye_value,
+        obj=fs.dye_disposal_cost,
         name="Dye",
         ui_units=fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
-        description="Revenue from selling dye",
+        description="Annual dye disposal",
         is_input=False,
         is_output=True,
         output_category="Revenue",
@@ -756,7 +745,7 @@ def build_flowsheet():
     results = solve(m)
     assert_optimal_termination(results)
 
-    add_costing(m, has_dye_revenue=False)
+    add_costing(m)
     assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
