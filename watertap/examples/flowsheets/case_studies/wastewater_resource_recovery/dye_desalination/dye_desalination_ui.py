@@ -50,8 +50,8 @@ def export_variables(flowsheet=None, exports=None):
     exports.add(
         obj=fs.feed.conc_mass_comp[0, "dye"],
         name="Dye concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",  # can this be done by default?
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3",
         rounding=2,
         description="Inlet dye concentration",
         is_input=True,
@@ -62,8 +62,8 @@ def export_variables(flowsheet=None, exports=None):
     exports.add(
         obj=fs.feed.conc_mass_comp[0, "tds"],
         name="TDS concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",  # can this be done by default?
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3",
         rounding=2,
         description="Inlet total dissolved solids (TDS) concentration",
         is_input=True,
@@ -331,6 +331,17 @@ def export_variables(flowsheet=None, exports=None):
     exports.add(
         obj=v,
         name="Waste disposal cost per volume",
+        ui_units=getattr(pyunits, str(v._units)),
+        display_units=str(v._units),
+        rounding=2,
+        is_input=True,
+        input_category="System Costs",
+        is_output=False,
+    )
+    v = fs.zo_costing.dye_disposal_cost
+    exports.add(
+        obj=v,
+        name="Dye disposal cost per volume",
         ui_units=getattr(pyunits, str(v._units)),
         display_units=str(v._units),
         rounding=2,
