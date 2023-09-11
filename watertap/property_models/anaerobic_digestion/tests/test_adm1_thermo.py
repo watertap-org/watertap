@@ -11,7 +11,7 @@
 #################################################################################
 """
 Tests for ADM1 thermo property package.
-Authors: Adam Atia, Alejandro Garciadiego
+Authors: Adam Atia, Alejandro Garciadiego, Xinhong Liu
 """
 
 import pytest
@@ -129,6 +129,32 @@ class TestStateBlock(object):
         assert isinstance(model.props[1].conc_mass_comp, Var)
 
         assert len(model.props[1].conc_mass_comp) == 24
+        Comp_dict = {
+            "S_su": 0.012,
+            "S_aa": 0.0053,
+            "S_fa": 0.099,
+            "S_va": 0.012,
+            "S_bu": 0.013,
+            "S_pro": 0.016,
+            "S_ac": 0.20,
+            "S_h2": 2.3e-7,
+            "S_ch4": 0.055,
+            "S_IC": 0.15 * 12,
+            "S_IN": 0.13 * 14,
+            "S_I": 0.33,
+            "X_c": 0.31,
+            "X_ch": 0.028,
+            "X_pr": 0.10,
+            "X_li": 0.029,
+            "X_su": 0.42,
+            "X_aa": 1.18,
+            "X_fa": 0.24,
+            "X_c4": 0.43,
+            "X_pro": 0.14,
+            "X_ac": 0.76,
+            "X_h2": 0.32,
+            "X_I": 25.6,
+        }
         for i in model.props[1].conc_mass_comp:
             assert i in [
                 "S_su",
@@ -156,7 +182,7 @@ class TestStateBlock(object):
                 "X_h2",
                 "X_I",
             ]
-            assert value(model.props[1].conc_mass_comp[i]) == 0.001
+            assert value(model.props[1].conc_mass_comp[i]) == Comp_dict[i]
 
     @pytest.mark.unit
     def test_get_material_flow_terms(self, model):

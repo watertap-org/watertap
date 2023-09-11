@@ -70,6 +70,12 @@ A portion of the displayed output is shown below.
 
 .. testoutput::
 
+   WARNING: model contains export suffix 'fs.state_block[0].scaling_factor' that
+   contains 4 component keys that are not exported as part of the NL file.
+   Skipping.
+   WARNING: model contains export suffix 'fs.state_block[0].scaling_factor' that
+   contains 4 component keys that are not exported as part of the NL file.
+   Skipping.
    Block fs.state_block[0]
 
      Variables:

@@ -89,6 +89,9 @@ State variables
    "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[j]", ":math:`\text{kg/}\text{m}^3`"
    "Anions in molar concentrations", ":math:`M_a`", "anions", "None", ":math:`\text{kmol/}\text{m}^3`"
    "Cations in molar concentrations", ":math:`M_c`", "cations", "None", ":math:`\text{kmol/}\text{m}^3`"
+   "Component carbon content", ":math:`Ci`", "Ci_dict", "[j]", ":math:`\text{kmol/}\text{kg}`"
+   "Component nitrogen content", ":math:`Ni`", "Ni_dict", "[j]", ":math:`\text{kmol/}\text{kg}`"
+   "Component phosphorus content", ":math:`Pi`", "Pi_dict", "[j]", ":math:`\text{kmol/}\text{kg}`"
    "Component pressure", ":math:`P_{j,sat}`", "pressure_sat", "[j]", ":math:`\text{Pa}`"
    "Reference temperature", ":math:`T_{ref}`", "temperature_ref", "None", ":math:`\text{K}`"
    "Reference component mass concentrations", ":math:`C_{j,ref}`", "conc_mass_comp_ref", "[j]", ":math:`\text{kg/}\text{m}^3`"
@@ -144,6 +147,8 @@ Kinetic Parameters
    "First-order kinetic parameter for hydrolysis of carbohydrates, k_hyd_ch", ":math:`k_{hyd,ch}`", "k_hyd_ch", 10, ":math:`\text{d}^{-1}`"
    "First-order kinetic parameter for hydrolysis of proteins, k_hyd_pr", ":math:`k_{hyd,pr}`", "k_hyd_pr", 10, ":math:`\text{d}^{-1}`"
    "First-order kinetic parameter for hydrolysis of lipids, k_hyd_li", ":math:`k_{hyd,li}`", "k_hyd_li", 10, ":math:`\text{d}^{-1}`"
+   "Water dissociation constant, pK_W", ":math:`pK_W`", "pKW", 14, ":math:`\text{dimensionless}`"
+   "Process inhibition term, I", ":math:`I`", "I", 1, ":math:`\text{dimensionless}`"
    "Inhibition parameter for inorganic nitrogen, K_S_IN", ":math:`K_{S_{IN}}`", "K_S_IN", 1e-4, ":math:`\text{kmol/}\text{m}^3`"
    "Monod maximum specific uptake rate of sugars, k_m_su", ":math:`k_{m_{su}}`", "k_m_su", 30, ":math:`\text{d}^{-1}`"
    "Half saturation value for uptake of sugars, K_S_su", ":math:`K_{S_{su}}`", "K_S_su", 0.5, ":math:`\text{kg/}\text{m}^3`"
@@ -176,7 +181,6 @@ Kinetic Parameters
    "First-order decay rate for X_pro, k_dec_X_pro", ":math:`k_{dec,X_{pro}}`", "k_dec_X_pro", 0.02, ":math:`\text{d}^{-1}`"
    "First-order decay rate for X_ac, k_dec_X_ac", ":math:`k_{dec,X_{ac}}`", "k_dec_X_ac", 0.02, ":math:`\text{d}^{-1}`"
    "First-order decay rate for X_h2, k_dec_X_h2", ":math:`k_{dec,X_{h2}}`", "k_dec_X_h2", 0.02, ":math:`\text{d}^{-1}`"
-   "Water dissociation constant, KW", ":math:`KW`", "KW", 2.08e-14, ":math:`(\text{kmol/}\text{m}^3)^2`"
    "Valerate acid-base equilibrium constant, K_a_va", ":math:`K_{a,va}`", "K_a_va", 1.38e-5, ":math:`\text{kmol/}\text{m}^3`"
    "Butyrate acid-base equilibrium constant, K_a_bu", ":math:`K_{a,bu}`", "K_a_bu", 1.5e-5, ":math:`\text{kmol/}\text{m}^3`"
    "Propionate acid-base equilibrium constant, K_a_pro", ":math:`K_{a,pro}`", "K_a_bu", 1.32e-5, ":math:`\text{kmol/}\text{m}^3`"
@@ -199,8 +203,8 @@ Kinetic Parameters
    ":lime:`Yield of biomass on phosphate (kmol P/kg COD), Y_PO4`", ":math:`Y_{PO4}`", "Y_PO4", 12.903e-3, ":math:`\text{dimensionless}`"
    ":lime:`Potassium coefficient for polyphosphates, K_PP`", ":math:`K_{PP}`", "K_PP", 1/3, ":math:`\text{dimensionless}`"
    ":lime:`Magnesium coefficient for polyphosphates, Mg_PP`", ":math:`Mg_{PP}`", "Mg_PP", 1/3, ":math:`\text{dimensionless}`"
-   "Carbon dioxide acid-base equilibrium constant, K_a_co2", ":math:`K_{a,co2}`", "K_a_co2", 4.94e-7, ":math:`\text{kmol/}\text{m}^3`"
-   "Inorganic nitrogen acid-base equilibrium constant, K_a_IN", ":math:`K_{a,IN}`", "K_a_IN", 1.11e-9, ":math:`\text{kmol/}\text{m}^3`"
+   "Carbon dioxide acid-base equilibrium constant, pK_a_co2", ":math:`pK_{a,co2}`", "pK_a_co2", 6.35, ":math:`\text{dimensionless}`"
+   "Inorganic nitrogen acid-base equilibrium constant, pK_a_IN", ":math:`pK_{a,IN}`", "pK_a_IN", 9.25, ":math:`\text{dimensionless}`"
 
 Properties
 ----------
@@ -249,8 +253,17 @@ Additional Variables
 .. csv-table::
  :header: "Description", "Symbol", "Parameter", "Value at 20 C", "Units"
 
-   "Molar concentration of hydrogen, S_H", ":math:`S_{H}`", "S_H", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
-   "Molar concentration of hydroxide, S_OH", ":math:`S_{OH}`", "S_OH", 3.4e-8, ":math:`\text{kmol/}\text{m}^3`"
+   "pH of solution", ":math:`pH`", "pH", 7, ":math:`\text{dimensionless}`"
+   "Mass concentration of valerate, va-", ":math:`C_{va}`", "conc_mass_va", 0.011, ":math:`\text{kg/}\text{m}^3`"
+   "Mass concentration of butyrate, bu-", ":math:`C_{bu}`", "conc_mass_bu", 0.013, ":math:`\text{kg/}\text{m}^3`"
+   "Mass concentration of propionate, pro-", ":math:`C_{pro}`", "conc_mass_pro", 0.016, ":math:`\text{kg/}\text{m}^3`"
+   "Mass concentration of acetate, ac-", ":math:`C_{ac}`", "conc_mass_ac", 0.2, ":math:`\text{kg/}\text{m}^3`"
+   "Molar concentration of bicarbonate, HCO3", ":math:`M_{hco3}`", "conc_mol_hco3", 0.14, ":math:`\text{kmol/}\text{m}^3`"
+   "Molar concentration of ammonia, NH3", ":math:`M_{nh3}`", "conc_mol_nh3", 0.0041, ":math:`\text{kmol/}\text{m}^3`"
+   "Molar concentration of carbon dioxide, CO2", ":math:`M_{co2}`", "conc_mol_co2", 0.0099, ":math:`\text{kmol/}\text{m}^3`"
+   "Molar concentration of ammonium, NH4", ":math:`M_{nh4}`", "conc_mol_nh4", 0.1261, ":math:`\text{kmol/}\text{m}^3`"
+   "Molar concentration of magnesium, Mg", ":math:`M_{Mg}`", "conc_mol_Mg", 4.5822e-5, ":math:`\text{kmol/}\text{m}^3`"
+   "Molar concentration of potassium, K", ":math:`M_{K}`", "conc_mol_K", 0.010934, ":math:`\text{kmol/}\text{m}^3`"
 
 Additional Constraints
 ----------------------
@@ -259,22 +272,21 @@ Additional Constraints
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Water dissociation constant constraint", ":math:`KW = 10^{-14} exp{(\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
-   "CO2 acid-base equilibrium constraint", ":math:`K_{a,co2} = 10^{-6.35} exp{(\frac{7646}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
-   "Nitrogen acid-base equilibrium constraint", ":math:`K_{a,IN} = 10^{-9.25} exp{(\frac{51965}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))}`"
-   "Mass concentration of valerate, va-", ":math:`C_{va} = \frac{K_{a,va} * C_{va,ref}}{K_{a,va} + S_{H}}`"
-   "Mass concentration of butyrate, bu-", ":math:`C_{bu} = \frac{K_{a,bu} * C_{bu,ref}}{K_{a,bu} + S_{H}}`"
-   "Mass concentration of propionate, pro-", ":math:`C_{pro} = \frac{K_{a,pro} * C_{pro,ref}}{K_{a,pro} + S_{H}}`"
-   "Mass concentration of acetate, ac-", ":math:`C_{ac} = \frac{K_{a,ac} * C_{ac,ref}}{K_{a,ac} + S_{H}}`"
-   "Molar concentration of bicarbonate, HCO3", ":math:`M_{hco3} = \frac{K_{a,co2} * \frac{C_{S_{IC},ref}}{12}}{K_{a,co2} + S_{H}}`"
-   "Molar concentration of ammonia, NH3", ":math:`M_{nh3} = \frac{K_{a,IN} * \frac{C_{S_{IN},ref}}{14}}{K_{a,IN} + S_{H}}`"
+   "Water dissociation constant constraint", ":math:`log(10^{-pK_{W}}) = log(10^{-14}) + (\frac{55900}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))`"
+   "CO2 acid-base equilibrium constraint", ":math:`log(10^{-pK_{a,co2}}) = log(10^{-6.35}) + (\frac{7646}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))`"
+   "Nitrogen acid-base equilibrium constraint", ":math:`log(10^{-pK_{a,IN}}) = log(10^{-9.25}) + (\frac{51965}{R} * (\frac{1}{T_{ref}} - \frac{1}{T}))`"
+   "pH of solution", ":math:`pH = -log(S_{H})`"
+   "Mass concentration of valerate, va-", ":math:`C_{va,ref} = C_{va} (1 + \frac{S_{H}}{K_{a,va}})`"
+   "Mass concentration of butyrate, bu-", ":math:`C_{bu,ref} = C_{bu} (1 + \frac{S_{H}}{K_{a,bu}})`"
+   "Mass concentration of propionate, pro-", ":math:`C_{pro,ref} = C_{pro} (1 + \frac{S_{H}}{K_{a,pro}})`"
+   "Mass concentration of acetate, ac-", ":math:`C_{ac,ref} = C_{ac} (1 + \frac{S_{H}}{K_{a,ac}})`"
+   "Molar concentration of bicarbonate, HCO3", ":math:`pK_{a,co2} = log(M_{co2}) - log(M_{hco3}) + pH`"
+   "Molar concentration of ammonia, NH3", ":math:`pK_{a,IN} = log(M_{nh4}) - log(M_{nh3}) + pH`"
    "Molar concentration of carbon dioxide, CO2", ":math:`M_{co2} = \frac{C_{S_{IC},ref}}{12} - M_{hco3}`"
    "Molar concentration of ammonium, NH4+", ":math:`M_{nh4} = \frac{C_{S_{IN},ref}}{14} - M_{nh3}`"
+   ":blue:`Molar concentration of hydrogen, H+`", ":math:`S_{H} = M_{hco3} + \frac{C_{ac}}{64} + \frac{C_{pro}}{112} + \frac{C_{bu}}{160} + \frac{C_{va}}{208} + 10^{pH - pK_{W}} + M_{a} - M_{c} - M_{nh4} - M_{Mg} - M_{K}`"
    ":lime:`Molar concentration of magnesium, Mg`", ":math:`M_{Mg} = \frac{C_{X_{PP},ref}}{300.41}`"
    ":lime:`Molar concentration of potassium, K`", ":math:`M_{K} = \frac{C_{X_{PP},ref}}{300.41}`"
-   ":blue:`Molar concentration of hydrogen, H+`", ":math:`S_{H} = M_{hco3} + \frac{C_{ac}}{64} + \frac{C_{pro}}{112} + \frac{C_{bu}}{160} + \frac{C_{va}}{208} + S_{OH} + M_{a} - M_{c} - M_{nh4} - M_{Mg} - M_{K}`"
-   "Molar concentration of hydroxide, OH-", ":math:`S_{OH} = \frac{KW}{S_{H}}`"
-   "pH of solution", ":math:`pH = -log_{10}(S_{H})`"
 
 The rules for inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH,aa}`), acetate-utilizing microorganisms (:math:`I_{pH,ac}`), hydrogen-utilizing microorganisms (:math:`I_{pH,h2}`) are:
 

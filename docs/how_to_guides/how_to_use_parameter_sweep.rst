@@ -45,37 +45,43 @@ Once this is done, import the parameter sweep tool
 
 Conceptually, regardless of the number of iterations necessary to test each possible combination of variables, it is only necessary to build, simulate, and set up the model once.
 Thus, these steps are left to the user and handled outside the parameter sweep function.
-Depending on how the functions you've defined work, this could be as straightforward as
+
+In order to support native parallelism within the parameter sweep class, the preferred way of setting up a model is to create a standalone function 
+that can produce it. Depending on how the functions you've defined work, this could be as straightforward as
 
 .. testcode::
 
-    # replace these function calls with
-    # those in your own flowsheet module
+    def build_model(**kwargs):
 
-    # set up system
-    m = RO_flowsheet.build()
-    RO_flowsheet.set_operating_conditions(m)
-    RO_flowsheet.initialize_system(m)
+        # replace these function calls with
+        # those in your own flowsheet module
 
-    # simulate
-    RO_flowsheet.solve(m)
+        # set up system
+        m = RO_flowsheet.build()
+        RO_flowsheet.set_operating_conditions(m)
+        RO_flowsheet.initialize_system(m)
 
-    # set up the model for optimization
-    RO_flowsheet.optimize_set_up(m)
+        # simulate
+        RO_flowsheet.solve(m)
 
-.. testoutput::
+        # set up the model for optimization
+        RO_flowsheet.optimize_set_up(m)
 
-   ...
+        return m
 
 where ``m`` is the flowsheet model that results after the initial "build" step and subsequent operations are performed on that object.
 
-Once this sequence of setup steps is performed, the parameters to be varied should be identified with a dictionary:
+Once this sequence of setup steps is performed, the parameters to be varied should be identified with a dictionary. Similarly to the way a 
+model is produced, in order to support native parallelism the preferred way to define parameters is by defining a function that creates them
+(the generated model will automatically be passed in as the first argument):
 
 .. testcode::
 
-    sweep_params = dict()
-    sweep_params['Feed Mass NaCl'] = LinearSample(m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'], 0.005, 0.155, 4)
-    sweep_params['Water Recovery'] = LinearSample(m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'], 0.3, 0.7, 4)
+    def build_sweep_params(model, **kwargs):
+        sweep_params = dict()
+        sweep_params['Feed Mass NaCl'] = LinearSample(model.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'], 0.005, 0.155, 4)
+        sweep_params['Water Recovery'] = LinearSample(model.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'], 0.3, 0.7, 4)
+        return sweep_params
 
 where the basic pattern is ``dict_name['Short/Pretty-print Name'] = LinearSample(m.path.to.model.variable, lower_limit, upper_limit, num_samples)``.
 For example, "Feed Mass NaCl" (the feed mass flow rate of NaCl), which is accessed through the model variable ``m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl']``, is to be varied between 0.005 and 0.155 with 4 equally-spaced values, i.e., ``[0.005, 0.055, 0.105, 0.155]``.
@@ -88,10 +94,12 @@ For this RO flowsheet we'll report the levelized cost of water, the optimized RO
 
 .. testcode::
 
-    outputs = dict()
-    outputs['RO membrane area'] = m.fs.RO.area
-    outputs['Pump 1 pressure'] = m.fs.P1.control_volume.properties_out[0].pressure
-    outputs['Levelized Cost of Water'] = m.fs.costing.LCOW
+    def build_outputs(model, **kwargs):
+        outputs = dict()
+        outputs['RO membrane area'] = model.fs.RO.area
+        outputs['Pump 1 pressure'] = model.fs.P1.control_volume.properties_out[0].pressure
+        outputs['Levelized Cost of Water'] = model.fs.costing.LCOW
+        return outputs
 
 Once the problem is setup and the parameters are identified, the parameter_sweep function can finally be invoked which will perform the adjustment and optimization of the model using each combination of variables specified above (utilizing the solve method defined in our flowsheet module).
 If specified, the parameter_sweep function will optionally write results in CSV format to the path specified in `csv_results_file_name` or in H5 format to the path specified in `h5_results_file_name`.
@@ -99,9 +107,16 @@ The file `outputs_results.csv` contains the `sweep_param` values and `outputs` v
 The H5 writer also creates a companion text file containing the metadata of the h5 file in `outputs_results.h5.txt`.
 Note that if `outputs = None` and an H5 results file is specified, all of the pyomo model variables will be stored in the `outputs_results.h5` and `outputs_results.h5.txt` files.
 
+Passing in a model, sweep params, and outputs directly to the parameter_sweep function is currently supported but is deprecated and will be removed in
+future versions. The preferred way is to pass in generating functions as shown below:
+
 .. testcode::
 
-    parameter_sweep(m, sweep_params, outputs, csv_results_file_name='outputs_results.csv', h5_results_file_name='outputs_results.h5')
+    parameter_sweep(build_model, build_sweep_params, build_outputs, csv_results_file_name='outputs_results.csv', h5_results_file_name='outputs_results.h5')
+
+.. testoutput::
+
+    ...
 
 .. testcleanup::
 

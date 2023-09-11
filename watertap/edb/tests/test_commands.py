@@ -107,7 +107,9 @@ class EDBClientFactory:
 
 @pytest.fixture(scope="function")
 def mock_edb(monkeypatch) -> EDBClientFactory:
-    import mongomock
+    mongomock = pytest.importorskip(
+        "mongomock", reason="mongomock (EDB optional dependency) not available"
+    )
 
     # NOTE since mongomock clients store data in memory,
     # the same MongoClient instance must be kept and used for the lifetime of the fixture
@@ -204,11 +206,8 @@ class TestLoad:
         src = commands.get_edb_data("filename").parent
         dest = tmp_path / "data"
 
-        # TODO: dirs_exist_ok is only available for Python 3.8+, so we use a workaround
-        # until we can drop support for 3.7
-        # shutil.copytree(src, dest, dirs_exist_ok=False)
-        assert list(dest.rglob("*")) == [], f"Directory {dest} is not empty"
-        shutil.copytree(src, dest)
+        # NOTE: dirs_exist_ok is only available for Python 3.8+
+        shutil.copytree(src, dest, dirs_exist_ok=False)
         with _changing_cwd(dest):
             yield dest
 
