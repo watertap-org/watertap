@@ -423,9 +423,10 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                         interface.conc_mass_phase_comp[p, j] - 
                         prop_perm.conc_mass_phase_comp[p, j]) + (
                         1- b.reflect_coeff) * (
-                        (b.flux_mass_phase_comp[t, x, p, j] /
-                        interface.dens_mass_phase[p]) * 
-                        interface.conc_mass_phase_comp[p, j])
+                        ((b.flux_mass_phase_comp[t, x, p, j] / b.dens_solvent) * 
+                        interface.conc_mass_phase_comp[p, j]
+                        )
+                        )
                 
 
         @self.Expression(

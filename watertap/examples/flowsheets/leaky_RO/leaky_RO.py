@@ -110,24 +110,7 @@ def build(membrane_type='RO'):
                     * pyunits.second ** -1,
             doc="Salt permeability coefficient of the membrane",
         )
-    
-    m.fs.A_prime = Var(
-            initialize=1e-8,
-            domain=NonNegativeReals,
-            units=pyunits.m
-                    * pyunits.second ** -1
-                    * pyunits.kPa ** -1,
-            doc="Water permeability coefficient of the membrane",
-        )
-    
-    m.fs.B_prime = Var(
-            initialize=1e-6,
-            domain=NonNegativeReals,
-            units=pyunits.m
-                    * pyunits.second ** -1,
-            doc="Salt permeability coefficient of the membrane",
-        )
-    
+        
     m.fs.reflect_coeff = Var(
             initialize=1,
             domain=NonNegativeReals,
@@ -163,53 +146,48 @@ def build(membrane_type='RO'):
             units=pyunits.dimensionless,
             doc="Volumetric recovery rate",
     )
-    
-    m.fs.obs_salt_perm = Var(
-            initialize=0.1,
-            domain=NonNegativeReals,
-            units=pyunits.kg
-                    * pyunits.second ** -1 * pyunits.kPa ** -1,
-            doc="Reflection coefficient of the membrane",
-    )
 
-    if membrane_type == 'Leaky':
+    m.fs.dens_solvent = Var(
+            initialize=1000,
+            units=pyunits.kg * pyunits.m ** -3,
+            doc="Pure water density",
+        )
 
-        m.fs.alpha_constraint = Constraint(expr=m.fs.alpha == (1 - m.fs.reflect_coeff) / m.fs.obs_salt_perm)
-
-        m.fs.leaky_flux_constraint = Constraint(expr=m.fs.leaky_flux_mass_phase_comp == m.fs.A * (
-            (m.fs.feed[0].pressure - m.fs.perm[0].pressure) - m.fs.reflect_coeff*(
-            m.fs.feed[0].pressure_osm_phase['Liq'] - m.fs.perm[0].pressure_osm_phase['Liq']))
-            )
-    
-        # m.fs.leaky_salt_flux_constraint = Constraint(expr=m.fs.leaky_salt_flux_mass_phase_comp == m.fs.obs_salt_perm * 
-        #         (m.fs.feed[0].flow_mass_phase_comp['Liq', 'TDS'] - m.fs.perm[0].flow_mass_phase_comp['Liq', 'TDS']) + 
-        #         (1-m.fs.reflect_coeff)* (m.fs.leaky_flux_mass_phase_comp*m.fs.feed[0].flow_mass_phase_comp['Liq', 'TDS'])
-        #         )
-        
-        m.fs.leaky_salt_flux_constraint = Constraint(expr=m.fs.leaky_salt_flux_mass_phase_comp == m.fs.obs_salt_perm * 
-                (m.fs.feed[0].pressure_osm_phase['Liq'] - m.fs.perm[0].pressure_osm_phase['Liq']) + 
-                (1-m.fs.reflect_coeff)* (m.fs.leaky_flux_mass_phase_comp*m.fs.feed[0].flow_mass_phase_comp['Liq', 'TDS'])
-                )
-        
-        m.fs.perm_salt_flow_mass_phase_comp_constraint = Constraint(expr=m.fs.perm[0].flow_mass_phase_comp['Liq', 'TDS'] == m.fs.leaky_salt_flux_mass_phase_comp)
-        m.fs.perm_flow_mass_phase_comp_constraint = Constraint(expr=m.fs.perm[0].flow_mass_phase_comp['Liq', 'H2O'] == m.fs.leaky_flux_mass_phase_comp)
-    else:
-        m.fs.flux_constraint = Constraint(expr=m.fs.flux_mass_phase_comp == m.fs.A * (
+    m.fs.flux_constraint = Constraint(expr=m.fs.flux_mass_phase_comp == m.fs.A * 
+                m.fs.dens_solvent * (
                 (m.fs.feed[0].pressure - m.fs.perm[0].pressure) - (
                 m.fs.feed[0].pressure_osm_phase['Liq'] - m.fs.perm[0].pressure_osm_phase['Liq']))
-                )
-        
-        m.fs.salt_flux_constraint = Constraint(expr=m.fs.salt_flux_mass_phase_comp == m.fs.B * (
-                (m.fs.feed[0].flow_mass_phase_comp['Liq', 'TDS'] - m.fs.perm[0].flow_mass_phase_comp['Liq', 'TDS']))
-                )
-    
-        m.fs.perm_salt_flow_mass_phase_comp_constraint = Constraint(expr=m.fs.perm[0].flow_mass_phase_comp['Liq', 'TDS'] == m.fs.salt_flux_mass_phase_comp)
-        m.fs.perm_flow_mass_phase_comp_constraint = Constraint(expr=m.fs.perm[0].flow_mass_phase_comp['Liq', 'H2O'] == m.fs.flux_mass_phase_comp)
+        )
 
-    m.fs.feed_mass_flow_constraint = Constraint(expr=m.fs.feed_mass_flow == (m.fs.feed[0].flow_mass_phase_comp['Liq', 'H2O'] + m.fs.feed[0].flow_mass_phase_comp['Liq', 'TDS']))
-    m.fs.perm_mass_flow_constraint = Constraint(expr=m.fs.perm_mass_flow == (m.fs.perm[0].flow_mass_phase_comp['Liq', 'H2O'] + m.fs.perm[0].flow_mass_phase_comp['Liq', 'TDS']))
-    m.fs.feed_vol_flow_constraint = Constraint(expr=m.fs.feed_vol_flow == (m.fs.feed_mass_flow) / m.fs.feed[0].dens_mass_solvent)
-    m.fs.perm_vol_flow_constraint = Constraint(expr=m.fs.perm_vol_flow == (m.fs.perm_mass_flow) / m.fs.perm[0].dens_mass_solvent)
+    m.fs.salt_flux_constraint = Constraint(expr=m.fs.salt_flux_mass_phase_comp == m.fs.B * (
+                (m.fs.feed[0].conc_mass_phase_comp['Liq', 'TDS'] - 
+                 m.fs.perm[0].conc_mass_phase_comp['Liq', 'TDS']))
+                )
+
+    if membrane_type == 'Leaky':
+        m.fs.flux_constraint.deactivate()
+        m.fs.salt_flux_constraint.deactivate()
+
+        m.fs.alpha_constraint = Constraint(expr=m.fs.alpha == (1 - m.fs.reflect_coeff) / m.fs.B)
+
+        m.fs.flux_constraint = Constraint(expr=m.fs.flux_mass_phase_comp == m.fs.A * 
+                m.fs.dens_solvent * (
+                (m.fs.feed[0].pressure - m.fs.perm[0].pressure) - (
+                m.fs.feed[0].pressure_osm_phase['Liq'] - m.fs.perm[0].pressure_osm_phase['Liq']))
+        )
+
+        m.fs.salt_flux_constraint = Constraint(expr=m.fs.salt_flux_mass_phase_comp == m.fs.B * (
+                (m.fs.feed[0].conc_mass_phase_comp['Liq', 'TDS'] - 
+                 m.fs.perm[0].conc_mass_phase_comp['Liq', 'TDS']))
+                )
+
+    m.fs.perm_salt_flow_mass_phase_comp_constraint = Constraint(expr=m.fs.perm[0].flow_mass_phase_comp['Liq', 'TDS'] == m.fs.salt_flux_mass_phase_comp)
+    m.fs.perm_flow_mass_phase_comp_constraint = Constraint(expr=m.fs.perm[0].flow_mass_phase_comp['Liq', 'H2O'] == m.fs.flux_mass_phase_comp)
+
+#     m.fs.feed_mass_flow_constraint = Constraint(expr=m.fs.feed_mass_flow == (m.fs.feed[0].flow_mass_phase_comp['Liq', 'H2O'] + m.fs.feed[0].flow_mass_phase_comp['Liq', 'TDS']))
+#     m.fs.perm_mass_flow_constraint = Constraint(expr=m.fs.perm_mass_flow == (m.fs.perm[0].flow_mass_phase_comp['Liq', 'H2O'] + m.fs.perm[0].flow_mass_phase_comp['Liq', 'TDS']))
+#     m.fs.feed_vol_flow_constraint = Constraint(expr=m.fs.feed_vol_flow == (m.fs.feed_mass_flow) / m.fs.feed[0].dens_mass_solvent)
+#     m.fs.perm_vol_flow_constraint = Constraint(expr=m.fs.perm_vol_flow == (m.fs.perm_mass_flow) / m.fs.perm[0].dens_mass_solvent)
 
     m.fs.rejection_constraint = Constraint(expr= m.fs.rejection == 1 - (m.fs.perm[0].flow_mass_phase_comp['Liq', 'TDS'] / m.fs.feed[0].flow_mass_phase_comp['Liq', 'TDS']))
     
@@ -227,13 +205,14 @@ def set_operating_conditions(m, tds=0.035):
     m.fs.perm[0].pressure.fix(101325)                           # pressure (Pa)
     m.fs.perm[0].pressure_osm_phase
 
-    m.fs.A.fix(1e-9)
-    m.fs.A_prime.fix(1e-9)
-    m.fs.B.fix(1e-2)
+#     m.fs.A.fix(1e-9)
+#     m.fs.B.fix(1e-2)
+    m.fs.A.fix(4.2e-12)                                      # membrane water permeability (m/Pa/s)
+    m.fs.B.fix(3.5e-8) 
     # m.fs.obs_salt_perm.fix(1e-3)
-    m.fs.obs_salt_perm.fix(5e-11)
-#     m.fs.reflect_coeff.fix(0.1)
-    m.fs.alpha.fix(2e10)
+
+    m.fs.reflect_coeff.fix(0.8)
+#     m.fs.alpha.fix(2e10)
 
     return m
 
@@ -257,8 +236,8 @@ def param_sweep():
         auto_scale(m)
         results = solver.solve(m)
         print_results(m)
-        flux_results.append(value(units.convert(m.fs.flux_mass_phase_comp / m.fs.perm[0].dens_mass_solvent, to_units=pyunits.liter * pyunits.m ** -2 * pyunits.hour ** -1)))
-        leaky_flux_results.append(value(units.convert(m.fs.leaky_flux_mass_phase_comp / m.fs.perm[0].dens_mass_solvent, to_units=pyunits.liter * pyunits.m ** -2 * pyunits.hour ** -1)))
+        flux_results.append(value(units.convert(m.fs.flux_mass_phase_comp, to_units=pyunits.liter * pyunits.m ** -2 * pyunits.hour ** -1)))
+        leaky_flux_results.append(value(units.convert(m.fs.flux_mass_phase_comp, to_units=pyunits.liter * pyunits.m ** -2 * pyunits.hour ** -1)))
 
  
 def reflection_sensitivity():
@@ -273,8 +252,10 @@ def reflection_sensitivity():
     salt_flux_results = []
     rejection_results = []
     reports = []
-    for idx, alpha_coeff in enumerate(alpha_range):
-        m.fs.alpha.fix(alpha_coeff)
+#     for idx, alpha_coeff in enumerate(alpha_range):
+    for idx, ref_coeff in enumerate(ref_coeff_range):
+        # m.fs.alpha.fix(alpha_coeff)
+        m.fs.reflect_coeff.fix(ref_coeff)
         results = solver.solve(m)
         print_results(m)
         flux_results.append(value(units.convert(m.fs.leaky_flux_mass_phase_comp / m.fs.perm[0].dens_mass_solvent, to_units=pyunits.liter * pyunits.m ** -2 * pyunits.hour ** -1)))
@@ -284,7 +265,7 @@ def reflection_sensitivity():
 
     report = pd.concat(reports)
     print(report)
-    plot_data(alpha_range, flux_results, salt_flux_results, rejection_results, ax=ax, xlabel=r'Alpha $(\frac{1-\sigma}{\omega^\prime})$', ylabel=r'Water Flux $(\frac{L}{m^{2}  hr})$', ylabel2=r'Salt Flux $(\frac{kg}{m^{2}  hr})$')
+    plot_data(ref_coeff_range, flux_results, salt_flux_results, rejection_results, ax=ax, xlabel=r'Alpha $(\frac{1-\sigma}{\omega^\prime})$', ylabel=r'Water Flux $(\frac{L}{m^{2}  hr})$', ylabel2=r'Salt Flux $(\frac{kg}{m^{2}  hr})$')
     fig.tight_layout()
     plt.show()
 
