@@ -70,9 +70,8 @@ def cost_high_pressure_pump(blk, cost_electricity_flow=True):
     `TODO: describe equations`
 
     Args:
-        cost_electricity_flow - bool, if True, the Pump's work_mechanical will
-                                be converted to kW and costed as an electricity
-                                default = True
+        cost_electricity_flow (bool): if True, the Pump's work_mechanical will
+            be converted to kW and costed as an electricity. Defaults to True.
     """
     t0 = blk.flowsheet().time.first()
     make_capital_cost_var(blk)
@@ -119,9 +118,8 @@ def cost_low_pressure_pump(blk, cost_electricity_flow=True):
     TODO: describe equations
 
     Args:
-        cost_electricity_flow - bool, if True, the Pump's work_mechanical will
-                                be converted to kW and costed as an electricity
-                                default = True
+        cost_electricity_flow (bool): if True, the Pump's work_mechanical will
+            be converted to kW and costed as an electricity. Defaults to True.
     """
     t0 = blk.flowsheet().time.first()
     cost_by_flow_volume(

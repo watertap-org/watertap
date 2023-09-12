@@ -103,7 +103,7 @@ def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):
     The operating cost model assumes that heat is supplied via condensation of saturated steam (see Dutta et al.)
 
     Args:
-        cost_type - Option for crystallizer cost function type - volume or mass basis
+        cost_type: Option for crystallizer cost function type - volume or mass basis
     """
     if (
         cost_type == CrystallizerCostType.default
