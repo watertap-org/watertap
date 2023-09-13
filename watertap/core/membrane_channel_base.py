@@ -236,7 +236,7 @@ CONFIG_Template.declare(
 CONFIG_Template.declare(
     "transport_model",
     ConfigValue(
-        default='soultion-diffusion',
+        default="soultion-diffusion",
         description="Mass transfer model in RO feed channel",
         doc="""
         Options to account for mass transfer model.
