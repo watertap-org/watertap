@@ -64,7 +64,7 @@ jobs:
       run: conda info
     - name: Test parallel pytest w/ MPI
       run: |
-        mpiexec -n 2 coverage run --parallel-mode -m mpi4py -m pytest watertap/tools/parameter_sweep/tests/test*parameter_sweep.py --no-cov
+        mpiexec -n 2 coverage run --parallel-mode -m mpi4py -m pytest watertap/tools/parameter_sweep/tests/test*parameter_sweep.py watertap/tools/analysis_tools/loop_tool/tests/test*loop_tool.py --no-cov
         # single report
         coverage combine
         # convert to XML
