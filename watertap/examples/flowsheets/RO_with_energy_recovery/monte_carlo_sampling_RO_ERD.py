@@ -64,7 +64,6 @@ def build_model(
     read_model_defauls_from_file=False,
     defaults_fname="default_configuration.yaml",
 ):
-
     # Set up the solver
     solver = get_solver()
 
@@ -87,7 +86,6 @@ def build_sweep_params(
     read_sweep_params_from_file=False,
     num_samples=10,
 ):
-
     # Define the sampling type and ranges for three different variables
     if read_sweep_params_from_file:
         sweep_params = get_sweep_params_from_yaml(m, sweep_params_fname)
@@ -97,7 +95,7 @@ def build_sweep_params(
     return sweep_params
 
 
-def build_outputs(m, sweep_params):
+def build_outputs(m):
     outputs = {}
     outputs["EC"] = m.fs.costing.specific_energy_consumption
     outputs["LCOW"] = m.fs.costing.LCOW
@@ -114,7 +112,6 @@ def run_parameter_sweep(
     read_model_defauls_from_file=False,
     defaults_fname="default_configuration.yaml",
 ):
-
     # Set up the solver
     solver = get_solver()
 

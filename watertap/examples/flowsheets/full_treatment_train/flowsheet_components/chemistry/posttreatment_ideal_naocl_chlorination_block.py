@@ -116,7 +116,7 @@ from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util i
 )
 
 
-__author__ = "Austin Ladshaw"
+__author__ = "Austin Ladshaw, Xinhong Liu"
 
 # Configuration dictionary
 ideal_naocl_thermo_config = {
@@ -215,7 +215,7 @@ ideal_naocl_thermo_config = {
                     "3": (647.13, pyunits.K),
                     "4": (0.081, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -433,7 +433,7 @@ ideal_naocl_reaction_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
@@ -457,7 +457,7 @@ ideal_naocl_reaction_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (13.8, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (13.8, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-7.6422 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry

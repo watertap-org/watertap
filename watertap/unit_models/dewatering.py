@@ -14,7 +14,7 @@
 Dewatering unit model for BSM2 and plant-wide wastewater treatment modeling. 
 This unit inherits from the IDAES separator unit.
 
-Model based on 
+Model based on
 
 J. Alex, L. Benedetti, J.B. Copp, K.V. Gernaey, U. Jeppsson,
 I. Nopens, M.N. Pons, C. Rosen, J.P. Steyer and
