@@ -70,7 +70,11 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables,
 )
-from idaes.core.util.exceptions import ConfigurationError, InitializationError, PropertyPackageError
+from idaes.core.util.exceptions import (
+    ConfigurationError,
+    InitializationError,
+    PropertyPackageError,
+)
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
 
@@ -310,7 +314,7 @@ class MCASParameterData(PhysicalParameterBlock):
            "``MaterialFlowBasis.other``", "other material flowrate as the state variable"
        """,
         ),
-        )
+    )
 
     def build(self):
         """
@@ -990,7 +994,7 @@ class MCASStateBlockData(StateBlockData):
             units=pyunits.Pa,
             doc="State pressure",
         )
-        
+
     # -----------------------------------------------------------------------------
     # Property Methods
     # Material flow state variables generated via on-demand props
@@ -1005,6 +1009,7 @@ class MCASStateBlockData(StateBlockData):
             doc="Component molar flow rate",
         )
         if self.params.config.material_flow_basis == MaterialFlowBasis.mass:
+
             def rule_flow_mol_phase_comp(b, p, j):
                 return (
                     b.flow_mass_phase_comp[p, j]
@@ -1027,6 +1032,7 @@ class MCASStateBlockData(StateBlockData):
             doc="Component Mass flowrate",
         )
         if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
+
             def rule_flow_mass_phase_comp(b, p, j):
                 return (
                     b.flow_mass_phase_comp[p, j]
@@ -1037,9 +1043,8 @@ class MCASStateBlockData(StateBlockData):
                 self.params.phase_list,
                 self.params.component_list,
                 rule=rule_flow_mass_phase_comp,
-                )
-    
-    
+            )
+
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.params.phase_list,
@@ -1796,8 +1801,9 @@ class MCASStateBlockData(StateBlockData):
         elif self.params.config.material_flow_basis == MaterialFlowBasis.mass:
             return MaterialFlowBasis.mass
         else:
-            raise PropertyPackageError(f"{self.name} MCAS Property Package set to use unsupported material flow basis: {self.get_material_flow_basis()}")
-                    
+            raise PropertyPackageError(
+                f"{self.name} MCAS Property Package set to use unsupported material flow basis: {self.get_material_flow_basis()}"
+            )
 
     def define_state_vars(self):
         """Define state vars."""
@@ -1814,7 +1820,9 @@ class MCASStateBlockData(StateBlockData):
                 "pressure": self.pressure,
             }
         else:
-            raise PropertyPackageError(f"{self.name} MCAS Property Package set to use unsupported material flow basis: {self.get_material_flow_basis()}")
+            raise PropertyPackageError(
+                f"{self.name} MCAS Property Package set to use unsupported material flow basis: {self.get_material_flow_basis()}"
+            )
 
     def assert_electroneutrality(
         self,
