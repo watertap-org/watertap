@@ -164,24 +164,19 @@ def build():
 
     m.fs.costing = WaterTAPCosting()
     default = define_feed_comp()
-
     m.fs.properties = MCASParameterBlock(**default)
     m.fs.feed = Feed(property_package=m.fs.properties)
-
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
     m.fs.feed.properties[0].conc_mol_phase_comp[...]
     m.fs.feed.properties[0].flow_mass_phase_comp[...]
 
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
-
     m.fs.product.properties[0].total_hardness
 
     add_hardness_constraint(m.fs.product)
-
-    m.fs.NF = FlowsheetBlock(dynamic=False) 
+    m.fs.NF = FlowsheetBlock(dynamic=False)
     build_nf_block(m, m.fs.NF)
-
     m.fs.feed_to_nfUnit_feed = Arc(
         source=m.fs.feed.outlet, destination=m.fs.NF.feed.inlet
     )
@@ -189,13 +184,10 @@ def build():
         source=m.fs.NF.retentate.outlet,
         destination=m.fs.disposal.inlet,
     )
-
-
     m.fs.nfUnit_product_to_product = Arc(
         source=m.fs.NF.product.outlet,
         destination=m.fs.product.inlet,
     )
-
     m.fs.costing.disposal_cost = Var(
         initialize=0.1,
         bounds=(0, None),
@@ -211,8 +203,6 @@ def build():
         ),
         "disposal cost",
     )
-
-    
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)

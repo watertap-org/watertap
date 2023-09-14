@@ -75,13 +75,10 @@ def main():
 def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-
     m.fs.costing = WaterTAPCosting()
     default = nf.define_feed_comp()
-
     m.fs.properties = MCASParameterBlock(**default)
     m.fs.feed = Feed(property_package=m.fs.properties)
-
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
     m.fs.feed.properties[0].flow_mass_phase_comp[...]
 
@@ -94,10 +91,9 @@ def build():
         property_package=m.fs.properties,
         outlet_list=["nf_stage", "bypass"],
     )
-
-
     # NF UNIT BLOCK
     m.fs.NF = FlowsheetBlock(dynamic=False)
+
     nf.build_nf_block(m, m.fs.NF)
 
     m.fs.total_product_mixer = Mixer(
@@ -128,12 +124,9 @@ def build():
         source=m.fs.NF.retentate.outlet,
         destination=m.fs.disposal.inlet,
     )
-
-
     m.fs.mixer_to_product = Arc(
         source=m.fs.total_product_mixer.outlet, destination=m.fs.product.inlet
     )
-
     m.fs.costing.disposal_cost = Var(
         initialize=0.1,
         bounds=(0, None),
@@ -149,15 +142,11 @@ def build():
         ),
         "disposal cost",
     )
-
-
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
-
     iscale.set_scaling_factor(m.fs.costing.aggregate_flow_costs["disposal cost"], 1)
-    
     TransformationFactory("network.expand_arcs").apply_to(m)
     return m
 
