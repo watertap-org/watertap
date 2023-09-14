@@ -94,7 +94,7 @@ For this RO flowsheet we'll report the levelized cost of water, the optimized RO
 
 .. testcode::
 
-    def build_outputs(model, sweep_params):
+    def build_outputs(model, **kwargs):
         outputs = dict()
         outputs['RO membrane area'] = model.fs.RO.area
         outputs['Pump 1 pressure'] = model.fs.P1.control_volume.properties_out[0].pressure
