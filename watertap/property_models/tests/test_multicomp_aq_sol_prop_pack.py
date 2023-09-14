@@ -19,6 +19,9 @@ from pyomo.environ import (
     Param,
     units as pyunits,
     Suffix,
+    value,
+    Var,
+    Constraint,
 )
 from idaes.core import (
     FlowsheetBlock,
@@ -41,11 +44,16 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import (
     TransportNumberCalculation,
 )
 from watertap.core.util.initialization import check_dof
-from idaes.core.util.model_statistics import *
+from idaes.core.util.model_statistics import (
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
 from idaes.core.util.scaling import (
     unscaled_variables_generator,
     unscaled_constraints_generator,
     badly_scaled_var_generator,
+    set_scaling_factor,
 )
 from idaes.core.util.exceptions import ConfigurationError
 from watertap.property_models.tests.property_test_harness import PropertyAttributeError
@@ -1537,10 +1545,117 @@ def test_compatibility_with_mixer():
             property_package=m.fs.properties,
         )
 
-@pytest.mark.component
+
+@pytest.mark.unit
 def test_no_solute_list_provided():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    with pytest.raises(ConfigurationError,
-                       match="Must provide a list of solutes in solute_list"):
+    with pytest.raises(
+        ConfigurationError,
+        match="Must provide a list of solutes in solute_list as a list of strings.",
+    ):
         m.fs.properties = MCASParameterBlock()
+
+
+@pytest.mark.component
+def test_calculate_state_with_flow_mol_stateVar():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    mw = 0.50013 * pyunits.kg / pyunits.mol
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["target_ion"],
+        mw_data={"target_ion": mw, "H2O": 0.018 * pyunits.kg / pyunits.mol},
+    )
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+    m.fs.stream2 = m.fs.properties.build_state_block([0], defined_state=True)
+
+    flow_in = 0.04381 * pyunits.m**3 / pyunits.s
+    conc_mass = 10e-12 * pyunits.kg / pyunits.m**3
+    flow_mol = pyunits.convert(
+        conc_mass / mw * flow_in, to_units=pyunits.mol / pyunits.s
+    )
+    set_scaling_factor(m.fs.stream[0].flow_vol_phase, 10)
+    # note: the assertion that flow_mol_phase_comp of target_ion is approximately equal
+    # to the value of flow_mol will be false (i.e., false solution with erroneous results
+    # for flow_mol) without setting an apropriate scaling factor for the very small value associated with conc_mol_phase_comp
+    set_scaling_factor(m.fs.stream[0].conc_mol_phase_comp["Liq", "target_ion"], 1e11)
+    calculate_scaling_factors(m.fs.stream[0])
+    m.fs.stream.calculate_state(
+        var_args={
+            ("flow_vol_phase", "Liq"): flow_in,
+            ("conc_mol_phase_comp", ("Liq", "target_ion")): conc_mass / mw,
+            ("pressure", None): 101325,
+            ("temperature", None): 298,
+        },
+        hold_state=True,
+    )
+    assert pytest.approx(
+        value(m.fs.stream[0].flow_mol_phase_comp["Liq", "target_ion"]), rel=1e-3
+    ) == value(flow_mol)
+
+    set_scaling_factor(m.fs.stream2[0].flow_vol_phase, 10)
+    set_scaling_factor(m.fs.stream2[0].conc_mass_phase_comp["Liq", "target_ion"], 1e11)
+    calculate_scaling_factors(m.fs.stream2[0])
+    m.fs.stream2.calculate_state(
+        var_args={
+            ("flow_vol_phase", "Liq"): flow_in,
+            ("conc_mass_phase_comp", ("Liq", "target_ion")): conc_mass,
+            ("pressure", None): 101325,
+            ("temperature", None): 298,
+        },
+        hold_state=True,
+    )
+    assert pytest.approx(
+        value(m.fs.stream2[0].flow_mol_phase_comp["Liq", "target_ion"]), rel=1e-3
+    ) == value(flow_mol)
+
+@pytest.mark.component
+def test_calculate_state_with_flow_mass_stateVar():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    mw = 0.50013 * pyunits.kg / pyunits.mol
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["target_ion"],
+        mw_data={"target_ion": mw, "H2O": 0.018 * pyunits.kg / pyunits.mol},
+        material_flow_basis=MaterialFlowBasis.mass,
+    )
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+    m.fs.stream2 = m.fs.properties.build_state_block([0], defined_state=True)
+
+    flow_in = 0.04381 * pyunits.m**3 / pyunits.s
+    conc_mass = 10e-12 * pyunits.kg / pyunits.m**3
+    flow_mass = pyunits.convert(conc_mass * flow_in, to_units=pyunits.kg/ pyunits.s)
+    set_scaling_factor(m.fs.stream[0].flow_vol_phase, 10)
+    set_scaling_factor(m.fs.stream[0].conc_mol_phase_comp["Liq", "target_ion"], 1e11)
+    calculate_scaling_factors(m.fs.stream[0])
+    m.fs.stream.calculate_state(
+        var_args={
+            ("flow_vol_phase", "Liq"): flow_in,
+            ("conc_mol_phase_comp", ("Liq", "target_ion")): conc_mass/mw,
+            ("pressure", None): 101325,
+            ("temperature", None): 298,
+        },
+        hold_state=True,
+    )
+    
+    assert pytest.approx(
+        value(m.fs.stream[0].flow_mass_phase_comp["Liq", "target_ion"]), rel=1e-3
+    ) == value(flow_mass)
+
+    set_scaling_factor(m.fs.stream2[0].flow_vol_phase, 10)
+    set_scaling_factor(m.fs.stream2[0].conc_mass_phase_comp["Liq", "target_ion"], 1e11)
+    calculate_scaling_factors(m.fs.stream2[0])
+    m.fs.stream2.calculate_state(
+        var_args={
+            ("flow_vol_phase", "Liq"): flow_in,
+            ("conc_mass_phase_comp", ("Liq", "target_ion")): conc_mass,
+            ("pressure", None): 101325,
+            ("temperature", None): 298,
+        },
+        hold_state=True,
+    )
+    
+    assert pytest.approx(
+        value(m.fs.stream2[0].flow_mass_phase_comp["Liq", "target_ion"]), rel=1e-3
+    ) == value(flow_mass)
+

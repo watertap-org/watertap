@@ -74,7 +74,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError, 
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
 
-__author__ = "Adam Atia, Hunter Barber, Xiangyu Bi"
+__author__ = "Adam Atia, Hunter Barber, Xiangyu Bi, Kurban Sitterly"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -339,7 +339,7 @@ class MCASParameterData(PhysicalParameterBlock):
         # Check that solute_list was not left empty
         if self.config.solute_list is None:
             raise ConfigurationError(
-                "Must provide a list of solutes in solute_list"
+                "Must provide a list of solutes in solute_list as a list of strings."
             )
         # Group components into different sets
         for j in self.config.solute_list:
@@ -946,7 +946,7 @@ class _MCASStateBlock(StateBlock):
             )
 
         if not check_optimal_termination(results):
-            _log.warning(
+            _log.error(
                 "While using the calculate_state method on {sb_name}, the solver failed "
                 "to converge to an optimal solution. This suggests that the user provided "
                 "infeasible inputs, or that the model is poorly scaled, poorly initialized, "
