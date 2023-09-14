@@ -1836,9 +1836,9 @@ class MCASStateBlockData(StateBlockData):
         '''
         TODO: add descriptions of args and what is returned
         '''
-        if self.config.material_flow_basis == MaterialFlowBasis.molar:
+        if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
             state_var = self.flow_mol_phase_comp
-        elif self.config.material_flow_basis == MaterialFlowBasis.mass:
+        elif self.params.config.material_flow_basis == MaterialFlowBasis.mass:
             state_var = self.flow_mass_phase_comp
         else:
             raise PropertyPackageError(
@@ -1867,22 +1867,22 @@ class MCASStateBlockData(StateBlockData):
         if defined_state:
             for j in self.params.solute_set:
                 if (
-                    not self.flow_mol_phase_comp["Liq", j].is_fixed()
+                    not state_var["Liq", j].is_fixed()
                     and adjust_by_ion != j
                 ):
                     raise AssertionError(
-                        f"{self.flow_mol_phase_comp['Liq', j]} was not fixed. Fix flow_mol_phase_comp for each solute"
+                        f"{state_var['Liq', j]} was not fixed. Fix {state_var} for each solute"
                         f" to check that electroneutrality is satisfied."
                     )
-                if adjust_by_ion == j and self.flow_mol_phase_comp["Liq", j].is_fixed():
-                    self.flow_mol_phase_comp["Liq", j].unfix()
+                if adjust_by_ion == j and state_var["Liq", j].is_fixed():
+                    state_var["Liq", j].unfix()
         else:
             for j in self.params.solute_set:
                 #TODO: check if DOF=0 for defined_state=False valid case? Test with defined_state=false
-                if self.flow_mol_phase_comp["Liq", j].is_fixed():
+                if state_var["Liq", j].is_fixed():
                     raise AssertionError(
-                        f"{self.flow_mol_phase_comp['Liq', j]} was fixed. Either set defined_state=True or unfix "
-                        f"flow_mol_phase_comp for each solute to check that electroneutrality is satisfied."
+                        f"{state_var['Liq', j]} was fixed. Either set defined_state=True or unfix "
+                        f"{state_var} for each solute to check that electroneutrality is satisfied."
                     )
 
         # touch this var since it is required for this method
@@ -1890,7 +1890,7 @@ class MCASStateBlockData(StateBlockData):
 
         if solve:
             if adjust_by_ion is not None:
-                ion_before_adjust = self.flow_mol_phase_comp["Liq", adjust_by_ion].value
+                ion_before_adjust = state_var["Liq", adjust_by_ion].value
             solve = get_solver()
             solve.solve(self)
             results = solve.solve(self)
@@ -1917,9 +1917,9 @@ class MCASStateBlockData(StateBlockData):
         if abs(val) <= tol:
             if adjust_by_ion is not None:
                 del self.charge_balance
-                ion_adjusted = self.flow_mol_phase_comp["Liq", adjust_by_ion].value
+                ion_adjusted = state_var["Liq", adjust_by_ion].value
                 if defined_state:
-                    self.flow_mol_phase_comp["Liq", adjust_by_ion].fix(ion_adjusted)
+                    state_var["Liq", adjust_by_ion].fix(ion_adjusted)
                     # touch on-demand property desired
                     if get_property is not None:
                         if isinstance(get_property, str):
@@ -1938,13 +1938,13 @@ class MCASStateBlockData(StateBlockData):
                                 f" {get_property}."
                             )
                     msg = (
-                        f"{adjust_by_ion} adjusted: flow_mol_phase_comp['Liq',{adjust_by_ion}] was adjusted from "
+                        f"{adjust_by_ion} adjusted: {state_var}['Liq',{adjust_by_ion}] was adjusted from "
                         f"{ion_before_adjust} and fixed "
                         f"to {ion_adjusted}."
                     )
                 else:
                     msg = (
-                        f"{adjust_by_ion} was adjusted and the value computed for flow_mol_phase_comp['Liq',{adjust_by_ion}]"
+                        f"{adjust_by_ion} was adjusted and the value computed for {state_var}['Liq',{adjust_by_ion}]"
                         f" is {ion_adjusted}."
                     )
 
