@@ -1833,7 +1833,18 @@ class MCASStateBlockData(StateBlockData):
         get_property=None,
         solve=True,
     ):
-
+        '''
+        TODO: add descriptions of args and what is returned
+        '''
+        if self.config.material_flow_basis == MaterialFlowBasis.molar:
+            state_var = self.flow_mol_phase_comp
+        elif self.config.material_flow_basis == MaterialFlowBasis.mass:
+            state_var = self.flow_mass_phase_comp
+        else:
+            raise PropertyPackageError(
+                f"{self.name} MCAS Property Package set to use unsupported material flow basis: {self.get_material_flow_basis()}"
+                )
+        
         if tol is None:
             tol = 1e-8
         if not defined_state and get_property is not None:
@@ -1867,6 +1878,7 @@ class MCASStateBlockData(StateBlockData):
                     self.flow_mol_phase_comp["Liq", j].unfix()
         else:
             for j in self.params.solute_set:
+                #TODO: check if DOF=0 for defined_state=False valid case? Test with defined_state=false
                 if self.flow_mol_phase_comp["Liq", j].is_fixed():
                     raise AssertionError(
                         f"{self.flow_mol_phase_comp['Liq', j]} was fixed. Either set defined_state=True or unfix "
