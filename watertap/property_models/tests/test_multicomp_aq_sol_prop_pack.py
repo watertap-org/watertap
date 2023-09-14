@@ -48,6 +48,7 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
+    degrees_of_freedom,
 )
 from idaes.core.util.scaling import (
     unscaled_variables_generator,
@@ -55,7 +56,7 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
     set_scaling_factor,
 )
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from watertap.property_models.tests.property_test_harness import PropertyAttributeError
 from idaes.core.solvers import get_solver
 
@@ -1609,6 +1610,7 @@ def test_calculate_state_with_flow_mol_stateVar():
         value(m.fs.stream2[0].flow_mol_phase_comp["Liq", "target_ion"]), rel=1e-3
     ) == value(flow_mol)
 
+
 @pytest.mark.component
 def test_calculate_state_with_flow_mass_stateVar():
     m = ConcreteModel()
@@ -1624,20 +1626,20 @@ def test_calculate_state_with_flow_mass_stateVar():
 
     flow_in = 0.04381 * pyunits.m**3 / pyunits.s
     conc_mass = 10e-12 * pyunits.kg / pyunits.m**3
-    flow_mass = pyunits.convert(conc_mass * flow_in, to_units=pyunits.kg/ pyunits.s)
+    flow_mass = pyunits.convert(conc_mass * flow_in, to_units=pyunits.kg / pyunits.s)
     set_scaling_factor(m.fs.stream[0].flow_vol_phase, 10)
     set_scaling_factor(m.fs.stream[0].conc_mol_phase_comp["Liq", "target_ion"], 1e11)
     calculate_scaling_factors(m.fs.stream[0])
     m.fs.stream.calculate_state(
         var_args={
             ("flow_vol_phase", "Liq"): flow_in,
-            ("conc_mol_phase_comp", ("Liq", "target_ion")): conc_mass/mw,
+            ("conc_mol_phase_comp", ("Liq", "target_ion")): conc_mass / mw,
             ("pressure", None): 101325,
             ("temperature", None): 298,
         },
         hold_state=True,
     )
-    
+
     assert pytest.approx(
         value(m.fs.stream[0].flow_mass_phase_comp["Liq", "target_ion"]), rel=1e-3
     ) == value(flow_mass)
@@ -1654,8 +1656,77 @@ def test_calculate_state_with_flow_mass_stateVar():
         },
         hold_state=True,
     )
-    
+
     assert pytest.approx(
         value(m.fs.stream2[0].flow_mass_phase_comp["Liq", "target_ion"]), rel=1e-3
     ) == value(flow_mass)
 
+
+@pytest.mark.component
+def test_flow_mass_basis_with_RO_unit():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock()
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["NaCl"],
+        diffusivity_data={("Liq", "NaCl"): 1e-9},
+        mw_data={"NaCl": 0.058, "H2O": 0.018},
+        material_flow_basis=MaterialFlowBasis.mass,
+    )
+
+    # Import RO model
+    from watertap.unit_models.reverse_osmosis_0D import (
+        ReverseOsmosis0D,
+        ConcentrationPolarizationType,
+        MassTransferCoefficient,
+    )
+
+    m.fs.unit = ReverseOsmosis0D(
+        property_package=m.fs.properties,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.fixed,
+        has_pressure_change=True,
+    )
+
+    feed_flow_mass = 1
+    feed_mass_frac_NaCl = 0.035
+    feed_pressure = 50e5
+    feed_temperature = 273.15 + 25
+    membrane_pressure_drop = 3e5
+    membrane_area = 50
+    A = 4.2e-12
+    B = 3.5e-8
+    pressure_atmospheric = 101325
+    kf = 2e-5
+
+    feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+        feed_flow_mass * feed_mass_frac_NaCl
+    )
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        feed_flow_mass * feed_mass_frac_H2O
+    )
+    m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+    m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+    m.fs.unit.deltaP.fix(-membrane_pressure_drop)
+    m.fs.unit.area.fix(membrane_area)
+    m.fs.unit.A_comp.fix(A)
+    m.fs.unit.B_comp.fix(B)
+    m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+    m.fs.unit.feed_side.K[0, 0.0, "NaCl"].fix(kf)
+    m.fs.unit.feed_side.K[0, 1.0, "NaCl"].fix(kf)
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
+    )
+
+    calculate_scaling_factors(m)
+    assert degrees_of_freedom(m) == 0
+    # TODO: initialize/solve fails because I likely have to put some effort into revising MCAS initialization/scaling based on when flow_mass is used as state var, which I left for last
+    # try:
+    #     m.fs.unit.initialize()
+    # except InitializationError:
+    # #     pass
+    # results= solver.solve(m)
+    # from watertap.core.util.model_diagnostics.infeasible import print_infeasible_constraints
+    # print_infeasible_constraints(m)
+    # assert_optimal_termination(results)
