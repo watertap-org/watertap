@@ -11,16 +11,20 @@
 #################################################################################
 import pytest
 from _pytest.config import Config
+from pyomo.common.dependencies import attempt_import
 
 from watertap.edb import ElectrolyteDB
 from watertap.edb.commands import _load_bootstrap
 
+mongomock, mongomock_available = attempt_import("mongomock")
+
 
 class MockDB(ElectrolyteDB):
     def __init__(self, db="foo", **kwargs):
-        from mongomock import MongoClient
+        if not mongomock_available:
+            pytest.skip(reason="mongomock (EDB optional dependency) not available")
 
-        self._client = MongoClient()
+        self._client = mongomock.MongoClient()
         self._db = getattr(self._client, db)
         # note: don't call superclass!
         self._database_name = db
