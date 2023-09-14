@@ -31,7 +31,7 @@ def export_to_ui():
     )
 
 
-def export_variables(flowsheet=None, exports=None):
+def export_variables(flowsheet=None, exports=None, build_options=None):
     fs = flowsheet
 
     def _base_curr(x):

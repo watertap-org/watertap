@@ -75,10 +75,13 @@ def main():
 def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
+
     m.fs.costing = WaterTAPCosting()
     default = nf.define_feed_comp()
+
     m.fs.properties = MCASParameterBlock(**default)
     m.fs.feed = Feed(property_package=m.fs.properties)
+
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
     m.fs.feed.properties[0].flow_mass_phase_comp[...]
 
@@ -90,10 +93,11 @@ def build():
     m.fs.by_pass_splitter = Separator(
         property_package=m.fs.properties,
         outlet_list=["nf_stage", "bypass"],
-    )
+    ) # HERE EXTRA LINE NF-BYPASS
+
+
     # NF UNIT BLOCK
     m.fs.NF = FlowsheetBlock(dynamic=False)
-
     nf.build_nf_block(m, m.fs.NF)
 
     m.fs.total_product_mixer = Mixer(
@@ -101,11 +105,11 @@ def build():
         inlet_list=["bypass", "nf_stage"],
         energy_mixing_type=MixingType.none,
         momentum_mixing_type=MomentumMixingType.minimize,
-    )
-    m.fs.total_product_mixer.mixed_state[0.0].temperature.fix(293.15)
+    ) # HERE EXTRA LINE NF-BYPASS
+    m.fs.total_product_mixer.mixed_state[0.0].temperature.fix(293.15) # HERE EXTRA LINE NF-BYPASS
     m.fs.feed_to_splitter = Arc(
         source=m.fs.feed.outlet, destination=m.fs.by_pass_splitter.inlet
-    )
+    ) # HERE EXTRA LINE NF-BYPASS
 
     m.fs.splitter_to_nfUnit_feed = Arc(
         source=m.fs.by_pass_splitter.nf_stage, destination=m.fs.NF.feed.inlet
@@ -113,20 +117,23 @@ def build():
 
     m.fs.splitter_to_mixer = Arc(
         source=m.fs.by_pass_splitter.bypass, destination=m.fs.total_product_mixer.bypass
-    )
+    ) # HERE EXTRA LINE NF-BYPASS
 
     m.fs.nfUnit_product_to_mixer = Arc(
         source=m.fs.NF.product.outlet,
         destination=m.fs.total_product_mixer.nf_stage,
-    )
+    ) # HERE EXTRA LINE NF-BYPASS
 
     m.fs.nfUnit_retentate_to_disposal = Arc(
         source=m.fs.NF.retentate.outlet,
         destination=m.fs.disposal.inlet,
     )
+
+
     m.fs.mixer_to_product = Arc(
         source=m.fs.total_product_mixer.outlet, destination=m.fs.product.inlet
-    )
+    ) # HERE EXTRA LINE NF-BYPASS
+
     m.fs.costing.disposal_cost = Var(
         initialize=0.1,
         bounds=(0, None),
@@ -142,11 +149,15 @@ def build():
         ),
         "disposal cost",
     )
+
+
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
-    iscale.set_scaling_factor(m.fs.costing.aggregate_flow_costs["disposal cost"], 1)
+
+    iscale.set_scaling_factor(m.fs.costing.aggregate_flow_costs["disposal cost"], 1) # HERE EXTRA LINE NF-BYPASS
+    
     TransformationFactory("network.expand_arcs").apply_to(m)
     return m
 
