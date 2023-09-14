@@ -169,13 +169,13 @@ def build():
     m.fs.feed = Feed(property_package=m.fs.properties)
 
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
-    m.fs.feed.properties[0].conc_mol_phase_comp[...] # HERE EXTRA LINE NF
+    m.fs.feed.properties[0].conc_mol_phase_comp[...]
     m.fs.feed.properties[0].flow_mass_phase_comp[...]
 
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
 
-    m.fs.product.properties[0].total_hardness # HERE EXTRA LINE NF
+    m.fs.product.properties[0].total_hardness
 
     add_hardness_constraint(m.fs.product)
 
@@ -194,7 +194,7 @@ def build():
     m.fs.nfUnit_product_to_product = Arc(
         source=m.fs.NF.product.outlet,
         destination=m.fs.product.inlet,
-    ) # HERE EXTRA LINE NF
+    )
 
     m.fs.costing.disposal_cost = Var(
         initialize=0.1,
@@ -288,7 +288,6 @@ def unfix_opt_vars(m):
     m.fs.feed.properties[0].total_hardness
     m.fs.disposal.properties[0].total_hardness
     iscale.calculate_scaling_factors(m)
-    print('unfixed opt vars')
 
 
 def add_objective(m):
@@ -426,7 +425,7 @@ def set_NF_feed_scaling(blk):
         scale = calc_scale(blk.feed.properties[0].flow_mol_phase_comp[index].value)
         print(f"{index} flow_mol_phase_comp scaling factor = {10**(scale+_add)}")
         blk.properties.set_default_scaling(
-            "flow_mol_phase_comp", 10 ** (scale + _add), index=index
+            "flow_mol_phase_comp", 10 ** (scale + 0), index=index
         )
 
 
