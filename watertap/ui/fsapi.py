@@ -216,7 +216,6 @@ class ModelOption(BaseModel):
     name: str
     display_name: str = None
     description: str = None
-    # value_type: OptionValueType = OptionValueType.string
     display_values: List[Any] = []
     values_allowed: Dict = {}
     value: Any = None
@@ -235,17 +234,16 @@ class ModelOption(BaseModel):
             v = values.get("display_name")
         return v
 
-    # @validator("value")
-    # @classmethod
-    # def validate_value(cls, v, values):
-    #     vtype = values.get("value_type", OptionValueType.string)
-    #     converted_value = OptionValueType.convert(vtype, v)
-    #     allowed = values.get("values_allowed", None)
-    #     if allowed:
-    #         if converted_value not in allowed:
-    #             raise ValueError(f"Converted 'value' ({converted_value}) not in "
-    #                              f"allowed values: {allowed}")
-    #     return converted_value
+    @validator("value")
+    @classmethod
+    def validate_value(cls, v, values):
+        allowed = values.get("values_allowed", None)
+        allowed = list(allowed.keys())
+        if v in allowed:
+            return v
+        else:
+            raise ValueError(f"'value' ({v}) not in "
+                                 f"allowed values: {allowed}")
 
 
 class FlowsheetExport(BaseModel):
