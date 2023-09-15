@@ -91,8 +91,6 @@ class ModelExport(BaseModel):
     num_samples: int = 2
     has_bounds: bool = True
     is_sweep: bool = False
-    always_present: bool = True
-    required_options: dict = {}
 
     class Config:
         arbitrary_types_allowed = True
@@ -217,7 +215,7 @@ class ModelOption(BaseModel):
     display_name: str = None
     description: str = None
     display_values: List[Any] = []
-    values_allowed: Dict = {}
+    values_allowed: List[Any] = []
     value: Any = None
 
     @validator("display_name", always=True)
@@ -238,17 +236,28 @@ class ModelOption(BaseModel):
     @classmethod
     def validate_value(cls, v, values):
         allowed = values.get("values_allowed", None)
-        allowed = list(allowed.keys())
+        # allowed = list(allowed.keys())
         if v in allowed:
             return v
         else:
             raise ValueError(f"'value' ({v}) not in "
                                  f"allowed values: {allowed}")
+        
+    # set display_values dynamically from values_allowed
+    # @validator("display_values", always=True)
+    # @classmethod
+    # def validate_name(cls, v, values):
+    #     allowed = values.get("values_allowed", None)
+    #     print(f'display_values - allowed is {allowed}')
+    #     if allowed is not None:
+    #         v = list(allowed.keys())
+    #     else:
+    #         v = []
+    #     return v
 
 
 class FlowsheetExport(BaseModel):
     """A flowsheet and its contained exported model objects."""
-
     m: object = Field(default=None, exclude=True)
     obj: object = Field(default=None, exclude=True)
     name: str = ""
@@ -258,7 +267,7 @@ class FlowsheetExport(BaseModel):
     requires_idaes_solver: bool = False
     dof: int = 0
     sweep_results: Union[None, dict] = {}
-    options: Dict[str, ModelOption] = {}
+    build_options: Dict[str, ModelOption] = {}
 
     # set name dynamically from object
     @validator("name", always=True)
@@ -350,7 +359,7 @@ class FlowsheetExport(BaseModel):
             kwargs: Fields of :class:`ModelOption`
         """
         option = ModelOption(name=name, **kwargs)
-        self.options[name] = option
+        self.build_options[name] = option
         return option
 
 
@@ -586,13 +595,13 @@ class FlowsheetInterface:
         """
 
         # fs = FlowsheetExport.parse_obj(data)  # new instance from data
-        self.fs_exp.options[option_name].value = new_option
+        self.fs_exp.build_options[option_name].value = new_option
 
-        # get function name from model options
-        func_name = self.fs_exp.options[option_name].values_allowed[new_option]
+        # # get function name from model options
+        # func_name = self.fs_exp.build_options[option_name].values_allowed[new_option]
 
-        # add functino name as new build function
-        self.add_action("build", func_name)
+        # # add functino name as new build function
+        # self.add_action("build", func_name)
 
 
     def add_action(self, action_name: str, action_func: Callable):
@@ -630,7 +639,7 @@ class FlowsheetInterface:
                 # clear model_objects dict, since duplicates not allowed
                 self.fs_exp.model_objects.clear()
                 # use get_action() since run_action() will refuse to call it directly
-                self.get_action(Actions.export)(exports=self.fs_exp, build_options=self.fs_exp.options)
+                self.get_action(Actions.export)(exports=self.fs_exp, build_options=self.fs_exp.build_options)
                 print('got export action')
                 result = None
             elif action_name == Actions.diagram:

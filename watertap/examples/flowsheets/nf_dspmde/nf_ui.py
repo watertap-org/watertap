@@ -25,12 +25,12 @@ def export_to_ui():
         get_diagram=get_diagram,
         requires_idaes_solver=True,
         category=FlowsheetCategory.wastewater,
-        options={
+        build_options={
             "Bypass": {
                 "name": "bypass option", 
-                "display_name": "With Bypass", 
-                "display_values": ["false", "true"],
-                "values_allowed": {"false": build_flowsheet, "true": build_flowsheet_with_bypass}, 
+                "display_name": "With Bypass",
+                "values_allowed": ['false', 'true'],
+                # "values_allowed": {"false": build_flowsheet, "true": build_flowsheet_with_bypass}, 
                 "value": "false"
             }
         }
@@ -363,8 +363,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None):
                 input_category="Bypass design",
                 is_output=True,
                 output_category="Bypass design",
-                always_present=False,
-                required_options={"Bypass": "true"}
             )
     except Exception as e:
         print('unable to try and add bypass variable')
@@ -398,23 +396,36 @@ def export_variables(flowsheet=None, exports=None, build_options=None):
         )
 
 
-def build_flowsheet():
+def build_flowsheet(build_options=None):
     # build and solve initial flowsheet
-    solver = get_solver()
-    m = nf.build()
-    nf.initialize(m, solver)
-    nf.add_objective(m)
-    nf.unfix_opt_vars(m)
+    if build_options is not None:
+        if build_options["Bypass"].value == "true": #build with bypass
+            solver = get_solver()
+            m = nf_with_bypass.build()
+            nf_with_bypass.initialize(m, solver)
+            nf_with_bypass.unfix_opt_vars(m)
+        else: # build without bypass
+            solver = get_solver()
+            m = nf.build()
+            nf.initialize(m, solver)
+            nf.add_objective(m)
+            nf.unfix_opt_vars(m)
+    else: # build without bypass
+        solver = get_solver()
+        m = nf.build()
+        nf.initialize(m, solver)
+        nf.add_objective(m)
+        nf.unfix_opt_vars(m)
     return m
 
-def build_flowsheet_with_bypass():
-    # build and solve initial flowsheet
-    solver = get_solver()
-    m = nf_with_bypass.build()
-    nf_with_bypass.initialize(m, solver)
-    nf_with_bypass.unfix_opt_vars(m)
-    nf.add_objective(m)
-    return m
+# def build_flowsheet_with_bypass():
+#     # build and solve initial flowsheet
+#     solver = get_solver()
+#     m = nf_with_bypass.build()
+#     nf_with_bypass.initialize(m, solver)
+#     nf_with_bypass.unfix_opt_vars(m)
+#     nf.add_objective(m)
+#     return m
 
 def get_diagram(build_options):
     if build_options["Bypass"].value == "true":
