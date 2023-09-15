@@ -30,7 +30,6 @@ def export_to_ui():
                 "name": "bypass option", 
                 "display_name": "With Bypass",
                 "values_allowed": ['false', 'true'],
-                # "values_allowed": {"false": build_flowsheet, "true": build_flowsheet_with_bypass}, 
                 "value": "false"
             }
         }
@@ -417,15 +416,6 @@ def build_flowsheet(build_options=None):
         nf.add_objective(m)
         nf.unfix_opt_vars(m)
     return m
-
-# def build_flowsheet_with_bypass():
-#     # build and solve initial flowsheet
-#     solver = get_solver()
-#     m = nf_with_bypass.build()
-#     nf_with_bypass.initialize(m, solver)
-#     nf_with_bypass.unfix_opt_vars(m)
-#     nf.add_objective(m)
-#     return m
 
 def get_diagram(build_options):
     if build_options["Bypass"].value == "true":
