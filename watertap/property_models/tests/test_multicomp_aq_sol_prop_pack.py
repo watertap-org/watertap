@@ -1576,11 +1576,11 @@ def test_calculate_state_with_flow_mol_stateVar():
     flow_mol = pyunits.convert(
         conc_mass / mw * flow_in, to_units=pyunits.mol / pyunits.s
     )
-    set_scaling_factor(m.fs.stream[0].flow_vol_phase, 10)
-    # note: the assertion that flow_mol_phase_comp of target_ion is approximately equal
-    # to the value of flow_mol will be false (i.e., false solution with erroneous results
-    # for flow_mol) without setting an apropriate scaling factor for the very small value associated with conc_mol_phase_comp
-    set_scaling_factor(m.fs.stream[0].conc_mol_phase_comp["Liq", "target_ion"], 1e11)
+
+    set_scaling_factor(m.fs.stream[0].flow_mol_phase_comp['Liq', 'H2O'], 1)
+    set_scaling_factor(m.fs.stream[0].flow_mol_phase_comp["Liq", "target_ion"], value(1/flow_mol))
+    m.fs.stream[0].conc_mol_phase_comp
+    m.fs.stream[0].flow_vol_phase
     calculate_scaling_factors(m.fs.stream[0])
     m.fs.stream.calculate_state(
         var_args={
@@ -1595,8 +1595,10 @@ def test_calculate_state_with_flow_mol_stateVar():
         value(m.fs.stream[0].flow_mol_phase_comp["Liq", "target_ion"]), rel=1e-3
     ) == value(flow_mol)
 
-    set_scaling_factor(m.fs.stream2[0].flow_vol_phase, 10)
-    set_scaling_factor(m.fs.stream2[0].conc_mass_phase_comp["Liq", "target_ion"], 1e11)
+    set_scaling_factor(m.fs.stream2[0].flow_mol_phase_comp['Liq', 'H2O'], 1)
+    set_scaling_factor(m.fs.stream2[0].flow_mol_phase_comp["Liq", "target_ion"], value(1/flow_mol))
+    m.fs.stream2[0].conc_mass_phase_comp
+    m.fs.stream2[0].flow_vol_phase
     calculate_scaling_factors(m.fs.stream2[0])
     m.fs.stream2.calculate_state(
         var_args={
@@ -1627,14 +1629,11 @@ def test_calculate_state_with_flow_mass_stateVar(c):
     m.fs.stream2 = m.fs.properties.build_state_block([0], defined_state=True)
 
     flow_in = 0.04381 * pyunits.m**3 / pyunits.s
-    # for c in [10e-10, 10e-9, 10e-8, 10e-7, 10e-6, 10e-5]:
     conc_mass = c * pyunits.kg / pyunits.m**3
     conc_mol = conc_mass / mw
     flow_mass = pyunits.convert(conc_mass * flow_in, to_units=pyunits.kg / pyunits.s)
     set_scaling_factor(m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'], 1)
-    set_scaling_factor(m.fs.stream[0].flow_mass_phase_comp["Liq", "target_ion"], value(10/conc_mol))
-    # set_scaling_factor(m.fs.stream[0].flow_vol_phase, 10)
-    # set_scaling_factor(m.fs.stream[0].conc_mol_phase_comp["Liq", "target_ion"], value(1/conc_mol))
+    set_scaling_factor(m.fs.stream[0].flow_mass_phase_comp["Liq", "target_ion"], value(1/flow_mass))
     m.fs.stream[0].conc_mol_phase_comp
     calculate_scaling_factors(m.fs.stream[0])
     m.fs.stream.calculate_state(
@@ -1651,22 +1650,23 @@ def test_calculate_state_with_flow_mass_stateVar(c):
         value(m.fs.stream[0].flow_mass_phase_comp["Liq", "target_ion"]), rel=1e-3
     ) == value(flow_mass)
 
-    # set_scaling_factor(m.fs.stream2[0].flow_vol_phase, 10)
-    # set_scaling_factor(m.fs.stream2[0].conc_mass_phase_comp["Liq", "target_ion"], value(1/conc_mass))
-    # calculate_scaling_factors(m.fs.stream2[0])
-    # m.fs.stream2.calculate_state(
-    #     var_args={
-    #         ("flow_vol_phase", "Liq"): flow_in,
-    #         ("conc_mass_phase_comp", ("Liq", "target_ion")): conc_mass,
-    #         ("pressure", None): 101325,
-    #         ("temperature", None): 298,
-    #     },
-    #     hold_state=True,
-    # )
+    set_scaling_factor(m.fs.stream2[0].flow_mass_phase_comp["Liq", "H2O"], 1)
+    set_scaling_factor(m.fs.stream2[0].flow_mass_phase_comp["Liq", "target_ion"], value(1/flow_mass))
+    m.fs.stream2[0].conc_mass_phase_comp
+    calculate_scaling_factors(m.fs.stream2[0])
+    m.fs.stream2.calculate_state(
+        var_args={
+            ("flow_vol_phase", "Liq"): flow_in,
+            ("conc_mass_phase_comp", ("Liq", "target_ion")): conc_mass,
+            ("pressure", None): 101325,
+            ("temperature", None): 298,
+        },
+        hold_state=True,
+    )
 
-    # assert pytest.approx(
-    #     value(m.fs.stream2[0].flow_mass_phase_comp["Liq", "target_ion"]), rel=1e-3
-    # ) == value(flow_mass)
+    assert pytest.approx(
+        value(m.fs.stream2[0].flow_mass_phase_comp["Liq", "target_ion"]), rel=1e-3
+    ) == value(flow_mass)
 
 
 
@@ -1759,16 +1759,12 @@ def test_seawater_data_with_flow_mass_basis():
     )
 
     calculate_scaling_factors(m)
-    import idaes.logger as idaeslog
 
-    stream.initialize(outlvl=idaeslog.DEBUG)
+    stream.initialize()
 
-    # check if any variables are badly scaled
     badly_scaled_var_list = list(
         badly_scaled_var_generator(m, large=100, small=0.01, zero=1e-10)
-    )
-    #TODO: come back and revisit scaling
-    [print(i[0], i[1]) for i in badly_scaled_var_list]
+    )   
     
     assert len(badly_scaled_var_list) == 0
     results = solver.solve(m)
@@ -1990,14 +1986,7 @@ def test_flow_mass_basis_with_RO_unit():
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
-
     calculate_scaling_factors(m)
-    assert degrees_of_freedom(m) == 0
-    #TODO: initialize/solve fails because I likely have to put some effort into revising MCAS initialization/scaling based on when flow_mass is used as state var, which I left for last
     m.fs.unit.initialize()
-    # except InitializationError:
-    #     pass
     results= solver.solve(m)
-    from watertap.core.util.model_diagnostics.infeasible import print_infeasible_constraints
-    print_infeasible_constraints(m)
     assert_optimal_termination(results)
