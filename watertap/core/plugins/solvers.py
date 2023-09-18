@@ -206,23 +206,26 @@ class IpoptWaterTAP(IPOPT):
             # than once because of References
             if v in self._bound_cache:
                 continue
-            if v.lb is None and v.ub is None:
+            lb, ub = v.bounds
+            if lb is None and ub is None:
                 continue
-            self._bound_cache[v] = (v.lb, v.ub)
+            self._bound_cache[v] = (lb, ub, v.domain)
+            v.domain = pyo.Reals
             sf = get_scaling_factor(v, default=1)
-            if v.lb is not None:
+            if lb is not None:
                 v.lb = val(
-                    (v.lb * sf - bound_relax_factor * max(1, abs(val(v.lb * sf)))) / sf
+                    (lb * sf - bound_relax_factor * max(1, abs(val(lb * sf)))) / sf
                 )
             if v.ub is not None:
                 v.ub = val(
-                    (v.ub * sf + bound_relax_factor * max(1, abs(val(v.ub * sf)))) / sf
+                    (ub * sf + bound_relax_factor * max(1, abs(val(ub * sf)))) / sf
                 )
 
     def _reset_bounds(self):
-        for v, (lb, ub) in self._bound_cache.items():
+        for v, (lb, ub, domain) in self._bound_cache.items():
             v.lb = lb
             v.ub = ub
+            v.domain = domain
         del self._bound_cache
 
     def _get_option(self, option_name, default_value):
