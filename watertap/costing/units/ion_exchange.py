@@ -359,7 +359,12 @@ def cost_ion_exchange(blk):
         )
     )
     if blk.unit_model.config.hazardous_waste:
-        blk.regen_dens = 1000 * pyo.units.kg / pyo.units.m**3
+        blk.regen_soln_dens = pyo.Param(
+            initialize=1000,
+            units=pyo.units.kg / pyo.units.m**3,
+            mutable=True,
+            doc="Density of regeneration solution",
+        )
 
         if blk.unit_model.config.regenerant == "single_use":
             blk.operating_cost_hazardous_constraint = pyo.Constraint(
@@ -376,13 +381,13 @@ def cost_ion_exchange(blk):
                 expr=blk.operating_cost_hazardous
                 == pyo.units.convert(
                     (
-                        +bed_mass_ton
+                        bed_mass_ton
                         * tot_num_col
                         * ion_exchange_params.hazardous_resin_disposal
                     )
                     * ion_exchange_params.annual_resin_replacement_factor
                     + pyo.units.convert(
-                        blk.vol_flow_regen_soln / blk.regen_dens,
+                        blk.vol_flow_regen_soln / blk.regen_soln_dens,
                         to_units=pyo.units.gal / pyo.units.year,
                     )
                     * ion_exchange_params.hazardous_regen_disposal
