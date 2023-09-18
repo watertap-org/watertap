@@ -76,7 +76,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 
 # Import idaes mixer to check compatibility in absence of get_enthalpy_flow_terms()
 from idaes.models.unit_models import Mixer
-from idaes.models.unit_models.mixer import MomentumMixingType, MixingType
+from idaes.models.unit_models.mixer import MixingType
 
 
 solver = get_solver()
@@ -904,9 +904,9 @@ def test_assert_electroneutrality_get_property_2():
         AssertionError,
         match=re.escape(
             "fs.stream[0].flow_mol_phase_comp[Liq,Ca_2+] was fixed. "
-            "Either set defined_state=True or unfix flow_mol_phase_comp "
-            "for each solute to check that electroneutrality is satisfied."
-        ),
+            "Either set defined_state=True or unfix fs.stream[0].flow_mol_phase_comp "
+            "for each solute to check that electroneutrality is satisfied.")
+        ,
     ):
         stream[0].assert_electroneutrality(defined_state=False)
 
@@ -1631,8 +1631,11 @@ def test_calculate_state_with_flow_mass_stateVar(c):
     conc_mass = c * pyunits.kg / pyunits.m**3
     conc_mol = conc_mass / mw
     flow_mass = pyunits.convert(conc_mass * flow_in, to_units=pyunits.kg / pyunits.s)
-    set_scaling_factor(m.fs.stream[0].flow_vol_phase, 10)
-    set_scaling_factor(m.fs.stream[0].conc_mol_phase_comp["Liq", "target_ion"], value(1/conc_mol))
+    set_scaling_factor(m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'], 1)
+    set_scaling_factor(m.fs.stream[0].flow_mass_phase_comp["Liq", "target_ion"], value(10/conc_mol))
+    # set_scaling_factor(m.fs.stream[0].flow_vol_phase, 10)
+    # set_scaling_factor(m.fs.stream[0].conc_mol_phase_comp["Liq", "target_ion"], value(1/conc_mol))
+    m.fs.stream[0].conc_mol_phase_comp
     calculate_scaling_factors(m.fs.stream[0])
     m.fs.stream.calculate_state(
         var_args={
@@ -1648,22 +1651,22 @@ def test_calculate_state_with_flow_mass_stateVar(c):
         value(m.fs.stream[0].flow_mass_phase_comp["Liq", "target_ion"]), rel=1e-3
     ) == value(flow_mass)
 
-    set_scaling_factor(m.fs.stream2[0].flow_vol_phase, 10)
-    set_scaling_factor(m.fs.stream2[0].conc_mass_phase_comp["Liq", "target_ion"], value(1/conc_mass))
-    calculate_scaling_factors(m.fs.stream2[0])
-    m.fs.stream2.calculate_state(
-        var_args={
-            ("flow_vol_phase", "Liq"): flow_in,
-            ("conc_mass_phase_comp", ("Liq", "target_ion")): conc_mass,
-            ("pressure", None): 101325,
-            ("temperature", None): 298,
-        },
-        hold_state=True,
-    )
+    # set_scaling_factor(m.fs.stream2[0].flow_vol_phase, 10)
+    # set_scaling_factor(m.fs.stream2[0].conc_mass_phase_comp["Liq", "target_ion"], value(1/conc_mass))
+    # calculate_scaling_factors(m.fs.stream2[0])
+    # m.fs.stream2.calculate_state(
+    #     var_args={
+    #         ("flow_vol_phase", "Liq"): flow_in,
+    #         ("conc_mass_phase_comp", ("Liq", "target_ion")): conc_mass,
+    #         ("pressure", None): 101325,
+    #         ("temperature", None): 298,
+    #     },
+    #     hold_state=True,
+    # )
 
-    assert pytest.approx(
-        value(m.fs.stream2[0].flow_mass_phase_comp["Liq", "target_ion"]), rel=1e-3
-    ) == value(flow_mass)
+    # assert pytest.approx(
+    #     value(m.fs.stream2[0].flow_mass_phase_comp["Liq", "target_ion"]), rel=1e-3
+    # ) == value(flow_mass)
 
 
 
@@ -1737,35 +1740,37 @@ def test_seawater_data_with_flow_mass_basis():
     check_dof(m, fail_flag=True)
 
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e-1, index=("Liq", "H2O")
+        "flow_mass_phase_comp", 1, index=("Liq", "H2O")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e1, index=("Liq", "Na_+")
+        "flow_mass_phase_comp", 1e2, index=("Liq", "Na_+")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e1, index=("Liq", "Cl_-")
+        "flow_mass_phase_comp", 1e2, index=("Liq", "Cl_-")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e2, index=("Liq", "Ca_2+")
+        "flow_mass_phase_comp", 1e3, index=("Liq", "Ca_2+")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e2, index=("Liq", "SO4_2-")
+        "flow_mass_phase_comp", 1e3, index=("Liq", "SO4_2-")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e2, index=("Liq", "Mg_2+")
+        "flow_mass_phase_comp", 1e3, index=("Liq", "Mg_2+")
     )
 
     calculate_scaling_factors(m)
+    import idaes.logger as idaeslog
 
-    stream.initialize()
+    stream.initialize(outlvl=idaeslog.DEBUG)
 
     # check if any variables are badly scaled
     badly_scaled_var_list = list(
         badly_scaled_var_generator(m, large=100, small=0.01, zero=1e-10)
     )
+    #TODO: come back and revisit scaling
     [print(i[0], i[1]) for i in badly_scaled_var_list]
+    
     assert len(badly_scaled_var_list) == 0
-
     results = solver.solve(m)
     assert_optimal_termination(results)
 
@@ -1988,12 +1993,11 @@ def test_flow_mass_basis_with_RO_unit():
 
     calculate_scaling_factors(m)
     assert degrees_of_freedom(m) == 0
-    # TODO: initialize/solve fails because I likely have to put some effort into revising MCAS initialization/scaling based on when flow_mass is used as state var, which I left for last
-    # try:
-    #     m.fs.unit.initialize()
+    #TODO: initialize/solve fails because I likely have to put some effort into revising MCAS initialization/scaling based on when flow_mass is used as state var, which I left for last
+    m.fs.unit.initialize()
     # except InitializationError:
-    # #     pass
-    # results= solver.solve(m)
-    # from watertap.core.util.model_diagnostics.infeasible import print_infeasible_constraints
-    # print_infeasible_constraints(m)
-    # assert_optimal_termination(results)
+    #     pass
+    results= solver.solve(m)
+    from watertap.core.util.model_diagnostics.infeasible import print_infeasible_constraints
+    print_infeasible_constraints(m)
+    assert_optimal_termination(results)

@@ -667,6 +667,19 @@ class _MCASStateBlock(StateBlock):
 
             # Vars indexed by phase and component_list
             for j in self[k].params.component_list:
+                if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
+                    self[k].flow_mass_phase_comp["Liq", j].set_value(
+                        self[k].flow_mol_phase_comp["Liq", j]
+                        * self[k].params.mw_comp[j]
+                    )
+                elif self.params.config.material_flow_basis == MaterialFlowBasis.mass:
+                    self[k].flow_mol_phase_comp["Liq", j].set_value(
+                        self[k].flow_mass_phase_comp["Liq", j]
+                        / self[k].params.mw_comp[j]
+                    )
+                else:
+                    pass
+
                 if self[k].is_property_constructed("mass_frac_phase_comp"):
                     self[k].mass_frac_phase_comp["Liq", j].set_value(
                         self[k].flow_mass_phase_comp["Liq", j]
@@ -687,11 +700,6 @@ class _MCASStateBlock(StateBlock):
                         / self[k].params.mw_comp[j]
                     )
 
-                if self[k].is_property_constructed("flow_mass_phase_comp"):
-                    self[k].flow_mass_phase_comp["Liq", j].set_value(
-                        self[k].flow_mol_phase_comp["Liq", j]
-                        * self[k].params.mw_comp[j]
-                    )
                 if self[k].is_property_constructed("mole_frac_phase_comp"):
                     self[k].mole_frac_phase_comp["Liq", j].set_value(
                         self[k].flow_mol_phase_comp["Liq", j]
@@ -1260,7 +1268,7 @@ class MCASStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.solute_set,
             initialize=1,
-            bounds=(0, 10),
+            bounds=(0, None),
             units=pyunits.mole / pyunits.kg,
             doc="Molality",
         )
@@ -1833,9 +1841,9 @@ class MCASStateBlockData(StateBlockData):
         get_property=None,
         solve=True,
     ):
-        '''
+        """
         TODO: add descriptions of args and what is returned
-        '''
+        """
         if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
             state_var = self.flow_mol_phase_comp
         elif self.params.config.material_flow_basis == MaterialFlowBasis.mass:
@@ -1843,8 +1851,8 @@ class MCASStateBlockData(StateBlockData):
         else:
             raise PropertyPackageError(
                 f"{self.name} MCAS Property Package set to use unsupported material flow basis: {self.get_material_flow_basis()}"
-                )
-        
+            )
+
         if tol is None:
             tol = 1e-8
         if not defined_state and get_property is not None:
@@ -1866,10 +1874,7 @@ class MCASStateBlockData(StateBlockData):
                 )
         if defined_state:
             for j in self.params.solute_set:
-                if (
-                    not state_var["Liq", j].is_fixed()
-                    and adjust_by_ion != j
-                ):
+                if not state_var["Liq", j].is_fixed() and adjust_by_ion != j:
                     raise AssertionError(
                         f"{state_var['Liq', j]} was not fixed. Fix {state_var} for each solute"
                         f" to check that electroneutrality is satisfied."
@@ -1878,7 +1883,7 @@ class MCASStateBlockData(StateBlockData):
                     state_var["Liq", j].unfix()
         else:
             for j in self.params.solute_set:
-                #TODO: check if DOF=0 for defined_state=False valid case? Test with defined_state=false
+                # TODO: check if DOF=0 for defined_state=False valid case? Test with defined_state=false
                 if state_var["Liq", j].is_fixed():
                     raise AssertionError(
                         f"{state_var['Liq', j]} was fixed. Either set defined_state=True or unfix "
@@ -1973,33 +1978,69 @@ class MCASStateBlockData(StateBlockData):
         # for the following variables: pressure,
         # temperature, dens_mass, visc_d_phase, diffus_phase_comp
 
+        for j, v in self.mw_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(self.mw_comp[j], value(v) ** -1)
         # the following variables should have users' input of scaling factors;
         # missing input triggers a warning
-        if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"]) is None:
-            sf = iscale.get_scaling_factor(
-                self.flow_mol_phase_comp["Liq", "H2O"], default=1, warning=True
-            )
-            iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"], sf)
 
-        for j in self.params.solute_set:
-            if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j]) is None:
-                sf = iscale.get_scaling_factor(
-                    self.flow_mol_phase_comp["Liq", j], default=1, warning=True
-                )
-                iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", j], sf)
+        if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
+            for j in self.params.component_list:
+                if (
+                    iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j])
+                    is None
+                ):
+                    sf = iscale.get_scaling_factor(
+                        self.flow_mol_phase_comp["Liq", j], default=1, warning=True
+                    )
+                    iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", j], sf)
 
+            if self.is_property_constructed("flow_mass_phase_comp"):
+                for j in self.params.component_list:
+                    if (
+                        iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", j])
+                        is None
+                    ):
+                        sf = iscale.get_scaling_factor(
+                            self.flow_mol_phase_comp["Liq", j]
+                        ) * iscale.get_scaling_factor(self.mw_comp[j])
+                        iscale.set_scaling_factor(
+                            self.flow_mass_phase_comp["Liq", j], sf
+                        )
+
+        elif self.params.config.material_flow_basis == MaterialFlowBasis.mass:
+            for j in self.params.component_list:
+                if (
+                    iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", j])
+                    is None
+                ):
+                    sf = iscale.get_scaling_factor(
+                        self.flow_mass_phase_comp["Liq", j], default=1, warning=True
+                    )
+                    iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", j], sf)
+
+            if self.is_property_constructed("flow_mol_phase_comp"):
+                for j in self.params.component_list:
+                    if (
+                        iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j])
+                        is None
+                    ):
+                        sf = iscale.get_scaling_factor(
+                            self.flow_mass_phase_comp["Liq", j]
+                        ) / iscale.get_scaling_factor(self.mw_comp[j])
+                        iscale.set_scaling_factor(
+                            self.flow_mol_phase_comp["Liq", j], sf
+                        )
+
+        # The following variables and parameters have computed scaling factors;
+        # Users do not have to input scaling factors but, if they do, their value
+        # will override.
         if self.is_property_constructed("flow_equiv_phase_comp"):
             for j in self.flow_equiv_phase_comp.keys():
                 if iscale.get_scaling_factor(self.flow_equiv_phase_comp[j]) is None:
                     sf = iscale.get_scaling_factor(self.flow_mol_phase_comp[j])
                     iscale.set_scaling_factor(self.flow_equiv_phase_comp[j], sf)
 
-        # The following variables and parameters have computed scaling factors;
-        # Users do not have to input scaling factors but, if they do, their value
-        # will override.
-        for j, v in self.mw_comp.items():
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.mw_comp[j], value(v) ** -1)
         if self.is_property_constructed("diffus_phase_comp"):
             for ind, v in self.diffus_phase_comp.items():
                 if iscale.get_scaling_factor(v) is None:
@@ -2042,17 +2083,6 @@ class MCASStateBlockData(StateBlockData):
                         iscale.set_scaling_factor(
                             self.mole_frac_phase_comp["Liq", j], sf
                         )
-
-        if self.is_property_constructed("flow_mass_phase_comp"):
-            for j in self.params.component_list:
-                if (
-                    iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", j])
-                    is None
-                ):
-                    sf = iscale.get_scaling_factor(
-                        self.flow_mol_phase_comp["Liq", j]
-                    ) * iscale.get_scaling_factor(self.mw_comp[j])
-                    iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", j], sf)
 
         if self.is_property_constructed("mass_frac_phase_comp"):
             for j in self.params.component_list:
@@ -2118,15 +2148,18 @@ class MCASStateBlockData(StateBlockData):
 
         if self.is_property_constructed("pressure_osm_phase"):
             if iscale.get_scaling_factor(self.pressure_osm_phase) is None:
-                sf = (
-                    1e-3
-                    * sum(
-                        iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
-                        ** 2
-                        for j in self.params.solute_set
+                sf_gas_constant = value(1 / Constants.gas_constant)
+                sf_temp = iscale.get_scaling_factor(self.temperature)
+                sf_conc_mol = value(
+                    1
+                    / (
+                        sum(
+                            self.conc_mol_phase_comp["Liq", j]
+                            for j in self.params.solute_set
+                        )
                     )
-                    ** 0.5
                 )
+                sf = sf_gas_constant * sf_temp * sf_conc_mol
                 iscale.set_scaling_factor(self.pressure_osm_phase, sf)
 
         if self.is_property_constructed("elec_mobility_phase_comp"):
@@ -2183,17 +2216,17 @@ class MCASStateBlockData(StateBlockData):
         if self.is_property_constructed("elec_cond_phase"):
             if iscale.get_scaling_factor(self.elec_cond_phase) is None:
                 for ind, v in self.elec_cond_phase.items():
-                    sf = (
-                        iscale.get_scaling_factor(self.equiv_conductivity_phase[ind])
-                        * sum(
-                            iscale.get_scaling_factor(
-                                self.conc_mol_phase_comp["Liq", j]
-                            )
-                            ** 2
+                    sf_equiv_cond_phase = iscale.get_scaling_factor(
+                        self.equiv_conductivity_phase[ind]
+                    )
+                    sf_conc_mol_z = value(
+                        1
+                        / sum(
+                            self.conc_mol_phase_comp["Liq", j] * self.charge_comp[j]
                             for j in self.params.cation_set
                         )
-                        ** 0.5
                     )
+                    sf = sf_equiv_cond_phase * sf_conc_mol_z
                     iscale.set_scaling_factor(self.elec_cond_phase[ind], sf)
 
         if self.is_property_constructed("flow_vol_phase"):
