@@ -723,7 +723,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None):
     )
 
 
-def build_flowsheet():
+def build_flowsheet(build_options=None):
     # build and solve initial flowsheet
     m = build()
 
