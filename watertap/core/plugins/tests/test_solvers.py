@@ -31,6 +31,7 @@ class TestIpoptWaterTAP:
         m = pyo.ConcreteModel()
         m.a = pyo.Var(initialize=0.25, bounds=(-0.5, 0.5))
         m.b = b = pyo.Block()
+        m.e = pyo.Var(initialize=0.42, domain=pyo.NonNegativeReals)
         b.a = pyo.Var([1, 2], bounds=(-10, 10))
 
         m.c = pyo.Constraint(expr=(0, 1.0 / (m.a**2), 100))
@@ -56,6 +57,7 @@ class TestIpoptWaterTAP:
         assert m.b.a[1].ub == 10
         assert m.b.a[2].lb == -10
         assert m.b.a[2].ub == 10
+        assert m.e.lb == 0
 
     @pytest.fixture(scope="class")
     def s(self):
@@ -92,6 +94,7 @@ class TestIpoptWaterTAP:
         assert m.b.a[1].ub == 10 + 1e-09
         assert m.b.a[2].lb == -10 - 1e-09
         assert m.b.a[2].ub == 10 + 1e-09
+        assert m.e.lb == 0.0 - 1e-10
 
     @pytest.mark.unit
     def test_postsolve_unscaled_constraints_and_bounds_cleanup(self, m, s):
