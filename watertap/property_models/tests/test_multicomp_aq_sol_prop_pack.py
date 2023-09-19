@@ -905,8 +905,8 @@ def test_assert_electroneutrality_get_property_2():
         match=re.escape(
             "fs.stream[0].flow_mol_phase_comp[Liq,Ca_2+] was fixed. "
             "Either set defined_state=True or unfix fs.stream[0].flow_mol_phase_comp "
-            "for each solute to check that electroneutrality is satisfied.")
-        ,
+            "for each solute to check that electroneutrality is satisfied."
+        ),
     ):
         stream[0].assert_electroneutrality(defined_state=False)
 
@@ -1557,7 +1557,9 @@ def test_no_solute_list_provided():
     ):
         m.fs.properties = MCASParameterBlock()
 
+
 c_list = [10e-10, 10e-9, 10e-8, 10e-7, 10e-6, 10e-5]
+
 
 @pytest.mark.component
 def test_calculate_state_with_flow_mol_stateVar():
@@ -1577,8 +1579,10 @@ def test_calculate_state_with_flow_mol_stateVar():
         conc_mass / mw * flow_in, to_units=pyunits.mol / pyunits.s
     )
 
-    set_scaling_factor(m.fs.stream[0].flow_mol_phase_comp['Liq', 'H2O'], 1)
-    set_scaling_factor(m.fs.stream[0].flow_mol_phase_comp["Liq", "target_ion"], value(1/flow_mol))
+    set_scaling_factor(m.fs.stream[0].flow_mol_phase_comp["Liq", "H2O"], 1)
+    set_scaling_factor(
+        m.fs.stream[0].flow_mol_phase_comp["Liq", "target_ion"], value(1 / flow_mol)
+    )
     m.fs.stream[0].conc_mol_phase_comp
     m.fs.stream[0].flow_vol_phase
     calculate_scaling_factors(m.fs.stream[0])
@@ -1595,8 +1599,10 @@ def test_calculate_state_with_flow_mol_stateVar():
         value(m.fs.stream[0].flow_mol_phase_comp["Liq", "target_ion"]), rel=1e-3
     ) == value(flow_mol)
 
-    set_scaling_factor(m.fs.stream2[0].flow_mol_phase_comp['Liq', 'H2O'], 1)
-    set_scaling_factor(m.fs.stream2[0].flow_mol_phase_comp["Liq", "target_ion"], value(1/flow_mol))
+    set_scaling_factor(m.fs.stream2[0].flow_mol_phase_comp["Liq", "H2O"], 1)
+    set_scaling_factor(
+        m.fs.stream2[0].flow_mol_phase_comp["Liq", "target_ion"], value(1 / flow_mol)
+    )
     m.fs.stream2[0].conc_mass_phase_comp
     m.fs.stream2[0].flow_vol_phase
     calculate_scaling_factors(m.fs.stream2[0])
@@ -1632,8 +1638,10 @@ def test_calculate_state_with_flow_mass_stateVar(c):
     conc_mass = c * pyunits.kg / pyunits.m**3
     conc_mol = conc_mass / mw
     flow_mass = pyunits.convert(conc_mass * flow_in, to_units=pyunits.kg / pyunits.s)
-    set_scaling_factor(m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'], 1)
-    set_scaling_factor(m.fs.stream[0].flow_mass_phase_comp["Liq", "target_ion"], value(1/flow_mass))
+    set_scaling_factor(m.fs.stream[0].flow_mass_phase_comp["Liq", "H2O"], 1)
+    set_scaling_factor(
+        m.fs.stream[0].flow_mass_phase_comp["Liq", "target_ion"], value(1 / flow_mass)
+    )
     m.fs.stream[0].conc_mol_phase_comp
     calculate_scaling_factors(m.fs.stream[0])
     m.fs.stream.calculate_state(
@@ -1651,7 +1659,9 @@ def test_calculate_state_with_flow_mass_stateVar(c):
     ) == value(flow_mass)
 
     set_scaling_factor(m.fs.stream2[0].flow_mass_phase_comp["Liq", "H2O"], 1)
-    set_scaling_factor(m.fs.stream2[0].flow_mass_phase_comp["Liq", "target_ion"], value(1/flow_mass))
+    set_scaling_factor(
+        m.fs.stream2[0].flow_mass_phase_comp["Liq", "target_ion"], value(1 / flow_mass)
+    )
     m.fs.stream2[0].conc_mass_phase_comp
     calculate_scaling_factors(m.fs.stream2[0])
     m.fs.stream2.calculate_state(
@@ -1667,7 +1677,6 @@ def test_calculate_state_with_flow_mass_stateVar(c):
     assert pytest.approx(
         value(m.fs.stream2[0].flow_mass_phase_comp["Liq", "target_ion"]), rel=1e-3
     ) == value(flow_mass)
-
 
 
 @pytest.mark.component
@@ -1739,9 +1748,7 @@ def test_seawater_data_with_flow_mass_basis():
 
     check_dof(m, fail_flag=True)
 
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1, index=("Liq", "H2O")
-    )
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1e2, index=("Liq", "Na_+")
     )
@@ -1764,8 +1771,8 @@ def test_seawater_data_with_flow_mass_basis():
 
     badly_scaled_var_list = list(
         badly_scaled_var_generator(m, large=100, small=0.01, zero=1e-10)
-    )   
-    
+    )
+
     assert len(badly_scaled_var_list) == 0
     results = solver.solve(m)
     assert_optimal_termination(results)
@@ -1929,7 +1936,8 @@ def test_seawater_data_with_flow_mass_basis():
         )
     )
 
-#TODO: test flow_mass_basis with RO unit
+
+# TODO: test flow_mass_basis with RO unit
 @pytest.mark.component
 def test_flow_mass_basis_with_RO_unit():
     m = ConcreteModel()
@@ -1988,5 +1996,5 @@ def test_flow_mass_basis_with_RO_unit():
     )
     calculate_scaling_factors(m)
     m.fs.unit.initialize()
-    results= solver.solve(m)
+    results = solver.solve(m)
     assert_optimal_termination(results)
