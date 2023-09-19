@@ -230,10 +230,10 @@ def build_nf_block(m, blk):
     blk.nf_to_retentate = Arc(
         source=blk.nfUnit.retentate, destination=blk.retentate.inlet
     )
-    blk.nf_flux = Var(initialize=1, units=pyunits.dimensionless)
-    blk.nf_flux_eq = Constraint(
-        expr=blk.nf_flux == blk.nfUnit.flux_vol_water_avg[0.0] * 3600 * 1000
-    )
+    # blk.nf_flux = Var(initialize=1, units=pyunits.dimensionless)
+    # blk.nf_flux_eq = Constraint(
+    #     expr=blk.nf_flux == blk.nfUnit.flux_vol_water_avg[0.0] * 3600 * 1000
+    # )
 
 
 def fix_init_vars(m):
@@ -256,7 +256,7 @@ def fix_init_vars(m):
     # NF membrane props for NF270
     m.fs.NF.nfUnit.radius_pore.fix(0.5e-9)
     m.fs.NF.nfUnit.membrane_thickness_effective.fix(8.598945196055952e-07)
-    m.fs.NF.nfUnit.membrane_charge_density.fix(-680)
+    m.fs.NF.nfUnit.membrane_charge_density.fix(-50)
     m.fs.NF.nfUnit.dielectric_constant_pore.fix(41.3)
     iscale.calculate_scaling_factors(m)
 
@@ -272,7 +272,7 @@ def unfix_opt_vars(m):
     m.fs.NF.nfUnit.area.unfix()
     m.fs.NF.nfUnit.velocity.unfix()
     m.fs.NF.nfUnit.velocity.setub(0.25)
-    m.fs.product.max_hardness.fix(200)
+    m.fs.product.max_hardness.fix(500)
 
     # Touch total_hardness (on-demand property) at feed and disposal for reporting
     m.fs.feed.properties[0].total_hardness
@@ -283,6 +283,7 @@ def unfix_opt_vars(m):
 def add_objective(m):
     if m.find_component("fs.LCOW_objective") is None:
         m.fs.LCOW_objective = Objective(expr=m.fs.costing.LCOW)
+        # iscale.set_scaling_factor(m.fs.LCOW_objective, 1e1)
         print("added objective function")
 
 
@@ -406,7 +407,7 @@ def set_NF_feed(
 
 
 def calc_scale(value):
-    return -1 * math.floor(math.log(value, 10))
+    return -1 * math.floor(math.log(value, 10)) 
 
 
 def set_NF_feed_scaling(blk):
