@@ -113,6 +113,9 @@ if __name__ == "__main__":
 
     import sys
     import time
+    import numpy as np
+    import pprint
+
 
     start_time = time.time()
 
@@ -123,9 +126,9 @@ if __name__ == "__main__":
         num_samples = int(sys.argv[1])
         num_procs = int(sys.argv[2])
 
-    ps, kwargs_dict = create_parameter_sweep_object(num_samples, num_procs)
+    ps1, kwargs_dict = create_parameter_sweep_object(num_samples, num_procs, parallel_backend="ConcurrentFutures")
 
-    results_array, results_dict = ps.parameter_sweep(
+    results_array1, results_dict1 = ps1.parameter_sweep(
         kwargs_dict["build_model"],
         kwargs_dict["build_sweep_params"],
         build_outputs=kwargs_dict["build_outputs"],
@@ -139,6 +142,3 @@ if __name__ == "__main__":
     end_time = time.time()
     time_elapsed = end_time - start_time
     print("time_elapsed = ", time_elapsed)
-
-    # import pprint
-    # pprint.pprint(results_dict)
