@@ -56,7 +56,7 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
     set_scaling_factor,
 )
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import ConfigurationError
 from watertap.property_models.tests.property_test_harness import PropertyAttributeError
 from idaes.core.solvers import get_solver
 
