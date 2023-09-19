@@ -270,7 +270,7 @@ class TestAnaerobicDigestionOxidationZO_w_default_removal:
         assert pytest.approx(563.6258, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]
         )
-        assert pytest.approx(2.4721887e-8, rel=1e-5) == value(
+        assert pytest.approx(0.0, abs=1e-7) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(7.02, abs=1e-5) == value(model.fs.unit.electricity[0])

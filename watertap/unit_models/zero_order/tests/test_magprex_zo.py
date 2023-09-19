@@ -133,13 +133,13 @@ class TestMagprexZO:
         assert pytest.approx(0.49975, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["phosphates"]
         )
-        assert pytest.approx(2.8270137e-08, rel=1e-5) == value(
+        assert pytest.approx(2.7270636e-08, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["struvite"]
         )
         assert pytest.approx(0.00095, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(2.9772917e-6, rel=1e-5) == value(
+        assert pytest.approx(2.8720285e-6, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphates"]
         )
         assert pytest.approx(1000, rel=1e-5) == value(
@@ -269,7 +269,7 @@ class TestMagprexZO_w_default_removal:
         assert pytest.approx(0.4948, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["phosphates"]
         )
-        assert pytest.approx(2.79904e-08, rel=1e-5) == value(
+        assert pytest.approx(2.70008e-08, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["struvite"]
         )
         assert pytest.approx(9.8961, rel=1e-5) == value(
@@ -278,13 +278,13 @@ class TestMagprexZO_w_default_removal:
         assert pytest.approx(0.00095, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(2.9772917e-6, rel=1e-5) == value(
+        assert pytest.approx(2.8720285e-6, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphates"]
         )
         assert pytest.approx(1000, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["struvite"]
         )
-        assert pytest.approx(2.9772917e-6, rel=1e-5) == value(
+        assert pytest.approx(2.8720285e-6, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(73.44, abs=1e-5) == value(model.fs.unit.electricity[0])

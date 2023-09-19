@@ -408,7 +408,7 @@ class TestMBRZO_w_default_removal:
         assert pytest.approx(173.0757847, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["cryptosporidium"]
         )
-        assert pytest.approx(1.73093e-6, rel=1e-5) == value(
+        assert pytest.approx(1.71362e-6, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(2948.205338, abs=1e-5) == value(

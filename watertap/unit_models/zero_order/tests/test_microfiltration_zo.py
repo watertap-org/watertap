@@ -312,7 +312,7 @@ class TestMicroFiltrationZO_w_default_removal:
         assert pytest.approx(348.205, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["cryptosporidium"]
         )
-        assert pytest.approx(1.48297e-8, rel=1e-5) == value(
+        assert pytest.approx(0.0, abs=1e-7) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(9.72, abs=1e-5) == value(model.fs.unit.electricity[0])

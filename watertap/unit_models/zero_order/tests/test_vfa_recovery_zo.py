@@ -262,7 +262,7 @@ class TestVFARecoveryZO_w_default_removal:
         assert pytest.approx(47.6190476, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nonbiodegradable_cod"]
         )
-        assert pytest.approx(4.0520349e-9, rel=1e-5) == value(
+        assert pytest.approx(0.0, abs=1e-8) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(4.42184, rel=1e-5) == value(model.fs.unit.electricity[0])

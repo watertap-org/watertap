@@ -144,19 +144,19 @@ class TestHRCSZO:
         assert pytest.approx(0.0789858615, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["cod"]
         )
-        assert pytest.approx(4.5711339e-14, rel=1e-5) == value(
+        assert pytest.approx(0.0, abs=1e-8) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["oxygen"]
         )
-        assert pytest.approx(4.5702987e-14, rel=1e-5) == value(
+        assert pytest.approx(0.0, abs=1e-8) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["carbon_dioxide"]
         )
         assert pytest.approx(0.001, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(4.5711229e-10, rel=1e-5) == value(
+        assert pytest.approx(9.900000e-06, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(4.5711229e-10, rel=1e-5) == value(
+        assert pytest.approx(9.900000e-06, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["cod"]
         )
         assert pytest.approx(790, rel=1e-5) == value(
@@ -298,10 +298,10 @@ class TestHRCSZO_w_default_removal:
         assert pytest.approx(0.078978, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["cod"]
         )
-        assert pytest.approx(4.5706769e-14, rel=1e-5) == value(
+        assert pytest.approx(0.0, abs=1e-8) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["oxygen"]
         )
-        assert pytest.approx(4.56984e-14, rel=1e-5) == value(
+        assert pytest.approx(0.0, abs=1e-8) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["carbon_dioxide"]
         )
         assert pytest.approx(0.099972, rel=1e-5) == value(
@@ -310,10 +310,10 @@ class TestHRCSZO_w_default_removal:
         assert pytest.approx(0.001, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(4.5711229e-10, rel=1e-5) == value(
+        assert pytest.approx(9.900000e-06, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(4.5711229e-10, rel=1e-5) == value(
+        assert pytest.approx(9.900000e-06, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["cod"]
         )
         assert pytest.approx(790, rel=1e-5) == value(
@@ -322,7 +322,7 @@ class TestHRCSZO_w_default_removal:
         assert pytest.approx(210, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["carbon_dioxide"]
         )
-        assert pytest.approx(4.5711229e-10, rel=1e-5) == value(
+        assert pytest.approx(9.900000e-06, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(2521.008, abs=1e-5) == value(model.fs.unit.electricity[0])

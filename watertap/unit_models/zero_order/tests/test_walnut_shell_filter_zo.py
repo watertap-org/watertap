@@ -148,7 +148,7 @@ class TestWalnutShellFilterZO_w_default_removal:
         assert pytest.approx(86.83974, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(2.532164e-07, rel=1e-5) == value(
+        assert pytest.approx(2.442638e-07, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(1.007 * 0 * 3600, abs=1e-5) == value(

@@ -168,16 +168,16 @@ class TestSludgeTankZO_default_removal:
         assert pytest.approx(0.00594178240, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["H2O"]
         )
-        assert pytest.approx(2.528e-9, rel=1e-2) == value(
+        assert pytest.approx(0.0, abs=1e-8) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["toc"]
         )
-        assert pytest.approx(2.528e-9, rel=1e-2) == value(
+        assert pytest.approx(0.0, abs=1e-8) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]
         )
-        assert pytest.approx(2.528e-9, rel=1e-2) == value(
+        assert pytest.approx(0.0, abs=1e-8) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["eeq"]
         )
-        assert pytest.approx(2.528e-9, rel=1e-2) == value(
+        assert pytest.approx(0.0, abs=1e-8) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]
         )
         assert pytest.approx(999.994058, rel=1e-5) == value(

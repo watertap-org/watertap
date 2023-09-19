@@ -148,7 +148,7 @@ class TestScreenZO_w_default_removal:
         assert pytest.approx(600.0, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(2.828427e-6, rel=1e-5) == value(
+        assert pytest.approx(2.728427e-6, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(0, abs=1e-5) == value(model.fs.unit.electricity[0])

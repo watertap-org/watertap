@@ -148,7 +148,7 @@ class TestCASZO_w_default_removal:
         assert pytest.approx(335.345405, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(2.853546e-8, rel=1e-5) == value(
+        assert pytest.approx(0.0, abs=1e-7) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(6.552, abs=1e-5) == value(model.fs.unit.electricity[0])

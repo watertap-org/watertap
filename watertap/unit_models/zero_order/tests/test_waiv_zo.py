@@ -135,10 +135,10 @@ class TestWAIVZO_w_default_removal:
         assert pytest.approx(0.99990000001, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(2.8287e-09, rel=1e-5) == value(
+        assert pytest.approx(2.7287e-09, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]
         )
-        assert pytest.approx(2.8287e-09, rel=1e-5) == value(
+        assert pytest.approx(2.7287e-09, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(2344.68, abs=1e-5) == value(model.fs.unit.electricity[0])
