@@ -62,8 +62,11 @@ def run_parameter_sweep(num_samples=100, num_procs=1):
     )
 
 
-def create_parameter_sweep_object(num_samples, num_procs):
-    # pprint(ParameterSweep.CONFIG.display())
+def create_parameter_sweep_object(
+        num_samples, 
+        num_procs,
+        parallel_backend="ConcurrentFutures",
+        ):
 
     solver = get_solver()
     kwargs_dict = {
@@ -99,7 +102,7 @@ def create_parameter_sweep_object(num_samples, num_procs):
         "publish_progress": False,
         "publish_address": "http://localhost:8888",
         "number_of_subprocesses": num_procs,
-        "parallel_back_end": "ConcurrentFutures",  # "MultiProcessing",
+        "parallel_back_end": parallel_backend, # "MultiProcessing",
         "log_model_states": False,
     }
     ps = ParameterSweep(**kwargs_dict)
@@ -108,8 +111,18 @@ def create_parameter_sweep_object(num_samples, num_procs):
 
 if __name__ == "__main__":
 
-    num_samples = 2
-    num_procs = 4
+    import sys
+    import time
+
+    start_time = time.time()
+
+    if len(sys.argv) == 1:
+        num_samples = 2
+        num_procs = 1
+    else:
+        num_samples = int(sys.argv[1])
+        num_procs = int(sys.argv[2])
+
     ps, kwargs_dict = create_parameter_sweep_object(num_samples, num_procs)
 
     results_array, results_dict = ps.parameter_sweep(
@@ -123,5 +136,9 @@ if __name__ == "__main__":
         build_sweep_params_kwargs=kwargs_dict["build_sweep_params_kwargs"],
     )
 
-    import pprint
-    pprint.pprint(results_dict)
+    end_time = time.time()
+    time_elapsed = end_time - start_time
+    print("time_elapsed = ", time_elapsed)
+
+    # import pprint
+    # pprint.pprint(results_dict)
