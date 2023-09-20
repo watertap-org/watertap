@@ -25,7 +25,7 @@ at least 4 degrees of freedom that should be fixed for the unit to be fully spec
     * Membrane permeability coefficient
     * Membrane thickness
     * Membrane thermal conductivity
-    * Membrane area
+    * Recovery *or* membrane area
     
 Configuring the MD unit to calculate temperature polarization, concentration polarization, mass transfer
 coefficient, and pressure drop would result in five additional degrees of freedom. In this case, in addition to the
@@ -73,7 +73,7 @@ Variables
    "Evaporation heat flux from hot channel", ":math:`q_{evap}`", "flux_enth_hot", "[t, x]", ":math:`\text{W}\text{/m}^2`"
    "Condensation heat flux to cold channel", ":math:`q_{conden}`", "flux_enth_cold", "[t, x]", ":math:`\text{W}\text{/m}^2`"
    "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
-   "Recovery rate", ":math:`R_j`", "recovery_mass", "[t]", ":math:`\text{dimensionless}`"
+   "Recovery rate", ":math:`R`", "recovery_mass", "[t]", ":math:`\text{dimensionless}`"
    
 The following variables are only built when specific configuration key-value pairs are selected.
 
@@ -201,7 +201,7 @@ Equations
    "Nusselt number", ":math:`Nu[t, x] == 0.162 * (Re[t, x] ** 0.656) * (Pr[t, x] ** 0.333)`"
    "Prandtl number", ":math:`Pr(t, x) = \frac{\mu(t, x) \cdot C_p(t, x)}{\kappa}`"
    "Effectiveness", ":math:`\epsilon(t) = \frac{T_{\text{cold, first}}(t) - T_{\text{c, last}}(t)}{T_{\text{h, first}}(t) - T_{\text{c, last}}(t)}`"
-   "Thermal efficiency", ":math:`\eta(t) = \frac{T_{\text{cold, first}}(t) - T_{\text{c, last}}(t)}{T_{\text{h, first}}(t) - T_{\text{c, last}}(t)}`"
+   "Thermal efficiency", ":math:`\eta(t) = \frac{q_{\text{evap,total}}(t)}{q_{\text{evap,total}}(t) + q_{\text{cond,total}}(t)}`"
    "Concentration polarization modulus",":math:`CP_{mod} = C_{interface}/C_{bulk}`"
    "Mass transfer coefficient",":math:`k_h = \frac{D Sh}{d_h}`"
    "Sherwood number",":math:`Sh[t, x] == 0.2 * (Re[t, x] ** 0.57) * (Pr[t, x] ** 0.4)`"
@@ -214,7 +214,7 @@ Equations
    "Hot channel velocity",":math:`v_h = Q_h/A_c`"
    "Friction factor",":math:`f = 0.42+\frac{189.3}{Re}`"
    "Pressure drop per unit length",":math:`\frac{ΔP}{Δx} = \frac{1}{2d_h}f\rho v_h^{2}`"
-   "Recovery rate",":math:`R_j = \frac{M_{p,j}}{M_{f,in,j}}`"
+   "Recovery rate",":math:`R = \frac{M_{p}}{M_{h,in}}`"
   
 
 

@@ -598,7 +598,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
 
-        # Create solver
+        # solver
         opt = get_solver(solver, optarg)
 
         # Solve unit *without* any flux equations
@@ -627,7 +627,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             f"Initialization Step 4 (Heat and Mass Flux) {idaeslog.condition(res)}"
         )
 
-        # Release inlet state, in case this error is caught
+        # Release inlet state
         self.cold_ch.release_state(cold_ch_flags, outlvl)
         self.hot_ch.release_state(hot_ch_flags, outlvl)
 
