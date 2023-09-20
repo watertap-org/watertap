@@ -59,6 +59,7 @@ def _set_equ_rxn_scaling(unit, rxn_params, rxn_config, min_k_eq_ref=1e-3):
         # Add scale for constraints in log form
         log_scale = min(min_k_eq_ref, 1e-3)
         # Scale keq calculation from keq_ref
+        print(f"scaling log_k_eq_constraint[{i[1]}] by {1 * scale / log_scale}")
         iscale.constraint_scaling_transform(
             unit.control_volume.reactions[0.0].log_k_eq_constraint[i[1]],
             1 * scale / log_scale,

@@ -924,28 +924,28 @@ def run_case2(
 
     ## ==================== Start Scaling for this problem ===========================
     _set_eps_vals(model.fs.rxn_params, rxn_config, max_k_eq_ref=1e-12)
-    #_set_equ_rxn_scaling(
-    #    model.fs.unit, model.fs.rxn_params, rxn_config, min_k_eq_ref=scaling_ref
-    #)
+    _set_equ_rxn_scaling(
+        model.fs.unit, model.fs.rxn_params, rxn_config, min_k_eq_ref=10
+    )
     _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=scaling_ref)
     if has_energy_balance == True:
         _set_ene_bal_scaling(model.fs.unit)
 
     model.fs.calculate_scaling_factors()
-    #assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
-    #assert isinstance(
-    #    model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix
-    #)
-    #assert isinstance(
-    #    model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix
-    #)
+    assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+    assert isinstance(
+        model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix
+    )
+    assert isinstance(
+        model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix
+    )
 
     ## ==================== END Scaling for this problem ===========================
 
-    # for macOS
     init_options = {**solver.options}
     init_options["tol"] = init_tol
-    init_options["constr_viol_tol"] = init_tol*100
+    init_options["constr_viol_tol"] = init_tol
+    # init_options["nlp_scaling_min_value"] = 1e-1
     model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
