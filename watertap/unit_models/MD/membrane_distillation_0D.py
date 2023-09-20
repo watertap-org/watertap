@@ -31,7 +31,6 @@ from idaes.core import (
 )
 
 from idaes.core import declare_process_block_class
-from idaes.core.util import scaling as iscale
 from .MD_channel_base import (
     TemperaturePolarizationType,
     MassTransferCoefficient,
@@ -43,7 +42,7 @@ from .membrane_distillation_base import (
 )
 from idaes.core.util.config import is_physical_parameter_block
 
-# __author__ = "Elmira Shamlou"
+__author__ = "Elmira Shamlou"
 
 
 @declare_process_block_class("MembraneDistillation0D")
