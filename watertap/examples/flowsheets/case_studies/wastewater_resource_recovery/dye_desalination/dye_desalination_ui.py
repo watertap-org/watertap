@@ -681,6 +681,17 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Operating costs",
     )
+    exports.add(
+        obj=fs.dye_disposal_cost,
+        name="Dye disposal",
+        ui_units=fs.zo_costing.base_currency / pyunits.year,
+        display_units="$/year",
+        rounding=2,
+        description="Annual dye disposal",
+        is_input=False,
+        is_output=True,
+        output_category="Operating costs",
+    )
     if hasattr(fs, "pretreatment"):
         exports.add(
             obj=fs.sludge_disposal_cost,
@@ -696,29 +707,6 @@ def export_variables(flowsheet=None, exports=None):
     else:
         pass
     # Revenue
-    total_revenue = fs.water_recovery_revenue - fs.dye_disposal_cost
-    exports.add(
-        obj=total_revenue,
-        name="Total",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=2,
-        description="Total revenue - including the value of recovered dye and water",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
-    )
-    exports.add(
-        obj=fs.dye_disposal_cost,
-        name="Dye",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=2,
-        description="Annual dye disposal",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
-    )
     exports.add(
         obj=fs.water_recovery_revenue,
         name="Water",
