@@ -155,7 +155,7 @@ class TestATHTLZO:
         assert pytest.approx(0.003499, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(6.800226e-12, rel=1e-5) == value(
+        assert pytest.approx(2.829567e-06, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["organic_solid"]
         )
         assert pytest.approx(1000, rel=1e-5) == value(

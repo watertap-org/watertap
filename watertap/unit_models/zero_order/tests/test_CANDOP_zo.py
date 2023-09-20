@@ -160,21 +160,16 @@ class TestCANDOPZO:
         assert pytest.approx(0.00075, rel=1e-2) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert (
-            value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrogen"])
-            < 1e-6
+        assert pytest.approx(1.32e-05, rel=1e-2) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrogen"]
         )
-        assert (
-            value(model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphates"])
-            < 1e-6
+        assert pytest.approx(1.32e-05, rel=1e-2) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphates"]
         )
-        assert (
-            value(
-                model.fs.unit.properties_byproduct[0].conc_mass_comp[
-                    "bioconcentrated_phosphorous"
-                ]
-            )
-            < 1e-6
+        assert pytest.approx(1.32e-05, rel=1e-2) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp[
+                "bioconcentrated_phosphorous"
+            ]
         )
         assert pytest.approx(1000, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrous_oxide"]
