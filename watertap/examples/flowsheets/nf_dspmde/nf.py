@@ -58,8 +58,8 @@ from watertap.costing import WaterTAPCosting
 def main():
     solver = get_solver()
     m = build()
-    initialize(m, solver)
     add_objective(m)
+    initialize(m, solver)
     unfix_opt_vars(m)
     results = optimize(m, solver)
     assert_optimal_termination(results)
@@ -289,7 +289,6 @@ def add_objective(m):
 def optimize(m, solver=None, **kwargs):
     if solver is None:
         solver = get_solver()
-    # add_objective(m)
     print("Optimizing with {} DOFs".format(degrees_of_freedom(m)))
     result = solver.solve(m, tee=True)
     return result
@@ -304,7 +303,7 @@ def initialize(m, solver=None, **kwargs):
     # solve box problem
     print("initalized, DOFs:", degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
-    results = solver.solve(m, tee=False)
+    results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
     print("Solved box problem")
 
@@ -322,6 +321,8 @@ def init_system(m, solver):
     propagate_state(m.fs.nfUnit_product_to_product)
     m.fs.NF.product.initialize(optarg=solver.options)
     m.fs.NF.retentate.initialize(optarg=solver.options)
+
+    m.fs.costing.initialize()
 
 
 def init_nf_block(blk, solver):
