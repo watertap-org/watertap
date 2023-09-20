@@ -1,6 +1,6 @@
 #!/bin/sh
 mkdir -p outputs
-N_SAMPLES=500
+N_SAMPLES=50
 for nprocs in {1..10}
 do
     # echo $NSAMPLE $nprocs
