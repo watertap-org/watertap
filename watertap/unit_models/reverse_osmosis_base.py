@@ -342,12 +342,26 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             doc="Mass flux across membrane at inlet and outlet",
         )
 
+        self.reflect_coeff = Var(
+                initialize=0.9,
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Reflection coefficient of the membrane",
+            )
+        
+        self.alpha = Var(
+                initialize=1e-8,
+                domain=NonNegativeReals,
+                units=units_meta("time") * units_meta("length") ** -1,
+                doc="Alpha coefficient of the membrane",
+            )
+        
         @self.Constraint(
             self.flowsheet().config.time,
             self.difference_elements,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            doc="Solvent and solute mass flux",
+            doc="Solvent and solute mass flux using SKK model",
         )
         def eq_flux_mass(b, t, x, p, j):
             prop_feed = b.feed_side.properties[t, x]
@@ -359,7 +373,8 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                     t, j
                 ] * b.dens_solvent * (
                     (prop_feed.pressure - prop_perm.pressure)
-                    - (
+                    - b.reflect_coeff
+                    * (
                         interface.pressure_osm_phase[p]
                         - prop_perm.pressure_osm_phase[p]
                     )
@@ -368,65 +383,21 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                 return b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j] * (
                     interface.conc_mass_phase_comp[p, j]
                     - prop_perm.conc_mass_phase_comp[p, j]
+                ) + (1 - b.reflect_coeff) * (
+                    (
+                        (b.flux_mass_phase_comp[t, x, p, 'H2O'] / b.dens_solvent)
+                        * interface.conc_mass_phase_comp[p, j]
+                    )
                 )
-
-        if self.config.transport_model == "SKK":
-
-            self.eq_flux_mass.deactivate()
-
-            self.reflect_coeff = Var(
-                initialize=1,
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Reflection coefficient of the membrane",
-            )
-
-            self.alpha = Var(
-                initialize=1e-8,
-                domain=NonNegativeReals,
-                units=units_meta("time") * units_meta("length") ** -1,
-                doc="Alpha coefficient of the membrane",
-            )
-
-            @self.Constraint(
+            
+        @self.Constraint(
                 self.flowsheet().config.time, solute_set, doc="SKK alpha coeff."
             )
-            def eq_alpha(b, t, j):
-                return b.alpha == (1 - b.reflect_coeff) / b.B_comp[t, j]
-
-            @self.Constraint(
-                self.flowsheet().config.time,
-                self.difference_elements,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
-                doc="Solvent and solute mass flux using SKK model",
-            )
-            def eq_flux_mass_skk(b, t, x, p, j):
-                prop_feed = b.feed_side.properties[t, x]
-                prop_perm = b.permeate_side[t, x]
-                interface = b.feed_side.properties_interface[t, x]
-                comp = self.config.property_package.get_component(j)
-                if comp.is_solvent():
-                    return b.flux_mass_phase_comp[t, x, p, j] == b.A_comp[
-                        t, j
-                    ] * b.dens_solvent * (
-                        (prop_feed.pressure - prop_perm.pressure)
-                        - b.reflect_coeff
-                        * (
-                            interface.pressure_osm_phase[p]
-                            - prop_perm.pressure_osm_phase[p]
-                        )
-                    )
-                elif comp.is_solute():
-                    return b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j] * (
-                        interface.conc_mass_phase_comp[p, j]
-                        - prop_perm.conc_mass_phase_comp[p, j]
-                    ) + (1 - b.reflect_coeff) * (
-                        (
-                            (b.flux_mass_phase_comp[t, x, p, j] / b.dens_solvent)
-                            * interface.conc_mass_phase_comp[p, j]
-                        )
-                    )
+        def eq_alpha(b, t, j):
+            return b.alpha == (1 - b.reflect_coeff) / b.B_comp[t, j]
+        
+        if self.config.transport_model != "SKK":
+            self.reflect_coeff.fix(1)
 
         @self.Expression(
             self.flowsheet().config.time,
