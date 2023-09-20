@@ -83,7 +83,7 @@ class IpoptWaterTAP(IPOPT):
                 "ipopt-watertap: Ipopt with user variable scaling and IDAES jacobian constraint scaling"
             )
 
-        bound_relax_factor = self._get_option("bound_relax_factor", 1e-10)
+        bound_relax_factor = self._get_option("bound_relax_factor", 0.0)
         if bound_relax_factor < 0.0:
             self._cleanup()
             raise ValueError(
