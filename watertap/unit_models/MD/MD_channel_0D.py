@@ -29,6 +29,8 @@ from .MD_channel_base import (
     PressureChangeType,
 )
 
+__author__ = "Elmira Shamlou"
+
 
 @declare_process_block_class("MDChannel0DBlock")
 class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):

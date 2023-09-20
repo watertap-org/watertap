@@ -36,6 +36,8 @@ from .MD_channel_base import (
     MassTransferCoefficient,
 )
 
+__author__ = "Elmira Shamlou"
+
 
 class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
     def build(self):
@@ -145,23 +147,23 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         self._add_heat_flux()
         self._add_mass_flux()
 
-        self.recovery_mass_phase_comp = Var(
+        self.recovery_mass = Var(
             self.flowsheet().config.time,
             # self.config.hot_ch.property_package.phase_list,
             # self.config.hot_ch.property_package.component_list,
             initialize=0.1,
             bounds=(1e-11, 0.99),
             units=pyunits.dimensionless,
-            doc="Mass-based component recovery",
+            doc="Mass-based recovery",
         )
 
         @self.Constraint(
             self.flowsheet().config.time,
             # self.config.hot_ch.property_package.component_list,
         )
-        def eq_recovery_mass_phase_comp(b, t):
+        def eq_recovery_mass(b, t):
             return (
-                b.recovery_mass_phase_comp[t]
+                b.recovery_mass[t]
                 * b.hot_ch.properties[t, b.first_element].flow_mass_phase_comp[
                     "Liq", "H2O"
                 ]
@@ -176,9 +178,36 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         self._add_mass_transfer()
         self._add_heat_transfer()
 
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="Average thermal efficiency",
+        )
+        def thermal_efficiency(b, t):
+            total_enth_flux = sum(
+                b.flux_enth_hot[t, x] for x in self.difference_elements
+            )
+            total_cond_heat_flux = sum(
+                b.flux_conduction_heat[t, x] for x in self.difference_elements
+            )
+
+            return total_enth_flux / (total_enth_flux + total_cond_heat_flux)
+
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="module heat recovery: ratio of the actual heat recovered by cold side to the maximum ideal heat recovery",
+        )
+        def effectiveness(b, t):
+
+            return (
+                b.cold_ch.properties[t, b.first_element].temperature
+                - b.cold_ch.properties[t, b.cold_ch.length_domain.last()].temperature
+            ) / (
+                b.hot_ch.properties[t, b.first_element].temperature
+                - b.cold_ch.properties[t, b.cold_ch.length_domain.last()].temperature
+            )
+
     def _add_mass_flux(self):
 
-        solvent_set = self.config.hot_ch.property_package.solvent_set
         solute_set = self.config.hot_ch.property_package.solute_set
 
         units_meta = (
@@ -411,7 +440,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         # Check for cold channel temperature polarization type
         if (
-            self.config.hot_ch.temperature_polarization_type
+            self.config.cold_ch.temperature_polarization_type
             != TemperaturePolarizationType.none
         ):
 
@@ -436,13 +465,6 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         return self.eq_flux_mass
 
     def _add_heat_flux(self):
-
-        solvent_set = self.config.hot_ch.property_package.solvent_set
-        solute_set = self.config.hot_ch.property_package.solute_set
-
-        units_meta = (
-            self.config.hot_ch.property_package.get_metadata().get_derived_units
-        )
 
         # todo: add calculation method for permeability coefficient
         self.membrane_thickness = Var(
@@ -513,9 +535,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         )
 
     def _add_area(self, include_constraint=True):
-        units_meta = (
-            self.config.hot_ch.property_package.get_metadata().get_derived_units
-        )
+
         if not hasattr(self, "area"):
             self.area = Var(
                 initialize=10,
@@ -581,22 +601,33 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         # Create solver
         opt = get_solver(solver, optarg)
 
-        # Solve unit *without* flux equationsc
+        # Solve unit *without* any flux equations
         self.eq_flux_mass.deactivate()
         self.eq_flux_heat.deactivate()
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-        init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}")
+        init_log.info_high(f"Initialization Step 2 (No Flux) {idaeslog.condition(res)}")
 
-        # Solve unit *with* flux equations
+        # Activate only the heat flux equations
         self.eq_flux_heat.activate()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info_high(
+            f"Initialization Step 3 (Heat Flux Only) {idaeslog.condition(res)}"
+        )
+
+        # Activate mass flux equations as well
         self.eq_flux_mass.activate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-        init_log.info_high(f"Initialization Step 3 {idaeslog.condition(res)}")
+        init_log.info_high(
+            f"Initialization Step 4 (Heat and Mass Flux) {idaeslog.condition(res)}"
+        )
 
-        # release inlet state, in case this error is caught
+        # Release inlet state, in case this error is caught
         self.cold_ch.release_state(cold_ch_flags, outlvl)
         self.hot_ch.release_state(hot_ch_flags, outlvl)
 
@@ -616,6 +647,23 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             time_point=time_point,
         )
 
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        expr_dict = {}
+
+        var_dict["Mass Recovery Rate"] = self.recovery_mass[time_point]
+        var_dict["Membrane Area"] = self.area
+        if hasattr(self, "length"):
+            var_dict["Membrane Length"] = self.length
+        if hasattr(self, "width"):
+            var_dict["Membrane Width"] = self.width
+
+        expr_dict["Average Solute Flux (LMH)"] = self.flux_mass_avg[time_point] * 1000
+        expr_dict["Thermal efficiency (%)"] = self.thermal_efficiency[time_point] * 100
+        expr_dict["Effectiveness (%)"] = self.effectiveness[time_point] * 100
+
+        return {"vars": var_dict, "exprs": expr_dict}
+
     def calculate_scaling_factors(self):
 
         if iscale.get_scaling_factor(self.dens_solvent) is None:
@@ -625,7 +673,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
         super().calculate_scaling_factors()
-        for t, v in self.recovery_mass_phase_comp.items():
+        for t, v in self.recovery_mass.items():
             sf = 1
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)

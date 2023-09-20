@@ -167,7 +167,7 @@ class MDChannelMixin:
             self.flowsheet().config.time,
             self.length_domain,
             initialize=2000,
-            bounds=(1, 1e4),
+            bounds=(1, 5e4),
             domain=NonNegativeReals,
             units=pyunits.J * pyunits.s**-1 * pyunits.K**-1 * pyunits.m**-2,
             doc="Convective heat transfer coefficient",
@@ -184,8 +184,8 @@ class MDChannelMixin:
         self.N_Pr = Var(
             self.flowsheet().config.time,
             self.length_domain,
-            initialize=5,
-            bounds=(0, 50),
+            initialize=1,
+            bounds=(0.1, 50),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Prandtl number in membrane channel",
@@ -221,7 +221,7 @@ class MDChannelMixin:
         def eq_N_Nu(b, t, x):
             if b._skip_element(x):
                 return Constraint.Skip
-            return b.N_Nu[t, x] == 0.162 * (b.N_Re[t, x] * b.N_Pr[t, x]) ** 0.656
+            return b.N_Nu[t, x] == 0.162 * b.N_Re[t, x] ** 0.656 * b.N_Pr[t, x] ** 0.333
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -232,10 +232,9 @@ class MDChannelMixin:
             if b._skip_element(x):
                 return Constraint.Skip
             return (
-                b.N_Pr[t, x]
-                * b.properties[t, x].visc_d_phase["Liq"]
+                b.N_Pr[t, x] * b.properties[t, x].therm_cond_phase["Liq"]
+                == b.properties[t, x].visc_d_phase["Liq"]
                 * b.properties[t, x].cp_mass_phase["Liq"]
-                == b.properties[t, x].therm_cond_phase["Liq"]
             )
 
         return self.eq_h_conv
@@ -373,7 +372,7 @@ class MDChannelMixin:
         def eq_N_Sh_comp(b, t, x, j):
             return (
                 b.N_Sh_comp[t, x, j]
-                == 0.46 * (b.N_Re[t, x] * b.N_Sc_comp[t, x, j]) ** 0.36
+                == 0.2 * b.N_Re[t, x] ** 0.57 * b.N_Sc_comp[t, x, j] ** 0.4
             )
 
         @self.Constraint(
