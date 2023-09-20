@@ -765,6 +765,13 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
             iscale.set_scaling_factor(self.recovery_vol_phase, 1)
 
+        if iscale.get_scaling_factor(self.alpha) is None:
+            iscale.set_scaling_factor(self.alpha, 1e8)
+
+        if iscale.get_scaling_factor(self.reflect_coeff) is None:
+            iscale.set_scaling_factor(self.reflect_coeff, 1)
+
+
         for (t, p, j), v in self.recovery_mass_phase_comp.items():
             if j in self.config.property_package.solvent_set:
                 sf = 1
