@@ -73,6 +73,13 @@ def has_mpi_peer_processes():
     return mpi4py_available and MPI.COMM_WORLD.Get_size() > 1
 
 
+def get_mpi_comm_process():
+    """
+    Returns mpi comm world
+    """
+    return MPI.COMM_WORLD
+
+
 def should_fan_out(number_of_subprocesses):
     """
     Returns whether the manager should fan out the computation to subprocesses. This
