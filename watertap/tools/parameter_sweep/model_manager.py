@@ -32,7 +32,7 @@ class ModelManager:
         self.initialized_states = {"state": [], "local_value_k": []}
         self.current_k = None
 
-    def build_and_init(self, params=None, local_value_k=None):
+    def build_and_init(self, sweep_params=None, local_value_k=None):
         """build and init model, if required by user, update paramaters before init"""
         self.model = self.ps_conf.build_model(**self.ps_conf.build_model_kwargs)
         # intilized model if init function is passed in
@@ -40,14 +40,12 @@ class ModelManager:
             # update paramters before init if enabled by user
             if (
                 self.ps_conf.update_sweep_params_before_init
-                and params != None
+                and sweep_params != None
                 and local_value_k != None
             ):
                 self.update_model_params(sweep_params, local_value_k)
             # init
-            self.ps_conf.initialize_function(
-                self.model, **self.ps_conf.initialize_kwargs
-            )
+            self.init_model()
         # raise error if user sets to init before sweep, but does not provide
         # initilize function
         elif self.ps_conf.update_sweep_params_before_init:
