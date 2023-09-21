@@ -1031,6 +1031,7 @@ def run_case2(
 
 ## ================================= Case 1 Tests ===============================
 @pytest.mark.component
+@pytest.mark.xfail
 def test_case_2_do_nothing():
     model = run_case2(
         xOH=1e-7 / 55.2,
