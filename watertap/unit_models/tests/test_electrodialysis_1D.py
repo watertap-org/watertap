@@ -42,6 +42,7 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
 
 __author__ = "Xiangyu Bi"
 
@@ -1825,7 +1826,10 @@ class Test_ED_pressure_drop_components:
         ed_m[1].fs.unit.friction_factor.fix(20)
         iscale.calculate_scaling_factors(ed_m[1])
         assert degrees_of_freedom(ed_m[1]) == 0
-        initialization_tester(ed_m[1])
+        # NOTE: This one isn't quite stable at the default pivot tolerance of 1e-8
+        initialization_tester(
+            ed_m[1], optarg={"ma27_pivtol": 1e-2}, outlvl=idaeslog.DEBUG
+        )
         results = solver.solve(ed_m[1])
         assert_optimal_termination(results)
         assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
