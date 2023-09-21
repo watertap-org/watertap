@@ -37,6 +37,7 @@ import idaes.logger as idaeslog
 from pyomo.environ import (
     Param,
     units as pyunits,
+    Var,
 )
 from pyomo.common.config import ConfigValue, In
 
@@ -126,6 +127,13 @@ class DewateringData(SeparatorData):
             units=pyunits.dimensionless,
             mutable=True,
             doc="Percentage of suspended solids removed",
+        )
+
+        self.electricity_consumption = Var(
+            self.flowsheet().time,
+            units=pyunits.kW,
+            bounds=(0, None),
+            doc="Electricity consumption of unit",
         )
 
         @self.Expression(self.flowsheet().time, doc="Suspended solid concentration")
