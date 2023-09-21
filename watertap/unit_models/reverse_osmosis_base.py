@@ -766,7 +766,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.recovery_vol_phase, 1)
 
         if iscale.get_scaling_factor(self.alpha) is None:
-            iscale.set_scaling_factor(self.alpha, 1e8)
+            iscale.set_scaling_factor(self.alpha, 1e-8)
 
         if iscale.get_scaling_factor(self.reflect_coeff) is None:
             iscale.set_scaling_factor(self.reflect_coeff, 1)
