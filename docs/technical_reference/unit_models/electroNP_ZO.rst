@@ -28,7 +28,7 @@ There is 1 degree of freedom for each solute in a given property model:
 
 Model Structure
 ------------------
-This electroNP model is built based on the IDAES Separator module. It consists of one inlet port and two outlet ports as
+This electroNP model is built based on the `IDAES Separator module <https://idaes-pse.readthedocs.io/en/stable/reference_guides/model_libraries/generic/unit_models/separator.html>`_. It consists of one inlet port and two outlet ports as
 treated and byproducts. The ``SplittingType`` is set to ``componentFlow``.
 
 Sets
@@ -51,8 +51,8 @@ Variables
    "Mass recovery fraction of water", ":math:`R_{H2O}`", "recovery_frac_mass_H2O", "[t]", ":math:`\text{dimensionless}`"
    "Removal fraction of component", ":math:`r_j`", "removal_frac_mass_comp", "[t, 'byproduct', j]", ":math:`\text{dimensionless}`"
    "Electricity consumption", ":math:`E`", "electricity", "[t]", ":math:`\text{kW}`"
-   "Electricity intensity with respect to phosphorus removal", ":math:`EI`", "energy_electric_flow_mass", " ", ":math:`\text{kWh/kg}`"
-   "Dosage of magnesium chloride per phosphorus removal", ":math:`D_{MgCl2}`", "magnesium_chloride_dosage", " ", ":math:`\text{dimensionless}`"
+   "Electricity intensity with respect to phosphorus removal", ":math:`EI`", "energy_electric_flow_mass", "None", ":math:`\text{kWh/kg}`"
+   "Dosage of magnesium chloride per phosphorus removal", ":math:`D_{MgCl2}`", "magnesium_chloride_dosage", "None", ":math:`\text{dimensionless}`"
    "Magnesium chloride flowrate", ":math:`Q_{MgCl2}`", "magnesium_chloride_dosage", "[t]", ":math:`\text{kg/hr}`"
 
 The electroNP model also has two mutable parameters:
@@ -60,8 +60,8 @@ The electroNP model also has two mutable parameters:
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Phosphorus removal fraction", ":math:`r_P`", "P_removal", " ", ":math:`\text{dimensionless}`"
-   "Nitrogen removal fraction", ":math:`r_N`", "N_removal", " ", ":math:`\text{dimensionless}`"
+   "Phosphorus removal fraction", ":math:`r_P`", "P_removal", "None", ":math:`\text{dimensionless}`"
+   "Nitrogen removal fraction", ":math:`r_N`", "N_removal", "None", ":math:`\text{dimensionless}`"
 
 **NOTE: Removal fractions for other components are fixed to 0**
 
