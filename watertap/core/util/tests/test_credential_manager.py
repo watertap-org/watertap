@@ -59,10 +59,8 @@ def test_credential_manager():
         credential_manager_encrypt._config_file
     )
 
-    try:
+    with pytest.raises(RuntimeError, match="Unable to upload DBS file."):
         credential_manager_encrypt_copy._get_credentials()
-    except RuntimeError:
-        pass
 
     # test 2: decrypt credentials
 
