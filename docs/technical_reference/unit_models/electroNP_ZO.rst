@@ -28,7 +28,7 @@ There is 1 degree of freedom for each solute in a given property model:
 
 Model Structure
 ------------------
-This electroNP model is built based on IDAES Separator module. It consists of one inlet port and two outlet ports as
+This electroNP model is built based on the IDAES Separator module. It consists of one inlet port and two outlet ports as
 treated and byproducts. The ``SplittingType`` is set to ``componentFlow``.
 
 Sets
