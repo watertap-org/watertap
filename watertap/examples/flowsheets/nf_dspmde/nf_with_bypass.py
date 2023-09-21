@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from pyomo.network import Arc, SequentialDecomposition
+from pyomo.network import Arc
 from idaes.core import (
     FlowsheetBlock,
 )
@@ -46,9 +46,9 @@ from watertap.costing import WaterTAPCosting
 def main():
     solver = get_solver()
     m = build()
-    nf.add_objective(m)
     initialize(m, solver)
     unfix_opt_vars(m)
+    nf.add_objective(m)
     results = optimize(m, solver)
     assert_optimal_termination(results)
     print("Optimal cost", m.fs.costing.LCOW.value)
@@ -201,13 +201,13 @@ def init_system(m, solver):
     m.fs.NF.product.initialize(optarg=solver.options)
     m.fs.NF.retentate.initialize(optarg=solver.options)
 
-    seq = SequentialDecomposition(tear_solver="cbc")
-    seq.options.iterLim = 10
-
-    def func_initialize(unit):
-        unit.initialize(optarg=solver.options)
-
-    seq.run(m, func_initialize)
+    # seq = SequentialDecomposition(tear_solver="cbc")
+    # seq.options.iterLim = 10
+    #
+    # def func_initialize(unit):
+    #     unit.initialize(optarg=solver.options)
+    #
+    # seq.run(m, func_initialize)
 
     m.fs.costing.initialize()
 
