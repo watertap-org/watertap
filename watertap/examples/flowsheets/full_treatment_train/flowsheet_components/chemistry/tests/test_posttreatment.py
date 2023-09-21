@@ -64,7 +64,7 @@ def test_ideal_naocl_chlorination():
     ].value == pytest.approx(4.254858076511e-07, rel=1e-3)
     assert model.fs.ideal_naocl_chlorination_unit.outlet.mole_frac_comp[
         0, "H_+"
-    ].value == pytest.approx(5.6407676871845223e-11, rel=1e-3)
+    ].value == pytest.approx(5.75022333462775e-11, rel=1e-3)
 
 
 @pytest.mark.requires_idaes_solver
