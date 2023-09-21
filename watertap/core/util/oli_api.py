@@ -357,7 +357,7 @@ class OLIApi:
                     "Could not find requested path to file. Please "
                     "check that this path to file exists."
                 )
-            result = self.credential_manager.upload_dbs_file(dbs_file_path)
+            result = self.upload_dbs_file(dbs_file_path)
             chemistry_file_id = result["file"][0]["id"]
             return chemistry_file_id
         else:
