@@ -22,7 +22,7 @@ Typically, the following variables are fixed:
    * electricity intensity
    * dosage of magnesium chloride per phosphorus removal
 
-There are 1 degree of freedom for each solute in a given property model:
+There is 1 degree of freedom for each solute in a given property model:
 
    * inlet solute concentration
 
