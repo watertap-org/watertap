@@ -87,13 +87,13 @@ class TestIpoptWaterTAP:
 
         assert s._model is m
 
-        assert m.a.lb == -0.5 - 1e-16
-        assert m.a.ub == 0.5 + 1e-16
-        assert m.b.a[1].lb == -10 - 1e-15
-        assert m.b.a[1].ub == 10 + 1e-15
-        assert m.b.a[2].lb == -10 - 1e-15
-        assert m.b.a[2].ub == 10 + 1e-15
-        assert m.e.lb == 0.0 - 1e-16
+        assert m.a.lb == -0.5
+        assert m.a.ub == 0.5
+        assert m.b.a[1].lb == -10
+        assert m.b.a[1].ub == 10
+        assert m.b.a[2].lb == -10
+        assert m.b.a[2].ub == 10
+        assert m.e.lb == 0.0
 
     @pytest.mark.unit
     def test_postsolve_unscaled_constraints_and_bounds_cleanup(self, m, s):
