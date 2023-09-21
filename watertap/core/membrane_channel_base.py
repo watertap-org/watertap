@@ -60,6 +60,15 @@ class MassTransferCoefficient(Enum):
     calculated = auto()
     # TODO: add option for users to define their own relationship?
 
+class TransportModel(Enum):
+    """
+    none: mass transfer coefficient not utilized for concentration polarization effect
+    fixed: mass transfer coefficient is a user specified value
+    calculated: mass transfer coefficient is calculated
+    """
+
+    SD = auto()
+    SKK = auto()
 
 class PressureChangeType(Enum):
     """
@@ -236,12 +245,16 @@ CONFIG_Template.declare(
 CONFIG_Template.declare(
     "transport_model",
     ConfigValue(
-        default="soultion-diffusion",
+        default=TransportModel.SD,
+        domain=In(TransportModel),
         description="Mass transfer model in RO feed channel",
         doc="""
         Options to account for mass transfer model.
 
-        **default** - ``solution-diffusion``
+        **default** - ``TransportModel.SD``
+
+        "``TransportModel.SD``", "Solution-diffusion model for describing water and salt transport for most membrane types"
+        "``TransportModel.SKK``", "Speigler-Kedem-Katchalsky model for describing water and salt transport for 'leaky' membranes"
 
         """,
     ),
