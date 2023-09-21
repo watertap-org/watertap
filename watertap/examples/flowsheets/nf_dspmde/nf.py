@@ -290,6 +290,7 @@ def optimize(m, solver=None, **kwargs):
     if solver is None:
         solver = get_solver()
     print("Optimizing with {} DOFs".format(degrees_of_freedom(m)))
+    solver.options["ma27_pivtol"] = 5e-1
     result = solver.solve(m, tee=True)
     return result
 
