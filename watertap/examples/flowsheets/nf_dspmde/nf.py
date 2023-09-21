@@ -167,7 +167,6 @@ def build():
     m.fs.properties = MCASParameterBlock(**default)
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
-    m.fs.feed.properties[0].conc_mol_phase_comp[...]
     m.fs.feed.properties[0].flow_mass_phase_comp[...]
 
     m.fs.product = Product(property_package=m.fs.properties)
@@ -282,7 +281,7 @@ def unfix_opt_vars(m):
 
 def add_objective(m):
     if m.find_component("fs.LCOW_objective") is None:
-        m.fs.LCOW_objective = Objective(expr=m.fs.costing.LCOW)
+        m.fs.LCOW_objective = Objective(expr=1e6 * m.fs.costing.LCOW)
         print("added objective function")
 
 
