@@ -28,11 +28,11 @@ __author__ = "Adam Atia, Paul Vecchiarelli"
 # Set up solver
 solver = get_solver()
 
+
 # TODO: alter tests; login and dependent functions now in credential_manager.py
 # TODO: write requests scripts that simulate login success/failure and return dummy objects in expected format
 @pytest.mark.unit
 def test_login():
-
     # Enter login credentials below, or leave empty and submit during user input prompt
     username = "dummy@dummy.edu"
     password = "dummy_pass"
@@ -40,10 +40,15 @@ def test_login():
     auth_url = "https://dummy_url.com/dummy"
     config_file = None
     encryption_key = None
-    
+
     oliapi = OLIApi(
-        username=username, password=password, root_url=root_url, auth_url=auth_url,
-        config_file=config_file, encryption_key=encryption_key, credential_manager_class=CredentialManager
+        username=username,
+        password=password,
+        root_url=root_url,
+        auth_url=auth_url,
+        config_file=config_file,
+        encryption_key=encryption_key,
+        credential_manager_class=CredentialManager,
     )
 
     # TODO: Want capability to test successful login (as well as testing desired exceptions to be raise upon intentional fail)
@@ -150,7 +155,7 @@ class TestOLIAPI_WaterTAP:
         auth_url = "https://dummy_url.com/dummy"
         config_file = None
         encryption_key = None
-        
+
         try:
             oliapi = OLIApi(
                 username=username,
@@ -203,7 +208,7 @@ class TestOLIAPI_WaterTAP:
         auth_url = "https://dummy_url.com/dummy"
         config_file = None
         encryption_key = None
-        
+
         try:
             oliapi = OLIApi(
                 username=username,

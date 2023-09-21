@@ -19,18 +19,24 @@ import requests
 
 from cryptography.fernet import Fernet
 
+
 class CredentialManager:
     """
     A class to handle credentials for OLI Cloud
     """
-    
-    def __init__(self,
-                 username=None, password=None,
-                 root_url=None, auth_url=None,
-                 config_file=None, encryption_key=None):
+
+    def __init__(
+        self,
+        username=None,
+        password=None,
+        root_url=None,
+        auth_url=None,
+        config_file=None,
+        encryption_key=None,
+    ):
         """
         Manages credentials for OLIApi authentication requests
-        
+
         Args:
             username (optional): user's username
             password (optional): user's password
@@ -39,53 +45,59 @@ class CredentialManager:
             config_file (optional): local path for encrypted credential file, if not default 'credentials.txt'
             encryption_key (required if config_file exists): key to encrypt/decrypt credentials
         """
-        
+
         self.config_file = config_file
         self.encryption_key = encryption_key
-        
-        self.credentials = {"username": username,
-                            "password": password,
-                            "root_url": root_url,
-                            "auth_url": auth_url}
-        
+
+        self.credentials = {
+            "username": username,
+            "password": password,
+            "root_url": root_url,
+            "auth_url": auth_url,
+        }
+
         self._get_credentials()
-                
+
         # note jwt_token and refresh_token are set with login()
         try:
             self.login(tee=False)
         except:
             raise RuntimeError(f"Login failed with provided credentials.")
-            
+
         self.dbs_url = self.credentials["root_url"] + "/channel/dbs"
         self.upload_dbs_url = self.credentials["root_url"] + "/channel/upload/dbs"
         self.engine_url = self.credentials["root_url"] + "/engine/"
-        #self._delete_dbs_url = self._credentials["root_url"] + "/channel/file/"
-    
+        # self._delete_dbs_url = self._credentials["root_url"] + "/channel/file/"
+
     def _get_credentials(self):
         """
         Method to save/load OLI credentials
         """
-        
+
         if self.config_file is None:
             self.config_file = "credentials.txt"
-            
+
         if (self.encryption_key is None) and (path.exists(self.config_file)):
-            raise RuntimeError(f" Config file {self.config_file} exists but no key was provided." +
-                               " WaterTAP will not read unencrypted credential files.")
-            
-        if self.encryption_key is None:            
+            raise RuntimeError(
+                f" Config file {self.config_file} exists but no key was provided."
+                + " WaterTAP will not read unencrypted credential files."
+            )
+
+        if self.encryption_key is None:
             if self._write_permission():
                 self._encrypt_credentials()
         else:
             self.credentials = self._decrypt_credentials()
-    
+
     def _write_permission(self):
         """
         Returns:
             boolean: status of user permission (to write encrypted config_file to disk)
         """
-        
-        r = input("WaterTAP will write encrypted file to store OLI Cloud credentials: [y]/n: ")
+
+        r = input(
+            "WaterTAP will write encrypted file to store OLI Cloud credentials: [y]/n: "
+        )
         if (r.lower() == "y") or (r == ""):
             return True
         return False
@@ -94,39 +106,45 @@ class CredentialManager:
         """
         Basic encryption method for credentials
         """
-        
+
         if self.encryption_key is None:
             self.encryption_key = Fernet.generate_key()
-            print(f"Your secret key is:\n{self.encryption_key.decode()}\nKeep it safe.\n")
-            
+            print(
+                f"Your secret key is:\n{self.encryption_key.decode()}\nKeep it safe.\n"
+            )
+
         try:
             cipher = Fernet(self.encryption_key)
-            encrypted_credentials = cipher.encrypt(json.dumps(self.credentials).encode())
-        
+            encrypted_credentials = cipher.encrypt(
+                json.dumps(self.credentials).encode()
+            )
+
             with open(self.config_file, "wb") as f:
-                f.write(encrypted_credentials)            
-    
+                f.write(encrypted_credentials)
+
         except:
-            raise RuntimeError(f" Failed encryption with provided key {self.encryption_key}.")
-            
+            raise RuntimeError(
+                f" Failed encryption with provided key {self.encryption_key}."
+            )
+
     def _decrypt_credentials(self):
-        """ 
+        """
         Basic decryption method for credentials
-        
+
         Returns:
             credentials: login credentials for OLI Cloud
         """
-        
+
         with open(self.config_file, "rb") as f:
             encrypted_credentials = f.read()
-            
+
         cipher = Fernet(self.encryption_key)
         decrypted_credentials = cipher.decrypt(encrypted_credentials).decode()
-        
+
         credentials = json.loads(decrypted_credentials)
-        
+
         return credentials
-    
+
     def login(self, tee=True, raise_on_failure=True):
         """
         Login into user credentials for the OLI Cloud
@@ -134,7 +152,7 @@ class CredentialManager:
         Args:
             tee: boolean argument to print status code when True
             raise_on_failure: boolean argument to raise exception upon login failure when True
-            
+
         Returns:
             boolean: True on success, False on failure
         """
@@ -147,17 +165,17 @@ class CredentialManager:
             "grant_type": "password",
             "client_id": "apiclient",
         }
-        
+
         return self._get_login_status(tee, raise_on_failure)
-        
+
     def refresh_token(self, tee=True, raise_on_failure=True):
         """
         Uses refresh token to update access token
-        
+
         Args:
             tee: boolean argument to print status code when True
             raise_on_failure: boolean argument to raise exception upon login failure when True
-            
+
         Returns:
             True on success, False on failure
         """
@@ -171,7 +189,7 @@ class CredentialManager:
         }
 
         return self._get_login_status(tee, raise_on_failure)
-    
+
     def request_auto_login(self, req_func):
         """
         Gets a new access token if the request returns with an expired token error. First tries with the refresh token
@@ -184,7 +202,6 @@ class CredentialManager:
 
         num_tries = 1
         while num_tries <= 2:
-
             headers = {"authorization": "Bearer " + self.jwt_token}
 
             req_result = req_func(headers)
@@ -201,31 +218,33 @@ class CredentialManager:
             num_tries = num_tries + 1
 
         return dict()
-    
+
     def _get_login_status(self, tee, raise_on_failure):
-        
-        req_result = requests.post(self.credentials["auth_url"], headers=headers, data=body)
-        
+        req_result = requests.post(
+            self.credentials["auth_url"], headers=headers, data=body
+        )
+
         if req_result.status_code == 200:
-            
             if tee:
                 print(f"Status code is {req_result.status_code}")
-                
+
             req_result = req_result.json()
-            
+
             if bool(req_result):
                 if "access_token" in req_result:
                     self.jwt_token = req_result["access_token"]
                     if "refresh_token" in req_result:
                         self.refresh_token = req_result["refresh_token"]
                         return True
-        
+
         if raise_on_failure:
-            raise Exception(f"OLI login failed. Status code is {req_result.status_code}.")
+            raise Exception(
+                f"OLI login failed. Status code is {req_result.status_code}."
+            )
         else:
             return False
-    
+
+
 class _TestCredentialManager(CredentialManager):
-    
     def _write_permission(self):
         return True
