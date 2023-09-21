@@ -17,7 +17,11 @@ from os import path
 import json
 import requests
 
-from cryptography.fernet import Fernet
+from pyomo.common.dependencies import attempt_import
+
+cryptography, cryptography_available = attempt_import("cryptography", defer_check=False)
+if cryptography_available:
+    from cryptography.fernet import Fernet
 
 
 class CredentialManager:
@@ -56,7 +60,10 @@ class CredentialManager:
             "auth_url": auth_url,
         }
 
-        self._get_credentials()
+        if cryptography_available:
+            self._get_credentials()
+        else:
+            raise ModuleNotFoundError("Module 'cryptography' not available.")
 
         # note jwt_token and refresh_token are set with login()
         try:
