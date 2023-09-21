@@ -173,7 +173,7 @@ class CredentialManager:
             "client_id": "apiclient",
         }
 
-        return self._get_login_status(tee, raise_on_failure)
+        return self._get_login_status(headers, body, tee, raise_on_failure)
 
     def refresh_token(self, tee=True, raise_on_failure=True):
         """
@@ -195,7 +195,7 @@ class CredentialManager:
             "client_id": "apiclient",
         }
 
-        return self._get_login_status(tee, raise_on_failure)
+        return self._get_login_status(headers, body, tee, raise_on_failure)
 
     def request_auto_login(self, req_func):
         """
@@ -226,7 +226,7 @@ class CredentialManager:
 
         return dict()
 
-    def _get_login_status(self, tee, raise_on_failure):
+    def _get_login_status(self, tee, headers, body, raise_on_failure):
         req_result = requests.post(
             self.credentials["auth_url"], headers=headers, data=body
         )
