@@ -397,7 +397,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         def eq_alpha(b, t, j):
             return b.alpha == (1 - b.reflect_coeff) / b.B_comp[t, j]
 
-        if self.config.transport_model != TransportModel.SKK:
+        if self.config.transport_model == TransportModel.SD:
             self.reflect_coeff.fix(1)
 
         @self.Expression(
