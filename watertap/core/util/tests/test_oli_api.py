@@ -11,20 +11,25 @@
 #################################################################################
 
 import pytest
+
+# imports from WaterTAP repo
+from watertap.core.util.credential_manager import CredentialManager
 from watertap.core.util.oli_api import OLIApi
+
 from pyomo.environ import ConcreteModel, assert_optimal_termination
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.solvers import get_solver
 import watertap.property_models.multicomp_aq_sol_prop_pack as props
 
-__author__ = "Adam Atia"
+__author__ = "Adam Atia, Paul Vecchiarelli"
 
 
 # Set up solver
 solver = get_solver()
 
-
+# TODO: alter tests; login and dependent functions now in credential_manager.py
+# TODO: write requests scripts that simulate login success/failure and return dummy objects in expected format
 @pytest.mark.unit
 def test_login():
 
@@ -33,8 +38,12 @@ def test_login():
     password = "dummy_pass"
     root_url = "https://dummy_root.com"
     auth_url = "https://dummy_url.com/dummy"
+    config_file = None
+    encryption_key = None
+    
     oliapi = OLIApi(
-        username=username, password=password, root_url=root_url, auth_url=auth_url
+        username=username, password=password, root_url=root_url, auth_url=auth_url,
+        config_file=config_file, encryption_key=encryption_key, credential_manager_class=CredentialManager
     )
 
     # TODO: Want capability to test successful login (as well as testing desired exceptions to be raise upon intentional fail)
@@ -139,12 +148,18 @@ class TestOLIAPI_WaterTAP:
         password = "dummy_pass"
         root_url = "https://dummy_root.com"
         auth_url = "https://dummy_url.com/dummy"
+        config_file = None
+        encryption_key = None
+        
         try:
             oliapi = OLIApi(
                 username=username,
                 password=password,
                 root_url=root_url,
                 auth_url=auth_url,
+                config_file=config_file,
+                encryption_key=encryption_key,
+                credential_manager_class=CredentialManager,
             )
         except ConnectionError:
             pass
@@ -186,12 +201,18 @@ class TestOLIAPI_WaterTAP:
         password = "dummy_pass"
         root_url = "https://dummy_root.com"
         auth_url = "https://dummy_url.com/dummy"
+        config_file = None
+        encryption_key = None
+        
         try:
             oliapi = OLIApi(
                 username=username,
                 password=password,
                 root_url=root_url,
                 auth_url=auth_url,
+                config_file=config_file,
+                encryption_key=encryption_key,
+                credential_manager_class=CredentialManager,
             )
         except ConnectionError:
             pass
