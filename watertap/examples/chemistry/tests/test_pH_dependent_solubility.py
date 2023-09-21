@@ -946,13 +946,16 @@ def run_case2(
     init_options = {**solver.options}
     init_options["tol"] = init_tol
     init_options["constr_viol_tol"] = init_tol
+    init_options["ma27_pivtol"] = 1e-1
     model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
     iscale.calculate_scaling_factors(model.fs.unit)
 
+    solver.options["ma27_pivtol"] = 1e-1
     results = solver.solve(model, tee=True)
+    del solver.options["ma27_pivtol"]
 
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok
@@ -2470,8 +2473,10 @@ def run_case4(
 
     assert degrees_of_freedom(model) == 0
 
-    solver.options["tol"] = 1.0e-12
+    solver.options["tol"] = 1.0e-16
+    solver.options["ma27_pivtol"] = 1e-2
     results = solver.solve(model, tee=True)
+    solver.options["ma27_pivtol"] = 1e-2
     del solver.options["tol"]
 
     assert results.solver.termination_condition == TerminationCondition.optimal
