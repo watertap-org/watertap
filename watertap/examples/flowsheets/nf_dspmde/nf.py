@@ -56,6 +56,7 @@ from watertap.costing import WaterTAPCosting
 
 __author__ = "Alexander Dudchenko, Adam Atia"
 
+
 def main():
     solver = get_solver()
     m = build()
@@ -409,7 +410,7 @@ def set_NF_feed(
 
 
 def calc_scale(value):
-    return -1 * math.floor(math.log(value, 10)) 
+    return -1 * math.floor(math.log(value, 10))
 
 
 def set_NF_feed_scaling(blk):

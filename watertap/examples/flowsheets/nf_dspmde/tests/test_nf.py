@@ -21,7 +21,7 @@ def test_main():
     m = main()
     test_dict = {
         "lcow": [m.fs.costing.LCOW, 0.144583],
-        "pressure": [m.fs.NF.pump.outlet.pressure[0]*1e-5, 5.372779],
+        "pressure": [m.fs.NF.pump.outlet.pressure[0] * 1e-5, 5.372779],
         "area": [m.fs.NF.nfUnit.area, 405.66782957],
         "recovery": [
             m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"] * 100,
