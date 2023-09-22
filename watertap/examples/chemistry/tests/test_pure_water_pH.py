@@ -629,6 +629,7 @@ class TestPureWater:
         assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_solution(self, model_solve):
         model, _ = model_solve
 

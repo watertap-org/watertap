@@ -1095,6 +1095,7 @@ def test_case_2_seawater_added_carbonates():
     )
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case_2_low_pH_no_precip():
     model = run_case2(

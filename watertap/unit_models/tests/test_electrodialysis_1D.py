@@ -921,6 +921,7 @@ class Test_ED_MembNonohm_On_ConstV:
 
         assert degrees_of_freedom(m) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialization_scaling(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
@@ -951,6 +952,7 @@ class Test_ED_MembNonohm_On_ConstV:
         # check to make sure DOF does not change
         assert degrees_of_freedom(m) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
@@ -962,6 +964,7 @@ class Test_ED_MembNonohm_On_ConstV:
         }
         assert not badly_scaled_var_values
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
@@ -985,6 +988,7 @@ class Test_ED_MembNonohm_On_ConstV:
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
         ) == pytest.approx(9.335e-4, rel=1e-3)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
@@ -1751,6 +1755,7 @@ class Test_ED_pressure_drop_components:
         )
         return m
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.unit
     def test_deltaP_various_methods(self, ed_m0, ed_m2, ed_m3, ed_m4, ed_m5, ed_m6):
         ed_m = (ed_m0, ed_m2, ed_m3, ed_m4, ed_m5, ed_m6)
