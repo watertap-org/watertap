@@ -1924,9 +1924,9 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
                 if comp.is_solute():
                     # Todo: revisit later
-                    physical_rejection_factor = (
-                        value(self.permeate_side[t, x].radius_stokes_comp[j] ** 2
-                        / self.radius_pore**2)
+                    physical_rejection_factor = value(
+                        self.permeate_side[t, x].radius_stokes_comp[j] ** 2
+                        / self.radius_pore**2
                     )
                     # will be 0.9, 0.99,0.999 etc for 1,2,3 valance
                     rejection_factor = (
