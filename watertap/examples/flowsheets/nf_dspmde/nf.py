@@ -54,6 +54,8 @@ import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
 
+__author__ = "Alexander Dudchenko, Adam Atia"
+
 
 def main():
     solver = get_solver()
@@ -256,7 +258,7 @@ def fix_init_vars(m):
     # NF membrane props for NF270
     m.fs.NF.nfUnit.radius_pore.fix(0.5e-9)
     m.fs.NF.nfUnit.membrane_thickness_effective.fix(8.598945196055952e-07)
-    m.fs.NF.nfUnit.membrane_charge_density.fix(-680)
+    m.fs.NF.nfUnit.membrane_charge_density.fix(-50)
     m.fs.NF.nfUnit.dielectric_constant_pore.fix(41.3)
     iscale.calculate_scaling_factors(m)
 
@@ -272,7 +274,8 @@ def unfix_opt_vars(m):
     m.fs.NF.nfUnit.area.unfix()
     m.fs.NF.nfUnit.velocity.unfix()
     m.fs.NF.nfUnit.velocity.setub(0.25)
-    m.fs.product.max_hardness.fix(200)
+    m.fs.product.max_hardness.fix(500)
+    m.fs.NF.nfUnit.recovery_vol_phase.fix(0.90)
 
     # Touch total_hardness (on-demand property) at feed and disposal for reporting
     m.fs.feed.properties[0].total_hardness
