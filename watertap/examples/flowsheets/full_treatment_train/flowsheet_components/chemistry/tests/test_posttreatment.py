@@ -53,6 +53,7 @@ def test_ideal_naocl_mixer():
     ].value == pytest.approx(5.373448801531194e-07, rel=1e-3)
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_ideal_naocl_chlorination():
     model = run_ideal_naocl_chlorination_example()
