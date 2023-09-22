@@ -78,7 +78,7 @@ from idaes.core.util.exceptions import (
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
 
-__author__ = "Adam Atia, Hunter Barber, Xiangyu Bi, Kurban Sitterly"
+__author__ = "Adam Atia, Xiangyu Bi, Hunter Barber, Kurban Sitterley"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 

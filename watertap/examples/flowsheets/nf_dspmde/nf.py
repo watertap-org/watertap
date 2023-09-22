@@ -54,6 +54,7 @@ import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
 
+__author__ = "Alexander Dudchenko, Adam Atia"
 
 def main():
     solver = get_solver()

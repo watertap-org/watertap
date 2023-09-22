@@ -54,6 +54,8 @@ import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
 
+__author__ = "Adam Atia"
+
 
 _log = idaeslog.getLogger(__name__)
 
