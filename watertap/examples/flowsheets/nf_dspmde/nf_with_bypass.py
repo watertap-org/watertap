@@ -156,7 +156,7 @@ def fix_init_vars(m):
     nf.fix_init_vars(m)
     # fix initial guess for splitter
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].fix(0.9)
-    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setlb(0)
+    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setlb(0.05)
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].setub(None)
 
 
