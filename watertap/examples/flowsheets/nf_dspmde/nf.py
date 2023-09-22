@@ -286,7 +286,6 @@ def unfix_opt_vars(m):
 def add_objective(m):
     if m.find_component("fs.LCOW_objective") is None:
         m.fs.LCOW_objective = Objective(expr=m.fs.costing.LCOW)
-        # iscale.set_scaling_factor(m.fs.LCOW_objective, 1e1)
         print("added objective function")
 
 
