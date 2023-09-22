@@ -1930,7 +1930,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                             self.feed_side.properties_in[t].dens_mass_phase["Liq"]
                         )
                         * iscale.get_scaling_factor(
-                            self.feed_side.properties_in[t].mw_comp[j]
+                            self.feed_side.properties_in[t].mw_comp["H2O"]
                         )
                         * iscale.get_scaling_factor(
                             self.permeate_side[t, x].conc_mol_phase_comp["Liq", j]

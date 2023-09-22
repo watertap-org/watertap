@@ -201,14 +201,6 @@ def init_system(m, solver):
     m.fs.NF.product.initialize(optarg=solver.options)
     m.fs.NF.retentate.initialize(optarg=solver.options)
 
-    # seq = SequentialDecomposition(tear_solver="cbc")
-    # seq.options.iterLim = 10
-    #
-    # def func_initialize(unit):
-    #     unit.initialize(optarg=solver.options)
-    #
-    # seq.run(m, func_initialize)
-
     m.fs.costing.initialize()
 
 
