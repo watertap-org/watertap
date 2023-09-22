@@ -81,9 +81,6 @@ def build():
     default = nf.define_feed_comp()
     m.fs.properties = MCASParameterBlock(**default)
     m.fs.feed = Feed(property_package=m.fs.properties)
-    m.fs.feed.properties[0].conc_mass_phase_comp[...]
-    m.fs.feed.properties[0].flow_mass_phase_comp[...]
-
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
 
@@ -158,7 +155,7 @@ def fix_init_vars(m):
     nf.fix_init_vars(m)
     # fix initial guess for splitter
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].fix(0.9)
-    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setlb(0)
+    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setlb(0.05)
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].setub(None)
 
 
