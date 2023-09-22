@@ -48,7 +48,6 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    degrees_of_freedom,
 )
 from idaes.core.util.scaling import (
     unscaled_variables_generator,
