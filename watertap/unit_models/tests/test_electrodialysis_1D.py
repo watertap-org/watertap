@@ -1750,6 +1750,7 @@ class Test_ED_pressure_drop_components:
         )
         return m
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.unit
     def test_deltaP_various_methods(self, ed_m0, ed_m2, ed_m3, ed_m4, ed_m5, ed_m6):
         ed_m = (ed_m0, ed_m2, ed_m3, ed_m4, ed_m5, ed_m6)
