@@ -1917,7 +1917,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                         / iscale.get_scaling_factor(prop_feed.visc_d_phase["Liq"])
                         / iscale.get_scaling_factor(self.membrane_thickness_effective)
                     )
-                    print(v, sf)
                     iscale.set_scaling_factor(v, sf)
 
         for (t, x, p, j), v in self.flux_mol_phase_comp.items():
