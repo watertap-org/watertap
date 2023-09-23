@@ -54,6 +54,8 @@ import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
 
+__author__ = "Adam Atia"
+
 
 _log = idaeslog.getLogger(__name__)
 
@@ -1923,6 +1925,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             if iscale.get_scaling_factor(v) is None:
                 if comp.is_solute():
                     # Todo: revisit later
+
                     # based on physicial hnderence and born energy
                     hfd = value(self.hindrance_factor_diffusive_comp[t, j])
                     bs = value(self.partition_factor_born_solvation_comp[t, j])
@@ -1944,6 +1947,8 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                         * iscale.get_scaling_factor(
                             self.feed_side.properties_in[t].mw_comp["H2O"]
                         )
+                        * valance_driven_rejection
+                        * (hfd * bs)
                         * iscale.get_scaling_factor(
                             self.feed_side.properties_in[t].conc_mol_phase_comp[
                                 "Liq", j
@@ -2019,6 +2024,12 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
         for (t, x, p, j), con in self.eq_solute_flux_concentration_polarization.items():
             sf = iscale.get_scaling_factor(self.flux_mol_phase_comp[t, x, p, j])
+
+            iscale.constraint_scaling_transform(con, sf)
+
+        for (t, x, p, j), con in self.eq_solute_flux_pore_domain.items():
+            sf = iscale.get_scaling_factor(self.flux_mol_phase_comp[t, x, p, j])
+
             iscale.constraint_scaling_transform(con, sf)
 
         for con in self.eq_electroneutrality_pore.values():
