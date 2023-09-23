@@ -2172,6 +2172,15 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.spacer_porosity, 1)
         if iscale.get_scaling_factor(self.electrodes_resistance, warning=True) is None:
             iscale.set_scaling_factor(self.electrodes_resistance, 1e4)
+        if hasattr(self, "current_efficiency_x") and (
+            iscale.get_scaling_factor(self.current_efficiency_x, warning=False) is None
+        ):
+            iscale.set_scaling_factor(self.current_efficiency_x, 1)
+        if hasattr(self, "ion_trans_number_membrane") and (
+            iscale.get_scaling_factor(self.ion_trans_number_membrane, warning=False)
+            is None
+        ):
+            iscale.set_scaling_factor(self.ion_trans_number_membrane, 1)
         for ind in self.velocity_diluate:
             if (
                 iscale.get_scaling_factor(self.velocity_diluate[ind], warning=False)

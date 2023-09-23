@@ -35,7 +35,6 @@ from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 from watertap.costing import WaterTAPCosting
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -57,6 +56,7 @@ def main():
 
     # Perform an optimization over selected variables
     initialize_system(m, solver=solver)
+
     optimize_system(
         m, solver=solver, checkpoint="solve flowsheet after optimizing system"
     )
@@ -123,12 +123,15 @@ def build():
         units=pyunits.meter**2,
         doc="Total membrane area for cem (or aem) in one stack",
     )
+    iscale.set_scaling_factor(m.fs.mem_area, 1)
     m.fs.product_salinity = Var(
         initialize=1, bounds=(0, 1000), units=pyunits.kg * pyunits.meter**-3
     )
+    iscale.set_scaling_factor(m.fs.product_salinity, 1)
     m.fs.disposal_salinity = Var(
         initialize=1, bounds=(0, 1e6), units=pyunits.kg * pyunits.meter**-3
     )
+    iscale.set_scaling_factor(m.fs.disposal_salinity, 1)
     m.fs.eq_product_salinity = Constraint(
         expr=m.fs.product_salinity
         == sum(
