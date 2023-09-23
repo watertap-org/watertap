@@ -54,6 +54,8 @@ import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
 
+__author__ = "Adam Atia"
+
 
 _log = idaeslog.getLogger(__name__)
 
@@ -1922,6 +1924,14 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
                 if comp.is_solute():
                     # Todo: revisit later
+                    physical_rejection_factor = value(
+                        self.permeate_side[t, x].radius_stokes_comp[j] ** 2
+                        / self.radius_pore**2
+                    )
+                    # will be 0.9, 0.99,0.999 etc for 1,2,3 valance
+                    rejection_factor = (
+                        10 ** abs(self.permeate_side[t, x].charge_comp[j].value) - 1
+                    ) / 10 ** abs(self.permeate_side[t, x].charge_comp[j].value)
                     sf = (
                         iscale.get_scaling_factor(
                             self.flux_mol_phase_comp[t, x, "Liq", "H2O"]
@@ -1930,8 +1940,10 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                             self.feed_side.properties_in[t].dens_mass_phase["Liq"]
                         )
                         * iscale.get_scaling_factor(
-                            self.feed_side.properties_in[t].mw_comp[j]
+                            self.feed_side.properties_in[t].mw_comp["H2O"]
                         )
+                        * (1 - rejection_factor)
+                        * physical_rejection_factor
                         * iscale.get_scaling_factor(
                             self.permeate_side[t, x].conc_mol_phase_comp["Liq", j]
                         )
@@ -1996,30 +2008,18 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                     self.feed_side.properties_in[t].dens_mass_solvent
                 )
             )
-            iscale.constraint_scaling_transform(con, sf / 100)
+            iscale.constraint_scaling_transform(con, sf)
 
         for (t, x, p, j), con in self.eq_solute_solvent_flux.items():
-            sf = iscale.get_constraint_transform_applied_scaling_factor(
-                self.eq_water_flux[t, x, p]
-            ) * iscale.get_scaling_factor(
-                self.mixed_permeate[t].conc_mol_phase_comp[p, j]
-            )
+            sf = iscale.get_scaling_factor(self.flux_mol_phase_comp[t, x, p, j])
             iscale.constraint_scaling_transform(con, sf)
 
         for (t, x, p, j), con in self.eq_solute_flux_concentration_polarization.items():
-            sf = iscale.get_constraint_transform_applied_scaling_factor(
-                self.eq_water_flux[t, x, p]
-            ) * iscale.get_scaling_factor(
-                self.mixed_permeate[t].conc_mol_phase_comp[p, j]
-            )
+            sf = iscale.get_scaling_factor(self.flux_mol_phase_comp[t, x, p, j])
             iscale.constraint_scaling_transform(con, sf)
 
         for (t, x, p, j), con in self.eq_solute_flux_pore_domain.items():
-            sf = iscale.get_constraint_transform_applied_scaling_factor(
-                self.eq_water_flux[t, x, p]
-            ) * iscale.get_scaling_factor(
-                self.mixed_permeate[t].conc_mol_phase_comp[p, j]
-            )
+            sf = iscale.get_scaling_factor(self.flux_mol_phase_comp[t, x, p, j])
             iscale.constraint_scaling_transform(con, sf)
 
         for con in self.eq_electroneutrality_pore.values():
