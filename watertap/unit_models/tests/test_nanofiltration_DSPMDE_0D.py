@@ -1769,7 +1769,9 @@ def test_pressure_recovery_step_2_ions():
     unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
     assert len(unscaled_var_list) == 0
 
-    # Expect only, flux_mol_phase_comp to be poorly scaled, as we have not
+
+    # Expect only flux_mol_phase_comp to be poorly scaled, as we have not
+
     # calculated correct values just yet.
     for var in list(badly_scaled_var_generator(m.fs.unit)):
         assert "flux_mol_phase_comp" in var[0].name
@@ -1887,7 +1889,6 @@ def test_pressure_recovery_step_5_ions():
 
     for index in m.fs.feed.properties[0].flow_mol_phase_comp:
         scale = calc_scale(m.fs.feed.properties[0].flow_mol_phase_comp[index].value)
-        print(f"{index} flow_mol_phase_comp scaling factor = {10 ** (scale)}")
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 10 ** (scale), index=index
         )
@@ -1913,7 +1914,7 @@ def test_pressure_recovery_step_5_ions():
     m.fs.nfUnit.spacer_mixing_length.fix()
 
     m.fs.nfUnit.radius_pore.fix(0.5e-9)
-    m.fs.nfUnit.membrane_thickness_effective.fix(8.598945196055952e-07)
+    m.fs.nfUnit.membrane_thickness_effective.fix(8.6e-07)
     m.fs.nfUnit.membrane_charge_density.fix(-680)
     m.fs.nfUnit.dielectric_constant_pore.fix(41.3)
     m.fs.nfUnit.mixed_permeate[0].pressure.fix(101325)
