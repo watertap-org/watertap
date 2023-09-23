@@ -1928,12 +1928,12 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                     bs = value(self.partition_factor_born_solvation_comp[t, j])
                     hinderence_factor = hfd * bs
                     # will be 0.1,0.01,0.001 etc for 2,3 valance
-                
                     valance_driven_rejection = 1 - (
                         10 ** abs(self.permeate_side[t, x].charge_comp[j].value) - 1
                     ) / 10 ** abs(self.permeate_side[t, x].charge_comp[j].value)
 
-                    print(j, hfd, bs,valance_driven_rejection, hfd * bs * valance_driven_rejection)
+                    expected_rejection = hinderence_factor * valance_driven_rejection
+
                     sf = (
                         iscale.get_scaling_factor(
                             self.flux_mol_phase_comp[t, x, "Liq", "H2O"]
@@ -1944,20 +1944,19 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                         * iscale.get_scaling_factor(
                             self.feed_side.properties_in[t].mw_comp["H2O"]
                         )
-                        * valance_driven_rejection
-                        * (hfd * bs)
                         * iscale.get_scaling_factor(
                             self.feed_side.properties_in[t].conc_mol_phase_comp[
                                 "Liq", j
                             ]
                         )
+                        * expected_rejection
                     )
 
                     iscale.set_scaling_factor(v, sf)
 
         for v in self.rejection_intrinsic_phase_comp.values():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(v, 1e1)
+                iscale.set_scaling_factor(v, 1)
 
         for j in self.config.property_package.component_list:
             if (

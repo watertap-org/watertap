@@ -401,7 +401,6 @@ class MCASParameterData(PhysicalParameterBlock):
         )
 
         if self.config.diffus_calculation == DiffusivityCalculation.none:
-
             self.diffus_phase_comp = Var(
                 self.phase_list,
                 self.solute_set,
@@ -632,7 +631,6 @@ class _MCASStateBlock(StateBlock):
 
         # initialize vars calculated from state vars
         for k in self.keys():
-
             # Vars indexed by phase and component_list
             for j in self[k].params.component_list:
                 if self[k].is_property_constructed("mass_frac_phase_comp"):
@@ -1004,6 +1002,7 @@ class MCASStateBlockData(StateBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density",
         )
+
         # TODO: reconsider this approach for solution density based on arbitrary solute_list
         def rule_dens_mass_phase(b, p):
             if b.params.config.density_calculation == DensityCalculation.constant:
@@ -1175,7 +1174,6 @@ class MCASStateBlockData(StateBlockData):
         )
 
         def rule_conc_equiv_phase_comp(b, p, j):
-
             return b.conc_equiv_phase_comp[p, j] == b.conc_mol_phase_comp[p, j] * abs(
                 b.params.charge_comp[j]
             )
@@ -1317,14 +1315,12 @@ class MCASStateBlockData(StateBlockData):
                     self.params.config.diffus_calculation
                     == DiffusivityCalculation.HaydukLaudie
                 ):
-
                     if j not in molar_volume_data_indices:
                         b.diffus_phase_comp[p, j].fix(
                             self.params.config.diffusivity_data[p, j]
                         )
                         return Constraint.Skip
                     else:
-
                         diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
                         visc_solvent_inv_units = pyunits.cP**-1
                         molar_volume_inv_units = pyunits.mol * pyunits.cm**-3
@@ -1764,7 +1760,6 @@ class MCASStateBlockData(StateBlockData):
         get_property=None,
         solve=True,
     ):
-
         if tol is None:
             tol = 1e-8
         if not defined_state and get_property is not None:
@@ -2037,14 +2032,23 @@ class MCASStateBlockData(StateBlockData):
 
         if self.is_property_constructed("pressure_osm_phase"):
             if iscale.get_scaling_factor(self.pressure_osm_phase) is None:
+                # sf = (
+                #     1e-3
+                #     * sum(
+                #         iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
+                #         ** 2
+                #         for j in self.params.solute_set
+                #     )
+                #     ** 0.5
+                # )
                 sf = (
-                    1e-3
-                    * sum(
+                    sum(
                         iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
-                        ** 2
                         for j in self.params.solute_set
                     )
-                    ** 0.5
+                    * 1
+                    / value(Constants.gas_constant)
+                    * iscale.get_scaling_factor(self.temperature)
                 )
                 iscale.set_scaling_factor(self.pressure_osm_phase, sf)
 
