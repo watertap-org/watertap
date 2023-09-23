@@ -284,7 +284,7 @@ def unfix_opt_vars(m):
 
 def add_objective(m):
     if m.find_component("fs.LCOW_objective") is None:
-        m.fs.LCOW_objective = Objective(expr=1e4 * m.fs.costing.LCOW)
+        m.fs.LCOW_objective = Objective(expr=m.fs.costing.LCOW)
         print("added objective function")
 
 
@@ -292,7 +292,6 @@ def optimize(m, solver=None, **kwargs):
     if solver is None:
         solver = get_solver()
     # add_objective(m)
-    solver.options["ma27_pivtol"] = 0.5
     print("Optimizing with {} DOFs".format(degrees_of_freedom(m)))
     result = solver.solve(m, tee=True)
     return result
