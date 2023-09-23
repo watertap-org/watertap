@@ -275,7 +275,6 @@ def unfix_opt_vars(m):
     m.fs.NF.nfUnit.velocity.unfix()
     m.fs.NF.nfUnit.velocity.setub(0.25)
     m.fs.product.max_hardness.fix(500)
-    m.fs.NF.nfUnit.recovery_vol_phase.fix(0.90)
 
     # Touch total_hardness (on-demand property) at feed and disposal for reporting
     m.fs.feed.properties[0].total_hardness

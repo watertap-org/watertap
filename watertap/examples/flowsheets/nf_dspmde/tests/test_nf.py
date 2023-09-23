@@ -20,13 +20,13 @@ from watertap.examples.flowsheets.nf_dspmde.nf import main
 def test_main():
     m = main()
     test_dict = {
-        "lcow": [m.fs.costing.LCOW, 0.144583],
-        "pressure": [m.fs.NF.pump.outlet.pressure[0] * 1e-5, 5.372779],
-        "area": [m.fs.NF.nfUnit.area, 405.66782957],
+        "lcow": [m.fs.costing.LCOW, 0.141678],
+        "pressure": [m.fs.NF.pump.outlet.pressure[0] * 1e-5, 5.21856],
+        "area": [m.fs.NF.nfUnit.area, 444.423],
         "recovery": [
             m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"] * 100,
-            90,
+            94.64,
         ],
     }
-    for (model_result, testval) in test_dict.values():
+    for model_result, testval in test_dict.values():
         assert pytest.approx(testval, rel=1e-3) == value(model_result)
