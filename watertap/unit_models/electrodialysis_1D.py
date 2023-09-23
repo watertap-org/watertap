@@ -940,7 +940,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             doc="Mass transfer term diluate channel",
         )
         def eq_mass_transfer_term_diluate(self, t, x, p, j):
-
             if j == "H2O":
                 if self.config.has_Nernst_diffusion_layer:
                     return (
@@ -1111,7 +1110,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             doc="Mass transfer term concentrate channel",
         )
         def eq_mass_transfer_term_concentrate(self, t, x, p, j):
-
             return (
                 self.concentrate.mass_transfer_term[t, x, p, j]
                 == -self.diluate.mass_transfer_term[t, x, p, j]
@@ -1159,7 +1157,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             doc="Overall current efficiency evaluation",
         )
         def eq_current_efficiency_x(self, t, x, p):
-
             return (
                 self.current_efficiency_x[t, x]
                 * self.current_density_x[t, x]
@@ -1194,7 +1191,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             )
 
     def _make_performance_nonohm_mem(self):
-
         self.potential_nonohm_membrane_x = Var(
             self.membrane_set,
             self.flowsheet().time,
@@ -1275,7 +1271,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             # This is mathematically valid as the ratio eliminate the difference and electro-neutrality stands.
 
     def _make_performance_dl_polarization(self):
-
         self.current_dens_lim_x = Var(
             self.flowsheet().time,
             self.diluate.length_domain,
@@ -1365,7 +1360,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                 doc="Calculate length-indexed limiting current density",
             )
             def eq_current_dens_lim_x(self, t, x):
-
                 return self.current_dens_lim_x[
                     t, x
                 ] == self.param_a * self.velocity_diluate[t, x] ** self.param_b * sum(
@@ -1824,7 +1818,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             doc="To calculate Re",
         )
         def eq_Re(self):
-
             return (
                 self.N_Re
                 == self.dens_mass
@@ -1837,7 +1830,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             doc="To calculate Sc",
         )
         def eq_Sc(self):
-
             return (
                 self.N_Sc == self.visc_d * self.dens_mass**-1 * self.diffus_mass**-1
             )
@@ -1846,7 +1838,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             doc="To calculate Sc",
         )
         def eq_Sh(self):
-
             return self.N_Sh == 0.29 * self.N_Re**0.5 * self.N_Sc**0.33
 
     def _pressure_drop_calculation(self):
@@ -2856,7 +2847,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         )
 
     def _get_performance_contents(self, time_point=0):
-
         return {
             "vars": {
                 "Total electrical power consumption(Watt)": self.diluate.power_electrical_x[
