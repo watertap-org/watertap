@@ -1811,7 +1811,7 @@ class Test_ED_pressure_drop_components:
         ed_m[0].fs.unit.pressure_drop.fix(40000)
         iscale.calculate_scaling_factors(ed_m[0])
         assert degrees_of_freedom(ed_m[0]) == 0
-        initialization_tester(ed_m[0])
+        initialization_tester(ed_m[0], optarg={"ma27_pivtol": 1e-2})
         badly_scaled_var_values = {
             var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[0])
         }
@@ -1847,7 +1847,7 @@ class Test_ED_pressure_drop_components:
         ed_m[2].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(ed_m[2])
         assert degrees_of_freedom(ed_m[2]) == 0
-        initialization_tester(ed_m[2])
+        initialization_tester(ed_m[2] , optarg={"ma27_pivtol": 1e-2})
         results = solver.solve(ed_m[2])
         assert_optimal_termination(results)
         assert value(ed_m[2].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
@@ -1864,7 +1864,7 @@ class Test_ED_pressure_drop_components:
         ed_m[3].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(ed_m[3])
         assert degrees_of_freedom(ed_m[3]) == 0
-        initialization_tester(ed_m[3])
+        initialization_tester(ed_m[3] , optarg={"ma27_pivtol": 1e-2})
         results = solver.solve(ed_m[3])
         assert_optimal_termination(results)
         assert value(ed_m[3].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)

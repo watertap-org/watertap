@@ -201,6 +201,11 @@ def set_operating_conditions(m):
     # Fix ED unit vars
     m.fs.EDstack.water_trans_number_membrane["cem"].fix(5.8)
     m.fs.EDstack.water_trans_number_membrane["aem"].fix(4.3)
+    for idx in m.fs.EDstack.water_trans_number_membrane:
+        iscale.set_scaling_factor(
+            m.fs.EDstack.water_trans_number_membrane[idx],
+            1 / m.fs.EDstack.water_trans_number_membrane[idx].value,
+        )
     m.fs.EDstack.water_permeability_membrane["cem"].fix(2.16e-14)
     m.fs.EDstack.water_permeability_membrane["aem"].fix(1.75e-14)
     m.fs.EDstack.voltage_applied.fix(5)
