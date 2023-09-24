@@ -1897,14 +1897,17 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 self.dielectric_constant_pore,
                 1 / self.dielectric_constant_pore[0].value,
             )
-        if iscale.get_scaling_factor(self.spacer_mixing_efficiency) is None:
-            iscale.set_scaling_factor(
-                self.spacer_mixing_efficiency, 1 / self.spacer_mixing_efficiency.value
-            )
-        if iscale.get_scaling_factor(self.spacer_porosity) is None:
-            iscale.set_scaling_factor(
-                self.spacer_porosity, 1 / self.spacer_porosity.value
-            )
+        if hasattr(self, "spacer_mixing_efficiency"):
+            if iscale.get_scaling_factor(self.spacer_mixing_efficiency) is None:
+                iscale.set_scaling_factor(
+                    self.spacer_mixing_efficiency,
+                    1 / self.spacer_mixing_efficiency.value,
+                )
+        if hasattr(self, "spacer_porosity"):
+            if iscale.get_scaling_factor(self.spacer_porosity) is None:
+                iscale.set_scaling_factor(
+                    self.spacer_porosity, 1 / self.spacer_porosity.value
+                )
         # setting scaling factors for variables
         # these variables should have user input, if not there will be a warning
         if iscale.get_scaling_factor(self.area) is None:
@@ -1949,7 +1952,14 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                     valance_driven_rejection = 1 - (
                         10 ** abs(self.permeate_side[t, x].charge_comp[j].value) - 1
                     ) / 10 ** abs(self.permeate_side[t, x].charge_comp[j].value)
-
+                    conc_scale = iscale.get_scaling_factor(
+                        self.feed_side.properties_in[t].conc_mol_phase_comp["Liq", j]
+                    )
+                    # prevents over scaling of really small concetratons
+                    # not based on any phyisical reasoning/huristic testing
+                    # with ion concetrations of 1e-4 or lower
+                    if conc_scale > 1:
+                        conc_scale = 1
                     sf = (
                         iscale.get_scaling_factor(
                             self.flux_mol_phase_comp[t, x, "Liq", "H2O"]
@@ -1960,20 +1970,23 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                         * iscale.get_scaling_factor(
                             self.feed_side.properties_in[t].mw_comp["H2O"]
                         )
-                        * valance_driven_rejection
-                        * iscale.get_scaling_factor(
+                        * conc_scale
+                    )
+                    print(
+                        v,
+                        iscale.get_scaling_factor(
                             self.feed_side.properties_in[t].conc_mol_phase_comp[
                                 "Liq", j
                             ]
-                        )
+                        ),
+                        conc_scale,
                     )
                     iscale.set_scaling_factor(v, sf)
+
         for (t, p, j), v in self.flux_mol_phase_comp_avg.items():
             if iscale.get_scaling_factor(v) is None:
-                sf = (
-                    iscale.get_scaling_factor(self.flux_mol_phase_comp[t, 0, p, j])
-                    + iscale.get_scaling_factor(self.flux_mol_phase_comp[t, 1, p, j])
-                ) / 2
+                sf = iscale.get_scaling_factor(self.flux_mol_phase_comp[t, 0, p, j])
+
                 iscale.set_scaling_factor(v, sf)
 
         for v in self.rejection_intrinsic_phase_comp.values():
@@ -2040,7 +2053,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             bs = value(self.partition_factor_born_solvation_comp[t, j])
             fdc = value(self.partition_factor_donnan_comp_feed[t, x, j])
             hinderence_factor = hfd * bs * fdc
-
             iscale.constraint_scaling_transform(con, 1 / hinderence_factor)
 
         for (t, x, p, j), con in self.eq_interfacial_partitioning_permeate.items():
@@ -2048,7 +2060,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             bs = value(self.partition_factor_born_solvation_comp[t, j])
             fdp = value(self.partition_factor_donnan_comp_permeate[t, x, j])
             hinderence_factor = hfd * bs * fdp
-
             iscale.constraint_scaling_transform(con, 1 / hinderence_factor)
 
         for (t, p, j), con in self.eq_mass_transfer_feed.items():
@@ -2132,18 +2143,18 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
         for (t, x, p, j), con in self.eq_solute_flux_concentration_polarization.items():
             sf = iscale.get_scaling_factor(self.flux_mol_phase_comp[t, x, p, j])
-
             iscale.constraint_scaling_transform(con, sf)
 
         for (t, x, p, j), con in self.eq_solute_flux_pore_domain.items():
             sf = iscale.get_scaling_factor(self.flux_mol_phase_comp[t, x, p, j])
-
             iscale.constraint_scaling_transform(con, sf)
-        for (t, x, p, j), con in self.eq_electroneutrality_pore.items():
+
+        for con in self.eq_electroneutrality_pore.values():
             iscale.constraint_scaling_transform(con, 1)
 
         for con in self.eq_electroneutrality_permeate.values():
             iscale.constraint_scaling_transform(con, 1)
+
         if hasattr(self, "eq_electroneutrality_interface"):
             for con in self.eq_electroneutrality_interface.values():
                 iscale.constraint_scaling_transform(con, 1)
