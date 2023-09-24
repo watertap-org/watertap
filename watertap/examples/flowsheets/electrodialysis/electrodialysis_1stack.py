@@ -235,13 +235,9 @@ def set_operating_conditions(m):
             1 / m.fs.EDstack.membrane_areal_resistance[idx].value,
         )
     m.fs.EDstack.cell_width.fix(0.1)
-    iscale.set_scaling_factor(
-        m.fs.EDstack.cell_width, 1 / m.fs.EDstack.cell_width.value
-    )
+    iscale.set_scaling_factor(m.fs.EDstack.cell_width, 1)
     m.fs.EDstack.cell_length.fix(0.79)
-    iscale.set_scaling_factor(
-        m.fs.EDstack.cell_length, 1 / m.fs.EDstack.cell_length.value
-    )
+    iscale.set_scaling_factor(m.fs.EDstack.cell_length, 1)
     iscale.set_scaling_factor(
         m.fs.EDstack.diluate.area,
         1
