@@ -2078,12 +2078,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.rejection_intrinsic_phase_comp[t, p, j])
             iscale.constraint_scaling_transform(con, sf)
 
-        for (t, p, j), con in self.eq_N_Sc_comp.items():
-            sf = iscale.get_scaling_factor(
-                self.feed_side.properties_in[0].visc_d_phase["Liq"]
-            )
-            iscale.constraint_scaling_transform(con, sf)
-
         for (t, x), con in self.eq_velocity.items():
             sf = iscale.get_scaling_factor(
                 self.feed_side.properties_in[0].flow_vol_phase["Liq"]
@@ -2139,17 +2133,44 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         for (t, x, p, j), con in self.eq_solute_flux_pore_domain.items():
             sf = iscale.get_scaling_factor(self.flux_mol_phase_comp[t, x, p, j])
             iscale.constraint_scaling_transform(con, sf)
-
-        for con in self.eq_electroneutrality_pore.values():
-            iscale.constraint_scaling_transform(con, 1)
-
-        for con in self.eq_electroneutrality_permeate.values():
-            iscale.constraint_scaling_transform(con, 1)
+        if hasattr(self, "eq_electroneutrality_pore"):
+            for con in self.eq_electroneutrality_pore.values():
+                sf = 0
+                for j in self.solute_set:
+                    sf += iscale.get_scaling_factor(
+                        self.feed_side.properties_in[t].conc_mol_phase_comp["Liq", j]
+                    )
+                iscale.constraint_scaling_transform(con, sf)
+        if hasattr(self, "eq_electroneutrality_permeate"):
+            for con in self.eq_electroneutrality_permeate.values():
+                sf = 0
+                for j in self.solute_set:
+                    sf += (
+                        iscale.get_scaling_factor(
+                            self.feed_side.properties_in[t].conc_mol_phase_comp[
+                                "Liq", j
+                            ]
+                        )
+                        * 10
+                    )
+                sf += iscale.get_scaling_factor(self.membrane_charge_density)
+                iscale.constraint_scaling_transform(con, 1)
 
         if hasattr(self, "eq_electroneutrality_interface"):
             for con in self.eq_electroneutrality_interface.values():
+                sf = 0
+                for j in self.solute_set:
+                    sf += iscale.get_scaling_factor(
+                        self.feed_side.properties_in[t].conc_mol_phase_comp["Liq", j]
+                    )
                 iscale.constraint_scaling_transform(con, 1)
 
+        if hasattr(self, "eq_N_Sc_comp"):
+            for (t, p, j), con in self.eq_N_Sc_comp.items():
+                sf = iscale.get_scaling_factor(
+                    self.feed_side.properties_in[0].visc_d_phase["Liq"]
+                )
+                iscale.constraint_scaling_transform(con, sf)
         if hasattr(self, "eq_N_Pe_comp"):
             for ind, con in self.eq_N_Pe_comp.items():
                 sf = iscale.get_scaling_factor(self.N_Pe_comp[ind])
