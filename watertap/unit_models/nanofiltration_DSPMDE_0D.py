@@ -1949,17 +1949,17 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 if comp.is_solute():
                     # Todo: revisit later
                     # will be 0.1,0.01,0.001 etc for 2,3 valance
-                    valance_driven_rejection = 1 - (
+                    valance_driven_rejection = (
                         10 ** abs(self.permeate_side[t, x].charge_comp[j].value) - 1
                     ) / 10 ** abs(self.permeate_side[t, x].charge_comp[j].value)
                     conc_scale = iscale.get_scaling_factor(
                         self.feed_side.properties_in[t].conc_mol_phase_comp["Liq", j]
                     )
                     # prevents over scaling of really small concetratons
-                    # not based on any phyisical reasoning/huristic testing
+                    # not based on any phyisical reasoning, simple huristic testing
                     # with ion concetrations of 1e-4 or lower
-                    if conc_scale > 1:
-                        conc_scale = 1
+                    if conc_scale > valance_driven_rejection:
+                        conc_scale = valance_driven_rejection
                     sf = (
                         iscale.get_scaling_factor(
                             self.flux_mol_phase_comp[t, x, "Liq", "H2O"]
