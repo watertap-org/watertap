@@ -1972,15 +1972,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                         )
                         * conc_scale
                     )
-                    print(
-                        v,
-                        iscale.get_scaling_factor(
-                            self.feed_side.properties_in[t].conc_mol_phase_comp[
-                                "Liq", j
-                            ]
-                        ),
-                        conc_scale,
-                    )
                     iscale.set_scaling_factor(v, sf)
 
         for (t, p, j), v in self.flux_mol_phase_comp_avg.items():
