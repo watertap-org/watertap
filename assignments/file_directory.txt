@@ -1,0 +1,4 @@
+local branch name: water 
+fork directory: C:\Users\kejia_hu\watertap\watertap\watertap\fork_water
+remote_name:fork_kejia 
+branch: water
