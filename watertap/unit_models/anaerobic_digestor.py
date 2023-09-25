@@ -67,6 +67,8 @@ from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
 
+from watertap.costing.unit_models.anaerobic_digestor import cost_anaerobic_digestor
+
 __author__ = "Alejandro Garciadiego, Andrew Lee, Xinhong Liu"
 
 
@@ -1028,3 +1030,7 @@ see reaction package for documentation.}""",
             )
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
+
+    @property
+    def default_costing_method(self):
+        return cost_anaerobic_digestor
