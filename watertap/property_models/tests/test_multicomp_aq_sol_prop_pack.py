@@ -1552,8 +1552,8 @@ def test_no_solute_list_provided():
     m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(
         ConfigurationError,
-        match="Must provide a list of solutes in solute_list as a list of strings.",
-    ):
+        match=re.escape("The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings).",
+    )):
         m.fs.properties = MCASParameterBlock()
 
 

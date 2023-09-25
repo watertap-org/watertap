@@ -343,7 +343,7 @@ class MCASParameterData(PhysicalParameterBlock):
         # Check that solute_list was not left empty
         if self.config.solute_list is None:
             raise ConfigurationError(
-                "Must provide a list of solutes in solute_list as a list of strings."
+                "The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings)."
             )
         # Group components into different sets
         for j in self.config.solute_list:
