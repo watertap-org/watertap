@@ -30,6 +30,7 @@ from watertap.core.membrane_channel0d import CONFIG_Template
 from watertap.unit_models.reverse_osmosis_base import (
     ReverseOsmosisBaseData,
     _add_has_full_reporting,
+    TransportModel,
 )
 
 __author__ = "Tim Bartholomew, Adam Atia"
