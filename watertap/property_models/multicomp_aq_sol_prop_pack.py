@@ -2286,7 +2286,7 @@ class MCASStateBlockData(StateBlockData):
 
         if self.is_property_constructed("total_hardness"):
             if iscale.get_scaling_factor(self.total_hardness) is None:
-                sf = 0.001
+                sf = 1/100
                 iscale.set_scaling_factor(self.total_hardness, sf)
         # transforming constraints
         transform_property_constraints(self)
