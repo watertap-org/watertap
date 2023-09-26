@@ -46,6 +46,7 @@ import idaes.logger as idaeslog
 from idaes.core.util.misc import add_object_reference
 
 from watertap.core import InitializationMixin
+from watertap.costing.unit_models.uv_aop import cost_uv_aop
 
 _log = idaeslog.getLogger(__name__)
 
@@ -1096,3 +1097,7 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
             for c in self.eq_reaction_rate_constant.values():
                 sf = iscale.get_scaling_factor(self.reaction_rate_constant)
                 iscale.constraint_scaling_transform(c, sf)
+
+    @property
+    def default_costing_method(self):
+        return cost_uv_aop
