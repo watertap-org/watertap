@@ -68,8 +68,8 @@ class TestOAROwithTurbine:
         initialize_system(
             m,
             number_of_stages=3,
-            solvent_multiplier=0.35,
-            solute_multiplier=0.5,
+            solvent_multiplier=0.5,
+            solute_multiplier=0.7,
             solver=solver,
         )
         assert degrees_of_freedom(m) == 0
@@ -80,10 +80,10 @@ class TestOAROwithTurbine:
         m = system_frame
         solve(m, solver=solver)
         fs = m.fs
-        assert pytest.approx(5.70232e-3, rel=1e-5) == value(
+        assert pytest.approx(3.98455e-3, rel=1e-5) == value(
             fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]
         )
-        assert pytest.approx(0.29357, rel=1e-5) == value(fs.water_recovery)
+        assert pytest.approx(0.2888, rel=1e-5) == value(fs.water_recovery)
 
     @pytest.mark.component
     def test_config_error(self, system_frame):
