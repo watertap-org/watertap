@@ -53,6 +53,7 @@ from watertap.core.util.initialization import check_dof
 import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
+from watertap.costing.unit_models.nanofiltration import cost_nanofiltration
 
 __author__ = "Adam Atia"
 
@@ -2195,3 +2196,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             iscale.constraint_scaling_transform(con, 1e-2)
         for con in self.feed_side.eq_feed_isothermal.values():
             iscale.constraint_scaling_transform(con, 1e-2)
+
+    @property
+    def default_costing_method(self):
+        return cost_nanofiltration

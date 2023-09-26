@@ -38,6 +38,9 @@ from watertap.core.membrane_channel_base import (
 )
 
 from watertap.core import InitializationMixin
+from watertap.costing.unit_models.osmotically_assisted_reverse_osmosis import (
+    cost_osmotically_assisted_reverse_osmosis,
+)
 
 
 def _add_has_full_reporting(config_obj):
@@ -845,3 +848,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
                     iscale.set_scaling_factor(v, sf)
                 sf = iscale.get_scaling_factor(v)
                 iscale.constraint_scaling_transform(self.eq_flux_mass[t, x, p, j], sf)
+
+    @property
+    def default_costing_method(self):
+        return cost_osmotically_assisted_reverse_osmosis

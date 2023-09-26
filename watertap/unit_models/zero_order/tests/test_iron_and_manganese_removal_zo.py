@@ -34,7 +34,7 @@ from idaes.core import UnitModelCostingBlock
 from watertap.unit_models.zero_order import IronManganeseRemovalZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
-from watertap.core.zero_order_costing import ZeroOrderCosting
+from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 

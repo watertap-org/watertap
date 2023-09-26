@@ -23,6 +23,10 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
+from watertap.costing.unit_models.pump import cost_pump
+from watertap.costing.unit_models.energy_recovery_device import (
+    cost_energy_recovery_device,
+)
 
 _log = idaeslog.getLogger(__name__)
 
@@ -176,6 +180,10 @@ class PumpIsothermalData(InitializationMixin, PumpData):
                 if iscale.get_scaling_factor(self.eta_constraint[t]) is None:
                     iscale.set_scaling_factor(self.eta_constraint[t], 1)
 
+    @property
+    def default_costing_method(self):
+        return cost_pump
+
 
 @declare_process_block_class("EnergyRecoveryDevice")
 class EnergyRecoveryDeviceData(PumpIsothermalData):
@@ -188,3 +196,7 @@ class EnergyRecoveryDeviceData(PumpIsothermalData):
     CONFIG.get("compressor")._default = False
     CONFIG.get("compressor")._domain = In([False])
     CONFIG.compressor = False
+
+    @property
+    def default_costing_method(self):
+        return cost_energy_recovery_device
