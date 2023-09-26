@@ -176,7 +176,6 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
     # ---------------------------------------------------------------------
 
     def build(self):
-
         super().build()
 
         # create blank scaling factors to be populated later
@@ -300,8 +299,8 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         )
         self.anode_electrochem_potential = Var(
             initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
+            bounds=(None, None),
+            domain=Reals,
             units=units_meta("mass")
             * units_meta("length") ** 2
             * units_meta("time") ** -3
@@ -323,7 +322,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.component_list,
             initialize=0,
             bounds=(None, None),
-            domain=NonNegativeReals,
+            domain=Reals,
             units=pyunits.dimensionless,
             doc="stoichiometry of the reaction at the anode normalized to 1 electron",
         )
@@ -347,8 +346,8 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         )
         self.cathode_electrochem_potential = Var(
             initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
+            bounds=(None, None),
+            domain=Reals,
             units=units_meta("mass")
             * units_meta("length") ** 2
             * units_meta("time") ** -3
@@ -370,7 +369,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.component_list,
             initialize=0,
             bounds=(None, None),
-            domain=NonNegativeReals,
+            domain=Reals,
             units=pyunits.dimensionless,
             doc="stoichiometry of the reaction at the cathode normalized to 1 electron",
         )
@@ -665,7 +664,6 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
 
     # ---------------------------------------------------------------------
     def _get_performance_contents(self, time_point=0):
-
         var_dict = {}
         anolyte_in = self.anolyte.properties_in[time_point]
         anolyte_out = self.anolyte.properties_out[time_point]
@@ -751,7 +749,6 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
 
     # ---------------------------------------------------------------------
     def calculate_scaling_factors(self):
-
         super().calculate_scaling_factors()
 
         # ---------------------------------------------------------------------
@@ -804,7 +801,6 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
 
         for t in self.flowsheet().time:
             for j in self.config.property_package.component_list:
-
                 if (
                     iscale.get_scaling_factor(self.custom_reaction_cathode[t, j])
                     is None
