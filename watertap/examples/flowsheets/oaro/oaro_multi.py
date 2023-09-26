@@ -53,7 +53,7 @@ from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
 )
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.costing import WaterTAPCosting
-from watertap.costing.units.pump import cost_low_pressure_pump
+from watertap.costing.unit_models.pump import cost_low_pressure_pump
 
 
 class ERDtype(StrEnum):
