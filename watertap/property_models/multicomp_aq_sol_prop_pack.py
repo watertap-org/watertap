@@ -2150,7 +2150,7 @@ class MCASStateBlockData(StateBlockData):
                 sf_temp = iscale.get_scaling_factor(self.temperature)
                 sf_conc_mol = (
                     sum(
-                        iscale.get_scailing_factor(self.conc_mol_phase_comp["Liq", j])
+                        iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
                         ** -1
                         for j in self.params.solute_set
                     )
@@ -2217,12 +2217,11 @@ class MCASStateBlockData(StateBlockData):
                     )
                     sf_conc_mol_z = (
                         sum(
-                            iscale.get_scailing_factor(
+                            iscale.get_scaling_factor(
                                 self.conc_mol_phase_comp["Liq", j]
                             )
                             ** -1
-                            * iscale.get_scailing_factor(self.charge_comp["Liq", j])
-                            ** -1
+                            * iscale.get_scaling_factor(self.charge_comp[j]) ** -1
                             for j in self.params.cation_set
                         )
                         ** -1
@@ -2277,6 +2276,7 @@ class MCASStateBlockData(StateBlockData):
                     sum(
                         iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
                         ** -1
+                        * iscale.get_scaling_factor(self.charge_comp[j]) ** -1
                         for j in self.params.solute_set
                     )
                     ** -1
