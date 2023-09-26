@@ -37,6 +37,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
+from watertap.costing.unit_models.evaporator import cost_evaporator
 
 
 _log = idaeslog.getLogger(__name__)
@@ -493,3 +494,7 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
                 self.properties_vapor[0].enth_flow_phase["Vap"]
             )
             iscale.set_scaling_factor(self.heat_transfer, sf)
+
+    @property
+    def default_costing_method(self):
+        return cost_evaporator

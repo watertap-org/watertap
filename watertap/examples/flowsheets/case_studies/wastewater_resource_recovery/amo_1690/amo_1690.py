@@ -42,7 +42,7 @@ from watertap.unit_models.zero_order import (
     AnaerobicDigestionReactiveZO,
     MembraneEvaporatorZO,
 )
-from watertap.core.zero_order_costing import ZeroOrderCosting
+from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
