@@ -1770,7 +1770,6 @@ def test_pressure_recovery_step_2_ions():
     assert len(unscaled_var_list) == 0
 
     # Expect only flux_mol_phase_comp to be poorly scaled, as we have not
-
     # calculated correct values just yet.
     for var in list(badly_scaled_var_generator(m.fs.unit)):
         assert "flux_mol_phase_comp" in var[0].name
