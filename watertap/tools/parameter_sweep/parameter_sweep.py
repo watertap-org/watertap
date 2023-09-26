@@ -783,7 +783,7 @@ class ParameterSweep(_ParameterSweepBase):
 
         # for each result, concat the "value" array of results into the
         # gathered results to combine them all
-        for result in all_results[1:]:
+        for i, result in enumerate(all_results[1:]):
             results = result.results
             for key, val in results.items():
                 if key == "solve_successful":
@@ -793,12 +793,36 @@ class ParameterSweep(_ParameterSweepBase):
                     continue
 
                 for subkey, subval in val.items():
+                    # try:
+                    # print(subkey, subval)
+                    # lets catch any keys that don' exist in result[0] and
+                    # create empty array with expected length, after which we will add
+                    # additional values, or add nan's instead
+                    if subkey not in combined_results[key]:
+                        # create empty array, as non of results so far had this key
+                        combined_results[key][subkey] = {}
+                        for sub_subkey, value in subval.items():
+                            if sub_subkey == "value":
+                                combined_results[key][subkey]["value"] = (
+                                    np.zeros((i + 1) * len(subval["value"])) * np.nan
+                                )
+                            else:
+                                combined_results[key][subkey][sub_subkey] = value
                     combined_results[key][subkey]["value"] = np.append(
                         combined_results[key][subkey]["value"],
                         copy.deepcopy(
                             subval["value"],
                         ),
                     )
+                    # keepy track of our subchunk_length
+                    sub_chunk_length = len(subval["value"])
+                # make sure we add any empty value to missing keys
+                for subkey in combined_results[key]:
+                    if subkey not in val.keys():
+                        empty_chunk = np.zeros(sub_chunk_length) * np.nan
+                        combined_results[key][subkey]["value"] = np.append(
+                            combined_results[key][subkey]["value"], empty_chunk
+                        )
 
         return combined_results
 
