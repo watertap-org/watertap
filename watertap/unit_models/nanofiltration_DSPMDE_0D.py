@@ -1955,7 +1955,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                     conc_scale = iscale.get_scaling_factor(
                         self.feed_side.properties_in[t].conc_mol_phase_comp["Liq", j]
                     )
-                    # prevents over scaling of really small concetratons
+                    # prevents over scaling of really small concentratons
                     # not based on any phyisical reasoning, simple huristic testing
                     # with ion concetrations of 1e-4 or lower
                     if conc_scale > valance_driven_rejection:
