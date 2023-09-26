@@ -2148,15 +2148,17 @@ class MCASStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.pressure_osm_phase) is None:
                 sf_gas_constant = value(1 / Constants.gas_constant)
                 sf_temp = iscale.get_scaling_factor(self.temperature)
-                sf_conc_mol = value(
-                    1
-                    / (
+                sf_conc_mol =                     (
                         sum(
-                            self.conc_mol_phase_comp["Liq", j]
+                            iscale.get_scailing_factor(
+                                self.conc_mol_phase_comp["Liq", j]
+                            )
+                            ** -1
                             for j in self.params.solute_set
                         )
                     )
-                )
+                    ** -1
+                
                 sf = sf_gas_constant * sf_temp * sf_conc_mol
                 iscale.set_scaling_factor(self.pressure_osm_phase, sf)
 
@@ -2217,13 +2219,15 @@ class MCASStateBlockData(StateBlockData):
                     sf_equiv_cond_phase = iscale.get_scaling_factor(
                         self.equiv_conductivity_phase[ind]
                     )
-                    sf_conc_mol_z = value(
-                        1
-                        / sum(
-                            self.conc_mol_phase_comp["Liq", j] * self.charge_comp[j]
+                    sf_conc_mol_z = sum(                            iscale.get_scailing_factor(
+                                self.conc_mol_phase_comp["Liq", j]
+                            )
+                            ** -1
+                            * iscale.get_scailing_factor(self.charge_comp["Liq", j])
+                            ** -1
                             for j in self.params.cation_set
                         )
-                    )
+                        ** -1
                     sf = sf_equiv_cond_phase * sf_conc_mol_z
                     iscale.set_scaling_factor(self.elec_cond_phase[ind], sf)
 
@@ -2283,7 +2287,7 @@ class MCASStateBlockData(StateBlockData):
 
         if self.is_property_constructed("total_hardness"):
             if iscale.get_scaling_factor(self.total_hardness) is None:
-                sf = 10 / value(self.total_hardness)
+                sf = 0.001
                 iscale.set_scaling_factor(self.total_hardness, sf)
         # transforming constraints
         transform_property_constraints(self)
