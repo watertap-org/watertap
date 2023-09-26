@@ -2277,7 +2277,7 @@ class MCASStateBlockData(StateBlockData):
                         for j in self.params.solute_set
                     )
                     ** -1
-                    / 2
+                    * 2
                 )
                 iscale.set_scaling_factor(self.ionic_strength_molal, sf)
 
