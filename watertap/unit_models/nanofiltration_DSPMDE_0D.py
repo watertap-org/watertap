@@ -1949,8 +1949,8 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         for (t, x, p, j), v in self.flux_mol_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 if comp.is_solute():
-                    # simply based on feed flow mol scailing 
-                    #                     
+                    # simply based on feed flow mol scailing
+                    #
                     sf = iscale.get_scaling_factor(
                         self.feed_side.properties_in[t].flow_mol_phase_comp["Liq", j]
                     )
@@ -2239,6 +2239,8 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         for con in self.eq_pressure_permeate_io.values():
             iscale.constraint_scaling_transform(con, 1e-4)
 
+        for con in self.eq_recovery_vol_phase.values():
+            iscale.constraint_scaling_transform(con, 1)
         # isothermal transforms
         for con in self.eq_permeate_isothermal.values():
             iscale.constraint_scaling_transform(con, 1e-2)
