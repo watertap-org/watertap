@@ -1973,15 +1973,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                         )
                         * conc_scale
                     )
-                    print(
-                        v,
-                        iscale.get_scaling_factor(
-                            self.feed_side.properties_in[t].conc_mol_phase_comp[
-                                "Liq", j
-                            ]
-                        ),
-                        conc_scale,
-                    )
                     iscale.set_scaling_factor(v, sf)
 
         for (t, p, j), v in self.flux_mol_phase_comp_avg.items():
@@ -2075,13 +2066,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 charge_reflection_multiplier = 10 ** abs(
                     value(self.permeate_side[t, x].charge_comp[j])
                 )
-            print(
-                j,
-                value(self.permeate_side[t, x].charge_comp[j]),
-                1 / hinderence_factor,
-                charge_reflection_multiplier,
-                1 / (hinderence_factor * charge_reflection_multiplier),
-            )
             iscale.constraint_scaling_transform(
                 con, 1 / (hinderence_factor * charge_reflection_multiplier)
             )
