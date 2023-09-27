@@ -3,16 +3,16 @@
 Zero Order Costing Package
 ==========================
 
-.. currentmodule:: watertap.core.zero_order_costing
+.. currentmodule:: watertap.costing.zero_order_costing
 
-The zero order costing module contains the costing package used for zero order models. Technoeconomic data used for zero order models is contained in the
+The zero order costing module contains the costing package typically used for zero order models, though it can also be used for high-fidelity models. Technoeconomic data used for zero order models is contained in the
 ``.yaml`` file for that model located in the data/techno_economic folder.
 
 
 Usage
 -----
 
-The ZeroOrderCosting class contains all the variables and constraints needed to cost a unit model derived from the :ref:`ZeroOrderBaseData`.
+The ZeroOrderCosting class contains all the variables and constraints needed to cost a unit model derived from the :ref:`ZeroOrderBaseData`. It also inherits the functionality of the :ref:`WaterTAPCostingBlockData`.
 
 The code below shows an outline of how the ZeroOrderCostingData class is intended to be used to cost zero-order type models.
 
@@ -22,7 +22,7 @@ The code below shows an outline of how the ZeroOrderCostingData class is intende
 
   from idaes.core import FlowsheetBlock
 
-  from watertap.core.zero_order_costing import ZeroOrderCosting
+  from watertap.costing.zero_order_costing import ZeroOrderCosting
   from watertap.core.wt_database import Database
   from watertap.core.zero_order_properties import WaterParameterBlock
   from watertap.unit_models.zero_order import MyZOUnit
@@ -46,7 +46,7 @@ The ZeroOrderCostingData class includes variables and constraints necessary to c
                  Cost                               Variable                 Name                               Description
 =============================================  ====================  =====================================  ==============================================================================
 Total capital cost                              :math:`C_{ZO,tot}`    ``total_capital_cost``                Total capital cost
-Unit capital cost                               :math:`C_{ZO,u}`      ``capital_cost``                      Unit process capital cost
+Unit capital cost                               :math:`C_{ZO,u}`      ``aggregate capital_cost``            Unit processes capital cost
 Total operating cost                            :math:`C_{op,tot}`    ``total_operating_cost``              Total operating cost for unit process
 Total fixed operating cost                      :math:`C_{op,fix}`    ``total_fixed_operating_cost``        Total fixed operating cost for unit process
 Total variable operating cost                   :math:`C_{op,var}`    ``total_variable_operating_cost``     Total variable operating cost for unit process
@@ -57,6 +57,7 @@ Benefits cost                                   :math:`C_{ben}`       ``benefits
 Maintenance cost                                :math:`C_{maint}`     ``maintenance_cost``                  Maintenance cost for unit process
 Laboratory cost                                 :math:`C_{lab}`       ``laboratory_cost``                   Laboratory cost for unit process
 Insurance & taxes cost                          :math:`C_{ins}`       ``insurance_and_taxes_cost``          Insurance & taxes for unit process
+Total annualized cost                           :math:`C_{annual}`    ``total_annualized_costs``            Total cost on a annualized basis
 =============================================  ====================  =====================================  ==============================================================================
 
 Calculations for each of these costs are presented below.
@@ -66,7 +67,7 @@ Costing Index and Technoeconomic Factors
 
 Costing indices are available in ``default_case_study.yaml`` located in the data/techno_economic folder.
 
-WaterTAP uses the Consumer Price Index (CPI) to help account for the time-value of investments and are used in the capital
+WaterTAP uses the CE (Chemical Engineering) Cost Index to help account for the time-value of investments and are used in the capital
 and operating cost calculations. Unit process capital costs are adjusted to the year of the case study. The default year is 2018.
 
 Other technoeconomic factors used to calculate various system metrics, capital, and operating costs are presented in the table below:
@@ -76,7 +77,7 @@ Other technoeconomic factors used to calculate various system metrics, capital, 
 =============================================  ====================  =====================================  ===============  ==============================================================================
 Plant capacity utilization factor                 :math:`f_{util}`    ``utilization_factor``                 100%               Percentage of year plant is operating
 Plant lifetime                                    :math:`L`           ``plant_lifetime``                     30 yr              Expected lifetime of unit process
-Electricity price                                 :math:`P`           ``electricity``                        $0.0595/kWh        Electricity price in 2019 USD.
+Electricity price                                 :math:`P`           ``electricity_cost``                   $0.0595/kWh        Electricity price in 2019 USD.
 Land cost factor                                  :math:`f_{land}`    ``land_cost_percent_FCI``              0.15%              Unit process land cost as percentage of capital cost
 Working capital cost factor                       :math:`f_{work}`    ``working_capital_percent_FCI``        5%                 Unit process working capital cost as percentage of capital cost
 Salaries cost factor                              :math:`f_{sal}`     ``salaries_percent_FCI``               0.1%               Unit process salaries cost as percentage of capital cost
@@ -129,7 +130,7 @@ Custom Capital Cost Methods
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There are several zero order models that have costing relationships that do not follow this general form. If that is the case, a custom costing method can
-be added to this base class to perform that calculation.
+be added to the unit model class to perform that calculation.
 
 Zero order models that have custom capital costing methods include:
 
@@ -161,10 +162,8 @@ Zero order models that have custom capital costing methods include:
 * UV + AOP - ``cost_uv_aop()``
 * Well field - ``cost_well_field()``
 
-To add a custom capital calculation method, the unit module class must be part of the ``import`` statement at the top of this file
-and there must be an entry in the ``unit_mapping`` dictionary that maps the unit model class to the costing method. Convention is to name the method
-``cost_unit_class_name`` without the "ZO" at the end of the class. For example, if the unit model class is ``MyUnitZO``, the custom cost method would be
-``cost_my_unit`` and ``MyUnitZO: cost_my_unit`` would be an entry in the ``unit_mapping`` dictionary found in this file.
+To add a custom capital calculation method, the unit model class must register its custom costing method by setting its `default_costing_method` attribute.
+
 
 Operating Cost Calculations
 +++++++++++++++++++++++++++
@@ -223,6 +222,8 @@ The Levelized Cost Of Water (LCOW) [$/m3] is a metric used to assess the technoe
     .. math::
 
         LCOW = \frac{ f_{crf} C_{ZO,tot} + C_{op,tot} }{Q f_{util} }
+
+Other aggregates, like specific energy consumption, are provided through the :ref:`WaterTAPCostingBlockData`: :ref:`technical_reference/costing/costing_base:Aggregates Metrics`. 
 
 Class Documentation
 -------------------

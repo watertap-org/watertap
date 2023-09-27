@@ -36,7 +36,7 @@ def build_electroNP_cost_param_block(blk):
         doc="Magnesium chloride cost",
         units=pyo.units.USD_2020 / pyo.units.kg,
     )
-    costing.add_defined_flow("magnesium chloride", blk.magnesium_chloride_cost)
+    costing.register_flow_type("magnesium chloride", blk.magnesium_chloride_cost)
 
     blk.phosphorus_recovery_value = pyo.Param(
         mutable=True,
@@ -44,7 +44,7 @@ def build_electroNP_cost_param_block(blk):
         doc="Phosphorus recovery value",
         units=pyo.units.USD_2020 / pyo.units.kg,
     )
-    costing.add_defined_flow("phosphorus salt product", blk.phosphorus_recovery_value)
+    costing.register_flow_type("phosphorus salt product", blk.phosphorus_recovery_value)
 
 
 @register_costing_parameter_block(

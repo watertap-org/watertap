@@ -42,6 +42,8 @@ from watertap.examples.flowsheets.nf_dspmde import nf
 
 from watertap.costing import WaterTAPCosting
 
+__author__ = "Alexander Dudchenko, Adam Atia"
+
 
 def main():
     solver = get_solver()
@@ -79,9 +81,6 @@ def build():
     default = nf.define_feed_comp()
     m.fs.properties = MCASParameterBlock(**default)
     m.fs.feed = Feed(property_package=m.fs.properties)
-    m.fs.feed.properties[0].conc_mass_phase_comp[...]
-    m.fs.feed.properties[0].flow_mass_phase_comp[...]
-
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
 
@@ -134,7 +133,7 @@ def build():
         units=pyunits.USD_2020 / pyunits.m**3,
     )
     m.fs.costing.disposal_cost.fix()
-    m.fs.costing.add_defined_flow("disposal cost", m.fs.costing.disposal_cost)
+    m.fs.costing.register_flow_type("disposal cost", m.fs.costing.disposal_cost)
     m.fs.costing.cost_flow(
         pyunits.convert(
             m.fs.disposal.properties[0].flow_vol_phase["Liq"],
@@ -156,7 +155,7 @@ def fix_init_vars(m):
     nf.fix_init_vars(m)
     # fix initial guess for splitter
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].fix(0.9)
-    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setlb(0)
+    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setlb(0.05)
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].setub(None)
 
 
@@ -200,14 +199,6 @@ def init_system(m, solver):
     propagate_state(m.fs.mixer_to_product)
     m.fs.NF.product.initialize(optarg=solver.options)
     m.fs.NF.retentate.initialize(optarg=solver.options)
-
-    # seq = SequentialDecomposition(tear_solver="cbc")
-    # seq.options.iterLim = 10
-    #
-    # def func_initialize(unit):
-    #     unit.initialize(optarg=solver.options)
-    #
-    # seq.run(m, func_initialize)
 
     m.fs.costing.initialize()
 
