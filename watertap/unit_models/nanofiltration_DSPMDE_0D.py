@@ -1891,7 +1891,8 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.membrane_charge_density) is None:
             iscale.set_scaling_factor(
-                self.membrane_charge_density, 1 / self.membrane_charge_density[0].value
+                self.membrane_charge_density,
+                1 / abs(self.membrane_charge_density[0].value),
             )
         if iscale.get_scaling_factor(self.dielectric_constant_pore) is None:
             iscale.set_scaling_factor(
@@ -1948,30 +1949,10 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         for (t, x, p, j), v in self.flux_mol_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 if comp.is_solute():
-                    # Todo: revisit later
-                    # will be 0.1,0.01,0.001 etc for 2,3 valance
-                    valance_driven_rejection = (
-                        10 ** abs(value(self.permeate_side[t, x].charge_comp[j])) - 1
-                    ) / 10 ** abs(value(self.permeate_side[t, x].charge_comp[j]))
-                    conc_scale = iscale.get_scaling_factor(
-                        self.feed_side.properties_in[t].conc_mol_phase_comp["Liq", j]
-                    )
-                    # prevents over scaling of really small concetratons
-                    # not based on any phyisical reasoning/huristic testing
-                    # with ion concetrations of 1e-4 or lower
-                    if conc_scale > valance_driven_rejection:
-                        conc_scale = valance_driven_rejection
-                    sf = (
-                        iscale.get_scaling_factor(
-                            self.flux_mol_phase_comp[t, x, "Liq", "H2O"]
-                        )
-                        / iscale.get_scaling_factor(
-                            self.feed_side.properties_in[t].dens_mass_phase["Liq"]
-                        )
-                        * iscale.get_scaling_factor(
-                            self.feed_side.properties_in[t].mw_comp["H2O"]
-                        )
-                        * conc_scale
+                    # simply based on feed flow mol scailing 
+                    #                     
+                    sf = iscale.get_scaling_factor(
+                        self.feed_side.properties_in[t].flow_mol_phase_comp["Liq", j]
                     )
                     iscale.set_scaling_factor(v, sf)
 
@@ -2075,7 +2056,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             bs = value(self.partition_factor_born_solvation_comp[t, j])
             fdp = value(self.partition_factor_donnan_comp_permeate[t, x, j])
             hinderence_factor = hfd * bs * fdp
-            # we expect that there will be less ion at membrane with same charge as it self
+            # we expect that there will be less ions at membrane with same charge as it self
             # eg. negative ions ar repulsed by negative membarnes, but positve ions are attracted
             membrane_charge = value(self.membrane_charge_density[0])
             if (
@@ -2181,15 +2162,64 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.flux_mol_phase_comp[t, x, p, j])
             iscale.constraint_scaling_transform(con, sf)
 
-        for con in self.eq_electroneutrality_pore.values():
-            iscale.constraint_scaling_transform(con, 1)
+        for (t, x, y, p), con in self.eq_electroneutrality_pore.items():
+            sf = (
+                sum(
+                    (
+                        iscale.get_scaling_factor(
+                            self.pore_entrance[t, x].conc_mol_phase_comp[p, j]
+                        )
+                        * iscale.get_scaling_factor(
+                            self.pore_entrance[t, x].charge_comp[j]
+                        )
+                    )
+                    ** -1
+                    for j in self.config.property_package.solute_set
+                )
+                ** -1
+            ) ** -1
 
-        for con in self.eq_electroneutrality_permeate.values():
-            iscale.constraint_scaling_transform(con, 1)
+            sf += iscale.get_scaling_factor(self.membrane_charge_density[0]) ** -1
+            iscale.constraint_scaling_transform(con, sf**-1)
+
+        for (t, x, p), con in self.eq_electroneutrality_permeate.items():
+            sf = (
+                sum(
+                    (
+                        iscale.get_scaling_factor(
+                            self.permeate_side[t, x].conc_mol_phase_comp[p, j]
+                        )
+                        * iscale.get_scaling_factor(
+                            self.permeate_side[t, x].charge_comp[j]
+                        )
+                    )
+                    ** -1
+                    for j in self.config.property_package.solute_set
+                )
+                ** -1
+            )
+            iscale.constraint_scaling_transform(con, sf)
 
         if hasattr(self, "eq_electroneutrality_interface"):
-            for con in self.eq_electroneutrality_interface.values():
-                iscale.constraint_scaling_transform(con, 1)
+            for (t, x, p), con in self.eq_electroneutrality_interface.items():
+                sf = (
+                    sum(
+                        (
+                            iscale.get_scaling_factor(
+                                self.feed_side.properties_interface[
+                                    t, x
+                                ].conc_mol_phase_comp[p, j]
+                            )
+                            * iscale.get_scaling_factor(
+                                self.feed_side.properties_interface[t, x].charge_comp[j]
+                            )
+                        )
+                        ** -1
+                        for j in self.config.property_package.solute_set
+                    )
+                    ** -1
+                )
+                iscale.constraint_scaling_transform(con, sf)
 
         if hasattr(self, "eq_N_Pe_comp"):
             for ind, con in self.eq_N_Pe_comp.items():
