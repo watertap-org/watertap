@@ -274,8 +274,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=0,
-            bounds=(None, None),
-            domain=NonNegativeReals,
+            domain=Reals,
             units=pyunits.dimensionless,
             doc="ion transport number of species passing from the anode to the cathode"
             " through the membrane normalized to 1 electron",
@@ -300,7 +299,6 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         )
         self.anode_electrochem_potential = Var(
             initialize=1,
-            bounds=(None, None),
             domain=Reals,
             units=units_meta("mass")
             * units_meta("length") ** 2
@@ -322,7 +320,6 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=0,
-            bounds=(None, None),
             domain=Reals,
             units=pyunits.dimensionless,
             doc="stoichiometry of the reaction at the anode normalized to 1 electron",
@@ -347,7 +344,6 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         )
         self.cathode_electrochem_potential = Var(
             initialize=1,
-            bounds=(None, None),
             domain=Reals,
             units=units_meta("mass")
             * units_meta("length") ** 2
@@ -369,7 +365,6 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=0,
-            bounds=(None, None),
             domain=Reals,
             units=pyunits.dimensionless,
             doc="stoichiometry of the reaction at the cathode normalized to 1 electron",
