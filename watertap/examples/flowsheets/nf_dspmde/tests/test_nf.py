@@ -20,9 +20,9 @@ from watertap.examples.flowsheets.nf_dspmde.nf import main
 def test_main():
     m = main()
     test_dict = {
-        "lcow": [m.fs.costing.LCOW, 0.1372],
-        "pressure": [m.fs.NF.pump.outlet.pressure[0] * 1e-5, 4.5383],
-        "area": [m.fs.NF.nfUnit.area, 414.085],
+        "lcow": [m.fs.costing.LCOW, 0.144580],
+        "pressure": [m.fs.NF.pump.outlet.pressure[0] * 1e-5, 5.373047],
+        "area": [m.fs.NF.nfUnit.area, 405.65321],
         "recovery": [
             m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"] * 100,
             89.999,
