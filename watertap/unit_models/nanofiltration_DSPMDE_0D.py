@@ -1886,29 +1886,29 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.membrane_thickness_effective) is None:
             iscale.set_scaling_factor(
                 self.membrane_thickness_effective,
-                1 / self.membrane_thickness_effective.value,
+                1 / value(self.membrane_thickness_effective),
             )
 
         if iscale.get_scaling_factor(self.membrane_charge_density) is None:
             iscale.set_scaling_factor(
                 self.membrane_charge_density,
-                1 / abs(self.membrane_charge_density[0].value),
+                1 / abs(value(self.membrane_charge_density[0])),
             )
         if iscale.get_scaling_factor(self.dielectric_constant_pore) is None:
             iscale.set_scaling_factor(
                 self.dielectric_constant_pore,
-                1 / self.dielectric_constant_pore[0].value,
+                1 / value(self.dielectric_constant_pore[0]),
             )
         if hasattr(self, "spacer_mixing_efficiency"):
             if iscale.get_scaling_factor(self.spacer_mixing_efficiency) is None:
                 iscale.set_scaling_factor(
                     self.spacer_mixing_efficiency,
-                    1 / self.spacer_mixing_efficiency.value,
+                    1 / value(self.spacer_mixing_efficiency),
                 )
         if hasattr(self, "spacer_porosity"):
             if iscale.get_scaling_factor(self.spacer_porosity) is None:
                 iscale.set_scaling_factor(
-                    self.spacer_porosity, 1 / self.spacer_porosity.value
+                    self.spacer_porosity, value(1 / self.spacer_porosity)
                 )
         # setting scaling factors for variables
         # these variables should have user input, if not there will be a warning
