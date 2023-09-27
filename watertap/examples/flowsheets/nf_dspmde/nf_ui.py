@@ -12,6 +12,7 @@
 from watertap.ui.fsapi import FlowsheetInterface, FlowsheetCategory
 from watertap.examples.flowsheets.nf_dspmde import nf
 from watertap.examples.flowsheets.nf_dspmde import nf_with_bypass
+from watertap.unit_models.nanofiltration_DSPMDE_0D import ConcentrationPolarizationType
 from pyomo.environ import units as pyunits
 from idaes.core.solvers import get_solver
 
@@ -31,6 +32,12 @@ def export_to_ui():
                 "display_name": "With Bypass",
                 "values_allowed": ['false', 'true'],
                 "value": "false"
+            },
+            "ConcentrationPolarization": {
+                "name": "ConcentrationPolarization", 
+                "display_name": "Concentration Polarization Type",
+                "values_allowed": ['calculated', 'none'],
+                "value": "calculated"
             }
         }
     )
@@ -401,11 +408,17 @@ def build_flowsheet(build_options=None):
         if build_options["Bypass"].value == "true": #build with bypass
             solver = get_solver()
             m = nf_with_bypass.build()
+            concentrationType = build_options["ConcentrationPolarization"].value
+            # print(f'setting concentration polarization type to {concentrationType}')
+            m.fs.NF.nfUnit.config.concentration_polarization_type = ConcentrationPolarizationType[concentrationType]
             nf_with_bypass.initialize(m, solver)
             nf_with_bypass.unfix_opt_vars(m)
         else: # build without bypass
             solver = get_solver()
             m = nf.build()
+            concentrationType = build_options["ConcentrationPolarization"].value
+            # print(f'setting concentration polarization type to {concentrationType}')
+            m.fs.NF.nfUnit.config.concentration_polarization_type = ConcentrationPolarizationType[concentrationType]
             nf.initialize(m, solver)
             nf.add_objective(m)
             nf.unfix_opt_vars(m)
@@ -415,6 +428,14 @@ def build_flowsheet(build_options=None):
         nf.initialize(m, solver)
         nf.add_objective(m)
         nf.unfix_opt_vars(m)
+    
+        # if build_options["ConcentrationPolarization"].value == "calculated":
+        #     print('setting concentration polarization type to calculated')
+        #     m.fs.unit.config.concentration_polarization_type = ConcentrationPolarizationType.calculated
+        # else:
+        #     print('setting concentration polarization type to none')
+        #     m.fs.unit.config.concentration_polarization_type = ConcentrationPolarizationType.none
+
     return m
 
 def get_diagram(build_options):
