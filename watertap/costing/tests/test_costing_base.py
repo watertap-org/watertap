@@ -15,15 +15,31 @@ import pytest
 import pyomo.environ as pyo
 import idaes.core as idc
 
-from watertap.costing.watertap_costing_package import WaterTAPCosting, _DefinedFlowsDict
+from idaes.core.base.costing_base import register_idaes_currency_units
+from watertap.costing.costing_base import WaterTAPCostingBlockData
+
+
+@idc.declare_process_block_class("TestWaterTAPCostingBlock")
+class TestWaterTAPCostingPackageData(WaterTAPCostingBlockData):
+    def build_global_params(self):
+        register_idaes_currency_units()
+        self.base_currency = pyo.units.USD_2021
+        self.base_period = pyo.units.year
+        self.electricity_cost = pyo.Param(
+            mutable=True,
+            initialize=0.07,
+            doc="Electricity cost",
+            units=pyo.units.USD_2018 / pyo.units.kWh,
+        )
+        self.defined_flows["electricity"] = self.electricity_cost
 
 
 @pytest.mark.component
-def test_lazy_flow_costing():
+def test_watertap_costing_package():
     m = pyo.ConcreteModel()
     m.fs = idc.FlowsheetBlock(dynamic=False)
 
-    m.fs.costing = WaterTAPCosting()
+    m.fs.costing = TestWaterTAPCostingBlock()
 
     m.fs.electricity = pyo.Var(units=pyo.units.kW)
 
@@ -33,7 +49,7 @@ def test_lazy_flow_costing():
     with pytest.raises(
         ValueError,
         match="foo is not a recognized flow type. Please check "
-        "your spelling and that the flow type has been available to"
+        "your spelling and that the flow type has been registered with"
         " the FlowsheetCostingBlock.",
     ):
         m.fs.costing.cost_flow(m.fs.electricity, "foo")
@@ -42,22 +58,15 @@ def test_lazy_flow_costing():
         initialize=42, doc="foo", units=pyo.units.USD_2020 / pyo.units.m
     )
 
-    m.fs.costing.add_defined_flow("foo", m.fs.costing.foo_cost)
+    m.fs.costing.register_flow_type("foo", m.fs.costing.foo_cost)
 
     # make sure the component was not replaced
-    # by add_defined_flow
+    # by register_defined_flow
     assert foo_cost is m.fs.costing.foo_cost
-
-    assert "foo" in m.fs.costing.defined_flows
-    # not registered until used
-    assert "foo" not in m.fs.costing.flow_types
 
     m.fs.foo = pyo.Var(units=pyo.units.m)
 
     m.fs.costing.cost_flow(m.fs.foo, "foo")
-
-    # now should be registered
-    assert "foo" in m.fs.costing.flow_types
 
     m.fs.costing.bar_base_cost = pyo.Var(
         initialize=0.42, doc="bar", units=pyo.units.USD_2020 / pyo.units.g
@@ -66,7 +75,7 @@ def test_lazy_flow_costing():
         initialize=0.50, doc="bar purity", units=pyo.units.dimensionless
     )
 
-    m.fs.costing.add_defined_flow(
+    m.fs.costing.register_flow_type(
         "bar", m.fs.costing.bar_base_cost * m.fs.costing.bar_purity
     )
 
@@ -81,46 +90,12 @@ def test_lazy_flow_costing():
 
     with pytest.raises(
         RuntimeError,
-        match="Attribute baz_cost already exists on the costing block, but is not ",
+        match="Component baz_cost already exists on fs.costing but is not 42",
     ):
-        m.fs.costing.add_defined_flow("baz", 42 * pyo.units.USD_2020 / pyo.units.m**2)
+        m.fs.costing.register_flow_type(
+            "baz", 42 * pyo.units.USD_2020 / pyo.units.m**2
+        )
 
+    m.fs.costing.register_flow_type("ham", 42 * pyo.units.USD_2021 / pyo.units.kg)
 
-@pytest.mark.component
-def test_defined_flows_dict():
-
-    d = _DefinedFlowsDict()
-
-    # test __setitem__; set unused keys
-    with pytest.raises(
-        KeyError,
-        match="Please use the `WaterTAPCosting.add_defined_flow` method to add defined flows.",
-    ):
-        d["a"] = 1
-
-    d._setitem("a", 1)
-    d._setitem("b", 2)
-
-    # test __delitem__; raise error on delete
-    with pytest.raises(
-        KeyError,
-        match="defined flows cannot be removed",
-    ):
-        del d["a"]
-
-    # test __setitem__; raise error if overwrite
-    with pytest.raises(
-        KeyError,
-        match="a has already been defined as a flow",
-    ):
-        d._setitem("a", 2)
-
-    # test __getitem__
-    assert d["a"] == 1
-    assert d["b"] == 2
-
-    # test __len__
-    assert len(d) == 2
-
-    # test __iter__
-    assert [*d] == ["a", "b"]
+    assert isinstance(m.fs.costing.ham_cost, pyo.Var)

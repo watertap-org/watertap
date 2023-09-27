@@ -36,6 +36,7 @@ from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
     ConcentrationPolarizationType,
 )
+from watertap.costing.unit_models.reverse_osmosis import cost_reverse_osmosis
 
 
 def _add_has_full_reporting(config_obj):
@@ -791,3 +792,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                         self.feed_side.properties[t, x].conc_mass_phase_comp[p, j]
                     )
                     iscale.set_scaling_factor(v, sf)
+
+    @property
+    def default_costing_method(self):
+        return cost_reverse_osmosis

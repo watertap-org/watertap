@@ -62,7 +62,7 @@ from watertap.unit_models.zero_order import (
     MunicipalDrinkingZO,
     LandfillZO,
 )
-from watertap.core.zero_order_costing import ZeroOrderCosting
+from watertap.costing.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
 
 # Set up logger
