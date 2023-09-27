@@ -232,7 +232,7 @@ def test_option_has_mass_transfer_model():
     assert pytest.approx(0.9, rel=1e-3) == value(
             m.fs.unit.reflect_coeff
         )
-    assert pytest.approx(1e-8, rel=1e-3) == value(
+    assert pytest.approx(1e8, rel=1e-3) == value(
             m.fs.unit.alpha
         )
 

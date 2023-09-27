@@ -351,7 +351,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         )
 
         self.alpha = Var(
-            initialize=1e-8,
+            initialize=1e8,
             domain=NonNegativeReals,
             units=units_meta("time") * units_meta("length") ** -1,
             doc="Alpha coefficient of the membrane",
