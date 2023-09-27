@@ -31,6 +31,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
+    TransportModel,
 )
 import watertap.property_models.NaCl_prop_pack as props
 
@@ -213,6 +214,27 @@ def test_option_friction_factor_spiral_wound():
     assert m.fs.unit.config.friction_factor == FrictionFactor.spiral_wound
     assert isinstance(m.fs.unit.feed_side.velocity, Var)
     assert isinstance(m.fs.unit.feed_side.eq_friction_factor, Constraint)
+
+@pytest.mark.unit
+def test_option_has_mass_transfer_model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = props.NaClParameterBlock()
+    m.fs.unit = ReverseOsmosis0D(
+        property_package=m.fs.properties, transport_model=TransportModel.SKK
+    )
+
+    assert isinstance(m.fs.unit.reflect_coeff, Var)
+    assert isinstance(m.fs.unit.alpha, Var)
+
+    assert value(m.fs.unit.reflect_coeff) == 0.9
+
+    assert pytest.approx(0.9, rel=1e-3) == value(
+            m.fs.unit.reflect_coeff
+        )
+    assert pytest.approx(1e-8, rel=1e-3) == value(
+            m.fs.unit.alpha
+        )
 
 
 class TestReverseOsmosis:
