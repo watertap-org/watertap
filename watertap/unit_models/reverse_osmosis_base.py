@@ -357,6 +357,12 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             doc="Alpha coefficient of the membrane",
         )
 
+        def eq_alpha(b, t, j):
+            return b.alpha == (1 - b.reflect_coeff) / b.B_comp[t, j]
+
+        if self.config.transport_model == TransportModel.SD:
+            self.reflect_coeff.fix(1)
+
         @self.Constraint(
             self.flowsheet().config.time,
             self.difference_elements,
@@ -394,11 +400,6 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(
             self.flowsheet().config.time, solute_set, doc="SKK alpha coeff."
         )
-        def eq_alpha(b, t, j):
-            return b.alpha == (1 - b.reflect_coeff) / b.B_comp[t, j]
-
-        if self.config.transport_model == TransportModel.SD:
-            self.reflect_coeff.fix(1)
 
         @self.Expression(
             self.flowsheet().config.time,
