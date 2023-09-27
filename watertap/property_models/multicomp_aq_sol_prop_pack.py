@@ -667,13 +667,13 @@ class _MCASStateBlock(StateBlock):
 
             # Vars indexed by phase and component_list
             for j in self[k].params.component_list:
-                if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
+                if self[k].params.config.material_flow_basis == MaterialFlowBasis.molar:
                     if self[k].is_property_constructed("flow_mass_phase_comp"):
                         self[k].flow_mass_phase_comp["Liq", j].set_value(
                             self[k].flow_mol_phase_comp["Liq", j]
                             * self[k].params.mw_comp[j]
                         )
-                elif self.params.config.material_flow_basis == MaterialFlowBasis.mass:
+                elif self[k].params.config.material_flow_basis == MaterialFlowBasis.mass:
                     if self[k].is_property_constructed("flow_mol_phase_comp"):
                         self[k].flow_mol_phase_comp["Liq", j].set_value(
                             self[k].flow_mass_phase_comp["Liq", j]
