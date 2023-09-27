@@ -151,7 +151,8 @@ class CredentialManager:
         credentials = json.loads(decrypted_credentials)
 
         return credentials
-
+    
+    # need to come up with some solutions for testing these methods
     def login(self, tee=True, raise_on_failure=True):
         """
         Login into user credentials for the OLI Cloud
@@ -226,7 +227,7 @@ class CredentialManager:
 
         return dict()
 
-    def _get_login_status(self, tee, headers, body, raise_on_failure):
+    def _get_login_status(self, headers, body, tee, raise_on_failure):
         req_result = requests.post(
             self.credentials["auth_url"], headers=headers, data=body
         )
@@ -254,4 +255,22 @@ class CredentialManager:
 
 class _TestCredentialManager(CredentialManager):
     def _write_permission(self):
+        return True
+    
+    def login(self, tee=False, raise_on_failure=False):
+        self.credentials["username"] = "test_username"
+	self.credentials["password"] = "test_password"
+
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+        body = {
+            "username": self.credentials["username"],
+       	    "password": self.credentials["password"],
+            "grant_type": "password",
+            "client_id": "apiclient",
+       	}
+        
+        return self._get_login_status(headers, body, tee, raise_on_failure)
+
+    def _get_login_status(self, headers, body, tee, raise_on_failure):
         return True

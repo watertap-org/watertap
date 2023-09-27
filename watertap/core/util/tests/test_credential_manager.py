@@ -21,44 +21,38 @@ from watertap.core.util.credential_manager import (
 
 __author__ = "Paul Vecchiarelli"
 
+# set up dummy credentials and encryption variables
 
+username = "dummy@dummy.edu"
+password = "dummy_pass"
+root_url = "https://dummy_root.com"
+auth_url = "https://dummy_url.com/dummy"
+
+credentials = {
+    "username": username,
+    "password": password,
+    "root_url": root_url,
+    "auth_url": auth_url,
+}
+ 
+config_file = None
+encryption_key = None
+    
 @pytest.mark.unit
-def test_credential_manager():
-    username = "dummy@dummy.edu"
-    password = "dummy_pass"
-    root_url = "https://dummy_root.com"
-    auth_url = "https://dummy_url.com/dummy"
+def test_encryption(credentials, config_file, encryption_key):
 
-    credentials = {
-        "username": username,
-        "password": password,
-        "root_url": root_url,
-        "auth_url": auth_url,
-    }
-
-    # test 1: encrypt credentials and create a duplicate instance to test RuntimeError
-
-    config_file = None
-    encryption_key = None
-
-    credential_manager_encrypt = CredentialManager(
-        username=username,
-        password=password,
-        root_url=root_url,
-        auth_url=auth_url,
+    credential_manager = CredentialManager(
+        username=credentials["username"],
+        password=credentials["password"],
+        root_url=credentials["root_url"],
+        auth_url=credentials["auth_url"],
         config_file=config_file,
         encryption_key=encryption_key,
     )
-
-    credential_manager_encrypt_copy = deepcopy(credential_manager_encrypt)
-
-    credential_manager_encrypt._get_credentials()
-    assert credentials == credential_manager_encrypt.credentials
-
-    credential_manager_encrypt_copy.config_file = (
-        credential_manager_encrypt._config_file
-    )
-
+    
+    assert credential_manager.config_file == "credentials.txt"
+    assert credential_manager.login() == True
+    
     with pytest.raises(RuntimeError, match="Unable to upload DBS file."):
         credential_manager_encrypt_copy._get_credentials()
 
@@ -79,3 +73,11 @@ def test_credential_manager():
     assert credentials == credential_manager_decrypt.credentials
 
     remove(config_file)
+    
+@pytest.mark.unit
+def test_decryption():
+    
+@pytest.mark.unit
+def test_login():
+    
+    
