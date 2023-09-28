@@ -49,8 +49,11 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Feed",
     )
+    feed_concentration = fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"] / sum(
+        fs.feed.flow_mass_phase_comp[0, "Liq", j] for j in ["H2O", "NaCl"]
+    )
     exports.add(
-        obj=fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"],
+        obj=feed_concentration,
         name="NaCl concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -63,17 +66,17 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     # Unit model data, pump 1
-    exports.add(
-        obj=fs.P1.efficiency_pump,
-        name="Feed pump efficiency",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Efficiency of feed pump",
-        is_input=True,
-        input_category="Feed Pump",
-        is_output=False,
-    )
+    # exports.add(
+    #     obj=fs.P1.efficiency_pump,
+    #     name="Feed pump efficiency",
+    #     ui_units=pyunits.dimensionless,
+    #     display_units="fraction",
+    #     rounding=2,
+    #     description="Efficiency of feed pump",
+    #     is_input=True,
+    #     input_category="Feed Pump",
+    #     is_output=False,
+    # )
     exports.add(
         obj=fs.P1.control_volume.properties_out[0].pressure,
         name="Feed pump operating pressure",
