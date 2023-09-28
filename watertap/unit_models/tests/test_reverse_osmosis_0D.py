@@ -297,8 +297,8 @@ class TestReverseOsmosis:
         assert isinstance(m.fs.unit.feed_side, MembraneChannel0DBlock)
 
         # test statistics
-        assert number_variables(m) == 118
-        assert number_total_constraints(m) == 93
+        assert number_variables(m) == 116
+        assert number_total_constraints(m) == 92
         assert number_unused_variables(m) == 8  # vars from property package parameters
 
     @pytest.mark.unit
@@ -463,8 +463,8 @@ class TestReverseOsmosis:
         m.fs.unit.feed_side.K[0, 1.0, "NaCl"].fix(kf)
 
         # test statistics
-        assert number_variables(m) == 120
-        assert number_total_constraints(m) == 95
+        assert number_variables(m) == 118
+        assert number_total_constraints(m) == 94
         assert number_unused_variables(m) == 8  # vars from property package parameters
 
         # Test units
@@ -583,8 +583,8 @@ class TestReverseOsmosis:
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 136
-        assert number_total_constraints(m) == 110
+        assert number_variables(m) == 134
+        assert number_total_constraints(m) == 109
         assert number_unused_variables(m) == 1  # vars from property package parameters
 
         # Test units
@@ -697,8 +697,8 @@ class TestReverseOsmosis:
         m.fs.unit.length.fix(16)
 
         # test statistics
-        assert number_variables(m) == 142
-        assert number_total_constraints(m) == 117
+        assert number_variables(m) == 140
+        assert number_total_constraints(m) == 116
         assert number_unused_variables(m) == 1  # vars from property package parameters
 
         # Test units
@@ -824,8 +824,8 @@ class TestReverseOsmosis:
         m.fs.unit.feed_side.dP_dx.fix(-membrane_pressure_drop / length)
 
         # test statistics
-        assert number_variables(m) == 137
-        assert number_total_constraints(m) == 111
+        assert number_variables(m) == 135
+        assert number_total_constraints(m) == 110
         assert number_unused_variables(m) == 1
 
         # Test units
@@ -937,8 +937,8 @@ class TestReverseOsmosis:
         m.fs.unit.length.fix(16)
 
         # test statistics
-        assert number_variables(m) == 142
-        assert number_total_constraints(m) == 117
+        assert number_variables(m) == 140
+        assert number_total_constraints(m) == 116
         assert number_unused_variables(m) == 1  # vars from property package parameters
 
         # Test units
