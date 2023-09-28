@@ -49,21 +49,21 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Feed",
     )
-    feed_concentration = fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"] / sum(
-        fs.feed.flow_mass_phase_comp[0, "Liq", j] for j in ["H2O", "NaCl"]
-    )
-    exports.add(
-        obj=feed_concentration,
-        name="NaCl concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
-        rounding=2,
-        description="Inlet NaCl concentration",
-        is_input=True,
-        input_category="Feed",
-        is_output=True,
-        output_category="Feed",
-    )
+    # feed_concentration = fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"] / sum(
+    #     fs.feed.flow_mass_phase_comp[0, "Liq", j] for j in ["H2O", "NaCl"]
+    # )
+    # exports.add(
+    #     obj=feed_concentration,
+    #     name="NaCl concentration",
+    #     ui_units=pyunits.g / pyunits.m**3,
+    #     display_units="g/m3",
+    #     rounding=2,
+    #     description="Inlet NaCl concentration",
+    #     is_input=True,
+    #     input_category="Feed",
+    #     is_output=True,
+    #     output_category="Feed",
+    # )
 
     # Unit model data, pump 1
     # exports.add(
