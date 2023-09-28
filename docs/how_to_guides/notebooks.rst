@@ -8,7 +8,7 @@ This guide describes the supported methods to work with WaterTAP using Jupyter n
 Local (developer) installation
 ------------------------------
 
-.. important:: These instructions assumes that a WaterTAP developer environment has already been configured, as described in e.g. :ref:`install-dev`.
+.. important:: These instructions assume that a WaterTAP developer environment has already been configured, as described in e.g. :ref:`install-dev`.
 
 1. Activate your WaterTAP environment. If your environment has a name different from ``watertap-dev``, replace ``watertap-dev`` with the actual name wherever applicable:
 
