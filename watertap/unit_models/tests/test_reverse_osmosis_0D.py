@@ -215,6 +215,7 @@ def test_option_friction_factor_spiral_wound():
     assert isinstance(m.fs.unit.feed_side.velocity, Var)
     assert isinstance(m.fs.unit.feed_side.eq_friction_factor, Constraint)
 
+
 @pytest.mark.unit
 def test_option_has_mass_transfer_model():
     m = ConcreteModel()
@@ -229,12 +230,8 @@ def test_option_has_mass_transfer_model():
 
     assert value(m.fs.unit.reflect_coeff) == 0.9
 
-    assert pytest.approx(0.9, rel=1e-3) == value(
-            m.fs.unit.reflect_coeff
-        )
-    assert pytest.approx(1e8, rel=1e-3) == value(
-            m.fs.unit.alpha
-        )
+    assert pytest.approx(0.9, rel=1e-3) == value(m.fs.unit.reflect_coeff)
+    assert pytest.approx(1e8, rel=1e-3) == value(m.fs.unit.alpha)
 
 
 class TestReverseOsmosis:

@@ -359,6 +359,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         )
 
         if self.config.transport_model == TransportModel.SD:
+
             @self.Constraint(
                 self.flowsheet().config.time,
                 self.difference_elements,
@@ -386,20 +387,21 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                         interface.conc_mass_phase_comp[p, j]
                         - prop_perm.conc_mass_phase_comp[p, j]
                     )
-                
+
         elif self.config.transport_model == TransportModel.SKK:
+
             @self.Constraint(
                 self.flowsheet().config.time, solute_set, doc="SKK alpha coeff."
             )
             def eq_alpha(b, t, j):
                 return b.alpha == (1 - b.reflect_coeff) / b.B_comp[t, j]
-        
+
             @self.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="Solvent and solute mass flux using SKK model",
+                self.flowsheet().config.time,
+                self.difference_elements,
+                self.config.property_package.phase_list,
+                self.config.property_package.component_list,
+                doc="Solvent and solute mass flux using SKK model",
             )
             def eq_flux_mass(b, t, x, p, j):
                 prop_feed = b.feed_side.properties[t, x]
@@ -427,6 +429,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                             * interface.conc_mass_phase_comp[p, j]
                         )
                     )
+
         else:
             raise ConfigurationError(
                 "Unsupported transport model: {}".format(self.config.transport_model)
