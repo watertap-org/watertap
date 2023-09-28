@@ -13,7 +13,8 @@ Local (developer) installation
 1. Activate your WaterTAP environment. If your environment has a name different from ``watertap-dev``, replace ``watertap-dev`` with the actual name wherever applicable:
 
    .. code-block:: shell
-    conda activate watertap-dev
+
+      conda activate watertap-dev
 
 1. Navigate to the directory where your local clone of the WaterTAP repository is located
 
@@ -21,7 +22,7 @@ Local (developer) installation
 
    .. code-block:: shell
 
-   python -m ipykernel --user --name "watertap-dev"
+      python -m ipykernel --user --name "watertap-dev"
 
 1. Then, start the Jupyter server from the current directory, navigate to the desired notebook using the file browser, and launch it
 1. If prompted to select a kernel, select "watertap-dev" from the menu. Otherwise, ensure "watertap-dev" appears in the kernel box in the top-right corner of the notebook interface
