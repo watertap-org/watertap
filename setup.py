@@ -103,6 +103,10 @@ setup(
             "nbmake",
             "nbconvert",
         ],
+        "notebooks": [
+            "jupyter",
+            "ipykernel",
+        ],
         "dev": [
             "nbsphinx",  # jupyter notebook support for sphinx
             "jinja2<3.1.0",  # see watertap-org/watertap#449
