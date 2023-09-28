@@ -364,7 +364,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             return b.alpha == (1 - b.reflect_coeff) / b.B_comp[t, j]
 
         if self.config.transport_model == TransportModel.SD:
-            self.reflect_coeff.fix(1)
+            self.reflect_coeff.fix(1.0)
 
         @self.Constraint(
             self.flowsheet().config.time,
