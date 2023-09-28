@@ -93,8 +93,6 @@ setup(
         # for watertap.ui.api_model (though may be generally useful)
         "pydantic < 2",
         "numpy",
-        # for importlib.metadata.entry_points()
-        "importlib_metadata; python_version < '3.8' ",
     ],
     extras_require={
         "testing": [
