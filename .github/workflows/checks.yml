@@ -72,6 +72,7 @@ jobs:
   tests:
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
+    needs: [code-formatting]
     strategy:
       fail-fast: false
       matrix:
@@ -144,6 +145,7 @@ jobs:
   user-mode-pytest:
     name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
+    needs: [code-formatting]
     strategy:
       fail-fast: false
       matrix:
@@ -197,6 +199,7 @@ jobs:
   notebooks:
     name: Test notebooks (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
+    needs: [code-formatting]
     strategy:
       fail-fast: false
       matrix:
@@ -241,6 +244,7 @@ jobs:
   macos:
     name: macOS setup (EXPERIMENTAL)
     runs-on: macos-11
+    needs: [code-formatting]
     strategy:
       fail-fast: false
       matrix:
