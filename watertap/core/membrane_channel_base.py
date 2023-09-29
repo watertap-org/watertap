@@ -60,6 +60,7 @@ class MassTransferCoefficient(Enum):
     calculated = auto()
     # TODO: add option for users to define their own relationship?
 
+
 class TransportModel(Enum):
     """
     none: mass transfer coefficient not utilized for concentration polarization effect
@@ -69,6 +70,7 @@ class TransportModel(Enum):
 
     SD = auto()
     SKK = auto()
+
 
 class PressureChangeType(Enum):
     """
