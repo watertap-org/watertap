@@ -28,18 +28,18 @@ def export_to_ui():
         category=FlowsheetCategory.wastewater,
         build_options={
             "Bypass": {
-                "name": "bypass option", 
+                "name": "bypass option",
                 "display_name": "With Bypass",
-                "values_allowed": ['false', 'true'],
-                "value": "false"
+                "values_allowed": ["false", "true"],
+                "value": "false",
             },
             "ConcentrationPolarization": {
-                "name": "ConcentrationPolarization", 
+                "name": "ConcentrationPolarization",
                 "display_name": "Concentration Polarization Type",
-                "values_allowed": ['calculated', 'none'],
-                "value": "calculated"
-            }
-        }
+                "values_allowed": ["calculated", "none"],
+                "value": "calculated",
+            },
+        },
     )
 
 
@@ -357,7 +357,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None):
     )
     try:
         if build_options["Bypass"].value == "true":
-            print('adding bypass variable')
             exports.add(
                 obj=fs.by_pass_splitter.split_fraction[0, "bypass"],
                 name="NF bypass",
@@ -371,8 +370,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None):
                 output_category="Bypass design",
             )
     except Exception as e:
-        print('unable to try and add bypass variable')
-        print(e)
+        print(f"error adding bypass: {e}")
 
     for (t, phase, ion), obj in fs.NF.nfUnit.rejection_intrinsic_phase_comp.items():
         exports.add(
@@ -405,38 +403,36 @@ def export_variables(flowsheet=None, exports=None, build_options=None):
 def build_flowsheet(build_options=None):
     # build and solve initial flowsheet
     if build_options is not None:
-        if build_options["Bypass"].value == "true": #build with bypass
+        if build_options["Bypass"].value == "true":  # build with bypass
             solver = get_solver()
             m = nf_with_bypass.build()
             concentrationType = build_options["ConcentrationPolarization"].value
             # print(f'setting concentration polarization type to {concentrationType}')
-            m.fs.NF.nfUnit.config.concentration_polarization_type = ConcentrationPolarizationType[concentrationType]
+            m.fs.NF.nfUnit.config.concentration_polarization_type = (
+                ConcentrationPolarizationType[concentrationType]
+            )
             nf_with_bypass.initialize(m, solver)
             nf_with_bypass.unfix_opt_vars(m)
-        else: # build without bypass
+        else:  # build without bypass
             solver = get_solver()
             m = nf.build()
             concentrationType = build_options["ConcentrationPolarization"].value
             # print(f'setting concentration polarization type to {concentrationType}')
-            m.fs.NF.nfUnit.config.concentration_polarization_type = ConcentrationPolarizationType[concentrationType]
+            m.fs.NF.nfUnit.config.concentration_polarization_type = (
+                ConcentrationPolarizationType[concentrationType]
+            )
             nf.initialize(m, solver)
             nf.add_objective(m)
             nf.unfix_opt_vars(m)
-    else: # build without bypass
+    else:  # build without bypass
         solver = get_solver()
         m = nf.build()
         nf.initialize(m, solver)
         nf.add_objective(m)
         nf.unfix_opt_vars(m)
-    
-        # if build_options["ConcentrationPolarization"].value == "calculated":
-        #     print('setting concentration polarization type to calculated')
-        #     m.fs.unit.config.concentration_polarization_type = ConcentrationPolarizationType.calculated
-        # else:
-        #     print('setting concentration polarization type to none')
-        #     m.fs.unit.config.concentration_polarization_type = ConcentrationPolarizationType.none
 
     return m
+
 
 def get_diagram(build_options):
     if build_options["Bypass"].value == "true":

@@ -182,8 +182,8 @@ class ModelExport(BaseModel):
 
 
 class OptionValueType(str, Enum):
-    """Possibilities for `value_type` in :meth:`FlowsheetExport.add_option()`
-    """
+    """Possibilities for `value_type` in :meth:`FlowsheetExport.add_option()`"""
+
     string = "s"
     float = "f"
     integer = "i"
@@ -209,8 +209,8 @@ class OptionValueType(str, Enum):
 
 
 class ModelOption(BaseModel):
-    """An option for building/running the model.
-    """
+    """An option for building/running the model."""
+
     name: str
     display_name: str = None
     description: str = None
@@ -240,24 +240,12 @@ class ModelOption(BaseModel):
         if v in allowed:
             return v
         else:
-            raise ValueError(f"'value' ({v}) not in "
-                                 f"allowed values: {allowed}")
-        
-    # set display_values dynamically from values_allowed
-    # @validator("display_values", always=True)
-    # @classmethod
-    # def validate_name(cls, v, values):
-    #     allowed = values.get("values_allowed", None)
-    #     print(f'display_values - allowed is {allowed}')
-    #     if allowed is not None:
-    #         v = list(allowed.keys())
-    #     else:
-    #         v = []
-    #     return v
+            raise ValueError(f"'value' ({v}) not in allowed values: {allowed}")
 
 
 class FlowsheetExport(BaseModel):
     """A flowsheet and its contained exported model objects."""
+
     m: object = Field(default=None, exclude=True)
     obj: object = Field(default=None, exclude=True)
     name: str = ""
@@ -477,7 +465,6 @@ class FlowsheetInterface:
             RuntimeError: If the build fails
         """
         try:
-            print('running build from fsapi')
             self.run_action(Actions.build, **kwargs)
         except Exception as err:
             raise RuntimeError(f"Building flowsheet: {err}") from err
@@ -500,7 +487,7 @@ class FlowsheetInterface:
         except Exception as err:
             raise RuntimeError(f"Solving flowsheet: {err}") from err
         return result
-    
+
     def get_diagram(self, **kwargs):
         """Return diagram image name.
 
@@ -510,7 +497,7 @@ class FlowsheetInterface:
         Returns:
             Return image file name if get_diagram function is callable. Otherwise, return none
         """
-        if(self.get_action(Actions.diagram) is not None):
+        if self.get_action(Actions.diagram) is not None:
             return self.run_action(Actions.diagram, **kwargs)
         else:
             return None
@@ -582,7 +569,7 @@ class FlowsheetInterface:
         self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         if missing:
             raise self.MissingObjectError(missing)
-        
+
     def select_option(self, option_name: str, new_option: str):
         """Update flowsheet with selected option.
 
@@ -603,7 +590,6 @@ class FlowsheetInterface:
         # # add functino name as new build function
         # self.add_action("build", func_name)
 
-
     def add_action(self, action_name: str, action_func: Callable):
         """Add an action for the flowsheet.
 
@@ -618,7 +604,6 @@ class FlowsheetInterface:
         # print(action_func)
         def action_wrapper(**kwargs):
             if action_name == Actions.build:
-                print('inside build action wrapper')
                 # set new model object from return value of build action
                 action_result = action_func(**kwargs)
                 if action_result is None:
@@ -639,8 +624,9 @@ class FlowsheetInterface:
                 # clear model_objects dict, since duplicates not allowed
                 self.fs_exp.model_objects.clear()
                 # use get_action() since run_action() will refuse to call it directly
-                self.get_action(Actions.export)(exports=self.fs_exp, build_options=self.fs_exp.build_options)
-                print('got export action')
+                self.get_action(Actions.export)(
+                    exports=self.fs_exp, build_options=self.fs_exp.build_options
+                )
                 result = None
             elif action_name == Actions.diagram:
                 self._actions[action_name] = action_func
@@ -661,7 +647,6 @@ class FlowsheetInterface:
                         raise RuntimeError(f"Solve failed: {result}")
             # Sync model with exported values
             if action_name in (Actions.build, Actions.solve):
-                print('exporting values')
                 self.export_values()
             return result
 
