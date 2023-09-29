@@ -337,7 +337,7 @@ Code Documentation
 -------------------
 
 * :mod:`watertap.unit_models.gac`
-* :mod:`watertap.costing.units.gac`
+* :mod:`watertap.costing.unit_models.gac`
 
 References
 -----------

@@ -31,11 +31,10 @@ def cost_energy_recovery_device(
     TODO: describe equations
 
     Args:
-        energy_recovery_device_type: EnergyRecoveryDeviceType Enum indicating ERD type,
-            default = EnergyRecoveryDeviceType.pressure_exchanger.
-
+        energy_recovery_device_type: EnergyRecoveryDeviceType Enum indicating ERD type.
+            Defaults to EnergyRecoveryDeviceType.pressure_exchanger.
         cost_electricity_flow: bool, if True, the ERD's work_mechanical will
-            be converted to kW and costed as an electricity default = True
+            be converted to kW and costed as an electricity. Defaults to True.
     """
     if energy_recovery_device_type == EnergyRecoveryDeviceType.pressure_exchanger:
         cost_pressure_exchanger_erd(blk)
@@ -66,9 +65,8 @@ def cost_pressure_exchanger_erd(blk, cost_electricity_flow=True):
     TODO: describe equations
 
     Args:
-        cost_electricity_flow - bool, if True, the ERD's work_mechanical will
-                                be converted to kW and costed as an electricity
-                                default = True
+        cost_electricity_flow (:obj:`bool`): if True, the ERD's work_mechanical will
+            be converted to kW and costed as an electricity. Defaults to True.
     """
     t0 = blk.flowsheet().time.first()
     cost_by_flow_volume(

@@ -490,13 +490,11 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
         if electrode_mat == "aluminum":
             # Reference for Al cost: Anuf et al., 2022 - https://doi.org/https://doi.org/10.1016/j.jwpe.2022.103074
-            costing.defined_flows["aluminum"] = 2.23 * base_currency / pyunits.kg
             costing.register_flow_type("aluminum", 2.23 * base_currency / pyunits.kg)
             costing_ec.electrode_material_cost.fix(2.23)
 
         if electrode_mat == "iron":
             # Reference for Fe cost: Anuf et al., 2022 - https://doi.org/https://doi.org/10.1016/j.jwpe.2022.103074
-            costing.defined_flows["iron"] = 3.41 * base_currency / pyunits.kg
             costing.register_flow_type("iron", 3.41 * base_currency / pyunits.kg)
             costing_ec.electrode_material_cost.fix(3.41)
 
