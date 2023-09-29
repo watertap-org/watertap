@@ -2022,24 +2022,14 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             iscale.constraint_scaling_transform(con, sf)
 
         for (t, x, p, j), con in self.eq_interfacial_partitioning_feed.items():
-            hfd = value(self.hindrance_factor_diffusive_comp[t, j])
+            fsc = value(self.partition_factor_steric_comp[t, j])
             bs = value(self.partition_factor_born_solvation_comp[t, j])
             fdc = value(self.partition_factor_donnan_comp_feed[t, x, j])
-            hinderence_factor = hfd * bs * fdc
+            hindrance_factor = fsc * bs * fdc
             # we expect that there will be less ion at membrane with same charge as it self
             # eg. negative ions ar repulsed by negative membarnes, but positve ions are attracted
             membrane_charge = value(self.membrane_charge_density[0])
-            if (
-                membrane_charge > 0
-                and value(self.permeate_side[t, x].charge_comp[j]) > 0
-            ):
-                charge_reflection_multiplier = 10 ** -abs(
-                    value(self.permeate_side[t, x].charge_comp[j])
-                )
-            elif (
-                membrane_charge < 0
-                and value(self.permeate_side[t, x].charge_comp[j]) < 0
-            ):
+            if membrane_charge * value(self.permeate_side[t, x].charge_comp[j]) > 0:
                 charge_reflection_multiplier = 10 ** -abs(
                     value(self.permeate_side[t, x].charge_comp[j])
                 )
@@ -2047,29 +2037,20 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 charge_reflection_multiplier = 10 ** abs(
                     value(self.permeate_side[t, x].charge_comp[j])
                 )
+            print(j, charge_reflection_multiplier)
             iscale.constraint_scaling_transform(
                 con, 1 / (hindrance_factor * charge_reflection_multiplier)
             )
 
         for (t, x, p, j), con in self.eq_interfacial_partitioning_permeate.items():
-            hfd = value(self.hindrance_factor_diffusive_comp[t, j])
+            fsc = value(self.partition_factor_steric_comp[t, j])
             bs = value(self.partition_factor_born_solvation_comp[t, j])
             fdp = value(self.partition_factor_donnan_comp_permeate[t, x, j])
-            hindrance_factor = hfd * bs * fdp
+            hindrance_factor = fsc * bs * fdp
             # we expect that there will be less ions at membrane with same charge as it self
             # eg. negative ions ar repulsed by negative membarnes, but positve ions are attracted
             membrane_charge = value(self.membrane_charge_density[0])
-            if (
-                membrane_charge > 0
-                and value(self.permeate_side[t, x].charge_comp[j]) > 0
-            ):
-                charge_reflection_multiplier = 10 ** -abs(
-                    value(self.permeate_side[t, x].charge_comp[j])
-                )
-            elif (
-                membrane_charge < 0
-                and value(self.permeate_side[t, x].charge_comp[j]) < 0
-            ):
+            if membrane_charge * value(self.permeate_side[t, x].charge_comp[j]) > 0:
                 charge_reflection_multiplier = 10 ** -abs(
                     value(self.permeate_side[t, x].charge_comp[j])
                 )
