@@ -43,7 +43,7 @@ from watertap.unit_models.zero_order import (
     VFARecoveryZO,
 )
 from idaes.models.unit_models import Mixer, MomentumMixingType, MixingType
-from watertap.core.zero_order_costing import ZeroOrderCosting
+from watertap.costing.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
 
 # Set up logger

@@ -68,8 +68,8 @@ def cost_uv_aop_bundle(blk, reactor_cost, lamp_cost, factor_lamp_replacement):
     Generic function for costing a UV system.
 
     Args:
-        reactor_cost - The cost of UV reactor in [currency]/[volume]
-        lamp_cost - The costs of the lamps, sleeves, ballasts and sensors in [currency]/[kW]
+        reactor_cost: The cost of UV reactor in [currency]/[volume]
+        lamp_cost: The costs of the lamps, sleeves, ballasts and sensors in [currency]/[kW]
     """
     make_capital_cost_var(blk)
     make_fixed_operating_cost_var(blk)
