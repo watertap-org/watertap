@@ -25,5 +25,6 @@ Unit Models
    mvc
    thickener
    dewatering
+   electroNP_ZO
    translators/index
    zero_order_unit_models/index
