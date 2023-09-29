@@ -2026,8 +2026,8 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             bs = value(self.partition_factor_born_solvation_comp[t, j])
             fdc = value(self.partition_factor_donnan_comp_feed[t, x, j])
             hinderence_factor = hfd * bs * fdc
-            # we expect that there will be less ion at membrane with same charge as it self
-            # eg. negative ions ar repulsed by negative membarnes, but positve ions are attracted
+            # we expect that there will be less ions at the membrane with same charge
+            # e.g., negative ions are repulsed by negative membranes, but positive ions are attracted
             membrane_charge = value(self.membrane_charge_density[0])
             if (
                 membrane_charge > 0
