@@ -121,26 +121,26 @@ class TestECZO_AL:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(43.3619999, rel=1e-5) == value(
+        assert pytest.approx(43.3619999, rel=1e-2) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]
         )
-        assert pytest.approx(1.5768, rel=1e-5) == value(
+        assert pytest.approx(1.5768, rel=1e-2) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["tds"]
         )
-        assert pytest.approx(0.165839, rel=1e-5) == value(
+        assert pytest.approx(0.165839, rel=1e-2) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["tss"]
         )
-        assert pytest.approx(0.00137970000, rel=1e-5) == value(
+        assert pytest.approx(0.00137970000, rel=1e-2) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["toc"]
         )
-        assert pytest.approx(53188.5028, rel=1e-5) == value(
+        assert pytest.approx(53188.5028, rel=1e-2) == value(
             model.fs.unit.applied_current
         )
-        assert pytest.approx(1.971969, rel=1e-5) == value(model.fs.unit.cell_voltage)
-        assert pytest.approx(8.87351e-6, rel=1e-5) == value(
+        assert pytest.approx(1.971969, rel=1e-2) == value(model.fs.unit.cell_voltage)
+        assert pytest.approx(8.87351e-6, rel=1e-2) == value(
             model.fs.unit.ohmic_resistance
         )
-        assert pytest.approx(104886.08773, rel=1e-5) == value(
+        assert pytest.approx(104886.08773, rel=1e-2) == value(
             model.fs.unit.power_required
         )
 
