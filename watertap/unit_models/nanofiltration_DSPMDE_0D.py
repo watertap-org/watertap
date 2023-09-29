@@ -2037,7 +2037,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 charge_reflection_multiplier = 10 ** abs(
                     value(self.permeate_side[t, x].charge_comp[j])
                 )
-            print(j, charge_reflection_multiplier)
             iscale.constraint_scaling_transform(
                 con, 1 / (hindrance_factor * charge_reflection_multiplier)
             )
