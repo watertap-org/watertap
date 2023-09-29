@@ -86,17 +86,13 @@ setup(
         "pymongo>3",  # database interface
         "fastjsonschema",  # schema validation
         "click",  # command-line tools with Click
-        # tutorial tests
-        "nbformat",
-        "scipy",
         # for parameter_sweep
         "h5py",
         "requests",
+        "scipy",
         # for watertap.ui.api_model (though may be generally useful)
         "pydantic < 2",
         "numpy",
-        # for importlib.metadata.entry_points()
-        "importlib_metadata; python_version < '3.8' ",
     ],
     extras_require={
         "testing": [
@@ -106,6 +102,10 @@ setup(
             "pandas",
             "nbmake",
             "nbconvert",
+        ],
+        "notebooks": [
+            "jupyter",
+            "ipykernel",
         ],
         "dev": [
             "nbsphinx",  # jupyter notebook support for sphinx
