@@ -21,14 +21,14 @@ cwd = Path(__file__).parent
 long_description = (cwd / "README.md").read_text()
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse==2.1.*",  # from PyPI
+    "idaes-pse==2.2.*",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse @ git+https://github.com/watertap-org/idaes-pse@2.2.0.dev0.watertap.23.08.03",
+    "idaes-pse==2.2.0",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -37,7 +37,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="0.10.dev0",
+    version="0.11.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -60,10 +60,10 @@ setup(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",
@@ -75,7 +75,7 @@ setup(
     packages=find_packages(
         include=("watertap*",),
     ),
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=[
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
@@ -86,17 +86,13 @@ setup(
         "pymongo>3",  # database interface
         "fastjsonschema",  # schema validation
         "click",  # command-line tools with Click
-        # tutorial tests
-        "nbformat",
-        "scipy",
         # for parameter_sweep
         "h5py",
         "requests",
+        "scipy",
         # for watertap.ui.api_model (though may be generally useful)
         "pydantic < 2",
         "numpy",
-        # for importlib.metadata.entry_points()
-        "importlib_metadata; python_version < '3.8' ",
     ],
     extras_require={
         "testing": [
@@ -107,10 +103,14 @@ setup(
             "nbmake",
             "nbconvert",
         ],
+        "notebooks": [
+            "jupyter",
+            "ipykernel",
+        ],
         "dev": [
             "nbsphinx",  # jupyter notebook support for sphinx
             "jinja2<3.1.0",  # see watertap-org/watertap#449
-            "Sphinx",  # docs
+            "Sphinx==7.1.*",  # docs
             "sphinx_rtd_theme",  # docs
             "urllib3 < 2",  # see watertap-org/watertap#1021,
             # other requirements
@@ -141,6 +141,7 @@ setup(
         "watertap.flowsheets": [
             "nf = watertap.examples.flowsheets.nf_dspmde.nf_ui",
             "nf_with_bypass = watertap.examples.flowsheets.nf_dspmde.nf_with_bypass_ui",
+            "bsm2 = watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.BSM2_ui",
             "metab = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab_ui",
             "suboxic_ASM = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_ASM_ui",
             "Magprex = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex_ui",

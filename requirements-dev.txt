@@ -4,4 +4,4 @@ pre-commit
 pylint
 astroid
 # Defer to setup.py contents
--e .[dev]
+-e .[dev,notebooks]
