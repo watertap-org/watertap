@@ -33,7 +33,7 @@ from watertap.unit_models.reverse_osmosis_base import (
     TransportModel,
 )
 
-__author__ = "Tim Bartholomew, Adam Atia"
+__author__ = "Tim Bartholomew, Adam Atia, Bernard Knueven"
 
 
 @declare_process_block_class("ReverseOsmosis0D")

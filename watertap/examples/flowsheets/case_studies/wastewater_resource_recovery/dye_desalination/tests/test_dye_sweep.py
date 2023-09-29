@@ -16,10 +16,10 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_
     run_analysis,
 )
 
-# test the first 7 case studies that can be run with or without RO
-pytest_parameterize_NF = list(range(1, 8))
+# test the first 11 case studies that can be run with or without RO
+pytest_parameterize_NF = list(range(1, 12))
 # then test case studies 9-11 that can only run with RO
-pytest_parameterize_RO = list(range(8, 13))
+pytest_parameterize_RO = list(range(12, 18))
 
 
 @pytest.mark.parametrize("case_num", pytest_parameterize_NF)
@@ -36,7 +36,7 @@ def test_dye_sweep(case_num, tmp_path):
         nx=1,
         interpolate_nan_outputs=False,
         withRO=withRO,
-        save_path=temp.name,
+        output_filename=temp.name,
     )
     os.remove(temp.name)
     os.chdir(cwd)
@@ -58,7 +58,7 @@ def test_dye_sweep2(case_num, tmp_path):
 def test_withRO_condition():
     # test a case without RO for a sweep that requires RO
     with pytest.raises(Exception):
-        run_analysis(9, 1, interpolate_nan_outputs=False, withRO=False)
+        run_analysis(15, 1, interpolate_nan_outputs=False, withRO=False)
     return
 
 
