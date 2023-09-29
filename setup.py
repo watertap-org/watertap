@@ -1,4 +1,4 @@
-#################################################################################
+###############################################################################
 # WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
@@ -37,7 +37,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="0.10.dev0",
+    version="0.10.0rc0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -79,7 +79,7 @@ setup(
     install_requires=[
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
-        *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
+        *SPECIAL_DEPENDENCIES_FOR_RELEASE,
         "pyomo>=6.6.1",  # (also needed for units in electrolyte database (edb))
         "pyyaml",  # watertap.core.wt_database
         # the following requirements are for the electrolyte database (edb)
