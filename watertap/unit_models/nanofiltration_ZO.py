@@ -40,6 +40,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
+from watertap.costing.unit_models.nanofiltration import cost_nanofiltration
 
 
 _log = idaeslog.getLogger(__name__)
@@ -707,3 +708,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         for (t, j), c in self.eq_recovery_mass_phase_comp.items():
             sf = iscale.get_scaling_factor(self.recovery_mass_phase_comp[t, "Liq", j])
             iscale.constraint_scaling_transform(c, sf)
+
+    @property
+    def default_costing_method(self):
+        return cost_nanofiltration
