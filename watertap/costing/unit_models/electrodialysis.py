@@ -55,7 +55,10 @@ def cost_electrodialysis(blk, cost_electricity_flow=True, has_rectifier=False):
     Function for costing the Electrodialysis unit
 
     Args:
-        cost_electricity_flow - Option for including the costing of electricity
+        cost_electricity_flow (:obj:`bool`, optional): Option for including the
+            costing of electricity. Defaults to True.
+        has_rectifier (:obj:`bool`, optional): Option for including a rectifier.
+            Defaults to False.
     """
     t0 = blk.flowsheet().time.first()
 

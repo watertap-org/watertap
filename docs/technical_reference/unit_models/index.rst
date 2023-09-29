@@ -21,6 +21,7 @@ Unit Models
    osmotically_assisted_reverse_osmosis_0D
    anaerobic_digestor
    ion_exchange_0D
+   membrane_distillation_0D
    mvc
    thickener
    dewatering

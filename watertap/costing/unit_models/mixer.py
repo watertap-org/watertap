@@ -100,7 +100,7 @@ def build_naocl_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.add_defined_flow("NaOCl", blk.cost / blk.purity)
+    costing.register_flow_type("NaOCl", blk.cost / blk.purity)
 
 
 @register_costing_parameter_block(
@@ -147,7 +147,7 @@ def build_caoh2_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.add_defined_flow("CaOH2", blk.cost / blk.purity)
+    costing.register_flow_type("CaOH2", blk.cost / blk.purity)
 
 
 def build_caoh2_mixer_cost_param_block(blk):

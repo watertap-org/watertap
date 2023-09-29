@@ -34,7 +34,7 @@ def build_hcl_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.add_defined_flow("HCl", blk.cost / blk.purity)
+    costing.register_flow_type("HCl", blk.cost / blk.purity)
 
 
 def build_naoh_cost_param_block(blk):
@@ -54,7 +54,7 @@ def build_naoh_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.add_defined_flow("NaOH", blk.cost / blk.purity)
+    costing.register_flow_type("NaOH", blk.cost / blk.purity)
 
 
 def build_meoh_cost_param_block(blk):
@@ -74,7 +74,7 @@ def build_meoh_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.add_defined_flow("MeOH", blk.cost / blk.purity)
+    costing.register_flow_type("MeOH", blk.cost / blk.purity)
 
 
 def build_nacl_cost_param_block(blk):
@@ -94,7 +94,7 @@ def build_nacl_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.add_defined_flow("NaCl", blk.cost / blk.purity)
+    costing.register_flow_type("NaCl", blk.cost / blk.purity)
 
 
 def build_ion_exhange_cost_param_block(blk):
