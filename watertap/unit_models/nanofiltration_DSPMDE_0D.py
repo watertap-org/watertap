@@ -2078,7 +2078,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                     value(self.permeate_side[t, x].charge_comp[j])
                 )
             iscale.constraint_scaling_transform(
-                con, 1 / (hinderence_factor * charge_reflection_multiplier)
+                con, 1 / (hindrance_factor * charge_reflection_multiplier)
             )
 
         for (t, p, j), con in self.eq_mass_transfer_feed.items():
