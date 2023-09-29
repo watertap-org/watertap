@@ -280,7 +280,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
 
         self.area = Var(
             initialize=10,
-            bounds=(1e-1, 1e3),
+            bounds=(1e-1, 1e5),
             domain=NonNegativeReals,
             units=units_meta("length") ** 2,
             doc="Total Membrane area",
