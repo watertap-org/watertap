@@ -31,8 +31,10 @@ from watertap.unit_models.reverse_osmosis_0D import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
-    TransportModel,
 )
+
+from watertap.unit_models.reverse_osmosis_base import TransportModel
+
 import watertap.property_models.NaCl_prop_pack as props
 
 from idaes.core.solvers import get_solver
