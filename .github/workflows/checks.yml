@@ -72,10 +72,7 @@ jobs:
   tests:
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
-# TODO: Grab cloud database password from encrypted repo secrets
-# TODO: and place in environment so tests can use it.
-#    env:
-#      EDB_CLOUD_PASSWORD: ${{ secrets.EDB_CLOUD_PASSWORD }}
+    needs: [code-formatting]
     strategy:
       fail-fast: false
       matrix:
@@ -98,9 +95,6 @@ jobs:
           - python-version: '3.8'
             # limit uploading coverage report for a single Python version in the matrix
             cov_report: true
-          - os: linux
-            # supercharge/mongodb-github-action is a container action, that's only available for Linux
-            mongodb_server: true
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
@@ -127,36 +121,6 @@ jobs:
         echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --verbose
         echo '::endgroup::'
-    - name: Set up MongoDB server
-      if: matrix.mongodb_server
-      uses: supercharge/mongodb-github-action@3f91157600649d0002802978c8b6fb6ee659a2dd
-      # with:
-        # everything else being equal, we test against 4.03 since it's the latest available
-        # through Conda, which makes installation significantly easier for users
-        # mongodb-version: "4.03"
-    - name: Test connection to MongoDB instance
-      if: matrix.mongodb_server
-      env:
-        _tests_that_should_not_be_skipped: db_api
-        _pytest_output_to_inspect: .pytest-edb-mongodb.log
-      run: |
-        # load EDB
-        edb load -b
-        # run subset of tests that should not be skipped if the MongoDB instance is accessible to the EDB
-        pytest -k "$_tests_that_should_not_be_skipped" --verbose --capture=tee-sys | tee "$_pytest_output_to_inspect"
-        echo '::group::pytest output to be inspected for skipped files'
-        cat "$_pytest_output_to_inspect"
-        echo '::endgroup::'
-        echo '::group::output of grep searching for skipped tests in pytest output'
-        bash -c 'grep "SKIPPED" "$_pytest_output_to_inspect" ; test $? -eq 1'
-        echo '::endgroup::'
-    - name: Require EDB tests to connect to MongoDB if server is set up
-      if: matrix.mongodb_server
-      run:
-        |
-        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --edb-no-mock" >> $GITHUB_ENV
-    - name: Test EDB client
-      run: pytest --pyargs watertap -k test_edb_client
     - name: Add coverage report pytest options
       if: matrix.cov_report
       run:
@@ -181,6 +145,7 @@ jobs:
   user-mode-pytest:
     name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
+    needs: [code-formatting]
     strategy:
       fail-fast: false
       matrix:
@@ -234,6 +199,7 @@ jobs:
   notebooks:
     name: Test notebooks (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
+    needs: [code-formatting]
     strategy:
       fail-fast: false
       matrix:
@@ -278,6 +244,7 @@ jobs:
   macos:
     name: macOS setup (EXPERIMENTAL)
     runs-on: macos-11
+    needs: [code-formatting]
     strategy:
       fail-fast: false
       matrix:
