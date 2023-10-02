@@ -11,25 +11,21 @@
 #
 #################################################################################
 
-from watertap.tools.oli.mcas_flowsheet import mcas_flowsheet
-
 import pytest
 
+from pathlib import Path
+from os.path import join
+
+from pandas import read_csv
+
+@pytest.fixture
+def get_test_file_columns():
+    test_file = read_csv(join(Path(__file__).parents[1], "periodic_table.csv"))
+    return test_file.columns
 
 @pytest.mark.unit
-def test_mcas_flowsheet():
-    source_water = {
-        "temperature": 298.15,
-        "pressure": 101325,
-        "components": {
-            "Cl_-": 870,
-            "Na_+": 739,
-            "SO4_2-": 1011,
-            "Mg_2+": 90,
-            "Ca_2+": 258,
-            "K_+": 9,
-            "HCO3_-": 385,
-        },
-    }
-
-    mcas_flowsheet(source_water)
+def test_periodic_table_headers(get_test_file_columns):
+    test_headers = ["AtomicMass", "Symbol"]
+    
+    assert all(header in get_test_file_columns for header in test_headers) == True
+    

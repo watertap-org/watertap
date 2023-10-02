@@ -22,8 +22,12 @@ https://gist.github.com/GoodmanSciences/c2dd862cd38f21b0ad36b8f96b4bf1ee.
 __author__ = "Paul Vecchiarelli"
 
 from collections import namedtuple
-from pandas import read_csv
+
 from re import findall
+
+from pathlib import Path
+from os.path import join
+from pandas import read_csv
 
 OLIName = namedtuple(
     "OLIName", ["oli_name", "watertap_name", "charge", "charge_group", "molar_mass"]
@@ -58,16 +62,19 @@ def watertap_to_oli(watertap_name: str) -> OLIName:
         - molar_mass: weight of 1 mole of the substance (grams per mole)
 
     """
+    c = findall(r'[A-Z]', watertap_name)
+    print(c)
+    if len(c) < 1:
+        raise RuntimeError(f" At least 1 uppercase letter is required to specify a molecule, not '{watertap_name}'.")
+        
     components = watertap_name.split("_")
 
+    print(components)
     # neutral molecule
     if len(components) == 1:
-        if components[0] != "":
-            molecule = components[0]
-            charge = 0
-        else:
-            raise RuntimeError("Unrecognized component " + watertap_name)
-
+        molecule = components[0]
+        charge = 0
+        
     # charged molecule
     elif len(components) == 2:
         molecule = components[0] + "ION"
@@ -85,10 +92,10 @@ def watertap_to_oli(watertap_name: str) -> OLIName:
         elif charge_sign == "-":
             charge = -charge_magnitude
         else:
-            raise RuntimeError("Unrecognized charge magnitude " + charge_magnitude)
+            raise RuntimeError(" Only + and - are valid charge indicators.")
 
     else:
-        raise RuntimeError("Unrecognized name format " + watertap_name)
+        raise RuntimeError(" Unrecognized name format " + watertap_name)
 
     charge_group = _charge_group_computation(charge)
 
@@ -107,12 +114,13 @@ def _molar_mass_from_watertap_name(watertap_formula: str) -> float:
     such as CH3CO2H, [UO2]2[OH]4, etc.
     """
 
-    # change to local file location
-    periodic_table = read_csv("watertap/tools/oli/periodic_table.csv")
+    file_path = Path(__file__).parents[0]
+    periodic_table = read_csv(join(file_path, "periodic_table.csv"))
 
     # isolate single- and double- letter elements and add to element_counts dict
     elements = findall("[A-Z][a-z]?[0-9]*", watertap_formula)
 
+    # TODO: strengthen element criteria to reduce potential for input bugs
     element_counts = {}
     for element in elements:
         if len(element) == 1:
@@ -129,7 +137,7 @@ def _molar_mass_from_watertap_name(watertap_formula: str) -> float:
             element_counts[element[:-2]] = int(element[-2:-1])
 
         else:
-            raise RuntimeError("Too many characters in " + element)
+            raise RuntimeError(" Too many characters in " + element)
 
         element_location = watertap_formula.find(element)
 

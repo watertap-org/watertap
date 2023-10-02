@@ -12,35 +12,51 @@
 #################################################################################
 
 import pytest
+
+from collections import namedtuple
+
+OLIName = namedtuple(
+    "OLIName", ["oli_name", "watertap_name", "charge", "charge_group", "molar_mass"]
+)
+
 from watertap.tools.oli.watertap_to_oli_helper_functions import (
     watertap_to_oli,
     oli_reverse_lookup,
     names_db,
 )
 
-
+@pytest.mark.parametrize(
+    "input_name,expected_output", [
+        ("NaOH", "NAOH"),
+        ("B[OH]3", "BOH3"),
+        ("B[OH]4_-", "BOH4ION"),
+        ("K_+", "KION"),
+        ("Cl_-", "CLION"),
+        ("Mg_2+", "MGION"),
+        ("HCO3_2-", "HCO3ION"),
+    ]
+)
+def test_watertap_to_oli(input_name: str, expected_output: str):
+    assert watertap_to_oli(input_name).oli_name == expected_output
+    
 @pytest.mark.unit
-def test_watertap_to_oli():
-    test_conditions = []
-    # neutral, no brackets
-    test_conditions.append("NaOH")
-    # neutral, bracket
-    test_conditions.append("B[OH]3")
-    # charged, bracket
-    test_conditions.append("B[OH]4_-")
-    # cation, z = 1
-    test_conditions.append("K_+")
-    # anion, z = -1
-    test_conditions.append("Cl_-")
-    # cation, z > 1
-    test_conditions.append("Mg_2+")
-    # anion Z < -1
-    test_conditions.append("HCO3_2-")
-
-    for test_name in test_conditions:
-        watertap_to_oli(test_name)
-
+def test_case_exception():
+    with pytest.raises(RuntimeError) as excinfo:
+        val = "abc_2+"
+        watertap_to_oli(val)
+    assert str(excinfo.value) == f" At least 1 uppercase letter is required to specify a molecule, not '{val}'."
+def test_charge_exception():
+    with pytest.raises(RuntimeError) as excinfo:
+        val = "Na_2#"
+        watertap_to_oli(val)
+    assert str(excinfo.value) == " Only + and - are valid charge indicators."
 
 @pytest.mark.unit
 def test_reverse_lookup():
-    oli_reverse_lookup("NAION", names_db)
+    assert oli_reverse_lookup("NAION", names_db).watertap_name  == "Na_+"
+
+@pytest.mark.unit
+def test_reverse_lookup_exception():
+    with pytest.raises(RuntimeError) as excinfo:
+        oli_reverse_lookup("Na_-", names_db)
+    assert str(excinfo.value) == " Component Na_- not found in names_db. Please update the dictionary if you wish to hard code OLI names."    
