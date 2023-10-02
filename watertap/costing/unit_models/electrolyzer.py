@@ -19,7 +19,6 @@ from ..util import (
 
 
 def build_electrolyzer_cost_param_block(blk):
-
     blk.factor_membrane_replacement = pyo.Var(
         initialize=0.33,
         doc="membrane replacement factor (fraction of membrane replaced/year)",
@@ -118,7 +117,6 @@ def cost_electrolyzer(blk):
     )
 
     # ---------------------------------------------------------------------
-    make_fixed_operating_cost_var(blk)
 
     blk.membrane_replacement_cost_constraint = pyo.Constraint(
         expr=blk.membrane_replacement_cost

@@ -374,30 +374,30 @@ class TestNFZO_non_default_subtype:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(0.00074739, rel=1e-5) == value(
+        assert pytest.approx(0.00082586, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(49.137649, rel=1e-5) == value(
+        assert pytest.approx(47.723905, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["tds"]
         )
-        assert pytest.approx(0.053854, rel=1e-5) == value(
+        assert pytest.approx(0.02512536, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["dye"]
         )
 
-        assert pytest.approx(0.00025261, rel=1e-5) == value(
+        assert pytest.approx(0.000174141, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(52.551416, rel=1e-5) == value(
+        assert pytest.approx(60.794315, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]
         )
-        assert pytest.approx(9.73735178, rel=1e-5) == value(
+        assert pytest.approx(14.237023, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["dye"]
         )
-        assert pytest.approx(3.9022551, rel=1e-5) == value(model.fs.unit.area)
-        assert pytest.approx(0.978458, rel=1e-5) == value(
+        assert pytest.approx(4.0450235, rel=1e-5) == value(model.fs.unit.area)
+        assert pytest.approx(0.9899499, rel=1e-5) == value(
             model.fs.unit.rejection_comp[0, "dye"]
         )
-        assert pytest.approx(0.017247, rel=1e-5) == value(
+        assert pytest.approx(0.0455219, rel=1e-5) == value(
             model.fs.unit.rejection_comp[0, "tds"]
         )
 
@@ -496,8 +496,8 @@ def test_costing_non_default_subtype():
     # Check for optimal solution
     assert check_optimal_termination(results)
 
-    assert pytest.approx(39162.813807, rel=1e-5) == value(m.fs.unit.area)
-    assert pytest.approx(0.58744, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-    assert pytest.approx(0.088116, rel=1e-5) == value(
+    assert pytest.approx(40657.003417, rel=1e-5) == value(m.fs.unit.area)
+    assert pytest.approx(2.03285, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(0.406570, rel=1e-5) == value(
         m.fs.unit.costing.variable_operating_cost
     )
