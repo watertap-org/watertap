@@ -37,7 +37,7 @@ def export_variables(flowsheet=None, exports=None):
     # Feed conditions
     exports.add(
         obj=fs.FeedWater.flow_vol[0],
-        name="Volumetric flow rate",
+        name="Feed volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -514,7 +514,7 @@ def export_variables(flowsheet=None, exports=None):
         input_category="Primary clarifier",
         is_output=False,
     )
-    # Unit model data, anaerobic digester
+    # Unit model data, anaerobic digestor
     exports.add(
         obj=fs.RADM.volume_liquid[0],
         name="Liquid volume",
@@ -523,7 +523,7 @@ def export_variables(flowsheet=None, exports=None):
         rounding=1,
         description="Liquid volume",
         is_input=True,
-        input_category="Anaerobic digester",
+        input_category="Anaerobic digestor",
         is_output=False,
     )
     exports.add(
@@ -534,7 +534,7 @@ def export_variables(flowsheet=None, exports=None):
         rounding=1,
         description="Vapor volume",
         is_input=True,
-        input_category="Anaerobic digester",
+        input_category="Anaerobic digestor",
         is_output=False,
     )
 
@@ -611,7 +611,7 @@ def export_variables(flowsheet=None, exports=None):
     # Outlets
     exports.add(
         obj=fs.Treated.properties[0].flow_vol,
-        name="Flow rate",
+        name="Treated flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -765,18 +765,18 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     exports.add(
-        obj=fs.DU.underflow.flow_vol[0],
-        name="Flow rate",
+        obj=fs.CL.effluent.properties[0].flow_vol,
+        name="Primary clarifier effluent flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
-        description="Outlet sludge disposal flow rate",
+        description="Outlet primary clarifier flow rate",
         is_input=False,
         is_output=True,
-        output_category="Dewatered Sludge",
+        output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.DU.underflow.conc_mass_comp[0, "S_I"],
+        obj=fs.CL.effluent.properties[0].conc_mass_comp["S_I"],
         name="S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -784,10 +784,10 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet soluble inert organic matter concentration",
         is_input=False,
         is_output=True,
-        output_category="Dewatered Sludge",
+        output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.DU.underflow.conc_mass_comp[0, "S_S"],
+        obj=fs.CL.effluent.properties[0].conc_mass_comp["S_S"],
         name="S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -795,10 +795,10 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet readily biodegradable substrate concentration",
         is_input=False,
         is_output=True,
-        output_category="Dewatered Sludge",
+        output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.DU.underflow.conc_mass_comp[0, "X_I"],
+        obj=fs.CL.effluent.properties[0].conc_mass_comp["X_I"],
         name="X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -806,10 +806,10 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet particulate inert organic matter concentration",
         is_input=False,
         is_output=True,
-        output_category="Dewatered Sludge",
+        output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.DU.underflow.conc_mass_comp[0, "X_S"],
+        obj=fs.CL.effluent.properties[0].conc_mass_comp["X_S"],
         name="X_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -817,10 +817,10 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet slowly biodegradable substrate concentration",
         is_input=False,
         is_output=True,
-        output_category="Dewatered Sludge",
+        output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.DU.underflow.conc_mass_comp[0, "X_BH"],
+        obj=fs.CL.effluent.properties[0].conc_mass_comp["X_BH"],
         name="X_BH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -828,10 +828,10 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet active heterotrophic biomass concentration",
         is_input=False,
         is_output=True,
-        output_category="Dewatered Sludge",
+        output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.DU.underflow.conc_mass_comp[0, "X_BA"],
+        obj=fs.CL.effluent.properties[0].conc_mass_comp["X_BA"],
         name="X_BA concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -839,10 +839,10 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet active autotrophic biomass concentration",
         is_input=False,
         is_output=True,
-        output_category="Dewatered Sludge",
+        output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.DU.underflow.conc_mass_comp[0, "X_P"],
+        obj=fs.CL.effluent.properties[0].conc_mass_comp["X_P"],
         name="X_P concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -850,10 +850,10 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet particulate products arising from biomass decay concentration",
         is_input=False,
         is_output=True,
-        output_category="Dewatered Sludge",
+        output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.DU.underflow.conc_mass_comp[0, "S_O"],
+        obj=fs.CL.effluent.properties[0].conc_mass_comp["S_O"],
         name="S_O concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -861,10 +861,10 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet oxygen concentration",
         is_input=False,
         is_output=True,
-        output_category="Dewatered Sludge",
+        output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.DU.underflow.conc_mass_comp[0, "S_NO"],
+        obj=fs.CL.effluent.properties[0].conc_mass_comp["S_NO"],
         name="S_NO concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -872,10 +872,10 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet nitrate and nitrite nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="Dewatered Sludge",
+        output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.DU.underflow.conc_mass_comp[0, "S_NH"],
+        obj=fs.CL.effluent.properties[0].conc_mass_comp["S_NH"],
         name="S_NH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -883,165 +883,10 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet ammonium and ammonia nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="Dewatered Sludge",
+        output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.DU.underflow.conc_mass_comp[0, "S_ND"],
-        name="Sludge S_ND concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
-        rounding=5,
-        description="Outlet soluble biodegradable organic nitrogen concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatered Sludge",
-    )
-    exports.add(
-        obj=fs.DU.underflow.conc_mass_comp[0, "X_ND"],
-        name="X_ND concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
-        rounding=5,
-        description="Outlet particulate biodegradable organic nitrogen concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatered Sludge",
-    )
-    exports.add(
-        obj=fs.DU.underflow.alkalinity[0],
-        name="S_ALK concentration",
-        ui_units=pyunits.mol / pyunits.m**3,
-        display_units="mol/m3",
-        rounding=5,
-        description="Outlet alkalinity concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatered Sludge",
-    )
-
-    exports.add(
-        obj=fs.DU.overflow.flow_vol[0],
-        name="Flow rate",
-        ui_units=pyunits.m**3 / pyunits.day,
-        display_units="m3/day",
-        rounding=2,
-        description="Dewatering unit liquid outlet flow rate",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
-    )
-    exports.add(
-        obj=fs.DU.overflow.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
-        rounding=5,
-        description="Outlet soluble inert organic matter concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
-    )
-    exports.add(
-        obj=fs.DU.overflow.conc_mass_comp[0, "S_S"],
-        name="S_S concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
-        rounding=5,
-        description="Outlet readily biodegradable substrate concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
-    )
-    exports.add(
-        obj=fs.DU.overflow.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
-        rounding=5,
-        description="Outlet particulate inert organic matter concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
-    )
-    exports.add(
-        obj=fs.DU.overflow.conc_mass_comp[0, "X_S"],
-        name="X_S concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
-        rounding=5,
-        description="Outlet slowly biodegradable substrate concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
-    )
-    exports.add(
-        obj=fs.DU.overflow.conc_mass_comp[0, "X_BH"],
-        name="X_BH concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
-        rounding=5,
-        description="Outlet active heterotrophic biomass concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
-    )
-    exports.add(
-        obj=fs.DU.overflow.conc_mass_comp[0, "X_BA"],
-        name="X_BA concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
-        rounding=5,
-        description="Outlet active autotrophic biomass concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
-    )
-    exports.add(
-        obj=fs.DU.overflow.conc_mass_comp[0, "X_P"],
-        name="X_P concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
-        rounding=5,
-        description="Outlet particulate products arising from biomass decay concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
-    )
-    exports.add(
-        obj=fs.DU.overflow.conc_mass_comp[0, "S_O"],
-        name="S_O concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
-        rounding=5,
-        description="Outlet oxygen concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
-    )
-    exports.add(
-        obj=fs.DU.overflow.conc_mass_comp[0, "S_NO"],
-        name="S_NO concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
-        rounding=5,
-        description="Outlet nitrate and nitrite nitrogen concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
-    )
-    exports.add(
-        obj=fs.DU.overflow.conc_mass_comp[0, "S_NH"],
-        name="S_NH concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
-        rounding=5,
-        description="Outlet ammonium and ammonia nitrogen concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
-    )
-    exports.add(
-        obj=fs.DU.overflow.conc_mass_comp[0, "S_ND"],
+        obj=fs.CL.effluent.properties[0].conc_mass_comp["S_ND"],
         name="S_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -1049,10 +894,10 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet soluble biodegradable organic nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
+        output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.DU.overflow.conc_mass_comp[0, "X_ND"],
+        obj=fs.CL.effluent.properties[0].conc_mass_comp["X_ND"],
         name="X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -1060,10 +905,10 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet particulate biodegradable organic nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
+        output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.DU.overflow.alkalinity[0],
+        obj=fs.CL.effluent.properties[0].alkalinity,
         name="S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
@@ -1071,12 +916,632 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet alkalinity concentration",
         is_input=False,
         is_output=True,
-        output_category="Dewatering Unit Liquid Outlet",
+        output_category="Primary Clarifier Effluent",
+    )
+
+    exports.add(
+        obj=fs.CL.underflow.properties[0].flow_vol,
+        name="Primary clarifier underflow flow rate",
+        ui_units=pyunits.m**3 / pyunits.day,
+        display_units="m3/day",
+        rounding=2,
+        description="Outlet primary clarifier flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+    exports.add(
+        obj=fs.CL.underflow.properties[0].conc_mass_comp["S_I"],
+        name="S_I concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet soluble inert organic matter concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+    exports.add(
+        obj=fs.CL.underflow.properties[0].conc_mass_comp["S_S"],
+        name="S_S concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet readily biodegradable substrate concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+    exports.add(
+        obj=fs.CL.underflow.properties[0].conc_mass_comp["X_I"],
+        name="X_I concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet particulate inert organic matter concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+    exports.add(
+        obj=fs.CL.underflow.properties[0].conc_mass_comp["X_S"],
+        name="X_S concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet slowly biodegradable substrate concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+    exports.add(
+        obj=fs.CL.underflow.properties[0].conc_mass_comp["X_BH"],
+        name="X_BH concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet active heterotrophic biomass concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+    exports.add(
+        obj=fs.CL.underflow.properties[0].conc_mass_comp["X_BA"],
+        name="X_BA concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet active autotrophic biomass concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+    exports.add(
+        obj=fs.CL.underflow.properties[0].conc_mass_comp["X_P"],
+        name="X_P concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet particulate products arising from biomass decay concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+    exports.add(
+        obj=fs.CL.underflow.properties[0].conc_mass_comp["S_O"],
+        name="S_O concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet oxygen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+    exports.add(
+        obj=fs.CL.underflow.properties[0].conc_mass_comp["S_NO"],
+        name="S_NO concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet nitrate and nitrite nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+    exports.add(
+        obj=fs.CL.underflow.properties[0].conc_mass_comp["S_NH"],
+        name="S_NH concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet ammonium and ammonia nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+    exports.add(
+        obj=fs.CL.underflow.properties[0].conc_mass_comp["S_ND"],
+        name="S_ND concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet soluble biodegradable organic nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+    exports.add(
+        obj=fs.CL.underflow.properties[0].conc_mass_comp["X_ND"],
+        name="X_ND concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet particulate biodegradable organic nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+    exports.add(
+        obj=fs.CL.underflow.properties[0].alkalinity,
+        name="S_ALK concentration",
+        ui_units=pyunits.mol / pyunits.m**3,
+        display_units="mol/m3",
+        rounding=5,
+        description="Outlet alkalinity concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Primary Clarifier Underflow",
+    )
+
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].flow_vol,
+        name="ASP recycle flow rate",
+        ui_units=pyunits.m**3 / pyunits.day,
+        display_units="m3/day",
+        rounding=2,
+        description="ASP recycle flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].conc_mass_comp["S_I"],
+        name="S_I concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet soluble inert organic matter concentration",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].conc_mass_comp["S_S"],
+        name="S_S concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet readily biodegradable substrate concentration",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].conc_mass_comp["X_I"],
+        name="X_I concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet particulate inert organic matter concentration",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].conc_mass_comp["X_S"],
+        name="X_S concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet slowly biodegradable substrate concentration",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].conc_mass_comp["X_BH"],
+        name="X_BH concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet active heterotrophic biomass concentration",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].conc_mass_comp["X_BA"],
+        name="X_BA concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet active autotrophic biomass concentration",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].conc_mass_comp["X_P"],
+        name="X_P concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet particulate products arising from biomass decay concentration",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].conc_mass_comp["S_O"],
+        name="S_O concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet oxygen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].conc_mass_comp["S_NO"],
+        name="S_NO concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet nitrate and nitrite nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].conc_mass_comp["S_NH"],
+        name="S_NH concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet ammonium and ammonia nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].conc_mass_comp["S_ND"],
+        name="S_ND concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet soluble biodegradable organic nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].conc_mass_comp["X_ND"],
+        name="X_ND concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet particulate biodegradable organic nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+    exports.add(
+        obj=fs.SP6.recycle.properties[0].alkalinity,
+        name="S_ALK concentration",
+        ui_units=pyunits.mol / pyunits.m**3,
+        display_units="mol/m3",
+        rounding=5,
+        description="Inlet alkalinity concentration",
+        is_input=False,
+        is_output=True,
+        output_category="ASP Recycle Inlet",
+    )
+
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].flow_vol,
+        name="Secondary clarifier flow rate",
+        ui_units=pyunits.m**3 / pyunits.day,
+        display_units="m3/day",
+        rounding=2,
+        description="Secondary clarifier inlet flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].conc_mass_comp["S_I"],
+        name="S_I concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet soluble inert organic matter concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].conc_mass_comp["S_S"],
+        name="S_S concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet readily biodegradable substrate concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].conc_mass_comp["X_I"],
+        name="X_I concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet particulate inert organic matter concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].conc_mass_comp["X_S"],
+        name="X_S concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet slowly biodegradable substrate concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].conc_mass_comp["X_BH"],
+        name="X_BH concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet active heterotrophic biomass concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].conc_mass_comp["X_BA"],
+        name="X_BA concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet active autotrophic biomass concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].conc_mass_comp["X_P"],
+        name="X_P concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet particulate products arising from biomass decay concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].conc_mass_comp["S_O"],
+        name="S_O concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet oxygen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].conc_mass_comp["S_NO"],
+        name="S_NO concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet nitrate and nitrite nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].conc_mass_comp["S_NH"],
+        name="S_NH concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet ammonium and ammonia nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].conc_mass_comp["S_ND"],
+        name="S_ND concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet soluble biodegradable organic nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].conc_mass_comp["X_ND"],
+        name="X_ND concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet particulate biodegradable organic nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+    exports.add(
+        obj=fs.SP5.overflow.properties[0].alkalinity,
+        name="S_ALK concentration",
+        ui_units=pyunits.mol / pyunits.m**3,
+        display_units="mol/m3",
+        rounding=5,
+        description="Inlet alkalinity concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Secondary Clarifier Inlet",
+    )
+
+    exports.add(
+        obj=fs.TU.inlet.properties[0].flow_vol,
+        name="Thickener flow rate",
+        ui_units=pyunits.m**3 / pyunits.day,
+        display_units="m3/day",
+        rounding=2,
+        description="Thickener inlet flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
+    )
+    exports.add(
+        obj=fs.TU.inlet.properties[0].conc_mass_comp["S_I"],
+        name="S_I concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet soluble inert organic matter concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
+    )
+    exports.add(
+        obj=fs.TU.inlet.properties[0].conc_mass_comp["S_S"],
+        name="S_S concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet readily biodegradable substrate concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
+    )
+    exports.add(
+        obj=fs.TU.inlet.properties[0].conc_mass_comp["X_I"],
+        name="X_I concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet particulate inert organic matter concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
+    )
+    exports.add(
+        obj=fs.TU.inlet.properties[0].conc_mass_comp["X_S"],
+        name="X_S concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet slowly biodegradable substrate concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
+    )
+    exports.add(
+        obj=fs.TU.inlet.properties[0].conc_mass_comp["X_BH"],
+        name="X_BH concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet active heterotrophic biomass concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
+    )
+    exports.add(
+        obj=fs.TU.inlet.properties[0].conc_mass_comp["X_BA"],
+        name="X_BA concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet active autotrophic biomass concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
+    )
+    exports.add(
+        obj=fs.TU.inlet.properties[0].conc_mass_comp["X_P"],
+        name="X_P concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet particulate products arising from biomass decay concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
+    )
+    exports.add(
+        obj=fs.TU.inlet.properties[0].conc_mass_comp["S_O"],
+        name="S_O concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet oxygen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
+    )
+    exports.add(
+        obj=fs.TU.inlet.properties[0].conc_mass_comp["S_NO"],
+        name="S_NO concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet nitrate and nitrite nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
+    )
+    exports.add(
+        obj=fs.TU.inlet.properties[0].conc_mass_comp["S_NH"],
+        name="S_NH concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet ammonium and ammonia nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
+    )
+    exports.add(
+        obj=fs.TU.inlet.properties[0].conc_mass_comp["S_ND"],
+        name="S_ND concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet soluble biodegradable organic nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
+    )
+    exports.add(
+        obj=fs.TU.inlet.properties[0].conc_mass_comp["X_ND"],
+        name="X_ND concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Inlet particulate biodegradable organic nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
+    )
+    exports.add(
+        obj=fs.TU.inlet.properties[0].alkalinity,
+        name="S_ALK concentration",
+        ui_units=pyunits.mol / pyunits.m**3,
+        display_units="mol/m3",
+        rounding=5,
+        description="Inlet alkalinity concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Thickener Inlet",
     )
 
     exports.add(
         obj=fs.asm_adm.inlet.flow_vol[0],
-        name="Flow rate",
+        name="ASM/ADM inlet flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -1231,7 +1696,7 @@ def export_variables(flowsheet=None, exports=None):
 
     exports.add(
         obj=fs.asm_adm.outlet.flow_vol[0],
-        name="Flow rate",
+        name="ASM/ADM outlet flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -1507,7 +1972,7 @@ def export_variables(flowsheet=None, exports=None):
 
     exports.add(
         obj=fs.adm_asm.inlet.flow_vol[0],
-        name="Flow rate",
+        name="ADM/ASM inlet flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -1783,7 +2248,7 @@ def export_variables(flowsheet=None, exports=None):
 
     exports.add(
         obj=fs.adm_asm.outlet.flow_vol[0],
-        name="Flow rate",
+        name="ADM/ASM outlet flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -1938,7 +2403,7 @@ def export_variables(flowsheet=None, exports=None):
 
     exports.add(
         obj=fs.RADM.vapor_outlet.flow_vol[0],
-        name="Flow rate",
+        name="Gas flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -1979,6 +2444,316 @@ def export_variables(flowsheet=None, exports=None):
         is_input=False,
         is_output=True,
         output_category="Anaerobic Digestor Vapor Outlet",
+    )
+
+    exports.add(
+        obj=fs.DU.underflow.flow_vol[0],
+        name="Sludge flow rate",
+        ui_units=pyunits.m**3 / pyunits.day,
+        display_units="m3/day",
+        rounding=2,
+        description="Outlet sludge disposal flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+    exports.add(
+        obj=fs.DU.underflow.conc_mass_comp[0, "S_I"],
+        name="S_I concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet soluble inert organic matter concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+    exports.add(
+        obj=fs.DU.underflow.conc_mass_comp[0, "S_S"],
+        name="S_S concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet readily biodegradable substrate concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+    exports.add(
+        obj=fs.DU.underflow.conc_mass_comp[0, "X_I"],
+        name="X_I concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet particulate inert organic matter concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+    exports.add(
+        obj=fs.DU.underflow.conc_mass_comp[0, "X_S"],
+        name="X_S concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet slowly biodegradable substrate concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+    exports.add(
+        obj=fs.DU.underflow.conc_mass_comp[0, "X_BH"],
+        name="X_BH concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet active heterotrophic biomass concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+    exports.add(
+        obj=fs.DU.underflow.conc_mass_comp[0, "X_BA"],
+        name="X_BA concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet active autotrophic biomass concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+    exports.add(
+        obj=fs.DU.underflow.conc_mass_comp[0, "X_P"],
+        name="X_P concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet particulate products arising from biomass decay concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+    exports.add(
+        obj=fs.DU.underflow.conc_mass_comp[0, "S_O"],
+        name="S_O concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet oxygen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+    exports.add(
+        obj=fs.DU.underflow.conc_mass_comp[0, "S_NO"],
+        name="S_NO concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet nitrate and nitrite nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+    exports.add(
+        obj=fs.DU.underflow.conc_mass_comp[0, "S_NH"],
+        name="S_NH concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet ammonium and ammonia nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+    exports.add(
+        obj=fs.DU.underflow.conc_mass_comp[0, "S_ND"],
+        name="Sludge S_ND concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet soluble biodegradable organic nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+    exports.add(
+        obj=fs.DU.underflow.conc_mass_comp[0, "X_ND"],
+        name="X_ND concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet particulate biodegradable organic nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+    exports.add(
+        obj=fs.DU.underflow.alkalinity[0],
+        name="S_ALK concentration",
+        ui_units=pyunits.mol / pyunits.m**3,
+        display_units="mol/m3",
+        rounding=5,
+        description="Outlet alkalinity concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatered Sludge",
+    )
+
+    exports.add(
+        obj=fs.DU.overflow.flow_vol[0],
+        name="Overflow flow rate",
+        ui_units=pyunits.m**3 / pyunits.day,
+        display_units="m3/day",
+        rounding=2,
+        description="Dewatering unit liquid outlet flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
+    )
+    exports.add(
+        obj=fs.DU.overflow.conc_mass_comp[0, "S_I"],
+        name="S_I concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet soluble inert organic matter concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
+    )
+    exports.add(
+        obj=fs.DU.overflow.conc_mass_comp[0, "S_S"],
+        name="S_S concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet readily biodegradable substrate concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
+    )
+    exports.add(
+        obj=fs.DU.overflow.conc_mass_comp[0, "X_I"],
+        name="X_I concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet particulate inert organic matter concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
+    )
+    exports.add(
+        obj=fs.DU.overflow.conc_mass_comp[0, "X_S"],
+        name="X_S concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet slowly biodegradable substrate concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
+    )
+    exports.add(
+        obj=fs.DU.overflow.conc_mass_comp[0, "X_BH"],
+        name="X_BH concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet active heterotrophic biomass concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
+    )
+    exports.add(
+        obj=fs.DU.overflow.conc_mass_comp[0, "X_BA"],
+        name="X_BA concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet active autotrophic biomass concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
+    )
+    exports.add(
+        obj=fs.DU.overflow.conc_mass_comp[0, "X_P"],
+        name="X_P concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet particulate products arising from biomass decay concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
+    )
+    exports.add(
+        obj=fs.DU.overflow.conc_mass_comp[0, "S_O"],
+        name="S_O concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet oxygen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
+    )
+    exports.add(
+        obj=fs.DU.overflow.conc_mass_comp[0, "S_NO"],
+        name="S_NO concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet nitrate and nitrite nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
+    )
+    exports.add(
+        obj=fs.DU.overflow.conc_mass_comp[0, "S_NH"],
+        name="S_NH concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet ammonium and ammonia nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
+    )
+    exports.add(
+        obj=fs.DU.overflow.conc_mass_comp[0, "S_ND"],
+        name="S_ND concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet soluble biodegradable organic nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
+    )
+    exports.add(
+        obj=fs.DU.overflow.conc_mass_comp[0, "X_ND"],
+        name="X_ND concentration",
+        ui_units=pyunits.g / pyunits.m**3,
+        display_units="g/m3",
+        rounding=5,
+        description="Outlet particulate biodegradable organic nitrogen concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
+    )
+    exports.add(
+        obj=fs.DU.overflow.alkalinity[0],
+        name="S_ALK concentration",
+        ui_units=pyunits.mol / pyunits.m**3,
+        display_units="mol/m3",
+        rounding=5,
+        description="Outlet alkalinity concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Dewatering Unit Liquid Outlet",
     )
 
     # performance metrics
