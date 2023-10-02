@@ -45,7 +45,7 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigValue, In
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-
+from pyomo.core.base.units_container import InconsistentUnitsError
 # Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
@@ -382,6 +382,8 @@ class MCASParameterData(PhysicalParameterBlock):
             else:
                 self.neutral_set.add(j)
 
+        if len(self.neutral_set)>0 and not len(self.ion_set):
+            _log.warning("Since the charge argument was not provided for any solutes while instantiating the MCAS property model, all solutes are assumed to be neutral and have no charge. Make sure to provide charge data for any ions in solute_list to avoid erroneous property calculations.")
         # reference
         # Todo: enter any relevant references
 
@@ -413,11 +415,12 @@ class MCASParameterData(PhysicalParameterBlock):
             units=pyunits.m**3 / pyunits.mol,
             doc="molar volume of solutes",
         )
+        # TODO:revisit- assuming ~ 1e-3 Pa*s for pure water
         self.visc_d_phase = Param(
             self.phase_list,
             mutable=True,
             default=1e-3,
-            initialize=1e-3,  # TODO:revisit- assuming ~ 1e-3 Pa*s for pure water
+            initialize=1e-3,  
             units=pyunits.Pa * pyunits.s,
             doc="Fluid viscosity",
         )
@@ -431,7 +434,7 @@ class MCASParameterData(PhysicalParameterBlock):
             units=pyunits.dimensionless,
             doc="Ion charge",
         )
-
+        
         if self.config.diffus_calculation == DiffusivityCalculation.none:
 
             self.diffus_phase_comp = Var(
@@ -1756,23 +1759,29 @@ class MCASStateBlockData(StateBlockData):
             units=pyunits.mg / pyunits.L,
             doc="total hardness as CaCO3",
         )
-
-        def rule_total_hardness(b):
-            return b.total_hardness == pyunits.convert(
+        #add try/except to handle case without multivalent cations, 
+        # which would return 0 and result in Inconsitentunits error due to conversion of dimensionless to mg/L
+        try:
+            total_hardness_temp = pyunits.convert(
                 sum(
-                    b.flow_mol_phase_comp["Liq", j]
-                    / b.flow_vol_phase["Liq"]
+                    self.flow_mol_phase_comp["Liq", j]
+                    / self.flow_vol_phase["Liq"]
                     * 100.0869
                     * pyunits.g
                     / pyunits.mol
-                    * b.charge_comp[j]
+                    * self.charge_comp[j]
                     / 2.0
-                    for j in b.params.cation_set
-                    if value(b.charge_comp[j]) > 1
+                    for j in self.params.cation_set
+                    if value(self.charge_comp[j]) > 1
                 ),
                 to_units=pyunits.mg / pyunits.L,
             )
-
+        except InconsistentUnitsError:
+            self.total_hardness.fix(0)
+            return
+        
+        def rule_total_hardness(b):
+            return b.total_hardness == total_hardness_temp
         self.eq_total_hardness = Constraint(rule=rule_total_hardness)
 
     # -----------------------------------------------------------------------------
@@ -1871,9 +1880,13 @@ class MCASStateBlockData(StateBlockData):
                     == 0
                 )
             else:
-                raise ValueError(
-                    "adjust_by_ion must be set to the name of an ion in the ion_set."
-                )
+                if not len(self.params.ion_set) and len(self.params.neutral_set)>0:
+                    raise ValueError(
+                        f"adjust_by_ion must be set to the name of an ion in the ion_set. Since the charge argument was not provided for any solutes while instantiating the MCAS property model, all solutes in solute_list were considered as neutral solutes without any charge."
+                    )
+                else:
+                    raise ValueError(
+                        "adjust_by_ion must be set to the name of an ion in the ion_set.")
         if defined_state:
             for j in self.params.solute_set:
                 if not state_var["Liq", j].is_fixed() and adjust_by_ion != j:
