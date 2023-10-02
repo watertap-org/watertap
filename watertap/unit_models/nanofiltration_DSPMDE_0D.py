@@ -1949,7 +1949,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         for (t, x, p, j), v in self.flux_mol_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 if comp.is_solute():
-                    # simply based on feed flow mol scailing
+                    # simply based on feed flow mol scaling
                     #
                     sf = iscale.get_scaling_factor(
                         self.feed_side.properties_in[t].flow_mol_phase_comp["Liq", j]
