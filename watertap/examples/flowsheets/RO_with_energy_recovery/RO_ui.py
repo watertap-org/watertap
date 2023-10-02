@@ -49,43 +49,53 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Feed",
     )
-    # feed_concentration = fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"] / sum(
-    #     fs.feed.flow_mass_phase_comp[0, "Liq", j] for j in ["H2O", "NaCl"]
-    # )
-    # exports.add(
-    #     obj=feed_concentration,
-    #     name="NaCl concentration",
-    #     ui_units=pyunits.g / pyunits.m**3,
-    #     display_units="g/m3",
-    #     rounding=2,
-    #     description="Inlet NaCl concentration",
-    #     is_input=True,
-    #     input_category="Feed",
-    #     is_output=True,
-    #     output_category="Feed",
-    # )
+    exports.add(
+        obj=fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"],
+        name="NaCl mass fraction",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Inlet NaCl mass fraction",
+        is_input=True,
+        input_category="Feed",
+        is_output=True,
+        output_category="Feed",
+    )
 
-    # Unit model data, pump 1
-    # exports.add(
-    #     obj=fs.P1.efficiency_pump,
-    #     name="Feed pump efficiency",
-    #     ui_units=pyunits.dimensionless,
-    #     display_units="fraction",
-    #     rounding=2,
-    #     description="Efficiency of feed pump",
-    #     is_input=True,
-    #     input_category="Feed Pump",
-    #     is_output=False,
-    # )
+    # Unit model data, feed pump
+    exports.add(
+        obj=fs.P1.efficiency_pump[0],
+        name="Feed pump efficiency",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Efficiency of feed pump",
+        is_input=True,
+        input_category="Feed Pump",
+        is_output=False,
+    )
     exports.add(
         obj=fs.P1.control_volume.properties_out[0].pressure,
         name="Feed pump operating pressure",
-        ui_units=pyunits.Pa,
-        display_units="Pa",
+        ui_units=pyunits.bar,
+        display_units="bar",
         rounding=2,
         description="Operating pressure of feed pump",
         is_input=True,
         input_category="Feed Pump",
+        is_output=False,
+    )
+
+    # Unit model data, RO
+    exports.add(
+        obj=fs.RO.A_comp[0, "H2O"],
+        name="Water permeability coefficient",
+        ui_units=pyunits.m / pyunits.s / pyunits.Pa,
+        display_units="m/s-Pa",
+        rounding=2,
+        description="RO Water permeability coefficient",
+        is_input=True,
+        input_category="Reverse Osmosis",
         is_output=False,
     )
 
