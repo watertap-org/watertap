@@ -1517,7 +1517,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Thickener Inlet",
     )
     exports.add(
-        obj=fs.TU.inlet.conc_mass_comp["X_ND"],
+        obj=fs.TU.inlet.conc_mass_comp[0, "X_ND"],
         name="X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
@@ -1562,7 +1562,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="ASM1/ADM1 Translator Inlet",
     )
     exports.add(
-        obj=fs.asm_adm.inlet.conc_mass_comp[0, 0, "S_S"],
+        obj=fs.asm_adm.inlet.conc_mass_comp[0, "S_S"],
         name="S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
