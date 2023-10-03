@@ -25,8 +25,10 @@ from watertap.tools.oli.watertap_to_oli_helper_functions import (
     names_db,
 )
 
+
 @pytest.mark.parametrize(
-    "input_name,expected_output", [
+    "input_name,expected_output",
+    [
         ("NaOH", "NAOH"),
         ("B[OH]3", "BOH3"),
         ("B[OH]4_-", "BOH4ION"),
@@ -34,29 +36,40 @@ from watertap.tools.oli.watertap_to_oli_helper_functions import (
         ("Cl_-", "CLION"),
         ("Mg_2+", "MGION"),
         ("HCO3_2-", "HCO3ION"),
-    ]
+    ],
 )
 def test_watertap_to_oli(input_name: str, expected_output: str):
     assert watertap_to_oli(input_name).oli_name == expected_output
-    
+
+
 @pytest.mark.unit
 def test_case_exception():
     with pytest.raises(RuntimeError) as excinfo:
         val = "abc_2+"
         watertap_to_oli(val)
-    assert str(excinfo.value) == f" At least 1 uppercase letter is required to specify a molecule, not '{val}'."
+    assert (
+        str(excinfo.value)
+        == f" At least 1 uppercase letter is required to specify a molecule, not '{val}'."
+    )
+
+
 def test_charge_exception():
     with pytest.raises(RuntimeError) as excinfo:
         val = "Na_2#"
         watertap_to_oli(val)
     assert str(excinfo.value) == " Only + and - are valid charge indicators."
 
+
 @pytest.mark.unit
 def test_reverse_lookup():
-    assert oli_reverse_lookup("NAION", names_db).watertap_name  == "Na_+"
+    assert oli_reverse_lookup("NAION", names_db).watertap_name == "Na_+"
+
 
 @pytest.mark.unit
 def test_reverse_lookup_exception():
     with pytest.raises(RuntimeError) as excinfo:
         oli_reverse_lookup("Na_-", names_db)
-    assert str(excinfo.value) == " Component Na_- not found in names_db. Please update the dictionary if you wish to hard code OLI names."    
+    assert (
+        str(excinfo.value)
+        == " Component Na_- not found in names_db. Please update the dictionary if you wish to hard code OLI names."
+    )

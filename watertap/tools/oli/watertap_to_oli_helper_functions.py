@@ -62,11 +62,13 @@ def watertap_to_oli(watertap_name: str) -> OLIName:
         - molar_mass: weight of 1 mole of the substance (grams per mole)
 
     """
-    c = findall(r'[A-Z]', watertap_name)
+    c = findall(r"[A-Z]", watertap_name)
     print(c)
     if len(c) < 1:
-        raise RuntimeError(f" At least 1 uppercase letter is required to specify a molecule, not '{watertap_name}'.")
-        
+        raise RuntimeError(
+            f" At least 1 uppercase letter is required to specify a molecule, not '{watertap_name}'."
+        )
+
     components = watertap_name.split("_")
 
     print(components)
@@ -74,7 +76,7 @@ def watertap_to_oli(watertap_name: str) -> OLIName:
     if len(components) == 1:
         molecule = components[0]
         charge = 0
-        
+
     # charged molecule
     elif len(components) == 2:
         molecule = components[0] + "ION"

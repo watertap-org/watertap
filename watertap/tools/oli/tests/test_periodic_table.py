@@ -18,14 +18,15 @@ from os.path import join
 
 from pandas import read_csv
 
+
 @pytest.fixture
 def get_test_file_columns():
     test_file = read_csv(join(Path(__file__).parents[1], "periodic_table.csv"))
     return test_file.columns
 
+
 @pytest.mark.unit
 def test_periodic_table_headers(get_test_file_columns):
     test_headers = ["AtomicMass", "Symbol"]
-    
+
     assert all(header in get_test_file_columns for header in test_headers) == True
-    
