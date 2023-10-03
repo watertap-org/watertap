@@ -1708,14 +1708,14 @@ def export_variables(flowsheet=None, exports=None):
 
     exports.add(
         obj=fs.asm_adm.outlet.flow_vol[0],
-        name="ASM/ADM outlet flow rate",
+        name="Anaerobic digestor inlet flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
-        description="ASM1/ADM1 translator outlet flow rate",
+        description="Anaerobic digestor inlet flow rate",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_su"],
@@ -1726,7 +1726,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Monosaccharides concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_aa"],
@@ -1737,7 +1737,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Amino acids concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_fa"],
@@ -1748,7 +1748,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Long chain fatty acids concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_va"],
@@ -1759,7 +1759,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Total valerate concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_bu"],
@@ -1770,7 +1770,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Total butyrate concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_pro"],
@@ -1781,7 +1781,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Total propionate concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_ac"],
@@ -1792,7 +1792,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Total acetate concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_h2"],
@@ -1803,7 +1803,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Hydrogen gas concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_ch4"],
@@ -1814,7 +1814,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Methane gas concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_IC"],
@@ -1825,7 +1825,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inorganic carbon concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_IN"],
@@ -1836,7 +1836,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inorganic nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_I"],
@@ -1847,7 +1847,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Soluble inerts concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_c"],
@@ -1858,7 +1858,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Composites concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_ch"],
@@ -1869,7 +1869,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Carbohydrates concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_pr"],
@@ -1880,7 +1880,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Proteins concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_li"],
@@ -1891,7 +1891,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Lipids concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_su"],
@@ -1902,7 +1902,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Sugar degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_aa"],
@@ -1913,7 +1913,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Amino acid degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_fa"],
@@ -1924,7 +1924,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Long chain fatty acid (LCFA) degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_c4"],
@@ -1935,7 +1935,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Valerate and butyrate degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_pro"],
@@ -1946,7 +1946,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Propionate degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_ac"],
@@ -1957,7 +1957,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Acetate degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_h2"],
@@ -1968,7 +1968,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Hydrogen degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_I"],
@@ -1979,19 +1979,19 @@ def export_variables(flowsheet=None, exports=None):
         description="Particulate inerts concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Inlet (post-interface)",
     )
 
     exports.add(
         obj=fs.adm_asm.inlet.flow_vol[0],
-        name="ADM/ASM inlet flow rate",
+        name="Anaerobic digestor liquid outlet flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
-        description="ADM1/ASM1 translator inlet flow rate",
+        description="Anaerobic digestor liquid outlet flow rate",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_su"],
@@ -2002,7 +2002,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Monosaccharides concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Outlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_aa"],
@@ -2013,7 +2013,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Amino acids concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_fa"],
@@ -2024,7 +2024,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Long chain fatty acids concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_va"],
@@ -2035,7 +2035,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Total valerate concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_bu"],
@@ -2046,7 +2046,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Total butyrate concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_pro"],
@@ -2057,7 +2057,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Total propionate concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_ac"],
@@ -2068,7 +2068,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Total acetate concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_h2"],
@@ -2079,7 +2079,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Hydrogen gas concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_ch4"],
@@ -2090,7 +2090,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Methane gas concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_IC"],
@@ -2101,7 +2101,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inorganic carbon concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_IN"],
@@ -2112,7 +2112,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inorganic nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_I"],
@@ -2123,7 +2123,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Soluble inerts concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_c"],
@@ -2134,7 +2134,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Composites concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_ch"],
@@ -2145,7 +2145,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Carbohydrates concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_pr"],
@@ -2156,7 +2156,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Proteins concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_li"],
@@ -2167,7 +2167,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Lipids concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_su"],
@@ -2178,7 +2178,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Sugar degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_aa"],
@@ -2189,7 +2189,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Amino acid degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_fa"],
@@ -2200,7 +2200,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Long chain fatty acid (LCFA) degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_c4"],
@@ -2211,7 +2211,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Valerate and butyrate degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_pro"],
@@ -2222,7 +2222,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Propionate degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_ac"],
@@ -2233,7 +2233,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Acetate degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_h2"],
@@ -2244,7 +2244,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Hydrogen degraders concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_I"],
@@ -2255,7 +2255,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Particulate inerts concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Inlet",
+        output_category="Anaerobic Digestor Liquid Outlet (pre-interface)",
     )
 
     exports.add(
