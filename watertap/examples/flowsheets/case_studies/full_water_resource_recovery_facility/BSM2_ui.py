@@ -908,7 +908,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Primary Clarifier Effluent",
     )
     exports.add(
-        obj=fs.CL.effluent.alkalinity,
+        obj=fs.CL.effluent.alkalinity[0],
         name="S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
@@ -1063,7 +1063,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Primary Clarifier Underflow",
     )
     exports.add(
-        obj=fs.CL.underflow.alkalinity,
+        obj=fs.CL.underflow.alkalinity[0],
         name="S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
@@ -1218,7 +1218,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="ASP Recycle Inlet",
     )
     exports.add(
-        obj=fs.SP6.recycle.alkalinity,
+        obj=fs.SP6.recycle.alkalinity[0],
         name="S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
@@ -1373,7 +1373,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Secondary Clarifier Inlet",
     )
     exports.add(
-        obj=fs.SP5.overflow.alkalinity,
+        obj=fs.SP5.overflow.alkalinity[0],
         name="S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
@@ -1528,7 +1528,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Thickener Inlet",
     )
     exports.add(
-        obj=fs.TU.inlet.alkalinity,
+        obj=fs.TU.inlet.alkalinity[0],
         name="S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
