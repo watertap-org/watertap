@@ -765,7 +765,7 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     exports.add(
-        obj=fs.CL.effluent.flow_vol,
+        obj=fs.CL.effluent.flow_vol[0],
         name="Primary clarifier effluent flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
@@ -920,7 +920,7 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     exports.add(
-        obj=fs.CL.underflow.flow_vol,
+        obj=fs.CL.underflow.flow_vol[0],
         name="Primary clarifier underflow flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
@@ -1075,7 +1075,7 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     exports.add(
-        obj=fs.SP6.recycle.flow_vol,
+        obj=fs.SP6.recycle.flow_vol[0],
         name="ASP recycle flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
@@ -1230,7 +1230,7 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     exports.add(
-        obj=fs.SP5.overflow.flow_vol,
+        obj=fs.SP5.overflow.flow_vol[0],
         name="Secondary clarifier flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
@@ -1385,7 +1385,7 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     exports.add(
-        obj=fs.TU.inlet.flow_vol,
+        obj=fs.TU.inlet.flow_vol[0],
         name="Thickener flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
