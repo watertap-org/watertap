@@ -9,10 +9,17 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+"""
+GUI configuration for the base BSM2 flowsheet.
+"""
+
 from pyomo.environ import units as pyunits, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
+
 from watertap.ui.fsapi import FlowsheetInterface
+
 from watertap.core.util.initialization import assert_degrees_of_freedom
+
 from watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.BSM2 import (
     build,
     set_operating_conditions,
@@ -22,6 +29,9 @@ from watertap.examples.flowsheets.case_studies.full_water_resource_recovery_faci
 
 
 def export_to_ui():
+    """
+    Exports the variables, flowsheet build, and solver results to the GUI.
+    """
     return FlowsheetInterface(
         name="BSM2",
         do_export=export_variables,
@@ -31,6 +41,9 @@ def export_to_ui():
 
 
 def export_variables(flowsheet=None, exports=None):
+    """
+    Exports the variables to the GUI.
+    """
     fs = flowsheet
     # --- Input data ---
     # Feed conditions
@@ -2773,7 +2786,9 @@ def export_variables(flowsheet=None, exports=None):
 
 
 def build_flowsheet():
-    # build and solve initial flowsheet
+    """
+    Builds the initial flowsheet.
+    """
     m = build()
 
     set_operating_conditions(m)
@@ -2795,6 +2810,9 @@ def build_flowsheet():
 
 
 def solve_flowsheet(flowsheet=None):
+    """
+    Solves the initial flowsheet.
+    """
     fs = flowsheet
     results = solve(fs)
     return results
