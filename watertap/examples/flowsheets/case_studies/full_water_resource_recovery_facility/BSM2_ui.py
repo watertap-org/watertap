@@ -9,6 +9,8 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+from pyomo.environ import units as pyunits, assert_optimal_termination
+from pyomo.util.check_units import assert_units_consistent
 from watertap.ui.fsapi import FlowsheetInterface
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.BSM2 import (
@@ -16,10 +18,7 @@ from watertap.examples.flowsheets.case_studies.full_water_resource_recovery_faci
     set_operating_conditions,
     initialize_system,
     solve,
-    add_costing,
 )
-from pyomo.environ import units as pyunits, assert_optimal_termination
-from pyomo.util.check_units import assert_units_consistent
 
 
 def export_to_ui():
