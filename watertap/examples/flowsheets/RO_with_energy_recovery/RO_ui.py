@@ -38,28 +38,26 @@ def export_variables(flowsheet=None, exports=None):
     # --- Input data ---
     # Feed conditions
     exports.add(
-        obj=fs.feed.properties[0].flow_vol_phase["Liq"],
-        name="Volumetric flow rate",
-        ui_units=pyunits.m**3 / pyunits.hour,
-        display_units="m3/hr",
-        rounding=2,
-        description="Inlet volumetric flow rate",
+        obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],
+        name="Water mass flowrate",
+        ui_units=pyunits.kg / pyunits.s,
+        display_units="kg/s",
+        rounding=3,
+        description="Inlet water mass flowrate",
         is_input=True,
         input_category="Feed",
-        is_output=True,
-        output_category="Feed",
+        is_output=False,
     )
     exports.add(
-        obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
-        rounding=2,
-        description="Inlet NaCl concentration",
+        obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"],
+        name="NaCl mass flowrate",
+        ui_units=pyunits.kg / pyunits.s,
+        display_units="kg/s",
+        rounding=3,
+        description="Inlet NaCl mass flowrate",
         is_input=True,
         input_category="Feed",
-        is_output=True,
-        output_category="Feed",
+        is_output=False,
     )
 
     # Unit model data, feed pump
@@ -144,17 +142,6 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.RO.area,
-        name="Area",
-        ui_units=pyunits.m**2,
-        display_units="m^2",
-        rounding=2,
-        description="Membrane area",
-        is_input=True,
-        input_category="Reverse Osmosis",
-        is_output=False,
-    )
-    exports.add(
         obj=fs.RO.width,
         name="Width",
         ui_units=pyunits.m,
@@ -164,6 +151,18 @@ def export_variables(flowsheet=None, exports=None):
         is_input=True,
         input_category="Reverse Osmosis",
         is_output=False,
+    )
+    exports.add(
+        obj=fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
+        name="Water mass recovery",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Water mass recovery of RO unit",
+        is_input=True,
+        input_category="Reverse Osmosis",
+        is_output=True,
+        output_category="System metrics",
     )
 
     # Unit model data, ERD
@@ -269,6 +268,30 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
 
+    # Feed
+    exports.add(
+        obj=fs.feed.properties[0].flow_vol_phase["Liq"],
+        name="Volumetric flow rate",
+        ui_units=pyunits.m**3 / pyunits.hour,
+        display_units="m3/hr",
+        rounding=2,
+        description="Inlet volumetric flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Feed",
+    )
+    exports.add(
+        obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
+        name="NaCl concentration",
+        ui_units=pyunits.g / pyunits.L,
+        display_units="g/L",
+        rounding=2,
+        description="Inlet NaCl concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Feed",
+    )
+
     # Product
     exports.add(
         obj=fs.product.properties[0].flow_vol,
@@ -293,14 +316,38 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Product",
     )
 
+    # Disposal
+    exports.add(
+        obj=fs.disposal.properties[0].flow_vol,
+        name="Volumetric flow rate",
+        ui_units=pyunits.m**3 / pyunits.hr,
+        display_units="m3/h",
+        rounding=2,
+        description="Outlet product water volumetric flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Disposal",
+    )
+    exports.add(
+        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
+        name="NaCl concentration",
+        ui_units=pyunits.g / pyunits.L,
+        display_units="g/L",
+        rounding=3,
+        description="Outlet product water NaCl concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Disposal",
+    )
+
     # System metrics
     exports.add(
-        obj=fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
-        name="Water mass recovery",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
+        obj=fs.RO.area,
+        name="Area",
+        ui_units=pyunits.m**2,
+        display_units="m^2",
         rounding=2,
-        description="Water mass recovery",
+        description="Membrane area",
         is_input=False,
         is_output=True,
         output_category="System metrics",
