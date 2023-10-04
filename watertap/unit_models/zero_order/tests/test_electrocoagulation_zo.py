@@ -215,7 +215,7 @@ class TestECZO_AL:
         assert pytest.approx(0.65510, rel=1e-3) == value(
             m.fs.costing.electricity_intensity
         )
-        assert pytest.approx(3257.909, rel=1e-3) == value(
+        assert pytest.approx(4928.611, rel=1e-3) == value(
             m.fs.unit.costing.capital_cost_reactor
         )
         assert pytest.approx(55926.1017, rel=1e-3) == value(
@@ -403,11 +403,11 @@ class TestECZO_FE:
 
         results = solver.solve(m)
         check_optimal_termination(results)
-        assert pytest.approx(0.45867, rel=1e-3) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.4696, rel=1e-3) == value(m.fs.costing.LCOW)
         assert pytest.approx(0.21057, rel=1e-3) == value(
             m.fs.costing.electricity_intensity
         )
-        assert pytest.approx(107204.804, rel=1e-3) == value(
+        assert pytest.approx(162180.930, rel=1e-3) == value(
             m.fs.unit.costing.capital_cost_reactor
         )
         assert pytest.approx(17976.2465, rel=1e-3) == value(

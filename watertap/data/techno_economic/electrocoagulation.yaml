@@ -43,7 +43,7 @@ default:
     cost_factor: TPEC
     ec_reactor_cap_base:
       value: 11500
-      units: USD_2020
+      units: USD_2000
       reference: Saad et al., 2022 - doi.org/10.1016/j.jksus.2022.102015; Smith, 2005 - doi.org/10.1205/cherd.br.0509
     ec_reactor_cap_exp:
       value: 0.45
