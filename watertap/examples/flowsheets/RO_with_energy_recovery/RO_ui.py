@@ -11,17 +11,14 @@
 #################################################################################
 from idaes.core.solvers import get_solver
 from watertap.ui.fsapi import FlowsheetInterface
-from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     build,
     set_operating_conditions,
     initialize_system,
-    optimize_set_up,
     solve,
     ERDtype,
 )
-from pyomo.environ import units as pyunits, assert_optimal_termination
-from pyomo.util.check_units import assert_units_consistent
+from pyomo.environ import units as pyunits
 
 
 def export_to_ui():
