@@ -234,7 +234,7 @@ Code Documentation
 -------------------
 
 * :mod:`watertap.unit_models.electrolyzer`
-* :mod:`watertap.costing.units.electrolyzer`
+* :mod:`watertap.costing.unit_models.electrolyzer`
 
 References
 -----------

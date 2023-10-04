@@ -54,6 +54,8 @@ import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
 
+__author__ = "Alexander Dudchenko, Adam Atia"
+
 
 def main():
     solver = get_solver()
@@ -167,7 +169,6 @@ def build():
     m.fs.properties = MCASParameterBlock(**default)
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
-    m.fs.feed.properties[0].conc_mol_phase_comp[...]
     m.fs.feed.properties[0].flow_mass_phase_comp[...]
 
     m.fs.product = Product(property_package=m.fs.properties)
@@ -195,7 +196,7 @@ def build():
         units=pyunits.USD_2020 / pyunits.m**3,
     )
     m.fs.costing.disposal_cost.fix()
-    m.fs.costing.add_defined_flow("disposal cost", m.fs.costing.disposal_cost)
+    m.fs.costing.register_flow_type("disposal cost", m.fs.costing.disposal_cost)
     m.fs.costing.cost_flow(
         pyunits.convert(
             m.fs.disposal.properties[0].flow_vol_phase["Liq"],
@@ -256,7 +257,7 @@ def fix_init_vars(m):
     # NF membrane props for NF270
     m.fs.NF.nfUnit.radius_pore.fix(0.5e-9)
     m.fs.NF.nfUnit.membrane_thickness_effective.fix(8.598945196055952e-07)
-    m.fs.NF.nfUnit.membrane_charge_density.fix(-680)
+    m.fs.NF.nfUnit.membrane_charge_density.fix(-50)
     m.fs.NF.nfUnit.dielectric_constant_pore.fix(41.3)
     iscale.calculate_scaling_factors(m)
 
@@ -272,12 +273,11 @@ def unfix_opt_vars(m):
     m.fs.NF.nfUnit.area.unfix()
     m.fs.NF.nfUnit.velocity.unfix()
     m.fs.NF.nfUnit.velocity.setub(0.25)
-    m.fs.product.max_hardness.fix(200)
-
+    m.fs.product.max_hardness.fix(500)
+    m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"].setub(0.9)
     # Touch total_hardness (on-demand property) at feed and disposal for reporting
     m.fs.feed.properties[0].total_hardness
     m.fs.disposal.properties[0].total_hardness
-    iscale.calculate_scaling_factors(m)
 
 
 def add_objective(m):
@@ -322,6 +322,8 @@ def init_system(m, solver):
     propagate_state(m.fs.nfUnit_product_to_product)
     m.fs.NF.product.initialize(optarg=solver.options)
     m.fs.NF.retentate.initialize(optarg=solver.options)
+
+    m.fs.costing.initialize()
 
 
 def init_nf_block(blk, solver):
@@ -397,7 +399,6 @@ def set_NF_feed(
     )
 
     blk.feed.properties[0].temperature.fix(298.15)
-    iscale.calculate_scaling_factors(blk)
 
     # switching to concentration for ease of adjusting in UI
     for ion, x in conc_mass_phase_comp.items():

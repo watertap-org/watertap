@@ -300,7 +300,7 @@ class TestNanoFiltration_with_CP_5ions:
             assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
-        for (obj_str, obj_type) in cv_objs_type_dict.items():
+        for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
@@ -559,7 +559,7 @@ class TestNanoFiltration_without_CP_5ions:
             assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
-        for (obj_str, obj_type) in cv_objs_type_dict.items():
+        for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
@@ -794,7 +794,7 @@ class TestNanoFiltration_with_CP_2ions:
             assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
-        for (obj_str, obj_type) in cv_objs_type_dict.items():
+        for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
@@ -1025,7 +1025,7 @@ class TestNanoFiltration_without_CP_2ions:
             assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
-        for (obj_str, obj_type) in cv_objs_type_dict.items():
+        for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
@@ -1266,7 +1266,7 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
             assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
-        for (obj_str, obj_type) in cv_objs_type_dict.items():
+        for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
@@ -1769,8 +1769,10 @@ def test_pressure_recovery_step_2_ions():
     unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
     assert len(unscaled_var_list) == 0
 
-    badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
-    assert len(badly_scaled_var_lst) == 0
+    # Expect only flux_mol_phase_comp to be poorly scaled, as we have not
+    # calculated correct values just yet.
+    for var in list(badly_scaled_var_generator(m.fs.unit)):
+        assert "flux_mol_phase_comp" in var[0].name
 
     initialization_tester(m)
 
@@ -1885,7 +1887,6 @@ def test_pressure_recovery_step_5_ions():
 
     for index in m.fs.feed.properties[0].flow_mol_phase_comp:
         scale = calc_scale(m.fs.feed.properties[0].flow_mol_phase_comp[index].value)
-        print(f"{index} flow_mol_phase_comp scaling factor = {10 ** (scale)}")
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 10 ** (scale), index=index
         )
@@ -1911,7 +1912,7 @@ def test_pressure_recovery_step_5_ions():
     m.fs.nfUnit.spacer_mixing_length.fix()
 
     m.fs.nfUnit.radius_pore.fix(0.5e-9)
-    m.fs.nfUnit.membrane_thickness_effective.fix(8.598945196055952e-07)
+    m.fs.nfUnit.membrane_thickness_effective.fix(8.6e-07)
     m.fs.nfUnit.membrane_charge_density.fix(-680)
     m.fs.nfUnit.dielectric_constant_pore.fix(41.3)
     m.fs.nfUnit.mixed_permeate[0].pressure.fix(101325)
