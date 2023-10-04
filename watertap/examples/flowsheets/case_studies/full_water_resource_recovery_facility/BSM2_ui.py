@@ -1557,10 +1557,10 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
-        description="ASM1/ADM1 translator inlet flow rate",
+        description="ASM1/ADM1 interface inlet flow rate",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "S_I"],
@@ -1571,7 +1571,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inlet soluble inert organic matter concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "S_S"],
@@ -1582,7 +1582,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inlet readily biodegradable substrate concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "X_I"],
@@ -1593,7 +1593,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inlet particulate inert organic matter concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "X_S"],
@@ -1604,7 +1604,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inlet slowly biodegradable substrate concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "X_BH"],
@@ -1615,7 +1615,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inlet active heterotrophic biomass concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "X_BA"],
@@ -1626,7 +1626,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inlet active autotrophic biomass concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "X_P"],
@@ -1637,7 +1637,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inlet particulate products arising from biomass decay concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "S_O"],
@@ -1648,7 +1648,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inlet oxygen concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "S_NO"],
@@ -1659,7 +1659,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inlet nitrate and nitrite nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "S_NH"],
@@ -1670,7 +1670,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inlet ammonium and ammonia nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "S_ND"],
@@ -1681,7 +1681,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inlet soluble biodegradable organic nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "X_ND"],
@@ -1692,7 +1692,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inlet particulate biodegradable organic nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
     exports.add(
         obj=fs.asm_adm.inlet.alkalinity[0],
@@ -1703,7 +1703,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Inlet alkalinity concentration",
         is_input=False,
         is_output=True,
-        output_category="ASM1/ADM1 Translator Inlet",
+        output_category="ASM1/ADM1 Interface Inlet",
     )
 
     exports.add(
@@ -2264,10 +2264,10 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
-        description="ADM1/ASM1 translator outlet flow rate",
+        description="ADM1/ASM1 interface outlet flow rate",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "S_I"],
@@ -2278,7 +2278,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet soluble inert organic matter concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "S_S"],
@@ -2289,7 +2289,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet readily biodegradable substrate concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "X_I"],
@@ -2300,7 +2300,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet particulate inert organic matter concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "X_S"],
@@ -2311,7 +2311,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet slowly biodegradable substrate concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "X_BH"],
@@ -2322,7 +2322,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet active heterotrophic biomass concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "X_BA"],
@@ -2333,7 +2333,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet active autotrophic biomass concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "X_P"],
@@ -2344,7 +2344,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet particulate products arising from biomass decay concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "S_O"],
@@ -2355,7 +2355,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet oxygen concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "S_NO"],
@@ -2366,7 +2366,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet nitrate and nitrite nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "S_NH"],
@@ -2377,7 +2377,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet ammonium and ammonia nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "S_ND"],
@@ -2388,7 +2388,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet soluble biodegradable organic nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "X_ND"],
@@ -2399,7 +2399,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet particulate biodegradable organic nitrogen concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
     exports.add(
         obj=fs.adm_asm.outlet.alkalinity[0],
@@ -2410,7 +2410,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Outlet alkalinity concentration",
         is_input=False,
         is_output=True,
-        output_category="ADM1/ASM1 Translator Outlet",
+        output_category="ADM1/ASM1 Interface Outlet",
     )
 
     exports.add(
