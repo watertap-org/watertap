@@ -339,7 +339,9 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             flow_in = pyunits.convert(
                 b.properties_in[0].flow_vol, to_units=pyunits.liter / pyunits.second
             )
-            return b.applied_current * (b.current_efficiency * b.mw_electrode_material)== (
+            return b.applied_current * (
+                b.current_efficiency * b.mw_electrode_material
+            ) == (
                 flow_in
                 * b.metal_dose
                 * b.valence_electrode_material
@@ -349,10 +351,6 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         @self.Constraint(doc="Total electrode area required")
         def eq_electrode_area_total(b):
             return b.anode_area == b.applied_current / b.current_density
-        
-        
-
-
 
         @self.Constraint(doc="Cell voltage")
         def eq_cell_voltage(b):
@@ -407,9 +405,26 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
     def calculate_scaling_factors(self):
 
-        print("FOUND IT")
-        pass
+        if iscale.get_scaling_factor(self.ohmic_resistance) is None:
+            iscale.set_scaling_factor(self.ohmic_resistance, 1e5)
 
+        if iscale.get_scaling_factor(self.charge_loading_rate) is None:
+            iscale.set_scaling_factor(self.charge_loading_rate, 1e-3)
+
+        if iscale.get_scaling_factor(self.applied_current) is None:
+            iscale.set_scaling_factor(self.applied_current, 1e-3)
+
+        if iscale.get_scaling_factor(self.power_required) is None:
+            iscale.set_scaling_factor(self.power_required, 1e-3)
+
+        if iscale.get_scaling_factor(self.metal_dose) is None:
+            iscale.set_scaling_factor(self.metal_dose, 1e3)
+
+        if iscale.get_scaling_factor(self.anode_area) is None:
+            iscale.set_scaling_factor(self.anode_area, 10)
+
+        if iscale.get_scaling_factor(self.cathode_area) is None:
+            iscale.set_scaling_factor(self.cathode_area, 10)
 
     @property
     def default_costing_method(self):
@@ -424,10 +439,6 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         ec = blk.unit_model
         costing = blk.config.flowsheet_costing_block
         base_currency = costing.base_currency
-
-        flow_mgd = pyunits.convert(
-            ec.properties_in[0].flow_vol, to_units=pyunits.Mgallons / pyunits.day
-        )
 
         flow_m3_yr = pyunits.convert(
             ec.properties_in[0].flow_vol, to_units=pyunits.m**3 / pyunits.year
@@ -447,14 +458,14 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         # Add cost variable and constraint
         blk.capital_cost = Var(
             initialize=1,
-            units=blk.config.flowsheet_costing_block.base_currency,
+            units=base_currency,
             bounds=(0, None),
             doc="Capital cost of unit operation",
         )
 
         blk.fixed_operating_cost = Var(
             initialize=1,
-            units=blk.config.flowsheet_costing_block.base_currency / pyunits.year,
+            units=base_currency / pyunits.year,
             bounds=(0, None),
             doc="Fixed operating cost of unit operation",
         )
@@ -509,8 +520,6 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             costing_ec.electrode_material_cost.fix(3.41)
 
         if reactor_mat == "stainless_steel":
-            # default is for PVC, so only need to change if it is stainless steel
-            # PVC coeff reference: Uludag-Demirer et al., 2020 - https://doi.org/10.3390/su12072697
             # Steel coeff reference: Smith, 2005 - https://doi.org/10.1205/cherd.br.0509
             costing_ec.ec_reactor_cap_material_coeff.fix(3.4)
 
@@ -537,16 +546,9 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
         blk.capital_cost_floc_reactor = Var(
             initialize=1e4,
-            units=base_currency,  # pyunits.dimensionless,
+            units=base_currency,
             bounds=(0, None),
             doc="Cost of floc. basin",
-        )
-
-        blk.annual_labor_maintenance = Var(
-            initialize=1e4,
-            units=base_currency / pyunits.year,
-            bounds=(0, None),
-            doc="Annual labor + maintenance cost",
         )
 
         blk.annual_sludge_management = Var(
@@ -558,26 +560,32 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
         blk.capital_cost_floc_constraint = Constraint(
             expr=blk.capital_cost_floc_reactor
-            == capital_floc_a_parameter
-            * pyunits.convert(ec.floc_basin_vol, to_units=pyunits.Mgallons)
-            + capital_floc_b_parameter
+            == pyunits.convert(
+                capital_floc_a_parameter
+                * pyunits.convert(ec.floc_basin_vol, to_units=pyunits.Mgallons)
+                + capital_floc_b_parameter,
+                to_units=base_currency,
+            )
         )
 
         blk.capital_cost_reactor_constraint = Constraint(
             expr=blk.capital_cost_reactor
-            == (
+            == pyunits.convert(
                 (
-                    pyunits.convert(ec_reactor_cap_base, base_currency)
-                    * (ec.reactor_volume) ** ec_reactor_cap_exp
+                    (
+                        pyunits.convert(ec_reactor_cap_base, base_currency)
+                        * (ec.reactor_volume / pyunits.m**3) ** ec_reactor_cap_exp
+                    )
+                    * ec_reactor_cap_material_coeff
                 )
-                * ec_reactor_cap_material_coeff
+                * ec_reactor_cap_safety_factor,
+                to_units=base_currency,
             )
-            * ec_reactor_cap_safety_factor
         )
 
         blk.capital_cost_electrodes_constraint = Constraint(
             expr=blk.capital_cost_electrodes
-            == (ec.electrode_mass)
+            == ec.electrode_mass
             * pyunits.convert(electrode_material_cost, base_currency / pyunits.kg)
             * electrode_material_cost_coeff
         )
@@ -605,7 +613,10 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
         blk.annual_sludge_management_constraint = Constraint(
             expr=blk.annual_sludge_management
-            == blk.annual_sludge_flow * sludge_handling_cost
+            == pyunits.convert(
+                blk.annual_sludge_flow * sludge_handling_cost,
+                to_units=base_currency / pyunits.year,
+            )
         )
 
         blk.fixed_operating_cost_constraint = Constraint(
