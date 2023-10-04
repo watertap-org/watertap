@@ -172,7 +172,10 @@ thermo_config = {
                     pyunits.J / pyunits.K / pyunits.mol,
                 ),
                 "pressure_sat_comp_coeff": {
-                    "A": (4.6543, None),  # [1], temperature range 255.9 K - 373 K
+                    "A": (
+                        4.6543,
+                        pyunits.dimensionless,
+                    ),  # [1], temperature range 255.9 K - 373 K
                     "B": (1435.264, pyunits.K),
                     "C": (-64.848, pyunits.K),
                 },
@@ -268,7 +271,7 @@ thermo_config = {
                     "3": (647.13, pyunits.K),
                     "4": (0.081, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -396,7 +399,7 @@ thermo_config = {
                     "3": (429.69, pyunits.K),
                     "4": (0.259, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-677.1, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-677.1, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (135749.9, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -457,7 +460,7 @@ reaction_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
@@ -624,7 +627,7 @@ class TestCarbonationProcess:
         model = equilibrium_config
 
         # Call scaling factor helper functions
-        _set_equ_rxn_scaling(model.fs.unit, reaction_config)
+        _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, reaction_config)
         _set_mat_bal_scaling_FpcTP(model.fs.unit)
         _set_ene_bal_scaling(model.fs.unit)
 
@@ -649,7 +652,7 @@ class TestCarbonationProcess:
         badly_scaled_var_values = {
             var.name: val
             for (var, val) in iscale.badly_scaled_var_generator(
-                model, large=1e4, small=1e-2
+                model, large=1e5, small=1e-2
             )
         }
         assert not badly_scaled_var_values
@@ -770,7 +773,7 @@ class TestCarbonationProcess:
             )
         )
         assert pytest.approx(5.339891, rel=1e-4) == pH
-        assert pytest.approx(8.660655, rel=1e-4) == pOH
+        assert pytest.approx(8.654294, rel=1e-4) == pOH
 
         CO2_sorbed = value(
             model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[

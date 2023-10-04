@@ -13,8 +13,8 @@ See documentation for :ref:`Helper Methods for Electricity Demand<electricity_me
 
 Costing Method
 --------------
-Costing is calculated using the **cost_power_law_flow** method in the zero-order costing package.
-See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
+Costing is calculated using the :py:meth:`~watertap.unit_models.zero_order.cloth_media_filtration_zo.ClothMediaFiltrationData.cost_cloth_media_filtration` method.
+For full details on costing, see documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 .. index::
    pair: watertap.unit_models.zero_order.cloth_media_filtration_zo;cloth_media_filtration_zo

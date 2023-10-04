@@ -108,29 +108,29 @@ rHGO_dye_rejection:
     cost_method: cost_membrane
     cost_factor: None
     membrane_cost:
-      value: 15
+      value: 50
       units: USD_2018/m^2
     membrane_replacement_rate:
-      value: 0.15
+      value: 0.2
       units: 1/year
   recovery_frac_mass_H2O:
-    value: 0.75
+    value: 0.83
     units: dimensionless
   default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
   removal_frac_mass_comp:
     dye:
-      value: 0.9839
+      value: 0.9917
       units: dimensionless
       constituent_longform: Dye
     tds:
-      value: 0.2655
+      value: 0.2117357
       units: dimensionless
       constituent_longform: Total Suspended Solids (TSS)
   applied_pressure:
-    value: 6.895   # corresponds to default of 100 psi
+    value: 7   # corresponds to default of 100 psi
     units: bar
   water_permeability_coefficient:
-    value: 100
+    value: 105
     units: liters/m^2/hour/bar

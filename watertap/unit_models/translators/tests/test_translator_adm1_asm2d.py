@@ -124,13 +124,13 @@ class TestAsm2dAdm1(object):
 
         m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.034597)
         m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.015037)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(0)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(0)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(0)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(0)
         m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.025072)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(0)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(0)
         m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.34628)
         m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.60014)
         m.fs.unit.inlet.conc_mass_comp[0, "S_IP"].fix(0.22677)
@@ -139,13 +139,13 @@ class TestAsm2dAdm1(object):
         m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(7.3687)
         m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(7.7308)
         m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(10.3288)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(0)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(0)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(0)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(0)
         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(12.7727)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(0.0022493)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(1.04110)
@@ -178,7 +178,7 @@ class TestAsm2dAdm1(object):
         assert hasattr(asmadm.fs.unit.outlet, "temperature")
         assert hasattr(asmadm.fs.unit.outlet, "pressure")
 
-        assert number_variables(asmadm) == 180
+        assert number_variables(asmadm) == 194
         assert number_total_constraints(asmadm) == 21
 
         assert number_unused_variables(asmadm.fs.unit) == 12
@@ -227,28 +227,28 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(0.60014, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_NH4"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_N2"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_NO3"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_O2"]
         )
         assert pytest.approx(0.22677, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_PO4"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_AUT"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_H"]
         )
         assert pytest.approx(12.7727, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_I"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PAO"]
         )
         assert pytest.approx(0.0022493, rel=1e-3) == value(

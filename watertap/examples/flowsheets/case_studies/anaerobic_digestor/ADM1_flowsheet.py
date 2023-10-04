@@ -51,7 +51,7 @@ def build_flowsheet():
     m.fs.R1.inlet.flow_vol.fix(170 * pyo.units.m**3 / pyo.units.day)
     m.fs.R1.inlet.temperature.fix(308.15 * pyo.units.K)
     m.fs.R1.inlet.pressure.fix(1 * pyo.units.atm)
-    m.fs.R1.inlet.conc_mass_comp[0, "S_su"].fix(1 * pyo.units.mg / pyo.units.liter)
+    m.fs.R1.inlet.conc_mass_comp[0, "S_su"].fix(10 * pyo.units.mg / pyo.units.liter)
     m.fs.R1.inlet.conc_mass_comp[0, "S_aa"].fix(1 * pyo.units.mg / pyo.units.liter)
     m.fs.R1.inlet.conc_mass_comp[0, "S_fa"].fix(1 * pyo.units.mg / pyo.units.liter)
     m.fs.R1.inlet.conc_mass_comp[0, "S_va"].fix(1 * pyo.units.mg / pyo.units.liter)
@@ -72,7 +72,7 @@ def build_flowsheet():
     m.fs.R1.inlet.conc_mass_comp[0, "X_ch"].fix(5000 * pyo.units.mg / pyo.units.liter)
     m.fs.R1.inlet.conc_mass_comp[0, "X_pr"].fix(20000 * pyo.units.mg / pyo.units.liter)
     m.fs.R1.inlet.conc_mass_comp[0, "X_li"].fix(5000 * pyo.units.mg / pyo.units.liter)
-    m.fs.R1.inlet.conc_mass_comp[0, "X_su"].fix(1 * pyo.units.mg / pyo.units.liter)
+    m.fs.R1.inlet.conc_mass_comp[0, "X_su"].fix(0.0 * pyo.units.mg / pyo.units.liter)
     m.fs.R1.inlet.conc_mass_comp[0, "X_aa"].fix(10 * pyo.units.mg / pyo.units.liter)
     m.fs.R1.inlet.conc_mass_comp[0, "X_fa"].fix(10 * pyo.units.mg / pyo.units.liter)
     m.fs.R1.inlet.conc_mass_comp[0, "X_c4"].fix(10 * pyo.units.mg / pyo.units.liter)
@@ -90,9 +90,9 @@ def build_flowsheet():
     m.fs.R1.liquid_outlet.temperature.fix(308.15 * pyo.units.K)
 
     # TO DO: Fix initialization
-    m.fs.R1.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-8})
+    m.fs.R1.initialize(outlvl=idaeslog.INFO_HIGH)
 
-    solver = get_solver(options={"bound_push": 1e-8})
+    solver = get_solver()
 
     results = solver.solve(m, tee=True)
 

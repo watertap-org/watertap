@@ -22,7 +22,6 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
     build,
     set_operating_conditions,
     initialize_system,
-    solve,
     optimize,
 )
 
@@ -61,17 +60,10 @@ def get_sweep_params(m, num_samples, use_LHS=False):
     return sweep_params
 
 
-def run_parameter_sweep(
-    csv_results_file_name=None,
-    h5_results_file_name=None,
-    seed=None,
-    use_LHS=False,
-    read_sweep_params_from_file=False,
-    sweep_params_fname="mc_sweep_params.yaml",
+def build_model(
     read_model_defauls_from_file=False,
     defaults_fname="default_configuration.yaml",
 ):
-
     # Set up the solver
     solver = get_solver()
 
@@ -80,38 +72,74 @@ def run_parameter_sweep(
     set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=solver)
     initialize_system(m, solver=solver)
 
-    # Simulate once outside the parameter sweep to ensure everything is appropriately initialized
-    solve(m, solver=solver)
-
     # Check if we need to read in the default model values from a file
     if read_model_defauls_from_file:
         set_defaults_from_yaml(m, defaults_fname)
 
-    # Run the parameter sweep study using num_samples randomly drawn from the above range
-    num_samples = 10
+    return m
 
+
+def build_sweep_params(
+    m,
+    use_LHS=False,
+    sweep_params_fname="mc_sweep_params.yaml",
+    read_sweep_params_from_file=False,
+    num_samples=10,
+):
     # Define the sampling type and ranges for three different variables
     if read_sweep_params_from_file:
         sweep_params = get_sweep_params_from_yaml(m, sweep_params_fname)
     else:
         sweep_params = get_sweep_params(m, num_samples, use_LHS=use_LHS)
 
-    # Define the outputs to be saved
+    return sweep_params
+
+
+def build_outputs(m):
     outputs = {}
     outputs["EC"] = m.fs.costing.specific_energy_consumption
     outputs["LCOW"] = m.fs.costing.LCOW
+    return outputs
+
+
+def run_parameter_sweep(
+    csv_results_file_name=None,
+    h5_results_file_name=None,
+    seed=None,
+    use_LHS=False,
+    sweep_params_fname="mc_sweep_params.yaml",
+    read_sweep_params_from_file=False,
+    read_model_defauls_from_file=False,
+    defaults_fname="default_configuration.yaml",
+):
+    # Set up the solver
+    solver = get_solver()
+
+    # Run the parameter sweep study using num_samples randomly drawn from the above range
+    num_samples = 10
 
     # Run the parameter sweep
     global_results_arr, _ = parameter_sweep(
-        m,
-        sweep_params,
-        outputs,
+        build_model,
+        build_sweep_params,
+        build_outputs,
         csv_results_file_name=csv_results_file_name,
         h5_results_file_name=h5_results_file_name,
         optimize_function=optimize,
         optimize_kwargs={"solver": solver, "check_termination": False},
         num_samples=num_samples,
         seed=seed,
+        build_model_kwargs=dict(
+            read_model_defauls_from_file=read_model_defauls_from_file,
+            defaults_fname=defaults_fname,
+        ),
+        build_sweep_params_kwargs=dict(
+            num_samples=num_samples,
+            use_LHS=use_LHS,
+            sweep_params_fname=sweep_params_fname,
+            read_sweep_params_from_file=read_sweep_params_from_file,
+        ),
+        number_of_subprocesses=1,
     )
 
     return global_results_arr

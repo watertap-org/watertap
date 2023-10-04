@@ -38,9 +38,10 @@ from idaes.core import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 # Some more information about this module
-__author__ = "Marcus Holly"
+__author__ = "Marcus Holly, Adam Atia, Xinhong Liu"
 
 
 # Set up logger
@@ -101,6 +102,46 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
         self.X_PP = Solute(doc="Poly-phosphate. [kg P/m^3]")
         self.X_S = Solute(doc="Slowly biodegradable substrates. [kg COD/m^3]")
 
+        # Create sets for use across ASM models and associated unit models
+        self.non_particulate_component_set = pyo.Set(
+            initialize=[
+                "S_A",
+                "S_F",
+                "S_I",
+                "S_N2",
+                "S_NH4",
+                "S_NO3",
+                "S_O2",
+                "S_PO4",
+                "S_K",
+                "S_Mg",
+                "S_IC",
+                "H2O",
+            ]
+        )
+        self.particulate_component_set = pyo.Set(
+            initialize=[
+                "X_AUT",
+                "X_H",
+                "X_I",
+                "X_PAO",
+                "X_PHA",
+                "X_PP",
+                "X_S",
+            ]
+        )
+        self.tss_component_set = pyo.Set(
+            initialize=[
+                "X_AUT",
+                "X_H",
+                "X_I",
+                "X_PAO",
+                "X_PHA",
+                "X_PP",
+                "X_S",
+            ]
+        )
+
         # Heat capacity of water
         self.cp_mass = pyo.Param(
             mutable=False,
@@ -132,6 +173,49 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
             units=pyo.units.K,
         )
 
+        # COD to VSS coefficients
+        self.CODtoVSS_XI = pyo.Var(
+            initialize=1.5686,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="mass COD per mass VSS of XI",
+        )
+        self.CODtoVSS_XS = pyo.Var(
+            initialize=1.5686,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="mass COD per mass VSS of XS",
+        )
+        self.CODtoVSS_XBM = pyo.Var(
+            initialize=1.3072,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="mass COD per mass VSS of biomass",
+        )
+        self.CODtoVSS_XPHA = pyo.Var(
+            initialize=1.9608,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="mass COD per mass VSS of XPHA",
+        )
+        # Inorganic solids parameters
+        self.ISS_P = pyo.Var(
+            initialize=3.23,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="mass ISS per mass P",
+        )
+        self.f_ISS_BM = pyo.Var(
+            initialize=0.15,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="ISS fractional content of biomass",
+        )
+
+        # Fix Vars that are treated as Params
+        for v in self.component_objects(pyo.Var):
+            v.fix()
+
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties(
@@ -140,6 +224,13 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "temperature": {"method": None},
                 "conc_mass_comp": {"method": None},
+            }
+        )
+        obj.define_custom_properties(
+            {
+                "VSS": {"method": "_VSS"},
+                "ISS": {"method": "_ISS"},
+                "TSS": {"method": "_TSS"},
             }
         )
         obj.add_default_units(
@@ -269,7 +360,7 @@ class ModifiedASM2dStateBlockData(StateBlockData):
         self.flow_vol = pyo.Var(
             initialize=1.0,
             domain=pyo.NonNegativeReals,
-            doc="Total volumentric flowrate",
+            doc="Total volumetric flowrate",
             units=pyo.units.m**3 / pyo.units.s,
         )
         self.pressure = pyo.Var(
@@ -282,7 +373,7 @@ class ModifiedASM2dStateBlockData(StateBlockData):
         self.temperature = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=298.15,
-            bounds=(298.14, 323.15),
+            bounds=(273.15, 323.15),
             doc="Temperature",
             units=pyo.units.K,
         )
@@ -293,6 +384,69 @@ class ModifiedASM2dStateBlockData(StateBlockData):
             doc="Component mass concentrations",
             units=pyo.units.kg / pyo.units.m**3,
         )
+
+    # On-demand properties
+    def _VSS(self):
+        self.VSS = pyo.Var(
+            initialize=1,
+            domain=pyo.NonNegativeReals,
+            doc="Volatile suspended solids",
+            units=pyo.units.kg / pyo.units.m**3,
+        )
+
+        # TODO: X_SRB not included yet in biomass term summation
+        def rule_VSS(b):
+            return (
+                b.VSS
+                == b.conc_mass_comp["X_I"] / b.params.CODtoVSS_XI
+                + b.conc_mass_comp["X_S"] / b.params.CODtoVSS_XS
+                + (
+                    b.conc_mass_comp["X_H"]
+                    + b.conc_mass_comp["X_PAO"]
+                    + b.conc_mass_comp["X_AUT"]
+                )
+                / b.params.CODtoVSS_XBM
+                + b.conc_mass_comp["X_PHA"] / b.params.CODtoVSS_XPHA
+            )
+
+        self.eq_VSS = pyo.Constraint(rule=rule_VSS)
+
+    def _ISS(self):
+        self.ISS = pyo.Var(
+            initialize=1,
+            domain=pyo.NonNegativeReals,
+            doc="Inorganic suspended solids",
+            units=pyo.units.kg / pyo.units.m**3,
+        )
+
+        # TODO: Several HFO and other terms omitted since not included yet.
+        def rule_ISS(b):
+            return (
+                b.ISS
+                == b.params.f_ISS_BM
+                * (
+                    b.conc_mass_comp["X_H"]
+                    + b.conc_mass_comp["X_PAO"]
+                    + b.conc_mass_comp["X_AUT"]
+                )
+                / b.params.CODtoVSS_XBM
+                + b.params.ISS_P * b.conc_mass_comp["X_PP"]
+            )
+
+        self.eq_ISS = pyo.Constraint(rule=rule_ISS)
+
+    def _TSS(self):
+        self.TSS = pyo.Var(
+            initialize=1,
+            domain=pyo.NonNegativeReals,
+            doc="Total suspended solids",
+            units=pyo.units.kg / pyo.units.m**3,
+        )
+
+        def rule_TSS(b):
+            return b.TSS == b.VSS + b.ISS
+
+        self.eq_TSS = pyo.Constraint(rule=rule_TSS)
 
     def get_material_flow_terms(self, p, j):
         if j == "H2O":
@@ -345,3 +499,19 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
     def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        # TODO: revisit scaling of these new on-demand props
+        if self.is_property_constructed("VSS"):
+            if iscale.get_scaling_factor(self.VSS) is None:
+                iscale.set_scaling_factor(self.VSS, 1)
+
+        if self.is_property_constructed("ISS"):
+            if iscale.get_scaling_factor(self.ISS) is None:
+                iscale.set_scaling_factor(self.ISS, 1)
+
+        if self.is_property_constructed("TSS"):
+            if iscale.get_scaling_factor(self.TSS) is None:
+                iscale.set_scaling_factor(self.TSS, 1)

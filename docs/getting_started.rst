@@ -112,11 +112,11 @@ Next, we can obtain Ipopt and CBC from conda-forge:
 Running the test suite
 ----------------------
 
-To run the WaterTAP test suite, first install the optional testing dependencies using pip:
+To run the WaterTAP test suite, first install the ``pytest`` test framework:
 
 .. code-block:: shell
 
-   pip install "watertap[testing]"
+   pip install pytest
 
 Then, run the following command to run the complete WaterTAP test suite:
 
@@ -131,6 +131,8 @@ Then, run the following command to run the complete WaterTAP test suite:
    pytest --pyargs watertap --help
 
 .. note:: Some tests will be skipped (denoted by an ``s`` symbol). This is to be expected, as some of the tests are only applicable within a developer environment.
+
+.. _install-dev:
 
 For WaterTAP developers
 -----------------------
@@ -155,8 +157,14 @@ Install WaterTAP and the development dependencies using ``pip`` and the ``requir
 
    pip install -r requirements-dev.txt
 
-If needed, follow the steps described above to install solvers distributed through IDAES Extensions.
+If needed, or if this is your first time installing IDAES or WaterTAP on your machine, run the following line from the same environment where WaterTAP was installed.
 
+.. code-block:: shell
+
+   idaes get-extensions
+
+.. note:: Typically, the ``idaes get-extensions`` command only needs to be run once for each system, as it will install the required files into a common, system-wide location.  Depending on your operating system, you may need to follow additional steps described above to install solvers distributed through IDAES Extensions.
+   
 (Optional but recommended) `Pre-commit hooks <https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks>`_ are scripts that are automatically run by Git "client-side" (i.e. on a developer's local machine) whenever `git commit` is run. WaterTAP uses the `pre-commit <https://pre-commit.com/>`_ framework to manage a few hooks that are useful for WaterTAP developers. To install the WaterTAP pre-commit hooks, run:
 
 .. code-block:: shell
@@ -170,3 +178,8 @@ To verify that the installation was successful, try running the WaterTAP test su
    pytest
 
 To view/change the generated documentation, see the :ref:`documentation-mini-guide` section.
+
+Using Jupyter notebooks
+-----------------------
+
+WaterTAP has several examples and tutorials provided as Jupyter notebooks. Additional steps might be required (in addition to the WaterTAP standard installation described above); see :ref:`notebooks` for instructions.

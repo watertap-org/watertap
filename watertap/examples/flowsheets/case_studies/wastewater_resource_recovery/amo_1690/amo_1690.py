@@ -42,7 +42,7 @@ from watertap.unit_models.zero_order import (
     AnaerobicDigestionReactiveZO,
     MembraneEvaporatorZO,
 )
-from watertap.core.zero_order_costing import ZeroOrderCosting
+from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -141,6 +141,8 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "tkn"].fix(conc_mass_tkn)
     m.fs.feed.conc_mass_comp[0, "acetic_acid"].fix(conc_mass_aa)
     m.fs.feed.conc_mass_comp[0, "ammonium_as_nitrogen"].fix(conc_mass_nh4)
+
+    m.fs.feed.initialize()
 
     solve(m.fs.feed, checkpoint="solve feed block")
 

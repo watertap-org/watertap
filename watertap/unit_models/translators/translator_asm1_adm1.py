@@ -27,6 +27,7 @@ Proceedings of the Water Environment Federation, 2003, pp 498-510.
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 # Import IDAES cores
+from idaes.core.util.math import smooth_max
 from idaes.core import declare_process_block_class
 from idaes.models.unit_models.translator import TranslatorData
 from idaes.core.util.config import (
@@ -35,12 +36,12 @@ from idaes.core.util.config import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 from pyomo.environ import (
     Param,
-    PositiveReals,
+    NonNegativeReals,
     Var,
-    sqrt,
     units as pyunits,
     check_optimal_termination,
     Set,
@@ -49,7 +50,7 @@ from pyomo.environ import (
 
 from idaes.core.util.exceptions import InitializationError
 
-__author__ = "Alejandro Garciadiego"
+__author__ = "Alejandro Garciadiego, Xinhong Liu"
 
 
 # Set up logger
@@ -121,7 +122,13 @@ see reaction package for documentation.}""",
             doc="Anaerobic degradable fraction of X_I and X_P",
         )
 
-        eps = 1e-10 * pyunits.kg**2 / pyunits.m**6
+        self.eps = Param(
+            initialize=1e-10,
+            units=pyunits.kg / pyunits.m**3,
+            mutable=True,
+            doc="Smoothing factor",
+        )
+
         mw_n = 14 * pyunits.kg / pyunits.kmol
         mw_c = 12 * pyunits.kg / pyunits.kmol
 
@@ -146,24 +153,6 @@ see reaction package for documentation.}""",
         def eq_pressure_rule(blk, t):
             return blk.properties_out[t].pressure == blk.properties_in[t].pressure
 
-        @self.Expression(self.flowsheet().time, doc="Total Kjeldahl nitrogen")
-        def TKN(blk, t):
-            return (
-                blk.properties_in[t].conc_mass_comp["S_NH"]
-                + blk.properties_in[t].conc_mass_comp["S_ND"]
-                + blk.properties_in[t].conc_mass_comp["X_ND"]
-                + self.i_xb
-                * (
-                    blk.properties_in[t].conc_mass_comp["X_BH"]
-                    + blk.properties_in[t].conc_mass_comp["X_BA"]
-                )
-                + self.i_xe
-                * (
-                    blk.properties_in[t].conc_mass_comp["X_I"]
-                    + blk.properties_in[t].conc_mass_comp["X_P"]
-                )
-            )
-
         @self.Expression(self.flowsheet().time, doc="COD demand")
         def CODd(blk, t):
             return (
@@ -173,9 +162,9 @@ see reaction package for documentation.}""",
 
         self.inter_S_S = Var(
             self.flowsheet().time,
-            initialize=self.properties_in[0].conc_mass_comp["S_S"] - self.CODd[0],
+            initialize=self.properties_in[0].conc_mass_comp["S_S"],
             units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
+            domain=NonNegativeReals,
             doc="Readily biodegradable substrate remaining",
         )
 
@@ -184,9 +173,10 @@ see reaction package for documentation.}""",
             doc="COD demand minus readily biodegradable substrate",
         )
         def CODd_step1(blk, t):
-            return (
-                blk.inter_S_S[t]
-                == blk.properties_in[t].conc_mass_comp["S_S"] - blk.CODd[t]
+            return blk.inter_S_S[t] == smooth_max(
+                0 * pyunits.kg / pyunits.m**3,
+                blk.properties_in[t].conc_mass_comp["S_S"] - blk.CODd[t],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after S_S")
@@ -194,19 +184,17 @@ see reaction package for documentation.}""",
         # formulation included in all subsequent values for COD requirements and
         # COD remains
         def CODd2(blk, t):
-            return 0.5 * (
-                (blk.CODd[t] - blk.properties_in[t].conc_mass_comp["S_S"])
-                + sqrt(
-                    (blk.CODd[t] - blk.properties_in[t].conc_mass_comp["S_S"]) ** 2
-                    + eps
-                )
+            return smooth_max(
+                0 * pyunits.kg / pyunits.m**3,
+                blk.CODd[t] - blk.properties_in[t].conc_mass_comp["S_S"],
+                blk.eps,
             )
 
         self.inter_X_S = Var(
             self.flowsheet().time,
             initialize=self.properties_in[0].conc_mass_comp["X_S"],
             units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
+            domain=NonNegativeReals,
             doc="Slowly biodegradable substrate remaining",
         )
 
@@ -215,26 +203,25 @@ see reaction package for documentation.}""",
             doc="COD demand minus slowly biodegradable substrate",
         )
         def CODd_step2(blk, t):
-            return (
-                blk.inter_X_S[t]
-                == blk.properties_in[t].conc_mass_comp["X_S"] - blk.CODd2[t]
+            return blk.inter_X_S[t] == smooth_max(
+                0 * pyunits.kg / pyunits.m**3,
+                blk.properties_in[t].conc_mass_comp["X_S"] - blk.CODd2[t],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after X_S")
         def CODd3(blk, t):
-            return 0.5 * (
-                (blk.CODd2[t] - blk.properties_in[t].conc_mass_comp["X_S"])
-                + sqrt(
-                    (blk.CODd2[t] - blk.properties_in[t].conc_mass_comp["X_S"]) ** 2
-                    + eps
-                )
+            return smooth_max(
+                0 * pyunits.kg / pyunits.m**3,
+                blk.CODd2[t] - blk.properties_in[t].conc_mass_comp["X_S"],
+                blk.eps,
             )
 
         self.inter_X_BH = Var(
             self.flowsheet().time,
             initialize=self.properties_in[0].conc_mass_comp["X_BH"],
             units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
+            domain=NonNegativeReals,
             doc="Active heterotrophic biomass remaining",
         )
 
@@ -243,26 +230,25 @@ see reaction package for documentation.}""",
             doc="COD demand minus active heterotrophic biomass",
         )
         def CODd_step3(blk, t):
-            return (
-                blk.inter_X_BH[t]
-                == blk.properties_in[t].conc_mass_comp["X_BH"] - blk.CODd3[t]
+            return blk.inter_X_BH[t] == smooth_max(
+                0 * pyunits.kg / pyunits.m**3,
+                blk.properties_in[t].conc_mass_comp["X_BH"] - blk.CODd3[t],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after X_BH")
         def CODd4(blk, t):
-            return 0.5 * (
-                (blk.CODd3[t] - blk.properties_in[t].conc_mass_comp["X_BH"])
-                + sqrt(
-                    (blk.CODd3[t] - blk.properties_in[t].conc_mass_comp["X_BH"]) ** 2
-                    + eps
-                )
+            return smooth_max(
+                0 * pyunits.kg / pyunits.m**3,
+                blk.CODd3[t] - blk.properties_in[t].conc_mass_comp["X_BH"],
+                blk.eps,
             )
 
         self.inter_X_BA = Var(
             self.flowsheet().time,
             initialize=self.properties_in[0].conc_mass_comp["X_BA"],
             units=pyunits.kg / pyunits.m**3,
-            domain=PositiveReals,
+            domain=NonNegativeReals,
             doc="Active autotrophic biomass remaining",
         )
 
@@ -271,19 +257,18 @@ see reaction package for documentation.}""",
             doc="COD demand minus active autotrophic biomass",
         )
         def CODd_step4(blk, t):
-            return (
-                blk.inter_X_BA[t]
-                == blk.properties_in[t].conc_mass_comp["X_BA"] - blk.CODd4[t]
+            return blk.inter_X_BA[t] == smooth_max(
+                0 * pyunits.kg / pyunits.m**3,
+                blk.properties_in[t].conc_mass_comp["X_BA"] - blk.CODd4[t],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="COD demand after X_BA")
         def CODd5(blk, t):
-            return 0.5 * (
-                (blk.CODd4[t] - blk.properties_in[t].conc_mass_comp["X_BA"])
-                + sqrt(
-                    (blk.CODd4[t] - blk.properties_in[t].conc_mass_comp["X_BA"]) ** 2
-                    + eps
-                )
+            return smooth_max(
+                0 * pyunits.kg / pyunits.m**3,
+                blk.CODd4[t] - blk.properties_in[t].conc_mass_comp["X_BA"],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="Soluble COD")
@@ -303,6 +288,44 @@ see reaction package for documentation.}""",
         @self.Expression(self.flowsheet().time, doc="Total COD")
         def CODt(blk, t):
             return blk.CODs[t] + blk.CODp[t]
+
+        self.TKN_in = Var(
+            self.flowsheet().time,
+            initialize=self.properties_in[0].conc_mass_comp["S_NH"]
+            + self.properties_in[0].conc_mass_comp["S_ND"]
+            + self.properties_in[0].conc_mass_comp["X_ND"]
+            + self.i_xb
+            * (
+                self.properties_in[0].conc_mass_comp["X_BH"]
+                + self.properties_in[0].conc_mass_comp["X_BA"]
+            )
+            + self.i_xe
+            * (
+                self.properties_in[0].conc_mass_comp["X_I"]
+                + self.properties_in[0].conc_mass_comp["X_P"]
+            ),
+            units=pyunits.kg / pyunits.m**3,
+            domain=NonNegativeReals,
+            doc="Total Kjeldahl nitrogen",
+        )
+
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Total Kjeldahl nitrogen",
+        )
+        def TKNin(blk, t):
+            return blk.TKN_in[t] == blk.properties_in[t].conc_mass_comp[
+                "S_NH"
+            ] + blk.properties_in[t].conc_mass_comp["S_ND"] + blk.properties_in[
+                t
+            ].conc_mass_comp[
+                "X_ND"
+            ] + self.i_xb * (
+                blk.inter_X_BH[t] + blk.inter_X_BA[t]
+            ) + self.i_xe * (
+                blk.properties_in[t].conc_mass_comp["X_I"]
+                + blk.properties_in[t].conc_mass_comp["X_P"]
+            )
 
         @self.Expression(self.flowsheet().time, doc="Required soluble COD")
         def ReqCODs(blk, t):
@@ -325,7 +348,7 @@ see reaction package for documentation.}""",
             return Expr_if(
                 blk.inter_S_S[t] > blk.ReqCODs[t],
                 blk.inter_S_S[t] - blk.ReqCODs[t],
-                1e-6 * pyunits.kg / pyunits.m**3,
+                1e-10 * pyunits.kg / pyunits.m**3,
             )
 
         @self.Constraint(
@@ -337,15 +360,14 @@ see reaction package for documentation.}""",
 
         @self.Expression(self.flowsheet().time, doc="COD remaining from step A")
         def COD_remain_a(blk, t):
-            return 0.5 * (
-                (blk.CODt[t] - blk.inter_S_S[t])
-                + sqrt((blk.CODt[t] - blk.inter_S_S[t]) ** 2 + eps)
+            return smooth_max(
+                0 * pyunits.kg / pyunits.m**3, blk.CODt[t] - blk.inter_S_S[t], blk.eps
             )
 
         @self.Expression(self.flowsheet().time, doc="Organic nitrogen pool from step A")
         def ORGN_remain_a(blk, t):
             return (
-                blk.TKN[t]
+                blk.TKN_in[t]
                 - (
                     blk.properties_out[t].conc_mass_comp["S_aa"]
                     * blk.config.reaction_package.N_aa
@@ -398,13 +420,10 @@ see reaction package for documentation.}""",
 
         @self.Expression(self.flowsheet().time, doc="COD remaining from step B")
         def COD_remain_b(blk, t):
-            return 0.5 * (
-                (blk.COD_remain_a[t] - blk.properties_in[t].conc_mass_comp["S_I"])
-                + sqrt(
-                    (blk.COD_remain_a[t] - blk.properties_in[t].conc_mass_comp["S_I"])
-                    ** 2
-                    + eps
-                )
+            return smooth_max(
+                0 * pyunits.kg / pyunits.m**3,
+                blk.COD_remain_a[t] - blk.properties_in[t].conc_mass_comp["S_I"],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="Organic nitrogen pool from step B")
@@ -455,13 +474,10 @@ see reaction package for documentation.}""",
 
         @self.Expression(self.flowsheet().time, doc="COD remaining from step C")
         def COD_remain_c(blk, t):
-            return 0.5 * (
-                (blk.COD_remain_b[t] - blk.properties_out[t].conc_mass_comp["X_I"])
-                + sqrt(
-                    (blk.COD_remain_b[t] - blk.properties_out[t].conc_mass_comp["X_I"])
-                    ** 2
-                    + eps
-                )
+            return smooth_max(
+                0 * pyunits.kg / pyunits.m**3,
+                blk.COD_remain_b[t] - blk.properties_out[t].conc_mass_comp["X_I"],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="Organic nitrogen pool from step C")
@@ -501,7 +517,7 @@ see reaction package for documentation.}""",
                     + blk.config.reaction_package.f_li_xc
                 )
                 * (blk.COD_remain_c[t] - blk.properties_out[t].conc_mass_comp["X_c"]),
-                1e-6 * pyunits.kg / pyunits.m**3,
+                1e-10 * pyunits.kg / pyunits.m**3,
             )
 
         @self.Constraint(
@@ -521,7 +537,7 @@ see reaction package for documentation.}""",
                     + blk.config.reaction_package.f_li_xc
                 )
                 * (blk.COD_remain_c[t] - blk.properties_out[t].conc_mass_comp["X_c"]),
-                1e-6 * pyunits.kg / pyunits.m**3,
+                1e-10 * pyunits.kg / pyunits.m**3,
             )
 
         @self.Constraint(
@@ -600,7 +616,7 @@ see reaction package for documentation.}""",
         def return_zero_flow_comp(blk, t, i):
             return (
                 blk.properties_out[t].conc_mass_comp[i]
-                == 1e-6 * pyunits.kg / pyunits.m**3
+                == 1e-10 * pyunits.kg / pyunits.m**3
             )
 
         @self.Constraint(
@@ -612,6 +628,8 @@ see reaction package for documentation.}""",
                 blk.properties_in[t].alkalinity
                 == blk.properties_out[t].conc_mass_comp["S_IC"] / mw_c
             )
+
+        iscale.set_scaling_factor(self.properties_out[0].flow_vol, 1e5)
 
     def initialize_build(
         self,
