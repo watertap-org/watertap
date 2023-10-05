@@ -325,12 +325,12 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, scaling_ref=1e-3, rxn_config=None
     # End scaling if statement
 
     init_options = {**solver.options}
-    init_options["bound_relax_factor"] = 1.0e-02
+    init_options["bound_relax_factor"] = 1.0e-07
     model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
-    solver.options["bound_relax_factor"] = 1.0e-02
+    solver.options["bound_relax_factor"] = 1.0e-07
     results = solver.solve(model, tee=True)
     del solver.options["bound_relax_factor"]
 
