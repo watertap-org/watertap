@@ -132,6 +132,8 @@ Then, run the following command to run the complete WaterTAP test suite:
 
 .. note:: Some tests will be skipped (denoted by an ``s`` symbol). This is to be expected, as some of the tests are only applicable within a developer environment.
 
+.. _install-dev:
+
 For WaterTAP developers
 -----------------------
 
@@ -176,3 +178,8 @@ To verify that the installation was successful, try running the WaterTAP test su
    pytest
 
 To view/change the generated documentation, see the :ref:`documentation-mini-guide` section.
+
+Using Jupyter notebooks
+-----------------------
+
+WaterTAP has several examples and tutorials provided as Jupyter notebooks. Additional steps might be required (in addition to the WaterTAP standard installation described above); see :ref:`notebooks` for instructions.
