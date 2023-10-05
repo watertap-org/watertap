@@ -20,6 +20,7 @@ for case_num in [1, 2, 3, 4, 6, 8, 9]:
         pytest_parameterize_list.append(test_case)
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.parametrize("case_num, RO_type", pytest_parameterize_list)
 @pytest.mark.integration
 def test_multi_sweep(case_num, RO_type, tmp_path):
