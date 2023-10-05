@@ -65,7 +65,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 def main():
-    m = build()
+    m = build(include_pretreatment=False)
     set_operating_conditions(m)
 
     assert_degrees_of_freedom(m, 0)
@@ -89,7 +89,7 @@ def main():
     return m, results
 
 
-def build():
+def build(include_pretreatment=False):
     # flowsheet set up
     m = ConcreteModel()
     m.db = Database()
@@ -101,21 +101,28 @@ def build():
     m.fs.prop_ro = prop_SW.SeawaterParameterBlock()
 
     # define blocks
-    prtrt = m.fs.pretreatment = Block()
+    if include_pretreatment == True:
+        prtrt = m.fs.pretreatment = Block()
+        m.fs.wwt_retentate = Product(property_package=m.fs.prop_nf)
+    else:
+        pass
+
     dye_sep = m.fs.dye_separation = Block()
     desal = m.fs.desalination = Block()
 
     # define flowsheet inlets and outlets
     m.fs.feed = FeedZO(property_package=m.fs.prop_nf)
-    m.fs.wwt_retentate = Product(property_package=m.fs.prop_nf)
     m.fs.dye_retentate = Product(property_package=m.fs.prop_nf)
     m.fs.permeate = Product(property_package=m.fs.prop_ro)
     m.fs.brine = Product(property_package=m.fs.prop_ro)
 
     # pretreatment
-    prtrt.wwtp = SecondaryTreatmentWWTPZO(
-        property_package=m.fs.prop_nf, database=m.db, process_subtype="default"
-    )
+    if hasattr(m.fs, "pretreatment"):
+        prtrt.wwtp = SecondaryTreatmentWWTPZO(
+            property_package=m.fs.prop_nf, database=m.db, process_subtype="default"
+        )
+    else:
+        pass
 
     # nanofiltration components
     dye_sep.P1 = PumpElectricityZO(
@@ -172,9 +179,15 @@ def build():
             )
 
     # connections
-    m.fs.s_feed = Arc(source=m.fs.feed.outlet, destination=prtrt.wwtp.inlet)
-    prtrt.s01 = Arc(source=prtrt.wwtp.treated, destination=dye_sep.P1.inlet)
-    prtrt.s02 = Arc(source=prtrt.wwtp.byproduct, destination=m.fs.wwt_retentate.inlet)
+    if hasattr(m.fs, "pretreatment"):
+        m.fs.s_feed = Arc(source=m.fs.feed.outlet, destination=prtrt.wwtp.inlet)
+        prtrt.s01 = Arc(source=prtrt.wwtp.treated, destination=dye_sep.P1.inlet)
+        prtrt.s02 = Arc(
+            source=prtrt.wwtp.byproduct, destination=m.fs.wwt_retentate.inlet
+        )
+    else:
+        m.fs.s_feed = Arc(source=m.fs.feed.outlet, destination=dye_sep.P1.inlet)
+
     dye_sep.s01 = Arc(
         source=dye_sep.P1.outlet, destination=dye_sep.nanofiltration.inlet
     )
@@ -208,7 +221,12 @@ def build():
     m.fs.prop_ro.set_default_scaling("flow_mass_phase_comp", 1e-1, index=("Liq", "TDS"))
 
     # set unit model values
-    iscale.set_scaling_factor(desal.P2.control_volume.work, 1e-5)
+    iscale.set_scaling_factor(desal.P2.control_volume.work, 1e-6)
+    iscale.set_scaling_factor(desal.P2.control_volume.deltaP, 1e-7)
+    iscale.set_scaling_factor(
+        desal.P2.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "H2O"],
+        1e-1,
+    )
     iscale.set_scaling_factor(desal.RO.area, 1e-4)
     iscale.set_scaling_factor(desal.P3.control_volume.work, 1e-5)
     iscale.set_scaling_factor(desal.PXR.low_pressure_side.work, 1e-5)
@@ -220,14 +238,18 @@ def build():
 
 
 def set_operating_conditions(m):
-    prtrt = m.fs.pretreatment
+    if hasattr(m.fs, "pretreatment"):
+        prtrt = m.fs.pretreatment
+    else:
+        pass
+
     dye_sep = m.fs.dye_separation
     desal = m.fs.desalination
 
     # feed
-    flow_vol = 120 / 3600 * pyunits.m**3 / pyunits.s
-    conc_mass_dye = 2.5 * pyunits.kg / pyunits.m**3
-    conc_mass_tds = 50.0 * pyunits.kg / pyunits.m**3
+    flow_vol = 280 / 3600 * pyunits.m**3 / pyunits.s
+    conc_mass_dye = 0.2 * pyunits.kg / pyunits.m**3
+    conc_mass_tds = 2 * pyunits.kg / pyunits.m**3
     temperature = 298 * pyunits.K
     pressure = 101325 * pyunits.Pa
 
@@ -237,7 +259,10 @@ def set_operating_conditions(m):
     solve(m.fs.feed, checkpoint="solve feed block")
 
     # pretreatment
-    prtrt.wwtp.load_parameters_from_database(use_default_removal=True)
+    if hasattr(m.fs, "pretreatment"):
+        prtrt.wwtp.load_parameters_from_database(use_default_removal=True)
+    else:
+        pass
 
     # nanofiltration
     dye_sep.nanofiltration.load_parameters_from_database(use_default_removal=True)
@@ -247,6 +272,7 @@ def set_operating_conditions(m):
     dye_sep.P1.applied_pressure.fix(
         dye_sep.nanofiltration.applied_pressure.get_values()[0]
     )
+    dye_sep.P1.eta_pump.fix(0.75)  # pump efficiency [-]
     dye_sep.P1.lift_height.unfix()
 
     # desalination
@@ -274,25 +300,29 @@ def set_operating_conditions(m):
 
 
 def initialize_system(m):
-    prtrt = m.fs.pretreatment
+    if hasattr(m.fs, "pretreatment"):
+        prtrt = m.fs.pretreatment
+    else:
+        pass
     dye_sep = m.fs.dye_separation
     desal = m.fs.desalination
 
     # initialize feed
     solve(m.fs.feed, checkpoint="solve flowsheet after initializing feed")
 
-    # pretreatment
+    # initialize pretreatment
     propagate_state(m.fs.s_feed)
-    s = SequentialDecomposition()
-    s.options.tear_set = []
-    s.options.iterLim = 1
-    s.run(prtrt, lambda u: u.initialize())
-
-    # initialized nf
-    propagate_state(prtrt.s01)
     seq = SequentialDecomposition()
     seq.options.tear_set = []
     seq.options.iterLim = 1
+
+    if hasattr(m.fs, "pretreatment"):
+        seq.run(prtrt, lambda u: u.initialize())
+        propagate_state(prtrt.s01)
+    else:
+        pass
+
+    # initialize nf
     seq.run(dye_sep, lambda u: u.initialize())
 
     # initialize ro
@@ -371,7 +401,10 @@ def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
 
 
 def add_costing(m):
-    prtrt = m.fs.pretreatment
+    if hasattr(m.fs, "pretreatment"):
+        prtrt = m.fs.pretreatment
+    else:
+        pass
     dye_sep = m.fs.dye_separation
     desal = m.fs.desalination
 
@@ -385,11 +418,18 @@ def add_costing(m):
     m.fs.ro_costing = WaterTAPCosting()
 
     # cost nanofiltration module and pump
-    prtrt.wwtp.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.zo_costing)
+    if hasattr(m.fs, "pretreatment"):
+        prtrt.wwtp.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.zo_costing
+        )
+    else:
+        pass
+
     dye_sep.nanofiltration.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.zo_costing
     )
     dye_sep.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.zo_costing)
+    m.fs.zo_costing.pump_electricity.pump_cost["default"].fix(76)
 
     # RO Train
     # RO equipment is costed using more detailed costing package
@@ -440,30 +480,33 @@ def add_costing(m):
         doc="Cost of disposing of brine waste",
     )
 
-    m.fs.sludge_disposal_cost = Expression(
-        expr=(
-            m.fs.zo_costing.utilization_factor
-            * (
-                m.fs.zo_costing.waste_disposal_cost
-                * pyunits.convert(
-                    m.fs.wwt_retentate.properties[0].flow_vol,
-                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+    if hasattr(m.fs, "pretreatment"):
+        m.fs.sludge_disposal_cost = Expression(
+            expr=(
+                m.fs.zo_costing.utilization_factor
+                * (
+                    m.fs.zo_costing.waste_disposal_cost
+                    * pyunits.convert(
+                        m.fs.wwt_retentate.properties[0].flow_vol,
+                        to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                    )
                 )
-            )
-        ),
-        doc="Cost of disposing of waste water treatment plant sludge",
-    )
+            ),
+            doc="Cost of disposing of waste water treatment plant sludge",
+        )
+    else:
+        pass
 
-    m.fs.dye_recovery_revenue = Expression(
+    m.fs.dye_disposal_cost = Expression(
         expr=(
             m.fs.zo_costing.utilization_factor
-            * m.fs.zo_costing.dye_mass_cost
+            * m.fs.zo_costing.dye_disposal_cost
             * pyunits.convert(
-                m.fs.dye_retentate.flow_mass_comp[0, "dye"],
-                to_units=pyunits.kg / m.fs.zo_costing.base_period,
+                m.fs.dye_retentate.properties[0].flow_vol,
+                to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
             )
         ),
-        doc="Savings from dye recovered back to the plant",
+        doc="Cost of disposing of dye waste",
     )
 
     m.fs.water_recovery_revenue = Expression(
@@ -504,15 +547,23 @@ def add_costing(m):
             )
         )
 
-    @m.fs.Expression(doc="Total cost of water/dye recovered and brine/sludge disposed")
+    @m.fs.Expression(doc="Total cost of water recovery and brine/sludge/dye disposed")
     def total_externalities(b):
-        return pyunits.convert(
-            m.fs.water_recovery_revenue
-            + m.fs.dye_recovery_revenue
-            - m.fs.brine_disposal_cost
-            - m.fs.sludge_disposal_cost,
-            to_units=pyunits.USD_2020 / pyunits.year,
-        )
+        if hasattr(m.fs, "pretreatment"):
+            return pyunits.convert(
+                m.fs.water_recovery_revenue
+                - m.fs.dye_disposal_cost
+                - m.fs.brine_disposal_cost
+                - m.fs.sludge_disposal_cost,
+                to_units=pyunits.USD_2020 / pyunits.year,
+            )
+        else:
+            return pyunits.convert(
+                m.fs.water_recovery_revenue
+                - m.fs.dye_disposal_cost
+                - m.fs.brine_disposal_cost,
+                to_units=pyunits.USD_2020 / pyunits.year,
+            )
 
     @m.fs.Expression(
         doc="Levelized cost of treatment with respect to volumetric feed flow"
@@ -549,22 +600,38 @@ def add_costing(m):
         doc="Levelized cost of water with respect to volumetric permeate flow"
     )
     def LCOW(b):
-        return (
-            b.total_capital_cost * b.zo_costing.capital_recovery_factor
-            + b.total_operating_cost
-            - pyunits.convert(
-                m.fs.dye_recovery_revenue
-                - m.fs.brine_disposal_cost
-                - m.fs.sludge_disposal_cost,
-                to_units=pyunits.USD_2020 / pyunits.year,
+        if hasattr(m.fs, "pretreatment"):
+            return (
+                b.total_capital_cost * b.zo_costing.capital_recovery_factor
+                + b.total_operating_cost
+                - pyunits.convert(
+                    -m.fs.dye_disposal_cost
+                    - m.fs.brine_disposal_cost
+                    - m.fs.sludge_disposal_cost,
+                    to_units=pyunits.USD_2020 / pyunits.year,
+                )
+            ) / (
+                pyunits.convert(
+                    b.permeate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / pyunits.year,
+                )
+                * b.zo_costing.utilization_factor
             )
-        ) / (
-            pyunits.convert(
-                b.permeate.properties[0].flow_vol,
-                to_units=pyunits.m**3 / pyunits.year,
+        else:
+            return (
+                b.total_capital_cost * b.zo_costing.capital_recovery_factor
+                + b.total_operating_cost
+                - pyunits.convert(
+                    -m.fs.dye_disposal_cost - m.fs.brine_disposal_cost,
+                    to_units=pyunits.USD_2020 / pyunits.year,
+                )
+            ) / (
+                pyunits.convert(
+                    b.permeate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / pyunits.year,
+                )
+                * b.zo_costing.utilization_factor
             )
-            * b.zo_costing.utilization_factor
-        )
 
     @m.fs.Expression(
         doc="Levelized cost of water with respect to volumetric permeate flow"
@@ -593,13 +660,21 @@ def initialize_costing(m):
 
 def display_results(m):
     print("\nUnit models:")
-    m.fs.pretreatment.wwtp.report()
+    if hasattr(m.fs, "pretreatment"):
+        m.fs.pretreatment.wwtp.report()
+    else:
+        pass
+
     m.fs.dye_separation.P1.report()
     m.fs.dye_separation.nanofiltration.report()
     m.fs.desalination.RO.report()
 
     print("\nStreams:")
-    flow_list = ["feed", "wwt_retentate", "dye_retentate"]
+    if hasattr(m.fs, "pretreatment"):
+        flow_list = ["feed", "wwt_retentate", "dye_retentate"]
+    else:
+        flow_list = ["feed", "dye_retentate"]
+
     for f in flow_list:
         m.fs.component(f).report()
 
@@ -609,12 +684,17 @@ def display_results(m):
             to_units=pyunits.m**3 / pyunits.hr,
         )
     )
-    wwt_retentate_vol_flowrate = value(
-        pyunits.convert(
-            m.fs.wwt_retentate.properties[0].flow_vol,
-            to_units=pyunits.m**3 / pyunits.hr,
+
+    if hasattr(m.fs, "pretreatment"):
+        wwt_retentate_vol_flowrate = value(
+            pyunits.convert(
+                m.fs.wwt_retentate.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
         )
-    )
+    else:
+        pass
+
     permeate_salt_concentration = (
         m.fs.permeate.properties[0].conc_mass_phase_comp["Liq", "TDS"].value
     )
@@ -636,7 +716,14 @@ def display_results(m):
     print(f"Permeate salt concentration: {permeate_salt_concentration : .3f} g/l")
     print(f"\nBrine volumetric flowrate: {brine_vol_flowrate : .3f} m3/hr")
     print(f"Brine salt concentration: {brine_salt_concentration : .3f} g/l")
-    print(f"\nWastewater volumetric flowrate: {wwt_retentate_vol_flowrate : .3f} m3/hr")
+
+    if hasattr(m.fs, "pretreatment"):
+        print(
+            f"\nWastewater volumetric flowrate: {wwt_retentate_vol_flowrate : .3f} m3/hr"
+        )
+    else:
+        pass
+
     print(
         f"\nRecovered dye volumetric flowrate: {dye_retentate_vol_flowrate : .3f} m3/hr"
     )
@@ -659,11 +746,23 @@ def display_results(m):
 
 def display_costing(m):
     capex = value(pyunits.convert(m.fs.total_capital_cost, to_units=pyunits.MUSD_2020))
-    wwtp_capex = value(
-        pyunits.convert(
-            m.fs.pretreatment.wwtp.costing.capital_cost, to_units=pyunits.USD_2020
+    if hasattr(m.fs, "pretreatment"):
+        wwtp_capex = value(
+            pyunits.convert(
+                m.fs.pretreatment.wwtp.costing.capital_cost, to_units=pyunits.USD_2020
+            )
         )
-    )
+
+        wwtp_opex = value(
+            m.fs.pretreatment.wwtp.energy_electric_flow_vol_inlet
+            * m.fs.zo_costing.electricity_cost
+            * m.fs.zo_costing.utilization_factor
+            * pyunits.convert(
+                m.fs.feed.flow_vol[0], to_units=pyunits.m**3 / pyunits.year
+            )
+        )
+    else:
+        pass
 
     nf_capex = value(
         pyunits.convert(
@@ -683,23 +782,23 @@ def display_costing(m):
         )
     )
 
-    # this model only considers the energy cost contribution to operating cost
-    wwtp_opex = value(
-        m.fs.pretreatment.wwtp.energy_electric_flow_vol_inlet
-        * m.fs.zo_costing.electricity_cost
-        * m.fs.zo_costing.utilization_factor
-        * pyunits.convert(m.fs.feed.flow_vol[0], to_units=pyunits.m**3 / pyunits.year)
-    )
-
-    nf_opex = (
-        value(
+    if hasattr(m.fs, "pretreatment"):
+        nf_opex = (
+            value(
+                pyunits.convert(
+                    m.fs.zo_costing.total_operating_cost,
+                    to_units=pyunits.USD_2020 / pyunits.year,
+                )
+            )
+            - wwtp_opex
+        )
+    else:
+        nf_opex = value(
             pyunits.convert(
                 m.fs.zo_costing.total_operating_cost,
                 to_units=pyunits.USD_2020 / pyunits.year,
             )
         )
-        - wwtp_opex
-    )
 
     ro_opex = value(
         pyunits.convert(
@@ -718,9 +817,9 @@ def display_costing(m):
             m.fs.water_recovery_revenue, to_units=pyunits.USD_2020 / pyunits.year
         )
     )
-    drr = value(
+    ddc = value(
         pyunits.convert(
-            m.fs.dye_recovery_revenue, to_units=pyunits.USD_2020 / pyunits.year
+            m.fs.dye_disposal_cost, to_units=pyunits.USD_2020 / pyunits.year
         )
     )
     bdc = value(
@@ -728,11 +827,14 @@ def display_costing(m):
             m.fs.brine_disposal_cost, to_units=pyunits.USD_2020 / pyunits.year
         )
     )
-    sdc = value(
-        pyunits.convert(
-            m.fs.sludge_disposal_cost, to_units=pyunits.USD_2020 / pyunits.year
+    if hasattr(m.fs, "pretreatment"):
+        sdc = value(
+            pyunits.convert(
+                m.fs.sludge_disposal_cost, to_units=pyunits.USD_2020 / pyunits.year
+            )
         )
-    )
+    else:
+        pass
 
     # normalized costs
     feed_flowrate = value(
@@ -780,20 +882,45 @@ def display_costing(m):
 
     print("\n System costing metrics:")
     print(f"\nTotal Capital Cost: {capex:.4f} M$")
-    print(f"Wastewater Treatment Capital Cost: {wwtp_capex:.4f} $")
+    if hasattr(m.fs, "pretreatment"):
+        print(f"Wastewater Treatment Capital Cost: {wwtp_capex:.4f} $")
+    else:
+        pass
     print(f"Nanofiltration (r-HGO) Capital Cost: {nf_capex:.4f} $")
     print(f"Reverse Osmosis Capital Cost: {ro_capex:.4f} $")
 
+    print("\n----------Unit Capital Costs----------\n")
+    for u in m.fs.zo_costing._registered_unit_costing:
+        print(
+            u.name,
+            " : {price:0.3f} $".format(
+                price=value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2020))
+            ),
+        )
+    for z in m.fs.ro_costing._registered_unit_costing:
+        print(
+            z.name,
+            " : {price:0.3f} $".format(
+                price=value(pyunits.convert(z.capital_cost, to_units=pyunits.USD_2020))
+            ),
+        )
+
     print(f"\nTotal Operating Cost: {opex:.4f} M$/year")
-    print(f"Wastewater Treatment Operating Cost: {wwtp_opex:.4f} $/yr")
+    if hasattr(m.fs, "pretreatment"):
+        print(f"Wastewater Treatment Operating Cost: {wwtp_opex:.4f} $/yr")
+    else:
+        pass
     print(f"Nanofiltration (r-HGO) Operating Cost: {nf_opex:.4f} $/yr")
     print(f"Reverse Osmosis Operating Cost: {ro_opex:.4f} $/yr")
 
     print(f"\nTotal Externalities: {externalities:.4f} M$/year")
     print(f"Water recovery revenue: {wrr: .4f} USD/year")
-    print(f"Dye recovery revenue: {drr: .4f} USD/year")
+    print(f"Dye disposal cost: {ddc: .4f} USD/year")
     print(f"Brine disposal cost: {-1*bdc: .4f} USD/year")
-    print(f"Sludge disposal cost: {-1*sdc: .4f} USD/year")
+    if hasattr(m.fs, "pretreatment"):
+        print(f"Sludge disposal cost: {-1*sdc: .4f} USD/year")
+    else:
+        pass
 
     print(f"\nTotal Annual Cost: {annual_investment : .4f} $/year")
     print(f"Normalized Capital Cost: {capex_norm:.4f} $/m3feed/hr")

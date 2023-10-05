@@ -181,7 +181,6 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             initialize=0.4,
-            bounds=(1e-2, 1 - 1e-6),
             units=pyunits.dimensionless,
             doc="Volumetric recovery rate",
         )
@@ -280,7 +279,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
 
         self.area = Var(
             initialize=10,
-            bounds=(1e-1, 1e3),
+            bounds=(1e-1, 1e5),
             domain=NonNegativeReals,
             units=units_meta("length") ** 2,
             doc="Total Membrane area",

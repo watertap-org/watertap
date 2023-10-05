@@ -28,7 +28,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse==2.2.0rc0",
+    "idaes-pse==2.2.0",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -37,7 +37,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="0.10.dev0",
+    version="0.11.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -86,17 +86,13 @@ setup(
         "pymongo>3",  # database interface
         "fastjsonschema",  # schema validation
         "click",  # command-line tools with Click
-        # tutorial tests
-        "nbformat",
-        "scipy",
         # for parameter_sweep
         "h5py",
         "requests",
+        "scipy",
         # for watertap.ui.api_model (though may be generally useful)
         "pydantic < 2",
         "numpy",
-        # for importlib.metadata.entry_points()
-        "importlib_metadata; python_version < '3.8' ",
     ],
     extras_require={
         "testing": [
@@ -106,6 +102,10 @@ setup(
             "pandas",
             "nbmake",
             "nbconvert",
+        ],
+        "notebooks": [
+            "jupyter",
+            "ipykernel",
         ],
         "dev": [
             "nbsphinx",  # jupyter notebook support for sphinx
@@ -141,10 +141,10 @@ setup(
         "watertap.flowsheets": [
             "nf = watertap.examples.flowsheets.nf_dspmde.nf_ui",
             # "nf_with_bypass = watertap.examples.flowsheets.nf_dspmde.nf_with_bypass_ui",
+            "bsm2 = watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.BSM2_ui",
             "metab = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab_ui",
             "suboxic_ASM = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_ASM_ui",
             "Magprex = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex_ui",
-            # "Example = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.example_flowsheet.example_ui",
             "biomembrane_filtration = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.biomembrane_filtration.biomembrane_filtration_ui",
             "ENR = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal.electrochemical_nutrient_removal_ui",
             "CANDO_P = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1595_photothermal_membrane_candoP.amo_1595_ui",
