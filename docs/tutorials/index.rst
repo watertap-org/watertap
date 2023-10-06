@@ -12,9 +12,10 @@ the IDAES tutorials `Short introduction to Python and Pyomo <https://idaes.githu
 The tutorials included with WaterTAP are available in the "tutorials" directory
 on the WaterTAP GitHub Homepage: `<https://github.com/watertap-org/watertap/tree/main/tutorials>`_.
 
-To run the WaterTAP tutorials online (no installation required), click on the button below to launch an environment pointing to the current ``main`` branch of the WaterTAP repository:
+.. note::
+    **To run WaterTAP tutorials online (no installation required), click on the "launch binder" button below to launch an environment pointing to the current ``main`` branch of the WaterTAP repository:**
 
-.. image:: https://mybinder.org/badge_logo.svg
- :target: https://mybinder.org/v2/gh/watertap-org/watertap/main?labpath=tutorials%2Fintroduction.ipynb
+    .. image:: https://mybinder.org/badge_logo.svg
+     :target: https://mybinder.org/v2/gh/watertap-org/watertap/main?labpath=tutorials%2Fintroduction.ipynb
 
-For important details on running tutorial notebooks, refer to `this guide<https://watertap.readthedocs.io/en/stable/how_to_guides/notebooks.html#online-using-binder-org>`.
+    For important details on running tutorial notebooks, refer to `this guide<https://watertap.readthedocs.io/en/stable/how_to_guides/notebooks.html#online-using-binder-org>`.
