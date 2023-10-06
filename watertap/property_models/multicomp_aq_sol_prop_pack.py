@@ -383,7 +383,7 @@ class MCASParameterData(PhysicalParameterBlock):
                 self.neutral_set.add(j)
 
         if len(self.neutral_set)>0 and not len(self.ion_set):
-            _log.warning("Since the charge argument was not provided for any solutes while instantiating the MCAS property model, all solutes are assumed to be neutral and have no charge. Make sure to provide charge data for any ions in solute_list to avoid erroneous property calculations.")
+            _log.warning("Since the charge argument was not provided for any solutes while instantiating the MCAS property model, all solutes are assumed to be neutral and have no charge. If any ions exist in solute_list, make sure to provide charge data to avoid erroneous property calculations.")
         # reference
         # Todo: enter any relevant references
 
