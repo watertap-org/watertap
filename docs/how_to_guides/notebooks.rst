@@ -28,7 +28,7 @@ Local (developer) installation
 
 #. If prompted to select a kernel, select ``watertap-dev`` from the menu. Otherwise, ensure ``watertap-dev`` appears in the kernel box in the top-right corner of the notebook interface
 
-.. _noteboks-online:
+.. _notebooks-online:
 
 Online using Binder.org
 -----------------------
