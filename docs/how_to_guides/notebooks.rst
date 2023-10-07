@@ -33,7 +33,7 @@ Local (developer) installation
 Online using Binder.org
 -----------------------
 
-`Binder <https://mybinder.org>`_ is an online service providng a **short-lived temporary sandbox environment on public cloud resources** where Jupyter notebooks can be run, free of charge, without having to install any software locally.
+`Binder <https://mybinder.org>`_ is an online service providing a **short-lived temporary sandbox environment on public cloud resources** where Jupyter notebooks can be run, free of charge, without having to install any software locally.
 
 Click on this button to launch an environment pointing to the current ``main`` branch of the WaterTAP repository:
 
@@ -47,8 +47,8 @@ Click on this button to launch an environment pointing to the current ``main`` b
 Customization
 ^^^^^^^^^^^^^
 
-Binder uses a Git repository hosted on e.g. GitHub to fetch the notebooks and create the runtime environment.
-Users can specify a specific fork, branch, and Git ref (e.g. a particular commit hash), as well as the path to a particular directory or notebook file within the repository, that will be used
+Binder uses a Git repository hosted on, e.g., GitHub to fetch the notebooks and create the runtime environment.
+Users can specify a specific fork, branch, and Git ref (e.g., a particular commit hash), as well as the path to a particular directory or notebook file within the repository, that will be used
 when first starting the environment.
 
 These options can be specified interactively on the `Binder homepage <https://mybinder.org/>`_, which will create a URL that can then be shared with others to generate a (separate) instance of the environment with the same repository settings.
