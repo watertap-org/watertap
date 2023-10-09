@@ -38,6 +38,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
+from watertap.costing.unit_models.pressure_exchanger import cost_pressure_exchanger
 
 _log = idaeslog.getLogger(__name__)
 
@@ -570,3 +571,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             },
             "params": {},
         }
+
+    @property
+    def default_costing_method(self):
+        return cost_pressure_exchanger

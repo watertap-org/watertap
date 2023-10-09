@@ -24,6 +24,9 @@ def transform_property_constraints(self):
         var_str = p.name
         if p.method is not None and self.is_property_constructed(var_str):
             var = getattr(self, var_str)
+            # Some property models may not use `None` as the method for state variables and wouldn't have a constraint
+            if var_str in list(self.define_state_vars()):
+                continue
             msg = (
                 f"If there was a property constraint written for the variable, {var}, that constraint was not "
                 f"scaled. The transform_property_constraints tool expects constraints to have the following naming "

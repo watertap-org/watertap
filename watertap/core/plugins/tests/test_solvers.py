@@ -16,12 +16,13 @@ import idaes.core.util.scaling as iscale
 
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 from pyomo.common.errors import ApplicationError
+import pyomo.repn.plugins.nl_writer as _nl_writer
 from idaes.core.util.scaling import (
     set_scaling_factor,
     constraints_with_scale_factor_generator,
 )
 from idaes.core.solvers import get_solver
-from watertap.core.plugins.solvers import IpoptWaterTAP
+from watertap.core.plugins.solvers import IpoptWaterTAP, _SuffixData
 
 
 class TestIpoptWaterTAP:
@@ -30,6 +31,7 @@ class TestIpoptWaterTAP:
         m = pyo.ConcreteModel()
         m.a = pyo.Var(initialize=0.25, bounds=(-0.5, 0.5))
         m.b = b = pyo.Block()
+        m.e = pyo.Var(initialize=0.42, domain=pyo.NonNegativeReals)
         b.a = pyo.Var([1, 2], bounds=(-10, 10))
 
         m.c = pyo.Constraint(expr=(0, 1.0 / (m.a**2), 100))
@@ -55,6 +57,7 @@ class TestIpoptWaterTAP:
         assert m.b.a[1].ub == 10
         assert m.b.a[2].lb == -10
         assert m.b.a[2].ub == 10
+        assert m.e.lb == 0
 
     @pytest.fixture(scope="class")
     def s(self):
@@ -85,12 +88,13 @@ class TestIpoptWaterTAP:
 
         assert s._model is m
 
-        assert m.a.lb == -0.5 - 1e-10
-        assert m.a.ub == 0.5 + 1e-10
-        assert m.b.a[1].lb == -10 - 1e-09
-        assert m.b.a[1].ub == 10 + 1e-09
-        assert m.b.a[2].lb == -10 - 1e-09
-        assert m.b.a[2].ub == 10 + 1e-09
+        assert m.a.lb == -0.5
+        assert m.a.ub == 0.5
+        assert m.b.a[1].lb == -10
+        assert m.b.a[1].ub == 10
+        assert m.b.a[2].lb == -10
+        assert m.b.a[2].ub == 10
+        assert m.e.lb == 0.0
 
     @pytest.mark.unit
     def test_postsolve_unscaled_constraints_and_bounds_cleanup(self, m, s):
@@ -108,6 +112,7 @@ class TestIpoptWaterTAP:
         assert cons_with_sf == [(m.b.d, 1e6)]
 
         assert not hasattr(s, "_model")
+        assert _nl_writer._SuffixData is _SuffixData
 
     @pytest.mark.unit
     def test_option_absorption(self, m, s):
@@ -116,6 +121,7 @@ class TestIpoptWaterTAP:
         pyo.assert_optimal_termination(results)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _nl_writer._SuffixData is _SuffixData
         del s.options["ignore_variable_scaling"]
 
     @pytest.mark.unit
@@ -132,6 +138,7 @@ class TestIpoptWaterTAP:
         s._presolve(m, tee=True)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _nl_writer._SuffixData is _SuffixData
         s.options["nlp_scaling_method"] = "user-scaling"
 
     @pytest.mark.unit
@@ -141,6 +148,7 @@ class TestIpoptWaterTAP:
         del s.options["nlp_scaling_method"]
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _nl_writer._SuffixData is _SuffixData
 
     @pytest.mark.unit
     def test_passthrough_negative(self, m, s):
@@ -152,6 +160,7 @@ class TestIpoptWaterTAP:
         del s.options["ignore_variable_scaling"]
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _nl_writer._SuffixData is _SuffixData
 
     @pytest.mark.unit
     def test_presolve_incorrect_number_of_arguments(self, m, s):
@@ -172,6 +181,7 @@ class TestIpoptWaterTAP:
             s.solve(m)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _nl_writer._SuffixData is _SuffixData
         m.a.value = 1
 
     @pytest.mark.unit
@@ -189,6 +199,7 @@ class TestIpoptWaterTAP:
             s.solve(m)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _nl_writer._SuffixData is _SuffixData
         m.a.value = 1
 
     @pytest.mark.unit
@@ -206,6 +217,7 @@ class TestIpoptWaterTAP:
             s.solve(m)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _nl_writer._SuffixData is _SuffixData
         IPOPT._presolve = IPOPT_presolve
 
     @pytest.mark.unit
@@ -223,25 +235,8 @@ class TestIpoptWaterTAP:
             s.solve(m)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _nl_writer._SuffixData is _SuffixData
         iscale.constraint_autoscale_large_jac = constraint_autoscale_large_jac
-
-    @pytest.mark.unit
-    def test_honor_original_bounds(self, m, s):
-        s.options["honor_original_bounds"] = "yes"
-        with pytest.raises(ValueError):
-            s.solve(m)
-        self._test_bounds(m)
-        assert not hasattr(s, "_scaling_cache")
-        del s.options["honor_original_bounds"]
-
-    @pytest.mark.unit
-    def test_invalid_bound_relax_raises_error(self, m, s):
-        s.options["bound_relax_factor"] = -1e-12
-        with pytest.raises(ValueError):
-            s.solve(m)
-        self._test_bounds(m)
-        assert not hasattr(s, "_scaling_cache")
-        del s.options["bound_relax_factor"]
 
     @pytest.fixture(scope="class")
     def m2(self):
@@ -259,20 +254,6 @@ class TestIpoptWaterTAP:
         assert pyo.value(m2.x) == pytest.approx(5.000000024092977e-17, abs=0, rel=1e-8)
 
     @pytest.mark.unit
-    def test_set_bound_relax_1_small(self, m2, s):
-        s.options["bound_relax_factor"] = 1e-2
-        s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(4.9e-17, abs=0, rel=1e-8)
-        del s.options["bound_relax_factor"]
-
-    @pytest.mark.unit
-    def test_set_bound_relax_2_small(self, m2, s):
-        s.options["bound_relax_factor"] = 1e-12
-        s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(5.0e-17, abs=0, rel=1e-8)
-        del s.options["bound_relax_factor"]
-
-    @pytest.mark.unit
     def test_default_bound_relax_big(self, m2, s):
         m2.factor = 1.0e16
         m2.x.value = 1.0e16
@@ -281,17 +262,3 @@ class TestIpoptWaterTAP:
         m2.scaling_factor[m2.x] = pyo.value(1.0 / m2.factor)
         s.solve(m2, tee=True)
         assert pyo.value(m2.x) == pytest.approx(5.000000024092977e15, abs=0, rel=1e-8)
-
-    @pytest.mark.unit
-    def test_set_bound_relax_1_big(self, m2, s):
-        s.options["bound_relax_factor"] = 1e-2
-        s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(4.9e15, abs=0, rel=1e-8)
-        del s.options["bound_relax_factor"]
-
-    @pytest.mark.unit
-    def test_set_bound_relax_2_big(self, m2, s):
-        s.options["bound_relax_factor"] = 0.0
-        s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(5.0e15, abs=0, rel=1e-8)
-        del s.options["bound_relax_factor"]
