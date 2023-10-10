@@ -103,7 +103,6 @@ class RegenerantChem(StrEnum):
     NaCl = "NaCl"
     MeOH = "MeOH"
     single_use = "single_use"
-    none = "none"
 
 
 class IsothermType(StrEnum):
@@ -1160,20 +1159,17 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             @self.Constraint(
                 self.target_ion_set, doc="Clark equation with fundamental constants"
             )  # Croll et al (2023), Eq.9
-            def eq_clark_1(b, j):
-                denom = (
-                    1
-                    + (2 ** (b.freundlich_n - 1) - 1)
-                    * exp(
-                        (
-                            (b.mass_transfer_coeff * b.bed_depth * (b.freundlich_n - 1))
-                            / (b.bv_50 * b.vel_bed)
-                        )
-                        * (b.bv_50 - b.bv)
-                    )
-                ) ** (1 / (b.freundlich_n - 1))
-                # return c0 == denom * cb
-                return denom * b.c_norm[j] == 1
+            def eq_clark(b, j):
+                left_side = (
+                    (b.mass_transfer_coeff * b.bed_depth * (b.freundlich_n - 1))
+                    / (b.bv_50 * b.vel_bed)
+                ) * (b.bv_50 - b.bv)
+
+                right_side = log(
+                    ((1 / b.c_norm[j]) ** (b.freundlich_n - 1) - 1)
+                    / (2 ** (b.freundlich_n - 1) - 1)
+                )
+                return left_side - right_side == 0
 
             @self.Constraint(
                 self.target_ion_set,
@@ -1191,18 +1187,16 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             )
             def eq_tb_traps(b, k):
                 bv_traps = (b.tb_traps[k] * b.vel_bed) / b.bed_depth
-                denom = (
-                    1
-                    + (2 ** (b.freundlich_n - 1) - 1)
-                    * exp(
-                        (
-                            (b.mass_transfer_coeff * b.bed_depth * (b.freundlich_n - 1))
-                            / (b.bv_50 * b.vel_bed)
-                        )
-                        * (b.bv_50 - bv_traps)
-                    )
-                ) ** (1 / (b.freundlich_n - 1))
-                return denom * b.c_traps[k] == 1
+                left_side = (
+                    (b.mass_transfer_coeff * b.bed_depth * (b.freundlich_n - 1))
+                    / (b.bv_50 * b.vel_bed)
+                ) * (b.bv_50 - bv_traps)
+
+                right_side = log(
+                    ((1 / b.c_traps[k]) ** (b.freundlich_n - 1) - 1)
+                    / (2 ** (b.freundlich_n - 1) - 1)
+                )
+                return left_side - right_side == 0
 
             @self.Constraint(self.trap_index, doc="Area of trapezoids")
             def eq_traps(b, k):
@@ -1436,10 +1430,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 iscale.set_scaling_factor(self.kinetic_param, 1e7)
 
             if iscale.get_scaling_factor(self.mass_transfer_coeff) is None:
-                iscale.set_scaling_factor(self.mass_transfer_coeff, 1e4)
+                iscale.set_scaling_factor(self.mass_transfer_coeff, 10)
 
             if iscale.get_scaling_factor(self.bv_50) is None:
                 iscale.set_scaling_factor(self.bv_50, 1e-5)
+
+            if iscale.get_scaling_factor(self.bv) is None:
+                iscale.set_scaling_factor(self.bv, 1e-5)
 
             if iscale.get_scaling_factor(self.tb_traps) is None:
                 sf = iscale.get_scaling_factor(self.t_breakthru)
@@ -1477,7 +1474,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         if isotherm == IsothermType.freundlich:
 
-            for ind, c in self.eq_clark_1.items():
+            for ind, c in self.eq_clark.items():
                 if iscale.get_scaling_factor(c) is None:
                     iscale.constraint_scaling_transform(c, 1e6)
 
