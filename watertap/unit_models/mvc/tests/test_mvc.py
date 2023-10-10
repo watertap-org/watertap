@@ -117,7 +117,7 @@ def initialize(m, solver=None):
     optarg = solver.options
 
     # initialize evaporator
-    m.fs.evaporator.initialize_build(
+    m.fs.evaporator.initialize(
         delta_temperature_in=30, delta_temperature_out=5, outlvl=idaeslog.INFO_HIGH
     )
 
@@ -130,7 +130,7 @@ def initialize(m, solver=None):
 
     # initialize condenser
     propagate_state(m.fs.s02)
-    m.fs.condenser.initialize_build(heat=-m.fs.evaporator.heat_transfer.value)
+    m.fs.condenser.initialize(heat=-m.fs.evaporator.heat_transfer.value)
 
 
 @pytest.mark.requires_idaes_solver
@@ -148,7 +148,7 @@ def test_mvc():
     solver = get_solver()
     initialize(m, solver=solver)
 
-    results = solver.solve(m, tee=False)
+    results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
 
     m.fs.compressor.report()

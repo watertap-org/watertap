@@ -274,12 +274,10 @@ def unfix_opt_vars(m):
     m.fs.NF.nfUnit.velocity.unfix()
     m.fs.NF.nfUnit.velocity.setub(0.25)
     m.fs.product.max_hardness.fix(500)
-    m.fs.NF.nfUnit.recovery_vol_phase.fix(0.90)
-
+    m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"].setub(0.9)
     # Touch total_hardness (on-demand property) at feed and disposal for reporting
     m.fs.feed.properties[0].total_hardness
     m.fs.disposal.properties[0].total_hardness
-    iscale.calculate_scaling_factors(m)
 
 
 def add_objective(m):
@@ -401,7 +399,6 @@ def set_NF_feed(
     )
 
     blk.feed.properties[0].temperature.fix(298.15)
-    iscale.calculate_scaling_factors(blk)
 
     # switching to concentration for ease of adjusting in UI
     for ion, x in conc_mass_phase_comp.items():
