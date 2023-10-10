@@ -576,7 +576,6 @@ class TestIonExchangeFreundlich:
             "mass_transfer_coeff": 0.159346300525143,
             "bv": 18000,
             "bv_50": 20000,
-            # "bed_capacity_param": 311.9325370632754,
             "kinetic_param": 1.5934630052514297e-06,
         }
 

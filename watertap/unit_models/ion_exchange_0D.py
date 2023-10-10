@@ -827,10 +827,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     + b.bed_expansion_frac_C * b.bw_rate**2
                 )  # for 20C
 
-            @self.Expression(doc="Bed expansion from backwashing")
-            def bed_expansion_h(b):
-                return b.bed_expansion_frac * b.bed_depth
-
             @self.Expression(doc="Rinse flow rate")
             def rinse_flow(b):
                 return b.vel_bed * (b.bed_vol / b.bed_depth) * b.number_columns
@@ -904,6 +900,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
             for j in inerts:
                 self.regeneration_stream[0].get_material_flow_terms("Liq", j).fix(0)
+
+        @self.Expression(doc="Bed expansion from backwashing")
+        def bed_expansion_h(b):
+            if self.config.regenerant == RegenerantChem.single_use:
+                return 0 * pyunits.m
+            else:
+                return b.bed_expansion_frac * b.bed_depth
 
         @self.Expression(doc="Main pump power")
         def main_pump_power(b):
@@ -1026,16 +1029,10 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Column height")
         def eq_col_height(b):
-            if self.config.regenerant != RegenerantChem.single_use:
-                return (
-                    b.col_height
-                    == b.bed_depth
-                    + b.distributor_h
-                    + b.underdrain_h
-                    + b.bed_expansion_h
-                )
-            else:
-                return b.col_height == b.bed_depth + b.distributor_h + b.underdrain_h
+            return (
+                b.col_height
+                == b.bed_depth + b.distributor_h + b.underdrain_h + b.bed_expansion_h
+            )
 
         @self.Constraint(doc="Bed design")
         def eq_bed_design(b):
