@@ -211,12 +211,14 @@ def cost_ion_exchange(blk):
     tot_num_col = blk.unit_model.number_columns + blk.unit_model.number_columns_redund
     col_vol_gal = pyo.units.convert(blk.unit_model.col_vol_per, to_units=pyo.units.gal)
     bed_vol_ft3 = pyo.units.convert(blk.unit_model.bed_vol, to_units=pyo.units.ft**3)
-    bed_mass_ton = pyo.units.convert(
-        blk.unit_model.bed_vol * blk.unit_model.resin_bulk_dens,
-        to_units=pyo.units.ton,
-    )
 
     ix_type = blk.unit_model.ion_exchange_type
+    blk.regen_soln_dens = pyo.Param(
+        initialize=1000,
+        units=pyo.units.kg / pyo.units.m**3,
+        mutable=True,
+        doc="Density of regeneration solution",
+    )
     blk.regen_dose = pyo.Param(
         initialize=300,
         units=pyo.units.kg / pyo.units.m**3,
@@ -255,13 +257,13 @@ def cost_ion_exchange(blk):
     )
     blk.flow_mass_regen_soln = pyo.Var(
         initialize=1,
-        bounds=(0, None),
+        domain=pyo.NonNegativeReals,
         units=pyo.units.kg / pyo.units.year,
         doc="Regeneration solution flow",
     )
     blk.total_pumping_power = pyo.Var(
         initialize=1,
-        bounds=(0, None),
+        domain=pyo.NonNegativeReals,
         units=pyo.units.kilowatt,
         doc="Total pumping power required",
     )
@@ -292,47 +294,52 @@ def cost_ion_exchange(blk):
         blk.capital_cost_backwash_tank.fix(0)
         blk.capital_cost_regen_tank.fix(0)
         blk.flow_mass_regen_soln.fix(0)
-        blk.vol_flow_resin = pyo.Var(
+        blk.flow_vol_resin = pyo.Var(
             initialize=1e5,
             bounds=(0, None),
             units=pyo.units.m**3 / blk.costing_package.base_period,
-            doc="Volumetric flow of resin per cycle",  # assumes you are only replacing the operational columns
+            doc="Volumetric flow of resin per cycle",  # assumes you are only replacing the operational columns, t_cycle = t_breakthru
         )
-        blk.operating_cost_single_use_resin = pyo.Var(
+        blk.single_use_resin_replacement_cost = pyo.Var(
             initialize=1e5,
             bounds=(0, None),
             units=blk.costing_package.base_currency / blk.costing_package.base_period,
             doc="Operating cost for using single-use resin (i.e., no regeneration)",
         )
 
-        blk.vol_flow_resin_constraint = pyo.Constraint(
-            expr=blk.vol_flow_resin
+        blk.flow_vol_resin_constraint = pyo.Constraint(
+            expr=blk.flow_vol_resin
             == pyo.units.convert(
                 blk.unit_model.bed_vol_tot / blk.unit_model.t_breakthru,
                 to_units=pyo.units.m**3 / blk.costing_package.base_period,
             )
         )
         blk.mass_flow_resin = pyo.units.convert(
-            blk.vol_flow_resin * blk.unit_model.resin_bulk_dens,
+            blk.flow_vol_resin * blk.unit_model.resin_bulk_dens,
             to_units=pyo.units.ton / blk.costing_package.base_period,
         )
     else:
-        bw_tank_vol = pyo.units.convert(
-            (
-                blk.unit_model.bw_flow * blk.unit_model.t_bw
-                + blk.unit_model.rinse_flow * blk.unit_model.t_rinse
-            ),
-            to_units=pyo.units.gal,
+        blk.backwash_tank_vol = pyo.Expression(
+            expr=pyo.units.convert(
+                (
+                    blk.unit_model.bw_flow * blk.unit_model.t_bw
+                    + blk.unit_model.rinse_flow * blk.unit_model.t_rinse
+                ),
+                to_units=pyo.units.gal,
+            )
         )
-        regen_tank_vol = pyo.units.convert(
-            blk.unit_model.regen_tank_vol,
-            to_units=pyo.units.gal,
+
+        blk.regeneration_tank_vol = pyo.Expression(
+            expr=pyo.units.convert(
+                blk.unit_model.regen_tank_vol,
+                to_units=pyo.units.gal,
+            )
         )
         blk.capital_cost_backwash_tank_constraint = pyo.Constraint(
             expr=blk.capital_cost_backwash_tank
             == pyo.units.convert(
                 ion_exchange_params.backwash_tank_A_coeff
-                * (bw_tank_vol / pyo.units.gallon)
+                * (blk.backwash_tank_vol / pyo.units.gallon)
                 ** ion_exchange_params.backwash_tank_b_coeff,
                 to_units=blk.costing_package.base_currency,
             )
@@ -341,7 +348,7 @@ def cost_ion_exchange(blk):
             expr=blk.capital_cost_regen_tank
             == pyo.units.convert(
                 ion_exchange_params.regen_tank_A_coeff
-                * (regen_tank_vol / pyo.units.gallon)
+                * (blk.regeneration_tank_vol / pyo.units.gallon)
                 ** ion_exchange_params.regen_tank_b_coeff,
                 to_units=blk.costing_package.base_currency,
             )
@@ -359,12 +366,6 @@ def cost_ion_exchange(blk):
         )
     )
     if blk.unit_model.config.hazardous_waste:
-        blk.regen_soln_dens = pyo.Param(
-            initialize=1000,
-            units=pyo.units.kg / pyo.units.m**3,
-            mutable=True,
-            doc="Density of regeneration solution",
-        )
 
         if blk.unit_model.config.regenerant == "single_use":
             blk.operating_cost_hazardous_constraint = pyo.Constraint(
@@ -377,6 +378,10 @@ def cost_ion_exchange(blk):
                 )
             )
         else:
+            bed_mass_ton = pyo.units.convert(
+                blk.unit_model.bed_vol * blk.unit_model.resin_bulk_dens,
+                to_units=pyo.units.ton,
+            )
             blk.operating_cost_hazardous_constraint = pyo.Constraint(
                 expr=blk.operating_cost_hazardous
                 == pyo.units.convert(
@@ -400,10 +405,10 @@ def cost_ion_exchange(blk):
         blk.operating_cost_hazardous.fix(0)
     if blk.unit_model.config.regenerant == "single_use":
 
-        blk.operating_cost_single_use_resin_constraint = pyo.Constraint(
-            expr=blk.operating_cost_single_use_resin
+        blk.single_use_resin_replacement_cost_constraint = pyo.Constraint(
+            expr=blk.single_use_resin_replacement_cost
             == pyo.units.convert(
-                blk.vol_flow_resin * resin_cost,
+                blk.flow_vol_resin * resin_cost,
                 to_units=blk.costing_package.base_currency
                 / blk.costing_package.base_period,
             )
@@ -411,7 +416,7 @@ def cost_ion_exchange(blk):
 
         blk.fixed_operating_cost_constraint = pyo.Constraint(
             expr=blk.fixed_operating_cost
-            == blk.operating_cost_single_use_resin + blk.operating_cost_hazardous
+            == blk.single_use_resin_replacement_cost + blk.operating_cost_hazardous
         )
 
     else:
