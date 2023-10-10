@@ -253,7 +253,7 @@ def cost_ion_exchange(blk):
         units=blk.costing_package.base_currency / blk.costing_package.base_period,
         doc="Operating cost for hazardous waste disposal",
     )
-    blk.vol_flow_regen_soln = pyo.Var(
+    blk.flow_mass_regen_soln = pyo.Var(
         initialize=1,
         bounds=(0, None),
         units=pyo.units.kg / pyo.units.year,
@@ -291,7 +291,7 @@ def cost_ion_exchange(blk):
     if blk.unit_model.config.regenerant == "single_use":
         blk.capital_cost_backwash_tank.fix(0)
         blk.capital_cost_regen_tank.fix(0)
-        blk.vol_flow_regen_soln.fix(0)
+        blk.flow_mass_regen_soln.fix(0)
         blk.vol_flow_resin = pyo.Var(
             initialize=1e5,
             bounds=(0, None),
@@ -387,7 +387,7 @@ def cost_ion_exchange(blk):
                     )
                     * ion_exchange_params.annual_resin_replacement_factor
                     + pyo.units.convert(
-                        blk.vol_flow_regen_soln / blk.regen_soln_dens,
+                        blk.flow_mass_regen_soln / blk.regen_soln_dens,
                         to_units=pyo.units.gal / pyo.units.year,
                     )
                     * ion_exchange_params.hazardous_regen_disposal
@@ -432,8 +432,8 @@ def cost_ion_exchange(blk):
             + blk.operating_cost_hazardous
         )
 
-        blk.vol_flow_regen_soln_constraint = pyo.Constraint(
-            expr=blk.vol_flow_regen_soln
+        blk.flow_mass_regen_soln_constraint = pyo.Constraint(
+            expr=blk.flow_mass_regen_soln
             == pyo.units.convert(
                 (
                     (blk.regen_dose * blk.unit_model.bed_vol * tot_num_col)
@@ -445,7 +445,7 @@ def cost_ion_exchange(blk):
         )
 
         blk.costing_package.cost_flow(
-            blk.vol_flow_regen_soln, blk.unit_model.config.regenerant
+            blk.flow_mass_regen_soln, blk.unit_model.config.regenerant
         )
 
     if blk.unit_model.config.regenerant == "single_use":
