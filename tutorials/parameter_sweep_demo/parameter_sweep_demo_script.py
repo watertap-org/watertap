@@ -21,6 +21,11 @@ from watertap.tools.parameter_sweep import (
 def build_sweep_params(m, num_samples=1, scenario="A_comp_vs_LCOW"):
     sweep_params = {}
 
+    # A_comp: Membrane water permeability coefficient
+    # B_comp: Membrane salt permeability coefficient
+    # NaCl_Loading: Feed water salinity
+    # LCOW: Levelized cost of water
+
     if scenario == "A_comp_vs_LCOW":
         sweep_params["A_comp"] = LinearSample(
             m.fs.RO.A_comp, 1.0e-12, 1e-11, num_samples
