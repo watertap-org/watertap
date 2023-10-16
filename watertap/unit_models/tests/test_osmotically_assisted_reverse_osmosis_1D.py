@@ -26,7 +26,6 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
     MomentumBalanceType,
-    ControlVolume1DBlock,
     FlowDirection,
 )
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_1D import (

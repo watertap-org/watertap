@@ -298,8 +298,8 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
         self._add_flux_balance()
         if self.config.has_pressure_change:
-            self._add_deltaP(side="feed_side")
-            self._add_deltaP(side="permeate_side")
+            self._add_deltaP("feed_side")
+            self._add_deltaP("permeate_side")
         self._add_mass_transfer()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)

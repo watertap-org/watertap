@@ -23,7 +23,6 @@ from idaes.core import declare_process_block_class, FlowDirection, useDefault
 from idaes.core.util import scaling as iscale
 from watertap.core import (
     MembraneChannel1DBlock,
-    MassTransferCoefficient,
     PressureChangeType,
 )
 from watertap.core.membrane_channel1d import CONFIG_Template
