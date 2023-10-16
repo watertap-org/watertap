@@ -230,3 +230,12 @@ class OsmoticallyAssistedReverseOsmosis1DData(
             v = self.permeate_side.mass_transfer_term[t, x, p, j]
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self.feed_side, "deltaP_stage"):
+            for v in self.feed_side.deltaP_stage.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e-4)
+        if hasattr(self.permeate_side, "deltaP_stage"):
+            for v in self.permeate_side.deltaP_stage.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e-4)
