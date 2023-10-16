@@ -2248,7 +2248,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_I"],
-        name="mAnaerobic digestor liquid outlet X_I concentration",
+        name="Anaerobic digestor liquid outlet X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
