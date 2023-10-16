@@ -61,7 +61,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
+        name="Feed S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -73,7 +73,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "S_S"],
-        name="S_S concentration",
+        name="Feed S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -85,7 +85,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
+        name="Feed X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -97,7 +97,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "X_S"],
-        name="X_S concentration",
+        name="Feed X_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -109,7 +109,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "X_BH"],
-        name="X_BH concentration",
+        name="Feed X_BH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -121,7 +121,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "X_BA"],
-        name="X_BA concentration",
+        name="Feed X_BA concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -133,7 +133,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "X_P"],
-        name="X_P concentration",
+        name="Feed X_P concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -145,7 +145,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "S_O"],
-        name="S_O concentration",
+        name="Feed S_O concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -157,7 +157,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "S_NO"],
-        name="S_NO concentration",
+        name="Feed S_NO concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -169,7 +169,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "S_NH"],
-        name="S_NH concentration",
+        name="Feed S_NH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -181,7 +181,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "S_ND"],
-        name="S_ND concentration",
+        name="Feed S_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -193,7 +193,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "X_ND"],
-        name="X_ND concentration",
+        name="Feed X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -205,7 +205,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.properties[0].alkalinity,
-        name="S_ALK",
+        name="Feed S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
         rounding=2,
