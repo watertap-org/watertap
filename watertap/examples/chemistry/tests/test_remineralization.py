@@ -748,6 +748,7 @@ reaction_config = {
 
 # Get default solver for testing
 solver = get_solver()
+solver.options["ma27_pivtol"] = 1e-1
 
 # Start test class
 class TestRemineralization:
