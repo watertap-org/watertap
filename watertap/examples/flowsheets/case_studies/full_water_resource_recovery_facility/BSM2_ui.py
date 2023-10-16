@@ -61,7 +61,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
+        name="Feed S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -73,7 +73,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "S_S"],
-        name="S_S concentration",
+        name="Feed S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -85,7 +85,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
+        name="Feed X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -97,7 +97,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "X_S"],
-        name="X_S concentration",
+        name="Feed X_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -109,7 +109,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "X_BH"],
-        name="X_BH concentration",
+        name="Feed X_BH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -121,7 +121,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "X_BA"],
-        name="X_BA concentration",
+        name="Feed X_BA concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -133,7 +133,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "X_P"],
-        name="X_P concentration",
+        name="Feed X_P concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -145,7 +145,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "S_O"],
-        name="S_O concentration",
+        name="Feed S_O concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -157,7 +157,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "S_NO"],
-        name="S_NO concentration",
+        name="Feed S_NO concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -169,7 +169,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "S_NH"],
-        name="S_NH concentration",
+        name="Feed S_NH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -181,7 +181,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "S_ND"],
-        name="S_ND concentration",
+        name="Feed S_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -193,7 +193,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.conc_mass_comp[0, "X_ND"],
-        name="X_ND concentration",
+        name="Feed X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=2,
@@ -205,7 +205,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.FeedWater.properties[0].alkalinity,
-        name="S_ALK",
+        name="Feed S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
         rounding=2,
@@ -634,7 +634,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.Treated.properties[0].conc_mass_comp["S_I"],
-        name="S_I concentration",
+        name="Treated S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -645,7 +645,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.Treated.properties[0].conc_mass_comp["S_S"],
-        name="S_S concentration",
+        name="Treated S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -656,7 +656,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.Treated.properties[0].conc_mass_comp["X_I"],
-        name="X_I concentration",
+        name="Treated X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -667,7 +667,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.Treated.properties[0].conc_mass_comp["X_S"],
-        name="X_S concentration",
+        name="Treated X_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -678,7 +678,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.Treated.properties[0].conc_mass_comp["X_BH"],
-        name="X_BH concentration",
+        name="Treated X_BH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -689,7 +689,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.Treated.properties[0].conc_mass_comp["X_BA"],
-        name="X_BA concentration",
+        name="Treated X_BA concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -700,7 +700,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.Treated.properties[0].conc_mass_comp["X_P"],
-        name="X_P concentration",
+        name="Treated X_P concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -711,7 +711,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.Treated.properties[0].conc_mass_comp["S_O"],
-        name="S_O concentration",
+        name="Treated S_O concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -722,7 +722,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.Treated.properties[0].conc_mass_comp["S_NO"],
-        name="S_NO concentration",
+        name="Treated S_NO concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -733,7 +733,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.Treated.properties[0].conc_mass_comp["S_NH"],
-        name="S_NH concentration",
+        name="Treated S_NH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -744,7 +744,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.Treated.properties[0].conc_mass_comp["S_ND"],
-        name="S_ND concentration",
+        name="Treated S_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -755,7 +755,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.Treated.properties[0].conc_mass_comp["X_ND"],
-        name="X_ND concentration",
+        name="Treated X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -766,7 +766,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.Treated.properties[0].alkalinity,
-        name="S_ALK concentration",
+        name="Treated S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
         rounding=5,
@@ -789,7 +789,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.effluent.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
+        name="Primary clarifier effluent S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -800,7 +800,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.effluent.conc_mass_comp[0, "S_S"],
-        name="S_S concentration",
+        name="Primary clarifier effluent S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -811,7 +811,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.effluent.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
+        name="Primary clarifier effluent X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -822,7 +822,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.effluent.conc_mass_comp[0, "X_S"],
-        name="X_S concentration",
+        name="Primary clarifier effluent X_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -833,7 +833,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.effluent.conc_mass_comp[0, "X_BH"],
-        name="X_BH concentration",
+        name="Primary clarifier effluent X_BH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -844,7 +844,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.effluent.conc_mass_comp[0, "X_BA"],
-        name="X_BA concentration",
+        name="Primary clarifier effluent X_BA concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -855,7 +855,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.effluent.conc_mass_comp[0, "X_P"],
-        name="X_P concentration",
+        name="Primary clarifier effluent X_P concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -866,7 +866,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.effluent.conc_mass_comp[0, "S_O"],
-        name="S_O concentration",
+        name="Primary clarifier effluent S_O concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -877,7 +877,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.effluent.conc_mass_comp[0, "S_NO"],
-        name="S_NO concentration",
+        name="Primary clarifier effluent S_NO concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -888,7 +888,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.effluent.conc_mass_comp[0, "S_NH"],
-        name="S_NH concentration",
+        name="Primary clarifier effluent S_NH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -899,7 +899,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.effluent.conc_mass_comp[0, "S_ND"],
-        name="S_ND concentration",
+        name="Primary clarifier effluent S_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -910,7 +910,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.effluent.conc_mass_comp[0, "X_ND"],
-        name="X_ND concentration",
+        name="Primary clarifier effluent X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -921,7 +921,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.effluent.alkalinity[0],
-        name="S_ALK concentration",
+        name="Primary clarifier effluent S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
         rounding=5,
@@ -944,7 +944,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.underflow.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
+        name="Primary clarifier underflow S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -955,7 +955,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.underflow.conc_mass_comp[0, "S_S"],
-        name="S_S concentration",
+        name="Primary clarifier underflow S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -966,7 +966,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.underflow.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
+        name="8Primary clarifier underflow X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -977,7 +977,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.underflow.conc_mass_comp[0, "X_S"],
-        name="X_S concentration",
+        name="Primary clarifier underflow X_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -988,7 +988,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.underflow.conc_mass_comp[0, "X_BH"],
-        name="X_BH concentration",
+        name="Primary clarifier underflow X_BH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -999,7 +999,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.underflow.conc_mass_comp[0, "X_BA"],
-        name="X_BA concentration",
+        name="Primary clarifier underflow X_BA concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1010,7 +1010,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.underflow.conc_mass_comp[0, "X_P"],
-        name="X_P concentration",
+        name="Primary clarifier underflow X_P concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1021,7 +1021,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.underflow.conc_mass_comp[0, "S_O"],
-        name="S_O concentration",
+        name="Primary clarifier underflow S_O concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1032,7 +1032,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.underflow.conc_mass_comp[0, "S_NO"],
-        name="S_NO concentration",
+        name="Primary clarifier underflow S_NO concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1043,7 +1043,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.underflow.conc_mass_comp[0, "S_NH"],
-        name="S_NH concentration",
+        name="Primary clarifier underflow S_NH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1054,7 +1054,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.underflow.conc_mass_comp[0, "S_ND"],
-        name="S_ND concentration",
+        name="Primary clarifier underflow S_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1065,7 +1065,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.underflow.conc_mass_comp[0, "X_ND"],
-        name="X_ND concentration",
+        name="Primary clarifier underflow X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1076,7 +1076,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.CL.underflow.alkalinity[0],
-        name="S_ALK concentration",
+        name="Primary clarifier underflow S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
         rounding=5,
@@ -1088,7 +1088,7 @@ def export_variables(flowsheet=None, exports=None):
 
     exports.add(
         obj=fs.SP6.recycle.flow_vol[0],
-        name="ASP recycle flow rate",
+        name="ASP recycle inlet flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -1099,7 +1099,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP6.recycle.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
+        name="ASP recycle inlet S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1110,7 +1110,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP6.recycle.conc_mass_comp[0, "S_S"],
-        name="S_S concentration",
+        name="ASP recycle inlet S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1121,7 +1121,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP6.recycle.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
+        name="ASP recycle inlet X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1132,7 +1132,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP6.recycle.conc_mass_comp[0, "X_S"],
-        name="X_S concentration",
+        name="ASP recycle inlet X_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1143,7 +1143,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP6.recycle.conc_mass_comp[0, "X_BH"],
-        name="X_BH concentration",
+        name="ASP recycle inlet X_BH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1154,7 +1154,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP6.recycle.conc_mass_comp[0, "X_BA"],
-        name="X_BA concentration",
+        name="ASP recycle inlet X_BA concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1165,7 +1165,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP6.recycle.conc_mass_comp[0, "X_P"],
-        name="X_P concentration",
+        name="ASP recycle inlet X_P concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1176,7 +1176,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP6.recycle.conc_mass_comp[0, "S_O"],
-        name="S_O concentration",
+        name="ASP recycle inlet S_O concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1187,7 +1187,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP6.recycle.conc_mass_comp[0, "S_NO"],
-        name="S_NO concentration",
+        name="ASP recycle inlet S_NO concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1198,7 +1198,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP6.recycle.conc_mass_comp[0, "S_NH"],
-        name="S_NH concentration",
+        name="ASP recycle inlet S_NH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1209,7 +1209,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP6.recycle.conc_mass_comp[0, "S_ND"],
-        name="S_ND concentration",
+        name="ASP recycle inlet S_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1220,7 +1220,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP6.recycle.conc_mass_comp[0, "X_ND"],
-        name="X_ND concentration",
+        name="ASP recycle inlet X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1231,7 +1231,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP6.recycle.alkalinity[0],
-        name="S_ALK concentration",
+        name="ASP recycle inlet S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
         rounding=5,
@@ -1243,7 +1243,7 @@ def export_variables(flowsheet=None, exports=None):
 
     exports.add(
         obj=fs.SP5.overflow.flow_vol[0],
-        name="Secondary clarifier flow rate",
+        name="Secondary clarifier inlet flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -1254,7 +1254,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP5.overflow.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
+        name="Secondary clarifier inlet S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1265,7 +1265,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP5.overflow.conc_mass_comp[0, "S_S"],
-        name="S_S concentration",
+        name="Secondary clarifier inlet S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1276,7 +1276,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP5.overflow.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
+        name="Secondary clarifier inlet X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1287,7 +1287,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP5.overflow.conc_mass_comp[0, "X_S"],
-        name="X_S concentration",
+        name="Secondary clarifier inlet X_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1298,7 +1298,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP5.overflow.conc_mass_comp[0, "X_BH"],
-        name="X_BH concentration",
+        name="Secondary clarifier inlet X_BH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1309,7 +1309,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP5.overflow.conc_mass_comp[0, "X_BA"],
-        name="X_BA concentration",
+        name="Secondary clarifier inlet X_BA concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1320,7 +1320,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP5.overflow.conc_mass_comp[0, "X_P"],
-        name="X_P concentration",
+        name="Secondary clarifier inlet X_P concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1331,7 +1331,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP5.overflow.conc_mass_comp[0, "S_O"],
-        name="S_O concentration",
+        name="Secondary clarifier inlet S_O concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1342,7 +1342,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP5.overflow.conc_mass_comp[0, "S_NO"],
-        name="S_NO concentration",
+        name="Secondary clarifier inlet S_NO concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1353,7 +1353,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP5.overflow.conc_mass_comp[0, "S_NH"],
-        name="S_NH concentration",
+        name="Secondary clarifier inlet S_NH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1364,7 +1364,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP5.overflow.conc_mass_comp[0, "S_ND"],
-        name="S_ND concentration",
+        name="Secondary clarifier inlet S_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1375,7 +1375,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP5.overflow.conc_mass_comp[0, "X_ND"],
-        name="X_ND concentration",
+        name="Secondary clarifier inlet X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1386,7 +1386,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.SP5.overflow.alkalinity[0],
-        name="S_ALK concentration",
+        name="Secondary clarifier inlet S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
         rounding=5,
@@ -1398,7 +1398,7 @@ def export_variables(flowsheet=None, exports=None):
 
     exports.add(
         obj=fs.TU.inlet.flow_vol[0],
-        name="Thickener flow rate",
+        name="Thickener inlet flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -1409,7 +1409,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.TU.inlet.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
+        name="Thickener inlet S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1420,7 +1420,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.TU.inlet.conc_mass_comp[0, "S_S"],
-        name="S_S concentration",
+        name="Thickener inlet S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1431,7 +1431,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.TU.inlet.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
+        name="Thickener inlet X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1442,7 +1442,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.TU.inlet.conc_mass_comp[0, "X_S"],
-        name="X_S concentration",
+        name="Thickener inlet X_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1453,7 +1453,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.TU.inlet.conc_mass_comp[0, "X_BH"],
-        name="X_BH concentration",
+        name="Thickener inlet X_BH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1464,7 +1464,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.TU.inlet.conc_mass_comp[0, "X_BA"],
-        name="X_BA concentration",
+        name="Thickener inlet X_BA concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1475,7 +1475,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.TU.inlet.conc_mass_comp[0, "X_P"],
-        name="X_P concentration",
+        name="Thickener inlet X_P concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1486,7 +1486,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.TU.inlet.conc_mass_comp[0, "S_O"],
-        name="S_O concentration",
+        name="Thickener inlet S_O concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1497,7 +1497,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.TU.inlet.conc_mass_comp[0, "S_NO"],
-        name="S_NO concentration",
+        name="Thickener inlet S_NO concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1508,7 +1508,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.TU.inlet.conc_mass_comp[0, "S_NH"],
-        name="S_NH concentration",
+        name="Thickener inlet S_NH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1519,7 +1519,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.TU.inlet.conc_mass_comp[0, "S_ND"],
-        name="S_ND concentration",
+        name="Thickener inlet S_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1530,7 +1530,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.TU.inlet.conc_mass_comp[0, "X_ND"],
-        name="X_ND concentration",
+        name="Thickener inlet X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1541,7 +1541,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.TU.inlet.alkalinity[0],
-        name="S_ALK concentration",
+        name="Thickener inlet S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
         rounding=5,
@@ -1553,7 +1553,7 @@ def export_variables(flowsheet=None, exports=None):
 
     exports.add(
         obj=fs.asm_adm.inlet.flow_vol[0],
-        name="ASM/ADM inlet flow rate",
+        name="ASM1/ADM1 inlet flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -1564,7 +1564,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
+        name="ASM1/ADM1 inlet S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1575,7 +1575,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "S_S"],
-        name="S_S concentration",
+        name="ASM1/ADM1 inlet S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1586,7 +1586,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
+        name="ASM1/ADM1 inlet X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1597,7 +1597,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "X_S"],
-        name="X_S concentration",
+        name="ASM1/ADM1 inlet X_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1608,7 +1608,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "X_BH"],
-        name="X_BH concentration",
+        name="ASM1/ADM1 inlet X_BH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1619,7 +1619,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "X_BA"],
-        name="X_BA concentration",
+        name="ASM1/ADM1 inlet X_BA concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1630,7 +1630,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "X_P"],
-        name="X_P concentration",
+        name="ASM1/ADM1 inlet X_P concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1641,7 +1641,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "S_O"],
-        name="S_O concentration",
+        name="ASM1/ADM1 inlet S_O concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1652,7 +1652,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "S_NO"],
-        name="S_NO concentration",
+        name="ASM1/ADM1 inlet S_NO concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1663,7 +1663,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "S_NH"],
-        name="S_NH concentration",
+        name="ASM1/ADM1 inlet S_NH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1674,7 +1674,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "S_ND"],
-        name="S_ND concentration",
+        name="ASM1/ADM1 inlet S_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1685,7 +1685,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.inlet.conc_mass_comp[0, "X_ND"],
-        name="X_ND concentration",
+        name="ASM1/ADM1 inlet X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1696,7 +1696,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.inlet.alkalinity[0],
-        name="S_ALK concentration",
+        name="ASM1/ADM1 inlet S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
         rounding=5,
@@ -1719,7 +1719,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_su"],
-        name="S_su concentration",
+        name="Anaerobic digestor inlet S_su concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1730,7 +1730,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_aa"],
-        name="S_aa concentration",
+        name="Anaerobic digestor inlet S_aa concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1741,7 +1741,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_fa"],
-        name="S_fa concentration",
+        name="Anaerobic digestor inlet S_fa concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1752,7 +1752,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_va"],
-        name="S_va concentration",
+        name="Anaerobic digestor inlet S_va concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1763,7 +1763,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_bu"],
-        name="S_bu concentration",
+        name="Anaerobic digestor inlet S_bu concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1774,7 +1774,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_pro"],
-        name="S_pro concentration",
+        name="Anaerobic digestor inlet S_pro concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1785,7 +1785,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_ac"],
-        name="S_ac concentration",
+        name="Anaerobic digestor inlet S_ac concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1796,7 +1796,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_h2"],
-        name="S_h2 concentration",
+        name="Anaerobic digestor inlet S_h2 concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1807,7 +1807,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_ch4"],
-        name="S_ch4 concentration",
+        name="Anaerobic digestor inlet S_ch4 concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1818,7 +1818,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_IC"],
-        name="S_IC concentration",
+        name="Anaerobic digestor inlet S_IC concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1829,7 +1829,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_IN"],
-        name="S_IN concentration",
+        name="Anaerobic digestor inlet S_IN concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1840,7 +1840,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
+        name="Anaerobic digestor inlet S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1851,7 +1851,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_c"],
-        name="X_c concentration",
+        name="Anaerobic digestor inlet X_c concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1862,7 +1862,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_ch"],
-        name="X_ch concentration",
+        name="Anaerobic digestor inlet X_ch concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1873,7 +1873,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_pr"],
-        name="X_pr concentration",
+        name="Anaerobic digestor inlet X_pr concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1884,7 +1884,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_li"],
-        name="X_li concentration",
+        name="Anaerobic digestor inlet X_li concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1895,7 +1895,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_su"],
-        name="X_su concentration",
+        name="Anaerobic digestor inlet X_su concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1906,7 +1906,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_aa"],
-        name="X_aa concentration",
+        name="Anaerobic digestor inlet X_aa concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1917,7 +1917,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_fa"],
-        name="X_fa concentration",
+        name="Anaerobic digestor inlet X_fa concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1928,7 +1928,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_c4"],
-        name="X_c4 concentration",
+        name="Anaerobic digestor inlet X_c4 concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1939,7 +1939,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_pro"],
-        name="X_pro concentration",
+        name="Anaerobic digestor inlet X_pro concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1950,7 +1950,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_ac"],
-        name="X_ac concentration",
+        name="Anaerobic digestor inlet X_ac concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1961,7 +1961,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_h2"],
-        name="X_h2 concentration",
+        name="Anaerobic digestor inlet X_h2 concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1972,7 +1972,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.asm_adm.outlet.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
+        name="Anaerobic digestor inlet X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -1995,7 +1995,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_su"],
-        name="S_su concentration",
+        name="Anaerobic digestor liquid outlet S_su concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2006,7 +2006,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_aa"],
-        name="S_aa concentration",
+        name="Anaerobic digestor liquid outlet S_aa concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2017,7 +2017,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_fa"],
-        name="S_fa concentration",
+        name="Anaerobic digestor liquid outlet S_fa concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2028,7 +2028,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_va"],
-        name="S_va concentration",
+        name="Anaerobic digestor liquid outlet S_va concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2039,7 +2039,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_bu"],
-        name="S_bu concentration",
+        name="Anaerobic digestor liquid outlet S_bu concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2050,7 +2050,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_pro"],
-        name="S_pro concentration",
+        name="Anaerobic digestor liquid outlet S_pro concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2061,7 +2061,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_ac"],
-        name="S_ac concentration",
+        name="Anaerobic digestor liquid outlet S_ac concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2072,7 +2072,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_h2"],
-        name="S_h2 concentration",
+        name="Anaerobic digestor liquid outlet S_h2 concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2083,7 +2083,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_ch4"],
-        name="S_ch4 concentration",
+        name="Anaerobic digestor liquid outlet S_ch4 concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2094,7 +2094,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_IC"],
-        name="S_IC concentration",
+        name="Anaerobic digestor liquid outlet S_IC concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2105,7 +2105,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_IN"],
-        name="S_IN concentration",
+        name="Anaerobic digestor liquid outlet S_IN concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2116,7 +2116,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
+        name="Anaerobic digestor liquid outlet S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2127,7 +2127,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_c"],
-        name="X_c concentration",
+        name="Anaerobic digestor liquid outlet X_c concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2138,7 +2138,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_ch"],
-        name="X_ch concentration",
+        name="Anaerobic digestor liquid outlet X_ch concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2149,7 +2149,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_pr"],
-        name="X_pr concentration",
+        name="Anaerobic digestor liquid outlet X_pr concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2160,7 +2160,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_li"],
-        name="X_li concentration",
+        name="Anaerobic digestor liquid outlet X_li concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2171,7 +2171,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_su"],
-        name="X_su concentration",
+        name="Anaerobic digestor liquid outlet X_su concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2182,7 +2182,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_aa"],
-        name="X_aa concentration",
+        name="Anaerobic digestor liquid outlet X_aa concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2193,7 +2193,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_fa"],
-        name="X_fa concentration",
+        name="Anaerobic digestor liquid outlet X_fa concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2204,7 +2204,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_c4"],
-        name="X_c4 concentration",
+        name="Anaerobic digestor liquid outlet X_c4 concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2215,7 +2215,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_pro"],
-        name="X_pro concentration",
+        name="Anaerobic digestor liquid outlet X_pro concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2226,7 +2226,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_ac"],
-        name="X_ac concentration",
+        name="Anaerobic digestor liquid outlet X_ac concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2237,7 +2237,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_h2"],
-        name="X_h2 concentration",
+        name="Anaerobic digestor liquid outlet X_h2 concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2248,7 +2248,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.inlet.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
+        name="Anaerobic digestor liquid outlet X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2260,7 +2260,7 @@ def export_variables(flowsheet=None, exports=None):
 
     exports.add(
         obj=fs.adm_asm.outlet.flow_vol[0],
-        name="ADM/ASM outlet flow rate",
+        name="ADM1/ASM1 outlet flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -2271,7 +2271,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
+        name="ADM1/ASM1 outlet S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2282,7 +2282,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "S_S"],
-        name="S_S concentration",
+        name="ADM1/ASM1 outlet S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2293,7 +2293,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
+        name="ADM1/ASM1 outlet X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2304,7 +2304,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "X_S"],
-        name="X_S concentration",
+        name="ADM1/ASM1 outlet X_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2315,7 +2315,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "X_BH"],
-        name="X_BH concentration",
+        name="ADM1/ASM1 outlet X_BH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2326,7 +2326,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "X_BA"],
-        name="X_BA concentration",
+        name="ADM1/ASM1 outlet X_BA concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2337,7 +2337,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "X_P"],
-        name="X_P concentration",
+        name="ADM1/ASM1 outlet X_P concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2348,7 +2348,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "S_O"],
-        name="S_O concentration",
+        name="ADM1/ASM1 outlet S_O concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2359,7 +2359,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "S_NO"],
-        name="S_NO concentration",
+        name="ADM1/ASM1 outlet S_NO concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2370,7 +2370,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "S_NH"],
-        name="S_NH concentration",
+        name="ADM1/ASM1 outlet S_NH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2381,7 +2381,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "S_ND"],
-        name="S_ND concentration",
+        name="ADM1/ASM1 outlet S_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2392,7 +2392,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.outlet.conc_mass_comp[0, "X_ND"],
-        name="X_ND concentration",
+        name="ADM1/ASM1 outlet X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2403,7 +2403,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.adm_asm.outlet.alkalinity[0],
-        name="S_ALK concentration",
+        name="ADM1/ASM1 outlet S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
         rounding=5,
@@ -2415,7 +2415,7 @@ def export_variables(flowsheet=None, exports=None):
 
     exports.add(
         obj=fs.RADM.vapor_outlet.flow_vol[0],
-        name="Gas flow rate",
+        name="Anaerobic digestor vapor flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -2426,7 +2426,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.RADM.vapor_outlet.conc_mass_comp[0, "S_h2"],
-        name="S_h2 concentration",
+        name="Anaerobic digestor vapor S_h2 concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2437,7 +2437,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.RADM.vapor_outlet.conc_mass_comp[0, "S_ch4"],
-        name="S_ch4 concentration",
+        name="Anaerobic digestor vapor S_ch4 concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2448,7 +2448,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.RADM.vapor_outlet.conc_mass_comp[0, "S_co2"],
-        name="S_co2 concentration",
+        name="Anaerobic digestor vapor S_co2 concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2460,7 +2460,7 @@ def export_variables(flowsheet=None, exports=None):
 
     exports.add(
         obj=fs.DU.underflow.flow_vol[0],
-        name="Sludge flow rate",
+        name="Dewatered sludge flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -2471,7 +2471,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.underflow.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
+        name="Dewatered sludge S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2482,7 +2482,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.underflow.conc_mass_comp[0, "S_S"],
-        name="S_S concentration",
+        name="Dewatered sludge S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2493,7 +2493,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.underflow.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
+        name="Dewatered sludge X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2504,7 +2504,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.underflow.conc_mass_comp[0, "X_S"],
-        name="X_S concentration",
+        name="Dewatered sludge X_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2515,7 +2515,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.underflow.conc_mass_comp[0, "X_BH"],
-        name="X_BH concentration",
+        name="Dewatered sludge X_BH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2526,7 +2526,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.underflow.conc_mass_comp[0, "X_BA"],
-        name="X_BA concentration",
+        name="Dewatered sludge X_BA concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2537,7 +2537,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.underflow.conc_mass_comp[0, "X_P"],
-        name="X_P concentration",
+        name="Dewatered sludge X_P concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2548,7 +2548,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.underflow.conc_mass_comp[0, "S_O"],
-        name="S_O concentration",
+        name="Dewatered sludge S_O concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2559,7 +2559,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.underflow.conc_mass_comp[0, "S_NO"],
-        name="S_NO concentration",
+        name="Dewatered sludge S_NO concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2570,7 +2570,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.underflow.conc_mass_comp[0, "S_NH"],
-        name="S_NH concentration",
+        name="Dewatered sludge S_NH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2581,7 +2581,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.underflow.conc_mass_comp[0, "S_ND"],
-        name="Sludge S_ND concentration",
+        name="Dewatered sludge S_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2592,7 +2592,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.underflow.conc_mass_comp[0, "X_ND"],
-        name="X_ND concentration",
+        name="Dewatered sludge X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2603,7 +2603,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.underflow.alkalinity[0],
-        name="S_ALK concentration",
+        name="Dewatered sludge S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
         rounding=5,
@@ -2615,18 +2615,18 @@ def export_variables(flowsheet=None, exports=None):
 
     exports.add(
         obj=fs.DU.overflow.flow_vol[0],
-        name="Overflow flow rate",
+        name="Dewatering unit liquid outlet flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
-        description="Dewatering unit liquid outlet flow rate",
+        description="Dewatering unit overflow flow rate",
         is_input=False,
         is_output=True,
         output_category="Dewatering Unit Liquid Outlet",
     )
     exports.add(
         obj=fs.DU.overflow.conc_mass_comp[0, "S_I"],
-        name="S_I concentration",
+        name="Dewatering unit liquid outlet S_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2637,7 +2637,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.overflow.conc_mass_comp[0, "S_S"],
-        name="S_S concentration",
+        name="Dewatering unit liquid outlet S_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2648,7 +2648,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.overflow.conc_mass_comp[0, "X_I"],
-        name="X_I concentration",
+        name="Dewatering unit liquid outlet X_I concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2659,7 +2659,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.overflow.conc_mass_comp[0, "X_S"],
-        name="X_S concentration",
+        name="Dewatering unit liquid outlet X_S concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2670,7 +2670,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.overflow.conc_mass_comp[0, "X_BH"],
-        name="X_BH concentration",
+        name="Dewatering unit liquid outlet X_BH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2681,7 +2681,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.overflow.conc_mass_comp[0, "X_BA"],
-        name="X_BA concentration",
+        name="Dewatering unit liquid outlet X_BA concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2692,7 +2692,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.overflow.conc_mass_comp[0, "X_P"],
-        name="X_P concentration",
+        name="Dewatering unit liquid outlet X_P concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2703,7 +2703,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.overflow.conc_mass_comp[0, "S_O"],
-        name="S_O concentration",
+        name="Dewatering unit liquid outlet S_O concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2714,7 +2714,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.overflow.conc_mass_comp[0, "S_NO"],
-        name="S_NO concentration",
+        name="Dewatering unit liquid outlet S_NO concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2725,7 +2725,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.overflow.conc_mass_comp[0, "S_NH"],
-        name="S_NH concentration",
+        name="Dewatering unit liquid outlet S_NH concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2736,7 +2736,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.overflow.conc_mass_comp[0, "S_ND"],
-        name="S_ND concentration",
+        name="Dewatering unit liquid outlet S_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2747,7 +2747,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.overflow.conc_mass_comp[0, "X_ND"],
-        name="X_ND concentration",
+        name="Dewatering unit liquid outlet X_ND concentration",
         ui_units=pyunits.g / pyunits.m**3,
         display_units="g/m3",
         rounding=5,
@@ -2758,7 +2758,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.DU.overflow.alkalinity[0],
-        name="S_ALK concentration",
+        name="Dewatering unit liquid outlet S_ALK concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m3",
         rounding=5,
