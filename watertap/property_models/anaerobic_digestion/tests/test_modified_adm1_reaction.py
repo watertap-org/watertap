@@ -18,15 +18,19 @@ X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J
 Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes,
 Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
 
-Authors: Chenyu Wang, Marcus Holly
+Authors: Chenyu Wang, Marcus Holly, Adam Atia, Xinhong Liu
 """
 
 import pytest
 
 from pyomo.environ import (
-    check_optimal_termination,
+    assert_optimal_termination,
     ConcreteModel,
     Param,
+    log10,
+    value,
+    Var,
+    Constraint,
 )
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
@@ -34,8 +38,7 @@ from watertap.unit_models.anaerobic_digestor import AD
 from idaes.core import MaterialFlowBasis
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
-from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set
-
+from idaes.core.util.model_statistics import degrees_of_freedom
 from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
 )
@@ -46,7 +49,6 @@ from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import
     ModifiedADM1ReactionParameterBlock,
     ModifiedADM1ReactionBlock,
 )
-from watertap.core.util.model_diagnostics.infeasible import *
 from idaes.core.util.testing import initialization_tester
 
 # -----------------------------------------------------------------------------
@@ -465,13 +467,13 @@ class TestParamBlock(object):
         assert value(model.rparams.k_dec_X_h2) == 0.02
 
         assert isinstance(model.rparams.K_a_va, Var)
-        assert value(model.rparams.K_a_va) == 1.38e-5
+        assert value(model.rparams.K_a_va) == 10 ** (-4.86)
         assert isinstance(model.rparams.K_a_bu, Var)
-        assert value(model.rparams.K_a_bu) == 1.5e-5
+        assert value(model.rparams.K_a_bu) == 10 ** (-4.82)
         assert isinstance(model.rparams.K_a_pro, Var)
-        assert value(model.rparams.K_a_pro) == 1.32e-5
+        assert value(model.rparams.K_a_pro) == 10 ** (-4.88)
         assert isinstance(model.rparams.K_a_ac, Var)
-        assert value(model.rparams.K_a_ac) == 1.74e-5
+        assert value(model.rparams.K_a_ac) == 10 ** (-4.76)
 
         assert isinstance(model.rparams.K_I_h2s_ac, Var)
         assert value(model.rparams.K_I_h2s_ac) == 460e-3
@@ -580,13 +582,13 @@ class TestReactor:
 
         m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.034597)
         m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.015037)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(1e-8)
         m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.025072)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-8)
         m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.34628)
         m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.60014)
         m.fs.unit.inlet.conc_mass_comp[0, "S_IP"].fix(0.22677)
@@ -595,13 +597,13 @@ class TestReactor:
         m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(7.3687)
         m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(7.7308)
         m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(10.3288)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(1e-6)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(1e-6)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(1e-8)
         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(12.7727)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(0.0022493)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(1.04110)
@@ -616,6 +618,10 @@ class TestReactor:
         m.fs.unit.volume_vapor.fix(300)
         m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
+        # Touch on-demand property, TSS, at inlet and outlet
+        m.fs.unit.liquid_phase.properties_in[0].TSS
+        m.fs.unit.liquid_phase.properties_out[0].TSS
+
         return m
 
     @pytest.mark.unit
@@ -624,7 +630,7 @@ class TestReactor:
 
     @pytest.mark.unit
     def test_unit_consistency(self, model):
-        assert_units_consistent(model) == 0
+        assert_units_consistent(model)
 
     @pytest.mark.unit
     def test_scaling_factors(self, model):
@@ -634,10 +640,6 @@ class TestReactor:
         # check that all variables have scaling factors
         unscaled_var_list = list(iscale.unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
-
-        # TODO: resolving "badly scaled vars" in this case doesn't help resolve; revisit scaling
-        # for _ in iscale.badly_scaled_var_generator(m):
-        #     assert False
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -651,12 +653,10 @@ class TestReactor:
     @pytest.mark.component
     @pytest.mark.requires_idaes_solver
     def test_solve(self, model):
-        solver = get_solver(options={"bound_push": 1e-8})
-        results = solver.solve(model, tee=True)
-        model.display()
-        print(large_residuals_set(model))
+        solver = get_solver()
+        results = solver.solve(model)
 
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     # TO DO: retest after conversion changes
     @pytest.mark.component
@@ -799,15 +799,27 @@ class TestReactor:
         assert value(model.fs.unit.liquid_phase.reactions[0].S_H) == pytest.approx(
             1.9180052e-9, rel=1e-2
         )
-        assert value(model.fs.unit.liquid_phase.reactions[0].S_OH) == pytest.approx(
-            1.08364612e-5, rel=1e-2
-        )
-        assert value(model.fs.unit.liquid_phase.reactions[0].KW, Var) == pytest.approx(
-            2.08e-14, rel=1e-2
+        assert value(model.fs.unit.liquid_phase.reactions[0].pKW, Var) == pytest.approx(
+            -log10(2.08e-14), rel=1e-2
         )
         assert value(
-            model.fs.unit.liquid_phase.reactions[0].K_a_co2, Var
-        ) == pytest.approx(4.94e-7, rel=1e-2)
+            model.fs.unit.liquid_phase.reactions[0].pK_a_co2, Var
+        ) == pytest.approx(-log10(4.94e-7), rel=1e-2)
         assert value(
-            model.fs.unit.liquid_phase.reactions[0].K_a_IN, Var
-        ) == pytest.approx(1.11e-9, rel=1e-2)
+            model.fs.unit.liquid_phase.reactions[0].pK_a_IN, Var
+        ) == pytest.approx(-log10(1.11e-9), rel=1e-2)
+        assert value(
+            1
+            - model.fs.unit.liquid_phase.properties_out[0].TSS
+            / model.fs.unit.liquid_phase.properties_in[0].TSS
+        ) * 100 == pytest.approx(55.989195, rel=1e-4)
+        assert value(
+            1
+            - model.fs.unit.liquid_phase.properties_out[0].VSS
+            / model.fs.unit.liquid_phase.properties_in[0].VSS
+        ) * 100 == pytest.approx(51.72925597, rel=1e-4)
+        assert value(
+            1
+            - model.fs.unit.liquid_phase.properties_out[0].ISS
+            / model.fs.unit.liquid_phase.properties_in[0].ISS
+        ) * 100 == pytest.approx(86.582365, rel=1e-4)

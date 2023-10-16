@@ -42,10 +42,12 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
 
 __author__ = "Xiangyu Bi"
 
 solver = get_solver()
+
 
 # -----------------------------------------------------------------------------
 # Start test class
@@ -262,7 +264,9 @@ class TestElectrodialysisVoltageConst:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(3.0, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.197, rel=5e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.485, rel=5e-3
@@ -271,7 +275,7 @@ class TestElectrodialysisVoltageConst:
     @pytest.mark.component
     def test_costing(self, electrodialysis_1d_cell1):
         m = electrodialysis_1d_cell1
-        blk = m.fs.unit
+        # blk = m.fs.unit
 
         m.fs.costing = WaterTAPCosting()
 
@@ -288,13 +292,44 @@ class TestElectrodialysisVoltageConst:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(388.6800, rel=1e-3) == value(
+        assert pytest.approx(584.6, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(45.86804, rel=1e-3) == value(
+        assert pytest.approx(153.6471, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(777.3600, rel=1e-3) == value(
+        assert pytest.approx(1169.2, rel=1e-3) == value(m.fs.costing.total_capital_cost)
+
+    @pytest.mark.component
+    def test_costing_with_rectifier(self, electrodialysis_1d_cell1):
+        m = electrodialysis_1d_cell1
+        # blk = m.fs.unit
+
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={
+                "cost_electricity_flow": True,
+                "has_rectifier": True,
+            },
+        )
+        m.fs.costing.cost_process()
+
+        assert_units_consistent(m)
+
+        assert degrees_of_freedom(m) == 0
+
+        results = solver.solve(m, tee=True)
+        assert_optimal_termination(results)
+
+        assert pytest.approx(2979.6988, rel=1e-3) == value(
+            m.fs.costing.aggregate_capital_cost
+        )
+        assert pytest.approx(297.5365, rel=1e-3) == value(
+            m.fs.costing.total_operating_cost
+        )
+        assert pytest.approx(5959.3977, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
 
@@ -505,7 +540,9 @@ class TestElectrodialysisCurrentConst:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(5.83, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.390, rel=5e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.480, rel=5e-3
@@ -674,9 +711,10 @@ class TestElectrodialysis_withNeutralSPecies:
         iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
 
         iscale.calculate_scaling_factors(m.fs)
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
         badly_scaled_var_values = {
-            var.name: val for (var, val) in iscale.badly_scaled_var_generator(m)
+            var.name: val
+            for (var, val) in iscale.badly_scaled_var_generator(m, zero=1e-9)
         }
         assert not badly_scaled_var_values
         # check to make sure DOF does not change
@@ -731,7 +769,9 @@ class TestElectrodialysis_withNeutralSPecies:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(5.837, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.3896, rel=5e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.480, rel=5e-3
@@ -881,6 +921,7 @@ class Test_ED_MembNonohm_On_ConstV:
 
         assert degrees_of_freedom(m) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialization_scaling(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
@@ -911,6 +952,7 @@ class Test_ED_MembNonohm_On_ConstV:
         # check to make sure DOF does not change
         assert degrees_of_freedom(m) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
@@ -922,6 +964,7 @@ class Test_ED_MembNonohm_On_ConstV:
         }
         assert not badly_scaled_var_values
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
@@ -945,6 +988,7 @@ class Test_ED_MembNonohm_On_ConstV:
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
         ) == pytest.approx(9.335e-4, rel=1e-3)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
@@ -954,7 +998,9 @@ class Test_ED_MembNonohm_On_ConstV:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(1.4735, rel=1e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.0955, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4925, rel=1e-3
@@ -1166,7 +1212,9 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(1.3907, rel=1e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.0900, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4928, rel=1e-3
@@ -1276,7 +1324,6 @@ class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
     def test_model_solutions(self, edcell_ilim_empi, edcell_ilim_theo):
         model = (edcell_ilim_empi, edcell_ilim_theo)
         for m in model:
-
             m.fs.properties.set_default_scaling(
                 "flow_mol_phase_comp", 1e1, index=("Liq", "H2O")
             )
@@ -1556,7 +1603,9 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(12.904, rel=1e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.8627, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4791, rel=1e-3
@@ -1706,6 +1755,7 @@ class Test_ED_pressure_drop_components:
         )
         return m
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.unit
     def test_deltaP_various_methods(self, ed_m0, ed_m2, ed_m3, ed_m4, ed_m5, ed_m6):
         ed_m = (ed_m0, ed_m2, ed_m3, ed_m4, ed_m5, ed_m6)
@@ -1766,7 +1816,7 @@ class Test_ED_pressure_drop_components:
         ed_m[0].fs.unit.pressure_drop.fix(40000)
         iscale.calculate_scaling_factors(ed_m[0])
         assert degrees_of_freedom(ed_m[0]) == 0
-        initialization_tester(ed_m[0])
+        initialization_tester(ed_m[0], outlvl=idaeslog.DEBUG)
         badly_scaled_var_values = {
             var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[0])
         }
@@ -1782,7 +1832,7 @@ class Test_ED_pressure_drop_components:
         ed_m[1].fs.unit.friction_factor.fix(20)
         iscale.calculate_scaling_factors(ed_m[1])
         assert degrees_of_freedom(ed_m[1]) == 0
-        initialization_tester(ed_m[1])
+        initialization_tester(ed_m[1], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[1])
         assert_optimal_termination(results)
         assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
@@ -1799,7 +1849,7 @@ class Test_ED_pressure_drop_components:
         ed_m[2].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(ed_m[2])
         assert degrees_of_freedom(ed_m[2]) == 0
-        initialization_tester(ed_m[2])
+        initialization_tester(ed_m[2], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[2])
         assert_optimal_termination(results)
         assert value(ed_m[2].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
@@ -1816,7 +1866,7 @@ class Test_ED_pressure_drop_components:
         ed_m[3].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(ed_m[3])
         assert degrees_of_freedom(ed_m[3]) == 0
-        initialization_tester(ed_m[3])
+        initialization_tester(ed_m[3], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[3])
         assert_optimal_termination(results)
         assert value(ed_m[3].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
@@ -1834,7 +1884,7 @@ class Test_ED_pressure_drop_components:
         ed_m[4].fs.unit.hydraulic_diameter.fix(1.5e-3)
         iscale.calculate_scaling_factors(ed_m[4])
         assert degrees_of_freedom(ed_m[4]) == 0
-        initialization_tester(ed_m[4])
+        initialization_tester(ed_m[4], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[4])
         assert_optimal_termination(results)
         assert value(ed_m[4].fs.unit.N_Re) == pytest.approx(74.987, rel=1e-3)
@@ -1852,7 +1902,7 @@ class Test_ED_pressure_drop_components:
         ed_m[5].fs.unit.spacer_specific_area.fix(10700)
         iscale.calculate_scaling_factors(ed_m[5])
         assert degrees_of_freedom(ed_m[5]) == 0
-        initialization_tester(ed_m[5])
+        initialization_tester(ed_m[5], outlvl=idaeslog.DEBUG)
         iscale.calculate_scaling_factors(ed_m[5])
         results = solver.solve(ed_m[5])
         assert_optimal_termination(results)

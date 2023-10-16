@@ -26,16 +26,9 @@ from pyomo.environ import (
     assert_optimal_termination,
 )
 
-from idaes.core import (
-    FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-)
+from idaes.core import FlowsheetBlock
 
-from pyomo.environ import (
-    units,
-)
+from pyomo.environ import units
 
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
@@ -43,11 +36,6 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    unused_variables_set,
-)
-
-from idaes.core.util.scaling import (
-    unscaled_variables_generator,
 )
 
 from idaes.core.util.testing import initialization_tester
@@ -66,7 +54,7 @@ from watertap.property_models.anaerobic_digestion.adm1_reactions import (
 )
 
 
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+from pyomo.util.check_units import assert_units_consistent
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -184,7 +172,7 @@ class TestAsm1Adm1(object):
         assert hasattr(asmadm.fs.unit.outlet, "pressure")
         assert hasattr(asmadm.fs.unit.outlet, "alkalinity")
 
-        assert number_variables(asmadm) == 129
+        assert number_variables(asmadm) == 132
         assert number_total_constraints(asmadm) == 16
 
         assert number_unused_variables(asmadm.fs.unit) == 4
@@ -233,19 +221,19 @@ class TestAsm1Adm1(object):
         assert pytest.approx(3.2375, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_S"]
         )
-        assert pytest.approx(1e-6, rel=1e-2) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_BH"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_BA"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_P"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_O"]
         )
-        assert pytest.approx(1e-6, rel=1e-3) == value(
+        assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_NO"]
         )
         assert pytest.approx(1.322, rel=1e-3) == value(

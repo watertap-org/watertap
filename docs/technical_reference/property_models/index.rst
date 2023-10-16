@@ -6,6 +6,7 @@ Property Models
 
    water
    NaCl
+   NaCl_T_dep
    seawater
    seawater_ion_generic
    coagulation
@@ -13,4 +14,5 @@ Property Models
    ASM2D
    ADM1
    modified_ADM1
+   modified_ASM2D
    mc_aq_sol

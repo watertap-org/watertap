@@ -28,8 +28,10 @@ import idaes.logger as idaeslog
 from watertap.core.membrane_channel_base import (
     MembraneChannelMixin,
     PressureChangeType,
-    CONFIG_Template,
+    CONFIG_Template as Base_CONFIG_Template,
 )
+
+CONFIG_Template = Base_CONFIG_Template()
 
 
 @declare_process_block_class("MembraneChannel0DBlock")
@@ -145,7 +147,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
             self.dP_dx = Var(
                 self.flowsheet().config.time,
                 initialize=-5e4,
-                bounds=(-2e5, -1e3),
+                bounds=(-2e5, None),
                 domain=NegativeReals,
                 units=units_meta("pressure") * units_meta("length") ** -1,
                 doc="pressure drop per unit length across channel",

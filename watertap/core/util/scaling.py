@@ -24,20 +24,34 @@ def transform_property_constraints(self):
         var_str = p.name
         if p.method is not None and self.is_property_constructed(var_str):
             var = getattr(self, var_str)
+            # Some property models may not use `None` as the method for state variables and wouldn't have a constraint
+            if var_str in list(self.define_state_vars()):
+                continue
+            msg = (
+                f"If there was a property constraint written for the variable, {var}, that constraint was not "
+                f"scaled. The transform_property_constraints tool expects constraints to have the following naming "
+                f"convention: 'eq_' + '{var_str}'. This suggests that the user may have defined a property in "
+                f"metadata but failed to follow the naming convention for its constraint. If there is no property "
+                f"constraint associated with the {var_str}, this warning can be ignored."
+            )
             if not isinstance(var, pyo.Var):
                 continue  # properties that are not vars do not have constraints
-            # adding a conditional to check if a constraint exists for property; in the case when we only add and object reference, there would not be a constraint
+            # adding a conditional to check if a constraint exists for property; in the case when we only add an object reference, there would not be a constraint
             if hasattr(self, "eq_" + var_str):
                 con = getattr(self, "eq_" + var_str)
                 for ind, c in con.items():
                     sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
                     iscale.constraint_scaling_transform(c, sf)
+            # in some cases, a variable could be fixed within the parameter block, and the logger warning shouldn't apply.
+            elif not var.is_indexed() and var.is_fixed():
+                pass
+            # in some cases, an indexed variable could be fixed within the parameter block, and the logger warning shouldn't apply
+            # to those indexed variables that are fixed.
+            elif var.is_indexed():
+                for indexed_var in var.values():
+                    if indexed_var.is_fixed():
+                        pass
+                    else:
+                        _log.warning(msg)
             else:
-                msg = (
-                    f"If there was a property constraint written for the variable, {var}, that constraint was not "
-                    f"scaled. The transform_property_constraints tool expects constraints to have the following naming "
-                    f"convention: 'eq_' + '{var_str}'. This suggests that the user may have defined a property in "
-                    f"metadata but failed to follow the naming convention for its constraint. If there is no property "
-                    f"constraint associated with the {var_str}, this warning can be ignored."
-                )
                 _log.warning(msg)

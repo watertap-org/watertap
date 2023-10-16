@@ -384,8 +384,10 @@ class TestGACRobust:
         mr.fs.unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=mr.fs.costing
         )
+        mr.fs.costing.cost_process()
 
         # testing gac costing block dof and initialization
+        assert assert_units_consistent(mr) is None
         assert istat.degrees_of_freedom(mr) == 0
         mr.fs.unit.costing.initialize()
 
@@ -411,7 +413,7 @@ class TestGACRobust:
 
     @pytest.mark.component
     def test_robust_costing_gravity(self, gac_frame_robust):
-        mr_grav = gac_frame_robust.clone()
+        mr_grav = gac_frame_robust
 
         mr_grav.fs.costing = WaterTAPCosting()
         mr_grav.fs.costing.base_currency = pyo.units.USD_2020
@@ -421,6 +423,13 @@ class TestGACRobust:
             costing_method_arguments={"contactor_type": "gravity"},
         )
         mr_grav.fs.costing.cost_process()
+
+        # testing gac costing block dof and initialization
+        assert assert_units_consistent(mr_grav) is None
+        assert istat.degrees_of_freedom(mr_grav) == 0
+        mr_grav.fs.unit.costing.initialize()
+
+        # solve
         results = solver.solve(mr_grav)
 
         # Check for optimal solution

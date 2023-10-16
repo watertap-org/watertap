@@ -57,8 +57,8 @@ State variables
    "Total volumetric flowrate", ":math:`Q`", "flow_vol", "None", ":math:`\text{m}^3\text{/s}`"
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
-   "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Molar alkalinity", ":math:`A`", "alkalinity", "[p]", ":math:`\text{kmol HCO}_{3}^{-}\text{/m}^{3}`"
+   "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[j]", ":math:`\text{kg/}\text{m}^3`"
+   "Molar alkalinity", ":math:`A`", "alkalinity", "None", ":math:`\text{kmol HCO}_{3}^{-}\text{/m}^{3}`"
 
 Stoichiometric Coefficients
 ---------------------------
@@ -120,7 +120,7 @@ Kinetic Parameters
    "Inhibition coefficient for PP storage", ":math:`K_{IPP}`", "K_IPP", 0.02, ":math:`\text{kg PP/}\text{kg PAO}`"
    "Saturation coefficient for PHA", ":math:`K_{PHA}`", "K_PHA", 0.01, ":math:`\text{kg PHA/}\text{kg PAO}`"
    "Maximum growth rate of X_AUT", ":math:`µ_{AUT}`", "mu_AUT", 1, ":math:`\text{day}^{-1}`"
-   "Decay rate of X_AUT", ":math:`µ_{AUT}`", "mu_{AUT}", 0.15, ":math:`\text{day}^{-1}`"
+   "Decay rate of X_AUT", ":math:`b_{AUT}`", "b_{AUT}", 0.15, ":math:`\text{day}^{-1}`"
    "Rate constant for P precipitation", ":math:`k_{PRE}`", "k_pre", 1000, ":math:`\text{m/}^{3}\text{kg Fe(OH)_3 . day}`"
    "Rate constant for redissolution", ":math:`k_{RED}`", "k_red", 0.6, ":math:`\text{day}^{-1}`"
 
@@ -164,6 +164,43 @@ Scaling
 -------
 A thorough scaling routine for the ASM2D property package has yet to be implemented.
 
+Class Documentation
+-------------------
+.. currentmodule:: watertap.property_models.activated_sludge.asm2d_properties
+
+.. autoclass:: ASM2dParameterBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ASM2dParameterData
+    :members:
+    :noindex:
+
+.. autoclass:: _ASM2dStateBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ASM2dStateBlockData
+    :members:
+    :noindex:
+
+.. currentmodule:: watertap.property_models.activated_sludge.asm2d_reactions
+
+.. autoclass:: ASM2dReactionParameterBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ASM2dReactionParameterData
+    :members:
+    :noindex:
+
+.. autoclass:: _ASM2dReactionBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ASM2dReactionBlockData
+    :members:
+    :noindex:
 
 References
 ----------

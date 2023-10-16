@@ -322,6 +322,7 @@ class TestCrystallization:
         for _ in badly_scaled_var_generator(m):
             assert False
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, Crystallizer_frame):
         # Add costing function, then initialize
@@ -342,6 +343,7 @@ class TestCrystallization:
     #     badly_scaled_var_lst = list(badly_scaled_var_generator(m))
     #     assert badly_scaled_var_lst == []
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, Crystallizer_frame):
         m = Crystallizer_frame
@@ -351,6 +353,7 @@ class TestCrystallization:
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, Crystallizer_frame):
         m = Crystallizer_frame
@@ -411,6 +414,7 @@ class TestCrystallization:
             <= 1e-2
         )
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, Crystallizer_frame):
         m = Crystallizer_frame
@@ -454,6 +458,7 @@ class TestCrystallization:
             m.fs.costing.aggregate_capital_cost
         )
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution2_capcosting_by_mass(self, Crystallizer_frame):
         m = Crystallizer_frame
@@ -562,6 +567,9 @@ class TestCrystallization:
         assert pytest.approx(30666.67, rel=1e-3) == value(
             m.fs.costing.aggregate_flow_costs["steam"]
         )
+        assert pytest.approx(0, rel=1e-3) == value(
+            m.fs.costing.aggregate_flow_costs["NaCl"]
+        )
 
     @pytest.mark.component
     def test_solution2_operatingcost_steampressure(self, Crystallizer_frame_2):
@@ -583,4 +591,30 @@ class TestCrystallization:
         )
         assert pytest.approx(21451.91, rel=1e-3) == value(
             m.fs.costing.aggregate_flow_costs["steam"]
+        )
+        assert pytest.approx(0, abs=1e-6) == value(
+            m.fs.costing.aggregate_flow_costs["NaCl"]
+        )
+
+    @pytest.mark.component
+    def test_solution2_operatingcost_NaCl_revenue(self, Crystallizer_frame_2):
+        m = Crystallizer_frame_2
+        m.fs.costing.crystallizer.steam_pressure.fix(3)
+        m.fs.costing.crystallizer.NaCl_recovery_value.fix(-0.07)
+
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        # Operating cost validation
+        assert pytest.approx(835.41, rel=1e-3) == value(
+            m.fs.costing.aggregate_flow_costs["electricity"]
+        )
+        assert pytest.approx(30666.67, rel=1e-3) == value(
+            m.fs.costing.aggregate_flow_costs["steam"]
+        )
+        assert pytest.approx(-187858.2, rel=1e-3) == value(
+            m.fs.costing.aggregate_flow_costs["NaCl"]
         )

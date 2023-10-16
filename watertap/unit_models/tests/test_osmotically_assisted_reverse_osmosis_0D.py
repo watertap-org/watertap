@@ -26,7 +26,6 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
     MomentumBalanceType,
-    ControlVolume0DBlock,
     FlowDirection,
 )
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
@@ -45,7 +44,6 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
-    unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
 

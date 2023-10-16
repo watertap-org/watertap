@@ -22,9 +22,10 @@ import tempfile
 
 # third-party
 import click
-from json_schema_for_humans import generate as schema_gen
-from json_schema_for_humans.generation_configuration import GenerationConfiguration
 from pymongo.errors import ConnectionFailure
+from pyomo.common.dependencies import attempt_import
+
+_, json_schema_available = attempt_import("json_schema_for_humans")
 
 # package
 from .db_api import ElectrolyteDB
@@ -399,6 +400,15 @@ def drop_database(url, database, yes):
     "-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB
 )
 def schema(output_file, output_format, data_type, url, database):
+    if not json_schema_available:
+        raise ImportError(
+            "json-schema-for-humans (EDB optional dependency) not installed"
+        )
+    from json_schema_for_humans import generate as schema_gen
+    from json_schema_for_humans.generation_configuration import (
+        GenerationConfiguration,
+    )
+
     print_messages = _log.isEnabledFor(logging.ERROR)
     if output_file:
         stream = output_file

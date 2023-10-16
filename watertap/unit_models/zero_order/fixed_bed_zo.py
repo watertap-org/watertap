@@ -14,7 +14,6 @@ This module contains a zero-order representation of a fixed bed unit
 operation.
 """
 
-import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.core import build_siso, constant_intensity, ZeroOrderBaseData

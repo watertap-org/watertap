@@ -454,7 +454,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             ec_reactor_cap_safety_factor,
             ec_admin_lab_cap_base,
             ec_admin_lab_cap_exp,
-            ec_power_supply_base,
+            ec_power_supply_base_slope,
             ec_admin_lab_op_base,
             ec_admin_lab_op_exp,
             sludge_handling_cost,
@@ -462,6 +462,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             current_per_reactor,
             number_redundant_reactors,
             electrode_material_cost,
+            electrode_material_cost_coeff,
         ) = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
@@ -473,7 +474,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 "ec_reactor_cap_safety_factor",
                 "ec_admin_lab_cap_base",
                 "ec_admin_lab_cap_exp",
-                "ec_power_supply_base",
+                "ec_power_supply_base_slope",
                 "ec_admin_lab_op_base",
                 "ec_admin_lab_op_exp",
                 "sludge_handling_cost",
@@ -481,6 +482,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 "current_per_reactor",
                 "number_redundant_reactors",
                 "electrode_material_cost",
+                "electrode_material_cost_coeff",
             ],
         )
 
@@ -488,13 +490,11 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
         if electrode_mat == "aluminum":
             # Reference for Al cost: Anuf et al., 2022 - https://doi.org/https://doi.org/10.1016/j.jwpe.2022.103074
-            costing.defined_flows["aluminum"] = 2.23 * base_currency / pyunits.kg
             costing.register_flow_type("aluminum", 2.23 * base_currency / pyunits.kg)
             costing_ec.electrode_material_cost.fix(2.23)
 
         if electrode_mat == "iron":
             # Reference for Fe cost: Anuf et al., 2022 - https://doi.org/https://doi.org/10.1016/j.jwpe.2022.103074
-            costing.defined_flows["iron"] = 3.41 * base_currency / pyunits.kg
             costing.register_flow_type("iron", 3.41 * base_currency / pyunits.kg)
             costing_ec.electrode_material_cost.fix(3.41)
 
@@ -599,11 +599,12 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 * blk.number_EC_reactors
             )
             * electrode_material_cost
+            * electrode_material_cost_coeff
         )
 
         blk.capital_cost_power_supply_constraint = Constraint(
             expr=blk.capital_cost_power_supply
-            == ec_power_supply_base * blk.number_EC_reactors
+            == (ec_power_supply_base_slope * ec.power_required) * blk.number_EC_reactors
         )
 
         blk.capital_cost_other_constraint = Constraint(

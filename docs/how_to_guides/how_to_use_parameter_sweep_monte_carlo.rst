@@ -50,59 +50,67 @@ The parameter sweep tool currently offers 6 classes that can be broadly categori
 
 Note that sampling types within ``FIXED`` can be specified with a different number of samples. However, the number of samples must be the same for all sweep variables within ``RANDOM`` and ``RANDOM_LHS``.
 
-We will use the :ref:`same setup steps as before<how_to_use_parameter_sweep>` which returns a flowsheet model ``m``, and performs some initialization
+We will use the :ref:`same setup steps as before<how_to_use_parameter_sweep>` to set up the generating functions for our model, sweep params, and outputs:
 
 .. testcode::
 
-    # replace these function calls with
-    # those in your own flowsheet module
+    def build_model(**kwargs):
 
-    # set up system
-    m = RO_flowsheet.build()
-    RO_flowsheet.set_operating_conditions(m)
-    RO_flowsheet.initialize_system(m)
+        # replace these function calls with
+        # those in your own flowsheet module
 
-    # simulate
-    RO_flowsheet.solve(m)
+        # set up system
+        m = RO_flowsheet.build()
+        RO_flowsheet.set_operating_conditions(m)
+        RO_flowsheet.initialize_system(m)
 
-    # set up the model for optimization
-    RO_flowsheet.optimize_set_up(m)
+        # simulate
+        RO_flowsheet.solve(m)
 
-.. testoutput::
+        # set up the model for optimization
+        RO_flowsheet.optimize_set_up(m)
 
-   ...
+        return m
 
 Once the model has been setup, we specify the variables to randomly sample using a dictionary
 
 .. testcode::
 
-    num_samples = 25
-    sweep_params = dict()
-    sweep_params['Spacer_porosity'] = UniformSample(m.fs.RO.feed_side.spacer_porosity, 0.95, 0.99, num_samples)
-    sweep_params['A_comp'] = NormalSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12, num_samples)
-    sweep_params['B_comp'] = NormalSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8, num_samples)
+    def build_sweep_params(model, num_samples=1):
+        sweep_params = dict()
+        sweep_params['Spacer_porosity'] = UniformSample(model.fs.RO.feed_side.spacer_porosity, 0.95, 0.99, num_samples)
+        sweep_params['A_comp'] = NormalSample(model.fs.RO.A_comp, 4.0e-12, 0.5e-12, num_samples)
+        sweep_params['B_comp'] = NormalSample(model.fs.RO.B_comp, 3.5e-8, 0.5e-8, num_samples)
+        return sweep_params
 
 where the ``spacer_porosity`` attribute will be randomly selected from a uniform distribution of values in the range :math:`[0.95, 0.99]` and model values ``A_comp`` and ``B_comp`` will be drawn from normal distributions centered at :math:`4.0\times10^{-12}` and :math:`3.5\times10^{-8}` with standard deviations of :math:`12-14\%`, respectively.  For this example, we'll extract flowsheet outputs associated with cost, the levelized cost of water (LCOW) and energy consumption (EC), defined via another dictionary
 
 .. testcode::
 
-    outputs = dict()
-    outputs['EC'] = m.fs.costing.specific_energy_consumption
-    outputs['LCOW'] = m.fs.costing.LCOW
+    def build_outputs(model,  **kwargs):
+        outputs = dict()
+        outputs['EC'] = model.fs.costing.specific_energy_consumption
+        outputs['LCOW'] = model.fs.costing.LCOW
+        return outputs
 
 
-With the flowsheet defined and suitably initialized, along with the definitions for ``sweep_params`` and ``outputs`` on hand, we can call the ``parameter_sweep`` function as before, where we exercise four new keyword arguments: (1) the ability to pass in custom optimization routines to be executed for each sample, (2) the ability to save per-process results for parallel debugging, (3) the specification of the number of samples to draw, and (4) the ability to set a seed for the randomly-generated values which allows consistency to be enforced between runs. The function passed in to `optimize_function` should return a Pyomo results object (i.e., the return value from calling the `solve` method).
+With the generating functions defined and suitably initialized, we can call the ``parameter_sweep`` function as before, where we exercise five new keyword arguments: (1) the ability to pass in custom optimization routines to be executed for each sample, (2) the ability to save per-process results for parallel debugging, (3) the specification of the number of samples to draw, (4) the ability to set a seed for the randomly-generated values which allows consistency to be enforced between runs, and (5) the ability to pass a keyword arg into the build_sweep_params function. The function passed in to `optimize_function` should return a Pyomo results object (i.e., the return value from calling the `solve` method).
 
 .. testcode::
 
     # Define the local results directory, num_samples, and seed (if desired)
     debugging_data_dir = 'local_results'
-    # Recall that num_samples = 25
+    num_samples = 25
     seed = None
 
     # Run the parameter sweep
-    global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file_name='monte_carlo_results.csv',
-        optimize_function=RO_flowsheet.optimize, debugging_data_dir=debugging_data_dir, num_samples=num_samples, seed=seed)
+    global_results = parameter_sweep(build_model, build_sweep_params, build_outputs, csv_results_file_name='monte_carlo_results.csv',
+        optimize_function=RO_flowsheet.optimize, debugging_data_dir=debugging_data_dir, num_samples=num_samples, seed=seed,
+        build_sweep_params_kwargs=dict(num_samples=num_samples))
+
+.. testoutput::
+
+    ...
 
 Note that ``num_samples`` must be provided for any of the random sample classes.  For the very small problem size and simple model used here, parallel hardware is almost certainly not necessary.  However, for larger total numbers of samples or more computationally demanding models, a significant speedup may be attained on a multi-core workstation or high performance computing (HPC) cluster.  To distribute the workload between more than one worker, simply call the scipt using the ``mpirun`` command from the command line
 

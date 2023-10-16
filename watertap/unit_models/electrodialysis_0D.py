@@ -23,7 +23,7 @@ from pyomo.environ import (
     Constraint,
     units as pyunits,
 )
-from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
@@ -33,7 +33,6 @@ from idaes.core import (
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
-    MaterialFlowBasis,
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
@@ -48,6 +47,7 @@ from idaes.core.util.constants import Constants
 from enum import Enum
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
+from watertap.costing.unit_models.electrodialysis import cost_electrodialysis
 
 __author__ = " Xiangyu Bi, Austin Ladshaw,"
 
@@ -1978,3 +1978,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
 
     def get_power_electrical(self, time_point=0):
         return self.power_electrical[time_point]
+
+    @property
+    def default_costing_method(self):
+        return cost_electrodialysis

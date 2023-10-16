@@ -51,7 +51,7 @@ from pyomo.environ import log10
 from pyomo.util.check_units import assert_units_consistent
 
 # Imports from idaes core
-from idaes.core import AqueousPhase, VaporPhase, FlowsheetBlock, EnergyBalanceType
+from idaes.core import AqueousPhase, FlowsheetBlock, EnergyBalanceType
 from idaes.core.base.components import Solvent, Solute, Cation, Anion, Apparent
 from idaes.core.base.phases import PhaseType as PT
 
@@ -61,10 +61,7 @@ from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
 from idaes.models.properties.modular_properties.base.generic_property import StateIndex
-from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
-    IdealBubbleDew,
-)
+
 from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
 
 # Importing the generic model information and objects
@@ -79,7 +76,6 @@ from idaes.models.properties.modular_properties.reactions.rate_forms import (
     power_law_rate,
 )
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    gibbs_energy,
     van_t_hoff,
 )
 from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
@@ -103,8 +99,6 @@ from pyomo.environ import (
 
 # Import idaes methods to check the model during construction
 from idaes.core.util import scaling as iscale
-from idaes.core.util.initialization import fix_state_vars, revert_state_vars
-from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -115,7 +109,6 @@ from watertap.examples.chemistry.chem_scaling_utils import (
     _set_inherent_rxn_scaling,
     _set_rate_rxn_scaling,
     _set_mat_bal_scaling_FTPx,
-    _set_ene_bal_scaling,
 )
 
 __author__ = "Austin Ladshaw"
@@ -195,7 +188,10 @@ thermo_config = {
                     pyunits.J / pyunits.K / pyunits.mol,
                 ),
                 "pressure_sat_comp_coeff": {
-                    "A": (4.6543, None),  # [1], temperature range 255.9 K - 373 K
+                    "A": (
+                        4.6543,
+                        pyunits.dimensionless,
+                    ),  # [1], temperature range 255.9 K - 373 K
                     "B": (1435.264, pyunits.K),
                     "C": (-64.848, pyunits.K),
                 },
@@ -357,7 +353,7 @@ thermo_config = {
                     "3": (1595.8, pyunits.K),
                     "4": (0.6598, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-240.1, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-240.1, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (167039, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -387,7 +383,7 @@ thermo_config = {
                     "3": (1, pyunits.K),
                     "4": (1, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -486,7 +482,7 @@ thermo_config = {
                     "3": (429.69, pyunits.K),
                     "4": (0.259, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-677.1, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-677.1, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (135749.9, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -638,7 +634,7 @@ thermo_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
@@ -752,6 +748,7 @@ reaction_config = {
 
 # Get default solver for testing
 solver = get_solver()
+solver.options["ma27_pivtol"] = 1e-1
 
 # Start test class
 class TestRemineralization:
@@ -1141,7 +1138,10 @@ thermo_config_cstr = {
                     pyunits.J / pyunits.K / pyunits.mol,
                 ),
                 "pressure_sat_comp_coeff": {
-                    "A": (4.6543, None),  # [1], temperature range 255.9 K - 373 K
+                    "A": (
+                        4.6543,
+                        pyunits.dimensionless,
+                    ),  # [1], temperature range 255.9 K - 373 K
                     "B": (1435.264, pyunits.K),
                     "C": (-64.848, pyunits.K),
                 },
@@ -1237,7 +1237,7 @@ thermo_config_cstr = {
                     "3": (647.13, pyunits.K),
                     "4": (0.081, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -1303,7 +1303,7 @@ thermo_config_cstr = {
                     "3": (1595.8, pyunits.K),
                     "4": (0.6598, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-240.1, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-240.1, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (167039, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -1333,7 +1333,7 @@ thermo_config_cstr = {
                     "3": (1, pyunits.K),
                     "4": (1, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -1432,7 +1432,7 @@ thermo_config_cstr = {
                     "3": (429.69, pyunits.K),
                     "4": (0.259, pyunits.dimensionless),
                 },
-                "enth_mol_form_liq_comp_ref": (-677.1, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-677.1, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (135749.9, pyunits.J / pyunits.kmol / pyunits.K),
                     "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
@@ -1546,7 +1546,7 @@ thermo_config_cstr = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry

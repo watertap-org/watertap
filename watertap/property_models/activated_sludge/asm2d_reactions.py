@@ -42,7 +42,7 @@ import idaes.core.util.scaling as iscale
 
 
 # Some more information about this module
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Xinhong Liu"
 
 
 # Set up logger
@@ -854,7 +854,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R16", "Liq", "X_PP"): -1,
             ("R16", "Liq", "X_S"): 0,
             ("R16", "Liq", "X_TSS"): -3.23,
-            # R17: Lysis of X_PAH
+            # R17: Lysis of X_PHA
             ("R17", "Liq", "H2O"): 0,
             ("R17", "Liq", "S_A"): 1,
             ("R17", "Liq", "S_F"): 0,
@@ -1056,13 +1056,10 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
                         * (
-                            (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"])
+                            b.conc_mass_comp_ref["X_S"]
                             / (
-                                b.params.K_X
-                                + (
-                                    b.conc_mass_comp_ref["X_S"]
-                                    / b.conc_mass_comp_ref["X_H"]
-                                )
+                                b.params.K_X * b.conc_mass_comp_ref["X_H"]
+                                + b.conc_mass_comp_ref["X_S"]
                             )
                         )
                         * b.conc_mass_comp_ref["X_H"],
@@ -1082,13 +1079,10 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
                         )
                         * (
-                            (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"])
+                            b.conc_mass_comp_ref["X_S"]
                             / (
-                                b.params.K_X
-                                + (
-                                    b.conc_mass_comp_ref["X_S"]
-                                    / b.conc_mass_comp_ref["X_H"]
-                                )
+                                b.params.K_X * b.conc_mass_comp_ref["X_H"]
+                                + b.conc_mass_comp_ref["X_S"]
                             )
                         )
                         * b.conc_mass_comp_ref["X_H"],
@@ -1108,13 +1102,10 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
                         )
                         * (
-                            (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"])
+                            b.conc_mass_comp_ref["X_S"]
                             / (
-                                b.params.K_X
-                                + (
-                                    b.conc_mass_comp_ref["X_S"]
-                                    / b.conc_mass_comp_ref["X_H"]
-                                )
+                                b.params.K_X * b.conc_mass_comp_ref["X_H"]
+                                + b.conc_mass_comp_ref["X_S"]
                             )
                         )
                         * b.conc_mass_comp_ref["X_H"],
@@ -1137,6 +1128,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_F"]
                                 + b.conc_mass_comp_ref["S_A"]
+                                + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * (
@@ -1171,6 +1163,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_F"]
                                 + b.conc_mass_comp_ref["S_A"]
+                                + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * (
@@ -1210,6 +1203,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_F"]
                                 + b.conc_mass_comp_ref["S_A"]
+                                + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * (
@@ -1249,6 +1243,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_F"]
                                 + b.conc_mass_comp_ref["S_A"]
+                                + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * (
@@ -1308,16 +1303,10 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.K_ALK + b.state_ref.alkalinity)
                         )
                         * (
-                            (
-                                b.conc_mass_comp_ref["X_PP"]
-                                / b.conc_mass_comp_ref["X_PAO"]
-                            )
+                            b.conc_mass_comp_ref["X_PP"]
                             / (
-                                b.params.K_PP
-                                + (
-                                    b.conc_mass_comp_ref["X_PP"]
-                                    / b.conc_mass_comp_ref["X_PAO"]
-                                )
+                                b.params.K_PP * b.conc_mass_comp_ref["X_PAO"]
+                                + b.conc_mass_comp_ref["X_PP"]
                             )
                         )
                         * b.conc_mass_comp_ref["X_PAO"],
@@ -1340,33 +1329,21 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.K_ALK + b.state_ref.alkalinity)
                         )
                         * (
-                            (
-                                b.conc_mass_comp_ref["X_PHA"]
-                                / b.conc_mass_comp_ref["X_PAO"]
-                            )
+                            b.conc_mass_comp_ref["X_PHA"]
                             / (
-                                b.params.K_PHA
-                                + (
-                                    b.conc_mass_comp_ref["X_PHA"]
-                                    / b.conc_mass_comp_ref["X_PAO"]
-                                )
+                                b.params.K_PHA * b.conc_mass_comp_ref["X_PAO"]
+                                + b.conc_mass_comp_ref["X_PHA"]
                             )
                         )
                         * (
                             (
-                                b.params.K_MAX
-                                - (
-                                    b.conc_mass_comp_ref["X_PP"]
-                                    / b.conc_mass_comp_ref["X_PAO"]
-                                )
+                                b.params.K_MAX * b.conc_mass_comp_ref["X_PAO"]
+                                - b.conc_mass_comp_ref["X_PP"]
                             )
                             / (
-                                b.params.K_IPP
-                                + b.params.K_MAX
-                                - (
-                                    b.conc_mass_comp_ref["X_PP"]
-                                    / b.conc_mass_comp_ref["X_PAO"]
-                                )
+                                b.params.K_IPP * b.conc_mass_comp_ref["X_PAO"]
+                                + b.params.K_MAX * b.conc_mass_comp_ref["X_PAO"]
+                                - b.conc_mass_comp_ref["X_PP"]
                             )
                         )
                         * b.conc_mass_comp_ref["X_PAO"],
@@ -1405,16 +1382,10 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             / (b.params.K_ALK + b.state_ref.alkalinity)
                         )
                         * (
-                            (
-                                b.conc_mass_comp_ref["X_PHA"]
-                                / b.conc_mass_comp_ref["X_PAO"]
-                            )
+                            b.conc_mass_comp_ref["X_PHA"]
                             / (
-                                b.params.K_PHA
-                                + (
-                                    b.conc_mass_comp_ref["X_PHA"]
-                                    / b.conc_mass_comp_ref["X_PAO"]
-                                )
+                                b.params.K_PHA * b.conc_mass_comp_ref["X_PAO"]
+                                + b.conc_mass_comp_ref["X_PHA"]
                             )
                         )
                         * b.conc_mass_comp_ref["X_PAO"],
@@ -1455,7 +1426,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R17":
-                    # R17: Lysis of X_PAH
+                    # R17: Lysis of X_PHA
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.b_PHA
                         * b.conc_mass_comp_ref["X_PHA"]

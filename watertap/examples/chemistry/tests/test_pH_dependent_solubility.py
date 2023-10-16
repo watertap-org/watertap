@@ -64,7 +64,6 @@ import pytest
 
 # Importing the object for units from pyomo
 from pyomo.environ import units as pyunits
-from pyomo.environ import Var
 
 # Imports from idaes core
 from idaes.core import AqueousPhase, SolidPhase, FlowsheetBlock, EnergyBalanceType
@@ -72,10 +71,8 @@ from idaes.core.base.components import Solvent, Solute, Cation, Anion, Component
 from idaes.core.base.phases import PhaseType as PT
 
 # Imports from idaes generic models
-import idaes
-import idaes.models.properties.modular_properties.pure.Perrys as Perrys
 from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
-from idaes.models.properties.modular_properties.state_definitions import FTPx, FpcTP
+from idaes.models.properties.modular_properties.state_definitions import FpcTP
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
@@ -89,7 +86,6 @@ from idaes.models.properties.modular_properties.reactions.dh_rxn import constant
 # Import safe log power law equation
 from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
-    power_law_equil,
 )
 
 # Import built-in van't Hoff function
@@ -98,12 +94,7 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_constant i
 )
 
 from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
-    solubility_product,
     log_solubility_product,
-    log_power_law_equil,
-)
-from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    ConstantKeq,
 )
 
 # Import specific pyomo objects
@@ -116,23 +107,12 @@ from pyomo.environ import (
 )
 
 from idaes.core.util import scaling as iscale
-from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 
 import idaes.logger as idaeslog
 
-# Import pyomo methods to check the system units
-from pyomo.util.check_units import assert_units_consistent
-
 # Import idaes methods to check the model during construction
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    fixed_variables_set,
-    activated_constraints_set,
-    number_variables,
-    number_total_constraints,
-    number_unused_variables,
-)
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import the idaes objects for Generic Properties and Reactions
 from idaes.models.properties.modular_properties.base.generic_property import (
@@ -153,11 +133,13 @@ from watertap.examples.chemistry.chem_scaling_utils import (
     _set_eps_vals,
     _set_equ_rxn_scaling,
     _set_mat_bal_scaling_FpcTP,
-    _set_mat_bal_scaling_FTPx,
     _set_ene_bal_scaling,
 )
 
 __author__ = "Austin Ladshaw"
+
+# Get default solver for testing
+solver = get_solver()
 
 # Case 1 Config
 case1_thermo_config = {
@@ -231,7 +213,7 @@ case1_thermo_config = {
                 "mw": (40.078, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "cp_mol_liq_comp_coeff": (167039, pyunits.J / pyunits.kmol / pyunits.K),
-                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.kJ / pyunits.mol),
                 "entr_mol_form_liq_comp_ref": (
                     -53,
                     pyunits.J / pyunits.K / pyunits.mol,
@@ -317,7 +299,7 @@ case1_log_rxn_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
@@ -335,9 +317,6 @@ case1_log_rxn_config = {
     # End equilibrium_reactions
 }
 # End reaction_config definition
-
-# Get default solver for testing
-solver = get_solver()
 
 # Defaults to pH of 7 with no lime added
 def run_case1(
@@ -402,7 +381,7 @@ def run_case1(
 
     ## ==================== Start Scaling for this problem ===========================
     _set_eps_vals(model.fs.rxn_params, rxn_config)
-    _set_equ_rxn_scaling(model.fs.unit, rxn_config)
+    _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, rxn_config)
     _set_mat_bal_scaling_FpcTP(model.fs.unit)
     if has_energy_balance == True:
         _set_ene_bal_scaling(model.fs.unit)
@@ -503,6 +482,7 @@ def test_case_1_no_dissolution():
     )
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case_1_high_dissolution():
     model = run_case1(
@@ -515,6 +495,7 @@ def test_case_1_high_dissolution():
     )
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case_1_mid_dissolution():
     model = run_case1(
@@ -527,6 +508,7 @@ def test_case_1_mid_dissolution():
     )
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case_1_low_dissolution():
     model = run_case1(
@@ -644,7 +626,7 @@ case2_thermo_config = {
                 "mw": (40.078, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "cp_mol_liq_comp_coeff": (167039, pyunits.J / pyunits.kmol / pyunits.K),
-                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.kJ / pyunits.mol),
                 "entr_mol_form_liq_comp_ref": (
                     -53,
                     pyunits.J / pyunits.K / pyunits.mol,
@@ -793,7 +775,7 @@ case2_log_rxn_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
@@ -872,6 +854,8 @@ def run_case2(
     thermo_config=None,
     rxn_config=None,
     has_energy_balance=True,
+    scaling_ref=1e-3,
+    init_tol=1e-6,
 ):
     print("==========================================================================")
     print("Case 2: Water softening via pH changes")
@@ -939,9 +923,11 @@ def run_case2(
     assert degrees_of_freedom(model) == 0
 
     ## ==================== Start Scaling for this problem ===========================
-    _set_eps_vals(model.fs.rxn_params, rxn_config)
-    _set_equ_rxn_scaling(model.fs.unit, rxn_config)
-    _set_mat_bal_scaling_FpcTP(model.fs.unit)
+    _set_eps_vals(model.fs.rxn_params, rxn_config, max_k_eq_ref=1e-12)
+    _set_equ_rxn_scaling(
+        model.fs.unit, model.fs.rxn_params, rxn_config, min_k_eq_ref=scaling_ref
+    )
+    _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=scaling_ref * 10)
     if has_energy_balance == True:
         _set_ene_bal_scaling(model.fs.unit)
 
@@ -958,13 +944,18 @@ def run_case2(
 
     # for macOS
     init_options = {**solver.options}
-    init_options["tol"] = 1.0e-06
-    init_options["constr_viol_tol"] = 1.0e-06
+    init_options["tol"] = init_tol
+    init_options["constr_viol_tol"] = init_tol
+    init_options["ma27_pivtol"] = 5e-1
     model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
+    iscale.calculate_scaling_factors(model.fs.unit)
+
+    solver.options["ma27_pivtol"] = 5e-1
     results = solver.solve(model, tee=True)
+    del solver.options["ma27_pivtol"]
 
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok
@@ -1040,6 +1031,7 @@ def run_case2(
 
 ## ================================= Case 1 Tests ===============================
 @pytest.mark.component
+@pytest.mark.xfail
 def test_case_2_do_nothing():
     model = run_case2(
         xOH=1e-7 / 55.2,
@@ -1103,6 +1095,7 @@ def test_case_2_seawater_added_carbonates():
     )
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case_2_low_pH_no_precip():
     model = run_case2(
@@ -1116,9 +1109,12 @@ def test_case_2_low_pH_no_precip():
         thermo_config=case2_thermo_config,
         rxn_config=case2_log_rxn_config,
         has_energy_balance=True,
+        scaling_ref=1e-5,
+        init_tol=1e-12,
     )
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case_2_ultra_high_ca():
     model = run_case2(
@@ -1215,7 +1211,7 @@ case3_thermo_config = {
                 "mw": (40.078, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "cp_mol_liq_comp_coeff": (167039, pyunits.J / pyunits.kmol / pyunits.K),
-                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.J / pyunits.mol),
+                "enth_mol_form_liq_comp_ref": (-542.83, pyunits.kJ / pyunits.mol),
                 "entr_mol_form_liq_comp_ref": (
                     -53,
                     pyunits.J / pyunits.K / pyunits.mol,
@@ -1401,7 +1397,7 @@ case3_log_rxn_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
@@ -1554,8 +1550,10 @@ def run_case3(
 
     ## ==================== Start Scaling for this problem ===========================
     #   Modify some of the default scaling factors with function args
-    _set_eps_vals(model.fs.rxn_params, rxn_config, factor=1e-2, max_k_eq_ref=1e-16)
-    _set_equ_rxn_scaling(model.fs.unit, rxn_config, min_k_eq_ref=1e-3)
+    _set_eps_vals(model.fs.rxn_params, rxn_config, factor=1e-2, max_k_eq_ref=1e-12)
+    _set_equ_rxn_scaling(
+        model.fs.unit, model.fs.rxn_params, rxn_config, min_k_eq_ref=1e-2
+    )
     _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=1e-2)
     if has_energy_balance == True:
         _set_ene_bal_scaling(model.fs.unit)
@@ -1569,17 +1567,24 @@ def run_case3(
         model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix
     )
 
+    model.fs.rxn_params.reaction_CaCO3_Ksp.s_norm.value = 1
+    model.fs.rxn_params.reaction_CaOH2_Ksp.s_norm.value = 1
+
     ## ==================== END Scaling for this problem ===========================
     #   Loosen the tolerances for initialization stage by passing a temporary
     #       config dict replacing default values (this does so without any
     #       changes to the global solver options in WaterTAP)
-    temp_config = {
-        "constr_viol_tol": 1e-5,
-        "tol": 1e-5,
-    }
+    temp_config = {"tol": 1e-6, "constr_viol_tol": 1e-6}
     model.fs.unit.initialize(optarg=temp_config, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
+
+    model.fs.rxn_params.reaction_CaCO3_Ksp.s_norm.value = (
+        model.fs.rxn_params.reaction_CaCO3_Ksp.k_eq_ref.value
+    )
+    model.fs.rxn_params.reaction_CaOH2_Ksp.s_norm.value = (
+        model.fs.rxn_params.reaction_CaOH2_Ksp.k_eq_ref.value
+    )
 
     results = solver.solve(model, tee=True)
 
@@ -2096,7 +2101,7 @@ case4_log_rxn_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "dh_rxn_ref": (55.830, pyunits.kJ / pyunits.mol),
                 "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
@@ -2451,7 +2456,7 @@ def run_case4(
     # # TODO: NOTE: The _set_eps_vals function may need to change. Some cases run
     #               better without it included.
     _set_eps_vals(model.fs.rxn_params, rxn_config)
-    _set_equ_rxn_scaling(model.fs.unit, rxn_config)
+    _set_equ_rxn_scaling(model.fs.unit, model.fs.rxn_params, rxn_config)
     _set_mat_bal_scaling_FpcTP(model.fs.unit)
     if has_energy_balance == True:
         _set_ene_bal_scaling(model.fs.unit)
@@ -2470,8 +2475,10 @@ def run_case4(
 
     assert degrees_of_freedom(model) == 0
 
-    solver.options["tol"] = 1.0e-12
+    solver.options["tol"] = 1.0e-16
+    solver.options["ma27_pivtol"] = 5e-1
     results = solver.solve(model, tee=True)
+    solver.options["ma27_pivtol"] = 5e-1
     del solver.options["tol"]
 
     assert results.solver.termination_condition == TerminationCondition.optimal
@@ -2582,6 +2589,7 @@ def test_case_4_seawater_added_Fe_OH_PO4():
 #       Add 1e-4 M of Fe
 #       Add 1e-4 M of PO4
 #       Add 0 M of OH
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_case_4_seawater_added_Fe_PO4():
     model = run_case4(
