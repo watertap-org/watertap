@@ -18,67 +18,6 @@ from idaes.core import declare_process_block_class
 from idaes.core.base.costing_base import register_idaes_currency_units
 
 from watertap.costing.costing_base import WaterTAPCostingBlockData
-from idaes.core.base.costing_base import (
-    FlowsheetCostingBlockData,
-    register_idaes_currency_units,
-)
-
-from idaes.models.unit_models import Mixer
-
-from watertap.unit_models import (
-    ReverseOsmosis0D,
-    ReverseOsmosis1D,
-    OsmoticallyAssistedReverseOsmosis0D,
-    NanoFiltration0D,
-    NanofiltrationZO,
-    PressureExchanger,
-    Crystallization,
-    Ultraviolet0D,
-    Pump,
-    EnergyRecoveryDevice,
-    Electrodialysis0D,
-    Electrodialysis1D,
-    IonExchange0D,
-    GAC,
-    Electrocoagulation,
-)
-
-from .units.crystallizer import cost_crystallizer
-from .units.electrodialysis import cost_electrodialysis
-from .units.energy_recovery_device import cost_energy_recovery_device
-from .units.gac import cost_gac
-from .units.ion_exchange import cost_ion_exchange
-from .units.nanofiltration import cost_nanofiltration
-from .units.mixer import cost_mixer
-from .units.osmotically_assisted_reverse_osmosis import (
-    cost_osmotically_assisted_reverse_osmosis,
-)
-from .units.pressure_exchanger import cost_pressure_exchanger
-from .units.pump import cost_pump
-from .units.reverse_osmosis import cost_reverse_osmosis
-from .units.uv_aop import cost_uv_aop
-from .units.electrocoagulation import cost_electrocoagulation
-
-
-class _DefinedFlowsDict(MutableMapping, dict):
-    # use dict methods
-    __getitem__ = dict.__getitem__
-    __iter__ = dict.__iter__
-    __len__ = dict.__len__
-
-    def _setitem(self, key, value):
-        if key in self and self[key] is not value:
-            raise KeyError(f"{key} has already been defined as a flow")
-        dict.__setitem__(self, key, value)
-
-    def __setitem__(self, key, value):
-        raise KeyError(
-            "Please use the `WaterTAPCosting.add_defined_flow` "
-            "method to add defined flows."
-        )
-
-    def __delitem__(self, key):
-        raise KeyError("defined flows cannot be removed")
 
 
 @declare_process_block_class("WaterTAPCosting")
