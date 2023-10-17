@@ -42,7 +42,7 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
         )
         self.factor_maintenance_labor_chemical = pyo.Var(
             initialize=0.03,
-            doc="Maintenance-labor-chemical factor [fraction of investment cost/year]",
+            doc="Maintenance-labor-chemical factor [fraction of equipment cost/year]",
             units=pyo.units.year**-1,
         )
         self.factor_capital_annualization = pyo.Var(
@@ -71,7 +71,7 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
         )
         self.maintenance_labor_chemical_operating_cost_constraint = pyo.Constraint(
             expr=self.maintenance_labor_chemical_operating_cost
-            == self.factor_maintenance_labor_chemical * self.total_capital_cost
+            == self.factor_maintenance_labor_chemical * self.aggregate_capital_cost
         )
 
         if (
