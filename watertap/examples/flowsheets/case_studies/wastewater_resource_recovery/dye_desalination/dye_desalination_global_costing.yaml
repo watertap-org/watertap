@@ -7,11 +7,14 @@ defined_flows:
   waste_disposal:
     value: 1
     units: USD_2020/m**3
-  dye_mass:
-    value: 0.1
-    units: USD_2020/kg
+  dye_disposal:
+    value: 120
+    units: USD_2020/m**3
+  brine_recovery:
+    value: 1
+    units: USD_2020/m**3
   recovered_water:
-    value: 0.1
+    value: 1.25
     units: USD_2020/m**3
 global_parameters:
   plant_lifetime:
