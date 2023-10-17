@@ -438,10 +438,12 @@ class TestECZO_OverpotentialCalculation:
             ]
         )
 
-        m.fs.unit = ElectrocoagulationZO(property_package=m.fs.params, 
-                                        database=m.db, 
-                                        reactor_material="stainless_steel", 
-                                        overpotential_calculation="calculated")
+        m.fs.unit = ElectrocoagulationZO(
+            property_package=m.fs.params,
+            database=m.db,
+            reactor_material="stainless_steel",
+            overpotential_calculation="calculated",
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(43.8)
         m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(0.004599)
@@ -460,7 +462,8 @@ class TestECZO_OverpotentialCalculation:
         assert model.fs.unit.config.electrode_material == ElectrodeMaterial.aluminum
         assert model.fs.unit.config.reactor_material == ReactorMaterial.stainless_steel
         assert (
-            model.fs.unit.config.overpotential_calculation == OverpotentialCalculation.calculated
+            model.fs.unit.config.overpotential_calculation
+            == OverpotentialCalculation.calculated
         )
         assert value(model.fs.unit.mw_electrode_material) == 0.027
         assert value(model.fs.unit.valence_electrode_material) == 3
@@ -554,7 +557,9 @@ class TestECZO_OverpotentialCalculation:
         assert pytest.approx(0.00137970000, rel=1e-2) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["toc"]
         )
-        assert pytest.approx(53188.5028, rel=1e-2) == value(model.fs.unit.applied_current)
+        assert pytest.approx(53188.5028, rel=1e-2) == value(
+            model.fs.unit.applied_current
+        )
         assert pytest.approx(2.49011, rel=1e-2) == value(model.fs.unit.cell_voltage)
         assert pytest.approx(9.4e-6, rel=1e-2) == value(model.fs.unit.ohmic_resistance)
         assert pytest.approx(132445, rel=1e-2) == value(model.fs.unit.power_required)
@@ -572,11 +577,16 @@ class TestECZO_OverpotentialCalculation:
         m.fs.costing.add_electricity_intensity(ec.properties_treated[0].flow_vol)
         assert "aluminum" in m.fs.costing._registered_flows
         assert (
-            value(m.fs.costing.electrocoagulation.ec_reactor_cap_material_coeff[None]) == 3.4
+            value(m.fs.costing.electrocoagulation.ec_reactor_cap_material_coeff[None])
+            == 3.4
         )
-        assert value(m.fs.costing.electrocoagulation.electrode_material_cost[None]) == 2.23
+        assert (
+            value(m.fs.costing.electrocoagulation.electrode_material_cost[None]) == 2.23
+        )
         assert isinstance(m.fs.costing.electrocoagulation, Block)
-        assert isinstance(m.fs.costing.electrocoagulation.ec_power_supply_base_slope, Var)
+        assert isinstance(
+            m.fs.costing.electrocoagulation.ec_power_supply_base_slope, Var
+        )
         assert isinstance(m.fs.costing.electrocoagulation.ec_reactor_cap_base, Var)
         assert isinstance(m.fs.unit.costing.capital_cost, Var)
         assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
@@ -586,7 +596,9 @@ class TestECZO_OverpotentialCalculation:
         results = solver.solve(m)
         check_optimal_termination(results)
         assert pytest.approx(0.406240, rel=1e-3) == value(m.fs.costing.LCOW)
-        assert pytest.approx(0.81564, rel=1e-3) == value(m.fs.costing.electricity_intensity)
+        assert pytest.approx(0.81564, rel=1e-3) == value(
+            m.fs.costing.electricity_intensity
+        )
         assert pytest.approx(270278.669, rel=1e-3) == value(
             m.fs.unit.costing.capital_cost_reactor
         )
@@ -598,4 +610,6 @@ class TestECZO_OverpotentialCalculation:
             m.fs.unit.costing.capital_cost_electrodes
         )
 
-        assert ec.costing.electricity_flow in m.fs.costing._registered_flows["electricity"]
+        assert (
+            ec.costing.electricity_flow in m.fs.costing._registered_flows["electricity"]
+        )
