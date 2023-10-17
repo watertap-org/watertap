@@ -59,42 +59,38 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
         # add total_captial_cost and total_operating_cost
         self._build_common_process_costs()
 
-        self.maintenance_labor_chemical_operating_cost = pyo.Var(
-            initialize=1e3,
-            doc="Maintenance-labor-chemical operating cost",
-            units=self.base_currency / self.base_period,
-        )
-
         self.total_capital_cost_constraint = pyo.Constraint(
             expr=self.total_capital_cost
             == self.factor_total_investment * self.aggregate_capital_cost
         )
-        self.maintenance_labor_chemical_operating_cost_constraint = pyo.Constraint(
-            expr=self.maintenance_labor_chemical_operating_cost
-            == self.factor_maintenance_labor_chemical * self.aggregate_capital_cost
+
+        self.maintenance_labor_chemical_operating_cost = pyo.Expression(
+            expr=self.factor_maintenance_labor_chemical * self.aggregate_capital_cost,
+            doc="Maintenance-labor-chemical operating cost",
         )
 
-        if (
-            pyo.units.get_units(sum(self.aggregate_flow_costs.values()))
-        ) == pyo.units.dimensionless:
-            self.total_operating_cost_constraint = pyo.Constraint(
-                expr=self.total_operating_cost
-                == self.maintenance_labor_chemical_operating_cost
-                + self.aggregate_fixed_operating_cost
-                + self.aggregate_variable_operating_cost
-                + sum(self.aggregate_flow_costs.values())
-                * self.base_currency
-                / self.base_period
+        self.total_fixed_operating_cost = pyo.Expression(
+            expr=self.aggregate_fixed_operating_cost
+            + self.maintenance_labor_chemical_operating_cost,
+            doc="Total fixed operating costs",
+        )
+
+        self.total_variable_operating_cost = pyo.Expression(
+            expr=(
+                self.aggregate_variable_operating_cost
+                + sum(self.aggregate_flow_costs[f] for f in self.used_flows)
                 * self.utilization_factor
             )
-        else:
-            self.total_operating_cost_constraint = pyo.Constraint(
-                expr=self.total_operating_cost
-                == self.maintenance_labor_chemical_operating_cost
-                + self.aggregate_fixed_operating_cost
-                + self.aggregate_variable_operating_cost
-                + sum(self.aggregate_flow_costs.values()) * self.utilization_factor
-            )
+            if self.used_flows
+            else self.aggregate_variable_operating_cost,
+            doc="Total variable operating cost of process per operating period",
+        )
+
+        self.total_operating_cost_constraint = pyo.Constraint(
+            expr=self.total_operating_cost
+            == (self.total_fixed_operating_cost + self.total_variable_operating_cost),
+            doc="Total operating cost of process per operating period",
+        )
 
         self.total_annualized_cost = pyo.Expression(
             expr=(
@@ -107,10 +103,6 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
     def initialize_build(self):
         calculate_variable_from_constraint(
             self.total_capital_cost, self.total_capital_cost_constraint
-        )
-        calculate_variable_from_constraint(
-            self.maintenance_labor_chemical_operating_cost,
-            self.maintenance_labor_chemical_operating_cost_constraint,
         )
         calculate_variable_from_constraint(
             self.total_operating_cost, self.total_operating_cost_constraint

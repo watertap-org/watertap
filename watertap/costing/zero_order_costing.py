@@ -121,6 +121,11 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
             / self.base_period
         )
 
+        self.factor_total_investment = pyo.Expression(
+            expr=1.0 + self.working_capital_percent_FCI + self.land_cost_percent_FCI,
+            doc="Total investment factor [investment cost/equipment cost]",
+        )
+
         # Fix all Vars from database
         for v in global_params:
             try:
@@ -148,10 +153,6 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
         self.working_capital = pyo.Expression(
             expr=self.working_capital_percent_FCI * self.aggregate_capital_cost,
             doc="Working capital - based on aggregate capital costs",
-        )
-        self.factor_total_investment = pyo.Expression(
-            expr=1.0 + self.working_capital_percent_FCI + self.land_cost_percent_FCI,
-            doc="Total investment factor [investment cost/equipment cost]",
         )
         self.total_capital_cost_constraint = pyo.Constraint(
             expr=self.total_capital_cost
@@ -190,23 +191,26 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
             doc="Maintenance-labor-chemical factor [fraction of equipment cost/year]",
         )
 
-        self.total_fixed_operating_cost = pyo.Var(
-            initialize=0,
-            units=self.base_currency / self.base_period,
-            doc="Total fixed operating costs",
+        self.maintenance_labor_chemical_operating_cost = pyo.Expression(
+            expr=self.factor_maintenance_labor_chemical * self.aggregate_capital_cost,
+            doc="Maintenance-labor-chemical operating cost",
         )
 
-        self.total_fixed_operating_cost_constraint = pyo.Constraint(
-            expr=self.total_fixed_operating_cost
-            == self.aggregate_fixed_operating_cost
-            + self.factor_maintenance_labor_chemical * self.aggregate_capital_cost
+        self.total_fixed_operating_cost = pyo.Expression(
+            expr=self.aggregate_fixed_operating_cost
+            + self.maintenance_labor_chemical_operating_cost,
+            doc="Total fixed operating costs",
         )
 
         # Other variable costs
         self.total_variable_operating_cost = pyo.Expression(
-            expr=self.aggregate_variable_operating_cost
-            + sum(self.aggregate_flow_costs[f] for f in self.used_flows)
-            * self.utilization_factor,
+            expr=(
+                self.aggregate_variable_operating_cost
+                + sum(self.aggregate_flow_costs[f] for f in self.used_flows)
+                * self.utilization_factor
+            )
+            if self.used_flows
+            else self.aggregate_variable_operating_cost,
             doc="Total variable operating cost of process per operating period",
         )
 
@@ -231,9 +235,8 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
         calculate_variable_from_constraint(
             self.total_capital_cost, self.total_capital_cost_constraint
         )
-
         calculate_variable_from_constraint(
-            self.total_fixed_operating_cost, self.total_fixed_operating_cost_constraint
+            self.total_operating_cost, self.total_operating_cost_constraint
         )
 
 

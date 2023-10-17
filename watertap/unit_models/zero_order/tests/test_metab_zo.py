@@ -276,7 +276,6 @@ class TestMetabZO_hydrogen_cost:
         assert "hydrogen_product" in model.fs.costing._registered_flows
 
         assert isinstance(model.fs.costing.total_capital_cost, Var)
-        assert isinstance(model.fs.costing.total_fixed_operating_cost, Var)
         assert isinstance(model.fs.costing.aggregate_flow_costs, Var)
 
     @pytest.mark.component
@@ -380,7 +379,6 @@ class TestMetabZO_methane_cost:
         assert "methane_product" in model.fs.costing._registered_flows
 
         assert isinstance(model.fs.costing.total_capital_cost, Var)
-        assert isinstance(model.fs.costing.total_fixed_operating_cost, Var)
         assert isinstance(model.fs.costing.aggregate_flow_costs, Var)
 
     @pytest.mark.component

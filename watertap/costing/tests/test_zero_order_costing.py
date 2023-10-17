@@ -454,7 +454,7 @@ class TestWorkflow:
         )
 
         assert pytest.approx(0, abs=1e-5) == value(
-            model.fs.costing.total_fixed_operating_cost_constraint
+            model.fs.costing.total_operating_cost_constraint
         )
 
     @pytest.mark.solver
