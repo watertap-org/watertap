@@ -283,6 +283,7 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
         }
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 class TestNaClPropertySolution_4(PropertyRegressionTest):
     # Test pure solid solution 1 - check solid properties
