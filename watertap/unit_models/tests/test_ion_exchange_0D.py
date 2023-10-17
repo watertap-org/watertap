@@ -307,7 +307,7 @@ class TestIonExchangeLangmuir:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(8894349.86900, rel=1e-3) == value(
+        assert pytest.approx(2.0 * 8894349.86900, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
         assert pytest.approx(2498819.7327, rel=1e-3) == value(
@@ -611,7 +611,7 @@ class TestIonExchangeFreundlich:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(9701947.4187, rel=1e-3) == value(
+        assert pytest.approx(2.0 * 9701947.4187, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
         assert pytest.approx(1448862.0602, rel=1e-3) == value(
@@ -910,7 +910,7 @@ class TestIonExchangeInert:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(9701947.4187, rel=1e-3) == value(
+        assert pytest.approx(2.0 * 9701947.4187, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
         assert pytest.approx(695243.5958, rel=1e-3) == value(

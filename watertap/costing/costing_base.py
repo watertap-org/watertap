@@ -212,7 +212,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         )
 
         self.TIC = pyo.Var(
-            initialize=1.65,
+            initialize=2.0,
             doc="Total Installed Cost (TIC)",
             units=pyo.units.dimensionless,
         )

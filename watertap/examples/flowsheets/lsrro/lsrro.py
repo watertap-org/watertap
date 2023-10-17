@@ -291,7 +291,7 @@ def build(
 
     # explicitly set the costing parameters used
     m.fs.costing.utilization_factor.fix(0.9)
-    m.fs.costing.factor_total_investment.fix(2)
+    m.fs.costing.TIC.fix(2)
     m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
     m.fs.costing.factor_capital_annualization.fix(0.1)
     m.fs.costing.electricity_cost.set_value(0.07)
@@ -401,6 +401,7 @@ def build(
 
     m.fs.costing.pumping_energy_aggregate_lcow = Expression(
         expr=m.fs.costing.factor_total_investment
+        * m.fs.costing.TIC
         * (
             m.fs.costing.primary_pump_capex_lcow
             + (
@@ -442,6 +443,7 @@ def build(
 
     m.fs.costing.membrane_aggregate_lcow = Expression(
         expr=m.fs.costing.factor_total_investment
+        * m.fs.costing.TIC
         * m.fs.costing.membrane_capex_lcow
         * (
             1
@@ -566,11 +568,14 @@ def cost_high_pressure_pump_lsrro(blk, cost_electricity_flow=True):
     make_capital_cost_var(blk)
     blk.capital_cost_constraint = Constraint(
         expr=blk.capital_cost
-        == blk.costing_package.high_pressure_pump.cost
-        * pyunits.watt
-        / (pyunits.m**3 * pyunits.pascal / pyunits.s)
-        * blk.unit_model.outlet.pressure[t0]
-        * blk.unit_model.control_volume.properties_out[t0].flow_vol
+        == blk.costing_package.TIC
+        * (
+            blk.costing_package.high_pressure_pump.cost
+            * pyunits.watt
+            / (pyunits.m**3 * pyunits.pascal / pyunits.s)
+            * blk.unit_model.outlet.pressure[t0]
+            * blk.unit_model.control_volume.properties_out[t0].flow_vol
+        )
     )
 
     if cost_electricity_flow:

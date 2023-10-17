@@ -110,7 +110,8 @@ def cost_electroNP_capital(blk, HRT, sizing_cost):
     print(f"base_currency: {blk.costing_package.base_currency}")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.costing_package.TIC
+        * pyo.units.convert(
             blk.HRT * flow_in * blk.sizing_cost,
             to_units=blk.costing_package.base_currency,
         )

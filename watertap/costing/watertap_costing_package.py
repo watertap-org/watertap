@@ -36,7 +36,7 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
         # Build flowsheet level costing components
         # These are the global parameters
         self.factor_total_investment = pyo.Var(
-            initialize=2,
+            initialize=1.0,
             doc="Total investment factor [investment cost/equipment cost]",
             units=pyo.units.dimensionless,
         )

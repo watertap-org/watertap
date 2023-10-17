@@ -338,7 +338,8 @@ def cost_ion_exchange(blk):
     )
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.costing_package.TIC
+        * pyo.units.convert(
             (
                 ((blk.capital_cost_vessel + blk.capital_cost_resin) * tot_num_col)
                 + blk.capital_cost_backwash_tank

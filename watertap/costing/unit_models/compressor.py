@@ -36,7 +36,8 @@ def cost_compressor(blk, cost_electricity_flow=True):
     make_capital_cost_var(blk)
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.costing_package.TIC
+        * pyo.units.convert(
             blk.costing_package.compressor.unit_cost
             * blk.unit_model.control_volume.properties_in[0].flow_mass_phase_comp[
                 "Vap", "H2O"

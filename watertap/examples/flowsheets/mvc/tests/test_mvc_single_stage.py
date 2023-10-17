@@ -229,8 +229,8 @@ class TestMVC:
         )
 
         # Costing
-        assert m.fs.costing.factor_total_investment.is_fixed()
-        assert value(m.fs.costing.factor_total_investment) == 2
+        assert m.fs.costing.TIC.is_fixed()
+        assert value(m.fs.costing.TIC) == 2
         assert m.fs.costing.heat_exchanger.material_factor_cost.is_fixed()
         assert value(m.fs.costing.heat_exchanger.material_factor_cost) == 5
         assert m.fs.costing.evaporator.material_factor_cost.is_fixed()

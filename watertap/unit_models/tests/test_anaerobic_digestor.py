@@ -410,7 +410,7 @@ class TestAdm(object):
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(1083290.8, rel=1e-5) == value(
+        assert pytest.approx(2.0 * 1083290.8, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
         assert pytest.approx(5.2754, rel=1e-5) == value(m.fs.costing.LCOW)

@@ -407,7 +407,7 @@ class TestGACRobust:
         assert pytest.approx(4.359, rel=1e-3) == pyo.value(cost.adsorbent_unit_cost)
         assert pytest.approx(17450, rel=1e-3) == pyo.value(cost.adsorbent_cost)
         assert pytest.approx(81690, rel=1e-3) == pyo.value(cost.other_process_cost)
-        assert pytest.approx(156000, rel=1e-3) == pyo.value(cost.capital_cost)
+        assert pytest.approx(2.0 * 156000, rel=1e-3) == pyo.value(cost.capital_cost)
         assert pytest.approx(12680, rel=1e-3) == pyo.value(cost.gac_makeup_cost)
         assert pytest.approx(27660, rel=1e-3) == pyo.value(cost.gac_regen_cost)
         assert pytest.approx(0.01631, rel=1e-3) == pyo.value(cost.energy_consumption)
@@ -445,7 +445,7 @@ class TestGACRobust:
         assert pytest.approx(4.359, rel=1e-3) == pyo.value(cost.adsorbent_unit_cost)
         assert pytest.approx(17450, rel=1e-3) == pyo.value(cost.adsorbent_cost)
         assert pytest.approx(159500, rel=1e-3) == pyo.value(cost.other_process_cost)
-        assert pytest.approx(340200, rel=1e-3) == pyo.value(cost.capital_cost)
+        assert pytest.approx(2.0 * 340200, rel=1e-3) == pyo.value(cost.capital_cost)
         assert pytest.approx(12680, rel=1e-3) == pyo.value(cost.gac_makeup_cost)
         assert pytest.approx(27660, rel=1e-3) == pyo.value(cost.gac_regen_cost)
         assert pytest.approx(2.476, rel=1e-3) == pyo.value(cost.energy_consumption)
@@ -474,7 +474,7 @@ class TestGACRobust:
         assert pyo.value(mr.fs.costing.gac_pressure.num_contactors_redundant) == 2
         assert pytest.approx(89040, rel=1e-3) == pyo.value(cost.contactor_cost)
         assert pytest.approx(69690, rel=1e-3) == pyo.value(cost.other_process_cost)
-        assert pytest.approx(176200, rel=1e-3) == pyo.value(cost.capital_cost)
+        assert pytest.approx(2.0 * 176200, rel=1e-3) == pyo.value(cost.capital_cost)
 
     @pytest.mark.component
     def test_robust_costing_max_gac_ref(self, gac_frame_robust):

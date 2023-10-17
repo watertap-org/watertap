@@ -159,7 +159,8 @@ def cost_crystallizer_by_crystal_mass(blk):
     make_capital_cost_var(blk)
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.costing_package.TIC
+        * pyo.units.convert(
             (
                 blk.costing_package.crystallizer.iec_percent
                 * blk.costing_package.crystallizer.fob_unit_cost
@@ -189,7 +190,8 @@ def cost_crystallizer_by_volume(blk):
     make_capital_cost_var(blk)
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.costing_package.TIC
+        * pyo.units.convert(
             (
                 blk.costing_package.crystallizer.volume_cost
                 * (

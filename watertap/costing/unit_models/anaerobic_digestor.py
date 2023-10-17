@@ -86,7 +86,8 @@ def cost_anaerobic_digestor_capital(
     print(f"base_currency: {blk.costing_package.base_currency}")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.costing_package.TIC
+        * pyo.units.convert(
             blk.capital_a_parameter * sizing_term**blk.capital_b_parameter,
             to_units=blk.costing_package.base_currency,
         )
