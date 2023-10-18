@@ -45,6 +45,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
+from watertap.costing.unit_models.ion_exchange import cost_ion_exchange
 
 __author__ = "Kurban Sitterley"
 
@@ -1578,3 +1579,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             var_dict[f"Clark Kinetic Param."] = self.kinetic_param
 
         return {"vars": var_dict}
+
+    @property
+    def default_costing_method(self):
+        return cost_ion_exchange

@@ -50,8 +50,8 @@ def export_variables(flowsheet=None, exports=None):
     exports.add(
         obj=fs.feed.conc_mass_comp[0, "dye"],
         name="Dye concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",  # can this be done by default?
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3",
         rounding=2,
         description="Inlet dye concentration",
         is_input=True,
@@ -62,8 +62,8 @@ def export_variables(flowsheet=None, exports=None):
     exports.add(
         obj=fs.feed.conc_mass_comp[0, "tds"],
         name="TDS concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",  # can this be done by default?
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3",
         rounding=2,
         description="Inlet total dissolved solids (TDS) concentration",
         is_input=True,
@@ -164,17 +164,20 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     # Unit model, secondary WWTP
-    exports.add(
-        obj=fs.pretreatment.wwtp.energy_electric_flow_vol_inlet,
-        name="Specific energy consumption per inlet flow rate",
-        ui_units=pyunits.kWh / pyunits.m**3,
-        display_units="kWh/m3",
-        rounding=2,
-        description="Electrical energy consumption with respect to influent volumetric flow rate",
-        is_input=True,
-        input_category="Secondary Wastewater Treatment",
-        is_output=False,
-    )
+    if hasattr(fs, "pretreatment"):
+        exports.add(
+            obj=fs.pretreatment.wwtp.energy_electric_flow_vol_inlet,
+            name="Specific energy consumption per inlet flow rate",
+            ui_units=pyunits.kWh / pyunits.m**3,
+            display_units="kWh/m3",
+            rounding=2,
+            description="Electrical energy consumption with respect to influent volumetric flow rate",
+            is_input=True,
+            input_category="Secondary Wastewater Treatment",
+            is_output=False,
+        )
+    else:
+        pass
 
     # Unit model, RO
     v = fs.desalination.RO.A_comp
@@ -338,10 +341,10 @@ def export_variables(flowsheet=None, exports=None):
         input_category="System Costs",
         is_output=False,
     )
-    v = fs.zo_costing.dye_mass_cost
+    v = fs.zo_costing.dye_disposal_cost
     exports.add(
         obj=v,
-        name="Value of recovered dye",
+        name="Dye disposal cost per volume",
         ui_units=getattr(pyunits, str(v._units)),
         display_units=str(v._units),
         rounding=2,
@@ -599,18 +602,21 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Capital costs",
     )
-    wwtp_capex = fs.pretreatment.wwtp.costing.capital_cost
-    exports.add(
-        obj=wwtp_capex,
-        name="Secondary WWTP Cost",
-        ui_units=fs.zo_costing.base_currency,
-        display_units="$",
-        rounding=2,
-        description="Secondary WWTP representative of conventional activated sludge with secondary clarifier",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
+    if hasattr(fs, "pretreatment"):
+        wwtp_capex = fs.pretreatment.wwtp.costing.capital_cost
+        exports.add(
+            obj=wwtp_capex,
+            name="Secondary WWTP Cost",
+            ui_units=fs.zo_costing.base_currency,
+            display_units="$",
+            rounding=2,
+            description="Secondary WWTP representative of conventional activated sludge with secondary clarifier",
+            is_input=False,
+            is_output=True,
+            output_category="Capital costs",
+        )
+    else:
+        pass
     nf_capex = (
         fs.dye_separation.nanofiltration.costing.capital_cost
         + fs.dye_separation.P1.costing.capital_cost
@@ -676,40 +682,31 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Operating costs",
     )
     exports.add(
-        obj=fs.sludge_disposal_cost,
-        name="WWTP sludge disposal",
+        obj=fs.dye_disposal_cost,
+        name="Dye disposal",
         ui_units=fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
-        description="Annual sludge disposal",
+        description="Annual dye disposal",
         is_input=False,
         is_output=True,
         output_category="Operating costs",
     )
+    if hasattr(fs, "pretreatment"):
+        exports.add(
+            obj=fs.sludge_disposal_cost,
+            name="WWTP sludge disposal",
+            ui_units=fs.zo_costing.base_currency / pyunits.year,
+            display_units="$/year",
+            rounding=2,
+            description="Annual sludge disposal",
+            is_input=False,
+            is_output=True,
+            output_category="Operating costs",
+        )
+    else:
+        pass
     # Revenue
-    total_revenue = fs.water_recovery_revenue + fs.dye_recovery_revenue
-    exports.add(
-        obj=total_revenue,
-        name="Total",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=2,
-        description="Total revenue - including the value of recovered dye and water",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
-    )
-    exports.add(
-        obj=fs.dye_recovery_revenue,
-        name="Dye",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=2,
-        description="Revenue from selling dye",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
-    )
     exports.add(
         obj=fs.water_recovery_revenue,
         name="Water",
@@ -725,7 +722,7 @@ def export_variables(flowsheet=None, exports=None):
 
 def build_flowsheet():
     # build and solve initial flowsheet
-    m = build()
+    m = build(include_pretreatment=False)
 
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)

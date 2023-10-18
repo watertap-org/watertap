@@ -20,11 +20,10 @@ from pyomo.common.config import ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import declare_process_block_class
-from idaes.core.base.costing_base import (
-    FlowsheetCostingBlockData,
-    register_idaes_currency_units,
-)
+from idaes.core.base.costing_base import register_idaes_currency_units
+from watertap.costing.costing_base import WaterTAPCostingBlockData
 
+# NOTE: some of these are defined in WaterTAPCostingBlockData
 global_params = [
     "plant_lifetime",
     "utilization_factor",
@@ -42,12 +41,12 @@ global_params = [
 
 
 @declare_process_block_class("ZeroOrderCosting")
-class ZeroOrderCostingData(FlowsheetCostingBlockData):
+class ZeroOrderCostingData(WaterTAPCostingBlockData):
     """
     General costing package for zero-order processes.
     """
 
-    CONFIG = FlowsheetCostingBlockData.CONFIG()
+    CONFIG = WaterTAPCostingBlockData.CONFIG()
     CONFIG.declare(
         "case_study_definition",
         ConfigValue(
@@ -72,21 +71,24 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         else:
             register_idaes_currency_units()
 
+        self._build_common_global_params()
+
         # Set the base year for all costs
         self.base_currency = getattr(pyo.units, cs_def["base_currency"])
         # Set a base period for all operating costs
         self.base_period = getattr(pyo.units, cs_def["base_period"])
 
         # Define expected flows
-        self.defined_flows = {}
         for f, v in cs_def["defined_flows"].items():
-            self.defined_flows[f] = v["value"] * getattr(pyo.units, v["units"])
+            value = v["value"]
+            units = getattr(pyo.units, v["units"])
+            if self.component(f + "_cost") is not None:
+                self.component(f + "_cost").fix(value * units)
+            else:
+                self.defined_flows[f] = value * units
 
         # Costing factors
         self.plant_lifetime = pyo.Var(units=self.base_period, doc="Plant lifetime")
-        self.utilization_factor = pyo.Var(
-            units=pyo.units.dimensionless, doc="Plant capacity utilization [%]"
-        )
 
         self.land_cost_percent_FCI = pyo.Var(
             units=pyo.units.dimensionless, doc="Land cost as % FCI"
@@ -113,22 +115,10 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         self.wacc = pyo.Var(
             units=pyo.units.dimensionless, doc="Weighted Average Cost of Capital (WACC)"
         )
-        self.capital_recovery_factor = pyo.Expression(
-            expr=(
-                (
-                    self.wacc
-                    * (1 + self.wacc) ** (self.plant_lifetime / self.base_period)
-                )
-                / (((1 + self.wacc) ** (self.plant_lifetime / self.base_period)) - 1)
-                / self.base_period
-            )
-        )
-
-        self.TPEC = pyo.Var(
-            units=pyo.units.dimensionless, doc="Total Purchased Equipment Cost (TPEC)"
-        )
-        self.TIC = pyo.Var(
-            units=pyo.units.dimensionless, doc="Total Installed Cost (TIC)"
+        self.capital_recovery_factor.expr = (
+            (self.wacc * (1 + self.wacc) ** (self.plant_lifetime / self.base_period))
+            / (((1 + self.wacc) ** (self.plant_lifetime / self.base_period)) - 1)
+            / self.base_period
         )
 
         # Fix all Vars from database
@@ -147,6 +137,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         """
         Calculating process wide costs.
         """
+        # add total_captial_cost and total_operating_cost
+        self._build_common_process_costs()
+
         # Other capital costs
         self.land_cost = pyo.Var(
             initialize=0,
@@ -157,9 +150,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             initialize=0,
             units=self.base_currency,
             doc="Working capital - based on aggregate capital costs",
-        )
-        self.total_capital_cost = pyo.Var(
-            initialize=0, units=self.base_currency, doc="Total capital cost of process"
         )
 
         self.land_cost_constraint = pyo.Constraint(
@@ -245,9 +235,18 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             doc="Total variable operating cost of process per operating period",
         )
 
-        self.total_operating_cost = pyo.Expression(
-            expr=(self.total_fixed_operating_cost + self.total_variable_operating_cost),
+        self.total_operating_cost_constraint = pyo.Constraint(
+            expr=self.total_operating_cost
+            == (self.total_fixed_operating_cost + self.total_variable_operating_cost),
             doc="Total operating cost of process per operating period",
+        )
+
+        self.total_annualized_cost = pyo.Expression(
+            expr=(
+                self.total_capital_cost * self.capital_recovery_factor
+                + self.total_operating_cost
+            ),
+            doc="Total annualized cost of operation",
         )
 
     def initialize_build(self):
@@ -282,51 +281,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             self.total_fixed_operating_cost, self.total_fixed_operating_cost_constraint
         )
 
-    def add_LCOW(self, flow_rate):
-        """
-        Add Levelized Cost of Water (LCOW) to costing block.
-        Args:
-            flow_rate - flow rate of water (volumetric) to be used in
-                        calculating LCOW
-        """
-        self.LCOW = pyo.Expression(
-            expr=(
-                self.total_capital_cost * self.capital_recovery_factor
-                + self.total_operating_cost
-            )
-            / (
-                pyo.units.convert(
-                    flow_rate, to_units=pyo.units.m**3 / self.base_period
-                )
-                * self.utilization_factor
-            ),
-            doc="Levelized Cost of Water",
-        )
-
-    def add_electricity_intensity(self, flow_rate):
-        """
-        Add calculation of overall electricity intensity to costing block.
-        Args:
-            flow_rate - flow rate of water (volumetric) to be used in
-                        calculating electricity intensity
-        """
-        self.electricity_intensity = pyo.Expression(
-            expr=pyo.units.convert(
-                self.aggregate_flow_electricity / flow_rate,
-                to_units=pyo.units.kWh / pyo.units.m**3,
-            ),
-            doc="Overall electricity intensity",
-        )
-
-    def _get_costing_method_for(self, unit_model):
-        """
-        Allow the unit model to register its default costing method,
-        either through an attribute named "default_costing_method"
-        or by naming the default costing method "default_costing_method"
-        """
-        if hasattr(unit_model, "default_costing_method"):
-            return unit_model.default_costing_method
-        return super()._get_costing_method_for(unit_model)
+        for var, con in self._registered_LCOWs.values():
+            calculate_variable_from_constraint(var, con)
 
 
 def _load_case_study_definition(self):

@@ -433,7 +433,6 @@ class MCASParameterData(PhysicalParameterBlock):
         )
 
         if self.config.diffus_calculation == DiffusivityCalculation.none:
-
             self.diffus_phase_comp = Var(
                 self.phase_list,
                 self.solute_set,
@@ -664,7 +663,6 @@ class _MCASStateBlock(StateBlock):
 
         # initialize vars calculated from state vars
         for k in self.keys():
-
             # Vars indexed by phase and component_list
             for j in self[k].params.component_list:
                 if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
@@ -1084,6 +1082,7 @@ class MCASStateBlockData(StateBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density",
         )
+
         # TODO: reconsider this approach for solution density based on arbitrary solute_list
         def rule_dens_mass_phase(b, p):
             if b.params.config.density_calculation == DensityCalculation.constant:
@@ -1233,7 +1232,6 @@ class MCASStateBlockData(StateBlockData):
         )
 
         def rule_conc_equiv_phase_comp(b, p, j):
-
             return b.conc_equiv_phase_comp[p, j] == b.conc_mol_phase_comp[p, j] * abs(
                 b.params.charge_comp[j]
             )
@@ -1375,14 +1373,12 @@ class MCASStateBlockData(StateBlockData):
                     self.params.config.diffus_calculation
                     == DiffusivityCalculation.HaydukLaudie
                 ):
-
                     if j not in molar_volume_data_indices:
                         b.diffus_phase_comp[p, j].fix(
                             self.params.config.diffusivity_data[p, j]
                         )
                         return Constraint.Skip
                     else:
-
                         diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
                         visc_solvent_inv_units = pyunits.cP**-1
                         molar_volume_inv_units = pyunits.mol * pyunits.cm**-3

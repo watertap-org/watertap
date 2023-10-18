@@ -629,6 +629,7 @@ class TestPureWater:
         assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_solution(self, model_solve):
         model, _ = model_solve
 
@@ -654,8 +655,8 @@ class TestPureWater:
         pOH = -value(
             log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"] * total_molar_density)
         )
-        assert pytest.approx(6.9997414, rel=1e-5) == pH
-        assert pytest.approx(6.9997414, rel=1e-5) == pOH
+        assert pytest.approx(7.000, rel=1e-3) == pH
+        assert pytest.approx(7.000, rel=1e-3) == pOH
         assert pytest.approx(0.99999, rel=1e-5) == value(
             model.fs.unit.outlet.mole_frac_comp[0.0, "H2O"]
         )

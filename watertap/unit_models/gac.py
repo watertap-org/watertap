@@ -40,6 +40,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
+from watertap.costing.unit_models.gac import cost_gac
 
 __author__ = "Hunter Barber"
 
@@ -1421,3 +1422,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 iscale.set_scaling_factor(self.spdfr, 1)
 
         # (optional) transforming constraints
+
+    @property
+    def default_costing_method(self):
+        return cost_gac
