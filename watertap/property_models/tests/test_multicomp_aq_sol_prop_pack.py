@@ -238,7 +238,9 @@ def model2():
 
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
-        solute_list=["A", "B", "C", "D"], charge={"A": 1, "B": -2, "C": 2, "D": -1}
+        solute_list=["A", "B", "C", "D"], 
+        charge={"A": 1, "B": -2, "C": 2, "D": -1},
+        mw_data={"A": 10e-3, "B": 25e-3, "C": 100e-3, "D": 25e-3}
     )
 
     return m
@@ -257,12 +259,6 @@ def test_property_ions_2(model2):
     stream[0].flow_mol_phase_comp["Liq", "H2O"].fix(0.99046)
     stream[0].temperature.fix(298.15)
     stream[0].pressure.fix(101325)
-
-    stream[0].mw_comp["H2O"] = 18e-3
-    stream[0].mw_comp["A"] = 10e-3
-    stream[0].mw_comp["B"] = 25e-3
-    stream[0].mw_comp["C"] = 100e-3
-    stream[0].mw_comp["D"] = 25e-3
 
     stream[0].radius_stokes_comp["A"] = 1e-9
     stream[0].radius_stokes_comp["B"] = 1e-9
@@ -309,6 +305,7 @@ def model3():
         },
         elec_mobility_calculation=ElectricalMobilityCalculation.EinsteinRelation,
         charge={"Ca_2+": 1, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
+        mw_data={"Ca_2+": 40e-3, "SO4_2-": 97e-3, "Na_+": 23e-3, "Cl_-": 35e-3, "Mg_2+": 24e-3}
     )
 
     m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
@@ -451,7 +448,6 @@ def test_scaling(model3):
 
     assert len(unscaled_constraint_list) == 0
 
-    # m.fs.stream[0].scaling_factor.display()
     for j in m.fs.properties.config.solute_list:
         assert get_scaling_factor(m.fs.stream[0].mw_comp[j]) is not None
         assert (
@@ -1417,6 +1413,7 @@ def model7():
             ("Liq", "D"): 200e-6,  # arbitrary
         },
         diffusivity_data={("Liq", "E"): 1.33e-9, ("Liq", "F"): 2.03e-9},
+        mw_data={"A": 1, "B": 1, "C": 1, "D": 1, "E": 1, "F": 1, "G": 1} # arbitrary
     )
     # build state block
     m_hl.fs.sb = m_hl.fs.properties.build_state_block([0], defined_state=True)
@@ -1479,6 +1476,14 @@ def test_solute_list_longer_than_diff_data():
     m.fs.properties = MCASParameterBlock(
         solute_list=["A", "B", "C", "D", "E", "F", "G", "H"],
         charge={"E": 1, "F": -1},
+        mw_data={"A": 1, 
+                 "B": 1,
+                 "C": 1, 
+                 "D": 1, 
+                 "E": 1, 
+                 "F": 1, 
+                 "G": 1, 
+                 "H": 1},
         diffus_calculation=DiffusivityCalculation.none,
         molar_volume_data={
             ("Liq", "A"): 96e-6,  # tested for benzene
@@ -1503,7 +1508,7 @@ def test_flow_mass_basis():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
-        solute_list=["A"], material_flow_basis=MaterialFlowBasis.mass
+        solute_list=["A"], material_flow_basis=MaterialFlowBasis.mass, mw_data={"A": 1}
     )
 
     m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
@@ -1531,6 +1536,7 @@ def test_compatibility_with_mixer():
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Cl_-"],
+        mw_data={"Na_+": 23, "Cl_-": 35}
     )
 
     m.fs.mixer1 = Mixer(
@@ -1545,23 +1551,11 @@ def test_compatibility_with_mixer():
             property_package=m.fs.properties,
         )
 
-
-@pytest.mark.unit
-def test_no_solute_list_provided():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-    with pytest.raises(
-        ConfigurationError,
-        match=re.escape("The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings).",
-    )):
-        m.fs.properties = MCASParameterBlock()
-
-
 c_list = [10e-10, 10e-9, 10e-8, 10e-7, 10e-6, 10e-5]
 
-
+@pytest.mark.parametrize("c", c_list)
 @pytest.mark.component
-def test_calculate_state_with_flow_mol_stateVar():
+def test_calculate_state_with_flow_mol_stateVar(c):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     mw = 0.50013 * pyunits.kg / pyunits.mol
@@ -1573,7 +1567,7 @@ def test_calculate_state_with_flow_mol_stateVar():
     m.fs.stream2 = m.fs.properties.build_state_block([0], defined_state=True)
 
     flow_in = 0.04381 * pyunits.m**3 / pyunits.s
-    conc_mass = 10e-12 * pyunits.kg / pyunits.m**3
+    conc_mass = c * pyunits.kg / pyunits.m**3
     flow_mol = pyunits.convert(
         conc_mass / mw * flow_in, to_units=pyunits.mol / pyunits.s
     )
@@ -1997,3 +1991,46 @@ def test_flow_mass_basis_with_RO_unit():
     m.fs.unit.initialize()
     results = solver.solve(m)
     assert_optimal_termination(results)
+
+
+@pytest.mark.unit
+def test_no_solute_list_provided():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape("The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings).",
+    )):
+        m.fs.properties = MCASParameterBlock()
+    
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape("The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings).",
+    )):
+        m.fs.properties = MCASParameterBlock(solute_list=[])
+
+
+@pytest.mark.unit
+def test_no_mw_data_provided():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape("The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively.")):
+        m.fs.properties = MCASParameterBlock(solute_list=["foo"])
+
+
+@pytest.mark.unit
+def test_no_h2o_mw_data():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(solute_list=["NaCl"],
+                                         mw_data={"NaCl": 58e-3})
+    
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+
+    assert isinstance(m.fs.properties.mw_comp, Param)
+    assert m.fs.properties.mw_comp["NaCl"].value == 58e-3
+    assert m.fs.properties.mw_comp["H2O"].value == 18e-3
+    assert m.fs.stream[0].mw_comp["NaCl"].value == 58e-3
+    assert m.fs.stream[0].mw_comp["H2O"].value == 18e-3

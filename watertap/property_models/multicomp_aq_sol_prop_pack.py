@@ -341,7 +341,7 @@ class MCASParameterData(PhysicalParameterBlock):
         self.ion_set = Set(dimen=1)  # All Ion Components (cations + anions)
 
         # Check that solute_list was not left empty
-        if self.config.solute_list is None:
+        if self.config.solute_list is None or not len(self.config.solute_list):
             raise ConfigurationError(
                 "The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings)."
             )
@@ -387,13 +387,19 @@ class MCASParameterData(PhysicalParameterBlock):
         # reference
         # Todo: enter any relevant references
 
+        # Check for molecular weight data
+        if not len(self.config.mw_data):
+            raise ConfigurationError("The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively.")
+      
         # TODO: consider turning parameters into variables for future param estimation
+        mw_temp = {"H2O": 18e-3}
+        mw_temp.update(self.config.mw_data)
         # molecular weight
         self.mw_comp = Param(
             self.component_list,
             mutable=True,
             default=18e-3,
-            initialize=self.config.mw_data,
+            initialize=mw_temp,
             units=pyunits.kg / pyunits.mol,
             doc="Molecular weight",
         )
@@ -668,13 +674,13 @@ class _MCASStateBlock(StateBlock):
         for k in self.keys():
             # Vars indexed by phase and component_list
             for j in self[k].params.component_list:
-                if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
+                if self[k].params.config.material_flow_basis == MaterialFlowBasis.molar:
                     if self[k].is_property_constructed("flow_mass_phase_comp"):
                         self[k].flow_mass_phase_comp["Liq", j].set_value(
                             self[k].flow_mol_phase_comp["Liq", j]
                             * self[k].params.mw_comp[j]
                         )
-                elif self.params.config.material_flow_basis == MaterialFlowBasis.mass:
+                elif self[k].params.config.material_flow_basis == MaterialFlowBasis.mass:
                     if self[k].is_property_constructed("flow_mol_phase_comp"):
                         self[k].flow_mol_phase_comp["Liq", j].set_value(
                             self[k].flow_mass_phase_comp["Liq", j]
