@@ -40,7 +40,7 @@ def export_to_ui():
     )
 
 
-def export_variables(flowsheet=None, exports=None):
+def export_variables(flowsheet=None, exports=None, build_options=None):
     """
     Exports the variables to the GUI.
     """
@@ -2785,7 +2785,7 @@ def export_variables(flowsheet=None, exports=None):
     )
 
 
-def build_flowsheet():
+def build_flowsheet(build_options=None):
     """
     Builds the initial flowsheet.
     """
