@@ -921,6 +921,7 @@ class TestParameterSweep:
     def test_parameter_sweep_optimize_with_added_var(self, model, tmp_path):
         # this will run a solve function that adds a variable but only in some
         # of the solves.
+        """THIS TEST IS DESIGNED FOR 2 Parallel workers!!!!!!"""
         comm = MPI.COMM_WORLD
 
         tmp_path = _get_rank0_path(comm, tmp_path)
@@ -939,7 +940,8 @@ class TestParameterSweep:
             h5_results_file_name=h5_results_file_name,
             debugging_data_dir=tmp_path,
             interpolate_nan_outputs=False,
-            number_of_subprocesses=3,
+            number_of_subprocesses=2,
+            parallel_back_end="MultiProcessing",
         )
 
         results_fname = os.path.join(tmp_path, "global_results")
@@ -969,8 +971,8 @@ class TestParameterSweep:
                                 np.nan,
                                 np.nan,
                                 np.nan,
-                                5,
-                                5,
+                                np.nan,
+                                np.nan,
                                 5,
                                 np.nan,
                                 np.nan,
@@ -1016,6 +1018,7 @@ class TestParameterSweep:
             }
 
             read_dict = _read_output_h5(h5_results_file_name)
+            # print(read_dict)
             _assert_dictionary_correctness(truth_dict, read_dict)
 
     @pytest.mark.component
@@ -2058,9 +2061,9 @@ def _optimization(m, relax_feasibility=False):
 
 
 def _initialize_with_added_var(m):
-    if (
-        abs(m.fs.input["a"].value - 0.5) < 1e-6
-    ):  # and abs(m.fs.input["b"].value) < 1e-6:
+    if (abs(m.fs.input["a"].value - 0.5) < 1e-6) and abs(
+        m.fs.input["b"].value - 0.5
+    ) < 1e-6:
         m.fs.test_var = pyo.Var(initialize=5, bounds=(0, 10))
         m.fs.test_var.fix()
 
