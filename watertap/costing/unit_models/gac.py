@@ -304,9 +304,10 @@ def _cost_gac(blk, parameter_blk):
         )
     )
 
+    blk.costing_package.add_cost_factor(blk, "TIC")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == blk.costing_package.TIC
+        == blk.cost_factor
         * (blk.contactor_cost + blk.adsorbent_cost + blk.other_process_cost)
     )
 

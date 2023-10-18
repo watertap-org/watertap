@@ -336,9 +336,10 @@ def cost_ion_exchange(blk):
             to_units=blk.costing_package.base_currency,
         )
     )
+    blk.costing_package.add_cost_factor(blk, "TIC")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == blk.costing_package.TIC
+        == blk.cost_factor
         * pyo.units.convert(
             (
                 ((blk.capital_cost_vessel + blk.capital_cost_resin) * tot_num_col)

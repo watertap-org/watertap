@@ -369,7 +369,7 @@ def build(
 
     m.fs.costing.primary_pump_capex_lcow = Expression(
         expr=m.fs.costing.factor_capital_annualization
-        * sum(m.fs.PrimaryPumps[n].costing.capital_cost for n in m.fs.Stages)
+        * sum(m.fs.PrimaryPumps[n].costing.direct_capital_cost for n in m.fs.Stages)
         / m.fs.costing.annual_water_production
     )
 
@@ -380,7 +380,10 @@ def build(
     m.fs.costing.booster_pump_capex_lcow = Expression(
         expr=m.fs.costing.factor_capital_annualization
         * (
-            sum(m.fs.BoosterPumps[n].costing.capital_cost for n in m.fs.LSRRO_Stages)
+            sum(
+                m.fs.BoosterPumps[n].costing.direct_capital_cost
+                for n in m.fs.LSRRO_Stages
+            )
             if number_of_stages > 1
             else 0 * m.fs.costing.base_currency
         )
@@ -389,7 +392,10 @@ def build(
 
     m.fs.costing.erd_capex_lcow = Expression(
         expr=m.fs.costing.factor_capital_annualization
-        * sum(erd.costing.capital_cost for erd in m.fs.EnergyRecoveryDevices.values())
+        * sum(
+            erd.costing.direct_capital_cost
+            for erd in m.fs.EnergyRecoveryDevices.values()
+        )
         / m.fs.costing.annual_water_production
     )
 
@@ -421,13 +427,13 @@ def build(
 
     m.fs.costing.membrane_capex_lcow = Expression(
         expr=m.fs.costing.factor_capital_annualization
-        * sum(m.fs.ROUnits[n].costing.capital_cost for n in m.fs.Stages)
+        * sum(m.fs.ROUnits[n].costing.direct_capital_cost for n in m.fs.Stages)
         / m.fs.costing.annual_water_production
     )
 
     m.fs.costing.indirect_capex_lcow = Expression(
         expr=m.fs.costing.factor_capital_annualization
-        * (m.fs.costing.total_capital_cost - m.fs.costing.aggregate_capital_cost)
+        * (m.fs.costing.total_capital_cost - m.fs.costing.aggregate_direct_capital_cost)
         / m.fs.costing.annual_water_production
     )
 
@@ -566,9 +572,10 @@ def build_high_pressure_pump_cost_param_block(blk):
 def cost_high_pressure_pump_lsrro(blk, cost_electricity_flow=True):
     t0 = blk.flowsheet().time.first()
     make_capital_cost_var(blk)
+    blk.costing_package.add_cost_factor(blk, "TIC")
     blk.capital_cost_constraint = Constraint(
         expr=blk.capital_cost
-        == blk.costing_package.TIC
+        == blk.cost_factor
         * (
             blk.costing_package.high_pressure_pump.cost
             * pyunits.watt

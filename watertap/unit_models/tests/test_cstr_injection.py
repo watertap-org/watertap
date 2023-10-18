@@ -281,7 +281,9 @@ class TestSaponification(object):
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(7.75429, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(7.75429 * 2, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
         assert pytest.approx(0.00082698, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit

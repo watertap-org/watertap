@@ -34,9 +34,10 @@ def build_compressor_cost_param_block(blk):
 )
 def cost_compressor(blk, cost_electricity_flow=True):
     make_capital_cost_var(blk)
+    blk.costing_package.add_cost_factor(blk, "TIC")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == blk.costing_package.TIC
+        == blk.cost_factor
         * pyo.units.convert(
             blk.costing_package.compressor.unit_cost
             * blk.unit_model.control_volume.properties_in[0].flow_mass_phase_comp[
