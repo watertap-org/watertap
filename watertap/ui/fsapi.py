@@ -181,33 +181,6 @@ class ModelExport(BaseModel):
         return v
 
 
-class OptionValueType(str, Enum):
-    """Possibilities for `value_type` in :meth:`FlowsheetExport.add_option()`"""
-
-    string = "s"
-    float = "f"
-    integer = "i"
-    boolean = "b"
-
-    @classmethod
-    def convert(cls, t, v):
-        if t == cls.string:
-            if v is None or v is False or v is True:
-                raise ValueError(f"Got non-string value ({v}) but expected string")
-            if isinstance(v, int) or isinstance(v, float):
-                raise ValueError(f"Got numeric value ({v}) but expected string")
-            cv = str(v)
-        elif t == cls.float:
-            cv = float(v)
-        elif t == cls.integer:
-            cv = int(v)
-        elif t == cls.boolean:
-            cv = bool(v)
-        else:
-            raise ValueError(f"Unknown type: {t}")
-        return cv
-
-
 class ModelOption(BaseModel):
     """An option for building/running the model."""
 
