@@ -638,7 +638,7 @@ class _ParameterSweepBase(ABC):
             self.model_manager.build_and_init(sweep_params, local_value_k)
         # try to solve our model
         self.model_manager.update_model_params(sweep_params, local_value_k)
-        results = self.model_manager.solve_model()
+        self.model_manager.solve_model()
 
         # if model failed to solve from a prior paramter solved state, lets try
         # to re-init and solve again
@@ -648,7 +648,7 @@ class _ParameterSweepBase(ABC):
         ):
             self.model_manager.build_and_init(sweep_params, local_value_k)
             self.model_manager.update_model_params(sweep_params, local_value_k)
-            results = self.model_manager.solve_model()
+            self.model_manager.solve_model()
         # return model solved state
         return self.model_manager.is_solved
 
@@ -793,13 +793,14 @@ class ParameterSweep(_ParameterSweepBase):
                     continue
 
                 for subkey, subval in val.items():
-                    # try:
-                    # print(subkey, subval)
+                    # TODO This might not be MPI safe, when we split
+                    #  sweep params into unequal sized chunks, did not test
+
                     # lets catch any keys that don' exist in result[0] and
                     # create empty array with expected length, after which we will add
                     # additional values, or add nan's instead
                     if subkey not in combined_results[key]:
-                        # create empty array, as non of results so far had this key
+                        # create empty array, as none of results so far had this key
                         combined_results[key][subkey] = {}
                         for sub_subkey, value in subval.items():
                             if sub_subkey == "value":
@@ -814,7 +815,7 @@ class ParameterSweep(_ParameterSweepBase):
                             subval["value"],
                         ),
                     )
-                    # keepy track of our subchunk_length
+                    # keep track of our subchunk_length
                     sub_chunk_length = len(subval["value"])
                 # make sure we add any empty value to missing keys
                 for subkey in combined_results[key]:
