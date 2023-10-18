@@ -34,6 +34,11 @@ def build_heat_exchanger_cost_param_block(blk):
     parameter_block_name="heat_exchanger",
 )
 def cost_heat_exchanger(blk):
+    """
+    Heat Exchanger Costing Method
+
+    TODO: describe equations
+    """
     make_capital_cost_var(blk)
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost

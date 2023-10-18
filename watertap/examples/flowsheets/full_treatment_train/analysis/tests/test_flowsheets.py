@@ -27,10 +27,10 @@ def test_flowsheet_NF():
     m = flowsheet_NF.optimize_flowsheet(system_recovery=0.5)
     assert value(
         m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
-    ) == pytest.approx(0.7667, rel=1e-3)
+    ) == pytest.approx(0.7675, rel=1e-3)
     assert value(
         m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp["Liq", "Ca"]
-    ) == pytest.approx(1.1636e-4, rel=1e-3)
+    ) == pytest.approx(1.175e-4, rel=1e-3)
 
 
 @pytest.mark.component

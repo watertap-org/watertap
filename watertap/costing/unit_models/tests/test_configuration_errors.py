@@ -20,11 +20,13 @@ import idaes.core as idc
 
 from watertap.costing.watertap_costing_package import WaterTAPCosting
 
-from watertap.costing.units.reverse_osmosis import cost_reverse_osmosis
-from watertap.costing.units.pump import cost_pump
-from watertap.costing.units.energy_recovery_device import cost_energy_recovery_device
-from watertap.costing.units.mixer import cost_mixer
-from watertap.costing.units.crystallizer import cost_crystallizer
+from watertap.costing.unit_models.reverse_osmosis import cost_reverse_osmosis
+from watertap.costing.unit_models.pump import cost_pump
+from watertap.costing.unit_models.energy_recovery_device import (
+    cost_energy_recovery_device,
+)
+from watertap.costing.unit_models.mixer import cost_mixer
+from watertap.costing.unit_models.crystallizer import cost_crystallizer
 
 
 def _get_config_testing_block():

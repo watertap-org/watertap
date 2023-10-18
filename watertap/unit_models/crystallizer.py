@@ -40,6 +40,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
+from watertap.costing.unit_models.crystallizer import cost_crystallizer
 
 _log = idaeslog.getLogger(__name__)
 
@@ -791,3 +792,7 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             var_dict[supersat_mem_name] = self.relative_supersaturation[j]
 
         return {"vars": var_dict}
+
+    @property
+    def default_costing_method(self):
+        return cost_crystallizer
