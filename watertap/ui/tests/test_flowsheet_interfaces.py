@@ -91,7 +91,8 @@ class TestFlowsheetInterface:
 
 @pytest.mark.parametrize("n_times", [2, 3], ids="{} times".format)
 def test_roundtrip_with_garbage_collection(fs_interface, n_times):
-    build_options={
+    build_options = (
+        {
             "Bypass": {
                 "name": "bypass option",
                 "display_name": "With Bypass",
@@ -105,6 +106,7 @@ def test_roundtrip_with_garbage_collection(fs_interface, n_times):
                 "value": "calculated",
             },
         },
+    )
     for attempt in range(n_times):
         fs_interface.build(build_options=build_options)
         data = fs_interface.dict()
