@@ -1113,7 +1113,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
 
     @pytest.mark.parametrize("water_recovery", water_recovery_list)
     @pytest.mark.component
-    def test_Pdrop_calculation(self, water_recovery):
+    def test_water_recovery_sweep(self, water_recovery):
         """Testing 1D-OARO with PressureChangeType.calculated option."""
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
