@@ -1018,7 +1018,6 @@ class TestParameterSweep:
             }
 
             read_dict = _read_output_h5(h5_results_file_name)
-            # print(read_dict)
             _assert_dictionary_correctness(truth_dict, read_dict)
 
     @pytest.mark.component
