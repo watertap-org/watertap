@@ -76,7 +76,7 @@ users to model the chemical and physical properties of simple systems without th
     # Display the results.
     m.fs.state_block[0].display()
 
- A portion of the displayed output is shown below.
+A portion of the displayed output is shown below.
 
 .. testoutput::
 
