@@ -83,8 +83,13 @@ def test_config_with_CP():
             ("Liq", "Na_+"): 1.33e-09,
             ("Liq", "Cl_-"): 2.03e-09,
         },
-        mw_data={"Ca_2+": 40e-3, "SO4_2-": 97e-3, "Na_+": 23e-3, "Cl_-": 35e-3, "Mg_2+": 24e-3}
-
+        mw_data={
+            "Ca_2+": 40e-3,
+            "SO4_2-": 97e-3,
+            "Na_+": 23e-3,
+            "Cl_-": 35e-3,
+            "Mg_2+": 24e-3,
+        },
     )
     m.fs.unit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
 
@@ -135,7 +140,13 @@ def test_config_without_CP():
             ("Liq", "Na_+"): 1.33e-09,
             ("Liq", "Cl_-"): 2.03e-09,
         },
-        mw_data={"Ca_2+": 40e-3, "SO4_2-": 97e-3, "Na_+": 23e-3, "Cl_-": 35e-3, "Mg_2+": 24e-3}
+        mw_data={
+            "Ca_2+": 40e-3,
+            "SO4_2-": 97e-3,
+            "Na_+": 23e-3,
+            "Cl_-": 35e-3,
+            "Mg_2+": 24e-3,
+        },
     )
     m.fs.unit = NanofiltrationDSPMDE0D(
         property_package=m.fs.properties,

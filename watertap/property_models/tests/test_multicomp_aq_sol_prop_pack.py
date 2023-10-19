@@ -238,9 +238,9 @@ def model2():
 
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
-        solute_list=["A", "B", "C", "D"], 
+        solute_list=["A", "B", "C", "D"],
         charge={"A": 1, "B": -2, "C": 2, "D": -1},
-        mw_data={"A": 10e-3, "B": 25e-3, "C": 100e-3, "D": 25e-3}
+        mw_data={"A": 10e-3, "B": 25e-3, "C": 100e-3, "D": 25e-3},
     )
 
     return m
@@ -305,7 +305,13 @@ def model3():
         },
         elec_mobility_calculation=ElectricalMobilityCalculation.EinsteinRelation,
         charge={"Ca_2+": 1, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
-        mw_data={"Ca_2+": 40e-3, "SO4_2-": 97e-3, "Na_+": 23e-3, "Cl_-": 35e-3, "Mg_2+": 24e-3}
+        mw_data={
+            "Ca_2+": 40e-3,
+            "SO4_2-": 97e-3,
+            "Na_+": 23e-3,
+            "Cl_-": 35e-3,
+            "Mg_2+": 24e-3,
+        },
     )
 
     m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
@@ -1413,7 +1419,7 @@ def model7():
             ("Liq", "D"): 200e-6,  # arbitrary
         },
         diffusivity_data={("Liq", "E"): 1.33e-9, ("Liq", "F"): 2.03e-9},
-        mw_data={"A": 1, "B": 1, "C": 1, "D": 1, "E": 1, "F": 1, "G": 1} # arbitrary
+        mw_data={"A": 1, "B": 1, "C": 1, "D": 1, "E": 1, "F": 1, "G": 1},  # arbitrary
     )
     # build state block
     m_hl.fs.sb = m_hl.fs.properties.build_state_block([0], defined_state=True)
@@ -1476,14 +1482,7 @@ def test_solute_list_longer_than_diff_data():
     m.fs.properties = MCASParameterBlock(
         solute_list=["A", "B", "C", "D", "E", "F", "G", "H"],
         charge={"E": 1, "F": -1},
-        mw_data={"A": 1, 
-                 "B": 1,
-                 "C": 1, 
-                 "D": 1, 
-                 "E": 1, 
-                 "F": 1, 
-                 "G": 1, 
-                 "H": 1},
+        mw_data={"A": 1, "B": 1, "C": 1, "D": 1, "E": 1, "F": 1, "G": 1, "H": 1},
         diffus_calculation=DiffusivityCalculation.none,
         molar_volume_data={
             ("Liq", "A"): 96e-6,  # tested for benzene
@@ -1535,8 +1534,7 @@ def test_compatibility_with_mixer():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
-        solute_list=["Na_+", "Cl_-"],
-        mw_data={"Na_+": 23, "Cl_-": 35}
+        solute_list=["Na_+", "Cl_-"], mw_data={"Na_+": 23, "Cl_-": 35}
     )
 
     m.fs.mixer1 = Mixer(
@@ -1551,7 +1549,9 @@ def test_compatibility_with_mixer():
             property_package=m.fs.properties,
         )
 
+
 c_list = [10e-10, 10e-9, 10e-8, 10e-7, 10e-6, 10e-5]
+
 
 @pytest.mark.parametrize("c", c_list)
 @pytest.mark.component
@@ -1999,14 +1999,18 @@ def test_no_solute_list_provided():
     m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(
         ConfigurationError,
-        match=re.escape("The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings).",
-    )):
+        match=re.escape(
+            "The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings).",
+        ),
+    ):
         m.fs.properties = MCASParameterBlock()
-    
+
     with pytest.raises(
         ConfigurationError,
-        match=re.escape("The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings).",
-    )):
+        match=re.escape(
+            "The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings).",
+        ),
+    ):
         m.fs.properties = MCASParameterBlock(solute_list=[])
 
 
@@ -2016,7 +2020,10 @@ def test_no_mw_data_provided():
     m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(
         ConfigurationError,
-        match=re.escape("The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively.")):
+        match=re.escape(
+            "The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively."
+        ),
+    ):
         m.fs.properties = MCASParameterBlock(solute_list=["foo"])
 
 
@@ -2024,9 +2031,8 @@ def test_no_mw_data_provided():
 def test_no_h2o_mw_data():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = MCASParameterBlock(solute_list=["NaCl"],
-                                         mw_data={"NaCl": 58e-3})
-    
+    m.fs.properties = MCASParameterBlock(solute_list=["NaCl"], mw_data={"NaCl": 58e-3})
+
     m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
 
     assert isinstance(m.fs.properties.mw_comp, Param)
