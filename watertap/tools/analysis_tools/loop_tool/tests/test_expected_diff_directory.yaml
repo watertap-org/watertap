@@ -1,0 +1,172 @@
+ro_diff_analysis:
+  membrane_cost:
+    simulation_setup:
+      build_defaults: {}
+      diff_params:
+        fs.costing.reverse_osmosis.membrane_cost:
+          diff_mode: percentile
+          diff_sample_type: UniformSample
+          nominal_lb: 25
+          nominal_ub: 30
+          num_samples: 1
+          param: fs.costing.reverse_osmosis.membrane_cost
+          relative_lb: -0.01
+          relative_ub: -0.01
+      diff_samples: 1
+      expected_num_samples: 1
+      force_rerun: null
+      h5dir: ro_diff_analysis/membrane_cost
+      init_defaults: {}
+      min_num_samples: null
+      num_samples: 2
+      optimize_defaults: {}
+      original_options_dict:
+        build_defaults:
+          erd_type: pump_as_turbine
+        diff_param_loop:
+          membrane_cost:
+            diff_mode: percentile
+            diff_sample_type: UniformSample
+            nominal_lb: 25
+            nominal_ub: 30
+            num_samples: 1
+            param: fs.costing.reverse_osmosis.membrane_cost
+            relative_lb: -0.01
+            relative_ub: -0.01
+          membrane_group:
+            factor_membrane_replacement:
+              diff_mode: percentile
+              diff_sample_type: UniformSample
+              nominal_lb: 0.15
+              nominal_ub: 300.2
+              num_samples: 1
+              param: fs.costing.reverse_osmosis.factor_membrane_replacement
+              relative_lb: -0.01
+              relative_ub: -0.01
+            membrane_cost:
+              diff_mode: percentile
+              diff_sample_type: UniformSample
+              nominal_lb: 25
+              nominal_ub: 30
+              num_samples: 1
+              param: fs.costing.reverse_osmosis.membrane_cost
+              relative_lb: -0.01
+              relative_ub: -0.01
+          sweep_reference_params:
+            factor_membrane_replacement:
+              lower_limit: 0.15
+              num_samples: 2
+              param: fs.costing.reverse_osmosis.factor_membrane_replacement
+              type: UniformSample
+              upper_limit: 0.2
+            membrane_cost:
+              lower_limit: 25
+              num_samples: 2
+              param: fs.costing.reverse_osmosis.membrane_cost
+              type: UniformSample
+              upper_limit: 30
+            num_samples: 2
+        initialize_before_sweep: false
+      sweep_params:
+        fs.costing.reverse_osmosis.factor_membrane_replacement:
+          lower_limit: 0.15
+          num_samples: 2
+          param: fs.costing.reverse_osmosis.factor_membrane_replacement
+          type: UniformSample
+          upper_limit: 0.2
+        fs.costing.reverse_osmosis.membrane_cost:
+          lower_limit: 25
+          num_samples: 2
+          param: fs.costing.reverse_osmosis.membrane_cost
+          type: UniformSample
+          upper_limit: 30
+  membrane_group:
+    simulation_setup:
+      build_defaults: {}
+      diff_params:
+        fs.costing.reverse_osmosis.factor_membrane_replacement:
+          diff_mode: percentile
+          diff_sample_type: UniformSample
+          nominal_lb: 0.15
+          nominal_ub: 300.2
+          num_samples: 1
+          param: fs.costing.reverse_osmosis.factor_membrane_replacement
+          relative_lb: -0.01
+          relative_ub: -0.01
+        fs.costing.reverse_osmosis.membrane_cost:
+          diff_mode: percentile
+          diff_sample_type: UniformSample
+          nominal_lb: 25
+          nominal_ub: 30
+          num_samples: 1
+          param: fs.costing.reverse_osmosis.membrane_cost
+          relative_lb: -0.01
+          relative_ub: -0.01
+      diff_samples: 1
+      expected_num_samples: null
+      force_rerun: null
+      h5dir: ro_diff_analysis/membrane_group
+      init_defaults: {}
+      min_num_samples: null
+      num_samples: 2
+      optimize_defaults: {}
+      original_options_dict:
+        build_defaults:
+          erd_type: pump_as_turbine
+        diff_param_loop:
+          membrane_cost:
+            diff_mode: percentile
+            diff_sample_type: UniformSample
+            nominal_lb: 25
+            nominal_ub: 30
+            num_samples: 1
+            param: fs.costing.reverse_osmosis.membrane_cost
+            relative_lb: -0.01
+            relative_ub: -0.01
+          membrane_group:
+            factor_membrane_replacement:
+              diff_mode: percentile
+              diff_sample_type: UniformSample
+              nominal_lb: 0.15
+              nominal_ub: 300.2
+              num_samples: 1
+              param: fs.costing.reverse_osmosis.factor_membrane_replacement
+              relative_lb: -0.01
+              relative_ub: -0.01
+            membrane_cost:
+              diff_mode: percentile
+              diff_sample_type: UniformSample
+              nominal_lb: 25
+              nominal_ub: 30
+              num_samples: 1
+              param: fs.costing.reverse_osmosis.membrane_cost
+              relative_lb: -0.01
+              relative_ub: -0.01
+          sweep_reference_params:
+            factor_membrane_replacement:
+              lower_limit: 0.15
+              num_samples: 2
+              param: fs.costing.reverse_osmosis.factor_membrane_replacement
+              type: UniformSample
+              upper_limit: 0.2
+            membrane_cost:
+              lower_limit: 25
+              num_samples: 2
+              param: fs.costing.reverse_osmosis.membrane_cost
+              type: UniformSample
+              upper_limit: 30
+            num_samples: 2
+        initialize_before_sweep: false
+      sweep_params:
+        fs.costing.reverse_osmosis.factor_membrane_replacement:
+          lower_limit: 0.15
+          num_samples: 2
+          param: fs.costing.reverse_osmosis.factor_membrane_replacement
+          type: UniformSample
+          upper_limit: 0.2
+        fs.costing.reverse_osmosis.membrane_cost:
+          lower_limit: 25
+          num_samples: 2
+          param: fs.costing.reverse_osmosis.membrane_cost
+          type: UniformSample
+          upper_limit: 30
