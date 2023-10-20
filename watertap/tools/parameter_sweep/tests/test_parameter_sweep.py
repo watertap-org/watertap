@@ -260,9 +260,9 @@ class TestParameterSweep:
         C_values = nn_C + np.arange(nn_C)
 
         param_dict = dict()
-        param_dict["var_A"] = PredeterminedFixedSample(A_param, A_values, nn_A)
-        param_dict["var_B"] = PredeterminedFixedSample(B_param, B_values, nn_B)
-        param_dict["var_C"] = PredeterminedFixedSample(C_param, C_values, nn_C)
+        param_dict["var_A"] = PredeterminedFixedSample(A_param, A_values)
+        param_dict["var_B"] = PredeterminedFixedSample(B_param, B_values)
+        param_dict["var_C"] = PredeterminedFixedSample(C_param, C_values)
 
         global_combo_array = ps._build_combinations(
             param_dict, SamplingType.FIXED, None
@@ -354,9 +354,9 @@ class TestParameterSweep:
         C_values = 20.0 + A_values
 
         param_dict = dict()
-        param_dict["var_A"] = PredeterminedRandomSample(A_param, A_values, nn)
-        param_dict["var_B"] = PredeterminedRandomSample(B_param, B_values, nn)
-        param_dict["var_C"] = PredeterminedRandomSample(C_param, C_values, nn)
+        param_dict["var_A"] = PredeterminedRandomSample(A_param, A_values)
+        param_dict["var_B"] = PredeterminedRandomSample(B_param, B_values)
+        param_dict["var_C"] = PredeterminedRandomSample(C_param, C_values)
 
         global_combo_array = ps._build_combinations(param_dict, SamplingType.RANDOM, nn)
 

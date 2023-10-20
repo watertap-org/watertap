@@ -101,9 +101,9 @@ class PredeterminedFixedSample(FixedSample):
     def sample(self):
         return self.values
 
-    def setup(self, values, num_samples):
+    def setup(self, values):
         self.values = values
-        self.num_samples = num_samples
+        self.num_samples = len(values)
 
 
 class UniformSample(RandomSample):
@@ -130,9 +130,9 @@ class PredeterminedRandomSample(RandomSample):
     def sample(self):
         return self.values
 
-    def setup(self, values, num_samples):
+    def setup(self, values):
         self.values = values
-        self.num_samples = num_samples
+        self.num_samples = len(values)
 
 
 class LatinHypercubeSample(_Sample):
