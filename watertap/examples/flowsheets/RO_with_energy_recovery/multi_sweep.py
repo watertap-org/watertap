@@ -16,21 +16,22 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
 )
 import idaes.core.util.scaling as iscale
 
+
 def set_up_sensitivity():
     outputs = {}
 
-
-
     m = RO.build(erd_type=ERDtype.pump_as_turbine)
-    RO.set_operating_conditions(m,
-                                water_recovery=0.7,
-                                over_pressure=0.3,
-                                flow_vol=1e-3,
-                                salt_mass_conc=5,)
+    RO.set_operating_conditions(
+        m,
+        water_recovery=0.7,
+        over_pressure=0.3,
+        flow_vol=1e-3,
+        salt_mass_conc=5,
+    )
     RO.initialize_system(m)
     RO.solve(m)
     m.fs.feed.properties[0].flow_mass_phase_comp.unfix()
-    m.fs.feed.properties[0].flow_vol_phase['Liq'].fix()
+    m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix()
     RO.optimize_set_up(m)
     RO.solve(m)
@@ -72,10 +73,14 @@ def run_analysis(
         m.fs.RO.recovery_mass_phase_comp.unfix()
 
         sweep_params["mass_concentration"] = LinearSample(
-            m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"], 0.963, 4.816, nx
+            m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
+            0.963,
+            4.816,
+            nx,
         )
         sweep_params["volumetric_recovery"] = LinearSample(
-            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.9, nx)
+            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.9, nx
+        )
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 

@@ -173,7 +173,7 @@ def build(erd_type=ERDtype.pressure_exchanger):
     # set unit model values
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
-    
+
     if erd_type == ERDtype.pressure_exchanger:
         iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
         iscale.set_scaling_factor(m.fs.PXR.low_pressure_side.work, 1e-3)
@@ -185,7 +185,7 @@ def build(erd_type=ERDtype.pressure_exchanger):
         iscale.set_scaling_factor(m.fs.ERD.control_volume.work, 1e-3)
     else:
         erd_type_not_found(erd_type)
- 
+
     return m
 
 
@@ -206,20 +206,19 @@ def set_operating_conditions(
     m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
     # properties (cannot be fixed for initialization routines, must calculate the state variables)
-   # scaling
+    # scaling
     # set default property values
 
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1000 * flow_vol, index=("Liq", "H2O")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1/ flow_vol / salt_mass_conc, index=("Liq", "NaCl")
+        "flow_mass_phase_comp", 1 / flow_vol / salt_mass_conc, index=("Liq", "NaCl")
     )
 
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
-
 
     # unused scaling factors needed by IDAES base costing module
     # calculate and propagate scaling factors
@@ -229,7 +228,6 @@ def set_operating_conditions(
     # print("----------------   badly_scaled_var_list   ----------------")
     # for x in badly_scaled_var_list:
     #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
 
     m.fs.feed.properties.calculate_state(
         var_args={
