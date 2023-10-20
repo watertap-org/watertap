@@ -31,6 +31,7 @@ from idaes.core.util.misc import add_object_reference
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
+from watertap.costing.unit_models.electroNP import cost_electroNP
 
 __author__ = "Chenyu Wang"
 
@@ -258,3 +259,7 @@ class ElectroNPZOdata(SeparatorData):
         for t, v in self.MgCl2_flowrate.items():
             sf = iscale.get_scaling_factor(self.magnesium_chloride_dosage)
             iscale.set_scaling_factor(v, sf)
+
+    @property
+    def default_costing_method(self):
+        return cost_electroNP

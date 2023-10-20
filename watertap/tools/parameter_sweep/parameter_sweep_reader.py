@@ -90,8 +90,70 @@ class ParameterSweepReader:
         return self._dict_to_params(m, input_dict)
 
     @staticmethod
-    def _dict_to_params(m, input_dict):
+    def _dict_to_diff_spec(m, input_dict):
+        """Reads and stores a yaml file as a dictionary
+        Args:
+            dict (str):
+                The dictionary of paramters that are turned into paramter sweep samples
+        Returns:
+            input_dict (dict):
+                The result of reading the yaml file and translating
+                its structure into a dictionary.
+        """
+        diff_spec = {}
 
+        for param, values in input_dict.items():
+            # Find the specified component on the model
+            component = m.find_component(values["param"])
+
+            if component is None:
+                raise ValueError(f'Could not acccess attribute {values["param"]}')
+
+            if values["diff_sample_type"] == "NormalSample":
+                diff_spec[param] = {
+                    "diff_mode": values["diff_mode"],
+                    "diff_sample_type": NormalSample,
+                    "std_dev": values["std_dev"],
+                    "pyomo_object": component,
+                }
+
+            elif values["diff_sample_type"] == "UniformSample":
+                if values["diff_mode"] == "percentile":
+                    nominal_lb = values["nominal_lb"]
+                    nominal_ub = values["nominal_ub"]
+                elif values["diff_mode"] == "sum" or values["diff_mode"] == "product":
+                    nominal_lb = None
+                    nominal_ub = None
+                diff_spec[param] = {
+                    "diff_mode": values["diff_mode"],
+                    "diff_sample_type": UniformSample,
+                    "relative_lb": values["relative_lb"],
+                    "relative_ub": values["relative_ub"],
+                    "nominal_lb": nominal_lb,
+                    "nominal_ub": nominal_ub,
+                    "pyomo_object": component,
+                }
+            elif values["diff_sample_type"] == "LinearSample":
+                if values["diff_mode"] == "percentile":
+                    nominal_lb = values["nominal_lb"]
+                    nominal_ub = values["nominal_ub"]
+                elif values["diff_mode"] == "sum" or values["diff_mode"] == "product":
+                    nominal_lb = None
+                    nominal_ub = None
+                diff_spec[param] = {
+                    "diff_mode": values["diff_mode"],
+                    "diff_sample_type": LinearSample,
+                    "relative_lb": values["relative_lb"],
+                    "relative_ub": values["relative_ub"],
+                    "nominal_lb": nominal_lb,
+                    "nominal_ub": nominal_ub,
+                    "pyomo_object": component,
+                }
+
+        return diff_spec
+
+    @staticmethod
+    def _dict_to_params(m, input_dict):
         """Reads and stores a yaml file as a dictionary
 
         Args:
@@ -107,7 +169,6 @@ class ParameterSweepReader:
         sweep_params = {}
 
         for param, values in input_dict.items():
-
             # Find the specified component on the model
             component = m.find_component(values["param"])
 
@@ -194,7 +255,6 @@ class ParameterSweepReader:
         self._set_values_from_dict(m, input_dict, verbose)
 
     def _set_values_from_dict(self, m, input_dict, verbose=False):
-
         fail_count = 0
 
         for key, default_value in input_dict.items():

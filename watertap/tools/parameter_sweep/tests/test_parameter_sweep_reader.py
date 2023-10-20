@@ -200,3 +200,81 @@ class TestInputParser:
             psr.set_defaults_from_yaml(m, filename)
 
         os.remove(filename)
+
+    @pytest.mark.unit
+    def test_dict_to_diff(self, model):
+        diff_spec_dict = {
+            "fs.x": {
+                "diff_mode": "percentile",
+                "diff_sample_type": "UniformSample",
+                "param": "fs.x",
+                "relative_lb": -0.01,
+                "relative_ub": -0.01,
+                "nominal_lb": 15,
+                "nominal_ub": 30,
+                "num_samples": 1,
+            },
+        }
+        diff_spec = ParameterSweepReader()._dict_to_diff_spec(model, diff_spec_dict)
+        for key in diff_spec_dict:
+            assert key in diff_spec
+        diff_spec_dict = {
+            "fs.x": {
+                "diff_mode": "percentile",
+                "diff_sample_type": "LinearSample",
+                "param": "fs.x",
+                "relative_lb": -0.01,
+                "relative_ub": -0.01,
+                "nominal_lb": 15,
+                "nominal_ub": 30,
+                "num_samples": 1,
+            },
+        }
+        diff_spec = ParameterSweepReader()._dict_to_diff_spec(model, diff_spec_dict)
+        for key in diff_spec_dict:
+            assert key in diff_spec
+        diff_spec_dict = {
+            "fs.x": {
+                "diff_mode": "sum",
+                "diff_sample_type": "UniformSample",
+                "param": "fs.x",
+                "relative_lb": -0.01,
+                "relative_ub": -0.01,
+                "nominal_lb": 15,
+                "nominal_ub": 30,
+                "num_samples": 1,
+            },
+        }
+        diff_spec = ParameterSweepReader()._dict_to_diff_spec(model, diff_spec_dict)
+        diff_spec_dict["fs.x"]["relative_lb"] = None
+        diff_spec_dict["fs.x"]["relative_ub"] = None
+        for key in diff_spec_dict:
+            assert key in diff_spec
+        diff_spec_dict = {
+            "fs.x": {
+                "diff_mode": "sum",
+                "diff_sample_type": "LinearSample",
+                "param": "fs.x",
+                "relative_lb": -0.01,
+                "relative_ub": -0.01,
+                "nominal_lb": 15,
+                "nominal_ub": 30,
+                "num_samples": 1,
+            },
+        }
+        diff_spec = ParameterSweepReader()._dict_to_diff_spec(model, diff_spec_dict)
+        diff_spec_dict["fs.x"]["relative_lb"] = None
+        diff_spec_dict["fs.x"]["relative_ub"] = None
+        for key in diff_spec_dict:
+            assert key in diff_spec
+        diff_spec_dict = {
+            "fs.x": {
+                "diff_mode": "percentile",
+                "diff_sample_type": "NormalSample",
+                "param": "fs.x",
+                "std_dev": 0.4,
+            },
+        }
+        diff_spec = ParameterSweepReader()._dict_to_diff_spec(model, diff_spec_dict)
+        for key in diff_spec_dict:
+            assert key in diff_spec

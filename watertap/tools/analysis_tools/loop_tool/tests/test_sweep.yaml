@@ -1,0 +1,30 @@
+ro_analysis:
+  initialize_before_sweep: False
+  build_defaults:
+    erd_type: pump_as_turbine
+  build_outputs_kwargs:
+    LCOW: fs.costing.LCOW
+  build_loop:
+    erd_type:
+      - pump_as_turbine
+      - pressure_exchanger
+    sweep_param_loop:
+      membrane_cost:
+        type: LinearSample
+        param: fs.costing.reverse_osmosis.membrane_cost
+        lower_limit: 20
+        upper_limit: 30
+        num_samples: 3
+      membrane_group:
+        membrane_cost:
+          type: LinearSample
+          param: fs.costing.reverse_osmosis.membrane_cost
+          lower_limit: 25
+          upper_limit: 30
+          num_samples: 2
+        factor_membrane_replacement:
+          type: LinearSample
+          param: fs.costing.reverse_osmosis.factor_membrane_replacement
+          lower_limit: 0.15
+          upper_limit: 0.2
+          num_samples: 2
