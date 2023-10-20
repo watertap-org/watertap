@@ -68,7 +68,7 @@ users to model the chemical and physical properties of simple systems without th
     solver = get_solver()
 
     # Solve the model.
-    results = solver.solve(m, tee=True)
+    results = solver.solve(m)
 
     # Assert that the solution is "optimal"
     assert_optimal_termination(results)
