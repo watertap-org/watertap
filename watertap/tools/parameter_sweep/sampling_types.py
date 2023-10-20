@@ -22,6 +22,7 @@ class SamplingType(Enum):
     FIXED = auto()
     RANDOM = auto()
     RANDOM_LHS = auto()
+    PREDETERMINED = auto()
 
 
 class _Sample(ABC):
@@ -96,6 +97,13 @@ class ReverseGeomSample(FixedSample):
         self.upper_limit = upper_limit
         self.num_samples = num_samples
 
+class PredeterminedFixedSample(FixedSample):
+    def sample(self):
+        return self.values
+
+    def setup(self, values, num_samples):
+        self.values = values
+        self.num_samples = num_samples
 
 class UniformSample(RandomSample):
     def sample(self):
@@ -114,6 +122,14 @@ class NormalSample(RandomSample):
     def setup(self, mean, sd, num_samples):
         self.mean = mean
         self.sd = sd
+        self.num_samples = num_samples
+
+class PredeterminedRandomSample(RandomSample):
+    def sample(self):
+        return self.values
+
+    def setup(self, values, num_samples):
+        self.values = values
         self.num_samples = num_samples
 
 

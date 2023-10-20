@@ -455,7 +455,7 @@ class _ParameterSweepBase(ABC):
         sampling_type = None
 
         # Check the list of parameters to make sure they are valid
-        for k in sweep_params:
+        for k in sweep_params.keys():
             # Convert to using Sample class
             if isinstance(sweep_params[k], (list, tuple)):
                 sweep_params[k] = LinearSample(*sweep_params[k])
