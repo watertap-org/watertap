@@ -57,6 +57,6 @@ Alternatively, the URL can be generated manually according to the following sche
 
    https://mybinder.org/v2/gh/<github-org-or-user-name>/<github-repo-name>/<git-ref>?labpath=<path-to-notebook>
 
-Example, for branch ``mybranch`` of ``myuser``'s fork of this repository, pointing to the ``tutorials/introduction.ipynb`` notebook file::
+Example, for branch ``mybranch`` of ``myuser``'s fork of this repository, pointing to the ``tutorials/my-tutorial.ipynb`` notebook file::
 
-   https://mybinder.org/v2/gh/myuser/watertap/mybranch?labpath=tutorials/introduction.ipynb
+   https://mybinder.org/v2/gh/myuser/watertap/mybranch?labpath=tutorials/my-tutorial.ipynb
