@@ -271,7 +271,7 @@ class TestParameterSweep:
         assert np.shape(global_combo_array)[0] == nn_A * nn_B * nn_C
         assert np.shape(global_combo_array)[1] == len(param_dict)
         assert (global_combo_array[0] == np.array([nn_A, nn_B, nn_C])).all()
-        assert (global_combo_array[-1] == 2*np.array([nn_A, nn_B, nn_C])-1).all
+        assert (global_combo_array[-1] == 2 * np.array([nn_A, nn_B, nn_C]) - 1).all
 
     @pytest.mark.component
     def test_status_publishing(self):
@@ -348,7 +348,7 @@ class TestParameterSweep:
         A_param = pyo.Param(initialize=0.0, mutable=True)
         B_param = pyo.Param(initialize=0.0, mutable=True)
         C_param = pyo.Param(initialize=0.0, mutable=True)
-        
+
         A_values = np.arange(nn)
         B_values = 10.0 + A_values
         C_values = 20.0 + A_values
@@ -357,7 +357,7 @@ class TestParameterSweep:
         param_dict["var_A"] = PredeterminedRandomSample(A_param, A_values, nn)
         param_dict["var_B"] = PredeterminedRandomSample(B_param, B_values, nn)
         param_dict["var_C"] = PredeterminedRandomSample(C_param, C_values, nn)
-        
+
         global_combo_array = ps._build_combinations(param_dict, SamplingType.RANDOM, nn)
 
         assert np.shape(global_combo_array)[0] == nn
