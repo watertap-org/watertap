@@ -26,7 +26,7 @@ def set_up_sensitivity():
         water_recovery=0.7,
         over_pressure=0.3,
         flow_vol=1e-3,
-        salt_mass_conc=5,
+        salt_mass_conc=5e-3,
     )
     RO.initialize_system(m)
     RO.solve(m)
