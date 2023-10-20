@@ -356,7 +356,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None):
         output_category="Process cost and operating metrics",
     )
     try:
-        if build_options["Bypass"].value == "true":
+        if build_options["Bypass"]["value"] == "true":
             exports.add(
                 obj=fs.by_pass_splitter.split_fraction[0, "bypass"],
                 name="NF bypass",
@@ -403,10 +403,10 @@ def export_variables(flowsheet=None, exports=None, build_options=None):
 def build_flowsheet(build_options=None):
     # build and solve initial flowsheet
     if build_options is not None:
-        if build_options["Bypass"].value == "true":  # build with bypass
+        if build_options["Bypass"]["value"] == "true":  # build with bypass
             solver = get_solver()
             m = nf_with_bypass.build()
-            concentrationType = build_options["ConcentrationPolarization"].value
+            concentrationType = build_options["ConcentrationPolarization"]["value"]
             # print(f'setting concentration polarization type to {concentrationType}')
             m.fs.NF.nfUnit.config.concentration_polarization_type = (
                 ConcentrationPolarizationType[concentrationType]
@@ -416,7 +416,7 @@ def build_flowsheet(build_options=None):
         else:  # build without bypass
             solver = get_solver()
             m = nf.build()
-            concentrationType = build_options["ConcentrationPolarization"].value
+            concentrationType = build_options["ConcentrationPolarization"]["value"]
             # print(f'setting concentration polarization type to {concentrationType}')
             m.fs.NF.nfUnit.config.concentration_polarization_type = (
                 ConcentrationPolarizationType[concentrationType]
@@ -435,7 +435,7 @@ def build_flowsheet(build_options=None):
 
 
 def get_diagram(build_options):
-    if build_options["Bypass"].value == "true":
+    if build_options["Bypass"]["value"] == "true":
         return "nf_with_bypass_ui.png"
     else:
         return "nf_ui.png"
