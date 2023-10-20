@@ -14,21 +14,37 @@ import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recov
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     ERDtype,
 )
+import idaes.core.util.scaling as iscale
 
-
-def set_up_sensitivity(m):
+def set_up_sensitivity():
     outputs = {}
-    optimize_kwargs = {"fail_flag": False}
-    opt_function = RO.solve
 
+
+
+    m = RO.build(erd_type=ERDtype.pump_as_turbine)
+    RO.set_operating_conditions(m,
+                                water_recovery=0.7,
+                                over_pressure=0.3,
+                                flow_vol=1e-3,
+                                salt_mass_conc=5,)
+    RO.initialize_system(m)
+    RO.solve(m)
+    m.fs.feed.properties[0].flow_mass_phase_comp.unfix()
+    m.fs.feed.properties[0].flow_vol_phase['Liq'].fix()
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix()
+    RO.optimize_set_up(m)
+    RO.solve(m)
+    print("\n***---Optimization results---***")
+    RO.display_system(m)
+    RO.display_design(m)
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
 
-    return outputs, optimize_kwargs, opt_function
+    return outputs, m
 
 
 def run_analysis(
-    case_num=1, nx=11, interpolate_nan_outputs=True, withERD=True, output_filename=None
+    case_num=1, nx=10, interpolate_nan_outputs=True, withERD=True, output_filename=None
 ):
 
     if output_filename is None:
@@ -38,32 +54,28 @@ def run_analysis(
     case_num = int(case_num)
     nx = int(nx)
     interpolate_nan_outputs = bool(interpolate_nan_outputs)
-    withERD = bool(withERD)
+    # withERD = bool(withERD)
 
-    # select flowsheet configuration
-    if withERD:
-        m = RO.main(erd_type=ERDtype.pump_as_turbine)[0]
-    else:
-        m = RO.main(erd_type=ERDtype.pressure_exchanger)[0]
+    # # select flowsheet configuration
+    # if withERD:
+    #     m = RO.main(erd_type=ERDtype.pump_as_turbine)[0]
+    # else:
+    #     m = RO.main(erd_type=ERDtype.pressure_exchanger)[0]
 
-    outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
+    outputs, m = set_up_sensitivity()
 
     # choose parameter sweep from case structure
     sweep_params = {}
 
     if case_num == 1:
-        m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"].unfix()
-        m.fs.feed.properties[0].flow_vol_phase["Liq"].unfix()
+        # Need to unfix mass recovery of water (or simply sweep across it instead of recovery_vol)
+        m.fs.RO.recovery_mass_phase_comp.unfix()
 
-        sweep_params["salt_concentration"] = LinearSample(
-            m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"], 0.001, 0.01, nx
+        sweep_params["mass_concentration"] = LinearSample(
+            m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"], 0.963, 4.816, nx
         )
-        sweep_params["flowrate"] = LinearSample(
-            m.fs.feed.properties[0].flow_vol_phase["Liq"],
-            0.03,
-            0.11,
-            nx,
-        )
+        sweep_params["volumetric_recovery"] = LinearSample(
+            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.9, nx)
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 
@@ -72,8 +84,8 @@ def run_analysis(
         sweep_params,
         outputs,
         csv_results_file_name=output_filename,
-        optimize_function=opt_function,
-        optimize_kwargs=optimize_kwargs,
+        optimize_function=RO.solve,
+        # optimize_kwargs=optimize_kwargs,
         interpolate_nan_outputs=interpolate_nan_outputs,
     )
 
@@ -82,3 +94,4 @@ def run_analysis(
 
 if __name__ == "__main__":
     results, sweep_params, m = run_analysis()
+    print(results)
