@@ -93,19 +93,19 @@ A portion of the displayed output is shown below.
            Size=3, Index=fs.state_block[0].flow_mol_phase_comp_index, Units=mol/s
            Key             : Lower : Value : Upper : Fixed : Stale : Domain
            ('Liq', 'Cl_-') :     0 : 0.483 :  None :  True :  True : NonNegativeReals
-           ('Liq', 'H2O') :     0 :  53.8 :  None :  True :  True : NonNegativeReals
+               ('Liq', 'H2O') :     0 :  53.8 :  None :  True :  True : NonNegativeReals
            ('Liq', 'Na_+') :     0 : 0.483 :  None :  True :  True : NonNegativeReals
        flow_mass_phase_comp : Component Mass flowrate
            Size=3, Index=fs.state_block[0].flow_mass_phase_comp_index, Units=kg/s
            Key             : Lower : Value                : Upper : Fixed : Stale : Domain
            ('Liq', 'Cl_-') :     0 :             0.016905 :  None : False : False :  Reals
-           ('Liq', 'H2O') :     0 :   0.9683999999999999 :  None : False : False :  Reals
+               ('Liq', 'H2O') :     0 :   0.9683999999999999 :  None : False : False :  Reals
            ('Liq', 'Na_+') :     0 : 0.011108999999999999 :  None : False : False :  Reals
        conc_mass_phase_comp : Mass concentration
            Size=3, Index=fs.state_block[0].conc_mass_phase_comp_index, Units=kg/m**3
            Key             : Lower : Value             : Upper  : Fixed : Stale : Domain
            ('Liq', 'Cl_-') :     0 : 16.96583950044861 : 2000.0 : False : False :  Reals
-           ('Liq', 'H2O') :     0 : 971.8851802563994 : 2000.0 : False : False :  Reals
+               ('Liq', 'H2O') :     0 : 971.8851802563994 : 2000.0 : False : False :  Reals
            ('Liq', 'Na_+') :     0 : 11.14898024315194 : 2000.0 : False : False :  Reals
        dens_mass_phase : Mass density
            Size=1, Index=fs.state_block[0].dens_mass_phase_index, Units=kg/m**3
@@ -115,7 +115,7 @@ A portion of the displayed output is shown below.
            Size=3, Index=fs.state_block[0].mass_frac_phase_comp_index, Units=dimensionless
            Key             : Lower : Value                : Upper : Fixed : Stale : Domain
            ('Liq', 'Cl_-') :     0 :  0.01696583950044861 : 1.001 : False : False :  Reals
-           ('Liq', 'H2O') :     0 :   0.9718851802563995 : 1.001 : False : False :  Reals
+               ('Liq', 'H2O') :     0 :   0.9718851802563995 : 1.001 : False : False :  Reals
            ('Liq', 'Na_+') :     0 : 0.011148980243151932 : 1.001 : False : False :  Reals
        flow_vol_phase : Volumetric flow rate
            Size=1, Index=fs.properties.phase_list, Units=m**3/s
@@ -142,7 +142,7 @@ A portion of the displayed output is shown below.
            Size=3, Index=fs.state_block[0].conc_mol_phase_comp_index, Units=mol/m**3
            Key             : Lower : Value              : Upper : Fixed : Stale : Domain
            ('Liq', 'Cl_-') :     0 : 484.73827144138886 :  None : False : False :  Reals
-           ('Liq', 'H2O') :     0 :  53993.62112535552 :  None : False : False :  Reals
+               ('Liq', 'H2O') :     0 :  53993.62112535552 :  None : False : False :  Reals
            ('Liq', 'Na_+') :     0 : 484.73827144138886 :  None : False : False :  Reals
        ...
 
@@ -152,7 +152,7 @@ However, the user can select component mass flowrate as the flow basis instead a
 .. testcode::
 
     # Import MaterialFlowBasis from the MCAS property model
-    from watertap.property_models.multicomp_aq_sol_prop_pack as props import MaterialFlowBasis
+    from watertap.property_models.multicomp_aq_sol_prop_pack import MaterialFlowBasis
 
     # Create a concrete model and flowsheet.
     m = ConcreteModel()
