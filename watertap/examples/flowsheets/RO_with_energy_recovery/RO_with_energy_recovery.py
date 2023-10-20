@@ -68,7 +68,7 @@ def main(erd_type=ERDtype.pressure_exchanger):
 
     # optimize and display
     optimize_set_up(m)
-    solve(m, solver=solver)
+    results = solve(m, solver=solver)
 
     print("\n***---Simulation results---***")
     display_system(m)
@@ -78,7 +78,7 @@ def main(erd_type=ERDtype.pressure_exchanger):
     else:
         pass
 
-    return m
+    return m, results
 
 
 def build(erd_type=ERDtype.pressure_exchanger):
@@ -171,9 +171,13 @@ def build(erd_type=ERDtype.pressure_exchanger):
 
     # scaling
     # set default property values
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    flow_vol = 1e-3
+    salt_mass_conc = 0.0075
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
+        "flow_mass_phase_comp", 1000 * flow_vol, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1000 * flow_vol / salt_mass_conc, index=("Liq", "NaCl")
     )
     # set unit model values
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
@@ -195,6 +199,11 @@ def build(erd_type=ERDtype.pressure_exchanger):
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
 
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print("----------------   badly_scaled_var_list   ----------------")
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
     return m
 
 
@@ -202,6 +211,8 @@ def set_operating_conditions(
     m,
     water_recovery=0.5,
     over_pressure=0.3,
+    flow_vol=1e-3,
+    salt_mass_conc=0.0075,
     solver=None,
 ):
 
@@ -215,8 +226,8 @@ def set_operating_conditions(
     # properties (cannot be fixed for initialization routines, must calculate the state variables)
     m.fs.feed.properties.calculate_state(
         var_args={
-            ("flow_vol_phase", "Liq"): 1e-3,  # feed volumetric flow rate [m3/s]
-            ("mass_frac_phase_comp", ("Liq", "NaCl")): 0.035,
+            ("flow_vol_phase", "Liq"): flow_vol,  # feed volumetric flow rate [m3/s]
+            ("mass_frac_phase_comp", ("Liq", "NaCl")): salt_mass_conc,
         },  # feed NaCl mass fraction [-]
         hold_state=True,  # fixes the calculated component mass flow rates
     )
@@ -499,6 +510,12 @@ def display_system(m):
         m.fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"].value / feed_flow_mass
     )
     print("Feed: %.2f kg/s, %.0f ppm" % (feed_flow_mass, feed_mass_frac_NaCl * 1e6))
+
+    salt_concentration = value(
+        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
+        / m.fs.feed.properties[0].flow_vol_phase["Liq"]
+    )
+    print(f"Feed salt concentration: {salt_concentration} g/L")
 
     prod_flow_mass = sum(
         m.fs.product.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "NaCl"]
