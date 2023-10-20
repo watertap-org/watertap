@@ -1,3 +1,5 @@
+.. _mcas_tech_ref:
+
 Multi-Component Aqueous Solution (MCAS) Property Package
 ========================================================
 
