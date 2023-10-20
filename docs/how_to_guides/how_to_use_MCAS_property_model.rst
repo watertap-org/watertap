@@ -2,7 +2,7 @@ How to use the multicomponent aqueous solution (MCAS) property model
 --------------------------------------------------------------------
 
 The example below shows how to use the MCAS property model and display outputs for a state block. Property models allow
-users to model the chemical and physical properties of simple systems without the use of unit models.
+users to model the chemical and physical properties of simple systems without the use of unit models. For more details on the MCAS property model, see its technical reference.
 
 .. testsetup::
 
