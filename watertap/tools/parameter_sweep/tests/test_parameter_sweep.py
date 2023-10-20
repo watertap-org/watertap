@@ -271,7 +271,7 @@ class TestParameterSweep:
         assert np.shape(global_combo_array)[0] == nn_A * nn_B * nn_C
         assert np.shape(global_combo_array)[1] == len(param_dict)
         assert (global_combo_array[0] == np.array([nn_A, nn_B, nn_C])).all()
-        assert (global_combo_array[-1] == 2 * np.array([nn_A, nn_B, nn_C]) - 1).all
+        assert (global_combo_array[-1] == 2 * np.array([nn_A, nn_B, nn_C]) - 1).all()
 
     @pytest.mark.component
     def test_status_publishing(self):
