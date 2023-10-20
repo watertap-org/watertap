@@ -395,6 +395,12 @@ class MCASParameterData(PhysicalParameterBlock):
             raise ConfigurationError(
                 "The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively."
             )
+        missing_mw=[]
+        for i in self.config.solute_list:
+            if i not in self.config.mw_data.keys():
+                missing_mw.append(i)
+        if len(missing_mw) > 0:
+            raise ConfigurationError(f"Molecular weight data was not provided for {', '.join(mw for mw in missing_mw)}. Provide the missing molecular weight data to the mw_data argument.")
 
         # TODO: consider turning parameters into variables for future param estimation
         mw_temp = {"H2O": 18e-3}

@@ -2026,6 +2026,23 @@ def test_no_mw_data_provided():
     ):
         m.fs.properties = MCASParameterBlock(solute_list=["foo"])
 
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "Molecular weight data was not provided for bar. Provide the missing molecular weight data to the mw_data argument."
+        ),
+    ):
+        m.fs.properties_partial_data = MCASParameterBlock(solute_list=["foo", "bar"],
+                                                          mw_data={"foo": 1})
+    
+    with pytest.raises(
+    ConfigurationError,
+    match=re.escape(
+        "Molecular weight data was not provided for foo, fubar. Provide the missing molecular weight data to the mw_data argument."
+        ),
+    ):
+        m.fs.properties_partial_data2 = MCASParameterBlock(solute_list=["foo", "bar", "fubar"],
+                                                            mw_data={"bar": 1})
 
 @pytest.mark.unit
 def test_no_h2o_mw_data():

@@ -101,49 +101,6 @@ A portion of the displayed output is shown below.
            ('Liq', 'Cl_-') :     0 :             0.016905 :  None : False : False :  Reals
             ('Liq', 'H2O') :     0 :   0.9683999999999999 :  None : False : False :  Reals
            ('Liq', 'Na_+') :     0 : 0.011108999999999999 :  None : False : False :  Reals
-       conc_mass_phase_comp : Mass concentration
-           Size=3, Index=fs.state_block[0].conc_mass_phase_comp_index, Units=kg/m**3
-           Key             : Lower : Value             : Upper  : Fixed : Stale : Domain
-           ('Liq', 'Cl_-') :     0 : 16.96583950044861 : 2000.0 : False : False :  Reals
-            ('Liq', 'H2O') :     0 : 971.8851802563994 : 2000.0 : False : False :  Reals
-           ('Liq', 'Na_+') :     0 : 11.14898024315194 : 2000.0 : False : False :  Reals
-       dens_mass_phase : Mass density
-           Size=1, Index=fs.state_block[0].dens_mass_phase_index, Units=kg/m**3
-           Key : Lower : Value  : Upper  : Fixed : Stale : Domain
-           Liq : 500.0 : 1000.0 : 2000.0 : False : False :  Reals
-       mass_frac_phase_comp : Mass fraction
-           Size=3, Index=fs.state_block[0].mass_frac_phase_comp_index, Units=dimensionless
-           Key             : Lower : Value                : Upper : Fixed : Stale : Domain
-           ('Liq', 'Cl_-') :     0 :  0.01696583950044861 : 1.001 : False : False :  Reals
-            ('Liq', 'H2O') :     0 :   0.9718851802563995 : 1.001 : False : False :  Reals
-           ('Liq', 'Na_+') :     0 : 0.011148980243151932 : 1.001 : False : False :  Reals
-       flow_vol_phase : Volumetric flow rate
-           Size=1, Index=fs.properties.phase_list, Units=m**3/s
-           Key : Lower : Value       : Upper : Fixed : Stale : Domain
-           Liq :     0 : 0.000996414 :  None : False : False :  Reals
-       molality_phase_comp : Molality
-           Size=2, Index=fs.state_block[0].molality_phase_comp_index, Units=mol/kg
-           Key             : Lower : Value               : Upper : Fixed : Stale : Domain
-           ('Liq', 'Cl_-') :     0 : 0.49876084262701365 :  None : False : False :  Reals
-           ('Liq', 'Na_+') :     0 : 0.49876084262701365 :  None : False : False :  Reals
-       total_hardness : total hardness as CaCO3
-           Size=1, Index=None, Units=mg/l
-           Key  : Lower : Value : Upper : Fixed : Stale : Domain
-           None :     0 :     0 :  None :  True :  True : NonNegativeReals
-       ionic_strength_molal : Molal ionic strength
-           Size=1, Index=None, Units=mol/kg
-           Key  : Lower : Value               : Upper : Fixed : Stale : Domain
-           None :     0 : 0.49876084262701365 :  None : False : False : NonNegativeReals
-       pressure_osm_phase : van't Hoff Osmotic pressure
-           Size=1, Index=fs.properties.phase_list, Units=Pa
-           Key : Lower : Value            : Upper : Fixed : Stale : Domain
-           Liq :     0 : 2403290.69096959 :  None : False : False :  Reals
-       conc_mol_phase_comp : Molar concentration
-           Size=3, Index=fs.state_block[0].conc_mol_phase_comp_index, Units=mol/m**3
-           Key             : Lower : Value              : Upper : Fixed : Stale : Domain
-           ('Liq', 'Cl_-') :     0 : 484.73827144138886 :  None : False : False :  Reals
-            ('Liq', 'H2O') :     0 :  53993.62112535552 :  None : False : False :  Reals
-           ('Liq', 'Na_+') :     0 : 484.73827144138886 :  None : False : False :  Reals
        ...
 
 The default material flow basis (i.e., state variable) for the MCAS property model is component molar flowrate. 
@@ -187,9 +144,13 @@ However, the user can select component mass flowrate as the flow basis instead a
 
     iscale.calculate_scaling_factors(m)
     
-    # `assert_electroneutrality` is an available method in MCAS. This can be used to assert and optionally adjust the defined feed composition to enforce electroneutrality.
-    # For a defined composition, i.e., the inlet composition, which is assumed to be known, set `defined_state` to True. To adjust composition to enforce electroneutrality, select the ion to adjust with the `adjust_by_ion` argument.
-   
+`assert_electroneutrality` is an available method in MCAS. This can be used to assert and optionally adjust composition to enforce electroneutrality.
+For a defined composition, i.e., the inlet composition, which is assumed to be known, set `defined_state` to True. To adjust composition to enforce electroneutrality, select the ion to adjust with the `adjust_by_ion` argument.
+ 
+.. testcode::
+  
     m.fs.state_block[0].assert_electroneutrality(defined_state=True, adjust_by_ion="Cl_-")
 
+.. testoutput::
 
+   Cl_- adjusted: fs.state_block[0].flow_mass_phase_comp['Liq',Cl_-] was adjusted from 0.0169 and fixed to 0.01689130427193779. Electroneutrality satisfied for fs.state_block[0]. Balance Result = 0.0
