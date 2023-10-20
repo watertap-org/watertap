@@ -516,12 +516,6 @@ def display_system(m):
     )
     print("Feed: %.2f kg/s, %.0f ppm" % (feed_flow_mass, feed_mass_frac_NaCl * 1e6))
 
-    salt_concentration = value(
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
-        / m.fs.feed.properties[0].flow_vol_phase["Liq"]
-    )
-    print(f"Feed salt concentration: {salt_concentration} g/L")
-
     prod_flow_mass = sum(
         m.fs.product.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "NaCl"]
     )
