@@ -22,7 +22,6 @@ class SamplingType(Enum):
     FIXED = auto()
     RANDOM = auto()
     RANDOM_LHS = auto()
-    PREDETERMINED = auto()
 
 
 class _Sample(ABC):
