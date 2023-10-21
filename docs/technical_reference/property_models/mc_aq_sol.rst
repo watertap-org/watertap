@@ -142,13 +142,13 @@ Relationships
 .. note::
 
    :sup:`1`  :math:`\textbf{f}(\cdot)` refers to empirical correlations of phase or solvent mass density to seawater salinity and temperature following the study of Sharqawy et al. (2010).
-| 
+   
    :sup:`2`  Electrical mobility can either be (1) specified when the user provides data via the ``elec_mobility_data`` configuration option or (2) calculated by setting the ``elec_mobility_calculation`` configuration option to ``ElectricalMobilityCalculation.EinsteinRelation``.
-| 
+
    :sup:`3`  Transport number can either be (1) specified when the user provides data via the ``trans_num_data`` configuration option or (2) calculated by setting the ``trans_num_calculation`` configuration option to ``TransportNumberCalculation.ElectricalMobility``.
-| 
+ 
    :sup:`4`  Phase equivalent conductivity can either be (1) specified when the user provides data via the ``equiv_conductivity_phase_data`` configuration option or (2) calculated by setting the ``equiv_conductivity_calculation`` configuration option to ``EquivalentConductivityCalculation.ElectricalMobility``.
-| 
+ 
    :sup:`5`  Diffusivity can either be (1) specified when the user provides data via the ``diffusivity_data`` configuration option or (2) calculated by the correlation defined in Hayduk, W., & Laudie, H. (1974). For the latter, the ``diffus_calculation`` configuration option must be set to ``DiffusivityCalculation.HaydukLaudie``.
 
 
