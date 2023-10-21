@@ -9,7 +9,7 @@ This MCAS property package
    * sets H2O as the solvent;
    * supports multiple solute components including ions and neutral molecules;
    * supports only liquid phase;
-   * uses molar flow rate (in mol/s), temperature and pressure as the initial state variables;
+   * uses temperature, pressure, and either molar flowrate (mol/s) or mass flowrate (kg/s) as state variables;
    * does not support dynamics.
 
 Sets
@@ -42,9 +42,25 @@ State variables
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
-   "Component molar flow rate", ":math:`N`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mol s}^{-1}`"
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
+
+The ``material_flow_basis`` configuration option can be used to select the desired state variable for flow basis.
+
+if ``material_flow_basis`` is set to ``MaterialFlowBasis.molar`` (the default setting), component molar flowrates will be used:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable", "Index", "Units"
+
+   "Component molar flowrate", ":math:`N`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mol s}^{-1}`"
+
+if ``material_flow_basis`` is set to ``MaterialFlowBasis.mass``, component mass flowrates will be used:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable", "Index", "Units"
+
+   "Component mass flowrate", ":math:`M`", "flow_mass_phase_comp", "[p, j]", ":math:`\text{kg s}^{-1}`"
+
 
 Parameters
 ----------
@@ -63,14 +79,16 @@ Parameters
  "Hayduk Laudie viscosity coefficient", ":math:`\chi_{2}`", "hl_visc_coeff", "None", ":math:`\text{dimensionless}`"
  "Hayduk Laudie molar volume coefficient", ":math:`\chi_{3}`", "hl_molar_volume_coeff", "None", ":math:`\text{dimensionless}`"
 
+.. note::
+   Component molecular weight data is now set as a requirement when instantiating the MCAS property model. 
+   Additionally, a warning will be displayed if charge data are not provided, in case the user intended to include ions in the ``solute_list`` but forgot to provide charge. However, this warning can be ignored if neutral molecules were the only solutes intended for inclusion in ``solute_list``.
 
 Properties
 ----------
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
-   "Component mass flow rate", ":math:`M`", "flow_mass_phase_comp", "[p, j]", ":math:`\text{kg s}^{-1}`"
-   "Component charge-equivalent molar flow rate", ":math:`\tilde{N}`", "flow_equiv_phase_comp", "[p, j]", ":math:`\text{mol s}^{-1}`"
+   "Component charge-equivalent molar flowrate", ":math:`\tilde{N}`", "flow_equiv_phase_comp", "[p, j]", ":math:`\text{mol s}^{-1}`"
    "Component charge-equivalent molar concentration", ":math:`\tilde{n}`", "conc_equiv_phase_comp", "[p, j]", ":math:`\text{mol m}^{-3}`"
    "Component mass fraction", ":math:`x`", "mass_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
    "Mass density of aqueous phase", ":math:`\rho`", "dens_mass_phase", "[p]", ":math:`\text{kg m}^{-3}`"
@@ -99,7 +117,7 @@ Relationships
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Component charge-equivalent molar flow rate", ":math:`\tilde{N}=N\left|z\right|`"
+   "Component charge-equivalent molar flowrate", ":math:`\tilde{N}=N\left|z\right|`"
    "Component charge-equivalent molar concentration", ":math:`\tilde{n}=n\left|z\right|`"
    "Component mass fraction", ":math:`x_j=\frac{M_j}{\sum_j{M_j}}`"
    "Mass density of aqueous phase", ":math:`\rho=1000 \text{ kg m}^{-3}` or :math:`\rho=\rho_w + \textbf{f} \left(\sum_{j\in solute}{x_j}, T\right)` :sup:`1`"
