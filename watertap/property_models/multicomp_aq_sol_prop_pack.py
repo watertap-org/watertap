@@ -830,9 +830,12 @@ class _MCASStateBlock(StateBlock):
                     )
                 )
             if self[k].is_property_constructed("total_hardness"):
-                calculate_variable_from_constraint(
-                    self[k].total_hardness, self[k].eq_total_hardness
-                )
+                if hasattr(self[k], "eq_total_hardness"):
+                    calculate_variable_from_constraint(
+                        self[k].total_hardness, self[k].eq_total_hardness
+                    )
+                else:
+                    self[k].total_hardness = 0
 
         # Check when the state vars are fixed already result in dof 0
         for k in self.keys():
@@ -1789,21 +1792,25 @@ class MCASStateBlockData(StateBlockData):
                     * 100.0869
                     * pyunits.g
                     / pyunits.mol
-                    * self.charge_comp[j]
+                    * float(value(self.charge_comp[j]))
                     / 2.0
                     for j in self.params.cation_set
                     if value(self.charge_comp[j]) > 1
                 ),
                 to_units=pyunits.mg / pyunits.L,
             )
+
+            def rule_total_hardness(b):
+                return b.total_hardness == total_hardness_temp
+
+            self.eq_total_hardness = Constraint(rule=rule_total_hardness)
+
         except InconsistentUnitsError:
             self.total_hardness.fix(0)
+            _log.warning(
+                "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
+            )
             return
-
-        def rule_total_hardness(b):
-            return b.total_hardness == total_hardness_temp
-
-        self.eq_total_hardness = Constraint(rule=rule_total_hardness)
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -2317,7 +2324,10 @@ class MCASStateBlockData(StateBlockData):
 
         if self.is_property_constructed("total_hardness"):
             if iscale.get_scaling_factor(self.total_hardness) is None:
-                sf = 10 / value(self.total_hardness)
+                if value(self.total_hardness) == 0:
+                    sf = 1
+                else:
+                    sf = 10 / value(self.total_hardness)
                 iscale.set_scaling_factor(self.total_hardness, sf)
         # transforming constraints
         transform_property_constraints(self)
@@ -2328,7 +2338,9 @@ class MCASStateBlockData(StateBlockData):
         if self.is_property_constructed("ionic_strength_molal"):
             iscale.constraint_scaling_transform(self.eq_ionic_strength_molal, 1)
 
-        if self.is_property_constructed("total_hardness"):
+        if self.is_property_constructed("total_hardness") and hasattr(
+            self, "eq_total_hardness"
+        ):
             sf = iscale.get_scaling_factor(self.total_hardness)
             iscale.constraint_scaling_transform(self.eq_total_hardness, sf)
 
