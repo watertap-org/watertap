@@ -121,8 +121,10 @@ class MCASParameterData(PhysicalParameterBlock):
 
     CONFIG.declare(
         "solute_list",
-        ConfigValue(domain=list, description="List of solute species names"),
-        description="Required argument. List of strings that specify names of solute species.",
+        ConfigValue(
+            domain=list,
+            description="Required argument.List of strings that specify names of solute species.",
+        ),
     )
     CONFIG.declare(
         "stokes_radius_data",
