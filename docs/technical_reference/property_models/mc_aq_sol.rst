@@ -50,14 +50,14 @@ State variables
 
 The ``material_flow_basis`` configuration option can be used to select the desired state variable for flow basis.
 
-if ``material_flow_basis`` is set to ``MaterialFlowBasis.molar`` (the default setting), component molar flowrates will be used:
+If ``material_flow_basis`` is set to ``MaterialFlowBasis.molar`` (the default setting), component molar flowrates will be used:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
    "Component molar flowrate", ":math:`N`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mol s}^{-1}`"
 
-if ``material_flow_basis`` is set to ``MaterialFlowBasis.mass``, component mass flowrates will be used:
+If ``material_flow_basis`` is set to ``MaterialFlowBasis.mass``, component mass flowrates will be used:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
@@ -70,11 +70,11 @@ Parameters
 .. csv-table::
  :header: "Description", "Symbol", "Parameter", "Index", "Units"
 
- "Component molecular weight", ":math:`m_N`", "mw_comp", "[j]", ":math:`\text{kg mol}^{-1}`"
+ "Component molecular weight :sup:`1`", ":math:`m_N`", "mw_comp", "[j]", ":math:`\text{kg mol}^{-1}`"
  "Stokes radius of solute", ":math:`r_h`", "radius_stokes_comp", "[j]", ":math:`\text{m}`"
  "Molar volume of solute", ":math:`V`", "molar_volume_phase_comp", "[p, j]", ":math:`\text{m}^3 \text{ mol}^{-1}`"
  "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa s}`"
- "Bulk diffusivity of solute", ":math:`D`", "diffus_phase_comp_param", "[p, j]", ":math:`\text{m}^2 \text{ s}^{-1}`"
+ "Bulk diffusivity of solute", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^2 \text{ s}^{-1}`"
  "Ion charge", ":math:`z`", "charge_comp", "[j]", ":math:`\text{dimensionless}`"
  "Dielectric constant of water", ":math:`\epsilon`", "dielectric_constant", "None", ":math:`\text{dimensionless}`"
  "Debye Huckel constant b", ":math:`b`", "debye_huckel_b", "None", ":math:`\text{kg mol}^{-1}`"
@@ -83,7 +83,7 @@ Parameters
  "Hayduk Laudie molar volume coefficient", ":math:`\chi_{3}`", "hl_molar_volume_coeff", "None", ":math:`\text{dimensionless}`"
 
 .. note::
-   *Component molecular weight* data is now set as a requirement when instantiating the MCAS property model. Hence, the user must provide these data in the ``mw_data`` configuration option.
+   :sup:`1` *Component molecular weight* data is now set as a requirement when instantiating the MCAS property model. Hence, the user must provide these data in the ``mw_data`` configuration option.
    Additionally, a warning will be displayed if *charge* data are not provided via the ``charge`` configuration option, in case the user intended to include ions in the ``solute_list`` but forgot to provide charge. However, this warning can be ignored if neutral molecules were the only solutes intended for inclusion in ``solute_list``.
 
 Properties
@@ -131,18 +131,21 @@ Relationships
    "Component molality", ":math:`b=\frac{N}{N_{H_2O} m_{N\text{H_2O}}}`"
    "Kinematic viscosity", ":math:`\nu=\mu\rho^{-1}`"
    "Phase osmotic pressure", ":math:`\Pi=RT\sum_{j\in solute}{n_j}`"
-   "Ion component electrical mobility", ":math:`\mu_e=\frac{D\left|z\right|F}{RT}`"
-   "Ion component transport number", ":math:`t_j=\frac{\left|z_j\right|\mu_{ej} n_j}{\sum_{j\in ion}{\left|z_j\right|\mu_{ej} n_j}}`"
-   "Phase equivalent conductivity", ":math:`\Lambda=\frac{\sum_{j\in ion}{F\left|z_j\right|\mu_{ej} n_j}}{\sum_{j\in cation}{\left|z_j\right|n_j}}`"
+   "Ion component electrical mobility :sup:`2`", ":math:`\mu_e=\frac{D\left|z\right|F}{RT}`"
+   "Ion component transport number :sup:`3`", ":math:`t_j=\frac{\left|z_j\right|\mu_{ej} n_j}{\sum_{j\in ion}{\left|z_j\right|\mu_{ej} n_j}}`"
+   "Phase equivalent conductivity :sup:`4`", ":math:`\Lambda=\frac{\sum_{j\in ion}{F\left|z_j\right|\mu_{ej} n_j}}{\sum_{j\in cation}{\left|z_j\right|n_j}}`"
    "Phase electrical conductivity", ":math:`\lambda=\Lambda\sum_{j\in cation}{\left|z_j\right|n_j}`"
    "Debye-Huckel constant", ":math:`A=\frac{\left(2 \pi N_A\right)^{0.5}}{log(10)} \left(\frac{\textbf{e}^2}{4 \pi \epsilon \epsilon_0 kT}\right)^{\frac{3}{2}}`"
    "Ionic strength", ":math:`I=0.5\sum_{j\in ion}{z_j^2b_j}`"
-   "Component mass diffusivity", ":math:`D\text{ specified in data argument}` or :math:`D \text{ }[\text{m}^2 \text{ s}^{-1}]=\frac{\chi_{1}}{(\mu \text{ }[\text{cP}])^{\chi_{2}}(V \text{ }[\text{cm}^3 \text{ mol}^{-1}])^{\chi_{3}}}` :sup:`2`"
+   "Component mass diffusivity :sup:`5`", ":math:`D\text{ specified in data argument}` or :math:`D \text{ }[\text{m}^2 \text{ s}^{-1}]=\frac{\chi_{1}}{(\mu \text{ }[\text{cP}])^{\chi_{2}}(V \text{ }[\text{cm}^3 \text{ mol}^{-1}])^{\chi_{3}}}``"
 
 .. note::
+   :sup:`1`  :math:`\textbf{f}(\cdot)` refers to empirical correlations of phase or solvent mass density to seawater salinity and temperature following the study of Sharqawy et al. (2010).
+|  :sup:`2`  Electrical mobility can either be (1) specified when the user provides data via the ``elec_mobility_data`` configuration option or (2) calculated by setting the ``elec_mobility_calculation`` configuration option to ``ElectricalMobilityCalculation.EinsteinRelation``.
+|  :sup:`3`  Transport number can either be (1) specified when the user provides data via the ``trans_num_data`` configuration option or (2) calculated by setting the ``trans_num_calculation`` configuration option to ``TransportNumberCalculation.ElectricalMobility``.
+|  :sup:`4`  Phase equivalent conductivity can either be (1) specified when the user provides data via the ``equiv_conductivity_phase_data`` configuration option or (2) calculated by setting the ``equiv_conductivity_calculation`` configuration option to ``EquivalentConductivityCalculation.ElectricalMobility``.
+|  :sup:`5`  Diffusivity can either be (1) specified when the user provides data via the ``diffusivity_data`` configuration option or (2) calculated by the correlation defined in Hayduk, W., & Laudie, H. (1974). For the latter, the ``diffus_calculation`` configuration option must be set to ``DiffusivityCalculation.HaydukLaudie``.
 
-   | :sup:`1`  :math:`\textbf{f}(\cdot)` refers to empirical correlations of phase or solvent mass density to seawater salinity and temperature following the study of Sharqawy et al. (2010).
-   | :sup:`2`  Diffusivity specified in diffus_phase_comp_param or calculated by the correlation defined in Hayduk, W., & Laudie, H. (1974).
 
 Physical/chemical constants
 ---------------------------

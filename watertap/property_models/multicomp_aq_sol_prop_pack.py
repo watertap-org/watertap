@@ -122,13 +122,14 @@ class MCASParameterData(PhysicalParameterBlock):
     CONFIG.declare(
         "solute_list",
         ConfigValue(domain=list, description="List of solute species names"),
+        description="Required argument. List of strings that specify names of solute species."
     )
     CONFIG.declare(
         "stokes_radius_data",
         ConfigValue(
             default={},
             domain=dict,
-            description="Dict of solute species names and Stokes radius data",
+            description="Dict of solute species names (keys) and Stokes radius data (values)",
         ),
     )
     CONFIG.declare(
@@ -136,7 +137,7 @@ class MCASParameterData(PhysicalParameterBlock):
         ConfigValue(
             default={},
             domain=dict,
-            description="Dict of solute species names and bulk ion diffusivity data",
+            description="Dict of solute species names (keys) and bulk ion diffusivity data (values)",
         ),
     )
     CONFIG.declare(
@@ -152,7 +153,7 @@ class MCASParameterData(PhysicalParameterBlock):
         ConfigValue(
             default={},
             domain=dict,
-            description="Dict of component names and molecular weight data",
+            description="Required argument. Dict of component names (keys)and molecular weight data (values)",
         ),
     )
     CONFIG.declare(
