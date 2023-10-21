@@ -1,8 +1,10 @@
+.. _mcas_how_to:
+
 How to use the multicomponent aqueous solution (MCAS) property model
 --------------------------------------------------------------------
 
 The example below shows how to use the MCAS property model and display outputs for a state block. Property models allow
-users to model the chemical and physical properties of simple systems without the use of unit models. For more details on the MCAS property model, see its :ref:`technical reference<mcas_tech_ref>`.
+users to model the chemical and physical properties of simple systems without the use of unit models. For more technical details on the MCAS property model, see the associated :ref:`technical reference<mcas_tech_ref>`.
 
 .. testsetup::
 
@@ -144,12 +146,14 @@ However, the user can select component mass flowrate as the flow basis instead a
 
     iscale.calculate_scaling_factors(m)
     
-`assert_electroneutrality` is an available method in MCAS. This can be used to assert and optionally adjust composition to enforce electroneutrality.
-For a defined composition, i.e., the inlet composition, which is assumed to be known, set `defined_state` to True. To adjust composition to enforce electroneutrality, select the ion to adjust with the `adjust_by_ion` argument.
+``assert_electroneutrality`` is an available method in MCAS. This can be used to assert and optionally adjust composition to enforce electroneutrality.
+For a defined composition, i.e., the inlet composition, which is assumed to be known, set ``defined_state`` to True. To adjust composition to enforce electroneutrality, select the ion to adjust with the ``adjust_by_ion`` argument.
  
 .. testcode::
   
     m.fs.state_block[0].assert_electroneutrality(defined_state=True, adjust_by_ion="Cl_-")
+
+Output similar to what is shown below will appear to notify the user whether an adjustment in ion composition was made and by how much:
 
 .. testoutput::
 

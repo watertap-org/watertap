@@ -5,19 +5,21 @@ Multi-Component Aqueous Solution (MCAS) Property Package
 
 This property package implements property relationships for an aqueous solution that may contain multiple neutral and/or ionic solutes.
 
-This MCAS property package
+The MCAS property package
    * sets H2O as the solvent;
    * supports multiple solute components including ions and neutral molecules;
    * supports only liquid phase;
    * uses temperature, pressure, and either molar flowrate (mol/s) or mass flowrate (kg/s) as state variables;
    * does not support dynamics.
 
+For usage examples, please refer to the associated :ref:`"how-to" documentation for MCAS<mcas_how_to>`. 
+
 Sets
 ----
 .. csv-table::
    :header: "Description", "Symbol", "Indices"
 
-   "Components", ":math:`j`", "['H2O', component_list :sup:`1`]"
+   "Components", ":math:`j`", "component_list=['H2O', solute_list :sup:`1`]"
    "Phases", ":math:`p`", "['Liq']"
    "solute_set", ":math:`j`", "[all components in component_list except H2O]"
    "cation_set", ":math:`j`", "[cationic components in component_list]"
@@ -26,15 +28,16 @@ Sets
    "ion_set", ":math:`j`", "[cationic and anionic components in component_list]"
 
 
-**Notes** 
-   :sup:`1`  component_list is provided by a necessary configuration to use this property package.
+.. note::
+   
+   :sup:`1`  solute_list must be provided by the user via the necessary configuration option, ``solute_list``.
 
 .. figure:: ../../_static/unit_models/mcas_set_hierarchy.png
     :width: 800
     :align: center
 
-    Figure 1. Hierarchy of the pyomo sets constructed in the MCAS property package. Here types are declared for the
-    species in component list, or sometimes auto assigned considering other input such as charge. e.g., the chloride anion
+    Figure 1. Hierarchy of the Pyomo sets constructed in the MCAS property package. Here, types are declared for the
+    species in component list, or sometimes auto-assigned considering other input such as charge; e.g., the chloride anion
     would be contained in anion_set, ion_set, solute_set, and component_list.
 
 State variables
@@ -80,8 +83,8 @@ Parameters
  "Hayduk Laudie molar volume coefficient", ":math:`\chi_{3}`", "hl_molar_volume_coeff", "None", ":math:`\text{dimensionless}`"
 
 .. note::
-   Component molecular weight data is now set as a requirement when instantiating the MCAS property model. 
-   Additionally, a warning will be displayed if charge data are not provided, in case the user intended to include ions in the ``solute_list`` but forgot to provide charge. However, this warning can be ignored if neutral molecules were the only solutes intended for inclusion in ``solute_list``.
+   *Component molecular weight* data is now set as a requirement when instantiating the MCAS property model. Hence, the user must provide these data in the ``mw_data`` configuration option.
+   Additionally, a warning will be displayed if *charge* data are not provided via the ``charge`` configuration option, in case the user intended to include ions in the ``solute_list`` but forgot to provide charge. However, this warning can be ignored if neutral molecules were the only solutes intended for inclusion in ``solute_list``.
 
 Properties
 ----------
@@ -136,7 +139,8 @@ Relationships
    "Ionic strength", ":math:`I=0.5\sum_{j\in ion}{z_j^2b_j}`"
    "Component mass diffusivity", ":math:`D\text{ specified in data argument}` or :math:`D \text{ }[\text{m}^2 \text{ s}^{-1}]=\frac{\chi_{1}}{(\mu \text{ }[\text{cP}])^{\chi_{2}}(V \text{ }[\text{cm}^3 \text{ mol}^{-1}])^{\chi_{3}}}` :sup:`2`"
 
-**Notes**
+.. note::
+
    | :sup:`1`  :math:`\textbf{f}(\cdot)` refers to empirical correlations of phase or solvent mass density to seawater salinity and temperature following the study of Sharqawy et al. (2010).
    | :sup:`2`  Diffusivity specified in diffus_phase_comp_param or calculated by the correlation defined in Hayduk, W., & Laudie, H. (1974).
 
