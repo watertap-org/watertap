@@ -1191,10 +1191,6 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(water_recovery)
         m.fs.unit.permeate_outlet.pressure[0].fix(1e5)
 
-        # # test variable scaling
-        # badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        # assert badly_scaled_var_lst == []
-
         # test solve
         results = solver.solve(m, tee=True)
 
