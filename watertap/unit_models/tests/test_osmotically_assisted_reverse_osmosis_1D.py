@@ -350,6 +350,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         # Check for optimal solution
         assert_optimal_termination(results)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, RO_frame):
         m = RO_frame
@@ -401,6 +402,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
             <= 1e-5
         )
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, RO_frame):
         m = RO_frame
