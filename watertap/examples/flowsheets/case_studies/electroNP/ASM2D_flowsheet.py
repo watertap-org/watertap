@@ -278,7 +278,7 @@ def build_flowsheet():
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
+                iscale.set_scaling_factor(var, 1e1)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
@@ -287,6 +287,8 @@ def build_flowsheet():
                 iscale.set_scaling_factor(var, 1e-3)
             if "alkalinity" in var.name:
                 iscale.set_scaling_factor(var, 1e3)
+            # if "conc_mass_comp" in var.name:
+            #     iscale.set_scaling_factor(var, 1e1)
 
             if "conc_mass_comp[S_O2]" in var.name:
                 iscale.set_scaling_factor(var, 1e3)
