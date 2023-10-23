@@ -264,8 +264,8 @@ class TestParameterSweep:
         param_dict["var_B"] = PredeterminedFixedSample(B_param, B_values)
         param_dict["var_C"] = PredeterminedFixedSample(C_param, C_values)
 
-        global_combo_array = ps._create_global_combo_array(
-            param_dict, SamplingType.FIXED
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
         )
 
         assert np.shape(global_combo_array)[0] == nn_A * nn_B * nn_C
