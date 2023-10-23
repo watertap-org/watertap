@@ -194,9 +194,10 @@ def set_operating_conditions(
     water_recovery=0.5,
     over_pressure=0.3,
     flow_vol=1e-3,
-    salt_mass_conc=35,
+    salt_mass_conc=35e-3,
     solver=None,
 ):
+
     if solver is None:
         solver = get_solver()
     # ---specifications---
@@ -212,11 +213,11 @@ def set_operating_conditions(
         "flow_mass_phase_comp", 1000 * flow_vol, index=("Liq", "H2O")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1 / flow_vol / salt_mass_conc, index=("Liq", "NaCl")
+        "flow_mass_phase_comp", 1e-3 / flow_vol / salt_mass_conc, index=("Liq", "NaCl")
     )
 
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
-    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
+    # m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
 
     # unused scaling factors needed by IDAES base costing module
@@ -231,7 +232,7 @@ def set_operating_conditions(
     m.fs.feed.properties.calculate_state(
         var_args={
             ("flow_vol_phase", "Liq"): flow_vol,  # feed volumetric flow rate [m3/s]
-            ("conc_mass_phase_comp", ("Liq", "NaCl")): salt_mass_conc,
+            ("mass_frac_phase_comp", ("Liq", "NaCl")): salt_mass_conc,
         },  # feed NaCl mass fraction [-]
         hold_state=True,  # fixes the calculated component mass flow rates
     )
@@ -514,12 +515,6 @@ def display_system(m):
         m.fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"].value / feed_flow_mass
     )
     print("Feed: %.2f kg/s, %.0f ppm" % (feed_flow_mass, feed_mass_frac_NaCl * 1e6))
-
-    salt_concentration = value(
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
-        / m.fs.feed.properties[0].flow_vol_phase["Liq"]
-    )
-    print(f"Feed salt concentration: {salt_concentration} g/L")
 
     prod_flow_mass = sum(
         m.fs.product.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "NaCl"]
