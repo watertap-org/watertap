@@ -121,7 +121,7 @@ class OsmoticallyAssistedReverseOsmosis1DData(
             Var(
                 self.flowsheet().config.time,
                 initialize=-1e5,
-                bounds=(None, 0),
+                bounds=(-1e6, 0),
                 domain=NegativeReals,
                 units=units_meta("pressure"),
                 doc=f"Pressure drop across {side}",
