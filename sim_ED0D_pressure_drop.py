@@ -37,7 +37,7 @@ def main():
     # create model, flowsheet
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    # create dict to define ions (the prop pack of Adam requires this)
+
     ion_dict = {
         "solute_list": ["Na_+", "Cl_-"],
         "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
@@ -48,9 +48,7 @@ def main():
 
     # attach prop pack to flowsheet
     m.fs.properties = MCASParameterBlock(**ion_dict)
-    # build the unit model, pass prop pack to the model
-    # m.fs.unit = Electrodialysis1D(default = {"property_package": m.fs.properties,
-    # "operation_mode": "Constant_Voltage","finite_elements": 20})
+
     m.fs.EDstack = Electrodialysis0D(
         property_package=m.fs.properties,
         operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -59,7 +57,7 @@ def main():
         has_Nernst_diffusion_layer=False,
         pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
         # pressure_drop_method=PressureDropMethod.none,
-        friction_factor_method=FrictionFactorMethod.Kuroda,
+        friction_factor_method=FrictionFactorMethod.Gurreri,
         hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
     )
     assert_units_consistent(m)
@@ -126,67 +124,38 @@ def main():
     m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
 
-    # fix for frictional factor calculation
     m.fs.EDstack.diffus_mass.fix(1.6e-9) if hasattr(m.fs.EDstack, "diffus_mass") else 0
-    #
-    # fix for the hydraulic diameter calculation in spacer_specficed method
+
     m.fs.EDstack.spacer_specific_area.fix(10700) if hasattr(
         m.fs.EDstack, "spacer_specific_area"
     ) else 0
-    #
+
     # m.fs.EDstack.hydraulic_diameter.fix(4.47e-4) if hasattr(
     #     m.fs.EDstack, "hydraulic_diameter"
     # ) else 0
 
-    # m.fs.EDstack.hydraulic_diameter.fix(3.47e-4) if hasattr(
-    #     m.fs.EDstack, "hydraulic_diameter") else 0
-    # m.fs.EDstack.hydraulic_diameter.fix(2*7.1e-4)
-
-    print("yes it has hydraulic diameter") if hasattr(
+    m.fs.EDstack.hydraulic_diameter.pprint() if hasattr(
         m.fs.EDstack, "hydraulic_diameter"
     ) else print("No it doesn't have hydraulic diameter")
-    print("yes it has diffus_mass") if hasattr(m.fs.EDstack, "diffus_mass") else print(
-        "No it doesn't have diffus_mass"
-    )
+
+    # m.fs.EDstack.friction_factor.fix(10)
+    # m.fs.EDstack.pressure_drop_total.fix(1.6e6)
+
+    m.fs.EDstack.diffus_mass.pprint() if hasattr(
+        m.fs.EDstack, "diffus_mass"
+    ) else print("No it doesn't have diffus_mass")
+
+    m.fs.EDstack.friction_factor.pprint() if hasattr(
+        m.fs.EDstack, "friction_factor"
+    ) else print("No it doesn't have friction_factor")
+
     # m.display()
     # m.fs.EDstack.report()
     m.fs.EDstack.velocity_diluate.pprint()
-    m.fs.EDstack.hydraulic_diameter.pprint()
-    # hydraulic_diameter_conventional = (
-    #     2
-    #     * m.fs.EDstack.channel_height()
-    #     * m.fs.EDstack.cell_width()
-    #     * m.fs.EDstack.spacer_porosity()
-    #     * (m.fs.EDstack.channel_height() + m.fs.EDstack.cell_width()) ** -1
-    # )
-    # spacer_specific_area = 1e4
-    #
-    # hydraulic_diameter_specified = (
-    #     4
-    #     * m.fs.EDstack.spacer_porosity()
-    #     * (
-    #         2 * m.fs.EDstack.channel_height() ** -1
-    #         + (1 - m.fs.EDstack.spacer_porosity()) * spacer_specific_area
-    #     )
-    #     ** -1
-    # )
-    # friction_factor_Gurreri = (
-    #     4 * 50.6 * m.fs.EDstack.spacer_porosity() ** -7.06 * m.fs.EDstack.N_Re() ** -1
-    # )
-    # friction_factor_Kuroda = (
-    #     4 * 9.6 * m.fs.EDstack.spacer_porosity() ** -1 * m.fs.EDstack.N_Re() ** -0.5
-    # )
-    # print("friction_factor_Gurreri", friction_factor_Gurreri)
-    # print("friction_factor_Kuroda", friction_factor_Kuroda)
-    # print("hydraulic diameter using specified methods:", hydraulic_diameter_specified)
-    #
-    # print(
-    #     "hydraulic diameter using conventional methods:",
-    #     hydraulic_diameter_conventional,
-    # )
-    #
-    # # m.fs.EDstack.friction_factor.fix(20)
-    # # m.fs.EDstack.pressure_drop.fix(1.6e6)
+    m.fs.EDstack.hydraulic_diameter.pprint() if hasattr(
+        m.fs.EDstack, "hydraulic_diameter"
+    ) else print("No it doesn't have hydraulic_diameter")
+
     #
     print("DOF IS", degrees_of_freedom(m))
     solver = get_solver()

@@ -57,8 +57,8 @@ _log = idaeslog.getLogger(__name__)
 
 class LimitingCurrentDensityMethod(Enum):
     InitialValue = 0
-    Empirical = 1
-    Theoretical = 2
+    # Empirical = 1
+    # Theoretical = 2
 
 
 class ElectricalOperationMode(Enum):
