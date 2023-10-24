@@ -24,9 +24,11 @@ To run the WaterTAP tutorials online (no installation required), refer to [this 
 ## Documentation
 
 The WaterTAP documentation is available online at <https://watertap.readthedocs.io>.
-## Developer notes
 
-Refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en/stable/getting_started.html#for-watertap-developers) section of the documentation.
+## Developer Installation
+
+If you want to clone the repository and work directly with the code, please
+refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en/stable/getting_started.html#for-watertap-developers) section of the documentation.
 
 ## Cite this work
 
