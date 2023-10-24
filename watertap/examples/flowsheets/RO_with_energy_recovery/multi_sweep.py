@@ -14,7 +14,6 @@ import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recov
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     ERDtype,
 )
-import idaes.core.util.scaling as iscale
 
 
 def set_up_sensitivity():
@@ -28,6 +27,9 @@ def set_up_sensitivity():
         flow_vol=1e-3,
         salt_mass_conc=5e-3,
     )
+    # m.fs.RO.A_comp[0, "H2O"].fix()
+    # m.fs.RO.B_comp[0, "NaCl"].fix()
+
     RO.initialize_system(m)
     RO.solve(m)
     m.fs.feed.properties[0].flow_mass_phase_comp.unfix()
