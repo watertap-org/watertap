@@ -320,10 +320,10 @@ def build_flowsheet():
                 iscale.set_scaling_factor(var, 1e2)
             if "conc_mass_comp[X_AUT]" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
-            if "conc_mass_comp[X_MeOH]" in var.name:
-                iscale.set_scaling_factor(var, 1e7)
-            if "conc_mass_comp[X_MeP]" in var.name:
-                iscale.set_scaling_factor(var, 1e7)
+            # if "conc_mass_comp[X_MeOH]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e7)
+            # if "conc_mass_comp[X_MeP]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e7)
             if "conc_mass_comp[X_TSS]" in var.name:
                 iscale.set_scaling_factor(var, 1e0)
 
