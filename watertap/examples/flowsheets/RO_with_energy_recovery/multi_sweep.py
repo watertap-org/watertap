@@ -40,12 +40,32 @@ def set_up_sensitivity():
     RO.display_design(m)
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
+    outputs["RO Energy Consumption"] = m.fs.costing.specific_energy_consumption
+    outputs["RO Capital Cost"] = m.fs.costing.aggregate_capital_cost
+    outputs["RO Operating Cost"] = m.fs.RO.costing.fixed_operating_cost
+    outputs[
+        "MLC Operating Cost"
+    ] = m.fs.costing.maintenance_labor_chemical_operating_cost
+    outputs["Feed Flow Rate"] = m.fs.feed.properties[0].flow_vol_phase["Liq"]
+    outputs["RO Operating Pressure"] = m.fs.RO.inlet.pressure[0]
+    outputs["RO Permeate H2O Mass Flow"] = m.fs.RO.permeate.flow_mass_phase_comp[
+        0, "Liq", "H2O"
+    ]
+    outputs["RO Permeate Salt Mass Flow"] = m.fs.RO.permeate.flow_mass_phase_comp[
+        0, "Liq", "NaCl"
+    ]
+    outputs["RO Retentate H2O Mass Flow"] = m.fs.RO.retentate.flow_mass_phase_comp[
+        0, "Liq", "H2O"
+    ]
+    outputs["RO Retentate Salt Mass Flow"] = m.fs.RO.retentate.flow_mass_phase_comp[
+        0, "Liq", "NaCl"
+    ]
 
     return outputs, m
 
 
 def run_analysis(
-    case_num=1, nx=10, interpolate_nan_outputs=True, withERD=True, output_filename=None
+    case_num=1, nx=3, interpolate_nan_outputs=True, withERD=True, output_filename=None
 ):
 
     if output_filename is None:
@@ -79,7 +99,7 @@ def run_analysis(
             nx,
         )
         sweep_params["volumetric_recovery"] = LinearSample(
-            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.9, nx
+            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.84, nx
         )
     else:
         raise ValueError(f"{case_num} is not yet implemented")
