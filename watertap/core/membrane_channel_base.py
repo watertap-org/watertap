@@ -63,9 +63,8 @@ class MassTransferCoefficient(Enum):
 
 class TransportModel(Enum):
     """
-    none: mass transfer coefficient not utilized for concentration polarization effect
-    fixed: mass transfer coefficient is a user specified value
-    calculated: mass transfer coefficient is calculated
+    SD: Solvent and solute mass flux is calculated using the Solution-Diffusion model
+    SKK: Solvent and solute mass flux is calculated using the Spiegler-Kedem-Katchalsky model
     """
 
     SD = auto()
