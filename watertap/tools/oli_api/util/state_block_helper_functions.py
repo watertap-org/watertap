@@ -29,9 +29,8 @@ from idaes.core.solvers import get_solver
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
-    get_oli_names,
-    oli_reverse_lookup,
-    names_db,
+    get_molar_mass,
+    get_charge,
 )
 
 
@@ -99,7 +98,7 @@ def create_state_block(source_water):
 
     for comp in source_water["components"]:
 
-        var_args[("conc_mass_phase_comp", ("Liq", comp.oli_name))] = convert_conc(
+        var_args[("conc_mass_phase_comp", ("Liq", comp))] = convert_conc(
             source_water["components"][comp]
         )
 
@@ -125,6 +124,38 @@ def convert_to_state_block_units(state_variable, source: dict, key):
     state_variable.fix(converted_value)
 
 
+def create_property_model_input(components, property_model_type: str = ""):
+    """
+    Builds property package inputs.
+
+    :param solutes: dictionary containing solute concentrations in mg/L.
+    """
+
+    if property_model_type == "mcas":
+
+        solute_list = []
+        mw_data = {}
+        charge = {}
+
+        for component in components:
+
+            molar_mass = get_molar_mass(component)
+
+            charge_value = get_charge(component)
+
+            solute_list.append(component)
+
+            mw_data[component] = get_molar_mass(component) * 1e-3
+
+            charge_value = get_charge(component)
+
+            if charge_value != 0:
+
+                charge[component] = charge_value
+
+        return {"solute_list": solute_list, "mw_data": mw_data, "charge": charge}
+
+
 def extract_state_vars(state_block, conc_var, units):
 
     update_conc = lambda conc, var, key: pyunits.convert_value(
@@ -135,11 +166,12 @@ def extract_state_vars(state_block, conc_var, units):
 
     for comp, conc in conc_var.items():
 
-        if comp[1] != "H2O":
+        phase = comp[0]
+        solute = comp[1]
 
-            oli_name = oli_reverse_lookup(comp[1], names_db)
+        if solute != "H2O":
 
-            components[oli_name] = update_conc(conc.value, conc_var, "components")
+            components[solute] = update_conc(conc.value, conc_var, "components")
 
     update_t_p = lambda var, key: pyunits.convert_value(
         var.value, var._units, units[key]
@@ -156,36 +188,3 @@ def extract_state_vars(state_block, conc_var, units):
     }
 
     return state_vars
-
-
-def create_property_model_input(components, property_model_type: str = ""):
-    """
-    Builds property package inputs.
-
-    :param solutes: dictionary containing solute concentrations in mg/L.
-    """
-
-    if property_model_type == "mcas":
-
-        try:
-
-            property_model_input = {
-                "solute_list": [component.oli_name for component in components],
-                "mw_data": {
-                    component.oli_name: component.molar_mass * 1e-3
-                    for component in components
-                },
-                "charge": {
-                    component.oli_name: component.charge
-                    for component in components
-                    if component.charge != 0
-                },
-            }
-
-            return property_model_input
-
-        except AttributeError:
-
-            raise RuntimeError(
-                " Run get_oli_names to fetch required attributes for create_property_model_input."
-            )

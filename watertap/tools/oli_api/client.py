@@ -198,15 +198,9 @@ class OLIApi:
 
         else:
 
-            try:
-
-                solute_list = [
-                    {"name": get_oli_name(solute)} for solute in chemistry_source
-                ]
-
-            except AttributeError:
-
-                solute_list = [{"name": solute.oli_name} for solute in chemistry_source]
+            solute_list = [
+                {"name": get_oli_name(solute)} for solute in chemistry_source
+            ]
 
         if model_name is None:
 

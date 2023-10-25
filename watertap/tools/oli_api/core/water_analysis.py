@@ -102,8 +102,6 @@ class WaterAnalysis:
     # TODO: maybe composition survey and post-processing can go in its own module;
     # not an issue yet, need to see output schema for other OLI calls
 
-    # TODO: also look at Mayo's version of composition_survey and add features in
-
     # TODO: add zero_species argument so users can track specific additives/scalants
     def build_composition_survey(self, survey_conditions):
         """
@@ -485,7 +483,7 @@ class WaterAnalysis:
 
             for scalant in scalants:
 
-                val = (prescaling_path[scalant], eq_scaling_path[scalant])
+                val = prescaling_path[scalant], eq_scaling_path[scalant]
 
                 self.extracted_scaling_tendencies.loc[i, scalant] = val
 

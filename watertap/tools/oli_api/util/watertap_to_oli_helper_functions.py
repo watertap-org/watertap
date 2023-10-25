@@ -29,13 +29,13 @@ from pathlib import Path
 from os.path import join
 from pandas import read_csv
 
+# TODO: some of this functionality exists in molmass: https://pypi.org/project/molmass
 
 OLIName = namedtuple(
     "OLIName", ["oli_name", "watertap_name", "charge", "charge_group", "molar_mass"]
 )
 
 
-# TODO: split functions to enable separate processing for creating MCAS state blocks or OLI inputs
 def watertap_to_oli(watertap_name: str) -> OLIName:
     """
     This method creates a named tuple
