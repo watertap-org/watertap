@@ -366,7 +366,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                 self.difference_elements,
                 self.config.property_package.phase_list,
                 self.config.property_package.component_list,
-                doc="Solvent and solute mass flux using SKK model",
+                doc="Solvent and solute mass flux using SD model",
             )
             def eq_flux_mass(b, t, x, p, j):
                 prop_feed = b.feed_side.properties[t, x]
