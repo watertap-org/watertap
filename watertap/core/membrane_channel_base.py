@@ -256,7 +256,7 @@ CONFIG_Template.declare(
         **default** - ``TransportModel.SD``
 
         "``TransportModel.SD``", "Solution-diffusion model for describing water and salt transport for most membrane types"
-        "``TransportModel.SKK``", "Speigler-Kedem-Katchalsky model for describing water and salt transport for 'leaky' membranes"
+        "``TransportModel.SKK``", "Speigler-Kedem-Katchalsky model for describing water and salt transport"
 
         """,
     ),
