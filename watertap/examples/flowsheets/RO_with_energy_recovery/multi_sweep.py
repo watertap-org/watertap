@@ -14,7 +14,6 @@ import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recov
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     ERDtype,
 )
-import idaes.core.util.scaling as iscale
 
 
 def set_up_sensitivity():
