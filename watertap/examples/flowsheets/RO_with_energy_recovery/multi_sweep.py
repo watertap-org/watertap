@@ -14,6 +14,7 @@ import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recov
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     ERDtype,
 )
+import idaes.core.util.scaling as iscale
 
 
 def set_up_sensitivity():
@@ -27,9 +28,6 @@ def set_up_sensitivity():
         flow_vol=1e-3,
         salt_mass_conc=5e-3,
     )
-    # m.fs.RO.A_comp[0, "H2O"].fix()
-    # m.fs.RO.B_comp[0, "NaCl"].fix()
-
     RO.initialize_system(m)
     RO.solve(m)
     m.fs.feed.properties[0].flow_mass_phase_comp.unfix()
@@ -42,26 +40,41 @@ def set_up_sensitivity():
     RO.display_design(m)
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
+    # Not used in Excel
     outputs["RO Energy Consumption"] = m.fs.costing.specific_energy_consumption
-    outputs["RO Capital Cost"] = m.fs.costing.aggregate_capital_cost
+    # No conversion in Excel
+    outputs["System Capital Cost"] = m.fs.costing.aggregate_capital_cost
+    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Operating Cost"] = m.fs.RO.costing.fixed_operating_cost
+    # Multiplied by flow rate scaling factor in Excel
     outputs[
         "MLC Operating Cost"
     ] = m.fs.costing.maintenance_labor_chemical_operating_cost
+    # Multiplied by flow rate scaling factor in Excel
     outputs["Feed Flow Rate"] = m.fs.feed.properties[0].flow_vol_phase["Liq"]
+    # Fixed based on desired flow rates given by the dye desal team
+    outputs["Permeate Flow Rate"] = m.fs.product.properties[0].flow_vol_phase["Liq"]
+    # Multiplied by flow rate scaling factor in Excel
+    outputs["Retentate Flow Rate"] = m.fs.disposal.properties[0].flow_vol_phase["Liq"]
+    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Operating Pressure"] = m.fs.RO.inlet.pressure[0]
+    # No conversion in Excel
     outputs["RO Permeate H2O Mass Flow"] = m.fs.RO.permeate.flow_mass_phase_comp[
         0, "Liq", "H2O"
     ]
+    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Permeate Salt Mass Flow"] = m.fs.RO.permeate.flow_mass_phase_comp[
         0, "Liq", "NaCl"
     ]
+    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Retentate H2O Mass Flow"] = m.fs.RO.retentate.flow_mass_phase_comp[
         0, "Liq", "H2O"
     ]
+    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Retentate Salt Mass Flow"] = m.fs.RO.retentate.flow_mass_phase_comp[
         0, "Liq", "NaCl"
     ]
+    # Multiplied by flow rate scaling factor in Excel
 
     return outputs, m
 
@@ -101,7 +114,7 @@ def run_analysis(
             nx,
         )
         sweep_params["volumetric_recovery"] = LinearSample(
-            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.84, nx
+            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.8, nx
         )
     else:
         raise ValueError(f"{case_num} is not yet implemented")
