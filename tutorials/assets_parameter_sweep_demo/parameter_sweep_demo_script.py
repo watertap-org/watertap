@@ -42,12 +42,14 @@ def build_sweep_params(m, num_samples=1, scenario="A_comp_vs_LCOW"):
             m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"], 0.1, 0.65, num_samples
         )
         sweep_params["NaCl_loading"] = LinearSample(
-            m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"], 
-            0.01, 0.05, num_samples
+            m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"],
+            0.01,
+            0.05,
+            num_samples,
         )
     else:
         raise NotImplementedError
-    
+
     return sweep_params
 
 
@@ -68,10 +70,10 @@ def run_parameter_sweep(num_samples=100, num_procs=1):
 
 
 def create_parameter_sweep_object(
-        num_samples, 
-        num_procs,
-        parallel_backend="ConcurrentFutures",
-        ):
+    num_samples,
+    num_procs,
+    parallel_backend="ConcurrentFutures",
+):
 
     solver = get_solver()
     kwargs_dict = {
@@ -87,8 +89,7 @@ def create_parameter_sweep_object(
         ),
         "build_sweep_params": build_sweep_params,
         "build_sweep_params_kwargs": dict(
-            num_samples=num_samples,
-            scenario="A_comp_vs_B_comp_vs_LCOW"
+            num_samples=num_samples, scenario="A_comp_vs_B_comp_vs_LCOW"
         ),
         "build_outputs": build_outputs,
         "build_outputs_kwargs": {},
@@ -107,7 +108,7 @@ def create_parameter_sweep_object(
         "publish_progress": False,
         "publish_address": "http://localhost:8888",
         "number_of_subprocesses": num_procs,
-        "parallel_back_end": parallel_backend, # "MultiProcessing",
+        "parallel_back_end": parallel_backend,  # "MultiProcessing",
         "log_model_states": False,
     }
     ps = ParameterSweep(**kwargs_dict)
@@ -121,7 +122,6 @@ if __name__ == "__main__":
     import numpy as np
     import pprint
 
-
     start_time = time.time()
 
     if len(sys.argv) == 1:
@@ -131,7 +131,9 @@ if __name__ == "__main__":
         num_samples = int(sys.argv[1])
         num_procs = int(sys.argv[2])
 
-    ps1, kwargs_dict = create_parameter_sweep_object(num_samples, num_procs, parallel_backend="ConcurrentFutures")
+    ps1, kwargs_dict = create_parameter_sweep_object(
+        num_samples, num_procs, parallel_backend="ConcurrentFutures"
+    )
 
     results_array1, results_dict1 = ps1.parameter_sweep(
         kwargs_dict["build_model"],
