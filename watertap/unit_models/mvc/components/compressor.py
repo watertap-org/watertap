@@ -36,6 +36,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
+from watertap.costing.unit_models.compressor import cost_compressor
 
 
 _log = idaeslog.getLogger(__name__)
@@ -353,3 +354,7 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
         # Efficiency, work constraints
         sf = iscale.get_scaling_factor(self.control_volume.work)
         iscale.constraint_scaling_transform(self.eq_efficiency, sf)
+
+    @property
+    def default_costing_method(self):
+        return cost_compressor
