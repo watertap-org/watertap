@@ -84,6 +84,8 @@ def main():
     display_metrics(m)
     display_design(m)
 
+    return m, results
+
 
 def build():
     # flowsheet set up
