@@ -177,7 +177,7 @@ class TestIonExchangeLangmuir:
             "col_diam",
             "number_columns",
             "t_breakthru",
-            "t_contact",
+            # "t_contact",
             "ebct",
             "vel_bed",
             "vel_inter",
@@ -204,8 +204,8 @@ class TestIonExchangeLangmuir:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 68
-        assert number_total_constraints(m) == 42
+        assert number_variables(m) == 67
+        assert number_total_constraints(m) == 41
         assert number_unused_variables(m) == 11
 
     @pytest.mark.unit
@@ -268,7 +268,7 @@ class TestIonExchangeLangmuir:
             "partition_ratio": 217.66935067994518,
             "fluid_mass_transfer_coeff": 3.456092786557271e-05,
             "t_breakthru": 52360.64416318684,
-            "t_contact": 120.0,
+            # "t_contact": 120.0,
             "mass_removed": 65300.80520398353,
             "vel_bed": 0.007083333333333333,
             "vel_inter": 0.014166666666666666,
@@ -451,7 +451,7 @@ class TestIonExchangeFreundlich:
             "col_height_to_diam_ratio",
             "number_columns",
             "t_breakthru",
-            "t_contact",
+            # "t_contact",
             "ebct",
             "vel_bed",
             "vel_inter",
@@ -479,8 +479,8 @@ class TestIonExchangeFreundlich:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 80
-        assert number_total_constraints(m) == 51
+        assert number_variables(m) == 79
+        assert number_total_constraints(m) == 50
         assert number_unused_variables(m) == 12
 
     @pytest.mark.unit
@@ -537,7 +537,7 @@ class TestIonExchangeFreundlich:
             "col_height_to_diam_ratio": 1.242662400172933,
             "number_columns": 16,
             "t_breakthru": 4320000.0,
-            "t_contact": 120.00000000000001,
+            # "t_contact": 120.00000000000001,
             "ebct": 240.00000000000003,
             "vel_bed": 0.006149999999999999,
             "vel_inter": 0.012299999999999998,
@@ -745,7 +745,7 @@ class TestIonExchangeSingleUse:
             "col_height_to_diam_ratio",
             "number_columns",
             "t_breakthru",
-            "t_contact",
+            # "t_contact",
             "ebct",
             "vel_bed",
             "vel_inter",
@@ -773,8 +773,8 @@ class TestIonExchangeSingleUse:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 76
-        assert number_total_constraints(m) == 48
+        assert number_variables(m) == 75
+        assert number_total_constraints(m) == 47
         assert number_unused_variables(m) == 11
 
     @pytest.mark.unit
@@ -831,7 +831,7 @@ class TestIonExchangeSingleUse:
             "col_height_to_diam_ratio": 1.0324865176826379,
             "number_columns": 18,
             "t_breakthru": 4320000.000000001,
-            "t_contact": 120.0,
+            # "t_contact": 120.0,
             "ebct": 240.0,
             "vel_bed": 0.00615,
             "vel_inter": 0.0123,
@@ -1043,7 +1043,7 @@ class TestIonExchangeInert:
             "col_height_to_diam_ratio",
             "number_columns",
             "t_breakthru",
-            "t_contact",
+            # "t_contact",
             "ebct",
             "vel_bed",
             "vel_inter",
@@ -1071,8 +1071,8 @@ class TestIonExchangeInert:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 88
-        assert number_total_constraints(m) == 55
+        assert number_variables(m) == 87
+        assert number_total_constraints(m) == 54
         assert number_unused_variables(m) == 14
 
     @pytest.mark.unit
@@ -1125,7 +1125,7 @@ class TestIonExchangeInert:
             "col_height_to_diam_ratio": 1.242662400172933,
             "number_columns": 16,
             "t_breakthru": 4320000.0,
-            "t_contact": 120.0,
+            # "t_contact": 120.0,
             "ebct": 240.0,
             "vel_bed": 0.006149999999999999,
             "vel_inter": 0.012299999999999998,

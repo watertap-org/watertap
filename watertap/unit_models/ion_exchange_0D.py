@@ -551,13 +551,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Breakthrough time",
         )
 
-        self.t_contact = Var(
-            initialize=120,
-            bounds=(100, None),
-            units=pyunits.s,
-            doc="Resin contact time",
-        )
-
         self.ebct = Var(
             initialize=520,
             bounds=(90, None),
@@ -921,14 +914,18 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Expression(doc="Total column volume required")
         def col_vol_tot(b):
             return b.number_columns * b.col_vol_per
-
-        @self.Expression(
-            doc="Bed volumes at breakthrough",
-        )
-        def bv_calc(b):
-            return (b.vel_bed * b.t_breakthru) / b.bed_depth
+        
+        @self.Expression(doc="Contact time")
+        def t_contact(b):
+            return b.ebct * b.bed_porosity
 
         if self.config.isotherm == IsothermType.langmuir:
+
+            @self.Expression(
+                doc="Bed volumes at breakthrough",
+            )
+            def bv_calc(b):
+                return (b.vel_bed * b.t_breakthru) / b.bed_depth
 
             @self.Expression(doc="Left hand side of constant pattern sol'n")
             def lh(b):
@@ -1008,10 +1005,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(doc="Empty bed contact time")
         def eq_ebct(b):
             return b.ebct * b.vel_bed == b.bed_depth
-
-        @self.Constraint(doc="Contact time")
-        def eq_t_contact(b):
-            return b.t_contact == b.ebct * b.bed_porosity
 
         @self.Constraint(doc="Service flow rate")
         def eq_service_flow_rate(b):
@@ -1102,7 +1095,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 b,
             ):  # Eqs. 16-120, 16-129, Perry's; Eq. 4.136, Inglezakis + Poulopoulos
                 return b.dimensionless_time * b.partition_ratio == (
-                    (b.vel_inter * b.t_breakthru * b.bed_porosity) / b.bed_depth
+                    ((b.vel_bed / b.bed_porosity) * b.t_breakthru * b.bed_porosity) / b.bed_depth
                     - b.bed_porosity
                 )
 
@@ -1379,9 +1372,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.ebct) is None:
             iscale.set_scaling_factor(self.ebct, 1e-2)
 
-        if iscale.get_scaling_factor(self.t_contact) is None:
-            iscale.set_scaling_factor(self.t_contact, 1e-2)
-
         if iscale.get_scaling_factor(self.vel_bed) is None:
             iscale.set_scaling_factor(self.vel_bed, 1e3)
 
@@ -1472,7 +1462,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
             for ind, c in self.eq_clark.items():
                 if iscale.get_scaling_factor(c) is None:
-                    iscale.constraint_scaling_transform(c, 1e6)
+                    iscale.constraint_scaling_transform(c, 1e-2)
 
             for ind, c in self.eq_traps.items():
                 if iscale.get_scaling_factor(c) is None:
@@ -1508,7 +1498,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         var_dict = {}
         var_dict["Breakthrough Time"] = self.t_breakthru
         var_dict["EBCT"] = self.ebct
-        var_dict["Contact Time"] = self.t_contact
         var_dict[f"Relative Breakthrough Conc. [{target_ion}]"] = self.c_norm[
             target_ion
         ]
