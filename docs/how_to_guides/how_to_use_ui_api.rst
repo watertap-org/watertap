@@ -60,7 +60,7 @@ There are 3 required functions:
 
 1. ``do_export`` - This function defines the variables that will be displayed on the UI. See example below::
 
-    def export_variables(flowsheet=None, exports=None, build_options=None):
+    def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
         fs = flowsheet
         exports.add(
             obj=fs.feed.properties[0].flow_vol_phase["Liq"],
@@ -146,7 +146,7 @@ and provide a diagram function among others. See additional examples below.
 
 Build function using build options::
 
-    def build_flowsheet(build_options=None):
+    def build_flowsheet(build_options=None, **kwargs):
         # build and solve initial flowsheet
         if build_options is not None:
             if build_options["Bypass"].value == "true": #build with bypass

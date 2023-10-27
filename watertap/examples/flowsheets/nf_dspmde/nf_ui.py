@@ -43,7 +43,7 @@ def export_to_ui():
     )
 
 
-def export_variables(flowsheet=None, exports=None, build_options=None):
+def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
     fs = flowsheet
     # --- Input data ---
     # Feed conditions
@@ -400,7 +400,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None):
         )
 
 
-def build_flowsheet(build_options=None):
+def build_flowsheet(build_options=None, **kwargs):
     # build and solve initial flowsheet
     if build_options is not None:
         if build_options["Bypass"]["value"] == "true":  # build with bypass
