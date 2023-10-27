@@ -304,6 +304,21 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         self.add_inlet_port(name="inlet", block=self.process_flow)
         self.add_outlet_port(name="outlet", block=self.process_flow)
 
+        tmp_dict = dict(**self.config.property_package_args)
+        tmp_dict["has_phase_equilibrium"] = False
+        tmp_dict["parameters"] = self.config.property_package
+        tmp_dict["defined_state"] = False
+
+        self.regeneration_stream = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of regeneration stream",
+            **tmp_dict,
+        )
+
+        regen = self.regeneration_stream[0]
+
+        self.add_outlet_port(name="regen", block=self.regeneration_stream)
+
         # ==========PARAMETERS==========
 
         self.underdrain_h = Param(
@@ -788,21 +803,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         if self.config.regenerant != RegenerantChem.single_use:
 
-            tmp_dict = dict(**self.config.property_package_args)
-            tmp_dict["has_phase_equilibrium"] = False
-            tmp_dict["parameters"] = self.config.property_package
-            tmp_dict["defined_state"] = False
-
-            self.regeneration_stream = self.config.property_package.state_block_class(
-                self.flowsheet().config.time,
-                doc="Material properties of regeneration stream",
-                **tmp_dict,
-            )
-
-            regen = self.regeneration_stream[0]
-
-            self.add_outlet_port(name="regen", block=self.regeneration_stream)
-
             @self.Expression(doc="Backwashing flow rate")
             def bw_flow(b):
                 return (
@@ -890,8 +890,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             def eq_isobaric_regen_stream(b):
                 return prop_in.pressure == regen.pressure
 
-            for j in inerts:
-                self.regeneration_stream[0].get_material_flow_terms("Liq", j).fix(0)
+        for j in inerts:
+            self.regeneration_stream[0].get_material_flow_terms("Liq", j).fix(0)
 
         @self.Expression(doc="Bed expansion from backwashing")
         def bed_expansion_h(b):
@@ -914,7 +914,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Expression(doc="Total column volume required")
         def col_vol_tot(b):
             return b.number_columns * b.col_vol_per
-        
+
         @self.Expression(doc="Contact time")
         def t_contact(b):
             return b.ebct * b.bed_porosity
@@ -1095,7 +1095,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 b,
             ):  # Eqs. 16-120, 16-129, Perry's; Eq. 4.136, Inglezakis + Poulopoulos
                 return b.dimensionless_time * b.partition_ratio == (
-                    ((b.vel_bed / b.bed_porosity) * b.t_breakthru * b.bed_porosity) / b.bed_depth
+                    ((b.vel_bed / b.bed_porosity) * b.t_breakthru * b.bed_porosity)
+                    / b.bed_depth
                     - b.bed_porosity
                 )
 
@@ -1278,18 +1279,16 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         )
         init_log.info("Initialization Step 1b Complete.")
 
-        if self.config.regenerant != RegenerantChem.single_use:
+        state_args_regen = deepcopy(state_args)
 
-            state_args_regen = deepcopy(state_args)
+        self.regeneration_stream.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args_regen,
+        )
 
-            self.regeneration_stream.initialize(
-                outlvl=outlvl,
-                optarg=optarg,
-                solver=solver,
-                state_args=state_args_regen,
-            )
-
-            init_log.info("Initialization Step 1c Complete.")
+        init_log.info("Initialization Step 1c Complete.")
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -1473,23 +1472,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             iscale.constraint_scaling_transform(c, sf)
 
     def _get_stream_table_contents(self, time_point=0):
-        if self.config.regenerant != RegenerantChem.single_use:
-            return create_stream_table_dataframe(
-                {
-                    "Feed Inlet": self.inlet,
-                    "Liquid Outlet": self.outlet,
-                    "Regen Outlet": self.regen,
-                },
-                time_point=time_point,
-            )
-        else:
-            return create_stream_table_dataframe(
-                {
-                    "Feed Inlet": self.inlet,
-                    "Liquid Outlet": self.outlet,
-                },
-                time_point=time_point,
-            )
+
+        return create_stream_table_dataframe(
+            {
+                "Feed Inlet": self.inlet,
+                "Liquid Outlet": self.outlet,
+                "Regen Outlet": self.regen,
+            },
+            time_point=time_point,
+        )
 
     def _get_performance_contents(self, time_point=0):
 
