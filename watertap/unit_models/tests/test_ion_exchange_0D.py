@@ -340,7 +340,6 @@ class TestIonExchangeFreundlich:
         }
         m.fs.ix = ix = IonExchange0D(**ix_config)
 
-        # c0 = pyunits.convert(c0, to_units=pyunits.kg / pyunits.m**3)
         ix.process_flow.properties_in.calculate_state(
             var_args={
                 ("flow_vol_phase", "Liq"): 0.5,
@@ -636,7 +635,6 @@ class TestIonExchangeSingleUse:
         }
         m.fs.ix = ix = IonExchange0D(**ix_config)
 
-        # c0 = pyunits.convert(c0, to_units=pyunits.kg / pyunits.m**3)
         ix.process_flow.properties_in.calculate_state(
             var_args={
                 ("flow_vol_phase", "Liq"): 0.5,
