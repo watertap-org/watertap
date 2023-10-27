@@ -179,7 +179,6 @@ class TestIonExchangeLangmuir:
             "t_breakthru",
             "ebct",
             "vel_bed",
-            "vel_inter",
             "service_flow_rate",
             "N_Re",
             "N_Sc",
@@ -203,8 +202,8 @@ class TestIonExchangeLangmuir:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 67
-        assert number_total_constraints(m) == 41
+        assert number_variables(m) == 66
+        assert number_total_constraints(m) == 40
         assert number_unused_variables(m) == 11
 
     @pytest.mark.unit
@@ -269,7 +268,6 @@ class TestIonExchangeLangmuir:
             "t_breakthru": 52360.64416318684,
             "mass_removed": 65300.80520398353,
             "vel_bed": 0.007083333333333333,
-            "vel_inter": 0.014166666666666666,
             "service_flow_rate": 15,
             "N_Re": 4.958333333333333,
             "N_Sc": 1086.9565217391305,
@@ -451,7 +449,6 @@ class TestIonExchangeFreundlich:
             "t_breakthru",
             "ebct",
             "vel_bed",
-            "vel_inter",
             "service_flow_rate",
             "N_Re",
             "N_Sc",
@@ -476,8 +473,8 @@ class TestIonExchangeFreundlich:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 79
-        assert number_total_constraints(m) == 50
+        assert number_variables(m) == 78
+        assert number_total_constraints(m) == 49
         assert number_unused_variables(m) == 12
 
     @pytest.mark.unit
@@ -536,7 +533,6 @@ class TestIonExchangeFreundlich:
             "t_breakthru": 4320000.0,
             "ebct": 240.00000000000003,
             "vel_bed": 0.006149999999999999,
-            "vel_inter": 0.012299999999999998,
             "service_flow_rate": 15,
             "N_Re": 4.151249999999999,
             "N_Sc": {"Cl_-": 999.9999999999998},
@@ -740,7 +736,6 @@ class TestIonExchangeSingleUse:
             "t_breakthru",
             "ebct",
             "vel_bed",
-            "vel_inter",
             "service_flow_rate",
             "N_Re",
             "N_Sc",
@@ -765,8 +760,8 @@ class TestIonExchangeSingleUse:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 79
-        assert number_total_constraints(m) == 47
+        assert number_variables(m) == 78
+        assert number_total_constraints(m) == 46
         assert number_unused_variables(m) == 15
 
     @pytest.mark.unit
@@ -825,7 +820,6 @@ class TestIonExchangeSingleUse:
             "t_breakthru": 4320000.000000001,
             "ebct": 240.0,
             "vel_bed": 0.00615,
-            "vel_inter": 0.0123,
             "service_flow_rate": 15,
             "N_Re": 4.15125,
             "N_Sc": {"Cl_-": 1000.0},
@@ -1036,7 +1030,6 @@ class TestIonExchangeInert:
             "t_breakthru",
             "ebct",
             "vel_bed",
-            "vel_inter",
             "service_flow_rate",
             "N_Re",
             "N_Sc",
@@ -1061,8 +1054,8 @@ class TestIonExchangeInert:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 87
-        assert number_total_constraints(m) == 54
+        assert number_variables(m) == 86
+        assert number_total_constraints(m) == 53
         assert number_unused_variables(m) == 14
 
     @pytest.mark.unit
@@ -1117,7 +1110,6 @@ class TestIonExchangeInert:
             "t_breakthru": 4320000.0,
             "ebct": 240.0,
             "vel_bed": 0.006149999999999999,
-            "vel_inter": 0.012299999999999998,
             "service_flow_rate": 15,
             "N_Re": 4.151249999999999,
             "N_Sc": {"Cl_-": 999.9999999999998},

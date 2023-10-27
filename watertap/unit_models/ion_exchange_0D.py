@@ -582,12 +582,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Superficial velocity through bed",
         )
 
-        self.vel_inter = Var(
-            initialize=0.01,
-            units=pyunits.m / pyunits.s,
-            doc="Interstitial velocity through bed",
-        )
-
         self.service_flow_rate = Var(
             initialize=10,
             bounds=(1, 40),
@@ -801,6 +795,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def bed_vol(b):
             return b.bed_vol_tot / b.number_columns
 
+
+
         if self.config.regenerant != RegenerantChem.single_use:
 
             @self.Expression(doc="Backwashing flow rate")
@@ -914,10 +910,14 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Expression(doc="Total column volume required")
         def col_vol_tot(b):
             return b.number_columns * b.col_vol_per
-
+        
         @self.Expression(doc="Contact time")
         def t_contact(b):
             return b.ebct * b.bed_porosity
+        
+        @self.Expression(doc="Interstitial velocity")
+        def vel_inter(b):
+            return b.vel_bed / b.bed_porosity
 
         if self.config.isotherm == IsothermType.langmuir:
 
@@ -994,9 +994,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         # =========== RESIN & COLUMN ===========
 
-        @self.Constraint(doc="Interstitial velocity")
-        def eq_vel_inter(b):
-            return b.vel_inter == b.vel_bed / b.bed_porosity
+
 
         @self.Constraint(doc="Resin bead surface area per volume")
         def eq_resin_surf_per_vol(b):
@@ -1095,7 +1093,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 b,
             ):  # Eqs. 16-120, 16-129, Perry's; Eq. 4.136, Inglezakis + Poulopoulos
                 return b.dimensionless_time * b.partition_ratio == (
-                    ((b.vel_bed / b.bed_porosity) * b.t_breakthru * b.bed_porosity)
+                    (b.vel_inter * b.t_breakthru * b.bed_porosity)
                     / b.bed_depth
                     - b.bed_porosity
                 )
@@ -1374,9 +1372,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.vel_bed) is None:
             iscale.set_scaling_factor(self.vel_bed, 1e3)
 
-        if iscale.get_scaling_factor(self.vel_inter) is None:
-            iscale.set_scaling_factor(self.vel_inter, 1e3)
-
         # unique scaling for isotherm type
         if isotherm == IsothermType.langmuir:
             if iscale.get_scaling_factor(self.resin_max_capacity) is None:
@@ -1466,10 +1461,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             for ind, c in self.eq_traps.items():
                 if iscale.get_scaling_factor(c) is None:
                     iscale.constraint_scaling_transform(c, 1e2)
-
-        for ind, c in self.eq_vel_inter.items():
-            sf = iscale.get_scaling_factor(self.vel_inter)
-            iscale.constraint_scaling_transform(c, sf)
 
     def _get_stream_table_contents(self, time_point=0):
 
