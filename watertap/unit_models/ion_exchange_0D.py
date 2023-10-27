@@ -795,8 +795,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def bed_vol(b):
             return b.bed_vol_tot / b.number_columns
 
-
-
         if self.config.regenerant != RegenerantChem.single_use:
 
             @self.Expression(doc="Backwashing flow rate")
@@ -910,11 +908,11 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Expression(doc="Total column volume required")
         def col_vol_tot(b):
             return b.number_columns * b.col_vol_per
-        
+
         @self.Expression(doc="Contact time")
         def t_contact(b):
             return b.ebct * b.bed_porosity
-        
+
         @self.Expression(doc="Interstitial velocity")
         def vel_inter(b):
             return b.vel_bed / b.bed_porosity
@@ -993,8 +991,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             return b.N_Pe_particle == b.Pe_p_A * b.N_Re**b.Pe_p_exp
 
         # =========== RESIN & COLUMN ===========
-
-
 
         @self.Constraint(doc="Resin bead surface area per volume")
         def eq_resin_surf_per_vol(b):
@@ -1093,8 +1089,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 b,
             ):  # Eqs. 16-120, 16-129, Perry's; Eq. 4.136, Inglezakis + Poulopoulos
                 return b.dimensionless_time * b.partition_ratio == (
-                    (b.vel_inter * b.t_breakthru * b.bed_porosity)
-                    / b.bed_depth
+                    (b.vel_inter * b.t_breakthru * b.bed_porosity) / b.bed_depth
                     - b.bed_porosity
                 )
 
