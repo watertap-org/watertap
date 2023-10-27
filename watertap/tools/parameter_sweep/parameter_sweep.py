@@ -348,38 +348,6 @@ class _ParameterSweepBase(ABC):
         return global_combo_array
 
     """
-    Create an empty buffer of the right size to hold the global array of combinations.
-    """
-
-    def _create_empty_global_combo_array(self, d, sampling_type, num_samples):
-        num_var_params = len(d)
-
-        if sampling_type == SamplingType.FIXED:
-            nx = 1
-            for k, v in d.items():
-                nx *= v.num_samples
-        elif (
-            sampling_type == SamplingType.RANDOM
-            or sampling_type == SamplingType.RANDOM_LHS
-        ):
-            # Make sure num_samples are the same here and across the SamplingTypes
-            for k, v in d.items():
-                if v.num_samples != num_samples:
-                    raise RuntimeError(
-                        "The number of samples should be the same across all sweep parameters."
-                    )
-            nx = num_samples
-        else:
-            raise ValueError(f"Unknown sampling type: {sampling_type}")
-
-        if not float(nx).is_integer():
-            raise RuntimeError(f"Total number of samples must be integer valued")
-        nx = int(nx)
-
-        # allocate the right amount of memory
-        return np.zeros((nx, num_var_params), dtype=float)
-
-    """
     Put together all of the parameter combinations that the sweep will be run for.
     """
 
@@ -387,14 +355,8 @@ class _ParameterSweepBase(ABC):
         # only build the full array of combinations on the root process. on the non-root
         # processes, initialize an empty array of the right size that will be synced
         # over from the root process.
-        if self.parallel_manager.is_root_process():
-            global_combo_array = self._create_global_combo_array(d, sampling_type)
-        else:
-            global_combo_array = self._create_empty_global_combo_array(
-                d, sampling_type, num_samples
-            )
 
-        # make sure all processes running in parallel have an identical copy of the data
+        global_combo_array = self._create_global_combo_array(d, sampling_type)
         self.parallel_manager.sync_array_with_peers(global_combo_array)
 
         return global_combo_array
@@ -455,7 +417,7 @@ class _ParameterSweepBase(ABC):
         sampling_type = None
 
         # Check the list of parameters to make sure they are valid
-        for k in sweep_params:
+        for k in sweep_params.keys():
             # Convert to using Sample class
             if isinstance(sweep_params[k], (list, tuple)):
                 sweep_params[k] = LinearSample(*sweep_params[k])
