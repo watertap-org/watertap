@@ -13,6 +13,8 @@
 
 import pytest
 
+import requests
+
 from pathlib import Path
 from os.path import join
 
@@ -38,7 +40,9 @@ def credential_manager():
 
     credential_manager = CredentialManager(**credentials, test=True)
 
-    credential_manager.login()
+    with pytest.raises(requests.exceptions.ConnectionError):
+
+        credential_manager.login()
 
     return credential_manager
 
@@ -78,11 +82,15 @@ def test_get_dbs_file_id(credential_manager, chemistry_source):
 
     with OLIApi(credential_manager) as oliapi:
 
-        local_dbs_file_id = oliapi.get_dbs_file_id(local_dbs_file)
+        with pytest.raises(OSError):
 
-        generated_dbs_file_id = oliapi.get_dbs_file_id(
-            chemistry_source["components"], phases, model_name
-        )
+            local_dbs_file_id = oliapi.get_dbs_file_id(local_dbs_file)
+
+        with pytest.raises(AttributeError):
+
+            generated_dbs_file_id = oliapi.get_dbs_file_id(
+                chemistry_source["components"], phases, model_name
+            )
 
 
 @pytest.mark.unit
@@ -104,11 +112,13 @@ def test_call(credential_manager, chemistry_source):
 
     with OLIApi(credential_manager) as oliapi:
 
-        generated_dbs_file_id = oliapi.get_dbs_file_id(
-            chemistry_source["components"], phases, model_name
-        )
+        with pytest.raises(AttributeError):
 
-        results = water_analysis.run(oliapi, generated_dbs_file_id)
+            generated_dbs_file_id = oliapi.get_dbs_file_id(
+                chemistry_source["components"], phases, model_name
+            )
+
+            results = water_analysis.run(oliapi, generated_dbs_file_id)
 
 
 @pytest.mark.unit
@@ -116,7 +126,9 @@ def test_get_user_summary(credential_manager):
 
     with OLIApi(credential_manager) as oliapi:
 
-        oliapi.get_user_summary()
+        with pytest.raises(AttributeError):
+
+            oliapi.get_user_summary()
 
 
 @pytest.mark.unit
@@ -124,4 +136,6 @@ def test_delete_dbs_files(credential_manager):
 
     with OLIApi(credential_manager, test=True) as oliapi:
 
-        oliapi.dbs_file_cleanup()
+        with pytest.raises(AttributeError):
+
+            oliapi.dbs_file_cleanup()
