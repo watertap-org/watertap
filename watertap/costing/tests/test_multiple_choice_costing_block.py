@@ -13,6 +13,7 @@
 import pytest
 
 import os
+import re
 
 import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
@@ -112,7 +113,7 @@ def setup_flowsheet():
                 },
                 "foo": {"costing_mehtod": cost_reverse_osmosis},
             },
-            initial_active_block="high_pressure",
+            initial_costing_block="high_pressure",
         )
     m.fs.RO2.del_component(m.fs.RO2.costing)
 
@@ -130,7 +131,7 @@ def setup_flowsheet():
                 },
                 "foo": {"costing_method_arguments": {"ro_type": "high_pressure"}},
             },
-            initial_active_block="high_pressure",
+            initial_costing_block="high_pressure",
         )
     m.fs.RO2.del_component(m.fs.RO2.costing)
 
@@ -159,7 +160,7 @@ def setup_flowsheet():
                 "costing_method_arguments": {"ro_type": "high_pressure"},
             },
         },
-        initial_active_block="high_pressure",
+        initial_costing_block="high_pressure",
     )
     m.fs.RO2.area.set_value(50)
 
@@ -197,6 +198,27 @@ def setup_flowsheet():
     m.fs.RO3.costing.select_costing_block("my_own")
 
     m.fs.costing.cost_process()
+
+    m.fs.foo = pyo.Block()
+    with pytest.raises(
+        TypeError,
+        match=re.escape(
+            "fs.foo.costing - parent object (fs.foo) is not an instance "
+            "of a UnitModelBlockData object. UnitModelCostingBlocks can only be "
+            "added to UnitModelBlocks."
+        ),
+    ):
+        m.fs.foo.costing = MultipleChoiceCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_blocks={
+                "normal_pressure": cost_reverse_osmosis,
+                "high_pressure": {
+                    "costing_method": cost_reverse_osmosis,
+                    "costing_method_arguments": {"ro_type": "high_pressure"},
+                },
+                "my_own": my_own_reverse_osmosis_costing,
+            },
+        )
 
     return m
 

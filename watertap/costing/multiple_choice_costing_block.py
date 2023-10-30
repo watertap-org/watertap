@@ -31,7 +31,6 @@ class MultipleChoiceCostingBlockData(UnitModelCostingBlockData, UnitModelCosting
     """
     Class for constructing several costing blocks on the same
     unit model and then allowing for choice between them
-
     """
 
     CONFIG = ConfigBlock()
@@ -56,7 +55,7 @@ class MultipleChoiceCostingBlockData(UnitModelCostingBlockData, UnitModelCosting
         ),
     )
     CONFIG.declare(
-        "initial_active_block",
+        "initial_costing_block",
         ConfigValue(
             doc="Costing block to be initially active",
             default=None,
@@ -102,16 +101,16 @@ class MultipleChoiceCostingBlockData(UnitModelCostingBlockData, UnitModelCosting
         add_object_reference(self, "unit_model", unit_model)
 
         self.costing_blocks = pyo.Block(self.config.costing_blocks)
-        self.costing_selector = pyo.Param(
+        self.costing_block_selector = pyo.Param(
             self.config.costing_blocks, domain=pyo.Boolean, default=0, mutable=True
         )
 
-        if self.config.initial_active_block is None:
+        if self.config.initial_costing_block is None:
             for k in self.config.costing_blocks:
-                self.costing_selector[k].set_value(1)
+                self.costing_block_selector[k].set_value(1)
                 break
         else:
-            self.costing_selector[self.config.initial_active_block].set_value(1)
+            self.costing_block_selector[self.config.initial_costing_block].set_value(1)
 
         # Get costing method if not provided
         for k, val in self.config.costing_blocks.items():
@@ -182,7 +181,7 @@ class MultipleChoiceCostingBlockData(UnitModelCostingBlockData, UnitModelCosting
                 cvar = blk.component(vname)
                 if cvar is None:
                     continue
-                expr += self.costing_selector[name] * cvar
+                expr += self.costing_block_selector[name] * cvar
 
             self.add_component(vname, pyo.Expression(expr=expr))
 
@@ -191,13 +190,12 @@ class MultipleChoiceCostingBlockData(UnitModelCostingBlockData, UnitModelCosting
         Set the active costing block
         """
         # zero out everything else
-        self.costing_selector[:].set_value(0)
-        self.costing_selector[costing_block_name].set_value(1)
+        self.costing_block_selector[:].set_value(0)
+        self.costing_block_selector[costing_block_name].set_value(1)
 
     def initialize(self, *args, **kwargs):
         """
-        See who is active, initialize that block
-        ??? maybe we should just initialize them all ???
+        Initialize all costing blocks for easy switching between
         """
         # TODO: Implement an initialization method
         # TODO: Need to have a general purpose method (block triangularisation?)
