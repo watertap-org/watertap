@@ -278,7 +278,7 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.pump_brine.efficiency_pump,
+        obj=fs.pump_brine.efficiency_pump[0],
         name="Brine pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
