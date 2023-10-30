@@ -134,7 +134,7 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.hx_distillate.overall_heat_transfer_coefficient,
+        obj=fs.hx_distillate.overall_heat_transfer_coefficient[0],
         name="Distillate HEX heat transfer coefficient",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -179,7 +179,7 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     exports.add(
-        obj=fs.hx_brine.overall_heat_transfer_coefficient,
+        obj=fs.hx_brine.overall_heat_transfer_coefficient[0],
         name="Brine HEX heat transfer coefficient",
         ui_units=pyunits.dimensionless,
         display_units="fraction",

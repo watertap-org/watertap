@@ -376,13 +376,13 @@ def set_operating_conditions(m):
     m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"] = m.fs.recovery[0].value
 
     # Distillate HX
-    m.fs.hx_distillate.overall_heat_transfer_coefficient.fix(2e3)
+    m.fs.hx_distillate.overall_heat_transfer_coefficient[0].fix(2e3)
     m.fs.hx_distillate.area.fix(125)
     m.fs.hx_distillate.cold.deltaP[0].fix(7e3)
     m.fs.hx_distillate.hot.deltaP[0].fix(7e3)
 
     # Brine HX
-    m.fs.hx_brine.overall_heat_transfer_coefficient.fix(2e3)
+    m.fs.hx_brine.overall_heat_transfer_coefficient[0].fix(2e3)
     m.fs.hx_brine.area.fix(115)
     m.fs.hx_brine.cold.deltaP[0].fix(7e3)
     m.fs.hx_brine.hot.deltaP[0].fix(7e3)
