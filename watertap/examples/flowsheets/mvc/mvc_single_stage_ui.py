@@ -300,7 +300,7 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.pump_distillate.efficiency_pump,
+        obj=fs.pump_distillate.efficiency_pump[0],
         name="Distillate pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
