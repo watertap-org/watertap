@@ -28,7 +28,7 @@ from idaes.core.solvers import get_solver
 
 def export_to_ui():
     return FlowsheetInterface(
-        name="Mechanical Vapor Compression",
+        name="Mechanical vapor compression",
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
@@ -136,8 +136,8 @@ def export_variables(flowsheet=None, exports=None):
     exports.add(
         obj=fs.hx_distillate.overall_heat_transfer_coefficient[0],
         name="Distillate HEX heat transfer coefficient",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
+        ui_units=pyunits.J * pyunits.s**-1 * pyunits.m**-2 * pyunits.K**-1,
+        display_units="W/K-m2",
         rounding=2,
         description="Distillate heat exchanger heat transfer coefficient",
         is_input=True,
@@ -181,8 +181,8 @@ def export_variables(flowsheet=None, exports=None):
     exports.add(
         obj=fs.hx_brine.overall_heat_transfer_coefficient[0],
         name="Brine HEX heat transfer coefficient",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
+        ui_units=pyunits.J * pyunits.s**-1 * pyunits.m**-2 * pyunits.K**-1,
+        display_units="W/K-m2",
         rounding=2,
         description="Brine heat exchanger heat transfer coefficient",
         is_input=True,
@@ -347,40 +347,6 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.plant_lifetime,
-        name="Plant lifetime",
-        ui_units=pyunits.year,
-        display_units="years",
-        rounding=1,
-        description="Plant lifetime",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.wacc,
-        name="Discount rate",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Discount rate used in calculating the capital annualization",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.maintenance_costs_percent_FCI,
-        name="Fixed operating cost factor",
-        ui_units=1 / pyunits.year,
-        display_units="fraction/year",
-        rounding=2,
-        description="Fixed operating cost factor - [annual fixed operating cost/total "
-        "investment cost]",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
         obj=fs.costing.electricity_cost,
         name="Electricity cost",
         ui_units=fs.costing.base_currency / pyunits.kWh,
@@ -475,39 +441,6 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.evaporator.properties_feed[0].temperature,
-        name="Preheated feed temperature",
-        ui_units=pyunits.K,
-        display_units="K",
-        rounding=2,
-        description="Evaporator feed temperature",
-        is_input=False,
-        is_output=True,
-        output_category="Outlets",
-    )
-    exports.add(
-        obj=fs.evaporator.properties_brine[0].temperature,
-        name="Evaporator (brine, vapor) temperature",
-        ui_units=pyunits.K,
-        display_units="K",
-        rounding=2,
-        description="Evaporator (brine, vapor) temperature",
-        is_input=False,
-        is_output=True,
-        output_category="Outlets",
-    )
-    exports.add(
-        obj=fs.evaporator.properties_brine[0].pressure,
-        name="Evaporator (brine, vapor) pressure",
-        ui_units=pyunits.Pa,
-        display_units="Pa",
-        rounding=2,
-        description="Evaporator (brine, vapor) pressure",
-        is_input=False,
-        is_output=True,
-        output_category="Outlets",
-    )
-    exports.add(
         obj=fs.compressor.control_volume.properties_out[0].temperature,
         name="Compressed vapor temperature",
         ui_units=pyunits.K,
@@ -541,39 +474,6 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.hx_brine.area,
-        name="Brine heat exchanger area",
-        ui_units=pyunits.m**2,
-        display_units="m2",
-        rounding=2,
-        description="Brine heat exchanger area",
-        is_input=False,
-        is_output=True,
-        output_category="Design variables",
-    )
-    exports.add(
-        obj=fs.hx_distillate.area,
-        name="Distillate heat exchanger area",
-        ui_units=pyunits.m**2,
-        display_units="m2",
-        rounding=2,
-        description="Distillate heat exchanger area",
-        is_input=False,
-        is_output=True,
-        output_category="Design variables",
-    )
-    exports.add(
-        obj=fs.evaporator.area,
-        name="Evaporator heat exchanger area",
-        ui_units=pyunits.m**2,
-        display_units="m2",
-        rounding=2,
-        description="Evaporator heat exchanger area",
-        is_input=False,
-        is_output=True,
-        output_category="Design variables",
-    )
-    exports.add(
         obj=fs.evaporator.lmtd,
         name="Evaporator log-mean temperature difference",
         ui_units=pyunits.K,
@@ -582,18 +482,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Evaporator LMTD",
         is_input=False,
         is_output=True,
-        output_category="Design variables",
-    )
-    exports.add(
-        obj=fs.compressor.pressure_ratio,
-        name="Compressor pressure ratio",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Compressor pressure ratio",
-        is_input=False,
-        is_output=True,
-        output_category="Design variables",
+        output_category="Outlets",
     )
 
     # System metrics
@@ -620,39 +509,7 @@ def export_variables(flowsheet=None, exports=None):
         "capital and installation - [total capital costs/feed flow rate]",
         is_input=False,
         is_output=True,
-        output_category="Normalized cost metrics",
-    )
-    direct_capital_norm = (
-        fs.magprex.costing.direct_capital_cost
-        + fs.centrifuge.costing.direct_capital_cost
-        + fs.classifier.costing.direct_capital_cost
-    ) / fs.feed.properties[0].flow_vol
-    exports.add(
-        obj=direct_capital_norm,
-        name="Direct capital",
-        ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
-        display_units="$/(m3/day)",
-        rounding=1,
-        description="Normalized direct capital costs - [total direct capital "
-        "costs/feed flow rate] ",
-        is_input=False,
-        is_output=True,
-        output_category="Normalized cost metrics",
-    )
-    elec_operating_norm = (
-        fs.costing.aggregate_flow_costs["electricity"] / fs.costing.annual_water_inlet
-    )
-    exports.add(
-        obj=elec_operating_norm,
-        name="Electricity",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of feed",
-        rounding=2,
-        description="Normalized electricity cost - [annual electricity costs/annual "
-        "feed flow rate]",
-        is_input=False,
-        is_output=True,
-        output_category="Normalized cost metrics",
+        output_category="Normalized metrics",
     )
 
     # performance metrics
@@ -665,7 +522,7 @@ def export_variables(flowsheet=None, exports=None):
         description="Specific energy consumption",
         is_input=False,
         is_output=True,
-        output_category="Normalized performance metrics",
+        output_category="Normalized metrics",
     )
 
     # Capital costs
@@ -756,18 +613,6 @@ def export_variables(flowsheet=None, exports=None):
         display_units="$/year",
         rounding=0,
         description="Annual electricity costs ",
-        is_input=False,
-        is_output=True,
-        output_category="Operating costs",
-    )
-    exports.add(
-        obj=fs.costing.total_fixed_operating_cost,
-        name="Fixed",
-        ui_units=fs.costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=0,
-        description="Annual fixed operating costs - these costs include material "
-        "replacement, maintenance, and labor",
         is_input=False,
         is_output=True,
         output_category="Operating costs",
