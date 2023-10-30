@@ -13,14 +13,17 @@ from watertap.ui.fsapi import FlowsheetInterface
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.examples.flowsheets.mvc.mvc_single_stage import (
     build,
+    set_operating_conditions,
     add_Q_ext,
     initialize_system,
     scale_costs,
     fix_outlet_pressures,
+    solve,
     set_up_optimization,
 )
-from pyomo.environ import units as pyunits, assert_optimal_termination
+from pyomo.environ import units as pyunits, assert_optimal_termination, Objective
 from pyomo.util.check_units import assert_units_consistent
+from idaes.core.solvers import get_solver
 
 
 def export_to_ui():
@@ -35,218 +38,287 @@ def export_to_ui():
 def export_variables(flowsheet=None, exports=None):
     fs = flowsheet
     # --- Input data ---
-    # Feed conditions
     exports.add(
-        obj=fs.feed.flow_vol[0],
-        name="Volumetric flow rate",
-        ui_units=pyunits.m**3 / pyunits.hr,
-        display_units="m3/h",
+        obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],
+        name="Feed mass flow",
+        ui_units=pyunits.kg / pyunits.s,
+        display_units="kg/s",
         rounding=2,
-        description="Inlet volumetric flow rate",
+        description="Liquid feed mass flow",
         is_input=True,
         input_category="Feed",
         is_output=True,
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "phosphates"],
-        name="OP concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
+        obj=fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"],
+        name="TDS mass fraction",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
         rounding=2,
-        description="Inlet orthophosphate concentration",
+        description="Salt mass fraction",
         is_input=True,
         input_category="Feed",
         is_output=True,
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "struvite"],
-        name="Struvite concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
+        obj=fs.feed.properties[0].temperature,
+        name="Feed temperature",
+        ui_units=pyunits.K,
+        display_units="K",
         rounding=2,
-        description="Inlet struvite concentration",
+        description="Feed temperature",
+        is_input=True,
+        input_category="Feed",
+        is_output=True,
+        output_category="Feed",
+    )
+    exports.add(
+        obj=fs.feed.properties[0].pressure,
+        name="Feed pressure",
+        ui_units=pyunits.Pa,
+        display_units="Pa",
+        rounding=2,
+        description="Feed pressure",
+        is_input=True,
+        input_category="Feed",
+        is_output=True,
+        output_category="Feed",
+    )
+    exports.add(
+        obj=fs.recovery[0],
+        name="Volumetric recovery",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Volumetric recovery of the flowsheet",
         is_input=True,
         input_category="Feed",
         is_output=True,
         output_category="Feed",
     )
 
-    # Unit model data, Magprex reactor
     exports.add(
-        obj=fs.magprex.recovery_frac_mass_H2O[0],
-        name="Water recovery",
+        obj=fs.pump_feed.efficiency_pump,
+        name="Feed pump efficiency",
         ui_units=pyunits.dimensionless,
-        display_units="fraction",  # we should change to %
+        display_units="fraction",
         rounding=2,
-        description="Water recovery [g-H2O treated/g-H2O inlet]",
+        description="Feed pump efficiency",
         is_input=True,
-        input_category="Magprex reactor",
+        input_category="Feed pump",
         is_output=False,
     )
     exports.add(
-        obj=fs.magprex.reaction_conversion[0, "struvite_precip"],
-        name="OP conversion",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",  # we should change to %
+        obj=fs.pump_feed.control_volume.deltaP[0],
+        name="Feed pump pressure change",
+        ui_units=pyunits.Pa,
+        display_units="Pa",
         rounding=2,
-        description="Orthophosphate conversion [g-OP reacted/g-OP inlet]",
+        description="Feed pump pressure change",
         is_input=True,
-        input_category="Magprex reactor",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.magprex.energy_electric_flow_vol_inlet,
-        name="Aeration energy",
-        ui_units=pyunits.kWh / pyunits.m**3,
-        display_units="kWh/m3",
-        rounding=2,
-        description="Specific aeration energy relating the energy to the volume of feed",
-        is_input=True,
-        input_category="Magprex reactor",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.magprex.magnesium_chloride_dosage,
-        name="MgCl2 Dosage",
-        ui_units=pyunits.dimensionless,
-        display_units="kg MgCl2/kg phosphates",
-        rounding=2,
-        description="MgCl2 Dosage per kg of influent phosphates",
-        is_input=True,
-        input_category="Magprex reactor",
+        input_category="Feed pump",
         is_output=False,
     )
 
-    # Unit cost data, Magprex reactor
     exports.add(
-        obj=fs.costing.magprex.HRT[None],
-        name="HRT",
-        ui_units=pyunits.hr,
-        display_units="h",
-        rounding=1,
-        description="Hydraulic retention time",
-        is_input=True,
-        input_category="Magprex reactor costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.magprex.sizing_cost[None],
-        name="Magprex reactor cost",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of reactor",
-        rounding=0,
-        description="Magprex reactor capital cost parameter",
-        is_input=True,
-        input_category="Magprex reactor costing",
-        is_output=False,
-    )
-
-    # Unit model data, centrifuge
-    exports.add(
-        obj=fs.centrifuge.recovery_frac_mass_H2O[0],
-        name="Water recovery",
+        obj=fs.separator_feed.split_fraction[0, "hx_distillate_cold"],
+        name="Separator split fraction for distillate HEX",
         ui_units=pyunits.dimensionless,
-        display_units="fraction",  # we should change to %
+        display_units="fraction",
         rounding=2,
-        description="Water recovery [g-H2O treated/g-H2O inlet]",
+        description="Separator split fraction going into distillate heat exchanger",
         is_input=True,
-        input_category="Centrifuge",
+        input_category="Feed separator",
         is_output=False,
     )
     exports.add(
-        obj=fs.centrifuge.removal_frac_mass_comp[0, "phosphates"],
-        name="OP removal",
+        obj=fs.hx_distillate.overall_heat_transfer_coefficient,
+        name="Distillate HEX heat transfer coefficient",
         ui_units=pyunits.dimensionless,
-        display_units="fraction",  # we should change to %
+        display_units="fraction",
         rounding=2,
-        description="Orthophosphate removal [g-OP removed/g-OP inlet]",
+        description="Distillate heat exchanger heat transfer coefficient",
         is_input=True,
-        input_category="Centrifuge",
+        input_category="Distillate heat exchanger",
         is_output=False,
     )
     exports.add(
-        obj=fs.centrifuge.energy_electric_flow_vol_inlet,
-        name="Specific power",
-        ui_units=pyunits.kWh / pyunits.m**3,
-        display_units="kWh/m3",
+        obj=fs.hx_distillate.area,
+        name="Distillate HEX area",
+        ui_units=pyunits.m**2,
+        display_units="m2",
         rounding=2,
-        description="Centrifuge specific power relating the power to the volume of feed",
+        description="Distillate heat exchanger area",
         is_input=True,
-        input_category="Centrifuge",
+        input_category="Distillate heat exchanger",
         is_output=False,
     )
     exports.add(
-        obj=fs.centrifuge.polymer_dose[0],
-        name="Polymer Dosage",
-        ui_units=pyunits.mg / pyunits.L,
-        display_units="mg/L",
+        obj=fs.hx_distillate.cold.deltaP[0],
+        name="Distillate HEX cold side pressure change",
+        ui_units=pyunits.Pa,
+        display_units="Pa",
         rounding=2,
-        description="Polymer Dosage per liter of sludge treated",
+        description="Distillate heat exchanger cold side pressure change",
         is_input=True,
-        input_category="Centrifuge",
+        input_category="Distillate heat exchanger",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.hx_distillate.hot.deltaP[0],
+        name="Distillate HEX hot side pressure change",
+        ui_units=pyunits.Pa,
+        display_units="Pa",
+        rounding=2,
+        description="Distillate heat exchanger hot side pressure change",
+        is_input=True,
+        input_category="Distillate heat exchanger",
         is_output=False,
     )
 
-    # Unit cost data, centrifuge
     exports.add(
-        obj=fs.costing.centrifuge.HRT[None],
-        name="HRT",
-        ui_units=pyunits.hr,
-        display_units="h",
-        rounding=1,
-        description="Hydraulic retention time",
-        is_input=True,
-        input_category="Centrifuge costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.centrifuge.sizing_cost[None],
-        name="Centrifuge cost",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of centrifuge",
-        rounding=0,
-        description="Centrifuge capital cost parameter",
-        is_input=True,
-        input_category="Centrifuge costing",
-        is_output=False,
-    )
-
-    # Unit model data, struvite classifier
-    exports.add(
-        obj=fs.classifier.energy_electric_flow_vol_inlet,
-        name="Specific power",
-        ui_units=pyunits.kWh / pyunits.m**3,
-        display_units="kWh/m3",
+        obj=fs.hx_brine.overall_heat_transfer_coefficient,
+        name="Brine HEX heat transfer coefficient",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
         rounding=2,
-        description="Classifier specific power relating the power to the volume of feed",
+        description="Brine heat exchanger heat transfer coefficient",
         is_input=True,
-        input_category="Classifier",
-        is_output=False,
-    )
-
-    # Unit cost data, struvite classifier
-    exports.add(
-        obj=fs.costing.struvite_classifier.HRT[None],
-        name="HRT",
-        ui_units=pyunits.hr,
-        display_units="h",
-        rounding=1,
-        description="Hydraulic retention time",
-        is_input=True,
-        input_category="Classifier costing",
+        input_category="Brine heat exchanger",
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.struvite_classifier.sizing_cost[None],
-        name="Classifier cost",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of classifier",
-        rounding=0,
-        description="Classifier capital cost parameter",
+        obj=fs.hx_brine.area,
+        name="Brine HEX area",
+        ui_units=pyunits.m**2,
+        display_units="m2",
+        rounding=2,
+        description="Brine heat exchanger area",
         is_input=True,
-        input_category="Classifier costing",
+        input_category="Brine heat exchanger",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.hx_brine.cold.deltaP[0],
+        name="Brine HEX cold side pressure change",
+        ui_units=pyunits.Pa,
+        display_units="Pa",
+        rounding=2,
+        description="Brine heat exchanger cold side pressure change",
+        is_input=True,
+        input_category="Brine heat exchanger",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.hx_brine.hot.deltaP[0],
+        name="Brine HEX hot side pressure change",
+        ui_units=pyunits.Pa,
+        display_units="Pa",
+        rounding=2,
+        description="Brine heat exchanger hot side pressure change",
+        is_input=True,
+        input_category="Brine heat exchanger",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.evaporator.inlet_feed.temperature[0],
+        name="Evaporator inlet temperature",
+        ui_units=pyunits.K,
+        display_units="K",
+        rounding=2,
+        description="Evaporator inlet feed temperature",
+        is_input=True,
+        input_category="Evaporator",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.evaporator.outlet_brine.temperature[0],
+        name="Evaporator brine temperature",
+        ui_units=pyunits.K,
+        display_units="K",
+        rounding=2,
+        description="Evaporator outlet brine temperature",
+        is_input=True,
+        input_category="Evaporator",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.evaporator.U,
+        name="Evaporator heat transfer coefficient",
+        ui_units=pyunits.J * pyunits.s**-1 * pyunits.m**-2 * pyunits.K**-1,
+        display_units="W/K-m2",
+        rounding=2,
+        description="Evaporator heat transfer coefficient",
+        is_input=True,
+        input_category="Evaporator",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.compressor.pressure_ratio,
+        name="Compressor pressure ratio",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Compressor pressure ratio",
+        is_input=True,
+        input_category="Compressor",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.compressor.efficiency,
+        name="Compressor efficiency",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Compressor efficiency",
+        is_input=True,
+        input_category="Compressor",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.pump_brine.efficiency_pump,
+        name="Brine pump efficiency",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Brine pump efficiency",
+        is_input=True,
+        input_category="Brine pump",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.pump_brine.control_volume.deltaP[0],
+        name="Brine pump pressure change",
+        ui_units=pyunits.Pa,
+        display_units="Pa",
+        rounding=2,
+        description="Brine pump pressure change",
+        is_input=True,
+        input_category="Brine pump",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.pump_distillate.efficiency_pump,
+        name="Distillate pump efficiency",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Distillate pump efficiency",
+        is_input=True,
+        input_category="Distillate pump",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.pump_distillate.control_volume.deltaP[0],
+        name="Distillate pump pressure change",
+        ui_units=pyunits.Pa,
+        display_units="Pa",
+        rounding=2,
+        description="Distillate pump pressure change",
+        is_input=True,
+        input_category="Distillate pump",
         is_output=False,
     )
 
@@ -320,119 +392,211 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.magnesium_chloride_cost,
-        name="MgCl2 cost",
-        ui_units=fs.costing.base_currency / pyunits.kg,
-        display_units="$/kg",
-        rounding=3,
-        description="Magnesium chloride cost",
+        obj=fs.costing.factor_total_investment,
+        name="Total investment factor",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Utilization factor - [annual use hours/total hours in year]",
         is_input=True,
         input_category="System costing",
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.polymer_cost,
-        name="Polymer cost",
-        ui_units=fs.costing.base_currency / pyunits.kg,
-        display_units="$/kg",
-        rounding=3,
-        description="Dry Polymer cost",
+        obj=fs.costing.heat_exchanger.material_factor_cost,
+        name="Heat exchanger material cost factor",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Heat exchanger material cost factor",
         is_input=True,
         input_category="System costing",
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.struvite_product_cost,
-        name="Struvite cost",
-        ui_units=fs.costing.base_currency / pyunits.kg,
-        display_units="$/kg",
-        rounding=3,
-        description="Struvite cost is negative because it is sold",
+        obj=fs.costing.evaporator.material_factor_cost,
+        name="Evaporator material cost factor",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Evaporator material cost factor",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.compressor.unit_cost,
+        name="Compressor unit cost",
+        ui_units=pyunits.USD_2001,
+        display_units="$(2001)",
+        rounding=2,
+        description="Compressor unit cost",
         is_input=True,
         input_category="System costing",
         is_output=False,
     )
 
     # Outlets
+    feed_salinity = 1e3 * fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]
     exports.add(
-        obj=fs.centrate.properties[0].flow_vol,
-        name="Centrate flow rate",
-        ui_units=pyunits.m**3 / pyunits.hr,
-        display_units="m3/h",
+        obj=feed_salinity,
+        name="Feed salinity",
+        ui_units=pyunits.g / pyunits.kg,
+        display_units="g/kg",
         rounding=2,
-        description="Outlet centrate flow rate",
+        description="Feed salinity",
         is_input=False,
         is_output=True,
         output_category="Outlets",
     )
-    exports.add(
-        obj=fs.centrate.properties[0].conc_mass_comp["phosphates"],
-        name="Centrate OP concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
-        rounding=5,
-        description="Outlet centrate orthophosphate concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Outlets",
+    brine_salinity = (
+        1e3 * fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"]
     )
     exports.add(
-        obj=fs.centrate.properties[0].conc_mass_comp["H2O"],
-        name="Centrate H2O concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
+        obj=brine_salinity,
+        name="Brine salinity",
+        ui_units=pyunits.g / pyunits.kg,
+        display_units="g/kg",
         rounding=2,
-        description="Outlet product water concentration",
+        description="Brine salinity",
         is_input=False,
         is_output=True,
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.biosolid_product.properties[0].flow_mass_comp["phosphates"],
-        name="Biosolid product flow rate",
-        ui_units=pyunits.kg / pyunits.hr,
-        display_units="kg-OP/h",
-        rounding=5,
-        description="Outlet orthophosphate biosolid product flow rate",
+        obj=fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"],
+        name="Product flow rate",
+        ui_units=pyunits.kg / pyunits.s,
+        display_units="kg/s",
+        rounding=2,
+        description="Evaporator steam flow rate",
         is_input=False,
         is_output=True,
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.struvite_product.properties[0].flow_mass_comp["struvite"],
-        name="Struvite product flow rate",
-        ui_units=pyunits.kg / pyunits.hr,
-        display_units="kg-struvite/h",
-        rounding=3,
-        description="Outlet struvite product flow rate",
+        obj=fs.evaporator.properties_feed[0].temperature,
+        name="Preheated feed temperature",
+        ui_units=pyunits.K,
+        display_units="K",
+        rounding=2,
+        description="Evaporator feed temperature",
         is_input=False,
         is_output=True,
         output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.evaporator.properties_brine[0].temperature,
+        name="Evaporator (brine, vapor) temperature",
+        ui_units=pyunits.K,
+        display_units="K",
+        rounding=2,
+        description="Evaporator (brine, vapor) temperature",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.evaporator.properties_brine[0].pressure,
+        name="Evaporator (brine, vapor) pressure",
+        ui_units=pyunits.Pa,
+        display_units="Pa",
+        rounding=2,
+        description="Evaporator (brine, vapor) pressure",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.compressor.control_volume.properties_out[0].temperature,
+        name="Compressed vapor temperature",
+        ui_units=pyunits.K,
+        display_units="K",
+        rounding=2,
+        description="Compressed vapor temperature",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.compressor.control_volume.properties_out[0].pressure,
+        name="Compressed vapor pressure",
+        ui_units=pyunits.Pa,
+        display_units="Pa",
+        rounding=2,
+        description="Compressed vapor pressure",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.condenser.control_volume.properties_out[0].temperature,
+        name="Condensed vapor temperature",
+        ui_units=pyunits.K,
+        display_units="K",
+        rounding=2,
+        description="Condensed vapor temperature",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.hx_brine.area,
+        name="Brine heat exchanger area",
+        ui_units=pyunits.m**2,
+        display_units="m2",
+        rounding=2,
+        description="Brine heat exchanger area",
+        is_input=False,
+        is_output=True,
+        output_category="Design variables",
+    )
+    exports.add(
+        obj=fs.hx_distillate.area,
+        name="Distillate heat exchanger area",
+        ui_units=pyunits.m**2,
+        display_units="m2",
+        rounding=2,
+        description="Distillate heat exchanger area",
+        is_input=False,
+        is_output=True,
+        output_category="Design variables",
+    )
+    exports.add(
+        obj=fs.evaporator.area,
+        name="Evaporator heat exchanger area",
+        ui_units=pyunits.m**2,
+        display_units="m2",
+        rounding=2,
+        description="Evaporator heat exchanger area",
+        is_input=False,
+        is_output=True,
+        output_category="Design variables",
+    )
+    exports.add(
+        obj=fs.evaporator.lmtd,
+        name="Evaporator log-mean temperature difference",
+        ui_units=pyunits.K,
+        display_units="K",
+        rounding=2,
+        description="Evaporator LMTD",
+        is_input=False,
+        is_output=True,
+        output_category="Design variables",
+    )
+    exports.add(
+        obj=fs.compressor.pressure_ratio,
+        name="Compressor pressure ratio",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Compressor pressure ratio",
+        is_input=False,
+        is_output=True,
+        output_category="Design variables",
     )
 
     # System metrics
-    exports.add(
-        obj=fs.costing.LCOT,
-        name="LCOT",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of feed",
-        rounding=3,
-        description="Levelized cost of treatment including operating and capital costs",
-        is_input=False,
-        is_output=True,
-        output_category="Levelized cost metrics",
-    )
-    exports.add(
-        obj=fs.costing.LCOT_with_revenue,
-        name="LCOT with revenue",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of feed",
-        rounding=3,
-        description="Levelized cost of treatment including revenue of struvite and consumption costs for MgCl2 and polymer",
-        is_input=False,
-        is_output=True,
-        output_category="Levelized cost metrics",
-    )
     exports.add(
         obj=fs.costing.LCOW,
         name="LCOW",
@@ -440,28 +604,6 @@ def export_variables(flowsheet=None, exports=None):
         display_units="$/m3 of centrate",
         rounding=3,
         description="Levelized cost of water including operating and capital costs",
-        is_input=False,
-        is_output=True,
-        output_category="Levelized cost metrics",
-    )
-    exports.add(
-        obj=fs.costing.LCOW_with_revenue,
-        name="LCOW with revenue",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of centrate",
-        rounding=3,
-        description="Levelized cost of water including revenue of struvite and consumption costs for MgCl2 and polymer",
-        is_input=False,
-        is_output=True,
-        output_category="Levelized cost metrics",
-    )
-    exports.add(
-        obj=fs.costing.LCOS,
-        name="Levelized cost of struvite",
-        ui_units=fs.costing.base_currency / pyunits.kg,
-        display_units="$/kg-struvite",
-        rounding=3,
-        description="Levelized cost of struvite including operating and capital costs",
         is_input=False,
         is_output=True,
         output_category="Levelized cost metrics",
@@ -514,45 +656,13 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     # performance metrics
-    recovery_vol = fs.centrate.properties[0].flow_vol / fs.feed.properties[0].flow_vol
     exports.add(
-        obj=recovery_vol,
-        name="Volumetric recovery",
-        ui_units=pyunits.dimensionless,
-        display_units="m3 of product/m3 of feed",
-        rounding=3,
-        description="Normalized volumetric recovery",
-        is_input=False,
-        is_output=True,
-        output_category="Normalized performance metrics",
-    )
-    removal_OP = (
-        1
-        - fs.centrate.properties[0].flow_mass_comp["phosphates"]
-        / fs.feed.properties[0].flow_mass_comp["phosphates"]
-    )
-    exports.add(
-        obj=removal_OP,
-        name="OP removal",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=3,
-        description="Orthophosphate removal fraction [1 - outlet OP flow/inlet OP flow]",
-        is_input=False,
-        is_output=True,
-        output_category="Normalized performance metrics",
-    )
-    struvite_production = (
-        fs.struvite_product.properties[0].flow_mass_comp["struvite"]
-        / fs.feed.properties[0].flow_vol
-    )
-    exports.add(
-        obj=struvite_production,
-        name="Struvite production",
-        ui_units=pyunits.kg / pyunits.m**3,
-        display_units="kg-struvite/m3 of feed",
-        rounding=3,
-        description="Struvite production [Struvite product flow rate/feed flow rate]",
+        obj=fs.costing.specific_energy_consumption,
+        name="Specific energy consumption",
+        ui_units=pyunits.kWh / pyunits.m**3,
+        display_units="kWh/m3",
+        rounding=2,
+        description="Specific energy consumption",
         is_input=False,
         is_output=True,
         output_category="Normalized performance metrics",
@@ -572,39 +682,60 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.magprex.costing.capital_cost,
-        name="Magprex reactor",
+        obj=fs.hx_distillate.costing.capital_cost,
+        name="Distillate heat exchanger",
         ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=0,
-        description="Magprex reactor",
+        description="Distillate heat exchanger capital cost",
         is_input=False,
         is_output=True,
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.centrifuge.costing.capital_cost,
-        name="Centrifuge",
+        obj=fs.hx_brine.costing.capital_cost,
+        name="Brine heat exchanger",
         ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=0,
-        description="Centrifuge",
+        description="Brine heat exchanger capital cost",
         is_input=False,
         is_output=True,
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.classifier.costing.capital_cost,
-        name="Classifier",
+        obj=fs.mixer_feed.costing.capital_cost,
+        name="Feed mixer",
         ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=0,
-        description="Classifier",
+        description="Feed mixer capital cost",
         is_input=False,
         is_output=True,
         output_category="Capital costs",
     )
-
+    exports.add(
+        obj=fs.evaporator.costing.capital_cost,
+        name="Evaporator",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=0,
+        description="Evaporator capital cost",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.compressor.costing.capital_cost,
+        name="Compressor",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=0,
+        description="Compressor capital cost",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
     # Operating costs
     exports.add(
         obj=fs.costing.total_operating_cost,
@@ -642,79 +773,29 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Operating costs",
     )
 
-    # Revenue
-    total_revenue = -(
-        fs.costing.aggregate_flow_costs["struvite_product"]
-        + fs.costing.aggregate_flow_costs["magnesium_chloride"]
-        + fs.costing.aggregate_flow_costs["polymer"]
-    )
-    exports.add(
-        obj=total_revenue,
-        name="Net",
-        ui_units=fs.costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=0,
-        description="Net revenue - including the sale of struvite and purchase of MgCl2 and dry polymer",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
-    )
-
-    exports.add(
-        obj=-fs.costing.aggregate_flow_costs["struvite_product"],
-        name="Struvite",
-        ui_units=fs.costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=0,
-        description="Revenue from selling struvite",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
-    )
-    exports.add(
-        obj=-fs.costing.aggregate_flow_costs["magnesium_chloride"],
-        name="Magnesium chloride",
-        ui_units=fs.costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=0,
-        description="Cost from buying magnesium chloride",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
-    )
-    exports.add(
-        obj=-fs.costing.aggregate_flow_costs["polymer"],
-        name="Polymer",
-        ui_units=fs.costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=0,
-        description="Cost from buying polymer",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
-    )
-
 
 def build_flowsheet():
     # build and solve initial flowsheet
     m = build()
-
     set_operating_conditions(m)
-    assert_degrees_of_freedom(m, 0)
-    assert_units_consistent(m)
-
+    add_Q_ext(m, time_point=m.fs.config.time)
     initialize_system(m)
+    # rescale costs after initialization because scaling depends on flow rates
+    scale_costs(m)
+    fix_outlet_pressures(m)  # outlet pressure are initially unfixed for initialization
 
-    results = solve(m)
+    m.fs.objective = Objective(expr=m.fs.Q_ext[0])
+
+    solver = get_solver()
+    results = solve(m, solver=solver, tee=False)
     assert_optimal_termination(results)
 
-    add_costing(m)
-    assert_degrees_of_freedom(m, 0)
-    m.fs.costing.initialize()
+    m.fs.Q_ext[0].fix(0)  # no longer want external heating in evaporator
+    del m.fs.objective
+    set_up_optimization(m)
+    results = solve(m, solver=solver, tee=False)
 
-    results = solve(m)
-    assert_optimal_termination(results)
-    return m
+    return m, results
 
 
 def solve_flowsheet(flowsheet=None):
