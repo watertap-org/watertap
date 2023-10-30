@@ -49,8 +49,13 @@ def setup_flowsheet():
     )
     m.fs.RO.costing = MultipleChoiceCostingBlock(
         flowsheet_costing_block=m.fs.costing,
-        costing_methods=[cost_reverse_osmosis, cost_high_pressure_reverse_osmosis],
-        costing_methods_arguments={cost_reverse_osmosis: {"ro_type": ROType.standard}},
+        costing_blocks={
+            "normal_pressure": cost_reverse_osmosis,
+            "high_pressure": {
+                "costing_method": cost_reverse_osmosis,
+                "costing_method_arguments": {"ROType": "high_pressure"},
+            },
+        },
     )
 
     m.fs.RO.area.set_value(100)
@@ -70,31 +75,28 @@ def test_multiple_choice_costing_block():
 
     # first method is the default
     assert pyo.value(m.fs.RO.costing.capital_cost) == pyo.value(
-        m.fs.RO.costing.costing_blocks[cost_reverse_osmosis].capital_cost
+        m.fs.RO.costing.costing_blocks["normal_pressure"].capital_cost
     )
 
     assert (
         m.fs.costing.total_capital_cost.value
-        == 2 * m.fs.RO.costing.costing_blocks[cost_reverse_osmosis].capital_cost.value
+        == 2 * m.fs.RO.costing.costing_blocks["normal_pressure"].capital_cost.value
     )
 
-    m.fs.RO.costing.select_costing_method(cost_high_pressure_reverse_osmosis)
+    m.fs.RO.costing.select_costing_block("high_pressure")
 
     assert pyo.value(m.fs.RO.costing.capital_cost) == pyo.value(
-        m.fs.RO.costing.costing_blocks[cost_high_pressure_reverse_osmosis].capital_cost
+        m.fs.RO.costing.costing_blocks["high_pressure"].capital_cost
     )
 
     # need to re-initialize
     assert (
         m.fs.costing.total_capital_cost.value
-        == 2 * m.fs.RO.costing.costing_blocks[cost_reverse_osmosis].capital_cost.value
+        == 2 * m.fs.RO.costing.costing_blocks["normal_pressure"].capital_cost.value
     )
 
     m.fs.costing.initialize()
     assert (
         m.fs.costing.total_capital_cost.value
-        == 2
-        * m.fs.RO.costing.costing_blocks[
-            cost_high_pressure_reverse_osmosis
-        ].capital_cost.value
+        == 2 * m.fs.RO.costing.costing_blocks["high_pressure"].capital_cost.value
     )

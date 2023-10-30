@@ -11,7 +11,7 @@
 #################################################################################
 
 import pyomo.environ as pyo
-from pyomo.common.config import ConfigBlock, ConfigValue, ListOf
+from pyomo.common.config import ConfigBlock, ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core import declare_process_block_class, ProcessBlockData, UnitModelBlockData
 from idaes.core.util.misc import add_object_reference
@@ -41,27 +41,21 @@ class MultipleChoiceCostingBlockData(UnitModelCostingBlockData):
         ),
     )
     CONFIG.declare(
-        "costing_methods",
+        "costing_blocks",
         ConfigValue(
-            doc="Costing methods to use for unit",
-        ),  # TODO:figure out domain (ListOf(callable) doesn't work)
-    )
-    CONFIG.declare(
-        "costing_methods_arguments",
-        ConfigValue(
-            default={},
             domain=dict,
-            doc="Arguments to be passed to each of the costing methods. "
-            "Should be a dict whose keys are the costing methods and whose "
-            "values are the keyword arguments for each costing method. "
-            "Costing methods without an entry will be treated as if they "
-            "do not have any keyword arguments.",
+            doc="Costing blocks to use for unit. Should be a dictionary whose keys "
+            "are the names of the block and whose values are either the costing "
+            "method used to construct the block, or another dictionary whose keys "
+            "are `costing_method`, which has the value of the costing method, and "
+            "optionally `costing_method_arguments`, which has the keyword arguments "
+            "for the costing method specified.",
         ),
     )
     CONFIG.declare(
-        "initial_active_method",
+        "initial_active_block",
         ConfigValue(
-            doc="Costing method to be initially active",
+            doc="Costing block to be initially active",
             default=None,
         ),
     )
@@ -104,31 +98,48 @@ class MultipleChoiceCostingBlockData(UnitModelCostingBlockData):
         add_object_reference(self, "costing_package", fcb)
         add_object_reference(self, "unit_model", unit_model)
 
-        self.costing_blocks = pyo.Block(self.config.costing_methods)
+        self.costing_blocks = pyo.Block(self.config.costing_blocks)
         self.costing_selector = pyo.Param(
-            self.config.costing_methods, domain=pyo.Boolean, default=0, mutable=True
+            self.config.costing_blocks, domain=pyo.Boolean, default=0, mutable=True
         )
 
-        if self.config.initial_active_method is None:
-            self.costing_selector[self.config.costing_methods[0]].set_value(1)
+        if self.config.initial_active_block is None:
+            for k in self.config.costing_blocks:
+                self.costing_selector[k].set_value(1)
+                break
         else:
-            self.costing_selector[self.config.initial_active_method].set_value(1)
+            self.costing_selector[self.config.initial_active_block].set_value(1)
 
         # Get costing method if not provided
-        for idx, method in enumerate(self.config.costing_methods):
-            blk = self.costing_blocks[method]
+        for k, val in self.config.costing_blocks.items():
+
+            # if we get a callable, just use it
+            if callable(val):
+                method = val
+                kwds = {}
+            # else we'll assume it's a dictionary with keys
+            # `costing_method` and potentially `costing_method_arguments`.
+            # We raise an error if we find something else.
+            else:
+                for l in val:
+                    if l not in ("costing_method", "costing_method_arguments"):
+                        raise RuntimeError(
+                            f"Unrecognized key {l} for costing block " f"{k}."
+                        )
+                try:
+                    method = val.get("costing_method")
+                except KeyError:
+                    raise KeyError(
+                        f"Must specify a `costing_method` key for costing "
+                        f"block {k}."
+                    )
+                kwds = val.get("costing_methods_arguments", {})
+
+            blk = self.costing_blocks[k]
 
             # Assign object references for costing package and unit model
             add_object_reference(blk, "costing_package", fcb)
             add_object_reference(blk, "unit_model", unit_model)
-
-            try:
-                kwds = self.config.costing_methods_arguments[method]
-            except KeyError:
-                try:
-                    kwds = self.config.costing_methods_arguments[idx]
-                except KeyError:
-                    kwds = {}
 
             # Call unit costing method
             method(blk, **kwds)
@@ -172,13 +183,13 @@ class MultipleChoiceCostingBlockData(UnitModelCostingBlockData):
 
             self.add_component(vname, pyo.Expression(expr=expr))
 
-    def select_costing_method(self, costing_method):
+    def select_costing_block(self, costing_block_name):
         """
-        Set the active costing method
+        Set the active costing block
         """
         # zero out everything else
         self.costing_selector[:].set_value(0)
-        self.costing_selector[costing_method].set_value(1)
+        self.costing_selector[costing_block_name].set_value(1)
 
     def initialize(self, *args, **kwargs):
         """
