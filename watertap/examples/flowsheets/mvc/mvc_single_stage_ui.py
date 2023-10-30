@@ -100,7 +100,7 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     exports.add(
-        obj=fs.pump_feed.efficiency_pump,
+        obj=fs.pump_feed.efficiency_pump[0],
         name="Feed pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
