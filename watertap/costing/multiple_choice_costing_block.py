@@ -21,6 +21,9 @@ from idaes.core.base.costing_base import (
     assert_flowsheet_costing_block,
     DefaultCostingComponents,
 )
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("MultipleChoiceCostingBlock")
@@ -124,16 +127,16 @@ class MultipleChoiceCostingBlockData(UnitModelCostingBlockData):
                 for l in val:
                     if l not in ("costing_method", "costing_method_arguments"):
                         raise RuntimeError(
-                            f"Unrecognized key {l} for costing block " f"{k}."
+                            f"Unrecognized key {l} for costing block {k}."
                         )
                 try:
-                    method = val.get("costing_method")
+                    method = val["costing_method"]
                 except KeyError:
                     raise KeyError(
                         f"Must specify a `costing_method` key for costing "
                         f"block {k}."
                     )
-                kwds = val.get("costing_methods_arguments", {})
+                kwds = val.get("costing_method_arguments", {})
 
             blk = self.costing_blocks[k]
 
@@ -148,7 +151,7 @@ class MultipleChoiceCostingBlockData(UnitModelCostingBlockData):
             cost_vars = DefaultCostingComponents
             for v in cost_vars:
                 try:
-                    cvar = getattr(self, v)
+                    cvar = getattr(blk, v)
                     if not isinstance(cvar, pyo.Var):
                         raise TypeError(
                             f"{unit_model.name} {v} component must be a Var. "
