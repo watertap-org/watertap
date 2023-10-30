@@ -27,7 +27,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("MultipleChoiceCostingBlock")
-class MultipleChoiceCostingBlockData(UnitModelCostingBlockData):
+class MultipleChoiceCostingBlockData(UnitModelCostingBlockData, UnitModelCostingBlock):
     """
     Class for constructing several costing blocks on the same
     unit model and then allowing for choice between them

@@ -76,20 +76,18 @@ def setup_flowsheet():
         )
     m.fs.RO.del_component(m.fs.RO.costing_2)
 
-    # TODO: this doesn't fail because the check is in IDAES and the class hierarchy
-    #       doesn't quite work correctly with derived types
-    # with pytest.raises(
-    #     RuntimeError,
-    #     match="Unit model fs.RO already has a costing block "
-    #     "registered: fs.RO.costing. Each unit may only have a single "
-    #     "UnitModelCostingBlock associated with it.",
-    # ):
-    #     m.fs.RO.costing_3 = UnitModelCostingBlock(
-    #         flowsheet_costing_block=m.fs.costing,
-    #         costing_method = cost_reverse_osmosis,
-    #         costing_method_arguments = {"ro_type": "high_pressure"},
-    #     )
-    # m.fs.RO.del_component(m.fs.RO.costing_3)
+    with pytest.raises(
+        RuntimeError,
+        match="Unit model fs.RO already has a costing block "
+        "registered: fs.RO.costing. Each unit may only have a single "
+        "UnitModelCostingBlock associated with it.",
+    ):
+        m.fs.RO.costing_3 = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_reverse_osmosis,
+            costing_method_arguments={"ro_type": "high_pressure"},
+        )
+    m.fs.RO.del_component(m.fs.RO.costing_3)
 
     m.fs.RO.area.set_value(100)
 
