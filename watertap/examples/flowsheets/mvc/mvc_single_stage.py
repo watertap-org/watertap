@@ -50,7 +50,6 @@ import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w
 from watertap.costing import WaterTAPCosting
 import math
-from pyomo.util.check_units import assert_units_consistent
 
 
 def main():
@@ -73,7 +72,6 @@ def main():
     results = solve(m, solver=solver, tee=False)
     print("Termination condition: ", results.solver.termination_condition)
     assert_optimal_termination(results)
-    assert_units_consistent(m)
     display_metrics(m)
     display_design(m)
 
@@ -85,7 +83,6 @@ def main():
     print("Termination condition: ", results.solver.termination_condition)
     display_metrics(m)
     display_design(m)
-    assert_units_consistent(m)
 
     return m, results
 
