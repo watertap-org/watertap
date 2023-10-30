@@ -398,7 +398,7 @@ def set_operating_conditions(m):
     m.fs.compressor.efficiency.fix(0.8)
 
     # Brine pump
-    m.fs.pump_brine.efficiency_pump.fix(0.8)
+    m.fs.pump_brine.efficiency_pump[0].fix(0.8)
     m.fs.pump_brine.control_volume.deltaP[0].fix(4e4)
 
     # Distillate pump
