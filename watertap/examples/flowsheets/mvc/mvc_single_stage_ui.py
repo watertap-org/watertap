@@ -795,7 +795,7 @@ def build_flowsheet():
     set_up_optimization(m)
     results = solve(m, solver=solver, tee=False)
 
-    return m, results
+    return m
 
 
 def solve_flowsheet(flowsheet=None):
