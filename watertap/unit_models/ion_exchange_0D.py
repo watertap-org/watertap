@@ -319,6 +319,10 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         self.add_outlet_port(name="regen", block=self.regeneration_stream)
 
+        for j in inerts:
+            self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
+            regen.get_material_flow_terms("Liq", j).fix(0)
+
         # ==========PARAMETERS==========
 
         self.underdrain_h = Param(
@@ -849,7 +853,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     to_units=pyunits.kilowatts,
                 )
 
-            @self.Expression(doc="Rinse pump power")
+            @self.Expression(doc="Regen pump power")
             def regen_pump_power(b):
                 return pyunits.convert(
                     (
@@ -863,29 +867,26 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     to_units=pyunits.kilowatts,
                 )
 
-            @self.Constraint(
-                self.target_ion_set, doc="Mass transfer for regeneration stream"
+        @self.Constraint(
+            self.target_ion_set, doc="Mass transfer for regeneration stream"
+        )
+        def eq_mass_transfer_regen(b, j):
+            return (
+                regen.get_material_flow_terms("Liq", j)
+                == -b.process_flow.mass_transfer_term[0, "Liq", j]
             )
-            def eq_mass_transfer_regen(b, j):
-                return (
-                    regen.get_material_flow_terms("Liq", j)
-                    == -b.process_flow.mass_transfer_term[0, "Liq", j]
-                )
 
-            @self.Constraint(
-                doc="Isothermal assumption for regen stream",
-            )
-            def eq_isothermal_regen_stream(b):
-                return prop_in.temperature == regen.temperature
+        @self.Constraint(
+            doc="Isothermal assumption for regen stream",
+        )
+        def eq_isothermal_regen_stream(b):
+            return prop_in.temperature == regen.temperature
 
-            @self.Constraint(
-                doc="Isobaric assumption for regen stream",
-            )
-            def eq_isobaric_regen_stream(b):
-                return prop_in.pressure == regen.pressure
-
-        for j in inerts:
-            self.regeneration_stream[0].get_material_flow_terms("Liq", j).fix(0)
+        @self.Constraint(
+            doc="Isobaric assumption for regen stream",
+        )
+        def eq_isobaric_regen_stream(b):
+            return prop_in.pressure == regen.pressure
 
         @self.Expression(doc="Bed expansion from backwashing")
         def bed_expansion_h(b):
@@ -955,9 +956,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 )
 
         # ==========CONSTRAINTS==========
-
-        for j in inerts:
-            self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
 
         # =========== DIMENSIONLESS ===========
 
@@ -1030,7 +1028,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def eq_col_height_to_diam_ratio(b):
             return b.col_height_to_diam_ratio * b.col_diam == b.col_height
 
-        # =========== MASS BALANCE ===========
+        # =========== ISOTHERM SPECIFIC ===========
 
         if self.config.isotherm == IsothermType.langmuir:
 
@@ -1259,7 +1257,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         state_args_out = deepcopy(state_args)
 
         for p, j in self.process_flow.properties_out.phase_component_set:
-            if j == self.config.target_ion:
+            if j in self.target_ion_set:
                 state_args_out["flow_mol_phase_comp"][(p, j)] = (
                     state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
                 )

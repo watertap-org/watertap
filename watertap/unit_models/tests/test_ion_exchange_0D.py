@@ -759,8 +759,8 @@ class TestIonExchangeSingleUse:
 
         # test statistics
         assert number_variables(m) == 78
-        assert number_total_constraints(m) == 46
-        assert number_unused_variables(m) == 15
+        assert number_total_constraints(m) == 49
+        assert number_unused_variables(m) == 12
 
     @pytest.mark.unit
     def test_dof(self, IX_single_use):
