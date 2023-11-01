@@ -11,50 +11,40 @@
 #################################################################################
 
 import pytest
+from os import remove
 
 from watertap.tools.oli_api.credentials import CredentialManager
 from watertap.tools.oli_api.client import OLIApi
 
-from os import remove
-
 
 @pytest.fixture
 def credential_manager():
-
     credentials = {
         "username": "dummy_username@email.com",
         "password": "dummy_password",
         "root_url": "https://dummyrooturl.com",
         "auth_url": "https://dummyauthurl.com",
     }
-
     return CredentialManager(**credentials, test=True)
 
 
 @pytest.mark.unit
 def test_encryption(credential_manager):
-
     key = credential_manager.encryption_key
-
     assert (
         CredentialManager(encryption_key=key, test=True).credentials
         == credential_manager.credentials
     )
-
     remove(credential_manager.config_file)
 
 
 # TODO: get access token from OLI to improve test coverage
 @pytest.mark.unit
 def test_login(credential_manager):
-
     # assert credential_manager.login() == True
-
     # assert credential_manager.get_refresh_token() == True
-
     # with OLIApi(credential_manager) as oliapi:
     #    req_result = oliapi.get_user_dbs_files()
-
     test_result = {
         "data": {
             "channelId": "dummy_channel_id",
@@ -69,7 +59,5 @@ def test_login(credential_manager):
         "message": "List of all DBS files, user has access to",
         "status": "SUCCESS",
     }
-
     # assert req_result.keys() == test_result.keys()
-
     remove(credential_manager.config_file)

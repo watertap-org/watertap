@@ -12,9 +12,7 @@
 #################################################################################
 
 import pytest
-
 from pyomo.environ import units as pyunits
-
 from watertap.tools.oli_api.util.state_block_helper_functions import (
     create_state_block,
     convert_to_state_block_units,
@@ -52,9 +50,6 @@ def state_block(chemistry_source):
 
 @pytest.mark.unit
 def test_extract_state_vars(chemistry_source, state_block):
-
     conc_var = state_block.fs.stream[0].conc_mass_phase_comp
-
     units = chemistry_source["units"]
-
     extract_state_vars(state_block.fs.stream[0], conc_var, chemistry_source["units"])

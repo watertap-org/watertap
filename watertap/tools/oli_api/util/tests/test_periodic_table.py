@@ -12,10 +12,8 @@
 #################################################################################
 
 import pytest
-
 from pathlib import Path
 from os.path import join
-
 from pandas import read_csv
 
 
@@ -28,5 +26,4 @@ def get_test_file_columns():
 @pytest.mark.unit
 def test_periodic_table_headers(get_test_file_columns):
     test_headers = ["AtomicMass", "Symbol"]
-
     assert all(header in get_test_file_columns for header in test_headers) == True

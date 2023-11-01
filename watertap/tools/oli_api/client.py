@@ -42,14 +42,8 @@
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
 
-"""
-This class provides methods for using the OLI Cloud API and augments the code provided via
-OLI API documentation. [WIP]
+__author__ = "Adam Atia, Adi Bannady, Paul Vecchiarelli"
 
-Most of this code was adopted from examples in OLI's documentation, with modifications implemented for
-interfacing w/WaterTap and addition of other functions for better utilizing OLI API functionality
-
-"""
 
 from os.path import isfile, islink
 import requests  # from requests import get, post, request
@@ -58,52 +52,37 @@ import time
 
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import get_oli_name
 
-__author__ = "Adam Atia, Adi Bannady, Paul Vecchiarelli"
-
 
 class OLIApi:
     """
-    A class to wrap OLI Cloud API calls to be accessible in a simple manner. This
-    is just an example
+    A class to wrap OLI Cloud API calls and access functions for interfacing with WaterTAP.
     """
 
-    def __init__(
-        self,
-        credential_manager,
-        test=False,
-    ):
+    def __init__(self, credential_manager, test=False):
         """
         Constructs all necessary attributes for OLIApi class
 
-        Args:
-            credential_manager_class: class used to manage credentials
+        :param credential_manager_class: class used to manage credentials
+        :param test: bool switch for automation during tests
         """
 
         self.test = test
-
         self.credential_manager = credential_manager
-
         self.request_auto_login = self.credential_manager.request_auto_login
 
     # binds OLIApi instance to context manager
     def __enter__(self):
-
         self.session_dbs_files = []
-
         return self
 
     # return False if no exceptions raised
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):
-
         # delete all .dbs files created during session
         for file in self.session_dbs_files:
-
             self._delete_dbs_file(file)
-
         return False
 
     def get_dbs_file_id(self, chemistry_source=None, phases=None, model_name=None):
-
         """
         Gets dbs_file_id for a given input.
 
@@ -115,26 +94,19 @@ class OLIApi:
         """
 
         if isinstance(chemistry_source, str):
-
             if not isfile(chemistry_source) and not islink(chemistry_source):
-
                 raise OSError(
                     "Could not find requested path to file. Please "
                     "check that this path to file exists."
                 )
-
             dbs_file_id = self._upload_dbs_file(chemistry_source)
-
         else:
-
             dbs_dict = self._create_dbs_dict(chemistry_source, phases, model_name)
-
             if not bool(dbs_dict):
                 raise RuntimeError(
                     "DBS file generation failed. Ensure your inputs, e.g.,"
                     + "solute names are formatted correctly."
                 )
-
             else:
                 dbs_file_id = self._generate_chemistry_file(dbs_dict)
 
@@ -145,14 +117,13 @@ class OLIApi:
         Uploads a dbs file to the OLI Cloud given a full file path.
 
         :param file_path: full path to dbs file
+
         :return dbs_file_id: string name for DBS file ID
         """
 
         try:
             with open(dbs_file_path, "rb") as file:
-
                 files = {"files": file}
-
                 req_result = self.request_auto_login(
                     lambda headers: requests.post(
                         self.credential_manager.upload_dbs_url,
@@ -160,15 +131,10 @@ class OLIApi:
                         files=files,
                     )
                 )
-
             dbs_file_id = req_result["file"][0]["id"]
-
             self.session_dbs_files.append(dbs_file_id)
-
             return dbs_file_id
-
         except:
-
             raise IOError(" Failed to upload DBS file. Ensure specified file exists.")
 
     def _create_dbs_dict(self, chemistry_source, phases, model_name):
@@ -176,63 +142,59 @@ class OLIApi:
         """
         Creates dict for chemistry-builder to later generate a DBS file id.
 
-        :param chemistry_source: OLI-compatible ion names as a Pyomo Set, list, or dict where the keys are ion names
+        :param chemistry_source: OLI-compatible ion names as a Pyomo Set, list, or dict,
+            where the keys are ion names
         :param model_name: Name for model as a string
         :param phases: OLI-compatible phases
 
-        :returns: DBS dict to be called by generate_chemistry_file.
+        :return dbs_dict: dict containing params for DBS file generation
         """
 
         # TODO: enable direct use of state block (via helper functions)
         if not isinstance(chemistry_source, (list, dict)):
-
             raise IOError(
                 " Provide a list, dict, or Pyomo set of OLI-compatible solute names (e.g., NAION"
             )
-
         if len(chemistry_source) == 0:
-
             raise IOError(
                 f" Unable to create DBS dict from empty {type(chemistry_source)}."
             )
-
         else:
-
-            solute_list = [
-                {"name": get_oli_name(solute)} for solute in chemistry_source
-            ]
+            try:
+                solute_list = [
+                    {"name": get_oli_name(solute)} for solute in chemistry_source
+                ]
+            except AttributeError:
+                solute_list = [{"name": solute.oli_name} for solute in chemistry_source]
 
         if model_name is None:
-
             model_name = input("Enter model name: ")
-
         if phases is None:
-
             phases = ["liquid1", "solid"]
-
         params = {
             "thermodynamicFramework": "MSE (H3O+ ion)",
             "modelName": model_name,
             "phases": phases,
             "inflows": solute_list,
         }
-
-        return {"method": "chemistrybuilder.generateDBS", "params": params}
+        dbs_dict = {"method": "chemistrybuilder.generateDBS", "params": params}
+        return dbs_dict
 
     def _generate_chemistry_file(self, dbs_dict):
+        """
+        :param dbs_dict: dict containing params for DBS file generation
+
+        :return dbs_file_id: string name for DBS file ID
+        """
 
         if (dbs_dict is None) or (len(dbs_dict) == 0):
-
             raise IOError(
                 f" Invalid container {dbs_dict} for chemistry file generation call."
             )
-
         else:
 
             def add_additional_header(headers):
-
                 headers["content-type"] = "application/json"
-
                 return requests.post(
                     url=self.credential_manager.dbs_url,
                     headers=headers,
@@ -240,41 +202,32 @@ class OLIApi:
                 )
 
             req_result = self.request_auto_login(add_additional_header)
-
             if req_result["status"] == "SUCCESS":
-
                 dbs_file_id = req_result["data"]["id"]
-
                 self.session_dbs_files.append(dbs_file_id)
-
                 return dbs_file_id
-
             raise RuntimeError(" Failed to generate chemistry file.")
 
     def get_user_summary(self):
         """
-        Gets information for all files on user's cloud
+        Gets information for all files on user's cloud.
 
         :return user_summary: dictionary containing file information and flash history for each dbs file
         """
 
         user_summary = {}
-
         for entry in self.get_user_dbs_files()["data"]:
-
             dbs_file_id = entry["fileId"]
-
             user_summary[dbs_file_id] = {
                 "dbs_file_info": self.get_dbs_file_info(dbs_file_id=dbs_file_id),
                 "flash_history": self.get_flash_history(dbs_file_id=dbs_file_id),
                 "job_id": self.get_flash_history(dbs_file_id=dbs_file_id, job_id=True),
             }
-
         return user_summary
 
     def get_user_dbs_files(self):
         """
-        Gets all DBS files on user's cloud
+        Gets all DBS files on user's cloud.
 
         :return user_dbs_files: dictionary containing a list of all user DBS files uploaded
         """
@@ -284,12 +237,11 @@ class OLIApi:
                 self.credential_manager.dbs_url, headers=headers
             )
         )
-
         return user_dbs_files
 
     def get_dbs_file_info(self, dbs_file_id=""):
         """
-        Retrieves chemistry information from OLI Cloud
+        Retrieves chemistry information from OLI Cloud.
 
         :param dbs_file_id: string ID of DBS file
 
@@ -301,20 +253,16 @@ class OLIApi:
         )
 
         def add_additional_header(headers):
-
             headers["content-type"] = "application/json"
-
             r = requests.get(endpoint, headers=headers)
-
             return r
 
         dbs_file_info = self.request_auto_login(add_additional_header)
-
         return dbs_file_info
 
     def get_flash_history(self, dbs_file_id, job_id=False):
         """
-        Retrieves history of flash information, e.g., input for a chemistry model
+        Retrieves history of flash information, e.g., input for a chemistry model.
 
         :param dbs_file_id: string ID of DBS file
         :param job_id: bool flag to return job ID for troubleshooting
@@ -324,42 +272,31 @@ class OLIApi:
         """
 
         endpoint = f"{self.credential_manager.engine_url}/flash/history/{dbs_file_id}"
-
         flash_history = self.request_auto_login(
             lambda headers: requests.get(endpoint, headers=headers)
         )
-
         if job_id:
-
             return flash_history["data"][0]["jobId"]
-
         return flash_history
 
-    # methods for dbs file deletion
     def dbs_file_cleanup(self, dbs_file_ids=None):
         """
-        Deletes all (or specified) DBS files on OLI Cloud
+        Deletes all (or specified) DBS files on OLI Cloud.
 
         :param dbs_file_ids: list of DBS files that should be deleted
         """
 
         if dbs_file_ids is None:
-
             dbs_file_ids = [
                 entry["fileId"] for entry in self.get_user_dbs_files()["data"]
             ]
-
         if self._delete_permission(dbs_file_ids):
-
             for dbs_file_id in dbs_file_ids:
-
                 self._delete_dbs_file(dbs_file_id)
-
-        return
 
     def _delete_permission(self, dbs_file_ids):
         """
-        Ensures user permits deletion of specified files
+        Ensures user permits deletion of specified files.
 
         :param dbs_file_ids: list of DBS files that should be deleted
 
@@ -367,41 +304,27 @@ class OLIApi:
         """
 
         if self.test is True:
-
             return True
-
         else:
-
             print("WaterTAP will delete dbs files:")
-
             for file in dbs_file_ids:
-
                 print(f"- {file}")
-
             print("from OLI Cloud.")
-
             r = input("[y]/n: ")
-
             if (r.lower() == "y") or (r == ""):
-
                 return True
-
             return False
 
     def _delete_dbs_file(self, dbs_file_id):
         """
-        Deletes a DBS file
+        Deletes a DBS file.
 
         :param dbs_file_id: string ID of DBS file
         """
 
         endpoint = f"{self.credential_manager._delete_dbs_url}{dbs_file_id}"
-
         headers = {"Authorization": "Bearer " + self.credential_manager.jwt_token}
-
         requests.request("DELETE", endpoint, headers=headers, data={})
-
-        return
 
     def call(
         self,
@@ -413,7 +336,7 @@ class OLIApi:
         tee=False,
     ):
         """
-        Calls a function in the OLI Engine API
+        Calls a function in the OLI Engine API.
 
         :param function_name: name of function to call
         :param dbs_file_id: string ID of DBS file
@@ -425,38 +348,28 @@ class OLIApi:
         :return: dictionary containing result or error
         """
 
-        # formulate url
         endpoint = ""
         method = "POST"
-
-        # TODO: we don't use this call for chemistry-info (get_dbs_file_info is used)
-        if function_name in {
-            "chemistry-info",
-            "corrosion-contact-surface",
-        }:
+        if function_name == "corrosion-contact-surface":
             endpoint = f"{self.credential_manager.engine_url}file/{dbs_file_id}/{function_name}"
             method = "GET"
-
         else:
             endpoint = f"{self.credential_manager.engine_url}flash/{dbs_file_id}/{function_name}"
             method = "POST"
 
-        # http body
         if bool(json_input):
             data = json.dumps(json_input)
         else:
+            # TODO: raise error
             data = ""
 
         def add_additional_header(headers):
             headers["content-type"] = "application/json"
             if method == "POST":
                 return requests.post(endpoint, headers=headers, data=data)
-
             output = requests.get(endpoint, headers=headers, data=data)
-
             return output
 
-        # first call
         results_link = ""
         start_time = time.time()
         request_result1 = self.request_auto_login(add_additional_header)
@@ -476,8 +389,7 @@ class OLIApi:
                                 results_link = request_result1["data"]["resultsLink"]
         if tee:
             print(results_link)
-
-        # error in getting results link
+        # TODO: raise error
         if results_link == "":
             return dict()
 
@@ -486,6 +398,7 @@ class OLIApi:
         endpoint = results_link
         method = "GET"
         request_iter = 0
+
         while True:
             # make request and time
             start_time = time.time()
@@ -523,5 +436,5 @@ class OLIApi:
                     break
             else:
                 break
-
+        # TODO: raise error
         return dict()

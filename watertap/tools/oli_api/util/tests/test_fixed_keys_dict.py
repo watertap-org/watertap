@@ -20,6 +20,7 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
 )
 
 
+@pytest.mark.unit
 def test_fixed_keys_dict():
 
     with pytest.raises(RuntimeError):
@@ -32,6 +33,3 @@ def test_fixed_keys_dict():
         default_oli_input_dict._check_value("temperature_unit", ["not_K"])
 
     default_oli_input_dict.pprint()
-
-
-test_fixed_keys_dict()

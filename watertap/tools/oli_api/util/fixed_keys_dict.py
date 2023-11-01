@@ -11,6 +11,8 @@
 #
 #################################################################################
 
+__author__ = "Paul Vecchiarelli, Ben Knueven"
+
 from collections import UserDict
 
 

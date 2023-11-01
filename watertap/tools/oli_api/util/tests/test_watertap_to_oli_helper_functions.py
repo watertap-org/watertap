@@ -74,5 +74,4 @@ def test_reverse_lookup_exception():
 @pytest.mark.unit
 def test_get_oli_names():
     source_dict = {"Ca_2+": 500, "Cl_-": 1000, "Mg_2+": 500, "SO4_2-": 50}
-
     source_dict = get_oli_names(source_dict)
