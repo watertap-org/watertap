@@ -30,6 +30,9 @@ from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
+import pyomo.environ as pyo
+
+from idaes.core.util.model_diagnostics import DegeneracyHunter
 
 
 def main():
@@ -52,13 +55,19 @@ def main():
     m.fs.EDstack = Electrodialysis0D(
         property_package=m.fs.properties,
         operation_mode=ElectricalOperationMode.Constant_Voltage,
+        # has_pressure_change=False,
         has_pressure_change=True,
         has_nonohmic_potential_membrane=False,
         has_Nernst_diffusion_layer=False,
         pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
+        # pressure_drop_method=PressureDropMethod.experimental,
         # pressure_drop_method=PressureDropMethod.none,
         friction_factor_method=FrictionFactorMethod.Gurreri,
-        hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
+        # friction_factor_method=FrictionFactorMethod.fixed,
+        # friction_factor_method=FrictionFactorMethod.Kuroda,
+        hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
+        # hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
+        # hydraulic_diameter_method=HydraulicDiameterMethod.fixed,
     )
     assert_units_consistent(m)
 
@@ -71,10 +80,11 @@ def main():
     m.fs.properties.set_default_scaling(
         "flow_mol_phase_comp", 5e2, index=("Liq", "Cl_-")
     )
-    iscale.set_scaling_factor(m.fs.EDstack.cell_width, 5)
-    iscale.set_scaling_factor(m.fs.EDstack.cell_length, 5)
-    iscale.set_scaling_factor(m.fs.EDstack.cell_pair_num, 5)
-    iscale.set_scaling_factor(m.fs.EDstack.voltage, 5)
+
+    # iscale.set_scaling_factor(m.fs.EDstack.cell_width, 5)
+    # iscale.set_scaling_factor(m.fs.EDstack.cell_length, 5)
+    # iscale.set_scaling_factor(m.fs.EDstack.cell_pair_num, 5)
+    # iscale.set_scaling_factor(m.fs.EDstack.voltage, 5)
 
     iscale.calculate_scaling_factors(m.fs.EDstack)
 
@@ -82,24 +92,23 @@ def main():
     # fix state variables in diluate and concentrate
     # 3 flow_mol_phase_comp for each chamber, 6
 
-    m.fs.EDstack.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(110)
-    m.fs.EDstack.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(0.342)
-    m.fs.EDstack.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(0.342)
-    m.fs.EDstack.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(110)
-    m.fs.EDstack.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(0.342)
-    m.fs.EDstack.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(0.342)
+    m.fs.EDstack.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.4e-1)
+    m.fs.EDstack.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
+    m.fs.EDstack.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
+    m.fs.EDstack.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.4e-1)
+    m.fs.EDstack.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
+    m.fs.EDstack.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
 
     # 2 temperature and pressure for each chamber ,4
-    m.fs.EDstack.inlet_diluate.pressure[0].fix(5003485)
+    m.fs.EDstack.inlet_diluate.pressure[0].fix(201325)
     m.fs.EDstack.inlet_diluate.temperature.fix(298.15)
-    m.fs.EDstack.inlet_concentrate.pressure[0].fix(5003485)
+    m.fs.EDstack.inlet_concentrate.pressure[0].fix(201325)
     m.fs.EDstack.inlet_concentrate.temperature.fix(298.15)
 
-    #  operation condition (voltage or current)
-    m.fs.EDstack.voltage.fix(25)
-    m.fs.EDstack.cell_width.fix(0.197)
-    m.fs.EDstack.cell_length.fix(1.69)
-    m.fs.EDstack.cell_pair_num.fix(250)
+    m.fs.EDstack.voltage.fix(0.5)
+    m.fs.EDstack.cell_width.fix(0.1)
+    m.fs.EDstack.cell_length.fix(0.79)
+    m.fs.EDstack.cell_pair_num.fix(10)
 
     m.fs.EDstack.current_utilization.fix(1)
     m.fs.EDstack.channel_height.fix(2.7e-4)
@@ -126,20 +135,23 @@ def main():
 
     m.fs.EDstack.diffus_mass.fix(1.6e-9) if hasattr(m.fs.EDstack, "diffus_mass") else 0
 
-    m.fs.EDstack.spacer_specific_area.fix(10700) if hasattr(
-        m.fs.EDstack, "spacer_specific_area"
-    ) else 0
+    # m.fs.EDstack.spacer_specific_area.fix(10700) if hasattr(
+    #     m.fs.EDstack, "spacer_specific_area"
+    # ) else 0
 
     # m.fs.EDstack.hydraulic_diameter.fix(4.47e-4) if hasattr(
     #     m.fs.EDstack, "hydraulic_diameter"
+    # ) else 0
+    # m.fs.EDstack.friction_factor.fix(10) if hasattr(
+    #     m.fs.EDstack, "friction_factor"
     # ) else 0
 
     m.fs.EDstack.hydraulic_diameter.pprint() if hasattr(
         m.fs.EDstack, "hydraulic_diameter"
     ) else print("No it doesn't have hydraulic diameter")
 
-    # m.fs.EDstack.friction_factor.fix(10)
-    # m.fs.EDstack.pressure_drop_total.fix(1.6e6)
+    # m.fs.EDstack.pressure_drop.fix(1e5)
+    # m.fs.EDstack.pressure_drop_total.fix(0)
 
     m.fs.EDstack.diffus_mass.pprint() if hasattr(
         m.fs.EDstack, "diffus_mass"
@@ -156,14 +168,42 @@ def main():
         m.fs.EDstack, "hydraulic_diameter"
     ) else print("No it doesn't have hydraulic_diameter")
 
-    #
+    m.fs.EDstack.pressure_drop.pprint() if hasattr(
+        m.fs.EDstack, "pressure_drop"
+    ) else print("No it doesn't have pressure_drop ")
+
     print("DOF IS", degrees_of_freedom(m))
     solver = get_solver()
     m.fs.EDstack.initialize(optarg=solver.options)
     m.fs.EDstack.report()
-
+    m.fs.EDstack.pressure_drop_total.pprint() if hasattr(
+        m.fs.EDstack, "pressure_drop_total"
+    ) else print("No it doesn't have pressure_drop total ")
     results = solver.solve(m)
     print(results.solver.termination_condition)
+
+    # # Specify Ipopt as the solver
+    # opt = pyo.SolverFactory('ipopt')
+    # # Specifying an iteration limit of 0 allows us to inspect the initial point
+    # opt.options['max_iter'] = 0
+    #
+    # # "Solving" the model with an iteration limit of 0 load the initial point and applies
+    # # any preprocessors (e.g., enforces bounds)
+    # opt.solve(m, tee=True)
+    # #
+    # # Create Degeneracy Hunter object
+    # # The Degeneracy Hunter algorithm needs a MILP solver
+    # # Here we specify CBC, an open source solver
+    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory('cbc'))
+    # # dh.check_residuals(tol=0.1)
+    # # dh.check_variable_bounds(tol=1.0)
+    # opt.options['max_iter'] = 50
+    # opt.solve(m, tee=True)
+    # dh.check_residuals(tol=1E-14)
+    # # dh.check_variable_bounds(tol=1E-5)
+    # dh.check_rank_equality_constraints()
+    m.fs.EDstack.visc_d.pprint()
+    m.fs.EDstack.dens_mass.pprint()
     return m
 
 

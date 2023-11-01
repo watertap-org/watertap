@@ -65,7 +65,10 @@ class TestElectrodialysisVoltageConst:
     def test_build_model(self, electrodialysis_cell1):
         m = electrodialysis_cell1
         # test configrations
-        assert len(m.fs.unit.config) == 13
+        print("configurations:", m.fs.unit.config)
+
+        assert len(m.fs.unit.config) == 17
+
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -85,7 +88,7 @@ class TestElectrodialysisVoltageConst:
         assert isinstance(m.fs.unit.cell_pair_num, Var)
         assert isinstance(m.fs.unit.cell_width, Var)
         assert isinstance(m.fs.unit.cell_length, Var)
-        assert isinstance(m.fs.unit.spacer_thickness, Var)
+        assert isinstance(m.fs.unit.channel_height, Var)
         assert isinstance(m.fs.unit.membrane_thickness, Var)
         assert isinstance(m.fs.unit.solute_diffusivity_membrane, Var)
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
@@ -119,7 +122,7 @@ class TestElectrodialysisVoltageConst:
     def test_stats(self, electrodialysis_cell1):
         m = electrodialysis_cell1
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 33
+        assert degrees_of_freedom(m) == 34
         # Specify a system
         # Note: Testing scenarios in this file are primarily in accord with an experimental
         # setup reported by Campione et al. in Desalination 465 (2019): 79-93.
@@ -132,7 +135,7 @@ class TestElectrodialysisVoltageConst:
         m.fs.unit.electrodes_resistance.fix(0)
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
-        m.fs.unit.spacer_thickness.fix(2.7e-4)
+        m.fs.unit.channel_height.fix(2.7e-4)
         m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
         m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.cell_width.fix(0.1)
@@ -182,6 +185,7 @@ class TestElectrodialysisVoltageConst:
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
+        m.fs.unit.spacer_porosity.fix(1)
 
         assert degrees_of_freedom(m) == 0
 
@@ -272,6 +276,11 @@ class TestElectrodialysisVoltageConst:
             flowsheet_costing_block=m.fs.costing, costing_method_arguments={}
         )
 
+        # Set costing parameters
+        # m.fs.costing.electrodialysis.aem_membrane_cost.set_value(45)
+        # m.fs.costing.electrodialysis.cem_membrane_cost.set_value(41)
+        # m.fs.costing.electrodialysis.factor_membrane_housing_replacement.set_value(0.2)
+
         m.fs.costing.cost_process()
 
         assert_units_consistent(m)
@@ -280,6 +289,16 @@ class TestElectrodialysisVoltageConst:
 
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
+
+        # assert pytest.approx(388.6800, rel=1e-3) == value(
+        #     m.fs.costing.aggregate_capital_cost
+        # )
+        # assert pytest.approx(45.86804, rel=1e-3) == value(
+        #     m.fs.costing.total_operating_cost
+        # )
+        # assert pytest.approx(777.3600, rel=1e-3) == value(
+        #     m.fs.costing.total_capital_cost
+        # )
 
         assert pytest.approx(584.6, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
@@ -319,7 +338,7 @@ class TestElectrodialysisCurrentConst:
         m = electrodialysis_cell2
 
         # test configrations
-        assert len(m.fs.unit.config) == 13
+        assert len(m.fs.unit.config) == 17
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
@@ -336,7 +355,7 @@ class TestElectrodialysisCurrentConst:
         assert isinstance(m.fs.unit.cell_pair_num, Var)
         assert isinstance(m.fs.unit.cell_width, Var)
         assert isinstance(m.fs.unit.cell_length, Var)
-        assert isinstance(m.fs.unit.spacer_thickness, Var)
+        assert isinstance(m.fs.unit.channel_height, Var)
         assert isinstance(m.fs.unit.membrane_thickness, Var)
         assert isinstance(m.fs.unit.solute_diffusivity_membrane, Var)
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
@@ -370,7 +389,7 @@ class TestElectrodialysisCurrentConst:
     def test_stats(self, electrodialysis_cell2):
         m = electrodialysis_cell2
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 33
+        assert degrees_of_freedom(m) == 34
         # Specify a system
         # set the operational parameters
         m.fs.unit.water_trans_number_membrane["cem"].fix(5.8)
@@ -381,7 +400,7 @@ class TestElectrodialysisCurrentConst:
         m.fs.unit.electrodes_resistance.fix(0)
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
-        m.fs.unit.spacer_thickness.fix(2.7e-4)
+        m.fs.unit.channel_height.fix(2.7e-4)
         m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
         m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.cell_width.fix(0.1)
@@ -431,6 +450,8 @@ class TestElectrodialysisCurrentConst:
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
+        m.fs.unit.spacer_porosity.fix(1)
+
         assert degrees_of_freedom(m) == 0
 
     @pytest.mark.component
@@ -489,6 +510,16 @@ class TestElectrodialysisCurrentConst:
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
         ) == pytest.approx(1.330e-3, rel=5e-3)
 
+        # assert pytest.approx(388.6800, rel=1e-3) == value(
+        #     m.fs.costing.aggregate_capital_cost
+        # )
+        # assert pytest.approx(47.16423, rel=1e-3) == value(
+        #     m.fs.costing.total_operating_cost
+        # )
+        # assert pytest.approx(777.3600, rel=1e-3) == value(
+        #     m.fs.costing.total_capital_cost
+        # )
+
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_cell2):
         m = electrodialysis_cell2
@@ -531,7 +562,7 @@ class TestElectrodialysis_withNeutralSPecies:
         m = electrodialysis_cell3
 
         # test configrations
-        assert len(m.fs.unit.config) == 13
+        assert len(m.fs.unit.config) == 17
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -551,7 +582,7 @@ class TestElectrodialysis_withNeutralSPecies:
         assert isinstance(m.fs.unit.cell_pair_num, Var)
         assert isinstance(m.fs.unit.cell_width, Var)
         assert isinstance(m.fs.unit.cell_length, Var)
-        assert isinstance(m.fs.unit.spacer_thickness, Var)
+        assert isinstance(m.fs.unit.channel_height, Var)
         assert isinstance(m.fs.unit.membrane_thickness, Var)
         assert isinstance(m.fs.unit.solute_diffusivity_membrane, Var)
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
@@ -585,7 +616,7 @@ class TestElectrodialysis_withNeutralSPecies:
     def test_stats(self, electrodialysis_cell3):
         m = electrodialysis_cell3
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 37
+        assert degrees_of_freedom(m) == 38
         # Specify a system
         # set the operational parameters
         m.fs.unit.water_trans_number_membrane["cem"].fix(5.8)
@@ -596,7 +627,7 @@ class TestElectrodialysis_withNeutralSPecies:
         m.fs.unit.electrodes_resistance.fix(0)
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
-        m.fs.unit.spacer_thickness.fix(2.7e-4)
+        m.fs.unit.channel_height.fix(2.7e-4)
         m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
         m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.cell_width.fix(0.1)
@@ -613,6 +644,7 @@ class TestElectrodialysis_withNeutralSPecies:
         m.fs.unit.ion_trans_number_membrane["aem", "Na_+"].fix(0)
         m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
         m.fs.unit.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
+        m.fs.unit.spacer_porosity.fix(1)
 
         # check ion transfer number requirements
         assert (
@@ -760,7 +792,7 @@ class Test_ED_MembNonohm_On_ConstV:
     def test_build_model(self, EDcell):
         m = EDcell
         # test configrations
-        assert len(m.fs.unit.config) == 13
+        assert len(m.fs.unit.config) == 17
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -780,7 +812,7 @@ class Test_ED_MembNonohm_On_ConstV:
         assert isinstance(m.fs.unit.cell_pair_num, Var)
         assert isinstance(m.fs.unit.cell_width, Var)
         assert isinstance(m.fs.unit.cell_length, Var)
-        assert isinstance(m.fs.unit.spacer_thickness, Var)
+        assert isinstance(m.fs.unit.channel_height, Var)
         assert isinstance(m.fs.unit.membrane_thickness, Var)
         assert isinstance(m.fs.unit.solute_diffusivity_membrane, Var)
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
@@ -814,7 +846,7 @@ class Test_ED_MembNonohm_On_ConstV:
     def test_stats(self, EDcell):
         m = EDcell
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 33
+        assert degrees_of_freedom(m) == 34
         # Specify a system
         # Note: Testing scenarios in this file are primarily in accord with an experimental
         # setup reported by Campione et al. in Desalination 465 (2019): 79-93.
@@ -827,7 +859,7 @@ class Test_ED_MembNonohm_On_ConstV:
         m.fs.unit.electrodes_resistance.fix(0)
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
-        m.fs.unit.spacer_thickness.fix(5e-4)
+        m.fs.unit.channel_height.fix(5e-4)
         m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
         m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.cell_width.fix(0.1)
@@ -877,6 +909,7 @@ class Test_ED_MembNonohm_On_ConstV:
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
+        m.fs.unit.spacer_porosity.fix(1)
 
         assert degrees_of_freedom(m) == 0
 
@@ -984,7 +1017,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstV:
     def test_build_model(self, EDcell):
         m = EDcell
         # test configrations
-        assert len(m.fs.unit.config) == 13
+        assert len(m.fs.unit.config) == 17
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -1004,7 +1037,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstV:
         assert isinstance(m.fs.unit.cell_pair_num, Var)
         assert isinstance(m.fs.unit.cell_width, Var)
         assert isinstance(m.fs.unit.cell_length, Var)
-        assert isinstance(m.fs.unit.spacer_thickness, Var)
+        assert isinstance(m.fs.unit.channel_height, Var)
         assert isinstance(m.fs.unit.membrane_thickness, Var)
         assert isinstance(m.fs.unit.solute_diffusivity_membrane, Var)
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
@@ -1038,7 +1071,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstV:
     def test_stats(self, EDcell):
         m = EDcell
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 33
+        assert degrees_of_freedom(m) == 34
         # Specify a system
         # Note: Testing scenarios in this file are primarily in accord with an experimental
         # setup reported by Campione et al. in Desalination 465 (2019): 79-93.
@@ -1051,7 +1084,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstV:
         m.fs.unit.electrodes_resistance.fix(0)
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
-        m.fs.unit.spacer_thickness.fix(5e-4)
+        m.fs.unit.channel_height.fix(5e-4)
         m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
         m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.cell_width.fix(0.1)
@@ -1101,6 +1134,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstV:
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
+        m.fs.unit.spacer_porosity.fix(1)
 
         assert degrees_of_freedom(m) == 0
 
@@ -1208,7 +1242,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstC:
     def test_build_model(self, EDcell):
         m = EDcell
         # test configrations
-        assert len(m.fs.unit.config) == 13
+        assert len(m.fs.unit.config) == 17
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -1228,7 +1262,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstC:
         assert isinstance(m.fs.unit.cell_pair_num, Var)
         assert isinstance(m.fs.unit.cell_width, Var)
         assert isinstance(m.fs.unit.cell_length, Var)
-        assert isinstance(m.fs.unit.spacer_thickness, Var)
+        assert isinstance(m.fs.unit.channel_height, Var)
         assert isinstance(m.fs.unit.membrane_thickness, Var)
         assert isinstance(m.fs.unit.solute_diffusivity_membrane, Var)
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
@@ -1262,7 +1296,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstC:
     def test_stats(self, EDcell):
         m = EDcell
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 33
+        assert degrees_of_freedom(m) == 34
         # Specify a system
         # Note: Testing scenarios in this file are primarily in accord with an experimental
         # setup reported by Campione et al. in Desalination 465 (2019): 79-93.
@@ -1275,7 +1309,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstC:
         m.fs.unit.electrodes_resistance.fix(0)
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
-        m.fs.unit.spacer_thickness.fix(5e-4)
+        m.fs.unit.channel_height.fix(5e-4)
         m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
         m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.cell_width.fix(0.1)
@@ -1290,6 +1324,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstC:
         m.fs.unit.ion_trans_number_membrane["aem", "Na_+"].fix(0)
         m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
         m.fs.unit.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
+        m.fs.unit.spacer_porosity.fix(1)
 
         # check ion transfer number requirements
         assert (

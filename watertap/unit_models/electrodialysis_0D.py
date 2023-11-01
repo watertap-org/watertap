@@ -1839,7 +1839,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                         == 2
                         * self.channel_height
                         * self.cell_width
-                        * self.spacer_porosity
+                        * (1 - self.spacer_porosity)
                         * (self.channel_height + self.cell_width) ** -1
                     )
                 else:
@@ -1889,16 +1889,16 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
     def _pressure_drop_calculation(self):
         self.pressure_drop_total = Var(
             self.flowsheet().time,
-            initialize=1e4,
+            initialize=1e6,
             units=pyunits.pascal,
             doc="pressure drop over an entire ED stack",
         )
-        # self.pressure_drop_total = Var(
-        #     self.flowsheet().time,
-        #     initialize=1e6,
-        #     units=pyunits.pascal,
-        #     doc="pressure drop over an entire ED stack",
-        # )
+        self.pressure_drop = Var(
+            self.flowsheet().time,
+            initialize=1e3,
+            units=pyunits.pascal * pyunits.meter**-1,
+            doc="pressure drop per unit of length",
+        )
 
         if self.config.pressure_drop_method == PressureDropMethod.experimental:
             _log.warning(
@@ -1922,7 +1922,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
 
             @self.Constraint(
                 self.flowsheet().time,
-                doc="To calculate pressure drop per unit length",
+                doc="To calculate pressure drop over an stack",
             )
             def eq_pressure_drop_total(self, t):
                 return (
@@ -1963,14 +1963,15 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                             == 4 * 9.6 * self.spacer_porosity**-1 * self.N_Re**-0.5
                         )
 
-        # @self.Constraint(
-        #     self.flowsheet().time,
-        #     doc="To calculate total pressure drop over a stack",
-        # )
-        # def eq_pressure_drop_total(self, t):
-        #     return (
-        #             self.pressure_drop_total[t] == self.pressure_drop[t] * self.cell_length
-        #     )
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="To calculate total pressure drop over a stack",
+        )
+        def eq_pressure_drop(self, t):
+            return (
+                self.pressure_drop[t]
+                == self.pressure_drop_total[t] * self.cell_length**-1
+            )
 
     # initialize method
     def initialize_build(
@@ -2337,20 +2338,22 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             elif self.config.friction_factor_method == FrictionFactorMethod.Kuroda:
                 sf = (4 * 9.6) ** -1 * iscale.get_scaling_factor(self.N_Re) ** -0.5
             iscale.set_scaling_factor(self.friction_factor, sf)
-        # if hasattr(self, "pressure_drop") and (
-        #         iscale.get_scaling_factor(self.pressure_drop, warning=True) is None
-        # ):
-        #     if self.config.pressure_drop_method == PressureDropMethod.experimental:
-        #         sf = 1e-5
-        #     else:
-        #         sf = (
-        #                 iscale.get_scaling_factor(self.dens_mass)
-        #                 * iscale.get_scaling_factor(self.friction_factor)
-        #                 * iscale.get_scaling_factor(self.velocity_diluate[0]) ** 2
-        #                 * 2
-        #                 * iscale.get_scaling_factor(self.hydraulic_diameter) ** -1
-        #         )
-        #     iscale.set_scaling_factor(self.pressure_drop, sf)
+
+        if hasattr(self, "pressure_drop") and (
+            iscale.get_scaling_factor(self.pressure_drop, warning=True) is None
+        ):
+            if self.config.pressure_drop_method == PressureDropMethod.experimental:
+                sf = 1e-5
+            else:
+                sf = (
+                    iscale.get_scaling_factor(self.dens_mass)
+                    * iscale.get_scaling_factor(self.friction_factor)
+                    * iscale.get_scaling_factor(self.velocity_diluate[0]) ** 2
+                    * 2
+                    * iscale.get_scaling_factor(self.hydraulic_diameter) ** -1
+                )
+            iscale.set_scaling_factor(self.pressure_drop, sf)
+
         # if hasattr(self, "pressure_drop_total") and (
         #         iscale.get_scaling_factor(self.pressure_drop_total, warning=True) is None
         # ):
@@ -2358,6 +2361,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         #         self.pressure_drop
         #     ) * iscale.get_scaling_factor(self.cell_length)
         #     iscale.set_scaling_factor(self.pressure_drop_total, sf)
+
         if hasattr(self, "pressure_drop_total") and (
             iscale.get_scaling_factor(self.pressure_drop_total, warning=True) is None
         ):
