@@ -1,8 +1,20 @@
 import pandas as pd
+import pyomo
+from pyomo.environ import (
+    Set,
+    Var,
+    check_optimal_termination,
+    Param,
+    Suffix,
+    NonNegativeReals,
+    value,
+    log,
+    Constraint,
+    units as pyunits,
+)
 
 
 def main():
-
     dens_mass = 1000.0
     visc_d = 0.001
     velocity_diluate = 0.01
@@ -11,16 +23,19 @@ def main():
     spacer_porosity = 0.83
     spacer_specific_area = 10700
     # diffus_mass = 1.6e-9
-    diffus_mass = 1.6e-16
+    # diffus_mass = 1.6e-16
     cell_length = 0.79
-    pressure_drop = 1e5
+    pressure_drop = 1e4
 
     hydraulic_diameter_list = ["conventional", "specific", "fixed"]
     friction_factor_list = ["Guerri", "Kuroda", "fixed"]
     pressure_drop_list = ["None", "Experimental", "Darcy"]
 
     method = {}
-
+    # hydraulic_diameter = Var()
+    # N_Re = Var()
+    # pressure_drop_total = Var()
+    # friction_factor = Var
     def cal_pressure_drop(method):
         friction_factor = cal_friction_factor(method)
         hydraulic_diameter, N_Re = cal_hydraulic_diamter(method)
@@ -75,6 +90,8 @@ def main():
             friction_factor = 10
         else:
             print("wrong")
+        print("hydraulic_diameter", hydraulic_diameter)
+        print("friction_factor", friction_factor)
         return friction_factor
 
     # result = {}
@@ -93,8 +110,13 @@ def main():
                     + hydraulic_diameter_method
                 )
                 pressure_drop_total = cal_pressure_drop(method=method)
-
-                print(full_name, pressure_drop_total)
+                print(
+                    full_name,
+                )
+                print("pressure_drop_total:", pressure_drop_total)
+                print(
+                    "------------------------------------------------------------------"
+                )
 
     # df_method = pd.DataFrame.from_dict( orient='index', columns=['Pressure Drop'])
     # outpath = r"C:\Users\kejia_hu\watertap-dev\watertap"

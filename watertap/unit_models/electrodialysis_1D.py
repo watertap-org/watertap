@@ -1353,6 +1353,10 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             )
             self.param_a = Param(
                 initialize=25,
+                # units=pyunits.coulomb
+                # * pyunits.mol**-1
+                # * pyunits.meter ** (1 - self.param_b)
+                # * pyunits.second ** (self.param_b - 1),
                 units=pyunits.coulomb
                 * pyunits.mol**-1
                 * pyunits.meter ** (1 - self.param_b)
@@ -2408,6 +2412,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     self.config.limiting_current_density_method
                     == LimitingCurrentDensityMethod.Theoretical
                 ):
+
                     for ind in self.current_dens_lim_x:
                         sf = (
                             iscale.get_scaling_factor(self.N_Sh)
