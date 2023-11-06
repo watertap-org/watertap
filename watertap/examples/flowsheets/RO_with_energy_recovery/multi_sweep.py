@@ -19,7 +19,7 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
 def set_up_sensitivity():
     outputs = {}
 
-    m = RO.build(erd_type=ERDtype.pump_as_turbine)
+    m = RO.build(erd_type=ERDtype.no_ERD)
     RO.set_operating_conditions(
         m,
         water_recovery=0.7,
@@ -113,7 +113,7 @@ def run_analysis(
             nx,
         )
         sweep_params["volumetric_recovery"] = LinearSample(
-            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.8, nx
+            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.9, nx
         )
     else:
         raise ValueError(f"{case_num} is not yet implemented")

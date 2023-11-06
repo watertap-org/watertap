@@ -47,6 +47,7 @@ from watertap.costing import WaterTAPCosting
 class ERDtype(StrEnum):
     pressure_exchanger = "pressure_exchanger"
     pump_as_turbine = "pump_as_turbine"
+    no_ERD = "no_ERD"
 
 
 def erd_type_not_found(erd_type):
@@ -130,6 +131,8 @@ def build(erd_type=ERDtype.pressure_exchanger):
         m.fs.ERD = EnergyRecoveryDevice(property_package=m.fs.properties)
         # add costing for ERD config
         m.fs.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    elif erd_type == ERDtype.no_ERD:
+        pass
     else:
         erd_type_not_found(erd_type)
 
@@ -164,6 +167,11 @@ def build(erd_type=ERDtype.pressure_exchanger):
         m.fs.s03 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
         m.fs.s04 = Arc(source=m.fs.RO.retentate, destination=m.fs.ERD.inlet)
         m.fs.s05 = Arc(source=m.fs.ERD.outlet, destination=m.fs.disposal.inlet)
+    elif erd_type == ERDtype.no_ERD:
+        m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
+        m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.RO.inlet)
+        m.fs.s03 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
+        m.fs.s04 = Arc(source=m.fs.RO.retentate, destination=m.fs.disposal.inlet)
     else:
         # this case should be caught in the previous conditional
         erd_type_not_found(erd_type)
@@ -183,6 +191,8 @@ def build(erd_type=ERDtype.pressure_exchanger):
         m.fs.S1.PXR_state[0].flow_vol_phase["Liq"]
     elif erd_type == ERDtype.pump_as_turbine:
         iscale.set_scaling_factor(m.fs.ERD.control_volume.work, 1e-3)
+    elif erd_type == ERDtype.no_ERD:
+        pass
     else:
         erd_type_not_found(erd_type)
 
@@ -283,6 +293,8 @@ def set_operating_conditions(
         # energy recovery turbine - efficiency and outlet pressure
         m.fs.ERD.efficiency_pump.fix(0.95)
         m.fs.ERD.control_volume.properties_out[0].pressure.fix(101325)
+    elif m.fs.erd_type == ERDtype.no_ERD:
+        pass
     else:
         erd_type_not_found(m.fs.erd_type)
 
@@ -378,6 +390,9 @@ def initialize_system(m, solver=None):
     elif m.fs.erd_type == ERDtype.pump_as_turbine:
         initialize_pump_as_turbine(m, optarg)
 
+    elif m.fs.erd_type == ERDtype.no_ERD:
+        initialize_no_erd(m, optarg)
+
     else:
         erd_type_not_found(m.fs.erd_type)
 
@@ -449,6 +464,12 @@ def initialize_pressure_exchanger(m, optarg):
 def initialize_pump_as_turbine(m, optarg):
     propagate_state(m.fs.s05)
     m.fs.ERD.initialize(optarg=optarg)
+    propagate_state(m.fs.s01)
+    m.fs.P1.initialize(optarg=optarg)
+    propagate_state(m.fs.s02)
+
+
+def initialize_no_erd(m, optarg):
     propagate_state(m.fs.s01)
     m.fs.P1.initialize(optarg=optarg)
     propagate_state(m.fs.s02)
@@ -570,6 +591,8 @@ def display_design(m):
                 -1 * m.fs.ERD.work_mechanical[0].value / 1e3,
             )
         )
+    elif m.fs.erd_type == ERDtype.no_ERD:
+        pass
     else:
         erd_type_not_found(m.fs.erd_type)
 
