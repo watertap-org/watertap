@@ -21,16 +21,23 @@ assumptions", 2012, Wat. Sci. Tech., Vol. 65 No. 8, pp. 1496-1505
 __author__ = "Alejandro Garciadiego, Andrew Lee"
 
 import pyomo.environ as pyo
+from pyomo.environ import (
+    value,
+    units as pyunits,
+)
 from pyomo.network import Arc, SequentialDecomposition
 
-from idaes.core import FlowsheetBlock
+from idaes.core import (
+    FlowsheetBlock,
+    UnitModelCostingBlock,
+)
 from idaes.models.unit_models import (
     CSTR,
     Feed,
-    Mixer,
     Separator,
-    PressureChanger,
     Product,
+    Mixer,
+    PressureChanger,
 )
 from idaes.models.unit_models.separator import SplittingType
 from idaes.core.solvers import get_solver
@@ -41,16 +48,42 @@ from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
-
 from watertap.unit_models.cstr_injection import CSTR_Injection
+from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
+    ModifiedADM1ParameterBlock,
+)
+from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
+    ADM1_vaporParameterBlock,
+)
+from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import (
+    ModifiedADM1ReactionParameterBlock,
+)
 from watertap.property_models.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
 )
 from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
 )
-
+from watertap.unit_models.translators.translator_adm1_asm2d import (
+    Translator_ADM1_ASM2D,
+)
+from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2d_ADM1
+from watertap.unit_models.anaerobic_digestor import AD
+from watertap.unit_models.electroNP_ZO import ElectroNPZO
+from watertap.unit_models.dewatering import (
+    DewateringUnit,
+    ActivatedSludgeModelType as dewater_type,
+)
+from watertap.unit_models.thickener import (
+    Thickener,
+    ActivatedSludgeModelType as thickener_type,
+)
 from watertap.core.util.initialization import check_solve
+from watertap.costing import WaterTAPCosting
+
+from watertap.core.util.model_diagnostics.infeasible import *
+from idaes.core.util.model_diagnostics import DegeneracyHunter
+
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -70,52 +103,92 @@ def build_flowsheet():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.props = ModifiedASM2dParameterBlock()
-    m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(property_package=m.fs.props)
+    m.fs.props_ASM2D = ModifiedASM2dParameterBlock()
+    m.fs.rxn_props_ASM2D = ModifiedASM2dReactionParameterBlock(
+        property_package=m.fs.props_ASM2D
+    )
+    m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
+    m.fs.props_vap_ADM1 = ADM1_vaporParameterBlock()
+    m.fs.rxn_props_ADM1 = ModifiedADM1ReactionParameterBlock(
+        property_package=m.fs.props_ADM1
+    )
+
+    m.fs.costing = WaterTAPCosting()
 
     # Feed water stream
-    m.fs.FeedWater = Feed(property_package=m.fs.props)
+    m.fs.FeedWater = Feed(property_package=m.fs.props_ASM2D)
     # Mixer for feed water and recycled sludge
-    m.fs.MX1 = Mixer(property_package=m.fs.props, inlet_list=["feed_water", "recycle"])
+    m.fs.MX1 = Mixer(
+        property_package=m.fs.props_ASM2D, inlet_list=["feed_water", "recycle"]
+    )
     # First reactor (anoxic) - standard CSTR
-    m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R1 = CSTR(
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
+    )
     # First reactor (anoxic) - standard CSTR
-    m.fs.R2 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R2 = CSTR(
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
+    )
     # Second reactor (anoxic) - standard CSTR
-    m.fs.R3 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R3 = CSTR(
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
+    )
 
-    m.fs.R4 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R4 = CSTR(
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
+    )
     # Third reactor (aerobic) - CSTR with injection
     m.fs.R5 = CSTR_Injection(
-        property_package=m.fs.props, reaction_package=m.fs.rxn_props
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
     )
     # Fourth reactor (aerobic) - CSTR with injection
     m.fs.R6 = CSTR_Injection(
-        property_package=m.fs.props, reaction_package=m.fs.rxn_props
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
     )
     # Fifth reactor (aerobic) - CSTR with injection
     m.fs.R7 = CSTR_Injection(
-        property_package=m.fs.props, reaction_package=m.fs.rxn_props
+        property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
     )
     m.fs.SP1 = Separator(
-        property_package=m.fs.props, outlet_list=["underflow", "overflow"]
+        property_package=m.fs.props_ASM2D, outlet_list=["underflow", "overflow"]
     )
     # Clarifier
     # TODO: Replace with more detailed model when available
     m.fs.CL1 = Separator(
-        property_package=m.fs.props,
+        property_package=m.fs.props_ASM2D,
         outlet_list=["underflow", "effluent"],
         split_basis=SplittingType.componentFlow,
     )
     # Mixing sludge recycle and R5 underflow
-    m.fs.MX2 = Mixer(property_package=m.fs.props, inlet_list=["clarifier", "reactor"])
+    m.fs.MX2 = Mixer(
+        property_package=m.fs.props_ASM2D, inlet_list=["clarifier", "reactor"]
+    )
     # Sludge separator
-    m.fs.SP2 = Separator(property_package=m.fs.props, outlet_list=["waste", "recycle"])
+    m.fs.SP2 = Separator(
+        property_package=m.fs.props_ASM2D, outlet_list=["waste", "recycle"]
+    )
+
+    # Thickener
+    m.fs.thickener = Thickener(
+        property_package=m.fs.props_ASM2D,
+        activated_sludge_model=thickener_type.modified_ASM2D,
+    )
+
+    # Translators
+    # m.fs.translator_asm2d_adm1 = Translator_ASM2d_ADM1(
+    #     inlet_property_package=m.fs.props_ASM2D,
+    #     outlet_property_package=m.fs.props_ADM1,
+    #     inlet_reaction_package=m.fs.rxn_props_ASM2D,
+    #     outlet_reaction_package=m.fs.rxn_props_ADM1,
+    #     has_phase_equilibrium=False,
+    #     outlet_state_defined=True,
+    # )
+
     # Product Blocks
-    m.fs.Treated = Product(property_package=m.fs.props)
-    m.fs.Sludge = Product(property_package=m.fs.props)
+    m.fs.Treated = Product(property_package=m.fs.props_ASM2D)
+    m.fs.Sludge = Product(property_package=m.fs.props_ASM2D)
     # Recycle pressure changer - use a simple isothermal unit for now
-    m.fs.P1 = PressureChanger(property_package=m.fs.props)
+    m.fs.P1 = PressureChanger(property_package=m.fs.props_ASM2D)
 
     # Link units
     m.fs.stream1 = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX1.feed_water)
@@ -133,10 +206,30 @@ def build_flowsheet():
     m.fs.stream13 = Arc(source=m.fs.CL1.effluent, destination=m.fs.Treated.inlet)
     m.fs.stream14 = Arc(source=m.fs.CL1.underflow, destination=m.fs.SP2.inlet)
 
-    m.fs.stream15 = Arc(source=m.fs.SP2.waste, destination=m.fs.Sludge.inlet)
+    # m.fs.stream15 = Arc(source=m.fs.SP2.waste, destination=m.fs.Sludge.inlet)
     m.fs.stream16 = Arc(source=m.fs.SP2.recycle, destination=m.fs.P1.inlet)
 
     m.fs.stream17 = Arc(source=m.fs.P1.outlet, destination=m.fs.MX1.recycle)
+
+    m.fs.stream_SP_thickener = Arc(
+        source=m.fs.SP2.waste, destination=m.fs.thickener.inlet
+    )
+    # m.fs.stream_thickener_translator = Arc(
+    #     source=m.fs.thickener.underflow, destination=m.fs.translator_asm2d_adm1.inlet
+    # )
+    # m.fs.stream_translator_AD = Arc(
+    #     source=m.fs.translator_asm2d_adm1.outlet, destination=m.fs.AD.inlet
+    # )
+    # m.fs.stream_AD_translator = Arc(
+    #     source=m.fs.AD.liquid_outlet, destination=m.fs.translator_adm1_asm2d.inlet
+    # )
+    # m.fs.stream_translator_dewater = Arc(
+    #     source=m.fs.translator_adm1_asm2d.outlet, destination=m.fs.dewater.inlet
+    # )
+    # m.fs.stream_dewater_electroNP = Arc(
+    #     source=m.fs.dewater.overflow, destination=m.fs.electroNP.inlet
+    # )
+
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
@@ -195,8 +288,8 @@ def build_flowsheet():
 
     # Feed Water Conditions
     print(f"DOF before feed: {degrees_of_freedom(m)}")
-    m.fs.FeedWater.flow_vol.fix(18446 * pyo.units.m**3 / pyo.units.day)
-    m.fs.FeedWater.temperature.fix(298.15 * pyo.units.K)
+    m.fs.FeedWater.flow_vol.fix(20648 * pyo.units.m**3 / pyo.units.day)
+    m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
     m.fs.FeedWater.conc_mass_comp[0, "S_O2"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(30 * pyo.units.g / pyo.units.m**3)
@@ -233,7 +326,7 @@ def build_flowsheet():
     m.fs.R7.volume.fix(1333 * pyo.units.m**3)
 
     # Injection rates to Reactions 3, 4 and 5
-    for j in m.fs.props.component_list:
+    for j in m.fs.props_ASM2D.component_list:
         if j != "S_O2":
             # All components except S_O have no injection
             m.fs.R5.injection[:, :, j].fix(0)
@@ -282,16 +375,18 @@ def build_flowsheet():
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
+                iscale.set_scaling_factor(var, 1e1)
+            if "translator_asm2d_adm1.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e4)
+            if "translator_asm2d_adm1.properties_out[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e4)
             if "temperature" in var.name:
-                iscale.set_scaling_factor(var, 1e-1)
+                iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-4)
-            if "enth_mol" in var.name:
                 iscale.set_scaling_factor(var, 1e-3)
-            # if "alkalinity" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
-            #
+            if "conc_mass_comp" in var.name:
+                iscale.set_scaling_factor(var, 1e2)
+
             # if "conc_mass_comp[S_O2]" in var.name:
             #     iscale.set_scaling_factor(var, 1e3)
             # if "conc_mass_comp[S_F]" in var.name:
@@ -300,14 +395,14 @@ def build_flowsheet():
             #     iscale.set_scaling_factor(var, 1e3)
             # if "conc_mass_comp[S_NH4]" in var.name:
             #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[S_NO3]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
+            # # if "conc_mass_comp[S_NO3]" in var.name:
+            # #     iscale.set_scaling_factor(var, 1e2)
             # if "conc_mass_comp[S_PO4]" in var.name:
             #     iscale.set_scaling_factor(var, 1e3)
             # if "conc_mass_comp[S_I]" in var.name:
             #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[S_N2]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
+            # # if "conc_mass_comp[S_N2]" in var.name:
+            # #     iscale.set_scaling_factor(var, 1e2)
             # if "conc_mass_comp[X_I]" in var.name:
             #     iscale.set_scaling_factor(var, 1e1)
             # if "conc_mass_comp[X_S]" in var.name:
@@ -320,14 +415,14 @@ def build_flowsheet():
             #     iscale.set_scaling_factor(var, 1e2)
             # if "conc_mass_comp[X_PHA]" in var.name:
             #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[X_AUT]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e1)
-            # if "conc_mass_comp[X_MeOH]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e7)
-            # if "conc_mass_comp[X_MeP]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e7)
-            # if "conc_mass_comp[X_TSS]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e0)
+            # # if "conc_mass_comp[X_AUT]" in var.name:
+            # #     iscale.set_scaling_factor(var, 1e1)
+            # if "conc_mass_comp[S_IC]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp[S_K]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e4)
+            # if "conc_mass_comp[S_Mg]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e4)
 
     for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
         block = getattr(m.fs, unit)
@@ -363,45 +458,117 @@ def build_flowsheet():
 
     # Initial guesses for flow into first reactor
     tear_guesses = {
-        "flow_vol": {0: 1.07},
+        "flow_vol": {0: 1.17},
         "conc_mass_comp": {
-            (0, "S_O2"): 0.001,
-            (0, "S_F"): 0.056,
-            (0, "S_A"): 0.013,
-            (0, "S_NH4"): 0.010,
-            (0, "S_NO3"): 0.011,
-            (0, "S_PO4"): 0.0024,
+            (0, "S_A"): 0.018,
+            (0, "S_F"): 0.0006,
             (0, "S_I"): 0.03,
-            (0, "S_N2"): 0.017,
-            # (0, "S_IC"): 0.079,
-            # (0, "S_K"): 1e-9,
-            # (0, "S_Mg"): 1e-9,
-            (0, "X_I"): 1.17,
-            (0, "X_S"): 0.05,
-            (0, "X_H"): 1.172,
-            (0, "X_PAO"): 0.200,
-            (0, "X_PP"): 0.052,
-            (0, "X_PHA"): 0.013,
-            (0, "X_AUT"): 0.030,
+            (0, "S_N2"): 1e-9,
+            (0, "S_NH4"): 0.008,
+            (0, "S_NO3"): 1e-9,
+            (0, "S_O2"): 0.002,
+            (0, "S_PO4"): 0.003,
+            (0, "S_K"): 1e-9,
+            (0, "S_Mg"): 1e-9,
+            (0, "S_IC"): 0.1,
+            (0, "X_AUT"): 1e-9,
+            (0, "X_H"): 1.3,
+            (0, "X_I"): 0.38,
+            (0, "X_PAO"): 1e-9,
+            (0, "X_PHA"): 1e-9,
+            (0, "X_PP"): 1e-9,
+            (0, "X_S"): 0.04,
         },
-        "temperature": {0: 298.15},
+        "temperature": {0: 308.15},
         "pressure": {0: 101325},
     }
 
+    # tear_guesses2 = {
+    #     "flow_vol": {0: 1.8e-4},
+    #     "conc_mass_comp": {
+    #         (0, "S_A"): 4.1e-5,
+    #         (0, "S_F"): 0.0003,
+    #         (0, "S_I"): 0.03,
+    #         (0, "S_N2"): 1e-9,
+    #         (0, "S_NH4"): 0.007,
+    #         (0, "S_NO3"): 1e-9,
+    #         (0, "S_O2"): 0.008,
+    #         (0, "S_PO4"): 0.003,
+    #         (0, "S_K"): 1e-9,
+    #         (0, "S_Mg"): 1e-9,
+    #         (0, "S_IC"): 0.1,
+    #         (0, "X_AUT"): 1.8e-5,
+    #         (0, "X_H"): 64.3,
+    #         (0, "X_I"): 19.8,
+    #         (0, "X_PAO"): 1e-9,
+    #         (0, "X_PHA"): 1e-9,
+    #         (0, "X_PP"): 1e-9,
+    #         (0, "X_S"): 1.3,
+    #     },
+    #     "temperature": {0: 308.15},
+    #     "pressure": {0: 101325},
+    # }
+
+    # tear_guesses2 = {
+    #     "flow_vol": {0: 1.8e-4},
+    #     "conc_mass_comp": {
+    #         (0, "S_A"): 4.1e-5,
+    #         (0, "S_F"): 0.0003,
+    #         (0, "S_I"): 0.03,
+    #         (0, "S_N2"): 1e-9,
+    #         (0, "S_NH4"): 0.007,
+    #         (0, "S_NO3"): 1e-9,
+    #         (0, "S_O2"): 0.008,
+    #         (0, "S_PO4"): 0.003,
+    #         (0, "S_K"): 1e-9,
+    #         (0, "S_Mg"): 1e-9,
+    #         (0, "S_IC"): 0.1,
+    #         (0, "X_AUT"): 1.8e-5,
+    #         (0, "X_H"): 64.3,
+    #         (0, "X_I"): 19.8,
+    #         (0, "X_PAO"): 1e-9,
+    #         (0, "X_PHA"): 1e-9,
+    #         (0, "X_PP"): 1e-9,
+    #         (0, "X_S"): 1.3,
+    #     },
+    #     "temperature": {0: 308.15},
+    #     "pressure": {0: 101325},
+    # }
+
     # Pass the tear_guess to the SD tool
     seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
+    # seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
-        badly_scaled_vars = list(iscale.badly_scaled_var_generator(unit))
-        if len(badly_scaled_vars) > 0:
-            automate_rescale_variables(unit)
+        # badly_scaled_vars = list(iscale.badly_scaled_var_generator(unit))
+        # if len(badly_scaled_vars) > 0:
+        #     automate_rescale_variables(unit)
 
     seq.run(m, function)
 
     solver = get_solver()
-    results = solver.solve(m, tee=False)
+    results = solver.solve(m, tee=True)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
+
+    # # Use of Degeneracy Hunter for troubleshooting model.
+    # m.obj = pyo.Objective(expr=0)
+    # solver = get_solver()
+    # solver.options["max_iter"] = 10000
+    # results = solver.solve(m, tee=True)
+    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    # # badly_scaled_var_list = iscale.badly_scaled_var_generator(
+    # #     m, large=1e1, small=1e-1
+    # # )
+    # # for x in badly_scaled_var_list:
+    # #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    # dh.check_residuals(tol=1e-8)
+    # # dh.check_variable_bounds(tol=1e-8)
+    # # dh.check_rank_equality_constraints(dense=True)
+    # # ds = dh.find_candidate_equations(verbose=True, tee=True)
+    # # ids = dh.find_irreducible_degenerate_sets(verbose=True)
+    # print_close_to_bounds(m)
+    # # print_infeasible_constraints(m)
 
     # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
     m.fs.R5.KLa.fix(240)
@@ -433,14 +600,18 @@ if __name__ == "__main__":
     stream_table = create_stream_table_dataframe(
         {
             "Feed": m.fs.FeedWater.outlet,
-            "Mix": m.fs.R1.inlet,
-            "R1": m.fs.R1.outlet,
-            "R2": m.fs.R2.outlet,
-            "R3": m.fs.R3.outlet,
-            "R4": m.fs.R4.outlet,
-            "R5": m.fs.R5.outlet,
-            "R6": m.fs.R6.outlet,
+            # "Mix": m.fs.R1.inlet,
+            # "R1": m.fs.R1.outlet,
+            # "R2": m.fs.R2.outlet,
+            "R3 inlet": m.fs.R3.inlet,
+            # "R3": m.fs.R3.outlet,
+            # "R4": m.fs.R4.outlet,
+            # "R5": m.fs.R5.outlet,
+            # "R6": m.fs.R6.outlet,
             "R7": m.fs.R7.outlet,
+            "thickener outlet": m.fs.thickener.underflow,
+            # "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
+            # "ASM-ADM translator outlet": m.fs.translator_asm2d_adm1.outlet,
         },
         time_point=0,
     )
