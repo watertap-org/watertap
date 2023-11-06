@@ -50,34 +50,34 @@ class TestDyeFlowsheet:
         initialize_system(m)
 
         # test feed conditions
-        assert pytest.approx(31.583, rel=1e-3) == value(
+        assert pytest.approx(77.607, rel=1e-3) == value(
             m.fs.feed.flow_mass_comp[0, "H2O"]
         )
 
-        assert pytest.approx(0.0833, rel=1e-3) == value(
+        assert pytest.approx(0.015556, rel=1e-3) == value(
             m.fs.feed.flow_mass_comp[0, "dye"]
         )
 
-        assert pytest.approx(1.6666, rel=1e-3) == value(
+        assert pytest.approx(0.155556, rel=1e-3) == value(
             m.fs.feed.flow_mass_comp[0, "tds"]
         )
 
         # test nanofiltration block
-        assert pytest.approx(130.075, rel=1e-3) == value(
+        assert pytest.approx(316.219, rel=1e-3) == value(
             m.fs.dye_separation.nanofiltration.area
         )
 
         # test pump block
-        assert pytest.approx(6.895, rel=1e-6) == value(
+        assert pytest.approx(7, rel=1e-6) == value(
             m.fs.dye_separation.P1.applied_pressure[0]
         )
 
         # check each product
-        assert pytest.approx(23.6875, rel=1e-6) == value(
+        assert pytest.approx(64.4135, rel=1e-6) == value(
             m.fs.permeate.flow_mass_comp[0, "H2O"]
         )
 
-        assert pytest.approx(0.08199, rel=1e-3) == value(
+        assert pytest.approx(0.015426, rel=1e-3) == value(
             m.fs.dye_retentate.flow_mass_comp[0, "dye"]
         )
 
@@ -87,11 +87,11 @@ class TestDyeFlowsheet:
         results = solve(m)
 
         # check each product
-        assert pytest.approx(23.6875, rel=1e-6) == value(
+        assert pytest.approx(64.4135, rel=1e-6) == value(
             m.fs.permeate.flow_mass_comp[0, "H2O"]
         )
 
-        assert pytest.approx(0.08199, rel=1e-3) == value(
+        assert pytest.approx(0.015426, rel=1e-3) == value(
             m.fs.dye_retentate.flow_mass_comp[0, "dye"]
         )
 
@@ -104,7 +104,7 @@ class TestDyeFlowsheet:
         assert_optimal_termination(results)
 
         # check values
-        assert pytest.approx(0.522149, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(19.626110, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):

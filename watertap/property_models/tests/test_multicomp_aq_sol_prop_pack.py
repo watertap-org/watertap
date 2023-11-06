@@ -19,6 +19,9 @@ from pyomo.environ import (
     Param,
     units as pyunits,
     Suffix,
+    value,
+    Var,
+    Constraint,
 )
 from idaes.core import (
     FlowsheetBlock,
@@ -41,11 +44,16 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import (
     TransportNumberCalculation,
 )
 from watertap.core.util.initialization import check_dof
-from idaes.core.util.model_statistics import *
+from idaes.core.util.model_statistics import (
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
 from idaes.core.util.scaling import (
     unscaled_variables_generator,
     unscaled_constraints_generator,
     badly_scaled_var_generator,
+    set_scaling_factor,
 )
 from idaes.core.util.exceptions import ConfigurationError
 from watertap.property_models.tests.property_test_harness import PropertyAttributeError
@@ -64,6 +72,12 @@ from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
+
+# Import idaes mixer to check compatibility in absence of get_enthalpy_flow_terms()
+from idaes.models.unit_models import Mixer
+from idaes.models.unit_models.mixer import MixingType
+import idaes.logger as idaeslog
+
 
 solver = get_solver()
 # -----------------------------------------------------------------------------
@@ -144,6 +158,7 @@ def test_parameter_block(model):
         model.fs.properties.config.activity_coefficient_model
         == ActivityCoefficientModel.ideal
     )
+    assert model.fs.properties.config.material_flow_basis == MaterialFlowBasis.molar
 
 
 @pytest.mark.component
@@ -224,7 +239,9 @@ def model2():
 
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
-        solute_list=["A", "B", "C", "D"], charge={"A": 1, "B": -2, "C": 2, "D": -1}
+        solute_list=["A", "B", "C", "D"],
+        charge={"A": 1, "B": -2, "C": 2, "D": -1},
+        mw_data={"A": 10e-3, "B": 25e-3, "C": 100e-3, "D": 25e-3},
     )
 
     return m
@@ -243,12 +260,6 @@ def test_property_ions_2(model2):
     stream[0].flow_mol_phase_comp["Liq", "H2O"].fix(0.99046)
     stream[0].temperature.fix(298.15)
     stream[0].pressure.fix(101325)
-
-    stream[0].mw_comp["H2O"] = 18e-3
-    stream[0].mw_comp["A"] = 10e-3
-    stream[0].mw_comp["B"] = 25e-3
-    stream[0].mw_comp["C"] = 100e-3
-    stream[0].mw_comp["D"] = 25e-3
 
     stream[0].radius_stokes_comp["A"] = 1e-9
     stream[0].radius_stokes_comp["B"] = 1e-9
@@ -294,7 +305,14 @@ def model3():
             ("Liq", "Mg_2+"): 7.06e-10,
         },
         elec_mobility_calculation=ElectricalMobilityCalculation.EinsteinRelation,
-        charge={"Ca_2+": 1, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
+        charge={"Ca_2+": 2, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
+        mw_data={
+            "Ca_2+": 40e-3,
+            "SO4_2-": 97e-3,
+            "Na_+": 23e-3,
+            "Cl_-": 35e-3,
+            "Mg_2+": 24e-3,
+        },
     )
 
     m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
@@ -326,10 +344,17 @@ def test_build(model3):
     for v in metadata.list_supported_properties():
         if metadata[v.name].method is not None:
             if m.fs.stream[0].is_property_constructed(v.name):
-                raise PropertyAttributeError(
-                    "Property {v_name} is an on-demand property, but was found "
-                    "on the stateblock without being demanded".format(v_name=v.name)
-                )
+                if (
+                    m.fs.properties.config.material_flow_basis
+                    == MaterialFlowBasis.molar
+                    and v.name == "flow_mol_phase_comp"
+                ):
+                    continue
+                else:
+                    raise PropertyAttributeError(
+                        "Property {v_name} is an on-demand property, but was found "
+                        "on the stateblock without being demanded".format(v_name=v.name)
+                    )
 
     # check that properties are built if demanded
     for v in metadata.list_supported_properties():
@@ -430,7 +455,6 @@ def test_scaling(model3):
 
     assert len(unscaled_constraint_list) == 0
 
-    # m.fs.stream[0].scaling_factor.display()
     for j in m.fs.properties.config.solute_list:
         assert get_scaling_factor(m.fs.stream[0].mw_comp[j]) is not None
         assert (
@@ -882,7 +906,7 @@ def test_assert_electroneutrality_get_property_2():
         AssertionError,
         match=re.escape(
             "fs.stream[0].flow_mol_phase_comp[Liq,Ca_2+] was fixed. "
-            "Either set defined_state=True or unfix flow_mol_phase_comp "
+            "Either set defined_state=True or unfix fs.stream[0].flow_mol_phase_comp "
             "for each solute to check that electroneutrality is satisfied."
         ),
     ):
@@ -1396,6 +1420,7 @@ def model7():
             ("Liq", "D"): 200e-6,  # arbitrary
         },
         diffusivity_data={("Liq", "E"): 1.33e-9, ("Liq", "F"): 2.03e-9},
+        mw_data={"A": 1, "B": 1, "C": 1, "D": 1, "E": 1, "F": 1, "G": 1},  # arbitrary
     )
     # build state block
     m_hl.fs.sb = m_hl.fs.properties.build_state_block([0], defined_state=True)
@@ -1458,6 +1483,7 @@ def test_solute_list_longer_than_diff_data():
     m.fs.properties = MCASParameterBlock(
         solute_list=["A", "B", "C", "D", "E", "F", "G", "H"],
         charge={"E": 1, "F": -1},
+        mw_data={"A": 1, "B": 1, "C": 1, "D": 1, "E": 1, "F": 1, "G": 1, "H": 1},
         diffus_calculation=DiffusivityCalculation.none,
         molar_volume_data={
             ("Liq", "A"): 96e-6,  # tested for benzene
@@ -1475,3 +1501,743 @@ def test_solute_list_longer_than_diff_data():
 
     m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
     calculate_scaling_factors(m.fs)
+
+
+@pytest.mark.component
+def test_flow_mass_basis():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["A"], material_flow_basis=MaterialFlowBasis.mass, mw_data={"A": 1}
+    )
+
+    m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
+
+    assert m.fs.properties.config.material_flow_basis == MaterialFlowBasis.mass
+
+    m.fs.sb[0].assert_electroneutrality(defined_state=False)
+    assert hasattr(m.fs.sb[0], "get_material_flow_terms")
+
+    A = m.fs.sb[0].get_material_flow_terms("Liq", "A")
+    print(A)
+    A.pprint()
+    assert_units_equivalent(
+        m.fs.sb[0].get_material_flow_terms("Liq", "A"), pyunits.kg / pyunits.s
+    )
+    assert (
+        m.fs.sb[0].get_material_flow_terms("Liq", "A")
+        == m.fs.sb[0].flow_mass_phase_comp["Liq", "A"]
+    )
+
+
+@pytest.mark.unit
+def test_compatibility_with_mixer():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["Na_+", "Cl_-"], mw_data={"Na_+": 23, "Cl_-": 35}
+    )
+
+    m.fs.mixer1 = Mixer(
+        property_package=m.fs.properties, energy_mixing_type=MixingType.none
+    )
+
+    with pytest.raises(
+        NotImplementedError,
+        match="property package has not implemented the get_enthalpy_flow_terms method. Please contact the property package developer.",
+    ):
+        m.fs.mixer2 = Mixer(
+            property_package=m.fs.properties,
+        )
+
+
+c_list = [10e-10, 10e-9, 10e-8, 10e-7, 10e-6, 10e-5]
+
+
+@pytest.mark.parametrize("c", c_list)
+@pytest.mark.component
+def test_calculate_state_with_flow_mol_stateVar(c):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    mw = 0.50013 * pyunits.kg / pyunits.mol
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["target_ion"],
+        mw_data={"target_ion": mw, "H2O": 0.018 * pyunits.kg / pyunits.mol},
+    )
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+    m.fs.stream2 = m.fs.properties.build_state_block([0], defined_state=True)
+
+    flow_in = 0.04381 * pyunits.m**3 / pyunits.s
+    conc_mass = c * pyunits.kg / pyunits.m**3
+    flow_mol = pyunits.convert(
+        conc_mass / mw * flow_in, to_units=pyunits.mol / pyunits.s
+    )
+
+    set_scaling_factor(m.fs.stream[0].flow_mol_phase_comp["Liq", "H2O"], 1)
+    set_scaling_factor(
+        m.fs.stream[0].flow_mol_phase_comp["Liq", "target_ion"], value(1 / flow_mol)
+    )
+    m.fs.stream[0].conc_mol_phase_comp
+    m.fs.stream[0].flow_vol_phase
+    calculate_scaling_factors(m.fs.stream[0])
+    m.fs.stream.calculate_state(
+        var_args={
+            ("flow_vol_phase", "Liq"): flow_in,
+            ("conc_mol_phase_comp", ("Liq", "target_ion")): conc_mass / mw,
+            ("pressure", None): 101325,
+            ("temperature", None): 298,
+        },
+        hold_state=True,
+    )
+    assert pytest.approx(
+        value(m.fs.stream[0].flow_mol_phase_comp["Liq", "target_ion"]), rel=1e-3
+    ) == value(flow_mol)
+
+    set_scaling_factor(m.fs.stream2[0].flow_mol_phase_comp["Liq", "H2O"], 1)
+    set_scaling_factor(
+        m.fs.stream2[0].flow_mol_phase_comp["Liq", "target_ion"], value(1 / flow_mol)
+    )
+    m.fs.stream2[0].conc_mass_phase_comp
+    m.fs.stream2[0].flow_vol_phase
+    calculate_scaling_factors(m.fs.stream2[0])
+    m.fs.stream2.calculate_state(
+        var_args={
+            ("flow_vol_phase", "Liq"): flow_in,
+            ("conc_mass_phase_comp", ("Liq", "target_ion")): conc_mass,
+            ("pressure", None): 101325,
+            ("temperature", None): 298,
+        },
+        hold_state=True,
+    )
+    assert pytest.approx(
+        value(m.fs.stream2[0].flow_mol_phase_comp["Liq", "target_ion"]), rel=1e-3
+    ) == value(flow_mol)
+
+
+@pytest.mark.parametrize("c", c_list)
+@pytest.mark.component
+def test_calculate_state_with_flow_mass_stateVar(c):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    mw = 0.50013 * pyunits.kg / pyunits.mol
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["target_ion"],
+        mw_data={"target_ion": mw, "H2O": 0.018 * pyunits.kg / pyunits.mol},
+        material_flow_basis=MaterialFlowBasis.mass,
+    )
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+    m.fs.stream2 = m.fs.properties.build_state_block([0], defined_state=True)
+
+    flow_in = 0.04381 * pyunits.m**3 / pyunits.s
+    conc_mass = c * pyunits.kg / pyunits.m**3
+    conc_mol = conc_mass / mw
+    flow_mass = pyunits.convert(conc_mass * flow_in, to_units=pyunits.kg / pyunits.s)
+    set_scaling_factor(m.fs.stream[0].flow_mass_phase_comp["Liq", "H2O"], 1)
+    set_scaling_factor(
+        m.fs.stream[0].flow_mass_phase_comp["Liq", "target_ion"], value(1 / flow_mass)
+    )
+    m.fs.stream[0].conc_mol_phase_comp
+    calculate_scaling_factors(m.fs.stream[0])
+    m.fs.stream.calculate_state(
+        var_args={
+            ("flow_vol_phase", "Liq"): flow_in,
+            ("conc_mol_phase_comp", ("Liq", "target_ion")): conc_mol,
+            ("pressure", None): 101325,
+            ("temperature", None): 298,
+        },
+        hold_state=True,
+    )
+
+    assert pytest.approx(
+        value(m.fs.stream[0].flow_mass_phase_comp["Liq", "target_ion"]), rel=1e-3
+    ) == value(flow_mass)
+
+    set_scaling_factor(m.fs.stream2[0].flow_mass_phase_comp["Liq", "H2O"], 1)
+    set_scaling_factor(
+        m.fs.stream2[0].flow_mass_phase_comp["Liq", "target_ion"], value(1 / flow_mass)
+    )
+    m.fs.stream2[0].conc_mass_phase_comp
+    calculate_scaling_factors(m.fs.stream2[0])
+    m.fs.stream2.calculate_state(
+        var_args={
+            ("flow_vol_phase", "Liq"): flow_in,
+            ("conc_mass_phase_comp", ("Liq", "target_ion")): conc_mass,
+            ("pressure", None): 101325,
+            ("temperature", None): 298,
+        },
+        hold_state=True,
+    )
+
+    assert pytest.approx(
+        value(m.fs.stream2[0].flow_mass_phase_comp["Liq", "target_ion"]), rel=1e-3
+    ) == value(flow_mass)
+
+
+@pytest.mark.component
+def test_seawater_data_with_flow_mass_basis():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
+        material_flow_basis=MaterialFlowBasis.mass,
+        diffusivity_data={
+            ("Liq", "Ca_2+"): 7.92e-10,
+            ("Liq", "SO4_2-"): 1.06e-09,
+            ("Liq", "Na_+"): 1.33e-09,
+            ("Liq", "Cl_-"): 2.03e-09,
+            ("Liq", "Mg_2+"): 7.06e-10,
+        },
+        mw_data={
+            "H2O": 0.018,
+            "Na_+": 0.023,
+            "Ca_2+": 0.04,
+            "Mg_2+": 0.024,
+            "Cl_-": 0.035,
+            "SO4_2-": 0.096,
+        },
+        stokes_radius_data={
+            "Na_+": 1.84e-10,
+            "Ca_2+": 3.09e-10,
+            "Mg_2+": 3.47e-10,
+            "Cl_-": 1.21e-10,
+            "SO4_2-": 2.3e-10,
+        },
+        charge={"Na_+": 1, "Ca_2+": 2, "Mg_2+": 2, "Cl_-": -1, "SO4_2-": -2},
+        elec_mobility_calculation=ElectricalMobilityCalculation.EinsteinRelation,
+        density_calculation=DensityCalculation.seawater,
+        activity_coefficient_model=ActivityCoefficientModel.davies,
+    )
+
+    m.fs.stream = stream = m.fs.properties.build_state_block([0], defined_state=True)
+
+    mass_flow_in = 1 * pyunits.kg / pyunits.s
+    feed_mass_frac = {
+        "Na_+": 11122e-6,
+        "Ca_2+": 382e-6,
+        "Mg_2+": 1394e-6,
+        "SO4_2-": 2136e-6,
+        "Cl_-": 20300e-6,
+    }
+    for ion, x in feed_mass_frac.items():
+        mass_comp_flow = x * pyunits.kg / pyunits.kg * mass_flow_in
+
+        stream[0].flow_mass_phase_comp["Liq", ion].fix(mass_comp_flow)
+
+    H2O_mass_frac = 1 - sum(x for x in feed_mass_frac.values())
+
+    stream[0].flow_mass_phase_comp["Liq", "H2O"].fix(H2O_mass_frac)
+    stream[0].temperature.fix(298.15)
+    stream[0].pressure.fix(101325)
+
+    stream[0].assert_electroneutrality(
+        defined_state=True, tol=1e-2, adjust_by_ion="Cl_-"
+    )
+
+    metadata = m.fs.properties.get_metadata().properties
+    for v in metadata.list_supported_properties():
+        getattr(stream[0], v.name)
+        assert stream[0].is_property_constructed(v.name)
+
+    assert_units_consistent(m)
+
+    check_dof(m, fail_flag=True)
+
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "Na_+")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "Cl_-")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e3, index=("Liq", "Ca_2+")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e3, index=("Liq", "SO4_2-")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e3, index=("Liq", "Mg_2+")
+    )
+
+    calculate_scaling_factors(m)
+
+    stream.initialize()
+
+    badly_scaled_var_list = list(
+        badly_scaled_var_generator(m, large=100, small=0.01, zero=1e-10)
+    )
+
+    assert len(badly_scaled_var_list) == 0
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+
+    assert value(stream[0].flow_vol_phase["Liq"]) == pytest.approx(9.767e-4, rel=1e-3)
+    assert value(stream[0].flow_mol_phase_comp["Liq", "H2O"]) == pytest.approx(
+        53.59256, rel=1e-3
+    )
+    assert value(stream[0].flow_mol_phase_comp["Liq", "Na_+"]) == pytest.approx(
+        0.4836, rel=1e-3
+    )
+    assert value(stream[0].flow_mol_phase_comp["Liq", "Ca_2+"]) == pytest.approx(
+        0.00955, rel=1e-3
+    )
+    assert value(stream[0].flow_mol_phase_comp["Liq", "Mg_2+"]) == pytest.approx(
+        0.05808, rel=1e-3
+    )
+    assert value(stream[0].flow_mol_phase_comp["Liq", "Cl_-"]) == pytest.approx(
+        0.57443, rel=1e-3
+    )
+    assert value(stream[0].flow_mol_phase_comp["Liq", "SO4_2-"]) == pytest.approx(
+        0.02225, rel=1e-3
+    )
+
+    assert value(stream[0].dens_mass_phase["Liq"]) == pytest.approx(1023.816, rel=1e-3)
+    assert value(stream[0].pressure_osm_phase["Liq"]) == pytest.approx(
+        29.132e5, rel=1e-3
+    )
+    assert value(stream[0].elec_cond_phase["Liq"]) == pytest.approx(8.066, rel=1e-3)
+    assert value(stream[0].flow_vol) == pytest.approx(9.767e-4, rel=1e-3)
+
+    assert value(
+        sum(
+            stream[0].conc_mass_phase_comp["Liq", j]
+            for j in m.fs.properties.ion_set | m.fs.properties.solute_set
+        )
+    ) == pytest.approx(35.9744, rel=1e-3)
+    assert value(
+        sum(
+            stream[0].mass_frac_phase_comp["Liq", j]
+            for j in m.fs.properties.ion_set | m.fs.properties.solute_set
+        )
+    ) == pytest.approx(0.035142, rel=1e-3)
+    assert value(
+        sum(
+            stream[0].mass_frac_phase_comp["Liq", j]
+            for j in m.fs.properties.component_list
+        )
+    ) == pytest.approx(1, rel=1e-3)
+    assert value(
+        sum(
+            stream[0].mole_frac_phase_comp["Liq", j]
+            for j in m.fs.properties.component_list
+        )
+    ) == pytest.approx(1, rel=1e-3)
+
+    assert value(stream[0].conc_mol_phase_comp["Liq", "Na_+"]) == pytest.approx(
+        495.082, rel=1e-3
+    )
+    assert value(stream[0].conc_mol_phase_comp["Liq", "Cl_-"]) == pytest.approx(
+        588.0431, rel=1e-3
+    )
+    assert value(stream[0].conc_mol_phase_comp["Liq", "Ca_2+"]) == pytest.approx(
+        9.777, rel=1e-3
+    )
+    assert value(stream[0].conc_mol_phase_comp["Liq", "SO4_2-"]) == pytest.approx(
+        22.780, rel=1e-3
+    )
+    assert value(stream[0].conc_mol_phase_comp["Liq", "Mg_2+"]) == pytest.approx(
+        59.467, rel=1e-3
+    )
+
+    assert value(stream[0].conc_mass_phase_comp["Liq", "Na_+"]) == pytest.approx(
+        11.387, rel=1e-3
+    )
+    assert value(stream[0].conc_mass_phase_comp["Liq", "Cl_-"]) == pytest.approx(
+        20.5815, rel=1e-3
+    )
+    assert value(stream[0].conc_mass_phase_comp["Liq", "Ca_2+"]) == pytest.approx(
+        0.391, rel=1e-3
+    )
+    assert value(stream[0].conc_mass_phase_comp["Liq", "SO4_2-"]) == pytest.approx(
+        2.187, rel=1e-3
+    )
+    assert value(stream[0].conc_mass_phase_comp["Liq", "Mg_2+"]) == pytest.approx(
+        1.427, rel=1e-3
+    )
+
+    assert value(stream[0].mole_frac_phase_comp["Liq", "Na_+"]) == pytest.approx(
+        8.833e-3, rel=1e-3
+    )
+    assert value(stream[0].mole_frac_phase_comp["Liq", "Cl_-"]) == pytest.approx(
+        1.049e-2, rel=1e-3
+    )
+    assert value(stream[0].mole_frac_phase_comp["Liq", "Ca_2+"]) == pytest.approx(
+        1.744e-4, rel=1e-3
+    )
+    assert value(stream[0].mole_frac_phase_comp["Liq", "SO4_2-"]) == pytest.approx(
+        4.064e-4, rel=1e-3
+    )
+    assert value(stream[0].mole_frac_phase_comp["Liq", "Mg_2+"]) == pytest.approx(
+        1.061e-3, rel=1e-3
+    )
+
+    assert value(stream[0].mass_frac_phase_comp["Liq", "Na_+"]) == pytest.approx(
+        1.112e-2, rel=1e-3
+    )
+    assert value(stream[0].mass_frac_phase_comp["Liq", "Cl_-"]) == pytest.approx(
+        2.01e-2, rel=1e-3
+    )
+    assert value(stream[0].mass_frac_phase_comp["Liq", "Ca_2+"]) == pytest.approx(
+        3.82e-4, rel=1e-3
+    )
+    assert value(stream[0].mass_frac_phase_comp["Liq", "SO4_2-"]) == pytest.approx(
+        2.136e-3, rel=1e-3
+    )
+    assert value(stream[0].mass_frac_phase_comp["Liq", "Mg_2+"]) == pytest.approx(
+        1.394e-3, rel=1e-3
+    )
+
+    assert value(stream[0].elec_mobility_phase_comp["Liq", "Na_+"]) == pytest.approx(
+        5.177e-8, rel=1e-3
+    )
+    assert value(stream[0].elec_mobility_phase_comp["Liq", "Cl_-"]) == pytest.approx(
+        7.901e-8, rel=1e-3
+    )
+    assert value(stream[0].elec_mobility_phase_comp["Liq", "Ca_2+"]) == pytest.approx(
+        6.165e-8, rel=1e-3
+    )
+    assert value(stream[0].elec_mobility_phase_comp["Liq", "SO4_2-"]) == pytest.approx(
+        8.251e-8, rel=1e-3
+    )
+    assert value(stream[0].elec_mobility_phase_comp["Liq", "Mg_2+"]) == pytest.approx(
+        5.496e-8, rel=1e-3
+    )
+    assert value(stream[0].trans_num_phase_comp["Liq", "Na_+"]) == pytest.approx(
+        0.3066, rel=1e-3
+    )
+    assert value(stream[0].trans_num_phase_comp["Liq", "Cl_-"]) == pytest.approx(
+        0.5558, rel=1e-3
+    )
+    assert value(stream[0].trans_num_phase_comp["Liq", "Ca_2+"]) == pytest.approx(
+        0.01442, rel=1e-3
+    )
+    assert value(stream[0].trans_num_phase_comp["Liq", "SO4_2-"]) == pytest.approx(
+        0.04497, rel=1e-3
+    )
+    assert value(stream[0].trans_num_phase_comp["Liq", "Mg_2+"]) == pytest.approx(
+        0.07820, rel=1e-3
+    )
+
+    assert value(stream[0].debye_huckel_constant) == pytest.approx(0.01554, rel=1e-3)
+    assert value(stream[0].ionic_strength_molal) == pytest.approx(0.73467, rel=1e-3)
+    assert value(stream[0].total_hardness) == pytest.approx(
+        value(
+            pyunits.convert(
+                (
+                    stream[0].conc_mol_phase_comp["Liq", "Ca_2+"]
+                    + stream[0].conc_mol_phase_comp["Liq", "Mg_2+"]
+                )
+                * 100.0869
+                * pyunits.g
+                / pyunits.mol,
+                to_units=pyunits.mg / pyunits.L,
+            )
+        ),
+        rel=1e-3,
+    )
+
+
+@pytest.mark.component
+def test_total_hardness():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+", "Al_3+"],
+        charge={
+            "Ca_2+": 2,
+            "SO4_2-": -2,
+            "Na_+": 1,
+            "Cl_-": -1,
+            "Mg_2+": 2,
+            "Al_3+": 3,
+        },
+        mw_data={
+            "Ca_2+": 40e-3,
+            "SO4_2-": 97e-3,
+            "Na_+": 23e-3,
+            "Cl_-": 35e-3,
+            "Mg_2+": 24e-3,
+            "Al_3+": 27e-3,
+        },
+        material_flow_basis=MaterialFlowBasis.mass,
+    )
+
+    m.fs.stream = stream = m.fs.properties.build_state_block([0], defined_state=True)
+
+    mass_flow_in = 1 * pyunits.kg / pyunits.s
+    feed_mass_frac = {
+        "Na_+": 11122e-6,
+        "Ca_2+": 382e-6,
+        "Mg_2+": 1394e-6,
+        "SO4_2-": 2136e-6,
+        "Cl_-": 20300e-6,
+        "Al_3+": 10e-6,
+    }
+    for ion, x in feed_mass_frac.items():
+        mass_comp_flow = x * pyunits.kg / pyunits.kg * mass_flow_in
+
+        stream[0].flow_mass_phase_comp["Liq", ion].fix(mass_comp_flow)
+
+    H2O_mass_frac = 1 - sum(x for x in feed_mass_frac.values())
+
+    stream[0].flow_mass_phase_comp["Liq", "H2O"].fix(H2O_mass_frac)
+    stream[0].temperature.fix(298.15)
+    stream[0].pressure.fix(101325)
+
+    stream[0].assert_electroneutrality(
+        defined_state=True, tol=1e-6, adjust_by_ion="Cl_-"
+    )
+
+    stream[0].total_hardness
+    stream[0].conc_mol_phase_comp
+    assert_units_consistent(m)
+
+    check_dof(m, fail_flag=True)
+
+    for j in m.fs.properties.component_list:
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp",
+            value(1 / stream[0].flow_mass_phase_comp["Liq", j]),
+            index=("Liq", j),
+        )
+
+    calculate_scaling_factors(m)
+
+    stream.initialize()
+
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+
+    assert value(stream[0].total_hardness) == pytest.approx(
+        value(
+            pyunits.convert(
+                (
+                    stream[0].conc_mol_phase_comp["Liq", "Ca_2+"]
+                    + stream[0].conc_mol_phase_comp["Liq", "Mg_2+"]
+                    + 3.0 / 2.0 * stream[0].conc_mol_phase_comp["Liq", "Al_3+"]
+                )
+                * 100.0869
+                * pyunits.g
+                / pyunits.mol,
+                to_units=pyunits.mg / pyunits.L,
+            )
+        ),
+        rel=1e-3,
+    )
+
+
+@pytest.mark.component
+def test_no_total_hardness(caplog):
+    caplog.set_level(
+        idaeslog.INFO, logger="watertap.property_models.multicomp_aq_sol_prop_pack."
+    )
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["Na_+", "Cl_-"],
+        charge={"Na_+": 1, "Cl_-": -1},
+        mw_data={
+            "Na_+": 23e-3,
+            "Cl_-": 35e-3,
+        },
+        material_flow_basis=MaterialFlowBasis.mass,
+    )
+
+    m.fs.stream = stream = m.fs.properties.build_state_block([0], defined_state=True)
+
+    mass_flow_in = 1 * pyunits.kg / pyunits.s
+    feed_mass_frac = {
+        "Na_+": 11122e-6,
+        "Cl_-": 20300e-6,
+    }
+    for ion, x in feed_mass_frac.items():
+        mass_comp_flow = x * pyunits.kg / pyunits.kg * mass_flow_in
+
+        stream[0].flow_mass_phase_comp["Liq", ion].fix(mass_comp_flow)
+
+    H2O_mass_frac = 1 - sum(x for x in feed_mass_frac.values())
+
+    stream[0].flow_mass_phase_comp["Liq", "H2O"].fix(H2O_mass_frac)
+    stream[0].temperature.fix(298.15)
+    stream[0].pressure.fix(101325)
+
+    stream[0].assert_electroneutrality(
+        defined_state=True, tol=1e-6, adjust_by_ion="Cl_-"
+    )
+
+    stream[0].total_hardness
+
+    assert_units_consistent(m)
+
+    check_dof(m, fail_flag=True)
+
+    for j in m.fs.properties.component_list:
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp",
+            value(1 / stream[0].flow_mass_phase_comp["Liq", j]),
+            index=("Liq", j),
+        )
+
+    calculate_scaling_factors(m)
+
+    stream.initialize()
+
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+
+    assert value(stream[0].total_hardness) == 0
+
+    assert (
+        "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
+        in caplog.text
+    )
+
+
+@pytest.mark.component
+def test_flow_mass_basis_with_RO_unit():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock()
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["NaCl"],
+        diffusivity_data={("Liq", "NaCl"): 1e-9},
+        mw_data={"NaCl": 0.058, "H2O": 0.018},
+        material_flow_basis=MaterialFlowBasis.mass,
+    )
+
+    # Import RO model
+    from watertap.unit_models.reverse_osmosis_0D import (
+        ReverseOsmosis0D,
+        ConcentrationPolarizationType,
+        MassTransferCoefficient,
+    )
+
+    m.fs.unit = ReverseOsmosis0D(
+        property_package=m.fs.properties,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.fixed,
+        has_pressure_change=True,
+    )
+
+    feed_flow_mass = 1
+    feed_mass_frac_NaCl = 0.035
+    feed_pressure = 50e5
+    feed_temperature = 273.15 + 25
+    membrane_pressure_drop = 3e5
+    membrane_area = 50
+    A = 4.2e-12
+    B = 3.5e-8
+    pressure_atmospheric = 101325
+    kf = 2e-5
+
+    feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+        feed_flow_mass * feed_mass_frac_NaCl
+    )
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        feed_flow_mass * feed_mass_frac_H2O
+    )
+    m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+    m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+    m.fs.unit.deltaP.fix(-membrane_pressure_drop)
+    m.fs.unit.area.fix(membrane_area)
+    m.fs.unit.A_comp.fix(A)
+    m.fs.unit.B_comp.fix(B)
+    m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+    m.fs.unit.feed_side.K[0, 0.0, "NaCl"].fix(kf)
+    m.fs.unit.feed_side.K[0, 1.0, "NaCl"].fix(kf)
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
+    )
+    calculate_scaling_factors(m)
+    m.fs.unit.initialize()
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+
+
+@pytest.mark.unit
+def test_no_solute_list_provided():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings).",
+        ),
+    ):
+        m.fs.properties = MCASParameterBlock()
+
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings).",
+        ),
+    ):
+        m.fs.properties = MCASParameterBlock(solute_list=[])
+
+
+@pytest.mark.unit
+def test_no_mw_data_provided():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively."
+        ),
+    ):
+        m.fs.properties = MCASParameterBlock(solute_list=["foo"])
+
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "Molecular weight data was not provided for bar. Provide the missing molecular weight data to the mw_data argument."
+        ),
+    ):
+        m.fs.properties_partial_data = MCASParameterBlock(
+            solute_list=["foo", "bar"], mw_data={"foo": 1}
+        )
+
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "Molecular weight data was not provided for foo, fubar. Provide the missing molecular weight data to the mw_data argument."
+        ),
+    ):
+        m.fs.properties_partial_data2 = MCASParameterBlock(
+            solute_list=["foo", "bar", "fubar"], mw_data={"bar": 1}
+        )
+
+
+@pytest.mark.unit
+def test_no_h2o_mw_data():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(solute_list=["NaCl"], mw_data={"NaCl": 58e-3})
+
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+
+    assert isinstance(m.fs.properties.mw_comp, Param)
+    assert m.fs.properties.mw_comp["NaCl"].value == 58e-3
+    assert m.fs.properties.mw_comp["H2O"].value == 18e-3
+    assert m.fs.stream[0].mw_comp["NaCl"].value == 58e-3
+    assert m.fs.stream[0].mw_comp["H2O"].value == 18e-3
+
+
+@pytest.mark.unit
+def test_no_h2o_mw_data_overwrite():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["NaCl"], mw_data={"H2O": 18.1e-3, "NaCl": 58e-3}
+    )
+
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+
+    assert isinstance(m.fs.properties.mw_comp, Param)
+    assert m.fs.properties.mw_comp["NaCl"].value == 58e-3
+    assert m.fs.properties.mw_comp["H2O"].value == 18.1e-3
+    assert m.fs.stream[0].mw_comp["NaCl"].value == 58e-3
+    assert m.fs.stream[0].mw_comp["H2O"].value == 18.1e-3

@@ -34,7 +34,7 @@ from idaes.core import UnitModelCostingBlock
 from watertap.unit_models.zero_order import MunicipalWWTPZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
-from watertap.core.zero_order_costing import ZeroOrderCosting
+from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -108,7 +108,7 @@ class TestMunicipalWWTPZO:
                 value(model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5
             ) == value(model.fs.unit.outlet.flow_mass_comp[t, j])
 
-        assert pytest.approx(8.4491446e-11, rel=1e-5) == value(
+        assert pytest.approx(1.8449145e-10, rel=1e-5) == value(
             model.fs.unit.electricity[0]
         )
 

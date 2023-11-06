@@ -38,7 +38,7 @@ from watertap.unit_models.reverse_osmosis_base import (
     _add_has_full_reporting,
 )
 
-__author__ = "Adam Atia"
+__author__ = "Adam Atia, Bernard Knueven"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

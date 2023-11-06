@@ -20,6 +20,7 @@ from pyomo.environ import (
     PositiveReals,
     Constraint,
     Expression,
+    log,
     units as pyunits,
 )
 from pyomo.common.config import ConfigValue, In
@@ -27,6 +28,7 @@ from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
 from idaes.core.util.constants import Constants
 from idaes.core.util.misc import StrEnum
+import idaes.core.util.scaling as iscale
 from watertap.core import build_sido, ZeroOrderBaseData
 
 
@@ -52,6 +54,11 @@ class ReactorMaterial(StrEnum):
     stainless_steel = "stainless_steel"
 
 
+class OverpotentialCalculation(StrEnum):
+    calculated = "calculated"
+    fixed = "fixed"
+
+
 @declare_process_block_class("ElectrocoagulationZO")
 class ElectrocoagulationZOData(ZeroOrderBaseData):
     """
@@ -75,6 +82,15 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             default="pvc",
             domain=In(ReactorMaterial),
             description="Reactor material",
+        ),
+    )
+
+    CONFIG.declare(
+        "overpotential_calculation",
+        ConfigValue(
+            default="fixed",
+            domain=In(OverpotentialCalculation),
+            description="Determination of overpotential",
         ),
     )
 
@@ -125,34 +141,20 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 doc="Density of electrode material",
             )
 
-        self.current_per_reactor = Param(
-            initialize=3000,
-            units=pyunits.ampere,
-            mutable=True,
-            within=PositiveReals,
-            doc="Current required per reactor",
-        )
+        # Electrocoagulation variables
 
-        self.tds_to_cond_conversion = Param(
-            initialize=5e3,
-            mutable=True,
-            units=(pyunits.mg * pyunits.m) / (pyunits.liter * pyunits.S),
-            within=PositiveReals,
-            doc="Conversion factor for mg/L TDS to S/m",
-        )
-
-        self.electrode_width = Var(
+        self.cathode_area = Var(
             initialize=1,
             bounds=(0, None),
-            units=pyunits.m,
-            doc="Electrode width",
+            units=pyunits.m**2,
+            doc="Area of cathode",
         )
 
-        self.electrode_height = Var(
+        self.anode_area = Var(
             initialize=1,
             bounds=(0, None),
-            units=pyunits.m,
-            doc="Electrode height",
+            units=pyunits.m**2,
+            doc="Area of anode",
         )
 
         self.electrode_thick = Var(
@@ -169,21 +171,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             doc="Electrode mass",
         )
 
-        self.electrode_area_total = Var(
-            initialize=1,
-            bounds=(0, None),
-            units=pyunits.m**2,
-            doc="Total electrode area",
-        )
-
-        self.electrode_area_per = Var(
-            initialize=1,
-            bounds=(0, None),
-            units=pyunits.m**2,
-            doc="Electrode area",
-        )
-
-        self.electrode_volume_per = Var(
+        self.electrode_volume = Var(
             initialize=1,
             bounds=(0, None),
             units=pyunits.m**3,
@@ -197,25 +185,11 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             doc="Electrode gap",
         )
 
-        self.electrolysis_time = Var(
-            initialize=30,
-            bounds=(2, 200),
-            units=pyunits.minute,
-            doc="Electrolysis time",
-        )
-
-        self.number_electrode_pairs = Var(
-            initialize=5,
-            bounds=(0, None),
-            units=pyunits.dimensionless,
-            doc="Number of electrode pairs",
-        )
-
-        self.number_cells = Var(
+        self.conductivity = Var(
             initialize=1,
             bounds=(0, None),
-            units=pyunits.dimensionless,
-            doc="Number of cells",
+            units=pyunits.S / pyunits.m,
+            doc="Feed conductivity in S/m",
         )
 
         self.applied_current = Var(
@@ -250,14 +224,14 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             initialize=1,
             bounds=(0, None),
             units=pyunits.m**3,
-            doc="Reactor volume total (electrochemical + flotation + sedimentation)",
+            doc="Reactor volume total (electrochemical)",
         )
 
-        self.metal_loading = Var(
+        self.metal_dose = Var(
             initialize=1,
             bounds=(0, None),
             units=pyunits.kg / pyunits.liter,
-            doc="Metal loading",
+            doc="Metal dose to the feed in kg/L",
         )
 
         self.ohmic_resistance = Var(
@@ -288,43 +262,95 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             doc="Power required",
         )
 
+        # Flocculator Variables
+
+        self.floc_basin_vol = Var(
+            initialize=1,
+            bounds=(0, None),
+            units=pyunits.m**3,
+            doc="Reactor volume total (flotation + sedimentation)",
+        )
+
+        self.floc_retention_time = Var(
+            initialize=30,
+            bounds=(2, 200),
+            units=pyunits.minute,
+            doc="Electrolysis time",
+        )
+
         self._fixed_perf_vars.append(self.electrode_thick)
         self._fixed_perf_vars.append(self.current_density)
-        self._fixed_perf_vars.append(self.electrolysis_time)
-        self._fixed_perf_vars.append(self.metal_loading)
-        self._fixed_perf_vars.append(self.number_electrode_pairs)
+        self._fixed_perf_vars.append(self.metal_dose)
+        self._fixed_perf_vars.append(self.conductivity)
         self._fixed_perf_vars.append(self.electrode_gap)
         self._fixed_perf_vars.append(self.current_efficiency)
-        self._fixed_perf_vars.append(self.overpotential)
+        self._fixed_perf_vars.append(self.floc_retention_time)
+
+        if self.config.overpotential_calculation is OverpotentialCalculation.fixed:
+            self._fixed_perf_vars.append(self.overpotential)
+
+        if self.config.overpotential_calculation == OverpotentialCalculation.calculated:
+
+            self.overpotential_k1 = Var(
+                initialize=430,
+                units=pyunits.millivolt,
+                doc="Constant k1 in overpotential equation",
+            )
+
+            self.overpotential_k2 = Var(
+                initialize=1000,
+                units=pyunits.millivolt,
+                doc="Constant k2 in overpotential equation",
+            )
+
+            self._fixed_perf_vars.append(self.overpotential_k1)
+            self._fixed_perf_vars.append(self.overpotential_k2)
+
+            @self.Constraint(doc="Overpotential calculation")
+            def eq_overpotential(b):
+                cd = pyunits.convert(
+                    b.current_density, to_units=pyunits.milliampere / pyunits.cm**2
+                )
+                cd_dimensionless = pyunits.convert(
+                    cd * pyunits.cm**2 / pyunits.milliampere,
+                    to_units=pyunits.dimensionless,
+                )
+                return b.overpotential == pyunits.convert(
+                    (
+                        (
+                            (
+                                b.overpotential_k1 * log(cd_dimensionless)
+                                + b.overpotential_k2
+                            )
+                        )
+                    ),
+                    to_units=pyunits.volt,
+                )
 
         @self.Constraint(doc="Charge loading rate equation")
         def eq_charge_loading_rate(b):
-            return b.charge_loading_rate == (
-                b.applied_current
-                * pyunits.convert(b.electrolysis_time, to_units=pyunits.second)
-            ) / pyunits.convert(b.reactor_volume, to_units=pyunits.liter)
-
-        @self.Constraint(doc="Metal loading equation")
-        def eq_metal_loading_rate(b):
-            return b.metal_loading == (
-                b.current_efficiency * b.charge_loading_rate * b.mw_electrode_material
-            ) / (b.valence_electrode_material * Constants.faraday_constant)
+            flow_in = pyunits.convert(
+                b.properties_in[0].flow_vol, to_units=pyunits.liter / pyunits.second
+            )
+            return b.charge_loading_rate == (b.applied_current / flow_in)
 
         @self.Constraint(doc="Total current required")
         def eq_applied_current(b):
             flow_in = pyunits.convert(
                 b.properties_in[0].flow_vol, to_units=pyunits.liter / pyunits.second
             )
-            return b.applied_current == (
+            return b.applied_current * (
+                b.current_efficiency * b.mw_electrode_material
+            ) == (
                 flow_in
-                * b.metal_loading
+                * b.metal_dose
                 * b.valence_electrode_material
                 * Constants.faraday_constant
-            ) / (b.current_efficiency * b.mw_electrode_material)
+            )
 
         @self.Constraint(doc="Total electrode area required")
         def eq_electrode_area_total(b):
-            return b.electrode_area_total == b.applied_current / b.current_density
+            return b.anode_area == b.applied_current / b.current_density
 
         @self.Constraint(doc="Cell voltage")
         def eq_cell_voltage(b):
@@ -333,63 +359,72 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 == b.overpotential + b.applied_current * b.ohmic_resistance
             )
 
-        @self.Constraint(doc="Area per electrode")
-        def eq_electrode_area_per(b):
-            return b.electrode_area_per == b.electrode_area_total / (
-                b.number_electrode_pairs * 2
-            )
-
-        @self.Constraint(doc="Electrode width")
-        def eq_electrode_width(b):
-            return b.electrode_width == (2 * b.electrode_area_per) ** 0.5
-
-        @self.Constraint(doc="Electrode height")
-        def eq_electrode_height(b):
-            return b.electrode_height == b.electrode_area_per / b.electrode_width
-
         @self.Constraint(doc="Electrode volume")
-        def eq_electrode_volume_per(b):
+        def eq_electrode_volume(b):
             return (
-                b.electrode_volume_per
-                == b.electrode_width * b.electrode_height * b.electrode_thick
+                b.electrode_volume
+                == (b.anode_area + b.cathode_area) * b.electrode_thick
             )
+
+        @self.Constraint(doc="Cathode and anode areas are equal")
+        def eq_cathode_anode(b):
+            return b.cathode_area == b.anode_area
 
         @self.Constraint(doc="Total reactor volume")
         def eq_reactor_volume(b):
-            flow_vol = b.properties_in[0].flow_vol
-            return (
-                b.reactor_volume
-                == pyunits.convert(
-                    flow_vol * b.electrolysis_time,
-                    to_units=pyunits.m**3,
-                )
-                / b.number_cells
+            return b.reactor_volume == pyunits.convert(
+                b.anode_area * (b.electrode_thick * 2 + b.electrode_gap),
+                to_units=pyunits.m**3,
             )
 
-        @self.Expression(doc="Conductivity")
-        def conductivity(b):
-            tds = pyunits.convert(
-                b.properties_in[0].conc_mass_comp["tds"],
-                to_units=pyunits.mg / pyunits.L,
+        @self.Constraint(doc="Total flocculation tank volume")
+        def eq_floc_reactor_volume(b):
+            flow_vol = b.properties_in[0].flow_vol
+            return b.floc_basin_vol == pyunits.convert(
+                flow_vol * b.floc_retention_time,
+                to_units=pyunits.m**3,
             )
-            return tds / b.tds_to_cond_conversion
 
         @self.Constraint(doc="Ohmic resistance")
         def eq_ohmic_resistance(b):
-            return b.ohmic_resistance == b.electrode_gap / (
-                b.conductivity * b.electrode_area_per * b.number_cells
-            )
+            return b.ohmic_resistance * b.conductivity * b.anode_area == b.electrode_gap
 
         @self.Constraint(doc="Electrode mass")
         def eq_electrode_mass(b):
-            return (
-                b.electrode_mass
-                == b.electrode_volume_per * b.density_electrode_material
-            )
+            return b.electrode_mass == b.electrode_volume * b.density_electrode_material
 
         @self.Constraint(doc="Power required")
         def eq_power_required(b):
             return b.power_required == b.cell_voltage * b.applied_current
+
+        @self.Expression(doc="Electrolysis time")
+        def electrolysis_time(b):
+            return b.reactor_volume / pyunits.convert(
+                b.properties_in[0].flow_vol, to_units=pyunits.m**3 / pyunits.minute
+            )
+
+    def calculate_scaling_factors(self):
+
+        if iscale.get_scaling_factor(self.ohmic_resistance) is None:
+            iscale.set_scaling_factor(self.ohmic_resistance, 1e5)
+
+        if iscale.get_scaling_factor(self.charge_loading_rate) is None:
+            iscale.set_scaling_factor(self.charge_loading_rate, 1e-3)
+
+        if iscale.get_scaling_factor(self.applied_current) is None:
+            iscale.set_scaling_factor(self.applied_current, 1e-3)
+
+        if iscale.get_scaling_factor(self.power_required) is None:
+            iscale.set_scaling_factor(self.power_required, 1e-3)
+
+        if iscale.get_scaling_factor(self.metal_dose) is None:
+            iscale.set_scaling_factor(self.metal_dose, 1e3)
+
+        if iscale.get_scaling_factor(self.anode_area) is None:
+            iscale.set_scaling_factor(self.anode_area, 10)
+
+        if iscale.get_scaling_factor(self.cathode_area) is None:
+            iscale.set_scaling_factor(self.cathode_area, 10)
 
     @property
     def default_costing_method(self):
@@ -404,10 +439,6 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         ec = blk.unit_model
         costing = blk.config.flowsheet_costing_block
         base_currency = costing.base_currency
-
-        flow_mgd = pyunits.convert(
-            ec.properties_in[0].flow_vol, to_units=pyunits.Mgallons / pyunits.day
-        )
 
         flow_m3_yr = pyunits.convert(
             ec.properties_in[0].flow_vol, to_units=pyunits.m**3 / pyunits.year
@@ -427,14 +458,14 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         # Add cost variable and constraint
         blk.capital_cost = Var(
             initialize=1,
-            units=blk.config.flowsheet_costing_block.base_currency,
+            units=base_currency,
             bounds=(0, None),
             doc="Capital cost of unit operation",
         )
 
         blk.fixed_operating_cost = Var(
             initialize=1,
-            units=blk.config.flowsheet_costing_block.base_currency / pyunits.year,
+            units=base_currency / pyunits.year,
             bounds=(0, None),
             doc="Fixed operating cost of unit operation",
         )
@@ -452,17 +483,12 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             ec_reactor_cap_exp,
             ec_reactor_cap_material_coeff,
             ec_reactor_cap_safety_factor,
-            ec_admin_lab_cap_base,
-            ec_admin_lab_cap_exp,
             ec_power_supply_base_slope,
-            ec_admin_lab_op_base,
-            ec_admin_lab_op_exp,
             sludge_handling_cost,
-            ec_labor_maint_factor,
-            current_per_reactor,
-            number_redundant_reactors,
             electrode_material_cost,
             electrode_material_cost_coeff,
+            capital_floc_a_parameter,
+            capital_floc_b_parameter,
         ) = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
@@ -472,17 +498,12 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 "ec_reactor_cap_exp",
                 "ec_reactor_cap_material_coeff",
                 "ec_reactor_cap_safety_factor",
-                "ec_admin_lab_cap_base",
-                "ec_admin_lab_cap_exp",
                 "ec_power_supply_base_slope",
-                "ec_admin_lab_op_base",
-                "ec_admin_lab_op_exp",
                 "sludge_handling_cost",
-                "ec_labor_maint_factor",
-                "current_per_reactor",
-                "number_redundant_reactors",
                 "electrode_material_cost",
                 "electrode_material_cost_coeff",
+                "capital_floc_a_parameter",
+                "capital_floc_b_parameter",
             ],
         )
 
@@ -490,70 +511,44 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
         if electrode_mat == "aluminum":
             # Reference for Al cost: Anuf et al., 2022 - https://doi.org/https://doi.org/10.1016/j.jwpe.2022.103074
-            costing.defined_flows["aluminum"] = 2.23 * base_currency / pyunits.kg
             costing.register_flow_type("aluminum", 2.23 * base_currency / pyunits.kg)
             costing_ec.electrode_material_cost.fix(2.23)
 
         if electrode_mat == "iron":
             # Reference for Fe cost: Anuf et al., 2022 - https://doi.org/https://doi.org/10.1016/j.jwpe.2022.103074
-            costing.defined_flows["iron"] = 3.41 * base_currency / pyunits.kg
             costing.register_flow_type("iron", 3.41 * base_currency / pyunits.kg)
             costing_ec.electrode_material_cost.fix(3.41)
 
         if reactor_mat == "stainless_steel":
-            # default is for PVC, so only need to change if it is stainless steel
-            # PVC coeff reference: Uludag-Demirer et al., 2020 - https://doi.org/10.3390/su12072697
             # Steel coeff reference: Smith, 2005 - https://doi.org/10.1205/cherd.br.0509
             costing_ec.ec_reactor_cap_material_coeff.fix(3.4)
 
-        blk.number_chambers_system = Param(
-            initialize=3,
-            mutable=True,
-            units=pyunits.dimensionless,
-            within=PositiveReals,
-            doc="Number total chambers for system - EC chamber > flotation chamber > sedimentation chamber. All made of same material.",
-        )
-
-        blk.number_EC_reactors = Var(
-            initialize=3,
-            units=pyunits.dimensionless,
-            bounds=(0, None),
-            doc="Number EC cells and power supplies",
-        )
-
         blk.capital_cost_reactor = Var(
             initialize=1e4,
-            units=pyunits.dimensionless,
+            units=base_currency,
             bounds=(0, None),
             doc="Cost of EC reactor",
         )
 
         blk.capital_cost_electrodes = Var(
             initialize=1e4,
-            units=pyunits.dimensionless,
+            units=base_currency,
             bounds=(0, None),
             doc="Cost of EC electrodes",
         )
 
         blk.capital_cost_power_supply = Var(
             initialize=1e6,
-            units=pyunits.dimensionless,
+            units=base_currency,
             bounds=(0, None),
             doc="Cost of EC power supply",
         )
 
-        blk.capital_cost_admin_lab = Var(
+        blk.capital_cost_floc_reactor = Var(
             initialize=1e4,
-            units=pyunits.dimensionless,
+            units=base_currency,
             bounds=(0, None),
-            doc="Cost of administration + lab + building, etc.",
-        )
-
-        blk.annual_labor_maintenance = Var(
-            initialize=1e4,
-            units=base_currency / pyunits.year,
-            bounds=(0, None),
-            doc="Annual labor + maintenance cost",
+            doc="Cost of floc. basin",
         )
 
         blk.annual_sludge_management = Var(
@@ -563,89 +558,74 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             doc="Annual sludge management cost",
         )
 
-        blk.annual_admin_lab = Var(
-            initialize=1e4,
-            units=base_currency / pyunits.year,
-            bounds=(0, None),
-            doc="Annual administration + lab cost",
-        )
-
-        blk.number_EC_reactors_constr = Constraint(
-            expr=blk.number_EC_reactors
-            == ec.applied_current / current_per_reactor + number_redundant_reactors
+        blk.capital_cost_floc_constraint = Constraint(
+            expr=blk.capital_cost_floc_reactor
+            == pyunits.convert(
+                capital_floc_a_parameter
+                * pyunits.convert(ec.floc_basin_vol, to_units=pyunits.Mgallons)
+                + capital_floc_b_parameter,
+                to_units=base_currency,
+            )
         )
 
         blk.capital_cost_reactor_constraint = Constraint(
             expr=blk.capital_cost_reactor
-            == (
+            == pyunits.convert(
                 (
-                    ec_reactor_cap_base
-                    * (
-                        ec.reactor_volume
-                        * blk.number_EC_reactors
-                        * blk.number_chambers_system
+                    (
+                        pyunits.convert(ec_reactor_cap_base, base_currency)
+                        * (ec.reactor_volume / pyunits.m**3) ** ec_reactor_cap_exp
                     )
-                    ** ec_reactor_cap_exp
+                    * ec_reactor_cap_material_coeff
                 )
-                * ec_reactor_cap_material_coeff
+                * ec_reactor_cap_safety_factor,
+                to_units=base_currency,
             )
-            * ec_reactor_cap_safety_factor
         )
 
         blk.capital_cost_electrodes_constraint = Constraint(
             expr=blk.capital_cost_electrodes
-            == (
-                ec.electrode_mass
-                * ec.number_electrode_pairs
-                * 2
-                * blk.number_EC_reactors
-            )
-            * electrode_material_cost
+            == ec.electrode_mass
+            * pyunits.convert(electrode_material_cost, base_currency / pyunits.kg)
             * electrode_material_cost_coeff
         )
 
         blk.capital_cost_power_supply_constraint = Constraint(
             expr=blk.capital_cost_power_supply
-            == (ec_power_supply_base_slope * ec.power_required) * blk.number_EC_reactors
+            == (
+                pyunits.convert(ec_power_supply_base_slope, base_currency / pyunits.W)
+                * ec.power_required
+            )
         )
 
-        blk.capital_cost_other_constraint = Constraint(
-            expr=blk.capital_cost_admin_lab
-            == ec_admin_lab_cap_base * flow_mgd**ec_admin_lab_cap_exp
-        )
+        ec._add_cost_factor(blk, parameter_dict["capital_cost"]["cost_factor"])
 
         blk.capital_cost_constraint = Constraint(
             expr=blk.capital_cost
-            == blk.capital_cost_reactor
-            + blk.capital_cost_electrodes
-            + blk.capital_cost_power_supply
-            + blk.capital_cost_admin_lab
-        )
-
-        blk.annual_labor_maintenance_constraint = Constraint(
-            expr=blk.annual_labor_maintenance == flow_m3_yr * ec_labor_maint_factor
+            == (
+                blk.capital_cost_reactor
+                + blk.capital_cost_electrodes
+                + blk.capital_cost_power_supply
+                + blk.capital_cost_floc_reactor
+            )
+            * blk.cost_factor
         )
 
         blk.annual_sludge_management_constraint = Constraint(
             expr=blk.annual_sludge_management
-            == blk.annual_sludge_flow * sludge_handling_cost
-        )
-
-        blk.annual_admin_lab_constraint = Constraint(
-            expr=blk.annual_admin_lab
-            == ec_admin_lab_op_base * flow_mgd**ec_admin_lab_op_exp
+            == pyunits.convert(
+                blk.annual_sludge_flow * sludge_handling_cost,
+                to_units=base_currency / pyunits.year,
+            )
         )
 
         blk.fixed_operating_cost_constraint = Constraint(
-            expr=blk.fixed_operating_cost
-            == blk.annual_labor_maintenance
-            + blk.annual_sludge_management
-            + blk.annual_admin_lab
+            expr=blk.fixed_operating_cost == blk.annual_sludge_management
         )
 
         blk.annual_electrode_replacement_mass_flow = Expression(
             expr=pyunits.convert(
-                ec.metal_loading * flow_m3_yr, to_units=pyunits.kg / pyunits.year
+                ec.metal_dose * flow_m3_yr, to_units=pyunits.kg / pyunits.year
             )
         )
 
