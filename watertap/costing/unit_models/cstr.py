@@ -11,7 +11,6 @@
 #################################################################################
 
 import pyomo.environ as pyo
-from idaes.core.util.misc import StrEnum
 from ..util import (
     register_costing_parameter_block,
     make_capital_cost_var,
