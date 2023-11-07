@@ -456,6 +456,7 @@ def add_costing(m):
 
     # process costing and add system level metrics
     m.fs.costing.cost_process()
+    m.fs.costing.add_electricity_intensity(m.fs.FeedWater.properties[0].flow_vol)
     m.fs.costing.add_annual_water_production(m.fs.Treated.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.Treated.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.Treated.properties[0].flow_vol)
@@ -505,8 +506,12 @@ def display_results(m):
 
 def display_costing(m):
     print(
-        "Energy Consumption: %.1f kWh/m3"
+        "Energy consumption: %.1f kWh/m3"
         % pyo.value(m.fs.costing.specific_energy_consumption)
+    )
+    print(
+        "Electricity intensity: %.1f kWh/m3"
+        % pyo.value(m.fs.costing.electricity_intensity)
     )
     print("Levelized cost of water: %.2f $/m3" % pyo.value(m.fs.costing.LCOW))
 
