@@ -49,7 +49,7 @@ from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
 )
 
-from idaes.core import FlowsheetBlock
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.models.unit_models import (
     CSTR,
     Feed,
@@ -65,6 +65,7 @@ from watertap.property_models.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
 from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.costing import WaterTAPCosting
 from pyomo.util.check_units import assert_units_consistent
 
 
@@ -82,12 +83,10 @@ def main():
     # Assert DOF = 0 after adding costing
     # assert_degrees_of_freedom(m, 0)
 
-    # TODO: initialize costing after adding to flowsheet
-    # m.fs.costing.initialize()
-
     # results = solve(m)
 
     display_results(m)
+    display_costing(m)
 
     return m, results
 
@@ -442,7 +441,27 @@ def initialize_system(m):
 
 def add_costing(m):
     # TODO: implement unit model and flowsheet level costing
-    pass
+    m.fs.costing = WaterTAPCosting()
+    m.fs.costing.base_currency = pyo.units.USD_2020
+
+    # Costing Blocks
+    m.fs.MX1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.R1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.R2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.MX6.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.RADM.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.MX2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.MX3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.MX4.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    # process costing and add system level metrics
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(m.fs.Treated.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.Treated.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.Treated.properties[0].flow_vol)
+
+    m.fs.costing.initialize()
+    m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
 
 
 def solve(blk, solver=None):
@@ -482,6 +501,25 @@ def display_results(m):
     ]
     for u in unit_list:
         m.fs.component(u).report()
+
+
+def display_costing(m):
+    print(
+        "Energy Consumption: %.1f kWh/m3"
+        % pyo.value(m.fs.costing.specific_energy_consumption)
+    )
+    print("Levelized cost of water: %.2f $/m3" % pyo.value(m.fs.costing.LCOW))
+
+    print(
+        "Total operating cost: %.2f $/yr" % pyo.value(m.fs.costing.total_operating_cost)
+    )
+
+    print("Total capital cost: %.2f $" % pyo.value(m.fs.costing.total_capital_cost))
+
+    print(
+        "Total annualized cost: %.2f $/yr"
+        % pyo.value(m.fs.costing.total_annualized_cost)
+    )
 
 
 if __name__ == "__main__":
