@@ -36,7 +36,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.full_WRRF_with_ASM1_ADM1 import (
+from watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.BSM2 import (
     main,
 )
 

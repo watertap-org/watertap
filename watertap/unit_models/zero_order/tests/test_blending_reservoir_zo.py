@@ -105,7 +105,7 @@ class TestBlendingReservoirZO:
                 value(model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5
             ) == value(model.fs.unit.outlet.flow_mass_comp[t, j])
 
-        assert pytest.approx(8.4491446e-11, rel=1e-5) == value(
+        assert pytest.approx(1.8449145e-10, rel=1e-5) == value(
             model.fs.unit.electricity[0]
         )
 

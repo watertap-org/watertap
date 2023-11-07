@@ -83,6 +83,13 @@ def test_config_with_CP():
             ("Liq", "Na_+"): 1.33e-09,
             ("Liq", "Cl_-"): 2.03e-09,
         },
+        mw_data={
+            "Ca_2+": 40e-3,
+            "SO4_2-": 97e-3,
+            "Na_+": 23e-3,
+            "Cl_-": 35e-3,
+            "Mg_2+": 24e-3,
+        },
     )
     m.fs.unit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
 
@@ -132,6 +139,13 @@ def test_config_without_CP():
             ("Liq", "Mg_2+"): 7.06e-10,
             ("Liq", "Na_+"): 1.33e-09,
             ("Liq", "Cl_-"): 2.03e-09,
+        },
+        mw_data={
+            "Ca_2+": 40e-3,
+            "SO4_2-": 97e-3,
+            "Na_+": 23e-3,
+            "Cl_-": 35e-3,
+            "Mg_2+": 24e-3,
         },
     )
     m.fs.unit = NanofiltrationDSPMDE0D(
@@ -300,7 +314,7 @@ class TestNanoFiltration_with_CP_5ions:
             assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
-        for (obj_str, obj_type) in cv_objs_type_dict.items():
+        for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
@@ -559,7 +573,7 @@ class TestNanoFiltration_without_CP_5ions:
             assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
-        for (obj_str, obj_type) in cv_objs_type_dict.items():
+        for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
@@ -794,7 +808,7 @@ class TestNanoFiltration_with_CP_2ions:
             assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
-        for (obj_str, obj_type) in cv_objs_type_dict.items():
+        for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
@@ -1025,7 +1039,7 @@ class TestNanoFiltration_without_CP_2ions:
             assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
-        for (obj_str, obj_type) in cv_objs_type_dict.items():
+        for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side
@@ -1266,7 +1280,7 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
             assert isinstance(sb, MCASStateBlock)
         # test objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
-        for (obj_str, obj_type) in cv_objs_type_dict.items():
+        for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
         # permeate side

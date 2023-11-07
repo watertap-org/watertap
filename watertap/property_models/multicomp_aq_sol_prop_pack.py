@@ -45,6 +45,7 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigValue, In
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.core.base.units_container import InconsistentUnitsError
 
 # Import IDAES cores
 from idaes.core import (
@@ -120,14 +121,17 @@ class MCASParameterData(PhysicalParameterBlock):
 
     CONFIG.declare(
         "solute_list",
-        ConfigValue(domain=list, description="List of solute species names"),
+        ConfigValue(
+            domain=list,
+            description="Required argument.List of strings that specify names of solute species.",
+        ),
     )
     CONFIG.declare(
         "stokes_radius_data",
         ConfigValue(
             default={},
             domain=dict,
-            description="Dict of solute species names and Stokes radius data",
+            description="Dict of solute species names (keys) and Stokes radius data (values)",
         ),
     )
     CONFIG.declare(
@@ -135,7 +139,7 @@ class MCASParameterData(PhysicalParameterBlock):
         ConfigValue(
             default={},
             domain=dict,
-            description="Dict of solute species names and bulk ion diffusivity data",
+            description="Dict of solute species names (keys) and bulk ion diffusivity data (values)",
         ),
     )
     CONFIG.declare(
@@ -151,7 +155,7 @@ class MCASParameterData(PhysicalParameterBlock):
         ConfigValue(
             default={},
             domain=dict,
-            description="Dict of component names and molecular weight data",
+            description="Required argument. Dict of component names (keys)and molecular weight data (values)",
         ),
     )
     CONFIG.declare(
@@ -341,9 +345,9 @@ class MCASParameterData(PhysicalParameterBlock):
         self.ion_set = Set(dimen=1)  # All Ion Components (cations + anions)
 
         # Check that solute_list was not left empty
-        if self.config.solute_list is None:
+        if self.config.solute_list is None or not len(self.config.solute_list):
             raise ConfigurationError(
-                "Must provide a list of solutes in solute_list as a list of strings."
+                "The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings)."
             )
         # Group components into different sets
         for j in self.config.solute_list:
@@ -382,16 +386,36 @@ class MCASParameterData(PhysicalParameterBlock):
             else:
                 self.neutral_set.add(j)
 
+        if len(self.neutral_set) > 0 and not len(self.ion_set):
+            _log.warning(
+                "Since the charge argument was not provided for any solutes while instantiating the MCAS property model, all solutes are assumed to be neutral and have no charge. If any ions exist in solute_list, make sure to provide charge data to avoid erroneous property calculations."
+            )
         # reference
         # Todo: enter any relevant references
 
+        # Check for molecular weight data
+        if not len(self.config.mw_data):
+            raise ConfigurationError(
+                "The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively."
+            )
+        missing_mw = []
+        for i in self.config.solute_list:
+            if i not in self.config.mw_data.keys():
+                missing_mw.append(i)
+        if len(missing_mw) > 0:
+            raise ConfigurationError(
+                f"Molecular weight data was not provided for {', '.join(mw for mw in missing_mw)}. Provide the missing molecular weight data to the mw_data argument."
+            )
+
         # TODO: consider turning parameters into variables for future param estimation
+        mw_temp = {"H2O": 18e-3}
+        mw_temp.update(self.config.mw_data)
         # molecular weight
         self.mw_comp = Param(
             self.component_list,
             mutable=True,
             default=18e-3,
-            initialize=self.config.mw_data,
+            initialize=mw_temp,
             units=pyunits.kg / pyunits.mol,
             doc="Molecular weight",
         )
@@ -413,11 +437,12 @@ class MCASParameterData(PhysicalParameterBlock):
             units=pyunits.m**3 / pyunits.mol,
             doc="molar volume of solutes",
         )
+        # TODO:revisit- assuming ~ 1e-3 Pa*s for pure water
         self.visc_d_phase = Param(
             self.phase_list,
             mutable=True,
             default=1e-3,
-            initialize=1e-3,  # TODO:revisit- assuming ~ 1e-3 Pa*s for pure water
+            initialize=1e-3,
             units=pyunits.Pa * pyunits.s,
             doc="Fluid viscosity",
         )
@@ -433,7 +458,6 @@ class MCASParameterData(PhysicalParameterBlock):
         )
 
         if self.config.diffus_calculation == DiffusivityCalculation.none:
-
             self.diffus_phase_comp = Var(
                 self.phase_list,
                 self.solute_set,
@@ -664,7 +688,6 @@ class _MCASStateBlock(StateBlock):
 
         # initialize vars calculated from state vars
         for k in self.keys():
-
             # Vars indexed by phase and component_list
             for j in self[k].params.component_list:
                 if self[k].params.config.material_flow_basis == MaterialFlowBasis.molar:
@@ -807,9 +830,12 @@ class _MCASStateBlock(StateBlock):
                     )
                 )
             if self[k].is_property_constructed("total_hardness"):
-                calculate_variable_from_constraint(
-                    self[k].total_hardness, self[k].eq_total_hardness
-                )
+                if hasattr(self[k], "eq_total_hardness"):
+                    calculate_variable_from_constraint(
+                        self[k].total_hardness, self[k].eq_total_hardness
+                    )
+                else:
+                    self[k].total_hardness = 0
 
         # Check when the state vars are fixed already result in dof 0
         for k in self.keys():
@@ -1086,6 +1112,7 @@ class MCASStateBlockData(StateBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density",
         )
+
         # TODO: reconsider this approach for solution density based on arbitrary solute_list
         def rule_dens_mass_phase(b, p):
             if b.params.config.density_calculation == DensityCalculation.constant:
@@ -1235,7 +1262,6 @@ class MCASStateBlockData(StateBlockData):
         )
 
         def rule_conc_equiv_phase_comp(b, p, j):
-
             return b.conc_equiv_phase_comp[p, j] == b.conc_mol_phase_comp[p, j] * abs(
                 b.params.charge_comp[j]
             )
@@ -1377,14 +1403,12 @@ class MCASStateBlockData(StateBlockData):
                     self.params.config.diffus_calculation
                     == DiffusivityCalculation.HaydukLaudie
                 ):
-
                     if j not in molar_volume_data_indices:
                         b.diffus_phase_comp[p, j].fix(
                             self.params.config.diffusivity_data[p, j]
                         )
                         return Constraint.Skip
                     else:
-
                         diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
                         visc_solvent_inv_units = pyunits.cP**-1
                         molar_volume_inv_units = pyunits.mol * pyunits.cm**-3
@@ -1758,24 +1782,35 @@ class MCASStateBlockData(StateBlockData):
             units=pyunits.mg / pyunits.L,
             doc="total hardness as CaCO3",
         )
-
-        def rule_total_hardness(b):
-            return b.total_hardness == pyunits.convert(
+        # add try/except to handle case without multivalent cations,
+        # which would return 0 and result in Inconsitentunits error due to conversion of dimensionless to mg/L
+        try:
+            total_hardness_temp = pyunits.convert(
                 sum(
-                    b.flow_mol_phase_comp["Liq", j]
-                    / b.flow_vol_phase["Liq"]
+                    self.flow_mol_phase_comp["Liq", j]
+                    / self.flow_vol_phase["Liq"]
                     * 100.0869
                     * pyunits.g
                     / pyunits.mol
-                    * b.charge_comp[j]
+                    * float(value(self.charge_comp[j]))
                     / 2.0
-                    for j in b.params.cation_set
-                    if value(b.charge_comp[j]) > 1
+                    for j in self.params.cation_set
+                    if value(self.charge_comp[j]) > 1
                 ),
                 to_units=pyunits.mg / pyunits.L,
             )
 
-        self.eq_total_hardness = Constraint(rule=rule_total_hardness)
+            def rule_total_hardness(b):
+                return b.total_hardness == total_hardness_temp
+
+            self.eq_total_hardness = Constraint(rule=rule_total_hardness)
+
+        except InconsistentUnitsError:
+            self.total_hardness.fix(0)
+            _log.warning(
+                "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
+            )
+            return
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -1873,9 +1908,14 @@ class MCASStateBlockData(StateBlockData):
                     == 0
                 )
             else:
-                raise ValueError(
-                    "adjust_by_ion must be set to the name of an ion in the ion_set."
-                )
+                if not len(self.params.ion_set) and len(self.params.neutral_set) > 0:
+                    raise ValueError(
+                        f"adjust_by_ion must be set to the name of an ion in the ion_set. Since the charge argument was not provided for any solutes while instantiating the MCAS property model, all solutes in solute_list were considered as neutral solutes without any charge."
+                    )
+                else:
+                    raise ValueError(
+                        "adjust_by_ion must be set to the name of an ion in the ion_set."
+                    )
         if defined_state:
             for j in self.params.solute_set:
                 if not state_var["Liq", j].is_fixed() and adjust_by_ion != j:
@@ -2284,7 +2324,10 @@ class MCASStateBlockData(StateBlockData):
 
         if self.is_property_constructed("total_hardness"):
             if iscale.get_scaling_factor(self.total_hardness) is None:
-                sf = 10 / value(self.total_hardness)
+                if value(self.total_hardness) == 0:
+                    sf = 1
+                else:
+                    sf = 10 / value(self.total_hardness)
                 iscale.set_scaling_factor(self.total_hardness, sf)
         # transforming constraints
         transform_property_constraints(self)
@@ -2295,7 +2338,9 @@ class MCASStateBlockData(StateBlockData):
         if self.is_property_constructed("ionic_strength_molal"):
             iscale.constraint_scaling_transform(self.eq_ionic_strength_molal, 1)
 
-        if self.is_property_constructed("total_hardness"):
+        if self.is_property_constructed("total_hardness") and hasattr(
+            self, "eq_total_hardness"
+        ):
             sf = iscale.get_scaling_factor(self.total_hardness)
             iscale.constraint_scaling_transform(self.eq_total_hardness, sf)
 
