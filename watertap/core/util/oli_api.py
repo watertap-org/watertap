@@ -66,7 +66,7 @@ import numpy as np
 from copy import deepcopy
 
 
-__author__ = "Adam Atia, Adi Bannady"
+__author__ = "Adam Atia, Adi Bannady, Paul Vecchiarelli"
 
 
 class OLIApi:
@@ -75,7 +75,14 @@ class OLIApi:
     is just an example
     """
 
-    def __init__(self, username=None, password=None, root_url=None, auth_url=None):
+    def __init__(
+        self,
+        username=None,
+        password=None,
+        root_url=None,
+        auth_url=None,
+        access_key=None,
+    ):
         """
         Constructs all necessary attributes for OLIApi class
 
@@ -99,8 +106,11 @@ class OLIApi:
         self.__refresh_token = ""
         self.__root_url = root_url
         self.__auth_url = auth_url
+        self.__access_key = access_key
+        self.__use_access_key = False
         self.__dbs_url = self.__root_url + "/channel/dbs"
         self.__upload_dbs_url = self.__root_url + "/channel/upload/dbs"
+        self.__access_key_url = self.__root_url + "/user/api-key"
 
     def login(self, tee=True, fail_flag=True):
         """
@@ -114,30 +124,39 @@ class OLIApi:
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
-        body = {
-            "username": self.__username,
-            "password": self.__password,
-            "grant_type": "password",
-            "client_id": "apiclient",
-        }
-
-        req_result = requests.post(self.__auth_url, headers=headers, data=body)
-
-        if req_result.status_code == 200:
-            if tee:
-                print(f"Status code is {req_result.status_code}")
-            req_result = req_result.json()
-            if "access_token" in req_result:
-                self.__jwt_token = req_result["access_token"]
-                if "refresh_token" in req_result:
-                    self.__refresh_token = req_result["refresh_token"]
-
+        # Attempt to authenticate using the access_key
+        if self.__access_key:
+            headers.update({"authorization": "API-KEY " + self.__access_key})
+            req_result = requests.get(self.__dbs_url, headers=headers)
+            if req_result.status_code == 200:
+                self.__use_access_key = True
+                if tee:
+                    print(f"Status code is {req_result.status_code}")
                     return True
+
+        # Fall back to username/password authentication
+        else:
+            body = {
+                "username": self.__username,
+                "password": self.__password,
+                "grant_type": "password",
+                "client_id": "apiclient",
+            }
+            req_result = requests.post(self.__auth_url, headers=headers, data=body)
+            if req_result.status_code == 200:
+                req_result = req_result.json()
+                if "access_token" in req_result:
+                    self.__jwt_token = req_result["access_token"]
+                    if "refresh_token" in req_result:
+                        self.__refresh_token = req_result["refresh_token"]
+                        if tee:
+                            print(f"Status code is {req_result.status_code}")
+                        return True
+
         if fail_flag:
             raise Exception(
                 f"OLI login failed. Status code is {req_result.status_code}."
             )
-
         return False
 
     def refresh_token(self):
@@ -177,15 +196,27 @@ class OLIApi:
         """
 
         num_tries = 1
-        while num_tries <= 2:
+        while num_tries <= 3:
 
-            headers = {"authorization": "Bearer " + self.__jwt_token}
+            if self.__use_access_key:
+                headers = {"authorization": "API-KEY " + self.__access_key}
+            else:
+                headers = {"authorization": "Bearer " + self.__jwt_token}
 
             req_result = req_func(headers)
             if req_result.status_code == 200:
                 ret_val = json.loads(req_result.text)
                 return ret_val
-            elif num_tries == 1 and req_result.status_code == 401:
+            elif (
+                num_tries >= 1
+                and req_result.status_code == 400
+                and self.__access_key != ""
+            ):
+                req_result = req_result.json()
+                if not self.login():
+                    print("Login failed. Please check your API access key.")
+                    quit()
+            elif num_tries >= 1 and req_result.status_code == 401:
                 req_result = req_result.json()
                 if not self.refresh_token():
                     if not self.login():
@@ -195,6 +226,41 @@ class OLIApi:
             num_tries = num_tries + 1
 
         return dict()
+
+    def generate_access_key(self):
+        """
+        Generate an access key.
+
+        :return: Response text containing the access key information or an error message.
+        """
+        headers = {
+            "Authorization": "Bearer " + self.__jwt_token,
+            "Content-Type": "application/json",
+        }
+
+        payload = json.dumps({})
+
+        response = requests.post(self.__access_key_url, headers=headers, data=payload)
+
+        return response.text
+
+    def delete_access_key(self, api_key):
+        """
+        Delete an access key.
+
+        :param api_key: The access key to delete.
+        :return: Response text containing the success message or an error message.
+        """
+        headers = {
+            "Authorization": "Bearer " + self.__jwt_token,
+            "Content-Type": "application/json",
+        }
+
+        payload = json.dumps({"apiKey": api_key})
+
+        response = requests.delete(self.__access_key_url, headers=headers, data=payload)
+
+        return response.text
 
     def upload_dbs_file(self, file_path):
         """
