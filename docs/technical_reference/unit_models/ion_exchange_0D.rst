@@ -211,9 +211,7 @@ If ``isotherm`` is set to ``freundlich``, the model includes the following compo
    "Freundlich isotherm exponent for resin/ion system", ":math:`n`", "``freundlich_n``", "None", ":math:`\text{dimensionless}`"
    "Bed volumes at breakthrough", ":math:`BV`", "``bv``", "None", ":math:`\text{dimensionless}`"
    "Bed volumes at 50% influent conc.", ":math:`BV_{50}`", "``bv_50``", "None", ":math:`\text{dimensionless}`"
-   "Kinetic fitting parameter", ":math:`r`", "``kinetic_param``", "None", ":math:`\text{dimensionless}`"
    "Mass transfer coefficient", ":math:`k_T`", "``mass_transfer_coeff``", "None", ":math:`\text{s}^{-1}`"
-   "Concentration at breakthrough", ":math:`C_{b}`", "``c_breakthru``", "``target_ion_set``", ":math:`\text{kg/}\text{m}^3`"
    "Average relative breakthrough concentration at breakthrough time", ":math:`X_{avg}`", "``c_norm_avg``", "None", ":math:`\text{dimensionless}`"
    "Relative breakthrough conc. for trapezoids", ":math:`X_{trap,k}`", "``c_traps``", "``k``", ":math:`\text{dimensionless}`"
    "Breakthrough times for trapezoids", ":math:`t_{trap,k}`", "``tb_traps``", "``k``", ":math:`\text{s}`"
@@ -256,7 +254,7 @@ If ``isotherm`` is set to ``freundlich``, the additional variables to fix are:
 * ``freundlich_n``
 * ``bv`` 
 * ``c_norm``
-* one of ``bv_50``, ``kinetic_param``, or ``mass_transfer_coeff`` as determined from Clark model equations
+* one of ``bv_50`` or ``mass_transfer_coeff`` as determined from Clark model equations
 
 
 
@@ -346,7 +344,6 @@ Equations and Relationships
    "Breakthrough concentration", ":math:`X = \frac{C_b}{C_0}`"
    "Bed volumes at breakthrough concentration", ":math:`BV = \frac{t_{break} u_{bed}}{Z}`"
    "Clark equation with fundamental constants", ":math:`X = \frac{1}{\bigg(1 + (2^{n - 1} - 1)\text{exp}\bigg[\frac{k_T Z (n - 1)}{BV_{50} u_{bed}} (BV_{50} - BV)\bigg]\bigg)^{\frac{1}{n-1}}}`"
-   "Mass transfer coefficient from Clark equation", ":math:`k_T = \frac{r BV_{50}}{n - 1}`"
    "Evenly spaced c_norm for trapezoids", ":math:`X_{trap,k} = X_{trap,min} + (k - 1) \frac{X - X_{trap,min}}{n_{trap} - 1}`"
    "Breakthru time calculation for trapezoids", ":math:`t_{trap,k} = - \log{\frac{X_{trap,k}^{n-1}-1}{A}} / k_T`"
    "Area of trapezoids", ":math:`A_{trap,k} = \frac{t_{trap,k} - t_{trap,k - 1}}{t_{trap,n_{trap}}} \frac{X_{trap,k} + X_{trap,k - 1}}{2}`"
