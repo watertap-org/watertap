@@ -83,7 +83,7 @@ The model provides three ports (Pyomo notation in parenthesis):
 
 * Inlet port (inlet)
 * Outlet port (outlet)
-* Regeneration port (regen, only if not using ``single_use`` resin configuration)
+* Regeneration port (regen)
 
 Sets
 ----
@@ -419,7 +419,7 @@ And the total capital cost for the ion exchange system is the summation of these
 A total installed cost (:math:`f_{TIC}`) factor of 1.65 is applied to account for installation costs. 
 
 .. note::
-    If using ``single_use`` option for ``regenerant`` configuration keyword, the capital for the backwashing/rinse tank and regeneration tank are zero.
+    If using ``single_use`` option for ``regenerant`` configuration keyword, the capital for the regeneration tank is zero.
 
 Operating Cost Calculations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -483,10 +483,10 @@ If ``hazardous_waste`` is set to ``True``, the hazardous waste disposal costs ar
 
 Otherwise, :math:`C_{op,haz} = 0` as before. 
 
-Lastly, the total energy consumed by the unit for ``single_use`` configuration is only for the main booster pump:
+Lastly, the total energy consumed by the unit for ``single_use`` configuration includes the booster pump, backwashing pump, and rinsing pump:
 
 .. math::
-    P_{tot} = P_{main}
+    P_{tot} = P_{main} + P_{bw} + P_{rinse}
 
 References
 ----------
