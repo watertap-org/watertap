@@ -797,7 +797,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         @self.Expression(doc="Waste time")
         def t_waste(b):
             return b.t_regen + b.t_bw + b.t_rinse
-        
+
         if self.config.regenerant == RegenerantChem.single_use:
             self.t_regen.set_value(0)
             self.service_to_regen_flow_ratio.set_value(0)
@@ -805,7 +805,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         if self.config.regenerant != RegenerantChem.single_use:
 
             # If resin is not single use, add regeneration
-            
+
             @self.Expression(doc="Regen pump power")
             def regen_pump_power(b):
                 return pyunits.convert(
