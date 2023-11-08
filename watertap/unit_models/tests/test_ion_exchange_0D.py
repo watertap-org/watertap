@@ -463,7 +463,7 @@ class TestIonExchangeFreundlich:
             "mass_transfer_coeff",
             "bv",
             "bv_50",
-            "kinetic_param",
+            # "kinetic_param",
         ]
 
         for v in ix_vars:
@@ -472,8 +472,8 @@ class TestIonExchangeFreundlich:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 77
-        assert number_total_constraints(m) == 48
+        assert number_variables(m) == 76
+        assert number_total_constraints(m) == 47
         assert number_unused_variables(m) == 12
 
     @pytest.mark.unit
@@ -566,7 +566,7 @@ class TestIonExchangeFreundlich:
             "mass_transfer_coeff": 0.159346300525143,
             "bv": 18000,
             "bv_50": 20000,
-            "kinetic_param": 1.5934630052514297e-06,
+            # "kinetic_param": 1.5934630052514297e-06,
             "t_waste": 3600,
         }
 
@@ -754,7 +754,7 @@ class TestIonExchangeSingleUse:
             "mass_transfer_coeff",
             "bv",
             "bv_50",
-            "kinetic_param",
+            # "kinetic_param",
         ]
 
         for v in ix_vars:
@@ -763,8 +763,8 @@ class TestIonExchangeSingleUse:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 77
-        assert number_total_constraints(m) == 48
+        assert number_variables(m) == 76
+        assert number_total_constraints(m) == 47
         assert number_unused_variables(m) == 12
 
     @pytest.mark.unit
@@ -857,7 +857,7 @@ class TestIonExchangeSingleUse:
             "mass_transfer_coeff": 0.15934630052514298,
             "bv": 18000,
             "bv_50": 20000,
-            "kinetic_param": 1.5934630052514293e-06,
+            # "kinetic_param": 1.5934630052514293e-06,
             "t_waste": 1800,
         }
 
@@ -1047,7 +1047,7 @@ class TestIonExchangeInert:
             "mass_transfer_coeff",
             "bv",
             "bv_50",
-            "kinetic_param",
+            # "kinetic_param",
         ]
 
         for v in ix_vars:
@@ -1056,8 +1056,8 @@ class TestIonExchangeInert:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 85
-        assert number_total_constraints(m) == 52
+        assert number_variables(m) == 84
+        assert number_total_constraints(m) == 51
         assert number_unused_variables(m) == 14
 
     @pytest.mark.unit
@@ -1147,7 +1147,7 @@ class TestIonExchangeInert:
             "mass_transfer_coeff": 0.159346300525143,
             "bv": 18000,
             "bv_50": 20000,
-            "kinetic_param": 1.59346300525143e-06,
+            # "kinetic_param": 1.59346300525143e-06,
         }
 
         for k, v in results_dict.items():

@@ -779,13 +779,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 doc="Bed volumes of feed at 50 percent breakthrough",
             )
 
-            self.kinetic_param = Var(
-                initialize=1e-5,
-                bounds=(0, None),
-                units=pyunits.s**-1,
-                doc="Kinetic fitting parameter for Clark model (r)",
-            )
-
         # ==========EXPRESSIONS==========
 
         @self.Expression(doc="Pressure drop")
@@ -1127,14 +1120,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             def c_breakthru(b, j):
                 return b.c_norm[j] * prop_in.conc_mass_phase_comp["Liq", j]
 
-            @self.Constraint(
-                doc="Mass transfer coefficient from Clark equation (kT)",
-            )  # Croll et al (2023), Eq.19
-            def eq_mass_transfer_coeff(b):
-                return b.mass_transfer_coeff * (b.freundlich_n - 1) == (
-                    b.kinetic_param * b.bv_50
-                )
-
             @self.Constraint(doc="Bed volumes at breakthrough")
             def eq_bv(b):
                 return b.t_breakthru * b.vel_bed == b.bv * b.bed_depth
@@ -1401,9 +1386,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             if iscale.get_scaling_factor(self.c_breakthru) is None:
                 iscale.set_scaling_factor(self.c_breakthru, 1e4)
 
-            if iscale.get_scaling_factor(self.kinetic_param) is None:
-                iscale.set_scaling_factor(self.kinetic_param, 1e7)
-
             if iscale.get_scaling_factor(self.mass_transfer_coeff) is None:
                 iscale.set_scaling_factor(self.mass_transfer_coeff, 10)
 
@@ -1511,7 +1493,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             var_dict[f"BV at 50% Breakthrough"] = self.bv_50
             var_dict[f"Freundlich n"] = self.freundlich_n
             var_dict[f"Clark Mass Transfer Coeff."] = self.mass_transfer_coeff
-            var_dict[f"Clark Kinetic Param."] = self.kinetic_param
 
         return {"vars": var_dict}
 
