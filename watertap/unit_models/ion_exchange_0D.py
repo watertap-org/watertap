@@ -424,59 +424,11 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         if self.config.regenerant != RegenerantChem.single_use:
 
-            # Bed expansion is calculated as a fraction of the bed_depth
-            # These coefficients are used to calculate that fraction (bed_expansion_frac) as a function of backwash rate (bw_rate, m/hr)
-            # bed_expansion_frac = bed_expansion_A + bed_expansion_B * bw_rate + bed_expansion_C * bw_rate**2
-            # Default is for strong-base type I acrylic anion exchanger resin (A-850, Purolite), @20C
-            # Data extracted from MWH Chap 16, Figure 16-15 and fit with Excel
-
-            self.bed_expansion_frac_A = Param(
-                initialize=-1.23e-2,
-                mutable=True,
-                units=pyunits.dimensionless,
-                doc="Bed expansion fraction eq intercept",
-            )
-
-            self.bed_expansion_frac_B = Param(
-                initialize=1.02e-1,
-                mutable=True,
-                units=pyunits.hr / pyunits.m,
-                doc="Bed expansion fraction equation B parameter",
-            )
-
-            self.bed_expansion_frac_C = Param(
-                initialize=-1.35e-3,
-                mutable=True,
-                units=pyunits.hr**2 / pyunits.m**2,
-                doc="Bed expansion fraction equation C parameter",
-            )
-            # Rinse, Regen, Backwashing params
-
             self.t_regen = Param(
                 initialize=1800,
                 mutable=True,
                 units=pyunits.s,
                 doc="Regeneration time",
-            )
-
-            self.rinse_bv = Param(
-                initialize=5,
-                mutable=True,
-                doc="Number of bed volumes for rinse step",
-            )
-
-            self.bw_rate = Param(
-                initialize=5,
-                mutable=True,
-                units=pyunits.m / pyunits.hour,
-                doc="Backwash loading rate [m/hr]",
-            )
-
-            self.t_bw = Param(
-                initialize=600,
-                mutable=True,
-                units=pyunits.s,
-                doc="Backwash time",
             )
 
             self.service_to_regen_flow_ratio = Param(
@@ -485,6 +437,54 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 units=pyunits.dimensionless,
                 doc="Ratio of service flow rate to regeneration flow rate",
             )
+
+        # Bed expansion is calculated as a fraction of the bed_depth
+        # These coefficients are used to calculate that fraction (bed_expansion_frac) as a function of backwash rate (bw_rate, m/hr)
+        # bed_expansion_frac = bed_expansion_A + bed_expansion_B * bw_rate + bed_expansion_C * bw_rate**2
+        # Default is for strong-base type I acrylic anion exchanger resin (A-850, Purolite), @20C
+        # Data extracted from MWH Chap 16, Figure 16-15 and fit with Excel
+
+        self.bed_expansion_frac_A = Param(
+            initialize=-1.23e-2,
+            mutable=True,
+            units=pyunits.dimensionless,
+            doc="Bed expansion fraction eq intercept",
+        )
+
+        self.bed_expansion_frac_B = Param(
+            initialize=1.02e-1,
+            mutable=True,
+            units=pyunits.hr / pyunits.m,
+            doc="Bed expansion fraction equation B parameter",
+        )
+
+        self.bed_expansion_frac_C = Param(
+            initialize=-1.35e-3,
+            mutable=True,
+            units=pyunits.hr**2 / pyunits.m**2,
+            doc="Bed expansion fraction equation C parameter",
+        )
+        # Rinse, Regen, Backwashing params
+
+        self.rinse_bv = Param(
+            initialize=5,
+            mutable=True,
+            doc="Number of bed volumes for rinse step",
+        )
+
+        self.bw_rate = Param(
+            initialize=5,
+            mutable=True,
+            units=pyunits.m / pyunits.hour,
+            doc="Backwash loading rate [m/hr]",
+        )
+
+        self.t_bw = Param(
+            initialize=600,
+            mutable=True,
+            units=pyunits.s,
+            doc="Backwash time",
+        )
 
         # ==========VARIABLES==========
         # COMMON TO LANGMUIR + FREUNDLICH
@@ -799,59 +799,23 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def bed_vol(b):
             return b.bed_vol_tot / b.number_columns
 
+        @self.Expression(doc="Rinse time")
+        def t_rinse(b):
+            return b.ebct * b.rinse_bv
+
+        if self.config.regenerant == RegenerantChem.single_use:
+
+            @self.Expression(doc="Waste time")
+            def t_waste(b):
+                return b.t_bw + b.t_rinse
+
         if self.config.regenerant != RegenerantChem.single_use:
 
-            @self.Expression(doc="Backwashing flow rate")
-            def bw_flow(b):
-                return (
-                    pyunits.convert(b.bw_rate, to_units=pyunits.m / pyunits.s)
-                    * (b.bed_vol / b.bed_depth)
-                    * b.number_columns
-                )
-
-            @self.Expression(doc="Bed expansion fraction from backwashing")
-            def bed_expansion_frac(b):
-                return (
-                    b.bed_expansion_frac_A
-                    + b.bed_expansion_frac_B * b.bw_rate
-                    + b.bed_expansion_frac_C * b.bw_rate**2
-                )  # for 20C
-
-            @self.Expression(doc="Rinse flow rate")
-            def rinse_flow(b):
-                return b.vel_bed * (b.bed_vol / b.bed_depth) * b.number_columns
-
-            @self.Expression(doc="Rinse time")
-            def t_rinse(b):
-                return b.ebct * b.rinse_bv
+            # If resin is not single use, add regeneration
 
             @self.Expression(doc="Waste time")
             def t_waste(b):
                 return b.t_regen + b.t_bw + b.t_rinse
-
-            @self.Expression(doc="Cycle time")
-            def t_cycle(b):
-                return b.t_breakthru + b.t_waste
-
-            @self.Expression(doc="Regen tank volume")
-            def regen_tank_vol(b):
-                return (
-                    prop_in.flow_vol_phase["Liq"] / b.service_to_regen_flow_ratio
-                ) * b.t_regen
-
-            @self.Expression(doc="Backwash pump power")
-            def bw_pump_power(b):
-                return pyunits.convert(
-                    (b.pressure_drop * b.bw_flow) / b.pump_efficiency,
-                    to_units=pyunits.kilowatts,
-                )
-
-            @self.Expression(doc="Rinse pump power")
-            def rinse_pump_power(b):
-                return pyunits.convert(
-                    (b.pressure_drop * b.rinse_flow) / b.pump_efficiency,
-                    to_units=pyunits.kilowatts,
-                )
 
             @self.Expression(doc="Regen pump power")
             def regen_pump_power(b):
@@ -866,6 +830,50 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     / b.pump_efficiency,
                     to_units=pyunits.kilowatts,
                 )
+
+            @self.Expression(doc="Regen tank volume")
+            def regen_tank_vol(b):
+                return (
+                    prop_in.flow_vol_phase["Liq"] / b.service_to_regen_flow_ratio
+                ) * b.t_regen
+
+        @self.Expression(doc="Backwashing flow rate")
+        def bw_flow(b):
+            return (
+                pyunits.convert(b.bw_rate, to_units=pyunits.m / pyunits.s)
+                * (b.bed_vol / b.bed_depth)
+                * b.number_columns
+            )
+
+        @self.Expression(doc="Bed expansion fraction from backwashing")
+        def bed_expansion_frac(b):
+            return (
+                b.bed_expansion_frac_A
+                + b.bed_expansion_frac_B * b.bw_rate
+                + b.bed_expansion_frac_C * b.bw_rate**2
+            )  # for 20C
+
+        @self.Expression(doc="Rinse flow rate")
+        def rinse_flow(b):
+            return b.vel_bed * (b.bed_vol / b.bed_depth) * b.number_columns
+
+        @self.Expression(doc="Cycle time")
+        def t_cycle(b):
+            return b.t_breakthru + b.t_waste
+
+        @self.Expression(doc="Backwash pump power")
+        def bw_pump_power(b):
+            return pyunits.convert(
+                (b.pressure_drop * b.bw_flow) / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            )
+
+        @self.Expression(doc="Rinse pump power")
+        def rinse_pump_power(b):
+            return pyunits.convert(
+                (b.pressure_drop * b.rinse_flow) / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            )
 
         @self.Constraint(
             self.target_ion_set, doc="Mass transfer for regeneration stream"
@@ -890,10 +898,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Expression(doc="Bed expansion from backwashing")
         def bed_expansion_h(b):
-            if self.config.regenerant == RegenerantChem.single_use:
-                return 0 * pyunits.m
-            else:
-                return b.bed_expansion_frac * b.bed_depth
+            return b.bed_expansion_frac * b.bed_depth
 
         @self.Expression(doc="Main pump power")
         def main_pump_power(b):
@@ -1118,12 +1123,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         if self.config.isotherm == IsothermType.freundlich:
 
-            @self.Constraint(self.target_ion_set, doc="Breakthrough concentration")
-            def eq_c_breakthru(b, j):
-                return (
-                    b.c_norm[j]
-                    == b.c_breakthru[j] / prop_in.conc_mass_phase_comp["Liq", j]
-                )
+            @self.Expression(self.target_ion_set, doc="Breakthrough concentration")
+            def c_breakthru(b, j):
+                return b.c_norm[j] * prop_in.conc_mass_phase_comp["Liq", j]
 
             @self.Constraint(
                 doc="Mass transfer coefficient from Clark equation (kT)",

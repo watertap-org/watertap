@@ -291,7 +291,6 @@ def cost_ion_exchange(blk):
         )
     )
     if blk.unit_model.config.regenerant == "single_use":
-        blk.capital_cost_backwash_tank.fix(0)
         blk.capital_cost_regen_tank.fix(0)
         blk.flow_mass_regen_soln.fix(0)
         blk.flow_vol_resin = pyo.Var(

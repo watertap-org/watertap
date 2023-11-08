@@ -403,6 +403,7 @@ class TestIonExchangeFreundlich:
                 assert isinstance(var, Var)
 
         # test unit objects
+
         ix_params = [
             "underdrain_h",
             "distributor_h",
@@ -458,7 +459,6 @@ class TestIonExchangeFreundlich:
             "tb_traps",
             "traps",
             "c_norm_avg",
-            "c_breakthru",
             "freundlich_n",
             "mass_transfer_coeff",
             "bv",
@@ -472,8 +472,8 @@ class TestIonExchangeFreundlich:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 78
-        assert number_total_constraints(m) == 49
+        assert number_variables(m) == 77
+        assert number_total_constraints(m) == 48
         assert number_unused_variables(m) == 12
 
     @pytest.mark.unit
@@ -516,7 +516,6 @@ class TestIonExchangeFreundlich:
     def test_solution(self, IX_fr):
         m = IX_fr
         ix = m.fs.ix
-        target_ion = ix.config.target_ion
         results_dict = {
             "resin_diam": 0.0006749999999999999,
             "resin_bulk_dens": 0.72,
@@ -568,6 +567,7 @@ class TestIonExchangeFreundlich:
             "bv": 18000,
             "bv_50": 20000,
             "kinetic_param": 1.5934630052514297e-06,
+            "t_waste": 3600,
         }
 
         for k, v in results_dict.items():
@@ -711,6 +711,12 @@ class TestIonExchangeSingleUse:
             "p_drop_B",
             "p_drop_C",
             "pump_efficiency",
+            "bed_expansion_frac_A",
+            "bed_expansion_frac_B",
+            "bed_expansion_frac_C",
+            "rinse_bv",
+            "bw_rate",
+            "t_bw",
             "c_trap_min",
         ]
 
@@ -744,7 +750,6 @@ class TestIonExchangeSingleUse:
             "tb_traps",
             "traps",
             "c_norm_avg",
-            "c_breakthru",
             "freundlich_n",
             "mass_transfer_coeff",
             "bv",
@@ -758,8 +763,8 @@ class TestIonExchangeSingleUse:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 78
-        assert number_total_constraints(m) == 49
+        assert number_variables(m) == 77
+        assert number_total_constraints(m) == 48
         assert number_unused_variables(m) == 12
 
     @pytest.mark.unit
@@ -802,7 +807,6 @@ class TestIonExchangeSingleUse:
     def test_solution(self, IX_single_use):
         m = IX_single_use
         ix = m.fs.ix
-        target_ion = ix.config.target_ion
         results_dict = {
             "resin_diam": 0.000675,
             "resin_bulk_dens": 0.72,
@@ -811,9 +815,9 @@ class TestIonExchangeSingleUse:
             "bed_vol_tot": 120.00000000000001,
             "bed_depth": 1.476,
             "bed_porosity": 0.5,
-            "col_height": 2.476,
+            "col_height": 3.16,
             "col_diam": 2.3980942681530144,
-            "col_height_to_diam_ratio": 1.0324865176826379,
+            "col_height_to_diam_ratio": 1.318,
             "number_columns": 18,
             "t_breakthru": 4320000.000000001,
             "ebct": 240.0,
@@ -854,6 +858,7 @@ class TestIonExchangeSingleUse:
             "bv": 18000,
             "bv_50": 20000,
             "kinetic_param": 1.5934630052514293e-06,
+            "t_waste": 1800,
         }
 
         for k, v in results_dict.items():
@@ -881,16 +886,16 @@ class TestIonExchangeSingleUse:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(3521557.0901, rel=1e-3) == value(
+        assert pytest.approx(3820012.32, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(6895468.46934, rel=1e-3) == value(
+        assert pytest.approx(6913375.783, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(7043114.18037, rel=1e-3) == value(
+        assert pytest.approx(7640024.640, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
-        assert pytest.approx(0.535161094, rel=1e-3) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.540625, rel=1e-3) == value(m.fs.costing.LCOW)
         assert pytest.approx(0.01712042, rel=1e-3) == value(
             m.fs.costing.specific_energy_consumption
         )
@@ -1038,7 +1043,6 @@ class TestIonExchangeInert:
             "tb_traps",
             "traps",
             "c_norm_avg",
-            "c_breakthru",
             "freundlich_n",
             "mass_transfer_coeff",
             "bv",
@@ -1052,8 +1056,8 @@ class TestIonExchangeInert:
             assert isinstance(var, Var)
 
         # test statistics
-        assert number_variables(m) == 86
-        assert number_total_constraints(m) == 53
+        assert number_variables(m) == 85
+        assert number_total_constraints(m) == 52
         assert number_unused_variables(m) == 14
 
     @pytest.mark.unit
