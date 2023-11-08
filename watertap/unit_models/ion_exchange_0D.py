@@ -422,21 +422,19 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Pump efficiency",
         )
 
-        if self.config.regenerant != RegenerantChem.single_use:
+        self.t_regen = Param(
+            initialize=1800,
+            mutable=True,
+            units=pyunits.s,
+            doc="Regeneration time",
+        )
 
-            self.t_regen = Param(
-                initialize=1800,
-                mutable=True,
-                units=pyunits.s,
-                doc="Regeneration time",
-            )
-
-            self.service_to_regen_flow_ratio = Param(
-                initialize=3,
-                mutable=True,
-                units=pyunits.dimensionless,
-                doc="Ratio of service flow rate to regeneration flow rate",
-            )
+        self.service_to_regen_flow_ratio = Param(
+            initialize=3,
+            mutable=True,
+            units=pyunits.dimensionless,
+            doc="Ratio of service flow rate to regeneration flow rate",
+        )
 
         # Bed expansion is calculated as a fraction of the bed_depth
         # These coefficients are used to calculate that fraction (bed_expansion_frac) as a function of backwash rate (bw_rate, m/hr)
@@ -796,20 +794,18 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def t_rinse(b):
             return b.ebct * b.rinse_bv
 
+        @self.Expression(doc="Waste time")
+        def t_waste(b):
+            return b.t_regen + b.t_bw + b.t_rinse
+        
         if self.config.regenerant == RegenerantChem.single_use:
-
-            @self.Expression(doc="Waste time")
-            def t_waste(b):
-                return b.t_bw + b.t_rinse
+            self.t_regen.set_value(0)
+            self.service_to_regen_flow_ratio.set_value(0)
 
         if self.config.regenerant != RegenerantChem.single_use:
 
             # If resin is not single use, add regeneration
-
-            @self.Expression(doc="Waste time")
-            def t_waste(b):
-                return b.t_regen + b.t_bw + b.t_rinse
-
+            
             @self.Expression(doc="Regen pump power")
             def regen_pump_power(b):
                 return pyunits.convert(

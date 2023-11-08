@@ -717,6 +717,8 @@ class TestIonExchangeSingleUse:
             "rinse_bv",
             "bw_rate",
             "t_bw",
+            "t_regen",
+            "service_to_regen_flow_ratio",
             "c_trap_min",
         ]
 
