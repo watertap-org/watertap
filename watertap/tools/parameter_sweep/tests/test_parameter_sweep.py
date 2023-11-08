@@ -244,6 +244,36 @@ class TestParameterSweep:
         assert global_combo_array[-1, 2] == pytest.approx(range_C[1])
 
     @pytest.mark.component
+    def test_predetermined_fixed_build_combinations(self):
+        ps = ParameterSweep()
+
+        A_param = pyo.Param(initialize=0.0, mutable=True)
+        B_param = pyo.Param(initialize=1.0, mutable=True)
+        C_param = pyo.Param(initialize=2.0, mutable=True)
+
+        nn_A = 2
+        nn_B = 3
+        nn_C = 4
+
+        A_values = nn_A + np.arange(nn_A)
+        B_values = nn_B + np.arange(nn_B)
+        C_values = nn_C + np.arange(nn_C)
+
+        param_dict = dict()
+        param_dict["var_A"] = PredeterminedFixedSample(A_param, A_values)
+        param_dict["var_B"] = PredeterminedFixedSample(B_param, B_values)
+        param_dict["var_C"] = PredeterminedFixedSample(C_param, C_values)
+
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
+        )
+
+        assert np.shape(global_combo_array)[0] == nn_A * nn_B * nn_C
+        assert np.shape(global_combo_array)[1] == len(param_dict)
+        assert (global_combo_array[0] == np.array([nn_A, nn_B, nn_C])).all()
+        assert (global_combo_array[-1] == 2 * np.array([nn_A, nn_B, nn_C]) - 1).all()
+
+    @pytest.mark.component
     def test_status_publishing(self):
         requests = pytest.importorskip(
             "requests",
@@ -314,6 +344,24 @@ class TestParameterSweep:
         assert (range_B[0] - range_B[1]) < np.mean(global_combo_array[:, 1])
 
         assert np.all(global_combo_array[:, 2] == range_C[0])
+
+        A_param = pyo.Param(initialize=0.0, mutable=True)
+        B_param = pyo.Param(initialize=0.0, mutable=True)
+        C_param = pyo.Param(initialize=0.0, mutable=True)
+
+        A_values = np.arange(nn)
+        B_values = 10.0 + A_values
+        C_values = 20.0 + A_values
+
+        param_dict = dict()
+        param_dict["var_A"] = PredeterminedRandomSample(A_param, A_values)
+        param_dict["var_B"] = PredeterminedRandomSample(B_param, B_values)
+        param_dict["var_C"] = PredeterminedRandomSample(C_param, C_values)
+
+        global_combo_array = ps._build_combinations(param_dict, SamplingType.RANDOM, nn)
+
+        assert np.shape(global_combo_array)[0] == nn
+        assert (global_combo_array == np.array([A_values, B_values, C_values]).T).all()
 
     @pytest.mark.component
     def test_divide_combinations(self):
