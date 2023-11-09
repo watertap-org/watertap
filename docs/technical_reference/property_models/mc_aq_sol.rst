@@ -1,21 +1,25 @@
+.. _mcas_tech_ref:
+
 Multi-Component Aqueous Solution (MCAS) Property Package
 ========================================================
 
 This property package implements property relationships for an aqueous solution that may contain multiple neutral and/or ionic solutes.
 
-This MCAS property package
+The MCAS property package
    * sets H2O as the solvent;
    * supports multiple solute components including ions and neutral molecules;
    * supports only liquid phase;
-   * uses molar flow rate (in mol/s), temperature and pressure as the initial state variables;
+   * uses temperature, pressure, and either molar flowrate (mol/s) or mass flowrate (kg/s) as state variables;
    * does not support dynamics.
+
+For usage examples, please refer to the associated :ref:`"how-to" documentation for MCAS<mcas_how_to>`. 
 
 Sets
 ----
 .. csv-table::
    :header: "Description", "Symbol", "Indices"
 
-   "Components", ":math:`j`", "['H2O', component_list :sup:`1`]"
+   "Components", ":math:`j`", "component_list=['H2O', solute_list :sup:`1`]"
    "Phases", ":math:`p`", "['Liq']"
    "solute_set", ":math:`j`", "[all components in component_list except H2O]"
    "cation_set", ":math:`j`", "[cationic components in component_list]"
@@ -24,15 +28,16 @@ Sets
    "ion_set", ":math:`j`", "[cationic and anionic components in component_list]"
 
 
-**Notes** 
-   :sup:`1`  component_list is provided by a necessary configuration to use this property package.
+.. note::
+   
+   :sup:`1`  solute_list must be provided by the user via the necessary configuration option, ``solute_list``.
 
 .. figure:: ../../_static/unit_models/mcas_set_hierarchy.png
     :width: 800
     :align: center
 
-    Figure 1. Hierarchy of the pyomo sets constructed in the MCAS property package. Here types are declared for the
-    species in component list, or sometimes auto assigned considering other input such as charge. e.g., the chloride anion
+    Figure 1. Hierarchy of the Pyomo sets constructed in the MCAS property package. Here, types are declared for the
+    species in component list, or sometimes auto-assigned considering other input such as charge; e.g., the chloride anion
     would be contained in anion_set, ion_set, solute_set, and component_list.
 
 State variables
@@ -40,20 +45,36 @@ State variables
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
-   "Component molar flow rate", ":math:`N`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mol s}^{-1}`"
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
+
+The ``material_flow_basis`` configuration option can be used to select the desired state variable for flow basis.
+
+If ``material_flow_basis`` is set to ``MaterialFlowBasis.molar`` (the default setting), component molar flowrates will be used:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable", "Index", "Units"
+
+   "Component molar flowrate", ":math:`N`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mol s}^{-1}`"
+
+If ``material_flow_basis`` is set to ``MaterialFlowBasis.mass``, component mass flowrates will be used:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable", "Index", "Units"
+
+   "Component mass flowrate", ":math:`M`", "flow_mass_phase_comp", "[p, j]", ":math:`\text{kg s}^{-1}`"
+
 
 Parameters
 ----------
 .. csv-table::
  :header: "Description", "Symbol", "Parameter", "Index", "Units"
 
- "Component molecular weight", ":math:`m_N`", "mw_comp", "[j]", ":math:`\text{kg mol}^{-1}`"
+ "Component molecular weight :sup:`1`", ":math:`m_N`", "mw_comp", "[j]", ":math:`\text{kg mol}^{-1}`"
  "Stokes radius of solute", ":math:`r_h`", "radius_stokes_comp", "[j]", ":math:`\text{m}`"
  "Molar volume of solute", ":math:`V`", "molar_volume_phase_comp", "[p, j]", ":math:`\text{m}^3 \text{ mol}^{-1}`"
  "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa s}`"
- "Bulk diffusivity of solute", ":math:`D`", "diffus_phase_comp_param", "[p, j]", ":math:`\text{m}^2 \text{ s}^{-1}`"
+ "Bulk diffusivity of solute", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^2 \text{ s}^{-1}`"
  "Ion charge", ":math:`z`", "charge_comp", "[j]", ":math:`\text{dimensionless}`"
  "Dielectric constant of water", ":math:`\epsilon`", "dielectric_constant", "None", ":math:`\text{dimensionless}`"
  "Debye Huckel constant b", ":math:`b`", "debye_huckel_b", "None", ":math:`\text{kg mol}^{-1}`"
@@ -61,14 +82,16 @@ Parameters
  "Hayduk Laudie viscosity coefficient", ":math:`\chi_{2}`", "hl_visc_coeff", "None", ":math:`\text{dimensionless}`"
  "Hayduk Laudie molar volume coefficient", ":math:`\chi_{3}`", "hl_molar_volume_coeff", "None", ":math:`\text{dimensionless}`"
 
+.. note::
+   :sup:`1` *Component molecular weight* data is now set as a requirement when instantiating the MCAS property model. Hence, the user must provide these data in the ``mw_data`` configuration option.
+   Additionally, a warning will be displayed if *charge* data are not provided via the ``charge`` configuration option, in case the user intended to include ions in the ``solute_list`` but forgot to provide charge. However, this warning can be ignored if neutral molecules were the only solutes intended for inclusion in ``solute_list``.
 
 Properties
 ----------
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
-   "Component mass flow rate", ":math:`M`", "flow_mass_phase_comp", "[p, j]", ":math:`\text{kg s}^{-1}`"
-   "Component charge-equivalent molar flow rate", ":math:`\tilde{N}`", "flow_equiv_phase_comp", "[p, j]", ":math:`\text{mol s}^{-1}`"
+   "Component charge-equivalent molar flowrate", ":math:`\tilde{N}`", "flow_equiv_phase_comp", "[p, j]", ":math:`\text{mol s}^{-1}`"
    "Component charge-equivalent molar concentration", ":math:`\tilde{n}`", "conc_equiv_phase_comp", "[p, j]", ":math:`\text{mol m}^{-3}`"
    "Component mass fraction", ":math:`x`", "mass_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
    "Mass density of aqueous phase", ":math:`\rho`", "dens_mass_phase", "[p]", ":math:`\text{kg m}^{-3}`"
@@ -97,7 +120,7 @@ Relationships
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Component charge-equivalent molar flow rate", ":math:`\tilde{N}=N\left|z\right|`"
+   "Component charge-equivalent molar flowrate", ":math:`\tilde{N}=N\left|z\right|`"
    "Component charge-equivalent molar concentration", ":math:`\tilde{n}=n\left|z\right|`"
    "Component mass fraction", ":math:`x_j=\frac{M_j}{\sum_j{M_j}}`"
    "Mass density of aqueous phase", ":math:`\rho=1000 \text{ kg m}^{-3}` or :math:`\rho=\rho_w + \textbf{f} \left(\sum_{j\in solute}{x_j}, T\right)` :sup:`1`"
@@ -108,17 +131,26 @@ Relationships
    "Component molality", ":math:`b=\frac{N}{N_{H_2O} m_{N\text{H_2O}}}`"
    "Kinematic viscosity", ":math:`\nu=\mu\rho^{-1}`"
    "Phase osmotic pressure", ":math:`\Pi=RT\sum_{j\in solute}{n_j}`"
-   "Ion component electrical mobility", ":math:`\mu_e=\frac{D\left|z\right|F}{RT}`"
-   "Ion component transport number", ":math:`t_j=\frac{\left|z_j\right|\mu_{ej} n_j}{\sum_{j\in ion}{\left|z_j\right|\mu_{ej} n_j}}`"
-   "Phase equivalent conductivity", ":math:`\Lambda=\frac{\sum_{j\in ion}{F\left|z_j\right|\mu_{ej} n_j}}{\sum_{j\in cation}{\left|z_j\right|n_j}}`"
+   "Ion component electrical mobility :sup:`2`", ":math:`\mu_e=\frac{D\left|z\right|F}{RT}`"
+   "Ion component transport number :sup:`3`", ":math:`t_j=\frac{\left|z_j\right|\mu_{ej} n_j}{\sum_{j\in ion}{\left|z_j\right|\mu_{ej} n_j}}`"
+   "Phase equivalent conductivity :sup:`4`", ":math:`\Lambda=\frac{\sum_{j\in ion}{F\left|z_j\right|\mu_{ej} n_j}}{\sum_{j\in cation}{\left|z_j\right|n_j}}`"
    "Phase electrical conductivity", ":math:`\lambda=\Lambda\sum_{j\in cation}{\left|z_j\right|n_j}`"
    "Debye-Huckel constant", ":math:`A=\frac{\left(2 \pi N_A\right)^{0.5}}{log(10)} \left(\frac{\textbf{e}^2}{4 \pi \epsilon \epsilon_0 kT}\right)^{\frac{3}{2}}`"
    "Ionic strength", ":math:`I=0.5\sum_{j\in ion}{z_j^2b_j}`"
-   "Component mass diffusivity", ":math:`D\text{ specified in data argument}` or :math:`D \text{ }[\text{m}^2 \text{ s}^{-1}]=\frac{\chi_{1}}{(\mu \text{ }[\text{cP}])^{\chi_{2}}(V \text{ }[\text{cm}^3 \text{ mol}^{-1}])^{\chi_{3}}}` :sup:`2`"
+   "Component mass diffusivity :sup:`5`", ":math:`D\text{ specified in data argument}` or :math:`D \text{ }[\text{m}^2 \text{ s}^{-1}]=\frac{\chi_{1}}{(\mu \text{ }[\text{cP}])^{\chi_{2}}(V \text{ }[\text{cm}^3 \text{ mol}^{-1}])^{\chi_{3}}}`"
 
-**Notes**
-   | :sup:`1`  :math:`\textbf{f}(\cdot)` refers to empirical correlations of phase or solvent mass density to seawater salinity and temperature following the study of Sharqawy et al. (2010).
-   | :sup:`2`  Diffusivity specified in diffus_phase_comp_param or calculated by the correlation defined in Hayduk, W., & Laudie, H. (1974).
+.. note::
+
+   :sup:`1`  :math:`\textbf{f}(\cdot)` refers to empirical correlations of phase or solvent mass density to seawater salinity and temperature following the study of Sharqawy et al. (2010).
+   
+   :sup:`2`  Electrical mobility can either be (1) specified when the user provides data via the ``elec_mobility_data`` configuration option or (2) calculated by setting the ``elec_mobility_calculation`` configuration option to ``ElectricalMobilityCalculation.EinsteinRelation``.
+
+   :sup:`3`  Transport number can either be (1) specified when the user provides data via the ``trans_num_data`` configuration option or (2) calculated by setting the ``trans_num_calculation`` configuration option to ``TransportNumberCalculation.ElectricalMobility``.
+ 
+   :sup:`4`  Phase equivalent conductivity can either be (1) specified when the user provides data via the ``equiv_conductivity_phase_data`` configuration option or (2) calculated by setting the ``equiv_conductivity_calculation`` configuration option to ``EquivalentConductivityCalculation.ElectricalMobility``.
+ 
+   :sup:`5`  Diffusivity can either be (1) specified when the user provides data via the ``diffusivity_data`` configuration option or (2) calculated by the correlation defined in Hayduk, W., & Laudie, H. (1974). For the latter, the ``diffus_calculation`` configuration option must be set to ``DiffusivityCalculation.HaydukLaudie``.
+
 
 Physical/chemical constants
 ---------------------------
