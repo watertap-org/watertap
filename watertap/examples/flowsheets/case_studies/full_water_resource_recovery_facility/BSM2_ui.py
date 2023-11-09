@@ -251,34 +251,12 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.R3.KLa,
-        name="First aerobic reactor oxygen mass transfer coefficient",
-        ui_units=pyunits.hour**-1,
-        display_units="1/hr",
-        rounding=1,
-        description="Lumped mass transfer coefficient for oxygen",
-        is_input=True,
-        input_category="Activated sludge process",
-        is_output=False,
-    )
-    exports.add(
         obj=fs.R4.volume[0],
         name="Second aerobic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
         rounding=1,
         description="CSTR volume",
-        is_input=True,
-        input_category="Activated sludge process",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.R4.KLa,
-        name="Second aerobic reactor oxygen mass transfer coefficient",
-        ui_units=pyunits.hour**-1,
-        display_units="1/hr",
-        rounding=1,
-        description="Lumped mass transfer coefficient for oxygen",
         is_input=True,
         input_category="Activated sludge process",
         is_output=False,
