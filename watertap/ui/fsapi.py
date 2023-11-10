@@ -32,9 +32,6 @@ import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pydantic import BaseModel, validator, Field
 import pyomo.environ as pyo
-from pyomo.core.expr.numeric_expr import ExpressionBase
-from pyomo.core.base.expression import Expression, _ExpressionData
-from pyomo.core.base.param import ScalarParam
 
 #: Forward-reference to a FlowsheetInterface type, used in
 #: :meth:`FlowsheetInterface.find`
