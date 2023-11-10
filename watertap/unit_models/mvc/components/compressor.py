@@ -163,7 +163,7 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
 
         # Add unit variables
         self.pressure_ratio = Var(
-            initialize=1.5, bounds=(1, 10), units=pyunits.dimensionless
+            initialize=1.5, bounds=(1, None), units=pyunits.dimensionless
         )
 
         self.efficiency = Var(

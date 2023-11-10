@@ -32,7 +32,7 @@ users to model the chemical and physical properties of simple systems without th
     # Build the state block and specify a time (0 = steady state).
     m.fs.state_block = m.fs.properties.build_state_block([0])
 
-    # Fully specify the system.
+    # Specify the state variables of the stream.
     feed_flow_mass = 1
     feed_mass_frac_NaCl = 0.035
     feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
@@ -49,7 +49,7 @@ users to model the chemical and physical properties of simple systems without th
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
     iscale.calculate_scaling_factors(m.fs)
 
-    # "Touch" build-on-demand variables so that they are created. If these are not touched before running the solver, the output would only display their initial values, not their actual values.
+    # "Touch" build-on-demand variables so that they are created. If these properties are not touched before running the solver, they will not be calculated, and the output would only display their initial values instead of their actual values.
     m.fs.state_block[0].dens_mass_phase['Liq']
     m.fs.state_block[0].conc_mass_phase_comp['Liq', 'NaCl']
     m.fs.state_block[0].flow_vol_phase['Liq']
