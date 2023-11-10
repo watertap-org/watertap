@@ -197,11 +197,6 @@ def build_ion_exhange_cost_param_block(blk):
         units=pyo.units.dimensionless,
         doc="Number of cycles the regenerant can be reused before disposal",
     )
-    blk.total_installed_cost_factor = pyo.Var(
-        initialize=1.65,
-        units=pyo.units.dimensionless,
-        doc="Costing factor to account for total installed cost of equipment",
-    )
 
 
 @register_costing_parameter_block(
@@ -345,8 +340,7 @@ def cost_ion_exchange(blk):
                 ((blk.capital_cost_vessel + blk.capital_cost_resin) * tot_num_col)
                 + blk.capital_cost_backwash_tank
                 + blk.capital_cost_regen_tank
-            )
-            * ion_exchange_params.total_installed_cost_factor,
+            ),
             to_units=blk.costing_package.base_currency,
         )
     )
