@@ -1066,7 +1066,7 @@ class TestParameterSweep:
             }
 
             read_dict = _read_output_h5(h5_results_file_name)
-            _assert_dictionary_correctness(truth_dict, read_dict,rtol=1e-2)
+            _assert_dictionary_correctness(truth_dict, read_dict, rtol=1e-2)
 
     @pytest.mark.component
     def test_parameter_sweep_bad_initialize_call_2(self, model, tmp_path):
@@ -2138,7 +2138,7 @@ def _bad_test_function(m):
     return False
 
 
-def _assert_dictionary_correctness(truth_dict, test_dict,rtol=1e-05,atol=1e-08):
+def _assert_dictionary_correctness(truth_dict, test_dict, rtol=1e-05, atol=1e-08):
     assert truth_dict.keys() == test_dict.keys()
 
     for key, item in truth_dict.items():
@@ -2150,14 +2150,17 @@ def _assert_dictionary_correctness(truth_dict, test_dict,rtol=1e-05,atol=1e-08):
                             test_dict[key][subkey]["value"],
                             subitem["value"],
                             equal_nan=True,
-                            rtol=rtol,atol=atol
+                            rtol=rtol,
+                            atol=atol,
                         )
                     else:
                         assert subsubitem == test_dict[key][subkey][subsubkey]
         elif key == "solve_successful":
             assert item == test_dict[key]
         elif key in ["nominal_idx", "differential_idx"]:
-            assert np.allclose(test_dict[key], item, equal_nan=True,rtol=rtol,atol=atol)
+            assert np.allclose(
+                test_dict[key], item, equal_nan=True, rtol=rtol, atol=atol
+            )
 
 
 def _assert_h5_csv_agreement(csv_filename, h5_dict):
