@@ -94,16 +94,16 @@ class TestFlowsheetInterface:
 def test_roundtrip_with_garbage_collection(fs_interface, n_times):
     build_options = {
         "Bypass": ModelOption(
-            name="bypass option", 
-            display_name= "With Bypass",
-            values_allowed=["false", "true"], 
-            value= "false",
+            name="bypass option",
+            display_name="With Bypass",
+            values_allowed=["false", "true"],
+            value="false",
         ),
         "ConcentrationPolarization": ModelOption(
-            name="ConcentrationPolarization", 
-            display_name= "Concentration Polarization Type",
-            values_allowed=["calculated", "none"], 
-            value= "calculated",
+            name="ConcentrationPolarization",
+            display_name="Concentration Polarization Type",
+            values_allowed=["calculated", "none"],
+            value="calculated",
         ),
     }
 
