@@ -419,6 +419,14 @@ see reaction package for documentation.}""",
         # Add object references
         self.volume_liquid = Reference(self.liquid_phase.volume[:])
 
+        self.hydraulic_retention_time = Var(
+            self.flowsheet().time,
+            initialize=1641600,
+            domain=NonNegativeReals,
+            units=pyunits.s,
+            doc="Hydraulic retention time",
+        )
+
         self.volume_AD = Var(
             self.flowsheet().time,
             initialize=3700,
@@ -680,6 +688,15 @@ see reaction package for documentation.}""",
             rule=ad_total_volume_rule,
             doc="Total anaerobic digestor volume",
         )
+
+        def AD_retention_time_rule(self, t):
+            return self.hydraulic_retention_time[t] == self.volume_AD[t] / self.liquid_phase.properties_in[t].flow_vol
+
+        self.AD_retention_time = Constraint(
+            self.flowsheet().time,
+            rule=AD_retention_time_rule,
+            doc="Total anaerobic digestor volume",
+        )
         # Add AD performance equation
         def ad_performance_eqn_rule(self, t, r):
             return self.liquid_phase.rate_reaction_extent[t, r] == (
@@ -770,6 +787,7 @@ see reaction package for documentation.}""",
         iscale.set_scaling_factor(self.KH_co2, 1e2)
         iscale.set_scaling_factor(self.KH_ch4, 1e2)
         iscale.set_scaling_factor(self.KH_h2, 1e2)
+        iscale.set_scaling_factor(self.hydraulic_retention_time, 1e-6)
         iscale.set_scaling_factor(self.volume_AD, 1e-2)
         iscale.set_scaling_factor(self.volume_vapor, 1e-2)
         iscale.set_scaling_factor(self.liquid_phase.rate_reaction_generation, 1e4)

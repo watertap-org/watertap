@@ -194,13 +194,14 @@ class TestAdm(object):
         assert hasattr(adm.fs.unit.vapor_outlet, "pressure")
 
         assert hasattr(adm.fs.unit, "ad_performance_eqn")
+        assert hasattr(adm.fs.unit, "hydraulic_retention_time")
         assert hasattr(adm.fs.unit, "volume_AD")
         assert hasattr(adm.fs.unit, "volume_liquid")
         assert hasattr(adm.fs.unit, "volume_vapor")
         assert hasattr(adm.fs.unit, "heat_duty")
 
-        assert number_variables(adm.fs.unit) == 201
-        assert number_total_constraints(adm.fs.unit) == 169
+        assert number_variables(adm.fs.unit) == 202
+        assert number_total_constraints(adm.fs.unit) == 170
         assert number_unused_variables(adm.fs.unit) == 0
 
     @pytest.mark.component
