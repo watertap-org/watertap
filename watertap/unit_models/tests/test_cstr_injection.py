@@ -16,10 +16,10 @@ Authors: Andrew Lee, Vibhav Dabadghao
 
 import pytest
 from pyomo.environ import (
-    check_optimal_termination, 
-    ConcreteModel, 
-    units, 
-    value, 
+    check_optimal_termination,
+    ConcreteModel,
+    units,
+    value,
     assert_optimal_termination,
 )
 from idaes.core import (
@@ -127,7 +127,6 @@ class TestSaponification(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, sapon):
-
         assert hasattr(sapon.fs.unit, "inlet")
         assert len(sapon.fs.unit.inlet.vars) == 4
         assert hasattr(sapon.fs.unit.inlet, "flow_vol")
@@ -260,6 +259,7 @@ class TestSaponification(object):
             )
             <= 1e-3
         )
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -277,9 +277,7 @@ class TestSaponification(object):
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(77.5429, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
+        assert pytest.approx(77.5429, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
         assert pytest.approx(0.00383185, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit

@@ -71,6 +71,7 @@ from watertap.costing import WaterTAPCosting
 # Get default solver for testing
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_config():
@@ -167,7 +168,6 @@ class TestAdm(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, adm):
-
         assert hasattr(adm.fs.unit, "inlet")
         assert len(adm.fs.unit.inlet.vars) == 6
         assert hasattr(adm.fs.unit.inlet, "flow_vol")
@@ -222,7 +222,6 @@ class TestAdm(object):
 
     @pytest.mark.component
     def test_var_scaling(self, adm):
-
         unscaled_var_list = list(
             unscaled_variables_generator(adm.fs.unit, include_fixed=True)
         )

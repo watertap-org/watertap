@@ -334,7 +334,10 @@ see reaction package for documentation.}""",
         )
 
         def CSTR_injection_retention_timee_rule(self, t):
-            return self.hydraulic_retention_time[t] == self.volume[t] / self.control_volume.properties_in[t].flow_vol
+            return (
+                self.hydraulic_retention_time[t]
+                == self.volume[t] / self.control_volume.properties_in[t].flow_vol
+            )
 
         self.CSTR_injection_retention_time = Constraint(
             self.flowsheet().time,
@@ -369,8 +372,7 @@ see reaction package for documentation.}""",
             var_dict["Pressure Change"] = self.deltaP[time_point]
 
         return {"vars": var_dict}
-    
+
     @property
     def default_costing_method(self):
         return cost_cstr_injection
-
