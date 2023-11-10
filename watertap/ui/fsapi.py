@@ -509,35 +509,59 @@ class FlowsheetInterface:
                 tmp = pyo.Var(initialize=src.value, units=ui_units)
                 tmp.construct()
                 # Convert units when setting value in the model
-                dst.obj.value = u.convert(tmp, to_units=u.get_units(dst.obj))
-                # Don't convert units when setting the exported value
-                dst.value = src.value
+                new_val = pyo.value(u.convert(tmp, to_units=u.get_units(dst.obj)))
+                # make sure value is really changed
+                if abs(dst.obj.value-new_val) > .00001:
+                    # print(f'changing value for {key} from {dst.obj.value} to {new_val}')
+                    dst.obj.set_value(new_val)
+                    # Don't convert units when setting the exported value
+                    dst.value = src.value
 
-                dst.obj.fixed = src.fixed
-                dst.fixed = src.fixed
+                if dst.obj.fixed != src.fixed:
+                    # print(f'changing fixed for {key} from {dst.obj.fixed} to {src.fixed}')
+                    if src.fixed:
+                        dst.obj.fix()
+                    else:
+                        dst.obj.unfix()
+                    dst.fixed = src.fixed
                 dst.is_sweep = src.is_sweep
                 dst.num_samples = src.num_samples
                 # update bounds
                 if src.lb is None or src.lb == "":
-                    dst.obj.lb = None
+                    if dst.obj.lb != src.lb:
+                        print(f'changing lb for {key} from {dst.obj.lb} to {new_lb}')
+                        dst.obj.setlb(None)
                     dst.lb = None
                 else:
                     tmp = pyo.Var(initialize=src.lb, units=ui_units)
                     tmp.construct()
-                    dst.obj.lb = pyo.value(
+                    
+                    new_lb = pyo.value(
                         u.convert(tmp, to_units=u.get_units(dst.obj))
                     )
-                    dst.lb = src.lb
+                    if dst.obj.lb != new_lb:
+                        dst.obj.setlb(new_lb)
+                        dst.lb = src.lb
+
                 if src.ub is None or src.ub == "":
-                    dst.obj.ub = None
-                    dst.ub = None
+                    if dst.obj.ub != src.ub:
+                        # print(f'changing ub for {key} from {dst.obj.ub} to {src.ub}')
+                        dst.obj.setub(None)
+                        # dst.obj.ub = None
+                        dst.ub = None
                 else:
                     tmp = pyo.Var(initialize=src.ub, units=ui_units)
                     tmp.construct()
-                    dst.obj.ub = pyo.value(
+                    new_ub = pyo.value(
                         u.convert(tmp, to_units=u.get_units(dst.obj))
                     )
-                    dst.ub = src.ub
+                    if dst.obj.ub != new_ub:
+                        # print(f'changing ub for {key} from {dst.obj.ub} to {new_ub}')
+                        dst.obj.setub(new_ub)
+                        # dst.obj.ub = pyo.value(
+                        #     u.convert(tmp, to_units=u.get_units(dst.obj))
+                        # )
+                        dst.ub = src.ub
         # update degrees of freedom (dof)
         self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         if missing:
@@ -660,16 +684,7 @@ class FlowsheetInterface:
         self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         for key, mo in self.fs_exp.model_objects.items():
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
-            if not isinstance(
-                mo.obj,
-                (
-                    Expression,
-                    ExpressionBase,
-                    _ExpressionData,
-                    ScalarParam,
-                    type(None),
-                ),
-            ):
+            if mo.is_input:
                 if mo.obj.ub is None:
                     mo.ub = mo.obj.ub
                 else:
