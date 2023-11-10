@@ -511,7 +511,7 @@ class FlowsheetInterface:
                 # Convert units when setting value in the model
                 new_val = pyo.value(u.convert(tmp, to_units=u.get_units(dst.obj)))
                 # make sure value is really changed
-                if abs(dst.obj.value-new_val) > .00001:
+                if abs(dst.obj.value - new_val) > 0.000001:
                     # print(f'changing value for {key} from {dst.obj.value} to {new_val}')
                     dst.obj.set_value(new_val)
                     # Don't convert units when setting the exported value
@@ -529,16 +529,13 @@ class FlowsheetInterface:
                 # update bounds
                 if src.lb is None or src.lb == "":
                     if dst.obj.lb != src.lb:
-                        print(f'changing lb for {key} from {dst.obj.lb} to {new_lb}')
+                        # print(f"changing lb for {key} from {dst.obj.lb} to {new_lb}")
                         dst.obj.setlb(None)
                     dst.lb = None
                 else:
                     tmp = pyo.Var(initialize=src.lb, units=ui_units)
                     tmp.construct()
-                    
-                    new_lb = pyo.value(
-                        u.convert(tmp, to_units=u.get_units(dst.obj))
-                    )
+                    new_lb = pyo.value(u.convert(tmp, to_units=u.get_units(dst.obj)))
                     if dst.obj.lb != new_lb:
                         dst.obj.setlb(new_lb)
                         dst.lb = src.lb
@@ -552,15 +549,10 @@ class FlowsheetInterface:
                 else:
                     tmp = pyo.Var(initialize=src.ub, units=ui_units)
                     tmp.construct()
-                    new_ub = pyo.value(
-                        u.convert(tmp, to_units=u.get_units(dst.obj))
-                    )
+                    new_ub = pyo.value(u.convert(tmp, to_units=u.get_units(dst.obj)))
                     if dst.obj.ub != new_ub:
                         # print(f'changing ub for {key} from {dst.obj.ub} to {new_ub}')
                         dst.obj.setub(new_ub)
-                        # dst.obj.ub = pyo.value(
-                        #     u.convert(tmp, to_units=u.get_units(dst.obj))
-                        # )
                         dst.ub = src.ub
         # update degrees of freedom (dof)
         self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
