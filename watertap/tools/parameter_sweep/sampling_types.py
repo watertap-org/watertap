@@ -97,6 +97,23 @@ class ReverseGeomSample(FixedSample):
         self.num_samples = num_samples
 
 
+class PredeterminedFixedSample(FixedSample):
+    """
+    Similar to other fixed ssampling types except the setup function arguments.
+    In this case a user needs to specify a numpy array (or a list) of
+    predetermined values. For example:
+
+    sample_obj = PredeterminedFixedSample(np.array([1,2,3,4]))
+    """
+
+    def sample(self):
+        return self.values
+
+    def setup(self, values):
+        self.values = values
+        self.num_samples = len(values)
+
+
 class UniformSample(RandomSample):
     def sample(self):
         return np.random.uniform(self.lower_limit, self.upper_limit, self.num_samples)
@@ -115,6 +132,23 @@ class NormalSample(RandomSample):
         self.mean = mean
         self.sd = sd
         self.num_samples = num_samples
+
+
+class PredeterminedRandomSample(RandomSample):
+    """
+    Similar to other fixed ssampling types except the setup function arguments.
+    In this case a user needs to specify a numpy array (or a list) of
+    predetermined values. For example:
+
+    sample_obj = PredeterminedFixedSample(np.array([1,2,3,4]))
+    """
+
+    def sample(self):
+        return self.values
+
+    def setup(self, values):
+        self.values = values
+        self.num_samples = len(values)
 
 
 class LatinHypercubeSample(_Sample):
