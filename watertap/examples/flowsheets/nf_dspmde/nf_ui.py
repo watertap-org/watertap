@@ -413,6 +413,7 @@ def build_flowsheet(build_options=None, **kwargs):
             )
             nf_with_bypass.initialize(m, solver)
             nf_with_bypass.unfix_opt_vars(m)
+            nf.add_objective(m)
         else:  # build without bypass
             solver = get_solver()
             m = nf.build()
