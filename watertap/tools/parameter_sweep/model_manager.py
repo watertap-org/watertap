@@ -40,12 +40,14 @@ class ModelManager:
             # update paramters before init if enabled by user
             if (
                 self.ps_conf.update_sweep_params_before_init
-                and sweep_params != None
-                and local_value_k != None
+                and sweep_params is not None
+                and local_value_k is not None
             ):
                 self.update_model_params(sweep_params, local_value_k)
             # init
+
             self.init_model()
+
         # raise error if user sets to init before sweep, but does not provide
         # initilize function
         elif self.ps_conf.update_sweep_params_before_init:
