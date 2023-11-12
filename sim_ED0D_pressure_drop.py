@@ -65,11 +65,11 @@ def main():
         # pressure_drop_method=PressureDropMethod.experimental,
         # pressure_drop_method=PressureDropMethod.none,
         # friction_factor_method=FrictionFactorMethod.Gurreri,
-        friction_factor_method=FrictionFactorMethod.fixed,
         # friction_factor_method=FrictionFactorMethod.Kuroda,
-        # hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
+        friction_factor_method=FrictionFactorMethod.fixed,
+        hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
         # hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
-        hydraulic_diameter_method=HydraulicDiameterMethod.fixed,
+        # hydraulic_diameter_method=HydraulicDiameterMethod.fixed,
     )
     assert_units_consistent(m)
 
@@ -102,9 +102,9 @@ def main():
     m.fs.EDstack.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
 
     # 2 temperature and pressure for each chamber ,4
-    m.fs.EDstack.inlet_diluate.pressure[0].fix(101315)
+    m.fs.EDstack.inlet_diluate.pressure[0].fix(201315)
     m.fs.EDstack.inlet_diluate.temperature.fix(298.15)
-    m.fs.EDstack.inlet_concentrate.pressure[0].fix(101315)
+    m.fs.EDstack.inlet_concentrate.pressure[0].fix(201315)
     m.fs.EDstack.inlet_concentrate.temperature.fix(298.15)
 
     m.fs.EDstack.voltage.fix(0.5)
@@ -136,24 +136,46 @@ def main():
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
 
     m.fs.EDstack.diffus_mass.fix(1.6e-9) if hasattr(m.fs.EDstack, "diffus_mass") else 0
-
+    #
     # m.fs.EDstack.spacer_specific_area.fix(10700) if hasattr(
     #     m.fs.EDstack, "spacer_specific_area"
     # ) else 0
     # m.display()
 
-    m.fs.EDstack.hydraulic_diameter.fix(1e-3) if hasattr(
-        m.fs.EDstack, "hydraulic_diameter"
-    ) else 0
-    m.fs.EDstack.friction_factor.fix(5) if hasattr(
+    # m.fs.EDstack.hydraulic_diameter.fix(1e-3) if hasattr(
+    #     m.fs.EDstack, "hydraulic_diameter"
+    # ) else 0
+    m.fs.EDstack.friction_factor.fix(20) if hasattr(
         m.fs.EDstack, "friction_factor"
     ) else 0
+    # m.fs.EDstack.pressure_drop.fix(1.32527e3)
 
+    m.display()
+    m.fs.EDstack.report()
+
+    print("DOF IS", degrees_of_freedom(m))
+    solver = get_solver()
+    m.fs.EDstack.initialize(optarg=solver.options)
+    m.fs.EDstack.report()
+
+    results = solver.solve(m)
+    print(results.solver.termination_condition)
+
+    m.fs.EDstack.report()
+
+    m.fs.EDstack.visc_d.pprint()
+    m.fs.EDstack.dens_mass.pprint()
+    m.fs.EDstack.pressure_drop_total.pprint() if hasattr(
+        m.fs.EDstack, "pressure_drop_total"
+    ) else print("No it doesn't have pressure_drop total ")
+
+    m.fs.EDstack.pressure_drop.pprint() if hasattr(
+        m.fs.EDstack, "pressure_drop"
+    ) else print("No it doesn't have pressure_drop ")
     m.fs.EDstack.hydraulic_diameter.pprint() if hasattr(
         m.fs.EDstack, "hydraulic_diameter"
     ) else print("No it doesn't have hydraulic diameter")
 
-    # m.fs.EDstack.pressure_drop.fix(1e4)
     m.fs.EDstack.current_dens_lim_ioa.pprint() if hasattr(
         m.fs.EDstack, "current_dens_lim_ioa"
     ) else print("No it doesn't have current_dens_lim_ioa")
@@ -166,51 +188,37 @@ def main():
     m.fs.EDstack.friction_factor.pprint() if hasattr(
         m.fs.EDstack, "friction_factor"
     ) else print("No it doesn't have friction_factor")
-
-    # m.display()
-    # m.fs.EDstack.report()
+    m.fs.EDstack.N_Re.pprint() if hasattr(m.fs.EDstack, "N_Re") else print(
+        "No it doesn't have friction_factor"
+    )
     m.fs.EDstack.velocity_diluate.pprint()
     m.fs.EDstack.hydraulic_diameter.pprint() if hasattr(
         m.fs.EDstack, "hydraulic_diameter"
     ) else print("No it doesn't have hydraulic_diameter")
-
-    m.fs.EDstack.pressure_drop.pprint() if hasattr(
-        m.fs.EDstack, "pressure_drop"
-    ) else print("No it doesn't have pressure_drop ")
-    m.fs.EDstack.visc_d.pprint()
-    m.fs.EDstack.dens_mass.pprint()
-    print("DOF IS", degrees_of_freedom(m))
-    solver = get_solver()
-    m.fs.EDstack.initialize(optarg=solver.options)
-    m.fs.EDstack.report()
-    m.fs.EDstack.pressure_drop_total.pprint() if hasattr(
-        m.fs.EDstack, "pressure_drop_total"
-    ) else print("No it doesn't have pressure_drop total ")
-    results = solver.solve(m)
-    print(results.solver.termination_condition)
-
     # print("----------------------------------------------------------------------------------------------")
     # print("display after solving")
     # m.display()
     # Specify Ipopt as the solver
     # opt = pyo.SolverFactory('ipopt')
-    # Specifying an iteration limit of 0 allows us to inspect the initial point
+    # # Specifying an iteration limit of 0 allows us to inspect the initial point
     # opt.options['max_iter'] = 0
 
     # "Solving" the model with an iteration limit of 0 load the initial point and applies
     # any preprocessors (e.g., enforces bounds)
     # opt.solve(m, tee=True)
+    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory('cbc'))
+    #
+    # dh.check_variable_bounds(tol=1.0)
+    # dh.check_residuals(tol=0.1)
 
     # Create Degeneracy Hunter object
     # The Degeneracy Hunter algorithm needs a MILP solver
     # Here we specify CBC, an open source solver
-    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory('cbc'))
-    # dh.check_residuals(tol=0.1)
+
     # opt.options['max_iter'] = 50
     # opt.solve(m, tee=True)
-    # dh.check_variable_bounds(tol=1.0)
-    # ds = dh.find_candidate_equations(verbose=True, tee=True)
     # dh.check_residuals(tol=1E-14)
+    # ds = dh.find_candidate_equations(verbose=True, tee=True)
     # dh.check_variable_bounds(tol=1E-5)
     # dh.check_rank_equality_constraints()
 
