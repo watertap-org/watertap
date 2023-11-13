@@ -18,7 +18,6 @@ from ..util import (
 
 
 def build_cstr_injection_cost_param_block(blk):
-
     # NOTE: costing data are from NREL Waste-to-Energy Model
     blk.capital_a_parameter = pyo.Var(
         initialize=1.1141e4,
@@ -30,6 +29,7 @@ def build_cstr_injection_cost_param_block(blk):
         doc="B parameter for capital cost",
         units=pyo.units.dimensionless,
     )
+
 
 @register_costing_parameter_block(
     build_rule=build_cstr_injection_cost_param_block,
@@ -56,9 +56,7 @@ def cost_cstr_injection(blk, cost_electricity_flow=True):
         )
 
 
-def cost_cstr_injection_capital(
-    blk, capital_a_parameter, capital_b_parameter
-):
+def cost_cstr_injection_capital(blk, capital_a_parameter, capital_b_parameter):
     """
     Generic function for costing an CSTR injection system.
     """
@@ -71,7 +69,9 @@ def cost_cstr_injection_capital(
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == pyo.units.convert(
-            blk.capital_a_parameter * (blk.unit_model.control_volume.volume[0]/ pyo.units.m**3)**blk.capital_b_parameter,
+            blk.capital_a_parameter
+            * (blk.unit_model.control_volume.volume[0] / pyo.units.m**3)
+            ** blk.capital_b_parameter,
             to_units=blk.costing_package.base_currency,
         )
     )
