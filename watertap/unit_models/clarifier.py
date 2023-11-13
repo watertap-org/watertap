@@ -34,9 +34,9 @@ from pyomo.environ import (
 from idaes.core.util.exceptions import (
     ConfigurationError,
 )
+from watertap.costing.unit_models.clarifier import cost_clarifier
 
 __author__ = "Chenyu Wang"
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -142,3 +142,7 @@ class ClarifierData(SeparatorData):
             io_dict[o] = getattr(self, o + "_state")
 
         return create_stream_table_dataframe(io_dict, time_point=time_point)
+
+    @property
+    def default_costing_method(self):
+        return cost_clarifier
