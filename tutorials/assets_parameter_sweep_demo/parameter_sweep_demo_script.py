@@ -184,7 +184,7 @@ def create_recursive_parameter_sweep_object(
         "parallel_back_end": parallel_backend,  # "MultiProcessing",
         "log_model_states": False,
     }
-    ps = ParameterSweep(**kwargs_dict)
+    ps = RecursiveParameterSweep(**kwargs_dict)
     return ps, kwargs_dict
 
 def create_differential_parameter_sweep_object(
@@ -232,7 +232,7 @@ def create_differential_parameter_sweep_object(
         "parallel_back_end": parallel_backend,  # "MultiProcessing",
         "log_model_states": False,
     }
-    ps = ParameterSweep(**kwargs_dict)
+    ps = DifferentialParameterSweep(**kwargs_dict)
     return ps, kwargs_dict
 
 
@@ -252,26 +252,35 @@ if __name__ == "__main__":
         num_samples = int(sys.argv[1])
         num_procs = int(sys.argv[2])
 
-    ps1, kwargs_dict1 = create_parameter_sweep_object(
-        num_samples, num_procs, parallel_backend="ConcurrentFutures"
-    )
+    # ps1, kwargs_dict1 = create_parameter_sweep_object(
+    #     num_samples, num_procs, parallel_backend="ConcurrentFutures"
+    # )
 
-    results_array1, results_dict1 = ps1.parameter_sweep(
-        kwargs_dict1["build_model"],
-        kwargs_dict1["build_sweep_params"],
-        build_outputs=kwargs_dict1["build_outputs"],
-        build_outputs_kwargs=kwargs_dict1["build_outputs_kwargs"],
-        num_samples=num_samples,
-        seed=None,
-        build_model_kwargs=kwargs_dict1["build_model_kwargs"],
-        build_sweep_params_kwargs=kwargs_dict1["build_sweep_params_kwargs"],
-    )
+    # results_array1, results_dict1 = ps1.parameter_sweep(
+    #     kwargs_dict1["build_model"],
+    #     kwargs_dict1["build_sweep_params"],
+    #     build_outputs=kwargs_dict1["build_outputs"],
+    #     build_outputs_kwargs=kwargs_dict1["build_outputs_kwargs"],
+    #     num_samples=num_samples,
+    #     seed=None,
+    #     build_model_kwargs=kwargs_dict1["build_model_kwargs"],
+    #     build_sweep_params_kwargs=kwargs_dict1["build_sweep_params_kwargs"],
+    # )
 
     ps2, kwargs_dict2 = create_recursive_parameter_sweep_object(num_samples, num_procs)
-    results_array2, results_dict2 = ps2.parameter_sweep()
+    results_array2, results_dict2 = ps2.parameter_sweep(
+        kwargs_dict2["build_model"],
+        kwargs_dict2["build_sweep_params"],
+        build_outputs=kwargs_dict2["build_outputs"],
+        build_outputs_kwargs=kwargs_dict2["build_outputs_kwargs"],
+        num_samples=num_samples,
+        seed=None,
+        build_model_kwargs=kwargs_dict2["build_model_kwargs"],
+        build_sweep_params_kwargs=kwargs_dict2["build_sweep_params_kwargs"],
+    )
 
-    ps3, kwargs_dict3 = create_differential_parameter_sweep_object(num_samples, num_procs)
-    results_array3, results_dict3 = ps3.parameter_sweep()
+    # ps3, kwargs_dict3 = create_differential_parameter_sweep_object(num_samples, num_procs)
+    # results_array3, results_dict3 = ps3.parameter_sweep()
 
     end_time = time.time()
     time_elapsed = end_time - start_time

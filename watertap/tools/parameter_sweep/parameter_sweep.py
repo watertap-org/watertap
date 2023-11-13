@@ -1143,16 +1143,16 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             if (
                 self.parallel_manager.number_of_worker_processes() > 1
             ):  # pragma: no cover
-                global_success_count = np.zeros(1, dtype=float)
-                global_failure_count = np.zeros(1, dtype=float)
+                global_success_count = np.zeros(1, dtype=int)
+                global_failure_count = np.zeros(1, dtype=int)
 
                 self.parallel_manager.sum_values_and_sync(
-                    sendbuf=np.array(success_count, dtype=float),
+                    sendbuf=np.array(success_count, dtype=int),
                     recvbuf=global_success_count,
                 )
 
                 self.parallel_manager.sum_values_and_sync(
-                    sendbuf=np.array(failure_count, dtype=float),
+                    sendbuf=np.array(failure_count, dtype=int),
                     recvbuf=global_failure_count,
                 )
             else:
