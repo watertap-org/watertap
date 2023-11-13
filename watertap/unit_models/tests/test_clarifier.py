@@ -14,7 +14,6 @@ Tests for costing clarifier.
 """
 __author__ = "Chenyu Wang"
 
-from idaes.models.unit_models import Separator
 from watertap.unit_models.clarifier import Clarifier
 from idaes.models.unit_models.separator import SplittingType
 import pytest
