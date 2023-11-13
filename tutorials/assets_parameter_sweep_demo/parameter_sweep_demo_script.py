@@ -76,26 +76,28 @@ def run_recursive_parameter_sweep(num_samples=100, num_procs=1):
     results_dict, results_array = ps.parameter_sweep(
         kwargs_dict["build_model"],
         kwargs_dict["build_sweep_params"],
-        build_outputs = kwargs_dict["build_outputs"],
-        build_outputs_kwargs = kwargs_dict["build_outputs_kwargs"],
-        num_samples = num_samples,
+        build_outputs=kwargs_dict["build_outputs"],
+        build_outputs_kwargs=kwargs_dict["build_outputs_kwargs"],
+        num_samples=num_samples,
         seed=None,
-        build_model_kwargs = kwargs_dict["build_model_kwargs"],
-        build_sweep_params_kwargs = kwargs_dict["build_sweep_params_kwargs"]
-        )
-    
+        build_model_kwargs=kwargs_dict["build_model_kwargs"],
+        build_sweep_params_kwargs=kwargs_dict["build_sweep_params_kwargs"],
+    )
+
+
 def run_differential_parameter_sweep(num_samples=10, num_procs=1):
     ps = create_differential_parameter_sweep_object(num_samples, num_procs)
     results_dict, results_array = ps.parameter_sweep(
         kwargs_dict["build_model"],
         kwargs_dict["build_sweep_params"],
-        build_outputs = kwargs_dict["build_outputs"],
-        build_outputs_kwargs = kwargs_dict["build_outputs_kwargs"],
-        num_samples = num_samples,
+        build_outputs=kwargs_dict["build_outputs"],
+        build_outputs_kwargs=kwargs_dict["build_outputs_kwargs"],
+        num_samples=num_samples,
         seed=None,
-        build_model_kwargs = kwargs_dict["build_model_kwargs"],
-        build_sweep_params_kwargs = kwargs_dict["build_sweep_params_kwargs"]
-        )
+        build_model_kwargs=kwargs_dict["build_model_kwargs"],
+        build_sweep_params_kwargs=kwargs_dict["build_sweep_params_kwargs"],
+    )
+
 
 def create_parameter_sweep_object(
     num_samples,
@@ -142,6 +144,7 @@ def create_parameter_sweep_object(
     ps = ParameterSweep(**kwargs_dict)
     return ps, kwargs_dict
 
+
 def create_recursive_parameter_sweep_object(
     num_samples,
     num_procs,
@@ -186,6 +189,7 @@ def create_recursive_parameter_sweep_object(
     }
     ps = RecursiveParameterSweep(**kwargs_dict)
     return ps, kwargs_dict
+
 
 def create_differential_parameter_sweep_object(
     num_samples,

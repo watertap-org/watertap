@@ -232,7 +232,9 @@ def test_recursive_parameter_sweep(model, tmp_path):
         csv_data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=",")
 
         # Compare the last row of the imported data to truth
-        assert np.allclose(data_array[-1, :], reference_save_data[-1, :], equal_nan=True)
+        assert np.allclose(
+            data_array[-1, :], reference_save_data[-1, :], equal_nan=True
+        )
 
         truth_dict = {
             "outputs": {
@@ -378,7 +380,9 @@ def test_recursive_parameter_sweep_function(model, tmp_path):
         csv_data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=",")
 
         # Compare the last row of the imported data to truth
-        assert np.allclose(data_array[-1, :], reference_save_data[-1, :], equal_nan=True)
+        assert np.allclose(
+            data_array[-1, :], reference_save_data[-1, :], equal_nan=True
+        )
 
         # Check for the h5 output
         truth_dict = {
