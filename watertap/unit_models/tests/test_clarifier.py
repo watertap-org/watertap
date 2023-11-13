@@ -30,13 +30,12 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import UnitModelCostingBlock
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util.scaling import calculate_scaling_factors
 from pyomo.util.check_units import assert_units_consistent
-import idaes.core.util.scaling as iscale
 from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_rectangular_clarifier,
+    cost_primary_clarifier,
 )
 
 # -----------------------------------------------------------------------------
@@ -132,17 +131,15 @@ class TestClarifierCosting:
         m.fs.unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing, costing_method=cost_circular_clarifier
         )
-        m.fs.unit.surface_area.fix(2000 * units.ft**2)
+        m.fs.unit.surface_area.fix(1500 * units.m**2)
         m.fs.costing.cost_process()
         results = solver.solve(m)
 
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(398816.2, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(194200.5, rel=1e-5) == value(
+        assert pytest.approx(1681573, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(629209.7, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
 
@@ -158,16 +155,34 @@ class TestClarifierCosting:
             flowsheet_costing_block=m.fs.costing,
             costing_method=cost_rectangular_clarifier,
         )
-        m.fs.unit.surface_area.fix(2000 * units.ft**2)
+        m.fs.unit.surface_area.fix(1500 * units.m**2)
         m.fs.costing.cost_process()
         results = solver.solve(m)
 
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(398816.2, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(194200.5, rel=1e-5) == value(
+        assert pytest.approx(3458422, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(119026.2, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_primary_clarifier_costing(self, clarifier_frame):
+        m = clarifier_frame
+
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_primary_clarifier,
+        )
+        m.fs.costing.cost_process()
+        results = solver.solve(m)
+
+        assert_optimal_termination(results)
+
+        # Check solutions
+        assert pytest.approx(1390570, rel=1e-5) == value(m.fs.unit.costing.capital_cost)

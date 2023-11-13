@@ -24,6 +24,7 @@ from ..util import (
 class ClarifierType(StrEnum):
     circular = "circular"
     rectangular = "rectangular"
+    primary = "primary"
 
 
 def cost_clarifier(blk, clarifier_type=ClarifierType.circular, **kwargs):
@@ -42,6 +43,8 @@ def cost_clarifier(blk, clarifier_type=ClarifierType.circular, **kwargs):
         cost_circular_clarifier(blk, **kwargs)
     elif clarifier_type == clarifier_type.rectangular:
         cost_rectangular_clarifier(blk, **kwargs)
+    elif clarifier_type == clarifier_type.primary:
+        cost_primary_clarifier(blk, **kwargs)
     else:
         raise ConfigurationError(
             f"{blk.unit_model.name} received invalid argument for clarifier_type:"
@@ -105,21 +108,20 @@ def cost_circular_clarifier(blk):
     make_capital_cost_var(blk)
     make_fixed_operating_cost_var(blk)
 
+    surface_area = pyo.units.convert(
+        blk.unit_model.surface_area, to_units=pyo.units.ft**2
+    )
+
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == pyo.units.convert(
-            blk.costing_package.circular.concstruction_a_parameter
-            * blk.unit_model.surface_area**2
-            + blk.costing_package.circular.concstruction_b_parameter
-            * blk.unit_model.surface_area
+            blk.costing_package.circular.concstruction_a_parameter * surface_area**2
+            + blk.costing_package.circular.concstruction_b_parameter * surface_area
             + blk.costing_package.circular.concstruction_c_parameter,
             to_units=blk.costing_package.base_currency,
         )
     )
 
-    surface_area = pyo.units.convert(
-        blk.unit_model.surface_area, to_units=pyo.units.ft**2
-    )
     max_surface_area_limit = 200 * pyo.units.ft**2
     if pyo.value(surface_area) > pyo.value(max_surface_area_limit):
         num_O_and_M = math.ceil(
@@ -146,12 +148,9 @@ def cost_circular_clarifier(blk):
         blk.fixed_operating_cost_constraint = pyo.Constraint(
             expr=blk.fixed_operating_cost
             == pyo.units.convert(
-                blk.costing_package.circular.O_and_M_a_parameter
-                * blk.unit_model.surface_area**3
-                + blk.costing_package.circular.O_and_M_b_parameter
-                * blk.unit_model.surface_area**2
-                + blk.costing_package.circular.O_and_M_c_parameter
-                * blk.unit_model.surface_area
+                blk.costing_package.circular.O_and_M_a_parameter * surface_area**3
+                + blk.costing_package.circular.O_and_M_b_parameter * surface_area**2
+                + blk.costing_package.circular.O_and_M_c_parameter * surface_area
                 + blk.costing_package.circular.O_and_M_d_parameter,
                 to_units=blk.costing_package.base_currency
                 / blk.costing_package.base_period,
@@ -203,25 +202,115 @@ def cost_rectangular_clarifier(blk):
     make_capital_cost_var(blk)
     make_fixed_operating_cost_var(blk)
 
+    surface_area = pyo.units.convert(
+        blk.unit_model.surface_area, to_units=pyo.units.ft**2
+    )
+    max_surface_area_limit = 4800 * pyo.units.ft**2
+
+    if pyo.value(surface_area) > pyo.value(max_surface_area_limit):
+        num_clarifier = math.ceil(
+            pyo.value(surface_area) / pyo.value(max_surface_area_limit)
+        )
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == pyo.units.convert(
+                num_clarifier
+                * (
+                    blk.costing_package.rectangular.concstruction_a_parameter
+                    * max_surface_area_limit**2
+                    + blk.costing_package.rectangular.concstruction_b_parameter
+                    * max_surface_area_limit
+                    + blk.costing_package.rectangular.concstruction_c_parameter
+                ),
+                to_units=blk.costing_package.base_currency,
+            )
+        )
+
+        blk.fixed_operating_cost_constraint = pyo.Constraint(
+            expr=blk.fixed_operating_cost
+            == pyo.units.convert(
+                num_clarifier
+                * (
+                    blk.costing_package.rectangular.O_and_M_a_parameter
+                    * max_surface_area_limit
+                    + blk.costing_package.rectangular.O_and_M_b_parameter
+                ),
+                to_units=blk.costing_package.base_currency
+                / blk.costing_package.base_period,
+            )
+        )
+
+    else:
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == pyo.units.convert(
+                blk.costing_package.rectangular.concstruction_a_parameter
+                * surface_area**2
+                + blk.costing_package.rectangular.concstruction_b_parameter
+                * surface_area
+                + blk.costing_package.rectangular.concstruction_c_parameter,
+                to_units=blk.costing_package.base_currency,
+            )
+        )
+
+        blk.fixed_operating_cost_constraint = pyo.Constraint(
+            expr=blk.fixed_operating_cost
+            == pyo.units.convert(
+                blk.costing_package.rectangular.O_and_M_a_parameter * surface_area
+                + blk.costing_package.rectangular.O_and_M_b_parameter,
+                to_units=blk.costing_package.base_currency
+                / blk.costing_package.base_period,
+            )
+        )
+
+
+def build_primary_clarifier_cost_param_block(blk):
+
+    blk.capital_a_parameter = pyo.Param(
+        initialize=120000 / 2776 * 12463,
+        doc="A parameter for capital cost",
+        units=pyo.units.USD_2021,
+    )
+
+    blk.capital_b_parameter = pyo.Param(
+        initialize=0.7,
+        doc="B parameter for construction cost",
+        units=pyo.units.dimensionless,
+    )
+
+
+@register_costing_parameter_block(
+    build_rule=build_primary_clarifier_cost_param_block,
+    parameter_block_name="primary",
+)
+def cost_primary_clarifier(blk, cost_electricity_flow=True):
+    """
+    Primary clarifier costing method
+    """
+    make_capital_cost_var(blk)
+
+    t0 = blk.flowsheet().time.first()
+    flow_in = pyo.units.convert(
+        blk.unit_model.inlet.flow_vol[t0], to_units=pyo.units.gallon / pyo.units.day
+    )
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == pyo.units.convert(
-            blk.costing_package.rectangular.concstruction_a_parameter
-            * blk.unit_model.surface_area**2
-            + blk.costing_package.rectangular.concstruction_b_parameter
-            * blk.unit_model.surface_area
-            + blk.costing_package.rectangular.concstruction_c_parameter,
+            blk.costing_package.primary.capital_a_parameter
+            * pyo.units.convert(
+                flow_in / (1e6 * pyo.units.gallon / pyo.units.day),
+                to_units=pyo.units.dimensionless,
+            )
+            ** blk.costing_package.primary.capital_b_parameter,
             to_units=blk.costing_package.base_currency,
         )
     )
 
-    blk.fixed_operating_cost_constraint = pyo.Constraint(
-        expr=blk.fixed_operating_cost
-        == pyo.units.convert(
-            blk.costing_package.rectangular.O_and_M_a_parameter
-            * blk.unit_model.surface_area
-            + blk.costing_package.rectangular.O_and_M_b_parameter,
-            to_units=blk.costing_package.base_currency
-            / blk.costing_package.base_period,
+    if cost_electricity_flow:
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                blk.unit_model.electricity_consumption[t0],
+                to_units=pyo.units.kW,
+            ),
+            "electricity",
         )
-    )

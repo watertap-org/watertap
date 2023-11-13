@@ -27,9 +27,9 @@ import idaes.logger as idaeslog
 
 from pyomo.environ import (
     Var,
+    Param,
     units as pyunits,
 )
-from pyomo.common.config import ConfigValue, In
 
 from idaes.core.util.exceptions import (
     ConfigurationError,
@@ -64,27 +64,6 @@ class ClarifierData(SeparatorData):
     CONFIG.outlet_list = ["underflow", "overflow"]
     CONFIG.split_basis = SplittingType.componentFlow
 
-    # CONFIG.declare(
-    #     "activated_sludge_model",
-    #     ConfigValue(
-    #         default=ActivatedSludgeModelType.ASM1,
-    #         domain=In(ActivatedSludgeModelType),
-    #         description="Activated Sludge Model used with unit",
-    #         doc="""
-    #     Options to account for version of activated sludge model property package.
-    #
-    #     **default** - ``ActivatedSludgeModelType.ASM1``
-    #
-    # .. csv-table::
-    #     :header: "Configuration Options", "Description"
-    #
-    #     "``ActivatedSludgeModelType.ASM1``", "ASM1 model"
-    #     "``ActivatedSludgeModelType.ASM2D``", "ASM2D model"
-    #     "``ActivatedSludgeModelType.modified_ASM2D``", "modified ASM2D model for ADM1 compatibility"
-    # """,
-    #     ),
-    # )
-
     def build(self):
         """
         Begin building model.
@@ -106,72 +85,39 @@ class ClarifierData(SeparatorData):
             )
 
         self.surface_area = Var(
-            initialize=5000,
-            doc="Surface area of the clarifier",
-            units=pyunits.ft**2,
-            bounds=(0, 5e4),
+            initialize=1500,
+            doc="Cross section surface area of the clarifier",
+            units=pyunits.m**2,
+            bounds=(0, 3000),
         )
 
-        # self.p_thick = Param(
-        #     initialize=0.07,
-        #     units=pyunits.dimensionless,
-        #     mutable=True,
-        #     doc="Fraction of suspended solids in the underflow",
-        # )
-        #
-        # self.TSS_rem = Param(
-        #     initialize=0.98,
-        #     units=pyunits.dimensionless,
-        #     mutable=True,
-        #     doc="Fraction of suspended solids removed",
-        # )
-        #
-        # @self.Expression(self.flowsheet().time, doc="Suspended solids concentration")
-        # def TSS_in(blk, t):
-        #     if blk.config.activated_sludge_model == ActivatedSludgeModelType.ASM1:
-        #         return 0.75 * (
-        #             sum(
-        #                 blk.inlet.conc_mass_comp[t, i]
-        #                 for i in blk.config.property_package.tss_component_set
-        #             )
-        #         )
-        #     elif blk.config.activated_sludge_model == ActivatedSludgeModelType.ASM2D:
-        #         return blk.inlet.conc_mass_comp[
-        #             t, blk.config.property_package.tss_component_set.first()
-        #         ]
-        #     elif (
-        #         blk.config.activated_sludge_model
-        #         == ActivatedSludgeModelType.modified_ASM2D
-        #     ):
-        #         return blk.mixed_state[t].TSS
-        #     else:
-        #         raise ConfigurationError(
-        #             "The activated_sludge_model was not specified properly in configuration options."
-        #         )
-        #
-        # @self.Expression(self.flowsheet().time, doc="Thickening factor")
-        # def f_thick(blk, t):
-        #     return blk.p_thick * (10 / (blk.TSS_in[t]))
-        #
-        # @self.Expression(self.flowsheet().time, doc="Remove factor")
-        # def f_q_du(blk, t):
-        #     return blk.TSS_rem / (pyunits.kg / pyunits.m**3) / 100 / blk.f_thick[t]
-        #
-        # @self.Constraint(
-        #     self.flowsheet().time,
-        #     self.config.property_package.particulate_component_set,
-        #     doc="particulate fraction",
-        # )
-        # def overflow_particulate_fraction(blk, t, i):
-        #     return blk.split_fraction[t, "overflow", i] == 1 - blk.TSS_rem
-        #
-        # @self.Constraint(
-        #     self.flowsheet().time,
-        #     self.config.property_package.non_particulate_component_set,
-        #     doc="soluble fraction",
-        # )
-        # def non_particulate_components(blk, t, i):
-        #     return blk.split_fraction[t, "overflow", i] == 1 - blk.f_q_du[t]
+        self.electricity_consumption = Var(
+            self.flowsheet().time,
+            units=pyunits.kW,
+            bounds=(0, None),
+            doc="Electricity consumption of unit",
+        )
+        # The value is taken from Maravelias' data
+        self.energy_electric_flow_vol_inlet = Param(
+            initialize=0.008,
+            units=pyunits.kWh / pyunits.m**3,
+            mutable=True,
+            doc="Electricity intensity with respect to inlet flow",
+        )
+
+        # Electricity constraint
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Constraint for electricity consumption based on phosphorus removal",
+        )
+        def rule_electricity_consumption(self, t):
+            return self.electricity_consumption[t] == (
+                self.energy_electric_flow_vol_inlet
+                * pyunits.convert(
+                    self.inlet.flow_vol[t],
+                    to_units=pyunits.m**3 / pyunits.hr,
+                )
+            )
 
     def _get_performance_contents(self, time_point=0):
         if hasattr(self, "split_fraction"):
