@@ -600,7 +600,7 @@ class _ParameterSweepBase(ABC):
             self.model_manager.build_and_init(sweep_params, local_value_k)
         # try to solve our model
         self.model_manager.update_model_params(sweep_params, local_value_k)
-        results = self.model_manager.solve_model()
+        self.model_manager.solve_model()
 
         # if model failed to solve from a prior paramter solved state, lets try
         # to re-init and solve again
@@ -610,7 +610,7 @@ class _ParameterSweepBase(ABC):
         ):
             self.model_manager.build_and_init(sweep_params, local_value_k)
             self.model_manager.update_model_params(sweep_params, local_value_k)
-            results = self.model_manager.solve_model()
+            self.model_manager.solve_model()
         # return model solved state
         return self.model_manager.is_solved
 
@@ -745,8 +745,13 @@ class ParameterSweep(_ParameterSweepBase):
 
         # for each result, concat the "value" array of results into the
         # gathered results to combine them all
-        for result in all_results[1:]:
+
+        # get length of data in first result for finding missing keys
+        total_chunk_length = len(all_results[0].results["solve_successful"])
+
+        for i, result in enumerate(all_results[1:]):
             results = result.results
+
             for key, val in results.items():
                 if key == "solve_successful":
                     combined_results[key] = np.append(
@@ -755,13 +760,38 @@ class ParameterSweep(_ParameterSweepBase):
                     continue
 
                 for subkey, subval in val.items():
+                    # lets catch any keys that don' exist in result[0] and
+                    # create empty array with expected length, after which we will add
+                    # additional values, or add nan's instead
+                    if subkey not in combined_results[key]:
+                        # create empty array, as none of results so far had this key\
+
+                        combined_results[key][subkey] = {}
+                        for sub_subkey, value in subval.items():
+                            if sub_subkey == "value":
+                                combined_results[key][subkey]["value"] = (
+                                    np.zeros(total_chunk_length) * np.nan
+                                )
+                            else:
+                                combined_results[key][subkey][sub_subkey] = value
                     combined_results[key][subkey]["value"] = np.append(
                         combined_results[key][subkey]["value"],
                         copy.deepcopy(
                             subval["value"],
                         ),
                     )
+                    # keep track of our subchunk_length
+                    sub_chunk_length = len(subval["value"])
 
+                # make sure we add any empty value to missing keys
+
+                for subkey in combined_results[key]:
+                    if subkey not in val.keys():
+                        empty_chunk = np.zeros(sub_chunk_length) * np.nan
+                        combined_results[key][subkey]["value"] = np.append(
+                            combined_results[key][subkey]["value"], empty_chunk
+                        )
+            total_chunk_length += sub_chunk_length
         return combined_results
 
     """
@@ -782,7 +812,6 @@ class ParameterSweep(_ParameterSweepBase):
         for _, output in outputs.items():
             for i in range(len(output["value"])):
                 combined_outputs[i] = np.append(combined_outputs[i], output["value"][i])
-
         return np.asarray(combined_outputs)
 
     """
