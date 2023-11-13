@@ -15,6 +15,8 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_R
 from watertap.tools.parameter_sweep import (
     LinearSample,
     ParameterSweep,
+    RecursiveParameterSweep,
+    DifferentialParameterSweep,
 )
 
 
@@ -56,7 +58,7 @@ def build_sweep_params(m, num_samples=1, scenario="A_comp_vs_LCOW"):
 def run_parameter_sweep(num_samples=100, num_procs=1):
 
     # solver = get_solver()
-    ps = create_parameter_sweep_object(solver, num_samples, num_procs)
+    ps = create_parameter_sweep_object(num_samples, num_procs)
     results_dict, results_array = ps.parameter_sweep(
         build_model,
         build_sweep_params,
@@ -69,6 +71,32 @@ def run_parameter_sweep(num_samples=100, num_procs=1):
     )
 
 
+def run_recursive_parameter_sweep(num_samples=100, num_procs=1):
+    ps = create_recursive_parameter_sweep_object(num_samples, num_procs)
+    results_dict, results_array = ps.parameter_sweep(
+        kwargs_dict["build_model"],
+        kwargs_dict["build_sweep_params"],
+        build_outputs = kwargs_dict["build_outputs"],
+        build_outputs_kwargs = kwargs_dict["build_outputs_kwargs"],
+        num_samples = num_samples,
+        seed=None,
+        build_model_kwargs = kwargs_dict["build_model_kwargs"],
+        build_sweep_params_kwargs = kwargs_dict["build_sweep_params_kwargs"]
+        )
+    
+def run_differential_parameter_sweep(num_samples=10, num_procs=1):
+    ps = create_differential_parameter_sweep_object(num_samples, num_procs)
+    results_dict, results_array = ps.parameter_sweep(
+        kwargs_dict["build_model"],
+        kwargs_dict["build_sweep_params"],
+        build_outputs = kwargs_dict["build_outputs"],
+        build_outputs_kwargs = kwargs_dict["build_outputs_kwargs"],
+        num_samples = num_samples,
+        seed=None,
+        build_model_kwargs = kwargs_dict["build_model_kwargs"],
+        build_sweep_params_kwargs = kwargs_dict["build_sweep_params_kwargs"]
+        )
+
 def create_parameter_sweep_object(
     num_samples,
     num_procs,
@@ -76,6 +104,99 @@ def create_parameter_sweep_object(
 ):
 
     solver = get_solver()
+    kwargs_dict = {
+        "debugging_data_dir": None,
+        "csv_results_file_name": None,
+        "h5_results_file_name": None,
+        "interpolate_nan_outputs": False,
+        "h5_parent_group_name": None,  # Loop Tool
+        "build_model": build_model,
+        "build_model_kwargs": dict(
+            read_model_defauls_from_file=False,
+            defaults_fname="default_configuration.yaml",
+        ),
+        "build_sweep_params": build_sweep_params,
+        "build_sweep_params_kwargs": dict(
+            num_samples=num_samples, scenario="A_comp_vs_B_comp_vs_LCOW"
+        ),
+        "build_outputs": build_outputs,
+        "build_outputs_kwargs": {},
+        "optimize_function": optimize,
+        "optimize_kwargs": {"solver": solver, "check_termination": False},
+        "initialize_function": None,
+        "update_sweep_params_before_init": False,
+        "initialize_kwargs": {},
+        "initialize_before_sweep": False,
+        "reinitialize_function": None,
+        "reinitialize_kwargs": {},
+        "reinitialize_before_sweep": False,
+        "probe_function": None,
+        "custom_do_param_sweep": None,
+        "custom_do_param_sweep_kwargs": {},
+        "publish_progress": False,
+        "publish_address": "http://localhost:8888",
+        "number_of_subprocesses": num_procs,
+        "parallel_back_end": parallel_backend,  # "MultiProcessing",
+        "log_model_states": False,
+    }
+    ps = ParameterSweep(**kwargs_dict)
+    return ps, kwargs_dict
+
+def create_recursive_parameter_sweep_object(
+    num_samples,
+    num_procs,
+    parallel_backend="ConcurrentFutures",
+):
+
+    solver = get_solver()
+    kwargs_dict = {
+        "debugging_data_dir": None,
+        "csv_results_file_name": None,
+        "h5_results_file_name": None,
+        "interpolate_nan_outputs": False,
+        "h5_parent_group_name": None,  # Loop Tool
+        "build_model": build_model,
+        "build_model_kwargs": dict(
+            read_model_defauls_from_file=False,
+            defaults_fname="default_configuration.yaml",
+        ),
+        "build_sweep_params": build_sweep_params,
+        "build_sweep_params_kwargs": dict(
+            num_samples=num_samples, scenario="A_comp_vs_B_comp_vs_LCOW"
+        ),
+        "build_outputs": build_outputs,
+        "build_outputs_kwargs": {},
+        "optimize_function": optimize,
+        "optimize_kwargs": {"solver": solver, "check_termination": False},
+        "initialize_function": None,
+        "update_sweep_params_before_init": False,
+        "initialize_kwargs": {},
+        "initialize_before_sweep": False,
+        "reinitialize_function": None,
+        "reinitialize_kwargs": {},
+        "reinitialize_before_sweep": False,
+        "probe_function": None,
+        "custom_do_param_sweep": None,
+        "custom_do_param_sweep_kwargs": {},
+        "publish_progress": False,
+        "publish_address": "http://localhost:8888",
+        "number_of_subprocesses": num_procs,
+        "parallel_back_end": parallel_backend,  # "MultiProcessing",
+        "log_model_states": False,
+    }
+    ps = ParameterSweep(**kwargs_dict)
+    return ps, kwargs_dict
+
+def create_differential_parameter_sweep_object(
+    num_samples,
+    num_procs,
+    parallel_backend="ConcurrentFutures",
+):
+
+    solver = get_solver()
+
+    differetial_sweep_specs = {}
+
     kwargs_dict = {
         "debugging_data_dir": None,
         "csv_results_file_name": None,
@@ -131,20 +252,26 @@ if __name__ == "__main__":
         num_samples = int(sys.argv[1])
         num_procs = int(sys.argv[2])
 
-    ps1, kwargs_dict = create_parameter_sweep_object(
+    ps1, kwargs_dict1 = create_parameter_sweep_object(
         num_samples, num_procs, parallel_backend="ConcurrentFutures"
     )
 
     results_array1, results_dict1 = ps1.parameter_sweep(
-        kwargs_dict["build_model"],
-        kwargs_dict["build_sweep_params"],
-        build_outputs=kwargs_dict["build_outputs"],
-        build_outputs_kwargs=kwargs_dict["build_outputs_kwargs"],
+        kwargs_dict1["build_model"],
+        kwargs_dict1["build_sweep_params"],
+        build_outputs=kwargs_dict1["build_outputs"],
+        build_outputs_kwargs=kwargs_dict1["build_outputs_kwargs"],
         num_samples=num_samples,
         seed=None,
-        build_model_kwargs=kwargs_dict["build_model_kwargs"],
-        build_sweep_params_kwargs=kwargs_dict["build_sweep_params_kwargs"],
+        build_model_kwargs=kwargs_dict1["build_model_kwargs"],
+        build_sweep_params_kwargs=kwargs_dict1["build_sweep_params_kwargs"],
     )
+
+    ps2, kwargs_dict2 = create_recursive_parameter_sweep_object(num_samples, num_procs)
+    results_array2, results_dict2 = ps2.parameter_sweep()
+
+    ps3, kwargs_dict3 = create_recursive_parameter_sweep_object(num_samples, num_procs)
+    results_array2, results_dict2 = ps2.parameter_sweep()
 
     end_time = time.time()
     time_elapsed = end_time - start_time

@@ -1216,7 +1216,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             self.parallel_manager.get_rank(),
         )
 
-        return global_save_data
+        return global_save_data, global_filtered_dict
 
 
 def do_build(
