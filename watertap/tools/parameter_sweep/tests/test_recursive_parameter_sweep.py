@@ -193,7 +193,7 @@ def test_recursive_parameter_sweep(model, tmp_path):
         m,
         sweep_params,
         build_outputs=outputs,
-        req_num_samples=num_samples,
+        num_samples=num_samples,
         seed=seed,
     )
 
@@ -342,7 +342,7 @@ def test_recursive_parameter_sweep_function(model, tmp_path):
         build_outputs=outputs,
         csv_results_file_name=csv_results_file,
         h5_results_file_name=h5_results_file,
-        req_num_samples=num_samples,
+        num_samples=num_samples,
         debugging_data_dir=tmp_path,
         seed=seed,
     )

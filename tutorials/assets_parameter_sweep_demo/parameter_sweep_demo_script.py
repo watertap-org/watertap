@@ -270,8 +270,8 @@ if __name__ == "__main__":
     ps2, kwargs_dict2 = create_recursive_parameter_sweep_object(num_samples, num_procs)
     results_array2, results_dict2 = ps2.parameter_sweep()
 
-    ps3, kwargs_dict3 = create_recursive_parameter_sweep_object(num_samples, num_procs)
-    results_array2, results_dict2 = ps2.parameter_sweep()
+    ps3, kwargs_dict3 = create_differential_parameter_sweep_object(num_samples, num_procs)
+    results_array3, results_dict3 = ps3.parameter_sweep()
 
     end_time = time.time()
     time_elapsed = end_time - start_time

@@ -1035,7 +1035,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         seed=None,
         build_model_kwargs=None,
         build_sweep_params_kwargs=None,
-        req_num_samples=None,
     ):
         build_model_kwargs = (
             build_model_kwargs if build_model_kwargs is not None else dict()
@@ -1097,8 +1096,8 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         if outputs is not None:
             self.assign_variable_names(model, outputs)
 
-        n_samples_remaining = req_num_samples
-        num_total_samples = req_num_samples
+        n_samples_remaining = num_samples
+        num_total_samples = num_samples
 
         local_output_collection = {}
         for loop_ctr in range(10):
@@ -1200,7 +1199,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             global_filtered_dict,
             global_filtered_results,
             global_filtered_values,
-        ) = self._aggregate_filtered_results(local_filtered_dict, req_num_samples)
+        ) = self._aggregate_filtered_results(local_filtered_dict, num_samples)
 
         # Now we can save this
         self.parallel_manager.sync_with_peers()
