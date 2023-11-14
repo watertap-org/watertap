@@ -23,9 +23,6 @@ Typically, the following variables are fixed, in addition to state variables at 
     * permeate outlet pressure
     * membrane area *or* length *or* width
 
-.. note::
-
-    This section is pending since the 1D-RO model is currently under development.
 
 Model Structure
 ------------------
@@ -44,9 +41,6 @@ Sets
 
 \*Solute depends on the imported property model; example shown here is for the NaCl property model.
 
-.. note::
-
-    Everything below this section is pending since the 1D-RO model is currently under development.
 
 Variables
 ----------
