@@ -51,7 +51,7 @@ from pandas import DataFrame, MultiIndex
 from pyomo.environ import value, units as pyunits
 
 from watertap.tools.oli_api.util.fixed_keys_dict import (
-    default_oli_input_dict,
+    default_oli_water_analysis_properties,
     default_oli_optional_properties,
     default_oli_unit_set_info,
 )
@@ -62,11 +62,12 @@ from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
     get_molar_mass,
 )
 
-
+# TODO: separate utilities that could be used for general flash calculations
+# TODO: maybe the rest of the functions that use OLIApi can go back into client
 class WaterAnalysis:
     def __init__(
         self,
-        oli_input_dict=default_oli_input_dict,
+        oli_water_analysis_properties=default_oli_water_analysis_properties,
         oli_optional_properties=default_oli_optional_properties,
         oli_unit_set_info=default_oli_unit_set_info,
         state_vars: dict = {},
@@ -76,7 +77,7 @@ class WaterAnalysis:
         """
         A class constructed for Water Analysis on OLI Cloud.
 
-        :param oli_input_dict: pre-configured dictionary containing OLI input variables
+        :param oli_water_analysis_properties: pre-configured dictionary containing OLI input variables
         :param oli_optional_properties: pre-configured dictionary containing OLI input variables
         :param oli_unit_set_info: pre-configured dictionary containing OLI input variables
         :param state_vars: dictionary containing state variables
@@ -87,9 +88,10 @@ class WaterAnalysis:
             raise IOError(
                 " Provide a dictionary of state variables, values, and units."
             )
-        self.oli_input_dict = oli_input_dict
+        self.oli_water_analysis_properties = oli_water_analysis_properties
         self.oli_optional_properties = oli_optional_properties
         self.oli_unit_set_info = oli_unit_set_info
+        
         self.build_inputs(state_vars)
         self.survey = self.build_composition_survey(survey_conditions)
         self.results = []
@@ -177,9 +179,9 @@ class WaterAnalysis:
         }
 
         result = oliapi.call(
-            function_name="wateranalysis",
+            method="wateranalysis",
             dbs_file_id=dbs_file_id,
-            json_input=water_analysis_input,
+            input_params=water_analysis_input,
         )
         return result
 
@@ -200,6 +202,7 @@ class WaterAnalysis:
                 param.update({"value": survey[key].iloc[i]})
         return inputs_clone
 
+    # TODO: increase flexibility 
     def build_inputs(self, state_vars):
         """
         Creates OLI Water Analysis configuration list.
@@ -225,7 +228,7 @@ class WaterAnalysis:
             {
                 "group": "Properties",
                 "name": "Temperature",
-                "unit": self.oli_input_dict["temperature_unit"],
+                "unit": self.oli_water_analysis_properties["temperature_unit"],
                 "value": float(state_vars["temperature"]),
             }
         )
@@ -233,7 +236,7 @@ class WaterAnalysis:
             {
                 "group": "Properties",
                 "name": "Pressure",
-                "unit": self.oli_input_dict["pressure_unit"],
+                "unit": self.oli_water_analysis_properties["pressure_unit"],
                 "value": float(state_vars["pressure"]),
             }
         )
@@ -251,7 +254,7 @@ class WaterAnalysis:
                 {
                     "group": get_charge_group(charge),
                     "name": get_oli_name(comp),
-                    "unit": self.oli_input_dict["concentration_unit"],
+                    "unit": self.oli_water_analysis_properties["concentration_unit"],
                     "value": float(conc),
                     "charge": charge,
                 }
@@ -272,16 +275,16 @@ class WaterAnalysis:
             "AutoNACL",
             "MakeupIon",
         ]
-        self.oli_input_dict._check_value("electroneutrality_value", valid_values)
+        self.oli_water_analysis_properties._check_value("electroneutrality_value", valid_values)
         self.inputs_true.append(
             {
                 "group": "Electroneutrality Options",
                 "name": "ElectroNeutralityBalanceType",
-                "value": self.oli_input_dict["electroneutrality_value"],
+                "value": self.oli_water_analysis_properties["electroneutrality_value"],
             }
         )
-        if self.oli_input_dict["electroneutrality_value"] == "MakeupIon":
-            self.oli_input_dict._check_value(
+        if self.oli_water_analysis_properties["electroneutrality_value"] == "MakeupIon":
+            self.oli_water_analysis_properties._check_value(
                 "MakeupIonBaseTag",
                 [get_oli_name(comp) for comp in state_vars["components"]],
             )
@@ -289,7 +292,7 @@ class WaterAnalysis:
                 {
                     "group": "Electroneutrality Options",
                     "name": "MakeupIonBaseTag",
-                    "value": self.oli_input_dict["MakeupIonBaseTag"],
+                    "value": self.oli_water_analysis_properties["MakeupIonBaseTag"],
                 }
             )
 
@@ -305,12 +308,12 @@ class WaterAnalysis:
             "ReconcilePhAndAlkalinityAndTic",
             "ReconcileCo2Gas",
         ]
-        self.oli_input_dict._check_value("reconciliation_value", valid_values)
+        self.oli_water_analysis_properties._check_value("reconciliation_value", valid_values)
         self.inputs_true.append(
             {
                 "group": "Calculation Options",
                 "name": "CalcType",
-                "value": self.oli_input_dict["reconciliation_value"],
+                "value": self.oli_water_analysis_properties["reconciliation_value"],
             }
         )
         # there is an option in the API to include/exclude specific solids if desired:
@@ -319,94 +322,95 @@ class WaterAnalysis:
             {
                 "group": "Calculation Options",
                 "name": "AllowSolidsToForm",
-                "value": bool(self.oli_input_dict["AllowSolidsToForm"]),
+                "value": bool(self.oli_water_analysis_properties["AllowSolidsToForm"]),
             }
         )
         self.inputs_true.append(
             {
                 "group": "Calculation Options",
                 "name": "CalcAlkalnity",
-                "value": bool(self.oli_input_dict["CalcAlkalnity"]),
+                "value": bool(self.oli_water_analysis_properties["CalcAlkalnity"]),
             }
         )
-        self.oli_input_dict._check_value("PhAcidTitrant", ["HCL"])
+        self.oli_water_analysis_properties._check_value("PhAcidTitrant", ["HCL"])
         self.inputs_true.append(
             {
                 "group": "Calculation Options",
                 "name": "PhAcidTitrant",
-                "value": self.oli_input_dict["PhAcidTitrant"],
+                "value": self.oli_water_analysis_properties["PhAcidTitrant"],
             }
         )
-        self.oli_input_dict._check_value("PhBaseTitrant", ["NAOH"])
+        self.oli_water_analysis_properties._check_value("PhBaseTitrant", ["NAOH"])
         self.inputs_true.append(
             {
                 "group": "Calculation Options",
                 "name": "PhBaseTitrant",
-                "value": self.oli_input_dict["PhBaseTitrant"],
+                "value": self.oli_water_analysis_properties["PhBaseTitrant"],
             }
         )
-
+        """
         # TODO: haven't tested beyond EquilCalcOnly
-        if self.oli_input_dict["reconciliation_value"] == "ReconcileCo2Gas":
-            self.oli_input_dict._check_value("CO2GasFraction", range(0, 101))
+        if self.oli_water_analysis_properties["reconciliation_value"] == "ReconcileCo2Gas":
+            self.oli_water_analysis_properties._check_value("CO2GasFraction", range(0, 101))
             self.inputs_true.append(
                 {
                     "group": "Properties",
                     "name": "CO2GasFraction",
-                    "unit": self.oli_input_dict["gas_fraction_unit"],
-                    "value": self.oli_input_dict["CO2GasFraction"],
+                    "unit": self.oli_water_analysis_properties["gas_fraction_unit"],
+                    "value": self.oli_water_analysis_properties["CO2GasFraction"],
                 }
             )
         else:
-            if "Ph" in self.oli_input_dict["reconciliation_value"]:
-                self.oli_input_dict._check_value("pH", range(0, 15))
+            if "Ph" in self.oli_water_analysis_properties["reconciliation_value"]:
+                self.oli_water_analysis_properties._check_value("pH", range(0, 15))
                 self.inputs_true.append(
                     {
                         "group": "Properties",
                         "name": "pH",
-                        "value": self.oli_input_dict["pH"],
+                        "value": self.oli_water_analysis_properties["pH"],
                     }
                 )
 
-            if "Alkalinity" in self.oli_input_dict["reconciliation_value"]:
+            if "Alkalinity" in self.oli_water_analysis_properties["reconciliation_value"]:
                 self.inputs_true.append(
                     {
                         "group": "Properties",
                         "name": "Alkalinity",
-                        "unit": self.oli_input_dict["alkalinity_unit"],
-                        "value": float(self.oli_input_dict["Alkalinity"]),
+                        "unit": self.oli_water_analysis_properties["alkalinity_unit"],
+                        "value": float(self.oli_water_analysis_properties["Alkalinity"]),
                     }
                 )
                 # TODO: which other titrants and pH endpoints may be used
-                self.oli_input_dict._check_value("AlkalinityPhTitrant", ["H2SO4"])
+                self.oli_water_analysis_properties._check_value("AlkalinityPhTitrant", ["H2SO4"])
                 self.inputs_true.append(
                     {
                         "group": "Calculation Options",
                         "name": "AlkalinityPhTitrant",
-                        "value": self.oli_input_dict["AlkalinityPhTitrant"],
+                        "value": self.oli_water_analysis_properties["AlkalinityPhTitrant"],
                     }
                 )
-                self.oli_input_dict._check_value(
+                self.oli_water_analysis_properties._check_value(
                     "AlkalinityTitrationEndpointPh", range(0, 15)
                 )
                 self.inputs_true.append(
                     {
                         "group": "Properties",
                         "name": "AlkalinityTitrationEndPointPh",
-                        "value": self.oli_input_dict["AlkalinityTitrationEndPointPh"],
+                        "value": self.oli_water_analysis_properties["AlkalinityTitrationEndPointPh"],
                     }
                 )
 
-            if "Tic" in self.oli_input_dict["reconciliation_value"]:
+            if "Tic" in self.oli_water_analysis_properties["reconciliation_value"]:
                 self.inputs_true.append(
                     {
                         "group": "Properties",
                         "name": "TIC",
-                        "unit": self.oli_input_dict["tic_unit"],
-                        "value": float(self.oli_input_dict["TIC"]),
+                        "unit": self.oli_water_analysis_properties["tic_unit"],
+                        "value": float(self.oli_water_analysis_properties["TIC"]),
                     }
                 )
-
+            """
+            
     def write_results_to_yaml(self, results_dict, filename=None):
         """
         Writes OLI Api results to .yaml file.
@@ -424,65 +428,3 @@ class WaterAnalysis:
         file_path = f"{filename}.yaml"
         print(f"Write to yaml successful, check working directory for {file_path}.")
         return file_path
-
-    # TODO: Make index labels more clear
-    def extract_scaling_tendencies(self, scalants=None, lower_bound=0):
-        """
-        Extracts scaling tendencies from OLI output for specific scalants.
-
-        :param scalants: list containing names of scalants
-        :param lower_bound: minimum scaling tendency to extract
-
-        :return extract: copy of DataFrame containing extracted scaling tendencies
-        """
-
-        if scalants is None:
-            raise RuntimeError(
-                f" Unable to find scaling tendency for species {scalants}."
-            )
-        header = MultiIndex.from_product(
-            [scalants, ["prescaling", "eq. scaling"]], names=["species", "label"]
-        )
-        self.extracted_scaling_tendencies = DataFrame(
-            columns=header, index=range(len(self.results))
-        )
-        for i in range(len(self.results)):
-            root_path = self.results[i]["result"]
-            prescaling_path = root_path["additionalProperties"]["prescalingTendencies"][
-                "values"
-            ]
-            eq_scaling_path = root_path["additionalProperties"]["scalingTendencies"][
-                "values"
-            ]
-            for scalant in scalants:
-                val = prescaling_path[scalant], eq_scaling_path[scalant]
-                self.extracted_scaling_tendencies.loc[i, scalant] = val
-        extract = deepcopy(self.extracted_scaling_tendencies)
-        return extract
-
-    def extract_basic_properties(self, phase, properties):
-        """
-        Extracts basic phase-specific properties from OLI output.
-
-        :param phase: string name of phase to extract properties from
-        :param properties: list containing string names of properties to extract from results
-
-        :return extract: copy of DataFrame containing extracted properties
-        """
-
-        header = MultiIndex.from_product(
-            [properties, ["value", "unit"]], names=["property", "label"]
-        )
-        self.extracted_properties = DataFrame(
-            columns=header, index=range(len(self.results))
-        )
-        for i in range(len(self.results)):
-            root_path = self.results[i]["result"]
-            for prop in properties:
-                val = (
-                    root_path["phases"][phase]["properties"][prop]["value"],
-                    root_path["phases"][phase]["properties"][prop]["unit"],
-                )
-                self.extracted_properties.loc[i, prop] = val
-        extract = deepcopy(self.extracted_properties)
-        return extract

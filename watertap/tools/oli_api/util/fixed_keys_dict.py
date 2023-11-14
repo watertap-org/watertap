@@ -44,7 +44,7 @@ class FixedKeysDict(UserDict):
             print(f" {key}\n - {value}\n")
 
 
-default_oli_input_dict = FixedKeysDict(
+default_oli_water_analysis_properties = FixedKeysDict(
     {
         "temperature_unit": "K",  # units
         "pressure_unit": "Pa",

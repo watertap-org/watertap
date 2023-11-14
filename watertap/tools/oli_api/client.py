@@ -219,7 +219,7 @@ class OLIApi:
         for entry in self.get_user_dbs_files()["data"]:
             dbs_file_id = entry["fileId"]
             user_summary[dbs_file_id] = {
-                "dbs_file_info": self.get_dbs_file_info(dbs_file_id=dbs_file_id),
+                "dbs_file_info": self.get_chemistry_info(dbs_file_id=dbs_file_id),
                 "flash_history": self.get_flash_history(dbs_file_id=dbs_file_id),
                 "job_id": self.get_flash_history(dbs_file_id=dbs_file_id, job_id=True),
             }
@@ -239,7 +239,7 @@ class OLIApi:
         )
         return user_dbs_files
 
-    def get_dbs_file_info(self, dbs_file_id=""):
+    def get_chemistry_info(self, dbs_file_id=""):
         """
         Retrieves chemistry information from OLI Cloud.
 
@@ -328,55 +328,46 @@ class OLIApi:
 
     def call(
         self,
-        function_name,
-        dbs_file_id,
-        json_input=dict(),
+        method="",
+        dbs_file_id="",
+        input_params=dict(),
         poll_time=1.0,
         max_request=1000,
         tee=False,
     ):
-        """
-        Calls a function in the OLI Engine API.
-
-        :param function_name: name of function to call
-        :param dbs_file_id: string ID of DBS file
-        :param json_input: calculation input JSON
-        :param poll_time: max delay between each call
-        :param max_request: maximum requests
-        :param tee: boolean argument to hide or display print messages
-
-        :return: dictionary containing result or error
-        """
-
-        endpoint = ""
-        method = "POST"
-        if function_name == "corrosion-contact-surface":
-            endpoint = f"{self.credential_manager.engine_url}file/{dbs_file_id}/{function_name}"
-            method = "GET"
+        
+        if not bool(method):
+            raise IOError(" Specify a flash method to use from {self.valid_flashes.keys()}." + 
+                          " Run self.get_valid_flash_methods to see a list and required inputs.")
+            
+        if not bool(dbs_file_id):
+            raise IOError("Specify a DBS file id to flash.")
+        
+        if bool(input_params):
+            data = json.dumps(input_params)
         else:
-            endpoint = f"{self.credential_manager.engine_url}flash/{dbs_file_id}/{function_name}"
-            method = "POST"
+            raise IOError("Specify flash calculation input to use this function.")
+            
+        endpoint = f"{self.credential_manager.engine_url}flash/{dbs_file_id}/{method}"
+                        
+        req_method = "POST"        
+        # TODO: reimplement other calls (e.g., "corrosion-contact-surface", "corrosion-rates")
 
-        if bool(json_input):
-            data = json.dumps(json_input)
-        else:
-            # TODO: raise error
-            data = ""
-
+        # TODO: improve header management
         def add_additional_header(headers):
             headers["content-type"] = "application/json"
-            if method == "POST":
+            if req_method == "POST":
                 return requests.post(endpoint, headers=headers, data=data)
             output = requests.get(endpoint, headers=headers, data=data)
             return output
 
-        results_link = ""
         start_time = time.time()
         request_result1 = self.request_auto_login(add_additional_header)
         end_time = time.time()
         request_time = end_time - start_time
         if tee:
             print("First request time =", request_time)
+            
         if bool(request_result1):
             if request_result1["status"] == "SUCCESS":
                 if "data" in request_result1:
@@ -396,7 +387,7 @@ class OLIApi:
         # poll on results link until success
         data = ""
         endpoint = results_link
-        method = "GET"
+        req_method = "GET"
         request_iter = 0
 
         while True:
