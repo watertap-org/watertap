@@ -37,8 +37,7 @@ Online using Binder.org
 
 Click on this button to launch an environment pointing to the current ``main`` branch of the WaterTAP repository:
 
-.. image:: https://mybinder.org/badge_logo.svg
- :target: https://mybinder.org/v2/gh/watertap-org/watertap/main?labpath=tutorials%2F00-index.ipynb
+|Binder launch button|
 
 .. important::
 

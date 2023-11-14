@@ -97,6 +97,12 @@ html_logo = "_static/NAWI_logo.png"
 html_favicon = "_static/favicon.ico"
 
 
+rst_epilog = """
+.. |Binder launch button| image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/watertap-org/watertap/main?labpath=tutorials%2F00-index.ipynb
+"""
+
+
 def run_apidoc(*args):
     # NOTE the env var must be set before importing apidoc, or the options
     # will have no effect
