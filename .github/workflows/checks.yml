@@ -125,10 +125,13 @@ jobs:
       if: matrix.cov_report
       run:
         |
-        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-report=xml" >> $GITHUB_ENV
-    - name: Test with pytest
+        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-report=xml --cov-append" >> $GITHUB_ENV
+    - name: Test with pytest (not tools)
       run: |
-        pytest --pyargs watertap
+        pytest --pyargs watertap -m 'not tools'
+    - name: Test with pytest (tools)
+      run: |
+        pytest --pyargs watertap -m 'tools' --verbose --capture=no
     - name: Upload coverage report to Codecov
       if: matrix.cov_report
       uses: codecov/codecov-action@v2
