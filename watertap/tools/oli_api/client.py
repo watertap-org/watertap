@@ -267,8 +267,7 @@ class OLIApi:
         :param dbs_file_id: string ID of DBS file
         :param job_id: bool flag to return job ID for troubleshooting
 
-        :return flash_history: dictionary containing array of submitted jobs OR
-        just job ID if specified
+        :return flash_history: dictionary containing array of submitted jobs OR just job ID if specified
         """
 
         endpoint = f"{self.credential_manager.engine_url}/flash/history/{dbs_file_id}"
