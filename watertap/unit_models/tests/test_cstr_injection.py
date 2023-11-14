@@ -196,7 +196,7 @@ class TestSaponification(object):
         assert pytest.approx(20.32, abs=1e-2) == value(
             sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
         )
-        assert pytest.approx(0.16056, abs=1e-3) == value(
+        assert pytest.approx(0.76624, abs=1e-3) == value(
             sapon.fs.unit.electricity_consumption[0]
         )
 
@@ -277,8 +277,8 @@ class TestSaponification(object):
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(77.5429, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(0.00383185, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(7.75429, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(0.01497, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_get_performance_contents(self, sapon):

@@ -20,7 +20,7 @@ from ..util import (
 def build_cstr_injection_cost_param_block(blk):
     # NOTE: costing data are from NREL Waste-to-Energy Model
     blk.capital_a_parameter = pyo.Var(
-        initialize=1.1141e4,
+        initialize=1.1141e3,
         doc="A parameter for capital cost",
         units=pyo.units.USD_1997,
     )
