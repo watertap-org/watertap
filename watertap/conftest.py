@@ -12,7 +12,7 @@
 import contextlib
 import enum
 from pathlib import Path
-from typing import Container, Optional, Callable
+from typing import Container, Optional, Callable, List
 
 import pytest
 from _pytest.nodes import Item
@@ -29,6 +29,7 @@ class MarkerSpec(enum.Enum):
     requires_idaes_solver = (
         "Tests that require a solver from the IDEAS extensions to pass"
     )
+    tools = "Tests pertaining to WaterTAP tools"
 
     @property
     def description(self) -> str:
@@ -83,3 +84,9 @@ def pytest_addoption(parser: Parser):
         default=False,
         dest="edb_no_mock",
     )
+
+
+def pytest_collection_modifyitems(items: List[Item]):
+    for item in items:
+        if "watertap/tools" in str(item.path):
+            item.add_marker("tools")
