@@ -20,10 +20,22 @@ from watertap.tools.parallel.parallel_manager import (
 )
 import multiprocessing
 from queue import Empty as EmptyQueue
+from numbers import Number
+from typing import Optional
+
+
+TimeoutSpec = Optional[Number]
+
+_DEFAULT_TIMEOUT_SECONDS = 1
 
 
 class MultiprocessingParallelManager(ParallelManager):
-    def __init__(self, number_of_subprocesses=1, **kwargs):
+    def __init__(
+        self,
+        number_of_subprocesses=1,
+        timeout: TimeoutSpec = _DEFAULT_TIMEOUT_SECONDS,
+        **kwargs,
+    ):
         self.max_number_of_subprocesses = number_of_subprocesses
 
         # this will be updated when child processes are kicked off
@@ -32,6 +44,7 @@ class MultiprocessingParallelManager(ParallelManager):
         # Future -> (process number, parameters). Used to keep track of the process number and parameters for
         # all in-progress futures
         self.running_futures = dict()
+        self.timeout = timeout
 
     def is_root_process(self):
         return True
@@ -105,6 +118,9 @@ class MultiprocessingParallelManager(ParallelManager):
                         do_execute,
                         divided_parameters[0],
                     ),
+                    kwargs={
+                        "timeout": self.timeout,
+                    },
                 )
             )
             self.actors[-1].start()
@@ -114,7 +130,7 @@ class MultiprocessingParallelManager(ParallelManager):
         # collect result from the actors
         while len(results) < self.expected_samples:
             try:
-                i, values, result = self.return_queue.get(timeout=5)
+                i, values, result = self.return_queue.get(timeout=self.timeout)
                 results.append(LocalResults(i, values, result))
             except EmptyQueue:
                 break
@@ -123,10 +139,10 @@ class MultiprocessingParallelManager(ParallelManager):
         results.sort(key=lambda result: result.process_number)
         return results
 
-    def _shut_down(self, timeout=5):
+    def _shut_down(self):
         for worker in self.actors:
             print(f"Attempting to shut down {worker}")
-            worker.join(timeout=5)
+            worker.join(timeout=self.timeout)
         print(f"Shut down {len(self.actors)} workers")
 
     def results_from_local_tree(self, results):
@@ -141,11 +157,12 @@ def multiProcessingActor(
     do_build_kwargs,
     do_execute,
     local_parameters,
+    timeout: TimeoutSpec = _DEFAULT_TIMEOUT_SECONDS,
 ):
     actor = parallelActor(do_build, do_build_kwargs, do_execute, local_parameters)
     while True:
         try:
-            msg = queue.get(timeout=5)
+            msg = queue.get(timeout=timeout)
         except EmptyQueue:
             return
         i, local_parameters = msg
