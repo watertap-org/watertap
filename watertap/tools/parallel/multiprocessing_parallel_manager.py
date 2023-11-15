@@ -116,9 +116,16 @@ class MultiprocessingParallelManager(ParallelManager):
                 i, values, result = self.return_queue.get(timeout=30)
 
                 results.append(LocalResults(i, values, result))
+        self._shut_down()
         # sort the results by the process number to keep a deterministic ordering
         results.sort(key=lambda result: result.process_number)
         return results
+
+    def _shut_down(self, timeout=5):
+        for worker in self.actors:
+            print(f"Attempting to shut down {worker}")
+            worker.join(timeout=5)
+        print(f"Shut down {len(self.actors)} workers")
 
     def results_from_local_tree(self, results):
         return results
