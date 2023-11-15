@@ -103,5 +103,5 @@ jobs:
         echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-report=xml --cov-append" >> $GITHUB_ENV
     - name: Test with pytest (tools)
       run: |
-        pytest --pyargs watertap -m 'tools' --verbose --capture=no
+        timeout -s SIGINT 3m pytest --pyargs watertap -m 'tools' --verbose --capture=no --full-trace
       timeout-minutes: 5
