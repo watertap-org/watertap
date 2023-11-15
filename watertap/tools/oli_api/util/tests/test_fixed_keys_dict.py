@@ -15,8 +15,6 @@ import pytest
 
 from watertap.tools.oli_api.util.fixed_keys_dict import (
     default_oli_input_dict,
-    default_oli_optional_properties,
-    default_oli_unit_set_info,
 )
 
 

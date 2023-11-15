@@ -48,7 +48,6 @@ import yaml
 from copy import deepcopy
 from itertools import product
 from pandas import DataFrame, MultiIndex
-from pyomo.environ import value, units as pyunits
 
 from watertap.tools.oli_api.util.fixed_keys_dict import (
     default_oli_input_dict,
@@ -59,7 +58,6 @@ from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
     get_oli_name,
     get_charge,
     get_charge_group,
-    get_molar_mass,
 )
 
 
