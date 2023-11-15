@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import contextlib
+import datetime
 import enum
 from pathlib import Path
 from typing import Container, Optional, Callable, List
@@ -18,6 +19,15 @@ import pytest
 from _pytest.nodes import Item
 from _pytest.config import Config
 from _pytest.config.argparsing import Parser
+
+
+START = datetime.datetime.now()
+
+
+def _get_elapsed_seconds(end=None) -> float:
+    end = end or datetime.datetime.now()
+    delta = end - START
+    return delta.total_seconds()
 
 
 class MarkerSpec(enum.Enum):
@@ -98,6 +108,8 @@ def pytest_runtest_protocol(item):
 
     this_process = psutil.Process()
 
+    print(f"START {item}")
+    print(f"{_get_elapsed_seconds()=}")
     print("processes before:")
     for proc in this_process.children(recursive=True):
         print(f"\t{proc}")
@@ -105,3 +117,5 @@ def pytest_runtest_protocol(item):
     print(f"\nprocesses after:")
     for proc in this_process.children(recursive=True):
         print(f"\t{proc}")
+    print(f"{_get_elapsed_seconds()=}")
+    print(f"END {item}")
