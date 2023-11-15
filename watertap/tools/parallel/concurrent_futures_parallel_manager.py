@@ -102,7 +102,7 @@ class ConcurrentFuturesParallelManager(ParallelManager):
     def gather(self):
         results = []
         try:
-            execution_results = futures.wait(self.running_futures.keys())
+            execution_results = futures.wait(self.running_futures.keys(), timeout=30)
             for future in execution_results.done:
                 process_number, values = self.running_futures[future]
                 results.append(LocalResults(process_number, values, future.result()))
