@@ -113,7 +113,7 @@ class MultiprocessingParallelManager(ParallelManager):
         # collect result from the actors
         while len(results) < self.expected_samples:
             if self.return_queue.empty() == False:
-                i, values, result = self.return_queue.get()
+                i, values, result = self.return_queue.get(timeout=30)
 
                 results.append(LocalResults(i, values, result))
         # sort the results by the process number to keep a deterministic ordering
