@@ -123,3 +123,4 @@ jobs:
     - name: Test with pytest (tools)
       run: |
         pytest --pyargs watertap -m 'tools' --verbose --capture=no
+      timeout-minutes: 5
