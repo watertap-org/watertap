@@ -103,5 +103,5 @@ jobs:
         echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-report=xml --cov-append" >> $GITHUB_ENV
     - name: Test with pytest (tools)
       run: |
-        pytest --pyargs watertap -m 'tools' -k 'not (test_multiple_subprocesses_with_multiprocessing or test_parameter_sweep_optimize_with_added_var)' --verbose --capture=no
+        pytest --pyargs watertap -m 'tools' -k 'not (test_multiple_subprocesses_with_multiprocessing or keyword_without_match)' --verbose --capture=no
       timeout-minutes: 5
