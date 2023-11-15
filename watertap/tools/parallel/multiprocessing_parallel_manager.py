@@ -138,6 +138,6 @@ def multiProcessingActor(
         if queue.empty():
             break
         else:
-            i, local_parameters = queue.get()
+            i, local_parameters = queue.get(timeout=30)
             result = actor.execute(local_parameters)
             return_queue.put([i, local_parameters, result])
