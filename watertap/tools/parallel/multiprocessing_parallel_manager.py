@@ -22,7 +22,10 @@ import multiprocessing
 from queue import Empty as EmptyQueue
 from numbers import Number
 from typing import Optional
+import logging
 
+
+_logger = logging.getLogger(__name__)
 
 TimeoutSpec = Optional[Number]
 
@@ -140,10 +143,12 @@ class MultiprocessingParallelManager(ParallelManager):
         return results
 
     def _shut_down(self):
-        for worker in self.actors:
-            print(f"Attempting to shut down {worker}")
-            worker.join(timeout=self.timeout)
-        print(f"Shut down {len(self.actors)} workers")
+        n_shut_down = 0
+        for process in self.actors:
+            _logger.debug("Attempting to shut down %s", process)
+            process.join(timeout=self.timeout)
+            n_shut_down += 1
+        _logger.debug("Shut down %d processes", n_shut_down)
 
     def results_from_local_tree(self, results):
         return results
