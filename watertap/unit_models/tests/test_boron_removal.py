@@ -913,7 +913,14 @@ class TestBoronRemoval_BadConfigs:
         # create dict to define ions (the prop pack requires this)
         ion_dict = {
             "solute_list": ["B[OH]3", "B[OH]4_-", "H_+", "OH_-", "Na_+"],
-            "mw_data": {"H2O": 18e-3, "B[OH]3": 61.83e-3, "B[OH]4_-": 78.83e-3},
+            "mw_data": {
+                "H2O": 18e-3,
+                "B[OH]3": 61.83e-3,
+                "B[OH]4_-": 78.83e-3,
+                "H_+": 1e-3,
+                "OH_-": 17e-3,
+                "Na_+": 23e-3,
+            },
             "charge": {
                 "B[OH]4_-": -1,
             },
