@@ -160,7 +160,8 @@ def build_flowsheet():
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
     m.fs.FeedWater.conc_mass_comp[0, "S_O2"].fix(0.0079024)
     m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(0.00030596)
-    m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(4.1385e-05)
+    # m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(4.1385e-05)
+    m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(3e-2)
     m.fs.FeedWater.conc_mass_comp[0, "S_NH4"].fix(0.0070896)
     m.fs.FeedWater.conc_mass_comp[0, "S_NO3"].fix(1.1750e-07)
     m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(0.0027761)
@@ -186,13 +187,13 @@ def build_flowsheet():
             if "flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
             if "translator_asm2d_adm1.properties_in[0.0].flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e4)
+                iscale.set_scaling_factor(var, 1e5)
             if "translator_asm2d_adm1.properties_out[0.0].flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e4)
+                iscale.set_scaling_factor(var, 1e5)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-3)
+                iscale.set_scaling_factor(var, 1e-4)
             # if "conc_mass_comp" in var.name:
             #     iscale.set_scaling_factor(var, 1e2)
             # if "conc_mass_comp[S_A]" in var.name:
@@ -275,26 +276,26 @@ def build_flowsheet():
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
+        unit.initialize(outlvl=idaeslog.DEBUG, optarg={"bound_push": 1e-2})
         # badly_scaled_vars = list(iscale.badly_scaled_var_generator(unit))
         # if len(badly_scaled_vars) > 0:
         #     automate_rescale_variables(unit)
 
-    # # Model debug
-    # solver = get_solver()
-    # m, results = model_debug(m, solver)
+    # Model debug
+    solver = get_solver()
+    m, results = model_debug(m, solver)
 
-    # Diagnostics Toolbox
-    results = DiagnosticsToolbox(m)
-    results.report_structural_issues()
-    results.report_numerical_issues()
-    results.display_constraints_with_large_residuals()
-    results.display_variables_at_or_outside_bounds()
-    results.display_constraints_with_extreme_jacobians()
-    results.display_extreme_jacobian_entries()
-    results.display_variables_near_bounds()
+    # # Diagnostics Toolbox
+    # results = DiagnosticsToolbox(m)
+    # results.report_structural_issues()
+    # results.report_numerical_issues()
+    # results.display_constraints_with_large_residuals()
+    # results.display_variables_at_or_outside_bounds()
+    # results.display_constraints_with_extreme_jacobians()
+    # results.display_extreme_jacobian_entries()
+    # results.display_variables_near_bounds()
 
-    # seq.run(m, function)
+    seq.run(m, function)
 
     # solver = get_solver()
     # results = solver.solve(m, tee=True)
@@ -314,7 +315,7 @@ def model_debug(model, solver):
     # solver.options["max_iter"] = 0
     # results = solver.solve(model, tee=False)
     # dh.check_residuals(tol=1e-8)
-    # # dh.check_variable_bounds(tol=1e-8)
+    # dh.check_variable_bounds(tol=1e-8)
 
     # solved model
     solver.options["max_iter"] = 10000
@@ -389,4 +390,4 @@ if __name__ == "__main__":
         },
         time_point=0,
     )
-    # print(stream_table_dataframe_to_string(stream_table))
+    print(stream_table_dataframe_to_string(stream_table))
