@@ -383,7 +383,7 @@ def build_flowsheet():
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-3)
+                iscale.set_scaling_factor(var, 1e-4)
             if "conc_mass_comp" in var.name:
                 iscale.set_scaling_factor(var, 1e2)
 
