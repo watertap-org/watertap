@@ -88,9 +88,6 @@ jobs:
         echo '::group::Output of "pip install" commands'
         pip install -r requirements-dev.txt
         echo '::endgroup::'
-        echo '::group::Output of "pip install -U ray" command'
-        pip install -U ray
-        echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
         pip list
