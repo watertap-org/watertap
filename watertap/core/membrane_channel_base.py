@@ -61,6 +61,16 @@ class MassTransferCoefficient(Enum):
     # TODO: add option for users to define their own relationship?
 
 
+class TransportModel(Enum):
+    """
+    SD: Solvent and solute mass flux is calculated using the Solution-Diffusion model
+    SKK: Solvent and solute mass flux is calculated using the Spiegler-Kedem-Katchalsky model
+    """
+
+    SD = auto()
+    SKK = auto()
+
+
 class PressureChangeType(Enum):
     """
     fixed_per_stage: pressure drop across membrane channel is a user-specified value
@@ -230,6 +240,24 @@ CONFIG_Template.declare(
         "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
         "``MassTransferCoefficient.calculated``", "Allow model to perform calculation of mass transfer coefficient"
     """,
+    ),
+)
+
+CONFIG_Template.declare(
+    "transport_model",
+    ConfigValue(
+        default=TransportModel.SD,
+        domain=In(TransportModel),
+        description="Mass transfer model in RO feed channel",
+        doc="""
+        Options to account for mass transfer model.
+
+        **default** - ``TransportModel.SD``
+
+        "``TransportModel.SD``", "Solution-diffusion model for describing water and salt transport for most membrane types"
+        "``TransportModel.SKK``", "Speigler-Kedem-Katchalsky model for describing water and salt transport"
+
+        """,
     ),
 )
 
