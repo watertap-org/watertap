@@ -10,19 +10,19 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-import numpy
+import logging
+import multiprocessing
+from numbers import Number
+from queue import Empty as EmptyQueue
+from typing import Optional
 
+import numpy
 
 from watertap.tools.parallel.results import LocalResults
 from watertap.tools.parallel.parallel_manager import (
     parallelActor,
     ParallelManager,
 )
-import multiprocessing
-from queue import Empty as EmptyQueue
-from numbers import Number
-from typing import Optional
-import logging
 
 
 _logger = logging.getLogger(__name__)
