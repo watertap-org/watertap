@@ -20,6 +20,8 @@ from watertap.tools.oli_api.credentials import CredentialManager, cryptography_a
 
 @pytest.fixture
 def credential_manager():
+    if not cryptography_available:
+        pytest.skip(reason="cryptography module not available")
     credentials = {
         "username": "dummy_username@email.com",
         "password": "dummy_password",
@@ -30,9 +32,6 @@ def credential_manager():
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(
-    not cryptography_available, reason="cryptography module not available"
-)
 def test_encryption(credential_manager):
     key = credential_manager.encryption_key
     assert (
@@ -44,9 +43,6 @@ def test_encryption(credential_manager):
 
 # TODO: get access token from OLI to improve test coverage
 @pytest.mark.unit
-@pytest.mark.skipif(
-    not cryptography_available, reason="cryptography module not available"
-)
 def test_login(credential_manager):
     # assert credential_manager.login()
     # assert credential_manager.get_refresh_token()
