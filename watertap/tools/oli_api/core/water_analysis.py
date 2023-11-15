@@ -410,21 +410,3 @@ class WaterAnalysis:
                     }
                 )
             """
-            
-    def write_results_to_yaml(self, results_dict, filename=None):
-        """
-        Writes OLI Api results to .yaml file.
-
-        :param results_dict: dictionary output from OLI API call
-        :param filename: string name of file to write
-
-        :return file_path: string name of file written
-        """
-
-        if filename is None:
-            filename = "oli_results"
-        with open(f"{filename}.yaml", "w") as yamlfile:
-            yaml.dump(results_dict, yamlfile)
-        file_path = f"{filename}.yaml"
-        print(f"Write to yaml successful, check working directory for {file_path}.")
-        return file_path

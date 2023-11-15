@@ -50,6 +50,7 @@ import yaml
 from copy import deepcopy
 from itertools import product
 from pandas import DataFrame, MultiIndex
+from random import sample
 
 from numpy import linspace
 
@@ -76,15 +77,18 @@ from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
     get_molar_mass,
 )
 
-from watertap.tools.oli_api.util.survey import (
-    build_survey)
+from watertap.tools.oli_api.core.flash import (
+    Flash)
+from watertap.tools.oli_api.core.survey import (
+    build_survey,
+    modify_inputs)
+from watertap.tools.oli_api.core.flash_data_extraction import (
+    extract_scaling_tendencies)
 
 # potential contents:
 # flash cases
 # helper functions
 # extraction functions
-
-# TODO: generate a base case using water analysis (maybe chemistry-info also works?)
 
 source_water = {
     "temperature": 298.15,
@@ -106,7 +110,7 @@ source_water = {
 }
 
 f = Flash()
-f.build_water_analysis_input(source_water)
+f.build_water_analysis_input_list(source_water)
 
 f.water_analysis_properties["AllowSolidsToForm"] = True
 props = {
@@ -118,33 +122,72 @@ props = {
     "materialBalanceGroup": False,
 }
 f.optional_properties.update(props)
+# specify scalants of interest
+get_scalants = ["CACO3", "CASO4.2H2O"]
+# specify phase-dependent parameters 
+get_phase="liquid1"
+get_properties=["osmoticPressure", "ph"]
 
-water_analysis_inputs = {"params": {
-    "waterAnalysisInputs": f.water_analysis_input},
-    "optionalProperties": dict(f.optional_properties),
-    "unitSetInfo": dict(f.unit_set_info)}
+# define survey parameters
+survey_vars = {"SO4_2-": linspace(0, 1e2, 3),
+               "Cl_-": linspace(0, 1e3, 3),
+               "Na_+": linspace(0, 1e3, 3),
+               "Ca_2+": linspace(0, 1e2, 3),
+               "Temperature": linspace(273, 373, 6)}
+water_analysis_survey = build_survey(survey_vars, get_oli_names=True)
 
-credential_manager = CredentialManager(encryption_key=encryption_key)
-
+# log in to OLI Cloud
+credentials = {}
+credential_manager = CredentialManager(**credentials)
 with OLIApi(credential_manager) as oliapi:
+    
     dbs_file_id = oliapi.get_dbs_file_id(chemistry_source=source_water["components"],
                                          phases=["liquid1", "solid"],
                                          model_name="remote_file_from_dict")                        
-        
-    water_analysis_base_case = oliapi.call("wateranalysis", dbs_file_id, water_analysis_inputs)
     
-# after generating a base case, we can modify it and then do a composition survey of water analyses
-survey_conditions = {"SO4_2-": linspace(0, 1e3, 3),
-                     "Cl_-": linspace(0, 1e4, 4),
-                     "Na_+": linspace(0, 1e4, 4),
-                     "Mg_2+": linspace(0, 1e3, 3),
-                     "temperature": linspace(0, 1e2, 10)}
-water_analysis_survey = build_survey(survey_conditions)
+    # generate a base case using water analysis
+    f.build_water_calculation_input(f.water_analysis_input_list)
+    water_analysis_base_case = oliapi.call("wateranalysis", dbs_file_id, f.water_analysis_inputs)
+    water_analysis_output = {"base": water_analysis_base_case}
+    
+    water_base_case_scaling_tendencies = extract_scaling_tendencies(raw_result=water_analysis_output, scalants=get_scalants)
+    water_base_case_extract_properties = extract_basic_properties(raw_result=water_analysis_output, phase=get_phase, properties=get_properties)
+    print(water_base_case_scaling_tendencies)
+    print(water_base_case_extract_properties)
+    f.write_output_to_yaml(water_analysis_output, "water_analysis_base_case")
+    '''
+    # do a water analysis composition survey
+    water_analysis_clones = modify_inputs(initial_flash_input=f.water_analysis_inputs, survey=water_analysis_survey, flash_method="wateranalysis")
+    
+    sample_indices = sample(list(water_analysis_clones), 10)
+    water_composition_survey = {i: oliapi.call("wateranalysis", dbs_file_id, water_analysis_clones[i]) for i in sample_indices}
+    
+    water_survey_scaling_tendencies = extract_scaling_tendencies(raw_result=water_composition_survey, scalants=get_scalants)
+    water_survey_extract_properties = extract_basic_properties(raw_result=water_composition_survey, phase=get_phase, properties=get_properties)
+    print(water_survey_scaling_tendencies)
+    print(water_survey_extract_properties)
+    f.write_output_to_yaml(water_composition_survey, "water_analysis_composition_survey")
+    '''
+    # compute an isothermal flash from water analysis base case
+    f.build_flash_calculation_input(method="isothermal", state_vars=source_water, water_analysis_output=water_analysis_output["base"])
+    isothermal_base_case = oliapi.call("isothermal", dbs_file_id, f.flash_analysis_inputs)
+    isothermal_analysis_output = {"base": isothermal_base_case}
+    
+    base_case_st_isothermal = extract_scaling_tendencies(raw_result=isothermal_analysis_output, scalants=get_scalants)
+    base_case_prop_isothermal = extract_basic_properties(raw_result=isothermal_analysis_output, phase=get_phase, properties=get_properties)
+    print(base_case_st_isothermal)
+    print(base_case_prop_isothermal)
+    f.write_output_to_yaml(isothermal_analysis_output, "isothermal_analysis_base_case")
 
-print(water_analysis_survey)
-
-# we can do further flash analyses using the water analysis base case 
-
-#f.extract_inflows(water_analysis_base_case)
-
-# we can do a survey of flash analyses
+    # do an isothermal flash composition survey    
+    isothermal_analysis_clones = modify_inputs(initial_flash_input=f.flash_analysis_inputs, survey=water_analysis_survey, flash_method="isothermal")
+    
+    isothermal_composition_survey = {i: oliapi.call("isothermal", dbs_file_id, isothermal_analysis_clones[i]) for i in sample_indices}
+    
+    isothermal_survey_scaling_tendencies = extract_scaling_tendencies(raw_result=isothermal_composition_survey, scalants=get_scalants)
+    isothermal_survey_extract_properties = extract_basic_properties(raw_result=isothermal_composition_survey, phase=get_phase, properties=get_properties)
+    print(isothermal_survey_scaling_tendencies)
+    print(isothermal_survey_extract_properties)
+    f.write_output_to_yaml(isothermal_composition_survey, "isothermal_analysis_composition_survey")
+    
+    print(water_analysis_output["base"]["result"]["total"]["trueConcentration"])
