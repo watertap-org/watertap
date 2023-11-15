@@ -1,16 +1,10 @@
 from idaes.core.solvers import get_solver
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
-    build,
-    set_operating_conditions,
-    initialize_system,
     optimize,
 )
 from watertap.examples.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD import (
-    get_sweep_params,
     build_model,
-    # build_sweep_params,
     build_outputs,
-    run_parameter_sweep,
 )
 from watertap.tools.parameter_sweep import (
     LinearSample,
@@ -58,45 +52,49 @@ def build_sweep_params(m, num_samples=1, scenario="A_comp_vs_LCOW"):
 
 def run_parameter_sweep(num_samples=100, num_procs=1):
 
-    # solver = get_solver()
-    ps = create_parameter_sweep_object(num_samples, num_procs)
-    results_dict, results_array = ps.parameter_sweep(
-        build_model,
-        build_sweep_params,
-        build_outputs=None,
-        build_outputs_kwargs=None,
+    ps1, kwargs_dict1 = create_parameter_sweep_object(
+        num_samples, num_procs, parallel_backend="ConcurrentFutures"
+    )
+
+    results_array1, results_dict1 = ps1.parameter_sweep(
+        kwargs_dict1["build_model"],
+        kwargs_dict1["build_sweep_params"],
+        build_outputs=kwargs_dict1["build_outputs"],
+        build_outputs_kwargs=kwargs_dict1["build_outputs_kwargs"],
         num_samples=num_samples,
         seed=None,
-        build_model_kwargs=None,
-        build_sweep_params_kwargs=None,
+        build_model_kwargs=kwargs_dict1["build_model_kwargs"],
+        build_sweep_params_kwargs=kwargs_dict1["build_sweep_params_kwargs"],
     )
 
 
 def run_recursive_parameter_sweep(num_samples=100, num_procs=1):
-    ps = create_recursive_parameter_sweep_object(num_samples, num_procs)
-    results_dict, results_array = ps.parameter_sweep(
-        kwargs_dict["build_model"],
-        kwargs_dict["build_sweep_params"],
-        build_outputs=kwargs_dict["build_outputs"],
-        build_outputs_kwargs=kwargs_dict["build_outputs_kwargs"],
+    ps2, kwargs_dict2 = create_recursive_parameter_sweep_object(num_samples, num_procs)
+    results_array2, results_dict2 = ps2.parameter_sweep(
+        kwargs_dict2["build_model"],
+        kwargs_dict2["build_sweep_params"],
+        build_outputs=kwargs_dict2["build_outputs"],
+        build_outputs_kwargs=kwargs_dict2["build_outputs_kwargs"],
         num_samples=num_samples,
         seed=None,
-        build_model_kwargs=kwargs_dict["build_model_kwargs"],
-        build_sweep_params_kwargs=kwargs_dict["build_sweep_params_kwargs"],
+        build_model_kwargs=kwargs_dict2["build_model_kwargs"],
+        build_sweep_params_kwargs=kwargs_dict2["build_sweep_params_kwargs"],
     )
 
 
 def run_differential_parameter_sweep(num_samples=10, num_procs=1):
-    ps = create_differential_parameter_sweep_object(num_samples, num_procs)
-    results_dict, results_array = ps.parameter_sweep(
-        kwargs_dict["build_model"],
-        kwargs_dict["build_sweep_params"],
-        build_outputs=kwargs_dict["build_outputs"],
-        build_outputs_kwargs=kwargs_dict["build_outputs_kwargs"],
+    model, ps3, kwargs_dict3 = create_differential_parameter_sweep_object(
+        num_samples, num_procs
+    )
+    results_array3, results_dict3 = ps3.parameter_sweep(
+        kwargs_dict3["build_model"],
+        kwargs_dict3["build_sweep_params"],
+        build_outputs=kwargs_dict3["build_outputs"],
+        build_outputs_kwargs=kwargs_dict3["build_outputs_kwargs"],
         num_samples=num_samples,
         seed=None,
-        build_model_kwargs=kwargs_dict["build_model_kwargs"],
-        build_sweep_params_kwargs=kwargs_dict["build_sweep_params_kwargs"],
+        build_model_kwargs=kwargs_dict3["build_model_kwargs"],
+        build_sweep_params_kwargs=kwargs_dict3["build_sweep_params_kwargs"],
     )
 
 
