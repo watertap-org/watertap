@@ -14,7 +14,8 @@ import pytest
 from os import remove
 
 from watertap.tools.oli_api.credentials import CredentialManager, cryptography_available
-from watertap.tools.oli_api.client import OLIApi
+
+# from watertap.tools.oli_api.client import OLIApi
 
 
 @pytest.fixture
