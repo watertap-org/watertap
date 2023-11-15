@@ -19,6 +19,7 @@ from watertap.tools.parallel.parallel_manager import (
     ParallelManager,
 )
 import multiprocessing
+from queue import Empty as EmptyQueue
 
 
 class MultiprocessingParallelManager(ParallelManager):
@@ -112,10 +113,11 @@ class MultiprocessingParallelManager(ParallelManager):
         results = []
         # collect result from the actors
         while len(results) < self.expected_samples:
-            if self.return_queue.empty() == False:
-                i, values, result = self.return_queue.get(timeout=30)
-
+            try:
+                i, values, result = self.return_queue.get(timeout=5)
                 results.append(LocalResults(i, values, result))
+            except EmptyQueue:
+                break
         self._shut_down()
         # sort the results by the process number to keep a deterministic ordering
         results.sort(key=lambda result: result.process_number)
@@ -142,9 +144,10 @@ def multiProcessingActor(
 ):
     actor = parallelActor(do_build, do_build_kwargs, do_execute, local_parameters)
     while True:
-        if queue.empty():
-            break
-        else:
-            i, local_parameters = queue.get(timeout=30)
-            result = actor.execute(local_parameters)
-            return_queue.put([i, local_parameters, result])
+        try:
+            msg = queue.get(timeout=5)
+        except EmptyQueue:
+            return
+        i, local_parameters = msg
+        result = actor.execute(local_parameters)
+        return_queue.put([i, local_parameters, result])
