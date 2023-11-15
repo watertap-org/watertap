@@ -90,3 +90,18 @@ def pytest_collection_modifyitems(items: List[Item]):
     for item in items:
         if "watertap/tools" in str(item.path):
             item.add_marker("tools")
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_protocol(item):
+    import psutil
+
+    this_process = psutil.Process()
+
+    print("processes before:")
+    for proc in this_process.children(recursive=True):
+        print(f"\t{proc}")
+    yield
+    print(f"\nprocesses after:")
+    for proc in this_process.children(recursive=True):
+        print(f"\t{proc}")
