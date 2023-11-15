@@ -15,9 +15,7 @@ import pytest
 from pyomo.environ import units as pyunits
 from watertap.tools.oli_api.util.state_block_helper_functions import (
     create_state_block,
-    convert_to_state_block_units,
     extract_state_vars,
-    create_property_model_input,
 )
 
 

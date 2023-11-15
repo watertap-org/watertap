@@ -21,7 +21,7 @@ from pyomo.environ import units as pyunits
 
 from numpy import linspace
 
-from watertap.tools.oli_api.credentials import CredentialManager
+from watertap.tools.oli_api.credentials import CredentialManager, cryptography_available
 from watertap.tools.oli_api.client import OLIApi
 
 from watertap.tools.oli_api.core.water_analysis import WaterAnalysis
@@ -64,6 +64,9 @@ def chemistry_source():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not cryptography_available, reason="cryptography module not available"
+)
 def test_get_dbs_file_id(credential_manager, chemistry_source):
     file_path = Path(__file__).parents[0]
     local_dbs_file = join(file_path, "test.dbs")
@@ -79,6 +82,9 @@ def test_get_dbs_file_id(credential_manager, chemistry_source):
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not cryptography_available, reason="cryptography module not available"
+)
 def test_call(credential_manager, chemistry_source):
     file_path = Path(__file__).parents[0]
     local_dbs_file = join(file_path, "test.dbs")
@@ -97,6 +103,9 @@ def test_call(credential_manager, chemistry_source):
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not cryptography_available, reason="cryptography module not available"
+)
 def test_get_user_summary(credential_manager):
     with OLIApi(credential_manager) as oliapi:
         with pytest.raises(AttributeError):
@@ -104,6 +113,9 @@ def test_get_user_summary(credential_manager):
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not cryptography_available, reason="cryptography module not available"
+)
 def test_delete_dbs_files(credential_manager):
     with OLIApi(credential_manager, test=True) as oliapi:
         with pytest.raises(AttributeError):

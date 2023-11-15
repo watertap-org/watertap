@@ -14,7 +14,6 @@
 import pytest
 
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
-    OLIName,
     watertap_to_oli,
     get_oli_names,
     oli_reverse_lookup,

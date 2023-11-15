@@ -13,7 +13,7 @@
 import pytest
 from os import remove
 
-from watertap.tools.oli_api.credentials import CredentialManager
+from watertap.tools.oli_api.credentials import CredentialManager, cryptography_available
 from watertap.tools.oli_api.client import OLIApi
 
 
@@ -29,6 +29,9 @@ def credential_manager():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not cryptography_available, reason="cryptography module not available"
+)
 def test_encryption(credential_manager):
     key = credential_manager.encryption_key
     assert (
@@ -40,9 +43,12 @@ def test_encryption(credential_manager):
 
 # TODO: get access token from OLI to improve test coverage
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not cryptography_available, reason="cryptography module not available"
+)
 def test_login(credential_manager):
-    # assert credential_manager.login() == True
-    # assert credential_manager.get_refresh_token() == True
+    # assert credential_manager.login()
+    # assert credential_manager.get_refresh_token()
     # with OLIApi(credential_manager) as oliapi:
     #    req_result = oliapi.get_user_dbs_files()
     test_result = {
