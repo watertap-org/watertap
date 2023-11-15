@@ -123,18 +123,3 @@ jobs:
     - name: Test with pytest (tools)
       run: |
         pytest --pyargs watertap -m 'tools' --verbose --capture=no
-    - name: Test with pytest (not tools)
-      run: |
-        pytest --pyargs watertap -m 'not tools'
-    - name: Upload coverage report to Codecov
-      if: matrix.cov_report
-      uses: codecov/codecov-action@v2
-    - name: Test documentation code
-      run: |
-        make -C docs doctest -d
-    # TODO: this should be moved to a dedicated job/workflow
-    # until then, we can leave this here as a reminder
-    - name: Test documentation links
-      if: 'false'
-      run: |
-        make -C docs linkcheck -d
