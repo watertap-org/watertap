@@ -60,6 +60,14 @@ from watertap.property_models.activated_sludge.modified_asm2d_properties import 
     ModifiedASM2dParameterBlock,
 )
 from pyomo.util.check_units import assert_units_consistent
+from watertap.costing import WaterTAPCosting
+from watertap.costing.unit_models.dewatering import (
+    cost_dewatering,
+    cost_centrifuge,
+    cost_filter_belt_press,
+    cost_filter_plate_press,
+    DewateringType
+)
 
 __author__ = "Alejandro Garciadiego, Adam Atia"
 
@@ -432,7 +440,7 @@ class TestDUModifiedASM2d(object):
 
         m.fs.unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing,
-            costing_method=cost_dewatering,
+            # costing_method=cost_dewatering,
         )
         m.fs.costing.cost_process()
         results = solver.solve(m)

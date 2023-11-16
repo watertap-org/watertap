@@ -15,6 +15,7 @@ from ..util import (
     register_costing_parameter_block,
     make_capital_cost_var,
 )
+from idaes.core.util.misc import StrEnum
 
 class DewateringType(StrEnum):
     filter_belt_press = "filter_belt_press"
@@ -22,7 +23,7 @@ class DewateringType(StrEnum):
     centrifuge = "centrifuge"
 
 
-def cost_dewatering(blk, dewatering_type=DewateringType.centrifuge, cost_electricity_flow=True)
+def cost_dewatering(blk, dewatering_type=DewateringType.centrifuge, cost_electricity_flow=True):
     make_capital_cost_var(blk)
     t0 = blk.flowsheet().time.first()
     if cost_electricity_flow:
@@ -35,7 +36,7 @@ def cost_dewatering(blk, dewatering_type=DewateringType.centrifuge, cost_electri
         )
 
     x = flow_in = pyo.units.convert(
-        blk.unit_model.inlet.flow_vol[t0], to_units=pyo.units.gallon / pyo.units.hr
+        blk.unit_model.inlet.flow_vol[t0], to_units=pyo.units.gallon / pyo.units.hr)
     
     if dewatering_type==DewateringType.centrifuge:
         cost_centrifuge(blk, dewatering_type, cost_electricity_flow)
