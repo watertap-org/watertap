@@ -741,14 +741,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 doc="Sum of trapezoid areas",
             )
 
-            self.c_breakthru = Var(
-                self.target_ion_set,
-                initialize=0.5,
-                bounds=(0, None),
-                units=pyunits.kg / pyunits.m**3,
-                doc="Breakthrough concentration of target ion",
-            )
-
             self.freundlich_n = Var(
                 initialize=1.5,
                 bounds=(0, None),
@@ -1379,9 +1371,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             if iscale.get_scaling_factor(self.freundlich_n) is None:
                 iscale.set_scaling_factor(self.freundlich_n, 0.1)
 
-            if iscale.get_scaling_factor(self.c_breakthru) is None:
-                iscale.set_scaling_factor(self.c_breakthru, 1e4)
-
             if iscale.get_scaling_factor(self.mass_transfer_coeff) is None:
                 iscale.set_scaling_factor(self.mass_transfer_coeff, 10)
 
@@ -1482,9 +1471,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 f"Fluid Mass Transfer Coeff. [{target_ion}]"
             ] = self.fluid_mass_transfer_coeff[target_ion]
         elif self.config.isotherm == IsothermType.freundlich:
-            var_dict[f"Breakthrough Conc. [{target_ion}]"] = self.c_breakthru[
-                target_ion
-            ]
             var_dict[f"BV at Breakthrough"] = self.bv
             var_dict[f"BV at 50% Breakthrough"] = self.bv_50
             var_dict[f"Freundlich n"] = self.freundlich_n
