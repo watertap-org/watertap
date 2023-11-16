@@ -232,13 +232,13 @@ Here we setup a simple run on RO erd flowsheet, requesting loopTool to run PS to
             - pressure_exchanger
             - pump_as_turbine
          sweep_param_loop
-            membrane_cost:  # Runs over differnt membrnae costs, generating 3 steps
+            membrane_cost:  # Runs over different membrane costs, generating 3 steps
                type: LinearSample
                param: fs.costing.reverse_osmosis.membrane_cost
                lower_limit: 10
                upper_limit: 30
                num_samples: 3
-            factor_membrane_replacement:  # Runs over membrane_replacment costs, generating 3 steps
+            factor_membrane_replacement:  # Runs over membrane_replacement costs, generating 3 steps
                type: LinearSample
                param: fs.costing.reverse_osmosis.factor_membrane_replacement
                lower_limit: 0.1
