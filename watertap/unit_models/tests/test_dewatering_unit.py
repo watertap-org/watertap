@@ -18,6 +18,7 @@ from pyomo.environ import (
     ConcreteModel,
     value,
     assert_optimal_termination,
+    units as pyunits,
 )
 
 from idaes.core import (
@@ -68,6 +69,9 @@ from watertap.costing.unit_models.dewatering import (
     cost_filter_plate_press,
     DewateringType
 )
+from idaes.core import UnitModelCostingBlock
+from watertap.costing import WaterTAPCosting
+
 
 __author__ = "Alejandro Garciadiego, Adam Atia"
 
@@ -183,9 +187,9 @@ class TestDu(object):
         assert hasattr(du.fs.unit.overflow, "pressure")
         assert hasattr(du.fs.unit.overflow, "alkalinity")
 
-        assert number_variables(du) == 76
+        assert number_variables(du) == 77
         assert number_total_constraints(du) == 60
-        assert number_unused_variables(du) == 0
+        assert number_unused_variables(du) == 1
 
     @pytest.mark.unit
     def test_dof(self, du):
@@ -289,6 +293,101 @@ class TestDu(object):
     def test_report(self, du):
         du.fs.unit.report()
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_du_default_costing(self, du):
+        m = du
+
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+        )
+
+        m.fs.costing.cost_process()
+
+        m.fs.unit.electricity_consumption.fix(0)
+
+        assert degrees_of_freedom(du) == 0
+
+        results = solver.solve(m)
+
+        assert_optimal_termination(results)
+
+        assert hasattr(m.fs.costing, 'centrifuge')
+        assert value(m.fs.costing.centrifuge.capital_a_parameter) == 328.03
+        assert value(m.fs.costing.centrifuge.capital_b_parameter) == 751295
+
+        # Check solutions
+        assert pytest.approx(1964.42, rel=1e-5) == value(pyunits.convert(m.fs.unit.inlet.flow_vol[0], to_units=pyunits.gal/pyunits.hr))
+        assert pytest.approx(1602087.9, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(1602087.9, rel=1e-5) == value(pyunits.convert((328.03*1964.42 +751295)*pyunits.USD_2007, to_units=m.fs.costing.base_currency))
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_du_centrifuge_costing(self, du):
+        m = du
+
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_centrifuge,
+        )
+
+        m.fs.costing.cost_process()
+
+        m.fs.unit.electricity_consumption.fix(0)
+
+        assert degrees_of_freedom(du) == 0
+
+        results = solver.solve(m)
+
+        assert_optimal_termination(results)
+
+        assert hasattr(m.fs.costing, 'centrifuge')
+        assert value(m.fs.costing.centrifuge.capital_a_parameter) == 328.03
+        assert value(m.fs.costing.centrifuge.capital_b_parameter) == 751295
+
+        # Check solutions
+        assert pytest.approx(1964.42, rel=1e-5) == value(pyunits.convert(m.fs.unit.inlet.flow_vol[0], to_units=pyunits.gal/pyunits.hr))
+        assert pytest.approx(1602087.9, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(1602087.9, rel=1e-5) == value(pyunits.convert((328.03*1964.42 +751295)*pyunits.USD_2007, to_units=m.fs.costing.base_currency))
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_du_centrifuge_costing2(self, du):
+        m = du
+
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_dewatering,
+            costing_method_arguments= {'dewatering_type': DewateringType.centrifuge, 'cost_electricity_flow': False}
+        )
+
+        m.fs.costing.cost_process()
+
+        assert degrees_of_freedom(du) == 0
+
+        results = solver.solve(m)
+
+        assert_optimal_termination(results)
+
+        assert hasattr(m.fs.costing, 'centrifuge')
+        assert value(m.fs.costing.centrifuge.capital_a_parameter) == 328.03
+        assert value(m.fs.costing.centrifuge.capital_b_parameter) == 751295
+        assert "electricity" not in m.fs.costing.aggregate_flow_costs.keys()
+        
+
+        # Check solutions
+        assert pytest.approx(1964.42, rel=1e-5) == value(pyunits.convert(m.fs.unit.inlet.flow_vol[0], to_units=pyunits.gal/pyunits.hr))
+        assert pytest.approx(1602087.9, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(1602087.9, rel=1e-5) == value(pyunits.convert((328.03*1964.42 +751295)*pyunits.USD_2007, to_units=m.fs.costing.base_currency))
 
 class TestDUASM2d(object):
     @pytest.fixture(scope="class")
@@ -430,22 +529,3 @@ class TestDUModifiedASM2d(object):
         results = solver.solve(du_mod_asm2d)
         assert_optimal_termination(results)
 
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_du_costing(self, du):
-        m = du
-
-        m.fs.costing = WaterTAPCosting()
-
-        m.fs.unit.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-            # costing_method=cost_dewatering,
-        )
-        m.fs.costing.cost_process()
-        results = solver.solve(m)
-
-        assert_optimal_termination(results)
-
-        # Check solutions
-        assert pytest.approx(1390570, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
