@@ -8,8 +8,8 @@ default:
     HRT: # Hydraulic retention time
       value: 0.5
       units: hr
-    sizing_cost:
-      value: 1
+    sizing_cost: #TODO: figure out what to do with this since this seems like an unhelpful default value 
+      value: 1 
       units: USD_2020/m^3
   recovery_frac_mass_H2O:
     value: 1

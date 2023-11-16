@@ -21,8 +21,7 @@ class DewateringType(StrEnum):
     filter_plate_press = "filter_plate_press"
     centrifuge = "centrifuge"
 
-def build_dewatering_cost_param_block(blk):
-
+def build_filter_belt_press_cost_param_block(blk):
     # NOTE: costing data are from McGiveney & Kawamura, 2008
     # blk.belt_press_capital_a_parameter = pyo.Var(
     # initialize=19.3552312e6,
@@ -63,7 +62,15 @@ def build_dewatering_cost_param_block(blk):
     #     initialize=0.6,
     #     doc="B parameter for capital cost",
     #     units=pyo.units.dimensionless,
-    )
+    # )
+
+def build_filter_plate_press_cost_param_block(blk):
+    # NOTE: costing data are from McGiveney & Kawamura, 2008
+
+def build_centrifuge_cost_param_block(blk):
+    # NOTE: costing data are from McGiveney & Kawamura, 2008
+
+
 
 @register_costing_parameter_block(
     build_rule=build_dewatering_cost_param_block,
