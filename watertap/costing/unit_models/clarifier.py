@@ -9,7 +9,15 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+"""
+[1] Sharma, Jwala R., Mohammad Najafi, and Syed R. Qasim.
+"Preliminary cost estimation models for construction, operation, and maintenance of water treatment plants."
+Journal of Infrastructure Systems 19.4 (2013): 451-464.
 
+[2] Byun, Jaewon, Maravelias, Christos.
+Benchmark Model for Wastewater Treatment Using an Activated Sludge Process.
+United States: N.p., 21 Jan, 2022. Web. doi: 10.7481/1844539.
+"""
 import math
 import pyomo.environ as pyo
 from idaes.core.util.exceptions import ConfigurationError
@@ -34,10 +42,6 @@ def cost_clarifier(blk, clarifier_type=ClarifierType.circular, **kwargs):
     Args:
         clarifier_type: ClarifierType Enum indicating clarifier type,
             default = ClarifierType.circular
-
-        # `**kwargs`: Additional keywords for the ClarifierType, e.g., NaOCl
-        #     and CaOH2 mixers expect the `dosing_rate` keyword
-        #     argument.
     """
     if clarifier_type == clarifier_type.circular:
         cost_circular_clarifier(blk, **kwargs)
@@ -54,19 +58,19 @@ def cost_clarifier(blk, clarifier_type=ClarifierType.circular, **kwargs):
 
 def build_circular_clarifier_cost_param_block(blk):
 
-    blk.concstruction_a_parameter = pyo.Param(
+    blk.construction_a_parameter = pyo.Param(
         initialize=-6e-4,
         doc="A parameter for construction cost",
         units=pyo.units.USD_2011 / pyo.units.ft**4,
     )
 
-    blk.concstruction_b_parameter = pyo.Param(
+    blk.construction_b_parameter = pyo.Param(
         initialize=98.952,
         doc="B parameter for construction cost",
         units=pyo.units.USD_2011 / pyo.units.ft**2,
     )
 
-    blk.concstruction_c_parameter = pyo.Param(
+    blk.construction_c_parameter = pyo.Param(
         initialize=191806,
         doc="C parameter for construction cost",
         units=pyo.units.USD_2011,
@@ -103,7 +107,7 @@ def build_circular_clarifier_cost_param_block(blk):
 )
 def cost_circular_clarifier(blk):
     """
-    Circular clarifier costing method
+    Circular clarifier costing method [1]
     """
     make_capital_cost_var(blk)
     make_fixed_operating_cost_var(blk)
@@ -115,9 +119,9 @@ def cost_circular_clarifier(blk):
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == pyo.units.convert(
-            blk.costing_package.circular.concstruction_a_parameter * surface_area**2
-            + blk.costing_package.circular.concstruction_b_parameter * surface_area
-            + blk.costing_package.circular.concstruction_c_parameter,
+            blk.costing_package.circular.construction_a_parameter * surface_area**2
+            + blk.costing_package.circular.construction_b_parameter * surface_area
+            + blk.costing_package.circular.construction_c_parameter,
             to_units=blk.costing_package.base_currency,
         )
     )
@@ -160,19 +164,19 @@ def cost_circular_clarifier(blk):
 
 def build_rectangular_clarifier_cost_param_block(blk):
 
-    blk.concstruction_a_parameter = pyo.Param(
+    blk.construction_a_parameter = pyo.Param(
         initialize=-2.9e-3,
         doc="A parameter for construction cost",
         units=pyo.units.USD_2011 / pyo.units.ft**4,
     )
 
-    blk.concstruction_b_parameter = pyo.Param(
+    blk.construction_b_parameter = pyo.Param(
         initialize=169.19,
         doc="B parameter for construction cost",
         units=pyo.units.USD_2011 / pyo.units.ft**2,
     )
 
-    blk.concstruction_c_parameter = pyo.Param(
+    blk.construction_c_parameter = pyo.Param(
         initialize=94365,
         doc="C parameter for construction cost",
         units=pyo.units.USD_2011,
@@ -197,7 +201,7 @@ def build_rectangular_clarifier_cost_param_block(blk):
 )
 def cost_rectangular_clarifier(blk):
     """
-    Rectangular clarifier costing method
+    Rectangular clarifier costing method [1]
     """
     make_capital_cost_var(blk)
     make_fixed_operating_cost_var(blk)
@@ -216,11 +220,11 @@ def cost_rectangular_clarifier(blk):
             == pyo.units.convert(
                 num_clarifier
                 * (
-                    blk.costing_package.rectangular.concstruction_a_parameter
+                    blk.costing_package.rectangular.construction_a_parameter
                     * max_surface_area_limit**2
-                    + blk.costing_package.rectangular.concstruction_b_parameter
+                    + blk.costing_package.rectangular.construction_b_parameter
                     * max_surface_area_limit
-                    + blk.costing_package.rectangular.concstruction_c_parameter
+                    + blk.costing_package.rectangular.construction_c_parameter
                 ),
                 to_units=blk.costing_package.base_currency,
             )
@@ -244,11 +248,11 @@ def cost_rectangular_clarifier(blk):
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == pyo.units.convert(
-                blk.costing_package.rectangular.concstruction_a_parameter
+                blk.costing_package.rectangular.construction_a_parameter
                 * surface_area**2
-                + blk.costing_package.rectangular.concstruction_b_parameter
+                + blk.costing_package.rectangular.construction_b_parameter
                 * surface_area
-                + blk.costing_package.rectangular.concstruction_c_parameter,
+                + blk.costing_package.rectangular.construction_c_parameter,
                 to_units=blk.costing_package.base_currency,
             )
         )
@@ -285,7 +289,7 @@ def build_primary_clarifier_cost_param_block(blk):
 )
 def cost_primary_clarifier(blk, cost_electricity_flow=True):
     """
-    Primary clarifier costing method
+    Primary clarifier costing method [2]
     """
     make_capital_cost_var(blk)
 
