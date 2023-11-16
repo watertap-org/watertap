@@ -57,58 +57,58 @@ class TestASM2DFlowsheet:
         assert value(model.fs.Treated.temperature[0]) == pytest.approx(298.15, rel=1e-4)
         assert value(model.fs.Treated.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.Treated.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            3.7182e-5, rel=1e-4
+            2.8607e-5, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            2.8210e-4, rel=1e-4
+            2.7654e-4, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_N2"]) == pytest.approx(
-            5.1980e-6, rel=1e-4
+            2.8363e-3, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            6.9821e-3, rel=1e-4
+            3.6483e-3, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
-            1.1420e-6, rel=1e-4
+            6.537e-4, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_O2"]) == pytest.approx(
-            7.9113e-3, rel=1e-4
+            7.8804e-3, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            2.8276e-3, rel=1e-4
+            2.8292e-3, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_IC"]) == pytest.approx(
-            1.0548e-1, rel=1e-4
+            1.0546e-1, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_K"]) == pytest.approx(
-            3.3877e-8, rel=1e-4
+            3.2678e-8, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
-            3.8428e-8, rel=1e-4
+            3.6606e-8, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
-            6.0447e-7, rel=1e-4
+            3.6338e-4, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            5.5016e-2, rel=1e-4
+            5.4581e-2, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            1.7511e-2, rel=1e-4
+            1.7631e-2, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
-            3.5534e-8, rel=1e-4
+            2.8530e-8, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_PHA"]) == pytest.approx(
-            3.1416e-8, rel=1e-4
+            1.8894e-8, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_PP"]) == pytest.approx(
-            8.0471e-8, rel=1e-4
+            6.6903e-8, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            1.0338e-3, rel=1e-4
+            1.0317e-3, rel=1e-4
         )
 
         # Sludge stream
@@ -116,56 +116,56 @@ class TestASM2DFlowsheet:
         assert value(model.fs.Sludge.temperature[0]) == pytest.approx(298.15, rel=1e-4)
         assert value(model.fs.Sludge.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            3.7182e-5, rel=1e-4
+            2.8608e-5, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            2.8210e-4, rel=1e-2
+            2.7655e-4, rel=1e-2
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_N2"]) == pytest.approx(
-            5.2014e-6, rel=1e-4
+            2.8363e-3, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            6.9821e-3, rel=1e-4
+            3.6483e-3, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
-            1.1573e-6, rel=1e-4
+            6.5371e-4, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_O2"]) == pytest.approx(
-            7.9113e-3, rel=1e-4
+            7.8803e-3, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            2.8276e-3, rel=1e-4
+            2.8292e-3, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_IC"]) == pytest.approx(
-            0.10548, rel=1e-4
+            0.10546, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_K"]) == pytest.approx(
-            2.0967e-7, rel=1e-4
+            1.9373e-7, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
-            2.0782e-7, rel=1e-4
+            1.9235e-7, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
-            2.6695e-5, rel=1e-4
+            1.6058e-2, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            2.4532, rel=1e-4
+            2.4338, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            0.7885, rel=1e-4
+            0.79386, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
-            1.5746e-6, rel=1e-4
+            1.2647e-6, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_PHA"]) == pytest.approx(
-            1.4343e-6, rel=1e-4
+            8.6630e-7, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_PP"]) == pytest.approx(
-            3.6725e-6, rel=1e-4
+            3.0536e-6, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            0.045489, rel=1e-4
+            0.045394, rel=1e-4
         )
