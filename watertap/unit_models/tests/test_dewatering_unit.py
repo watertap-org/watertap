@@ -421,3 +421,23 @@ class TestDUModifiedASM2d(object):
         solver = get_solver()
         results = solver.solve(du_mod_asm2d)
         assert_optimal_termination(results)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_du_costing(self, du):
+        m = du
+
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_dewatering,
+        )
+        m.fs.costing.cost_process()
+        results = solver.solve(m)
+
+        assert_optimal_termination(results)
+
+        # Check solutions
+        assert pytest.approx(1390570, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
