@@ -232,26 +232,26 @@ Here we setup a simple run on RO erd flowsheet, requesting loopTool to run PS to
             - pressure_exchanger
             - pump_as_turbine
          sweep_param_loop
-            membrane_cost:  # Runs over differnt membrnae costs
+            membrane_cost:  # Runs over differnt membrnae costs, generating 3 steps
                type: LinearSample
                param: fs.costing.reverse_osmosis.membrane_cost
                lower_limit: 10
                upper_limit: 30
                num_samples: 3
-            factor_membrane_replacement:  # Runs over membrane_replacment costs, generating 10 steps
+            factor_membrane_replacement:  # Runs over membrane_replacment costs, generating 3 steps
                type: LinearSample
                param: fs.costing.reverse_osmosis.factor_membrane_replacement
                lower_limit: 0.1
                upper_limit: 0.2
                num_samples: 3 
-            map_sweep: # Will run meshgrid sweep over feed_mass_nacl and ro_recovery, generating 100 samples
-               feed_mass_nacl:  # Runs over salt mass flow rate only, generating 10 steps
+            map_sweep: # Will run meshgrid sweep over feed_mass_nacl and ro_recovery, generating 9 samples
+               feed_mass_nacl:  # Runs over salt mass flow rate only, generating 3 steps
                   type: LinearSample
                   param: fs.feed.properties[0].flow_mass_phase_comp[Liq,NaCl]
                   lower_limit: 0.03
                   upper_limit: 0.04
                   num_samples: 3 
-               ro_recovery:  # Runs over ro recovery, generating 10 steps
+               ro_recovery:  # Runs over ro recovery, generating 3 steps
                   type: LinearSample
                   param: fs.RO.recovery_mass_phase_comp[0,Liq,H2O]
                   lower_limit: 0.3
