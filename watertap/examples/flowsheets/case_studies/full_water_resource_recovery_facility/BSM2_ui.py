@@ -216,6 +216,87 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Feed",
     )
 
+    # Unit model data, activated sludge process
+    exports.add(
+        obj=fs.R1.volume[0],
+        name="First anoxic reactor volume",
+        ui_units=pyunits.m**3,
+        display_units="m3",
+        rounding=1,
+        description="CSTR volume",
+        is_input=True,
+        input_category="Activated sludge process",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.R2.volume[0],
+        name="Second anoxic reactor volume",
+        ui_units=pyunits.m**3,
+        display_units="m3",
+        rounding=1,
+        description="CSTR volume",
+        is_input=True,
+        input_category="Activated sludge process",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.R3.volume[0],
+        name="First aerobic reactor volume",
+        ui_units=pyunits.m**3,
+        display_units="m3",
+        rounding=1,
+        description="CSTR volume",
+        is_input=True,
+        input_category="Activated sludge process",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.R4.volume[0],
+        name="Second aerobic reactor volume",
+        ui_units=pyunits.m**3,
+        display_units="m3",
+        rounding=1,
+        description="CSTR volume",
+        is_input=True,
+        input_category="Activated sludge process",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.R5.volume[0],
+        name="Third aerobic reactor volume",
+        ui_units=pyunits.m**3,
+        display_units="m3",
+        rounding=1,
+        description="CSTR volume",
+        is_input=True,
+        input_category="Activated sludge process",
+        is_output=False,
+    )
+
+    # Unit model data, anaerobic digestor
+    exports.add(
+        obj=fs.RADM.volume_liquid[0],
+        name="Liquid volume",
+        ui_units=pyunits.m**3,
+        display_units="m3",
+        rounding=1,
+        description="Liquid volume",
+        is_input=True,
+        input_category="Anaerobic digestor",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.RADM.volume_vapor[0],
+        name="Vapor volume",
+        ui_units=pyunits.m**3,
+        display_units="m3",
+        rounding=1,
+        description="Vapor volume",
+        is_input=True,
+        input_category="Anaerobic digestor",
+        is_output=False,
+    )
+
     # Unit model data, secondary clarifier
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "H2O"],
@@ -524,29 +605,6 @@ def export_variables(flowsheet=None, exports=None):
         description="Alkalinity split fraction",
         is_input=True,
         input_category="Primary clarifier",
-        is_output=False,
-    )
-    # Unit model data, anaerobic digestor
-    exports.add(
-        obj=fs.RADM.volume_liquid[0],
-        name="Liquid volume",
-        ui_units=pyunits.m**3,
-        display_units="m3",
-        rounding=1,
-        description="Liquid volume",
-        is_input=True,
-        input_category="Anaerobic digestor",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.RADM.volume_vapor[0],
-        name="Vapor volume",
-        ui_units=pyunits.m**3,
-        display_units="m3",
-        rounding=1,
-        description="Vapor volume",
-        is_input=True,
-        input_category="Anaerobic digestor",
         is_output=False,
     )
 
