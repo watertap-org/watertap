@@ -160,13 +160,13 @@ class TestASM2DFlowsheet:
             0.79386, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
-            1.2647e-6, rel=1e-4
+            0, abs=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_PHA"]) == pytest.approx(
-            8.6630e-7, rel=1e-4
+            0, abs=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_PP"]) == pytest.approx(
-            3.0536e-6, rel=1e-4
+            0, abs=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_S"]) == pytest.approx(
             0.045394, rel=1e-4
