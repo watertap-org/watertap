@@ -25,13 +25,10 @@ __author__ = "Chenyu Wang"
 import pytest
 
 from pyomo.environ import assert_optimal_termination, value
-from pyomo.util.check_units import assert_units_consistent
-
-from idaes.core.util.model_statistics import degrees_of_freedom
-
 from watertap.examples.flowsheets.case_studies.activated_sludge.modified_ASM2D_flowsheet import (
     build_flowsheet,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 
 class TestASM2DFlowsheet:
@@ -45,8 +42,13 @@ class TestASM2DFlowsheet:
 
     @pytest.mark.integration
     def test_structure(self, model):
-        assert_units_consistent(model)
-        assert degrees_of_freedom(model) == 0
+        dt = DiagnosticsToolbox(model)
+        dt.assert_no_structural_warnings()
+
+    @pytest.mark.component
+    def test_numerical_issues(self, model):
+        dt = DiagnosticsToolbox(model, variable_bounds_violation_tolerance=1e-9)
+        dt.assert_no_numerical_warnings()
         assert_optimal_termination(model.results)
 
     @pytest.mark.requires_idaes_solver
