@@ -123,17 +123,6 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     exports.add(
-        obj=fs.separator_feed.split_fraction[0, "hx_distillate_cold"],
-        name="Separator split fraction for distillate HEX",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Separator split fraction going into distillate heat exchanger",
-        is_input=True,
-        input_category="Feed separator",
-        is_output=False,
-    )
-    exports.add(
         obj=fs.hx_distillate.overall_heat_transfer_coefficient[0],
         name="Distillate HEX heat transfer coefficient",
         ui_units=pyunits.J * pyunits.s**-1 * pyunits.m**-2 * pyunits.K**-1,
@@ -428,6 +417,17 @@ def export_variables(flowsheet=None, exports=None):
         is_input=False,
         is_output=True,
         output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.separator_feed.split_fraction[0, "hx_distillate_cold"],
+        name="Separator split fraction for distillate HEX",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Separator split fraction going into distillate heat exchanger",
+        is_input=False,
+        is_output=True,
+        output_category="Separator",
     )
     exports.add(
         obj=fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"],
