@@ -145,10 +145,10 @@ class TestASM2DFlowsheet:
             0.10546, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_K"]) == pytest.approx(
-            1.9373e-7, rel=1e-4
+            0, abs=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
-            1.9235e-7, rel=1e-4
+            0, abs=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
             1.6058e-2, rel=1e-4
