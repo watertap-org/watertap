@@ -44,6 +44,7 @@ from pyomo.common.config import ConfigValue, In
 from idaes.core.util.exceptions import (
     ConfigurationError,
 )
+from watertap.costing.unit_models.dewatering import cost_dewatering
 
 __author__ = "Alejandro Garciadiego, Adam Atia"
 
@@ -203,3 +204,7 @@ class DewateringData(SeparatorData):
             io_dict[o] = getattr(self, o + "_state")
 
         return create_stream_table_dataframe(io_dict, time_point=time_point)
+
+    @property
+    def default_costing_method(self):
+        return cost_dewatering
