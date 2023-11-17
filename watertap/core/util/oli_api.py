@@ -113,7 +113,7 @@ class OLIApi:
         self.__dbs_url = self.__root_url + "/channel/dbs"
         self.__upload_dbs_url = self.__root_url + "/channel/upload/dbs"
         self.__access_key_url = self.__root_url + "/user/api-key"
-        
+
         if not self.login():
             raise ValueError("Login failed")
 
@@ -239,7 +239,7 @@ class OLIApi:
 
         :return: Response text containing the access key information or an error message.
         """
-        
+
         if self.__use_access_key:
             headers = {"authorization": "API-KEY " + self.__access_key}
         else:
@@ -256,7 +256,7 @@ class OLIApi:
         :param api_key: The access key to delete.
         :return: Response text containing the success message or an error message.
         """
-        
+
         if self.__use_access_key:
             headers = {"authorization": "API-KEY " + self.__access_key}
         else:
