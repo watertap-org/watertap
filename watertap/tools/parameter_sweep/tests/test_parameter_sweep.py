@@ -2154,7 +2154,13 @@ def _assert_dictionary_correctness(truth_dict, test_dict, rtol=1e-05, atol=1e-08
                             atol=atol,
                         )
                     else:
-                        assert subsubitem == test_dict[key][subkey][subsubkey]
+                        if (
+                            subsubkey in ["upper bound", "lower bound"]
+                            and test_dict[key][subkey][subsubkey] is None
+                        ):
+                            assert subsubitem in [np.finfo("d").min, np.finfo("d").max]
+                        else:
+                            assert subsubitem == test_dict[key][subkey][subsubkey]
         elif key == "solve_successful":
             assert item == test_dict[key]
         elif key in ["nominal_idx", "differential_idx"]:
