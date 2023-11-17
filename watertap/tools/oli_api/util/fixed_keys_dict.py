@@ -23,56 +23,45 @@ class FixedKeysDict(UserDict):
     def __setitem__(self, k, v):
         if k not in self.data:
             raise RuntimeError(f" Key {k} not in dictionary.")
+        elif isinstance(self.data[k]["value"], list):
+            if v not in self.data[k]:
+                raise RuntimeError(
+                    f" Value {v} not a valid value for key {k}."
+                )            
         else:
             self.data[k] = v
 
     def __delitem__(self, k):
         raise Exception(" Deleting keys not supported for this object.")
 
-    def _check_value(self, k, valid_values):
-        if k not in self.data:
-            raise RuntimeError(f" Key {k} not in dictionary.")
-        else:
-            if self.data[k] not in valid_values:
-                raise RuntimeError(
-                    f" Value {self.data[k]} not a valid value for key {k}."
-                )
-
     def pprint(self):
         print("-------------------------")
         for key, value in self.data.items():
             print(f" {key}\n - {value}\n")
 
-
-default_oli_water_analysis_properties = FixedKeysDict(
-    {
-        "temperature_unit": "K",  # units
-        "pressure_unit": "Pa",
-        "concentration_unit": "mg/L",
-        "gas_fraction_unit": "mole %",
-        "alkalinity_unit": "mg HCO3/L",
-        "tic_unit": "mol C/L",
-        # essential input parameters for water analysis
-        "electroneutrality_value": "DominantIon",
-        "reconciliation_value": "EquilCalcOnly",
-        "AllowSolidsToForm": False,
-        "CalcAlkalnity": False,
-        # optional inputs
-        # required for certain specifications
-        "MakeupIonBaseTag": None,
-        "CO2GasFraction": None,
-        "pH": None,
-        "PhAcidTitrant": "HCL",
-        "PhBaseTitrant": "NAOH",
-        "Alkalinity": None,
-        "AlkalinityPhTitrant": None,
-        "AlkalinityTitrationEndPointPh": None,
-        "TIC": None,
+default_water_analysis_properties = FixedKeysDict(
+    {   
+        "temperature": {"group": "Properties", "name": "Temperature", "unit": "K", "value": None},
+        "pressure": {"group": "Properties", "name": "Pressure", "unit": "Pa", "value": None},
+        "component": {"group": None, "name": None, "unit": "mg/L", "value": None, "charge": None},
+        "electroneutrality": {"group": "Electroneutrality Options", "name": "ElectroneutralityBalanceType", "value": ["DominantIon", "ProrateCations", "ProrateAnions", "Prorate", "AutoNACL", "MakeupIon"]},
+        "makeup_ion": {"group": "Electroneutrality Options", "name": "MakeupIonBaseTag", "value": None},
+        "reconciliation": {"group": "Calculation Options", "name": "CalcType", "value": ["EquilCalcOnly", "ReconcilePh", "ReconcilePhAndAlkalinity", "ReconcilePhAndAlkalinityAndTic", "ReconcileCo2Gas"]},
+        "ph": {"group": "Properties", "name": "pH", "value": None},
+        "acid_titrant": {"group": "Calculation Options", "name": "PhAcidTitrant", "value": None},
+        "base_titrant": {"group": "Calculation Options", "name": "PhBaseTitrant", "value": None},
+        "alkalinity": {"group": "Properties", "name": "Alkalinity", "unit": "mg HCO3/L", "value": None},
+        "alk_titrant": {"group": "Calculation Options", "name": "AlkalinityPhTitrant", "value": None},
+        "AlkalinityTitrationEndPointPh": {"group": "Properties", "name": "AlkalinityTitrationEndPointpH", "value": None},        
+        "tic": {"group": "Properties", "name": "TIC", "unit": "mol C/L", "value": None},
+        "co2_fraction":  {"group": "Properties", "name": "CO2GasFraction", "unit": "mole %", "value": None},
+        "solids": {"group":"Calculation Options", "name": "AllowSolidsToForm", "value": [False, True]},
+        "calc_alk": {"group":"Calculation Options", "name": "CalcAlkalnity", "value": [False, True]},
     }
 )
 
 # Full list of available optional inputs available: https://devdocs.olisystems.com/optional-inputs
-default_oli_optional_properties = FixedKeysDict(
+default_optional_properties = FixedKeysDict(
     {
         "scalingIndex": False,
         "prescalingTendencies": False,
@@ -83,7 +72,7 @@ default_oli_optional_properties = FixedKeysDict(
     }
 )
 
-default_oli_unit_set_info = FixedKeysDict(
+default_unit_set_info = FixedKeysDict(
     {
         "enthalpy": "J",
         "mass": "kg",

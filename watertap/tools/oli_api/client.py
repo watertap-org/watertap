@@ -328,15 +328,17 @@ class OLIApi:
 
     def call(
         self,
-        method="",
+        flash_method="",
         dbs_file_id="",
         input_params=dict(),
         poll_time=1.0,
         max_request=1000,
         tee=False,
     ):
+        """
+        """
         
-        if not bool(method):
+        if not bool(flash_method):
             raise IOError(" Specify a flash method to use from {self.valid_flashes.keys()}." + 
                           " Run self.get_valid_flash_methods to see a list and required inputs.")
             
@@ -348,7 +350,7 @@ class OLIApi:
         else:
             raise IOError("Specify flash calculation input to use this function.")
             
-        endpoint = f"{self.credential_manager.engine_url}flash/{dbs_file_id}/{method}"
+        endpoint = f"{self.credential_manager.engine_url}flash/{dbs_file_id}/{flash_method}"
                         
         req_method = "POST"        
         # TODO: reimplement other calls (e.g., "corrosion-contact-surface", "corrosion-rates")
