@@ -37,9 +37,7 @@ def test_login():
         username=username, password=password, root_url=root_url, auth_url=auth_url
     )
 
-    # TODO: Want capability to test successful login (as well as testing desired exceptions to be raise upon intentional fail)
-    # is desired from OLI.
-    # login will fail due to dummy credentials right now, with unintentional exception.
+    # TODO: Test login via access_keys
     # oliapi.login(fail_flag=False)
 
 

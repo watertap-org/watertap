@@ -91,26 +91,31 @@ class OLIApi:
         password: user's password
         root_url: root url
         auth_url: authorization url
+        access_key: encrypted credentials for streamlined login
         """
-        if username is None or not len(username):
-            username = input("Enter OLI username:\n")
-        if password is None or not len(password):
-            password = getpass.getpass("Enter OLI user password:\n")
-        if root_url is None or not len(root_url):
-            root_url = input("Enter root url:\n")
-        if auth_url is None or not len(password):
-            auth_url = input("Enter authorization token:\n")
+        if not access_key:
+            if username is None or not len(username):
+                username = input("Enter OLI username:\n")
+            if password is None or not len(password):
+                password = getpass.getpass("Enter OLI user password:\n")
+            if root_url is None or not len(root_url):
+                root_url = input("Enter root url:\n")
+            if auth_url is None or not len(password):
+                auth_url = input("Enter authorization token:\n")
         self.__username = username
         self.__password = password
-        self.__jwt_token = ""
-        self.__refresh_token = ""
         self.__root_url = root_url
         self.__auth_url = auth_url
+        self.__jwt_token = ""
+        self.__refresh_token = ""
         self.__access_key = access_key
         self.__use_access_key = False
         self.__dbs_url = self.__root_url + "/channel/dbs"
         self.__upload_dbs_url = self.__root_url + "/channel/upload/dbs"
         self.__access_key_url = self.__root_url + "/user/api-key"
+        
+        if not self.login():
+            raise ValueError("Login failed")
 
     def login(self, tee=True, fail_flag=True):
         """
@@ -144,13 +149,14 @@ class OLIApi:
             }
             req_result = requests.post(self.__auth_url, headers=headers, data=body)
             if req_result.status_code == 200:
+                if tee:
+                    print(f"Status code is {req_result.status_code}")
                 req_result = req_result.json()
                 if "access_token" in req_result:
                     self.__jwt_token = req_result["access_token"]
                     if "refresh_token" in req_result:
                         self.__refresh_token = req_result["refresh_token"]
-                        if tee:
-                            print(f"Status code is {req_result.status_code}")
+
                         return True
 
         if fail_flag:
@@ -233,15 +239,14 @@ class OLIApi:
 
         :return: Response text containing the access key information or an error message.
         """
-        headers = {
-            "Authorization": "Bearer " + self.__jwt_token,
-            "Content-Type": "application/json",
-        }
-
+        
+        if self.__use_access_key:
+            headers = {"authorization": "API-KEY " + self.__access_key}
+        else:
+            headers = {"authorization": "Bearer " + self.__jwt_token}
+        headers.update({"Content-Type": "application/json"})
         payload = json.dumps({})
-
         response = requests.post(self.__access_key_url, headers=headers, data=payload)
-
         return response.text
 
     def delete_access_key(self, api_key):
@@ -251,15 +256,14 @@ class OLIApi:
         :param api_key: The access key to delete.
         :return: Response text containing the success message or an error message.
         """
-        headers = {
-            "Authorization": "Bearer " + self.__jwt_token,
-            "Content-Type": "application/json",
-        }
-
+        
+        if self.__use_access_key:
+            headers = {"authorization": "API-KEY " + self.__access_key}
+        else:
+            headers = {"authorization": "Bearer " + self.__jwt_token}
+        headers.update({"Content-Type": "application/json"})
         payload = json.dumps({"apiKey": api_key})
-
         response = requests.delete(self.__access_key_url, headers=headers, data=payload)
-
         return response.text
 
     def upload_dbs_file(self, file_path):
