@@ -56,7 +56,7 @@ class MultiprocessingParallelManager(ParallelManager):
         return [data]
 
     def sum_values_and_sync(self, sendbuf, recvbuf):
-        recvbuf[0][:] = sendbuf[0][:]
+        recvbuf[:] = sendbuf
 
     def gather_arrays_to_root(self, sendbuf, recvbuf_spec):
         receive_arr = recvbuf_spec[0]

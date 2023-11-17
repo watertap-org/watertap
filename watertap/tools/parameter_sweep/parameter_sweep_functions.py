@@ -162,6 +162,8 @@ def parameter_sweep(
         kwargs["interpolate_nan_outputs"] = interpolate_nan_outputs
     if number_of_subprocesses is not None:
         kwargs["number_of_subprocesses"] = number_of_subprocesses
+    if build_outputs_kwargs is not None:
+        kwargs["build_outputs_kwargs"] = build_outputs_kwargs
 
     ps = ParameterSweep(**kwargs)
 
@@ -194,7 +196,6 @@ def recursive_parameter_sweep(
     num_samples=None,
     seed=None,
     number_of_subprocesses=None,
-    req_num_samples=None,
 ):
     """
     This function is similar to the `parameter_sweep` function for exploring the parameter space while guranteeing a required number of solves.
@@ -270,7 +271,7 @@ def recursive_parameter_sweep(
                                              If true, a second output file with the extension "_clean"
                                              will be saved alongside the raw (un-interpolated) values.
 
-        req_num_samples (optional) : If the user is using sampling techniques rather than a linear grid
+        num_samples (optional) : If the user is using sampling techniques rather than a linear grid
                                  of values, they need to set the required number of samples. This is the
                                  guaranteed number of solves that the user requires.
 
@@ -314,7 +315,7 @@ def recursive_parameter_sweep(
         build_model,
         build_sweep_params,
         build_outputs=build_outputs,
-        req_num_samples=req_num_samples,
+        num_samples=num_samples,
         seed=seed,
     )
 
