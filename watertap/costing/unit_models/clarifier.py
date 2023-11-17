@@ -100,12 +100,18 @@ def build_circular_clarifier_cost_param_block(blk):
         units=pyo.units.USD_2011 / pyo.units.year,
     )
 
+    blk.electricity_percentage = pyo.Param(
+        initialize=0.04,
+        doc="Percentage of electricity cost over O & M cost",
+        units=pyo.units.dimensionless,
+    )
+
 
 @register_costing_parameter_block(
     build_rule=build_circular_clarifier_cost_param_block,
     parameter_block_name="circular",
 )
-def cost_circular_clarifier(blk):
+def cost_circular_clarifier(blk, cost_electricity_flow=True):
     """
     Circular clarifier costing method [1]
     """
@@ -135,6 +141,7 @@ def cost_circular_clarifier(blk):
             expr=blk.fixed_operating_cost
             == pyo.units.convert(
                 num_O_and_M
+                * (1 - blk.costing_package.circular.electricity_percentage)
                 * (
                     blk.costing_package.circular.O_and_M_a_parameter
                     * max_surface_area_limit**3
@@ -152,13 +159,27 @@ def cost_circular_clarifier(blk):
         blk.fixed_operating_cost_constraint = pyo.Constraint(
             expr=blk.fixed_operating_cost
             == pyo.units.convert(
-                blk.costing_package.circular.O_and_M_a_parameter * surface_area**3
-                + blk.costing_package.circular.O_and_M_b_parameter * surface_area**2
-                + blk.costing_package.circular.O_and_M_c_parameter * surface_area
-                + blk.costing_package.circular.O_and_M_d_parameter,
+                (1 - blk.costing_package.circular.electricity_percentage)
+                * (
+                    blk.costing_package.circular.O_and_M_a_parameter * surface_area**3
+                    + blk.costing_package.circular.O_and_M_b_parameter
+                    * surface_area**2
+                    + blk.costing_package.circular.O_and_M_c_parameter * surface_area
+                    + blk.costing_package.circular.O_and_M_d_parameter
+                ),
                 to_units=blk.costing_package.base_currency
                 / blk.costing_package.base_period,
             )
+        )
+
+    t0 = blk.flowsheet().time.first()
+    if cost_electricity_flow:
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                blk.unit_model.electricity_consumption[t0],
+                to_units=pyo.units.kW,
+            ),
+            "electricity",
         )
 
 
@@ -194,12 +215,18 @@ def build_rectangular_clarifier_cost_param_block(blk):
         units=pyo.units.USD_2011 / pyo.units.year,
     )
 
+    blk.electricity_percentage = pyo.Param(
+        initialize=0.03,
+        doc="Percentage of electricity cost over O & M cost",
+        units=pyo.units.dimensionless,
+    )
+
 
 @register_costing_parameter_block(
     build_rule=build_rectangular_clarifier_cost_param_block,
     parameter_block_name="rectangular",
 )
-def cost_rectangular_clarifier(blk):
+def cost_rectangular_clarifier(blk, cost_electricity_flow=True):
     """
     Rectangular clarifier costing method [1]
     """
@@ -234,6 +261,7 @@ def cost_rectangular_clarifier(blk):
             expr=blk.fixed_operating_cost
             == pyo.units.convert(
                 num_clarifier
+                * (1 - blk.costing_package.rectangular.electricity_percentage)
                 * (
                     blk.costing_package.rectangular.O_and_M_a_parameter
                     * max_surface_area_limit
@@ -260,12 +288,25 @@ def cost_rectangular_clarifier(blk):
         blk.fixed_operating_cost_constraint = pyo.Constraint(
             expr=blk.fixed_operating_cost
             == pyo.units.convert(
-                blk.costing_package.rectangular.O_and_M_a_parameter * surface_area
-                + blk.costing_package.rectangular.O_and_M_b_parameter,
+                (1 - blk.costing_package.rectangular.electricity_percentage)
+                * (
+                    blk.costing_package.rectangular.O_and_M_a_parameter * surface_area
+                    + blk.costing_package.rectangular.O_and_M_b_parameter
+                ),
                 to_units=blk.costing_package.base_currency
                 / blk.costing_package.base_period,
             )
         )
+
+        t0 = blk.flowsheet().time.first()
+        if cost_electricity_flow:
+            blk.costing_package.cost_flow(
+                pyo.units.convert(
+                    blk.unit_model.electricity_consumption[t0],
+                    to_units=pyo.units.kW,
+                ),
+                "electricity",
+            )
 
 
 def build_primary_clarifier_cost_param_block(blk):

@@ -138,7 +138,7 @@ class TestClarifierCosting:
 
         # Check solutions
         assert pytest.approx(1681573, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(629209.7, rel=1e-5) == value(
+        assert pytest.approx(604041.3, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
 
@@ -162,7 +162,7 @@ class TestClarifierCosting:
 
         # Check solutions
         assert pytest.approx(3458422, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(119026.2, rel=1e-5) == value(
+        assert pytest.approx(115455.4, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
 
