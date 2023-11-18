@@ -26,6 +26,7 @@ from idaes.core import FlowsheetBlock
 from watertap.unit_models.anaerobic_digestor import AD
 from watertap.unit_models.thickener import Thickener
 from watertap.unit_models.dewatering import DewateringUnit
+from watertap.unit_models.cstr import AnoxicCSTR
 
 from watertap.unit_models.translators.translator_asm1_adm1 import Translator_ASM1_ADM1
 from watertap.unit_models.translators.translator_adm1_asm1 import Translator_ADM1_ASM1
@@ -51,7 +52,6 @@ from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.models.unit_models import (
-    CSTR,
     Feed,
     Mixer,
     Separator,
@@ -112,11 +112,11 @@ def build():
         property_package=m.fs.props_ASM1, inlet_list=["feed_water", "recycle"]
     )
     # First reactor (anoxic) - standard CSTR
-    m.fs.R1 = CSTR(
+    m.fs.R1 = AnoxicCSTR(
         property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
     )
     # Second reactor (anoxic) - standard CSTR
-    m.fs.R2 = CSTR(
+    m.fs.R2 = AnoxicCSTR(
         property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
     )
     # Third reactor (aerobic) - CSTR with injection
