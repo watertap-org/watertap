@@ -16,26 +16,13 @@ from ..util import (
     make_capital_cost_var,
 )
 
-# TODO: Add types here for anaerobic and aerobic reactors - see mixer example?
-
-# class CSTRType(StrEnum):
-#     anoxic = "anoxic"
-#     anaerobic = "anaerobic"
-#     aerobic = "aerobic"
-
 
 def build_cstr_cost_param_block(blk):
-    # Hovers in the 3-5 range in the literature, but the exact value should be determined w/optimization
-    blk.HRT = pyo.Var(
-        initialize=4,
-        doc="Hydraulic retention time",
-        units=pyo.units.hr,
-    )
     # Source: https://www.fwrj.com/articles/9812.pdf
     blk.sizing_cost = pyo.Var(
-        initialize=0.54,
+        initialize=0.34,
         doc="Reactor sizing cost",
-        units=pyo.units.USD_2020 / pyo.units.m**3,
+        units=pyo.units.USD_1998 / pyo.units.m**3,
     )
 
 
@@ -47,21 +34,18 @@ def cost_cstr(blk):
     """
     CSTR costing method
     """
-    # TODO: Add types here for anaerobic and aerobic reactors - see mixer example?
     cost_cstr_capital(
         blk,
-        blk.costing_package.cstr.HRT,
         blk.costing_package.cstr.sizing_cost,
     )
 
 
-def cost_cstr_capital(blk, HRT, sizing_cost):
+def cost_cstr_capital(blk, sizing_cost):
     """
     Generic function for costing an ElectroNP system.
     """
     make_capital_cost_var(blk)
 
-    blk.HRT = pyo.Expression(expr=HRT)
     blk.sizing_cost = pyo.Expression(expr=sizing_cost)
 
     flow_in = pyo.units.convert(
@@ -69,11 +53,13 @@ def cost_cstr_capital(blk, HRT, sizing_cost):
         to_units=pyo.units.m**3 / pyo.units.hr,
     )
 
+    HRT = blk.unit_model.HRT
+
     print(f"base_currency: {blk.costing_package.base_currency}")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == pyo.units.convert(
-            blk.HRT * flow_in * blk.sizing_cost,
+            HRT * flow_in * blk.sizing_cost,
             to_units=blk.costing_package.base_currency,
         )
     )
