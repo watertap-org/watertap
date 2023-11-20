@@ -53,7 +53,7 @@ def cost_cstr_capital(blk, sizing_cost):
         to_units=pyo.units.m**3 / pyo.units.hr,
     )
 
-    HRT = blk.unit_model.HRT
+    HRT = blk.unit_model.HRT[0]
 
     print(f"base_currency: {blk.costing_package.base_currency}")
     blk.capital_cost_constraint = pyo.Constraint(
