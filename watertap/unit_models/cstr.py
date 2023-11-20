@@ -26,7 +26,6 @@ import idaes.logger as idaeslog
 from pyomo.environ import (
     Param,
     units as pyunits,
-    NonNegativeReals,
 )
 
 __author__ = "Marcus Holly"
