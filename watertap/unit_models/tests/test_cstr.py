@@ -16,7 +16,13 @@ Authors: Marcus Holly
 
 import pytest
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, units, value
+from pyomo.environ import (
+    assert_optimal_termination,
+    check_optimal_termination,
+    ConcreteModel,
+    units,
+    value,
+)
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import (
@@ -27,6 +33,8 @@ from idaes.core import (
     UnitModelCostingBlock,
 )
 from watertap.unit_models.cstr import AnoxicCSTR
+from watertap.costing import WaterTAPCosting
+
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
@@ -379,3 +387,27 @@ class TestInitializers:
 
         assert not model.fs.unit.inlet.temperature[0].fixed
         assert not model.fs.unit.inlet.pressure[0].fixed
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_costing(self, model):
+        m = model
+
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.costing.cost_process()
+        results = solver.solve(m)
+
+        assert_optimal_termination(results)
+
+        # Check solutions
+        assert pytest.approx(296552.75, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
+
+    @pytest.mark.unit
+    def test_report(self, model):
+        m = model
+        m.fs.unit.report()
