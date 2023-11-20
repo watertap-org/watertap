@@ -13,7 +13,7 @@
 import pyomo.environ as pyo
 from ..util import (
     register_costing_parameter_block,
-    make_capital_cost_var,
+    cost_by_flow_volume,
 )
 
 
@@ -34,36 +34,17 @@ def cost_cstr(blk):
     """
     CSTR costing method
     """
-    cost_cstr_capital(
-        blk,
-        blk.costing_package.cstr.sizing_cost,
-    )
-
-
-def cost_cstr_capital(blk, sizing_cost):
-    """
-    Generic function for costing an ElectroNP system.
-    """
-    make_capital_cost_var(blk)
-
-    blk.sizing_cost = pyo.Expression(expr=sizing_cost)
-
-    flow_in = pyo.units.convert(
-        blk.unit_model.control_volume.properties_in[0].flow_vol,
-        to_units=pyo.units.m**3 / pyo.units.hr,
-    )
-
     HRT = pyo.units.convert(
         blk.unit_model.volume[0]
         / blk.unit_model.control_volume.properties_in[0].flow_vol,
         to_units=pyo.units.hr,
     )
 
-    print(f"base_currency: {blk.costing_package.base_currency}")
-    blk.capital_cost_constraint = pyo.Constraint(
-        expr=blk.capital_cost
-        == pyo.units.convert(
-            HRT * flow_in * blk.sizing_cost,
-            to_units=blk.costing_package.base_currency,
-        )
+    cost_by_flow_volume(
+        blk,
+        HRT * blk.costing_package.cstr.sizing_cost,
+        pyo.units.convert(
+            blk.unit_model.control_volume.properties_in[0].flow_vol,
+            (pyo.units.meter**3 / pyo.units.hours),
+        ),
     )
