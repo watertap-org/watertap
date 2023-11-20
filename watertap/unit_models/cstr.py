@@ -14,7 +14,6 @@
 Anoxic CSTR unit model for BSM2 and plant-wide wastewater treatment modeling.
 This unit inherits from the IDAES CSTR unit.
 """
-from enum import Enum, auto
 
 # Import IDAES cores
 from idaes.core import (
@@ -22,18 +21,12 @@ from idaes.core import (
 )
 from idaes.models.unit_models.cstr import CSTRData
 
-from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 
 from pyomo.environ import (
     Param,
     units as pyunits,
     NonNegativeReals,
-)
-from pyomo.common.config import ConfigValue, In
-
-from idaes.core.util.exceptions import (
-    ConfigurationError,
 )
 
 __author__ = "Marcus Holly"
