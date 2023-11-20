@@ -53,7 +53,11 @@ def cost_cstr_capital(blk, sizing_cost):
         to_units=pyo.units.m**3 / pyo.units.hr,
     )
 
-    HRT = blk.unit_model.HRT
+    HRT = pyo.units.convert(
+        blk.unit_model.volume[0]
+        / blk.unit_model.control_volume.properties_in[0].flow_vol,
+        to_units=pyo.units.hr,
+    )
 
     print(f"base_currency: {blk.costing_package.base_currency}")
     blk.capital_cost_constraint = pyo.Constraint(
