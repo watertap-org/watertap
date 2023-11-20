@@ -39,9 +39,6 @@ import idaes.core.util.scaling as iscale
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
-from watertap.property_models.activated_sludge.asm1_properties import (
-    ASM1ParameterBlock,
-)
 from watertap.property_models.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
