@@ -398,6 +398,7 @@ class TestInitializers:
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
+        m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         results = solver.solve(m)
 
         assert_optimal_termination(results)
@@ -406,6 +407,7 @@ class TestInitializers:
         assert pytest.approx(296552.75, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
+        assert pytest.approx(2.1442676e-5, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, model):
