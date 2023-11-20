@@ -24,10 +24,7 @@ from idaes.models.unit_models.cstr import CSTRData
 import idaes.logger as idaeslog
 
 from pyomo.environ import (
-    Constraint,
     Param,
-    NonNegativeReals,
-    Var,
     units as pyunits,
 )
 
@@ -60,31 +57,11 @@ class AnoxicCSTRData(CSTRData):
         # Call UnitModel.build to set up dynamics
         super(AnoxicCSTRData, self).build()
 
-        # self.HRT = Param(
-        #     initialize=4,
-        #     units=pyunits.hr,
-        #     mutable=True,
-        #     doc="Hydraulic retention time",
-        # )
-
-        self.HRT = Var(
-            self.flowsheet().time,
+        self.HRT = Param(
             initialize=4,
-            domain=NonNegativeReals,
-            units=pyunits.s,
+            units=pyunits.hr,
+            mutable=True,
             doc="Hydraulic retention time",
-        )
-
-        def CSTR_retention_time_rule(self, t):
-            return (
-                self.HRT[t]
-                == self.volume[t] / self.control_volume.properties_in[t].flow_vol
-            )
-
-        self.CSTR_retention_time = Constraint(
-            self.flowsheet().time,
-            rule=CSTR_retention_time_rule,
-            doc="Total CSTR retention time",
         )
 
     @property

@@ -77,10 +77,11 @@ def main():
     results = solve(m)
 
     add_costing(m)
+    m.fs.costing.initialize()
     # Assert DOF = 0 after adding costing
     # assert_degrees_of_freedom(m, 0)
 
-    # results = solve(m)
+    results = solve(m)
 
     display_results(m)
     display_costing(m)
@@ -461,7 +462,6 @@ def add_costing(m):
     m.fs.costing.add_LCOW(m.fs.Treated.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.Treated.properties[0].flow_vol)
 
-    m.fs.costing.initialize()
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
 
 

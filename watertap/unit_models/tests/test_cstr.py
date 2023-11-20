@@ -159,8 +159,8 @@ class TestSaponification(object):
         assert hasattr(sapon.fs.unit, "heat_duty")
         assert hasattr(sapon.fs.unit, "deltaP")
 
-        assert number_variables(sapon) == 28
-        assert number_total_constraints(sapon) == 17
+        assert number_variables(sapon) == 27
+        assert number_total_constraints(sapon) == 16
         assert number_unused_variables(sapon) == 0
 
     @pytest.mark.component
@@ -439,8 +439,10 @@ class TestInitializers:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(526.454, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(9.08474e-8, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(39936.08356, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
+        assert pytest.approx(6.939851e-5, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, model):
