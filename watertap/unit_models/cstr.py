@@ -28,6 +28,8 @@ from pyomo.environ import (
     units as pyunits,
 )
 
+from watertap.costing.unit_models.cstr import cost_cstr
+
 __author__ = "Marcus Holly"
 
 
@@ -61,3 +63,7 @@ class AnoxicCSTRData(CSTRData):
             mutable=True,
             doc="Hydraulic retention time",
         )
+
+    @property
+    def default_costing_method(self):
+        return cost_cstr
