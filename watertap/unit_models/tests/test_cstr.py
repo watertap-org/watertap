@@ -35,6 +35,11 @@ from idaes.core import (
 from watertap.unit_models.cstr import AnoxicCSTR
 from watertap.costing import WaterTAPCosting
 
+from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
+from watertap.property_models.activated_sludge.asm1_reactions import (
+    ASM1ReactionParameterBlock,
+)
+
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
@@ -154,8 +159,8 @@ class TestSaponification(object):
         assert hasattr(sapon.fs.unit, "heat_duty")
         assert hasattr(sapon.fs.unit, "deltaP")
 
-        assert number_variables(sapon) == 27
-        assert number_total_constraints(sapon) == 16
+        assert number_variables(sapon) == 28
+        assert number_total_constraints(sapon) == 17
         assert number_unused_variables(sapon) == 0
 
     @pytest.mark.component
@@ -391,8 +396,38 @@ class TestInitializers:
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_costing(self, model):
-        m = model
+    def test_costing(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props_ASM1 = ASM1ParameterBlock()
+        m.fs.ASM1_rxn_props = ASM1ReactionParameterBlock(
+            property_package=m.fs.props_ASM1
+        )
+
+        m.fs.unit = AnoxicCSTR(
+            property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+        )
+
+        m.fs.unit.inlet.flow_vol[0].set_value(1.2199)
+        m.fs.unit.inlet.alkalinity[0].set_value(4.5102)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].set_value(0.061909)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].set_value(0.012366)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].set_value(1.4258)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].set_value(0.090508)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].set_value(2.8404)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].set_value(0.20512)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].set_value(0.58681)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].set_value(0.00036092)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].set_value(0.012424)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].set_value(0.0076936)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].set_value(0.0019068)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].set_value(0.0053166)
+
+        m.fs.unit.inlet.temperature[0].set_value(308.15)
+        m.fs.unit.inlet.pressure[0].set_value(84790.0)
+
+        m.fs.unit.volume[0].fix(1000)
 
         m.fs.costing = WaterTAPCosting()
 
@@ -404,10 +439,8 @@ class TestInitializers:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(296552.75, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(2.1442676e-5, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(526.454, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(9.08474e-8, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, model):
