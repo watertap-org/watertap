@@ -445,14 +445,17 @@ def add_costing(m):
     m.fs.costing.base_currency = pyo.units.USD_2020
 
     # Costing Blocks
-    m.fs.MX1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.R1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.R2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.MX6.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
     m.fs.RADM.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.MX2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.MX3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.MX4.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    # Leaving out mixer costs for now
+    # m.fs.MX1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.MX6.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.MX2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.MX3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.MX4.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # process costing and add system level metrics
     m.fs.costing.cost_process()
