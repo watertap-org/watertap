@@ -17,9 +17,10 @@ from ..util import (
 )
 from idaes.core.util.misc import StrEnum
 
-'''
+"""
 Ref: W. McGivney, S. Kawamura, Cost estimating manual for water treatment facilities, John Wiley & Sons, 2008. http://onlinelibrary.wiley.com/book/10.1002/9780470260036.
-'''
+"""
+
 
 class DewateringType(StrEnum):
     filter_belt_press = "filter_belt_press"
@@ -27,23 +28,23 @@ class DewateringType(StrEnum):
     centrifuge = "centrifuge"
 
 
-def cost_dewatering(blk, dewatering_type=DewateringType.centrifuge, cost_electricity_flow=True):
-   
-    if dewatering_type==DewateringType.centrifuge:
+def cost_dewatering(
+    blk, dewatering_type=DewateringType.centrifuge, cost_electricity_flow=True
+):
+
+    if dewatering_type == DewateringType.centrifuge:
         cost_centrifuge(blk, dewatering_type, cost_electricity_flow)
 
-
-    elif dewatering_type==DewateringType.filter_belt_press:
+    elif dewatering_type == DewateringType.filter_belt_press:
         cost_filter_belt_press(blk, dewatering_type, cost_electricity_flow)
 
-    elif dewatering_type==DewateringType.filter_plate_press:
+    elif dewatering_type == DewateringType.filter_plate_press:
         cost_filter_plate_press(blk, dewatering_type, cost_electricity_flow)
     else:
-         raise ConfigurationError(
+        raise ConfigurationError(
             f"{blk.unit_model.name} received invalid argument for dewatering_type:"
             f" {dewatering_type}. Argument must be a member of the DewateringType Enum class."
-        )       
-    
+        )
 
 
 def build_centrifuge_cost_param_block(blk):
@@ -51,7 +52,7 @@ def build_centrifuge_cost_param_block(blk):
     blk.capital_a_parameter = pyo.Var(
         initialize=328.03,
         doc="A parameter for capital cost",
-        units=pyo.units.USD_2007/(pyo.units.gallon/pyo.units.hour),
+        units=pyo.units.USD_2007 / (pyo.units.gallon / pyo.units.hour),
     )
     blk.capital_b_parameter = pyo.Var(
         initialize=751295,
@@ -59,12 +60,13 @@ def build_centrifuge_cost_param_block(blk):
         units=pyo.units.USD_2007,
     )
 
+
 def build_filter_belt_press_cost_param_block(blk):
     # NOTE: costing data are from McGivney & Kawamura, 2008
     blk.capital_a_parameter = pyo.Var(
         initialize=146.29,
         doc="A parameter for capital cost",
-        units=pyo.units.USD_2007/(pyo.units.gallon/pyo.units.hour),
+        units=pyo.units.USD_2007 / (pyo.units.gallon / pyo.units.hour),
     )
     blk.capital_b_parameter = pyo.Var(
         initialize=433972,
@@ -72,12 +74,13 @@ def build_filter_belt_press_cost_param_block(blk):
         units=pyo.units.USD_2007,
     )
 
+
 def build_filter_plate_press_cost_param_block(blk):
     # NOTE: costing data are from McGivney & Kawamura, 2008
     blk.capital_a_parameter = pyo.Var(
         initialize=102794,
         doc="A parameter for capital cost",
-        units=pyo.units.USD_2007/(pyo.units.gallon/pyo.units.hour),
+        units=pyo.units.USD_2007 / (pyo.units.gallon / pyo.units.hour),
     )
     blk.capital_b_parameter = pyo.Var(
         initialize=0.4216,
@@ -85,25 +88,30 @@ def build_filter_plate_press_cost_param_block(blk):
         units=pyo.units.dimensionless,
     )
 
+
 @register_costing_parameter_block(
     build_rule=build_centrifuge_cost_param_block,
     parameter_block_name="centrifuge",
 )
-def cost_centrifuge(blk, dewatering_type=DewateringType.centrifuge, cost_electricity_flow=True):
+def cost_centrifuge(
+    blk, dewatering_type=DewateringType.centrifuge, cost_electricity_flow=True
+):
     """
     Centrifuge costing method
     """
     make_capital_cost_var(blk)
     cost_blk = blk.costing_package.centrifuge
     t0 = blk.flowsheet().time.first()
-    x = flow_in = pyo.units.convert(blk.unit_model.inlet.flow_vol[t0], to_units=pyo.units.gallon / pyo.units.hr)
+    x = flow_in = pyo.units.convert(
+        blk.unit_model.inlet.flow_vol[t0], to_units=pyo.units.gallon / pyo.units.hr
+    )
     blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost
-            == pyo.units.convert(
-                cost_blk.capital_a_parameter * x + cost_blk.capital_b_parameter,
-                to_units=blk.costing_package.base_currency,
-            )
+        expr=blk.capital_cost
+        == pyo.units.convert(
+            cost_blk.capital_a_parameter * x + cost_blk.capital_b_parameter,
+            to_units=blk.costing_package.base_currency,
         )
+    )
     if cost_electricity_flow:
         blk.costing_package.cost_flow(
             pyo.units.convert(
@@ -113,26 +121,31 @@ def cost_centrifuge(blk, dewatering_type=DewateringType.centrifuge, cost_electri
             "electricity",
         )
 
+
 @register_costing_parameter_block(
     build_rule=build_filter_belt_press_cost_param_block,
     parameter_block_name="filter_belt_press",
 )
-def cost_filter_belt_press(blk, dewatering_type=DewateringType.filter_belt_press, cost_electricity_flow=True):
+def cost_filter_belt_press(
+    blk, dewatering_type=DewateringType.filter_belt_press, cost_electricity_flow=True
+):
     """
     Belt Press Filter costing method
     """
     make_capital_cost_var(blk)
     cost_blk = blk.costing_package.filter_belt_press
     t0 = blk.flowsheet().time.first()
-    x = flow_in = pyo.units.convert(blk.unit_model.inlet.flow_vol[t0], to_units=pyo.units.gallon / pyo.units.hr)
+    x = flow_in = pyo.units.convert(
+        blk.unit_model.inlet.flow_vol[t0], to_units=pyo.units.gallon / pyo.units.hr
+    )
 
     blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost
-            == pyo.units.convert(
-                cost_blk.capital_a_parameter * x + cost_blk.capital_b_parameter,
-                to_units=blk.costing_package.base_currency,
-            )
+        expr=blk.capital_cost
+        == pyo.units.convert(
+            cost_blk.capital_a_parameter * x + cost_blk.capital_b_parameter,
+            to_units=blk.costing_package.base_currency,
         )
+    )
     if cost_electricity_flow:
         blk.costing_package.cost_flow(
             pyo.units.convert(
@@ -142,11 +155,14 @@ def cost_filter_belt_press(blk, dewatering_type=DewateringType.filter_belt_press
             "electricity",
         )
 
+
 @register_costing_parameter_block(
     build_rule=build_filter_plate_press_cost_param_block,
     parameter_block_name="filter_plate_press",
 )
-def cost_filter_plate_press(blk, dewatering_type=DewateringType.filter_plate_press, cost_electricity_flow=True):
+def cost_filter_plate_press(
+    blk, dewatering_type=DewateringType.filter_plate_press, cost_electricity_flow=True
+):
     """
     Plate Press Filter costing method
     """
@@ -160,7 +176,9 @@ def cost_filter_plate_press(blk, dewatering_type=DewateringType.filter_plate_pre
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == pyo.units.convert(
-            cost_blk.capital_a_parameter * x_units *(x/x_units)**cost_blk.capital_b_parameter,
+            cost_blk.capital_a_parameter
+            * x_units
+            * (x / x_units) ** cost_blk.capital_b_parameter,
             to_units=blk.costing_package.base_currency,
         )
     )
