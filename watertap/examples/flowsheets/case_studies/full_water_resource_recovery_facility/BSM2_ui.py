@@ -608,6 +608,7 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
 
+    #TODO: uncomment and revise below once costing is merged
     # System costing
     # exports.add(
     #     obj=fs.costing.utilization_factor,
