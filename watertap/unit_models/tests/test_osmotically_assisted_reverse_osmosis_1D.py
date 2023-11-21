@@ -558,7 +558,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         return m
 
     @pytest.mark.unit
-    def test_build(self, RO_SKK_frame):
+    def test_skk_build(self, RO_SKK_frame):
         m = RO_SKK_frame
 
         # test ports
