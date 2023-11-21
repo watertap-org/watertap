@@ -341,7 +341,7 @@ see reaction package for documentation.}""",
 
         self.CSTR_injection_retention_time = Constraint(
             self.flowsheet().time,
-            rule=CSTR_injection_retention_timee_rule,
+            rule=CSTR_injection_retention_time_rule,
             doc="Total CSTR retention time",
         )
 
