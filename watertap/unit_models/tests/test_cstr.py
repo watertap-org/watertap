@@ -440,7 +440,7 @@ class TestInitializers:
 
         # Check solutions
         assert pytest.approx(526.45, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(1.866959e-7, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(9.0847e-8, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, model):

@@ -34,15 +34,9 @@ def cost_cstr(blk):
     """
     CSTR costing method
     """
-    HRT = pyo.units.convert(
-        blk.unit_model.volume[0]
-        / blk.unit_model.control_volume.properties_in[0].flow_vol,
-        to_units=pyo.units.hr,
-    )
-
     cost_by_flow_volume(
         blk,
-        HRT * blk.costing_package.cstr.sizing_cost,
+        blk.unit_model.HRT[0] * blk.costing_package.cstr.sizing_cost,
         pyo.units.convert(
             blk.unit_model.control_volume.properties_in[0].flow_vol,
             (pyo.units.meter**3 / pyo.units.hours),
