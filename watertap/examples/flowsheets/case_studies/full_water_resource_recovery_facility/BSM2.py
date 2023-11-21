@@ -22,7 +22,7 @@ __author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia"
 import pyomo.environ as pyo
 
 from pyomo.network import Arc, SequentialDecomposition
-from idaes.core import FlowsheetBlock, UnitModelCostingBlock
+from idaes.core import FlowsheetBlock
 from watertap.unit_models.anaerobic_digestor import AD
 from watertap.unit_models.thickener import Thickener
 from watertap.unit_models.dewatering import DewateringUnit
@@ -49,6 +49,7 @@ from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
 )
 
+from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import (
     CSTR,
     Feed,
@@ -64,7 +65,6 @@ from watertap.property_models.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
 from watertap.core.util.initialization import assert_degrees_of_freedom
-from watertap.costing import WaterTAPCosting
 from pyomo.util.check_units import assert_units_consistent
 
 
@@ -88,7 +88,6 @@ def main():
     # results = solve(m)
 
     display_results(m)
-    display_costing(m)
 
     return m, results
 
@@ -443,20 +442,7 @@ def initialize_system(m):
 
 def add_costing(m):
     # TODO: implement unit model and flowsheet level costing
-    m.fs.costing = WaterTAPCosting()
-    m.fs.costing.base_currency = pyo.units.USD_2020
-
-    # process costing and add system level metrics
-    m.fs.R3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.R4.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.R5.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.RADM.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(m.fs.Treated.properties[0].flow_vol)
-    m.fs.costing.add_LCOW(m.fs.Treated.properties[0].flow_vol)
-
-    m.fs.costing.initialize()
-    m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
+    pass
 
 
 def solve(blk, solver=None):
@@ -496,79 +482,6 @@ def display_results(m):
     ]
     for u in unit_list:
         m.fs.component(u).report()
-
-
-def display_costing(m):
-    print("Levelized cost of water: %.2f $/m3" % pyo.value(m.fs.costing.LCOW))
-
-    print(
-        "Total operating cost: %.2f $/yr" % pyo.value(m.fs.costing.total_operating_cost)
-    )
-
-    print("Total capital cost: %.2f $" % pyo.value(m.fs.costing.total_capital_cost))
-
-    print(
-        "Total annualized cost: %.2f $/yr"
-        % pyo.value(m.fs.costing.total_annualized_cost)
-    )
-
-    print(
-        "electricity consumption AD",
-        pyo.value(m.fs.RADM.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.RADM.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption R3",
-        pyo.value(m.fs.R3.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.R3.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption R4",
-        pyo.value(m.fs.R4.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.R4.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption R5",
-        pyo.value(m.fs.R5.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.R5.electricity_consumption[0]),
-    )
-
-    print(
-        "total flow",
-        pyo.value(m.fs.FeedWater.flow_vol[0]),
-        pyo.units.get_units(m.fs.FeedWater.flow_vol[0]),
-    )
-    print(
-        "flow R3",
-        pyo.value(m.fs.R3.control_volume.properties_in[0].flow_vol),
-        pyo.units.get_units(m.fs.R3.control_volume.properties_in[0].flow_vol),
-    )
-    print(
-        "flow RADM",
-        pyo.value(m.fs.RADM.liquid_phase.properties_in[0].flow_vol),
-        pyo.units.get_units(m.fs.RADM.liquid_phase.properties_in[0].flow_vol),
-    )
-
-    print(
-        "cost AD",
-        pyo.value(m.fs.RADM.costing.capital_cost),
-        pyo.units.get_units(m.fs.RADM.costing.capital_cost),
-    )
-    print(
-        "cost R3",
-        pyo.value(m.fs.R3.costing.capital_cost),
-        pyo.units.get_units(m.fs.R3.costing.capital_cost),
-    )
-    print(
-        "cost R4",
-        pyo.value(m.fs.R4.costing.capital_cost),
-        pyo.units.get_units(m.fs.R4.costing.capital_cost),
-    )
-    print(
-        "cost R5",
-        pyo.value(m.fs.R5.costing.capital_cost),
-        pyo.units.get_units(m.fs.R5.costing.capital_cost),
-    )
 
 
 if __name__ == "__main__":
