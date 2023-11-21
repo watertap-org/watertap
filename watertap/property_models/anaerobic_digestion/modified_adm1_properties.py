@@ -380,7 +380,7 @@ class ModifiedADM1StateBlockData(StateBlockData):
         }
         self.conc_mass_comp = pyo.Var(
             self.params.solute_set,
-            domain=pyo.NonNegativeReals,
+            bounds=(1e-20, None),
             initialize=Comp_dict,
             doc="Component mass concentrations",
             units=pyo.units.kg / pyo.units.m**3,
