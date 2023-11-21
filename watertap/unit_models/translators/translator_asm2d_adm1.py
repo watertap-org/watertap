@@ -28,6 +28,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class
+from idaes.core.util.math import smooth_max
 from idaes.models.unit_models.translator import TranslatorData
 from idaes.core.util.config import (
     is_reaction_parameter_block,
@@ -126,7 +127,7 @@ see reaction package for documentation.}""",
         # Call UnitModel.build to setup dynamics
         super(TranslatorDataASM2dADM1, self).build()
 
-        eps = 0
+        eps = 1e-15
         mw_p = 31 * pyunits.kg / pyunits.kmol
         mw_n = 14 * pyunits.kg / pyunits.kmol
         mw_c = 12 * pyunits.kg / pyunits.kmol
@@ -201,6 +202,12 @@ see reaction package for documentation.}""",
             mutable=True,
             doc="P content of inert soluble COD S_I, [kg P/kg COD]",
         )
+        self.eps = Param(
+            initialize=1e-15,
+            units=pyunits.kg / pyunits.m**3,
+            mutable=True,
+            doc="Smoothing factor",
+        )
 
         @self.Constraint(
             self.flowsheet().time,
@@ -245,9 +252,11 @@ see reaction package for documentation.}""",
 
         @self.Expression(self.flowsheet().time, doc="S_A concentration at step 1")
         def SA_AS1(blk, t):
-            return (
+            return smooth_max(
+                0 * pyunits.kg / pyunits.m**3,
                 blk.properties_in[t].conc_mass_comp["S_A"]
-                - (1 / blk.config.inlet_reaction_package.Y_H) * self.COD_SO2[t]
+                - (1 / blk.config.inlet_reaction_package.Y_H) * self.COD_SO2[t],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="S_NH4 concentration at step 1")
@@ -294,9 +303,11 @@ see reaction package for documentation.}""",
 
         @self.Expression(self.flowsheet().time, doc="S_A concentration at step 2")
         def SA_AS2(blk, t):
-            return (
+            return smooth_max(
+                0 * pyunits.kg / pyunits.m**3,
                 blk.SA_AS1[t]
-                - (1 / blk.config.inlet_reaction_package.Y_H) * self.COD_SNO3[t]
+                - (1 / blk.config.inlet_reaction_package.Y_H) * self.COD_SNO3[t],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="S_NH4 concentration at step 2")
