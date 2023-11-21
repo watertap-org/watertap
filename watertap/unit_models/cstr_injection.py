@@ -333,7 +333,7 @@ see reaction package for documentation.}""",
             doc="Hydraulic retention time",
         )
 
-        def CSTR_injection_retention_timee_rule(self, t):
+        def CSTR_injection_retention_time_rule(self, t):
             return (
                 self.hydraulic_retention_time[t]
                 == self.volume[t] / self.control_volume.properties_in[t].flow_vol
