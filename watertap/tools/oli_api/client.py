@@ -138,7 +138,6 @@ class OLIApi:
             raise IOError(" Failed to upload DBS file. Ensure specified file exists.")
 
     def _create_dbs_dict(self, chemistry_source, phases, model_name):
-
         """
         Creates dict for chemistry-builder to later generate a DBS file id.
 
@@ -335,24 +334,27 @@ class OLIApi:
         max_request=1000,
         tee=False,
     ):
-        """
-        """
-        
+        """ """
+
         if not bool(flash_method):
-            raise IOError(" Specify a flash method to use from {self.valid_flashes.keys()}." + 
-                          " Run self.get_valid_flash_methods to see a list and required inputs.")
-            
+            raise IOError(
+                " Specify a flash method to use from {self.valid_flashes.keys()}."
+                + " Run self.get_valid_flash_methods to see a list and required inputs."
+            )
+
         if not bool(dbs_file_id):
             raise IOError("Specify a DBS file id to flash.")
-        
+
         if bool(input_params):
             data = json.dumps(input_params)
         else:
             raise IOError("Specify flash calculation input to use this function.")
-            
-        endpoint = f"{self.credential_manager.engine_url}flash/{dbs_file_id}/{flash_method}"
-                        
-        req_method = "POST"        
+
+        endpoint = (
+            f"{self.credential_manager.engine_url}flash/{dbs_file_id}/{flash_method}"
+        )
+
+        req_method = "POST"
         # TODO: reimplement other calls (e.g., "corrosion-contact-surface", "corrosion-rates")
 
         # TODO: improve header management
@@ -369,7 +371,7 @@ class OLIApi:
         request_time = end_time - start_time
         if tee:
             print("First request time =", request_time)
-            
+
         if bool(request_result1):
             if request_result1["status"] == "SUCCESS":
                 if "data" in request_result1:

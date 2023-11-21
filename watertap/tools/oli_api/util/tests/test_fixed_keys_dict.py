@@ -22,7 +22,6 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
 
 @pytest.mark.unit
 def test_fixed_keys_dict():
-
     with pytest.raises(RuntimeError):
         default_oli_input_dict["invalid_key"] = "value"
 
