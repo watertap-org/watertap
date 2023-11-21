@@ -38,6 +38,7 @@ from pyomo.environ import (
     Param,
     units as pyunits,
     Var,
+    NonNegativeReals,
 )
 from pyomo.common.config import ConfigValue, In
 
@@ -149,6 +150,27 @@ class DewateringData(SeparatorData):
         def eq_electricity_consumption(blk, t):
             return blk.electricity_consumption[t] == pyunits.convert(blk.energy_electric_flow_vol_inlet[t] * blk.inlet.flow_vol[t], to_units= pyunits.kW)
 
+        self.hydraulic_retention_time = Var(
+            self.flowsheet().time,
+            initialize=1800,
+            domain=NonNegativeReals,
+            units=pyunits.s,
+            doc="Hydraulic retention time",
+        )
+        self.volume = Var(
+            self.flowsheet().time,
+            initialize=1800,
+            domain=NonNegativeReals,
+            units=pyunits.m**3,
+            doc="Hydraulic retention time",
+        )
+        @self.Constraint(self.flowsheet().time, doc="Hydraulic retention time equation")
+        def eq_hydraulic_retention(blk, t):
+            return (
+                self.hydraulic_retention_time[t]
+                == self.volume[t] / self.inlet.flow_vol[t]
+            )
+
         @self.Expression(self.flowsheet().time, doc="Suspended solid concentration")
         def TSS_in(blk, t):
             if blk.config.activated_sludge_model == ActivatedSludgeModelType.ASM1:
@@ -204,6 +226,8 @@ class DewateringData(SeparatorData):
                 var_dict[f"Split Fraction [{str(k[1:])}]"] = self.split_fraction[k]
         var_dict['Electricity consumption'] = self.electricity_consumption[time_point]
         param_dict['Specific electricity consumption'] = self.energy_electric_flow_vol_inlet[time_point]
+        var_dict['Unit Volume'] = self.volume[time_point]
+        var_dict['Hydraulic Retention Time'] = self.hydraulic_retention_time[time_point]
         return {"vars": var_dict, "params": param_dict}
 
     def _get_stream_table_contents(self, time_point=0):

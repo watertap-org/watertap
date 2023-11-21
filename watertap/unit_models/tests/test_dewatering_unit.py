@@ -155,12 +155,16 @@ class TestDu(object):
         m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
         m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
 
+        m.fs.unit.hydraulic_retention_time.fix()
+
+
         return m
 
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, du):
-
+        assert hasattr(du.fs.unit, "hydraulic_retention_time")
+        assert hasattr(du.fs.unit, "volume")
         assert hasattr(du.fs.unit, "inlet")
         assert len(du.fs.unit.inlet.vars) == 5
         assert hasattr(du.fs.unit.inlet, "flow_vol")
@@ -185,8 +189,8 @@ class TestDu(object):
         assert hasattr(du.fs.unit.overflow, "pressure")
         assert hasattr(du.fs.unit.overflow, "alkalinity")
 
-        assert number_variables(du) == 77
-        assert number_total_constraints(du) == 61
+        assert number_variables(du) == 79
+        assert number_total_constraints(du) == 62
         assert number_unused_variables(du) == 0
 
     @pytest.mark.unit
@@ -256,6 +260,7 @@ class TestDu(object):
         assert pytest.approx(0.09784, rel=1e-3) == value(
             du.fs.unit.overflow.alkalinity[0]
         )
+        assert pytest.approx(3.718, rel=1e-3) == value(du.fs.unit.volume[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -545,6 +550,8 @@ class TestDUASM2d(object):
         )
         m.fs.unit.inlet.alkalinity[0].fix(4.6663 * units.mmol / units.liter)
 
+        m.fs.unit.hydraulic_retention_time.fix()
+
         return m
 
     @pytest.mark.unit
@@ -613,6 +620,7 @@ class TestDUModifiedASM2d(object):
         m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(
             118.3582 * units.mg / units.liter
         )
+        m.fs.unit.hydraulic_retention_time.fix()
 
         return m
 
