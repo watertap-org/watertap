@@ -136,6 +136,18 @@ class DewateringData(SeparatorData):
             bounds=(0, None),
             doc="Electricity consumption of unit",
         )
+        
+        # 0.026 kWh/m3 average between averages of belt and screw presses & centrifuge in relation to flow capacity
+        self.energy_electric_flow_vol_inlet = Param(
+                    self.flowsheet().time,
+                    units=pyunits.kWh/(pyunits.m**3),
+                    initialize=0.026,
+                    mutable=True,
+                    doc="Specific electricity intensity of unit",
+                )
+        @self.Constraint(self.flowsheet().time, doc="Electricity consumption equation")
+        def eq_electricity_consumption(blk, t):
+            return blk.electricity_consumption[t] == pyunits.convert(blk.energy_electric_flow_vol_inlet[t] * blk.inlet.flow_vol[t], to_units= pyunits.kW)
 
         @self.Expression(self.flowsheet().time, doc="Suspended solid concentration")
         def TSS_in(blk, t):
@@ -186,10 +198,13 @@ class DewateringData(SeparatorData):
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
+        param_dict = {}
         for k in self.split_fraction.keys():
             if k[0] == time_point:
                 var_dict[f"Split Fraction [{str(k[1:])}]"] = self.split_fraction[k]
-        return {"vars": var_dict}
+        var_dict['Electricity consumption'] = self.electricity_consumption[time_point]
+        param_dict['Specific electricity consumption'] = self.energy_electric_flow_vol_inlet[time_point]
+        return {"vars": var_dict, "params": param_dict}
 
     def _get_stream_table_contents(self, time_point=0):
         outlet_list = self.create_outlet_list()

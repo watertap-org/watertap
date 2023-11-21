@@ -65,8 +65,6 @@ from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.dewatering import (
     cost_dewatering,
     cost_centrifuge,
-    cost_filter_belt_press,
-    cost_filter_plate_press,
     DewateringType,
 )
 from idaes.core import UnitModelCostingBlock
@@ -188,8 +186,8 @@ class TestDu(object):
         assert hasattr(du.fs.unit.overflow, "alkalinity")
 
         assert number_variables(du) == 77
-        assert number_total_constraints(du) == 60
-        assert number_unused_variables(du) == 1
+        assert number_total_constraints(du) == 61
+        assert number_unused_variables(du) == 0
 
     @pytest.mark.unit
     def test_dof(self, du):
@@ -203,7 +201,6 @@ class TestDu(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, du):
-
         iscale.calculate_scaling_factors(du)
         initialization_tester(du)
 
@@ -307,8 +304,6 @@ class TestDu(object):
 
         m.fs.costing.cost_process()
 
-        m.fs.unit.electricity_consumption.fix(0)
-
         assert degrees_of_freedom(du) == 0
 
         results = solver.solve(m)
@@ -348,10 +343,9 @@ class TestDu(object):
             flowsheet_costing_block=m.fs.costing,
             costing_method=cost_centrifuge,
         )
-
+        # Using average specific energy consumption of 0.069 for centrifuge as a function of capacity
+        m.fs.unit.energy_electric_flow_vol_inlet[0] = 0.069 * pyunits.kWh/pyunits.m**3
         m.fs.costing.cost_process()
-
-        m.fs.unit.electricity_consumption.fix(0)
 
         assert degrees_of_freedom(du) == 0
 
@@ -372,6 +366,9 @@ class TestDu(object):
                 (328.03 * 1964.42 + 751295) * pyunits.USD_2007,
                 to_units=m.fs.costing.base_currency,
             )
+        )
+        assert pytest.approx(7.4361*0.069, rel=1e-5) == value(
+            m.fs.unit.electricity_consumption[0]
         )
 
     @pytest.mark.solver
@@ -428,10 +425,11 @@ class TestDu(object):
             costing_method=cost_dewatering,
             costing_method_arguments={
                 "dewatering_type": DewateringType.filter_plate_press,
-                "cost_electricity_flow": False,
+                "cost_electricity_flow": True,
             },
         )
-
+        # Using average specific energy consumption of 0.0039 for screw press as a function of capacity
+        m.fs.unit.energy_electric_flow_vol_inlet[0] = 0.0039 * pyunits.kWh/pyunits.m**3
         m.fs.costing.cost_process()
 
         assert degrees_of_freedom(du) == 0
@@ -443,7 +441,6 @@ class TestDu(object):
         assert hasattr(m.fs.costing, "filter_plate_press")
         assert value(m.fs.costing.filter_plate_press.capital_a_parameter) == 102794
         assert value(m.fs.costing.filter_plate_press.capital_b_parameter) == 0.4216
-        assert "electricity" not in m.fs.costing.aggregate_flow_costs.keys()
 
         # Check solutions
         assert pytest.approx(2885989.2, rel=1e-5) == value(
@@ -454,6 +451,9 @@ class TestDu(object):
                 (102794 * 1964.42**0.4216) * pyunits.USD_2007,
                 to_units=m.fs.costing.base_currency,
             )
+        )
+        assert pytest.approx(7.4361*0.0039, rel=1e-5) == value(
+            m.fs.unit.electricity_consumption[0]
         )
 
     @pytest.mark.solver
@@ -469,10 +469,11 @@ class TestDu(object):
             costing_method=cost_dewatering,
             costing_method_arguments={
                 "dewatering_type": DewateringType.filter_belt_press,
-                "cost_electricity_flow": False,
+                "cost_electricity_flow": True,
             },
         )
-
+        # Using average specific energy consumption of 0.006 for screw press as a function of capacity
+        m.fs.unit.energy_electric_flow_vol_inlet[0] = 0.006 * pyunits.kWh/pyunits.m**3
         m.fs.costing.cost_process()
 
         assert degrees_of_freedom(du) == 0
@@ -484,7 +485,6 @@ class TestDu(object):
         assert hasattr(m.fs.costing, "filter_belt_press")
         assert value(m.fs.costing.filter_belt_press.capital_a_parameter) == 146.29
         assert value(m.fs.costing.filter_belt_press.capital_b_parameter) == 433972
-        assert "electricity" not in m.fs.costing.aggregate_flow_costs.keys()
 
         # Check solutions
         assert pytest.approx(828025.2, rel=1e-5) == value(
@@ -496,7 +496,9 @@ class TestDu(object):
                 to_units=m.fs.costing.base_currency,
             )
         )
-
+        assert pytest.approx(7.4361*0.006, rel=1e-5) == value(
+            m.fs.unit.electricity_consumption[0]
+        )
 
 class TestDUASM2d(object):
     @pytest.fixture(scope="class")
