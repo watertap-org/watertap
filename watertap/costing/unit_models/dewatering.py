@@ -47,7 +47,7 @@ def cost_dewatering(blk, dewatering_type=DewateringType.centrifuge, cost_electri
 
 
 def build_centrifuge_cost_param_block(blk):
-    # NOTE: costing data are from McGiveney & Kawamura, 2008
+    # NOTE: costing data are from McGivney & Kawamura, 2008
     blk.capital_a_parameter = pyo.Var(
         initialize=328.03,
         doc="A parameter for capital cost",
@@ -60,7 +60,7 @@ def build_centrifuge_cost_param_block(blk):
     )
 
 def build_filter_belt_press_cost_param_block(blk):
-    # NOTE: costing data are from McGiveney & Kawamura, 2008
+    # NOTE: costing data are from McGivney & Kawamura, 2008
     blk.capital_a_parameter = pyo.Var(
         initialize=146.29,
         doc="A parameter for capital cost",
@@ -73,7 +73,7 @@ def build_filter_belt_press_cost_param_block(blk):
     )
 
 def build_filter_plate_press_cost_param_block(blk):
-    # NOTE: costing data are from McGiveney & Kawamura, 2008
+    # NOTE: costing data are from McGivney & Kawamura, 2008
     blk.capital_a_parameter = pyo.Var(
         initialize=102794,
         doc="A parameter for capital cost",
@@ -154,12 +154,13 @@ def cost_filter_plate_press(blk, dewatering_type=DewateringType.filter_plate_pre
 
     cost_blk = blk.costing_package.filter_plate_press
     t0 = blk.flowsheet().time.first()
-    x = flow_in = pyo.units.convert(blk.unit_model.inlet.flow_vol[t0], to_units=pyo.units.gallon / pyo.units.hr)
+    x_units = pyo.units.gallon / pyo.units.hr
+    x = flow_in = pyo.units.convert(blk.unit_model.inlet.flow_vol[t0], to_units=x_units)
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == pyo.units.convert(
-            cost_blk.capital_a_parameter * x ** cost_blk.capital_b_parameter,
+            cost_blk.capital_a_parameter * x_units *(x/x_units)**cost_blk.capital_b_parameter,
             to_units=blk.costing_package.base_currency,
         )
     )

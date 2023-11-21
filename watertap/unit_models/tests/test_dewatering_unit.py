@@ -314,8 +314,9 @@ class TestDu(object):
         results = solver.solve(m)
 
         assert_optimal_termination(results)
-
+        
         assert hasattr(m.fs.costing, 'centrifuge')
+        assert m.fs.unit.default_costing_method is cost_dewatering
         assert value(m.fs.costing.centrifuge.capital_a_parameter) == 328.03
         assert value(m.fs.costing.centrifuge.capital_b_parameter) == 751295
 
@@ -352,7 +353,6 @@ class TestDu(object):
         assert value(m.fs.costing.centrifuge.capital_b_parameter) == 751295
 
         # Check solutions
-        assert pytest.approx(1964.42, rel=1e-5) == value(pyunits.convert(m.fs.unit.inlet.flow_vol[0], to_units=pyunits.gal/pyunits.hr))
         assert pytest.approx(1602087.9, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
         assert pytest.approx(1602087.9, rel=1e-5) == value(pyunits.convert((328.03*1964.42 +751295)*pyunits.USD_2007, to_units=m.fs.costing.base_currency))
 
@@ -385,9 +385,73 @@ class TestDu(object):
         
 
         # Check solutions
-        assert pytest.approx(1964.42, rel=1e-5) == value(pyunits.convert(m.fs.unit.inlet.flow_vol[0], to_units=pyunits.gal/pyunits.hr))
         assert pytest.approx(1602087.9, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
         assert pytest.approx(1602087.9, rel=1e-5) == value(pyunits.convert((328.03*1964.42 +751295)*pyunits.USD_2007, to_units=m.fs.costing.base_currency))
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_du_filter_plate_press_costing(self, du):
+        m = du
+
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_dewatering,
+            costing_method_arguments= {'dewatering_type': DewateringType.filter_plate_press, 'cost_electricity_flow': False}
+        )
+
+        m.fs.costing.cost_process()
+
+        assert degrees_of_freedom(du) == 0
+
+        results = solver.solve(m)
+
+        assert_optimal_termination(results)
+        assert_units_consistent(m)
+        assert hasattr(m.fs.costing, 'filter_plate_press')
+        assert value(m.fs.costing.filter_plate_press.capital_a_parameter) == 102794
+        assert value(m.fs.costing.filter_plate_press.capital_b_parameter) == 0.4216
+        assert "electricity" not in m.fs.costing.aggregate_flow_costs.keys()
+        
+
+        # Check solutions
+        assert pytest.approx(2885989.2, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(2885989.2, rel=1e-5) == value(pyunits.convert((102794*1964.42**0.4216)*pyunits.USD_2007, to_units=m.fs.costing.base_currency))
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_du_filter_belt_press_costing(self, du):
+        m = du
+
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_dewatering,
+            costing_method_arguments= {'dewatering_type': DewateringType.filter_belt_press, 'cost_electricity_flow': False}
+        )
+
+        m.fs.costing.cost_process()
+
+        assert degrees_of_freedom(du) == 0
+
+        results = solver.solve(m)
+
+        assert_optimal_termination(results)
+        assert_units_consistent(m)
+        assert hasattr(m.fs.costing, 'filter_belt_press')
+        assert value(m.fs.costing.filter_belt_press.capital_a_parameter) == 146.29
+        assert value(m.fs.costing.filter_belt_press.capital_b_parameter) == 433972
+        assert "electricity" not in m.fs.costing.aggregate_flow_costs.keys()
+        
+
+        # Check solutions
+        assert pytest.approx(828025.2, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(828025.2, rel=1e-5) == value(pyunits.convert((146.29*1964.42 + 433972)*pyunits.USD_2007, to_units=m.fs.costing.base_currency))
+
 
 class TestDUASM2d(object):
     @pytest.fixture(scope="class")
