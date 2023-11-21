@@ -27,16 +27,11 @@ from watertap.tools.parallel.parallel_manager import (
 
 _logger = logging.getLogger(__name__)
 
-TimeoutSpec = Optional[Number]
-
-_DEFAULT_TIMEOUT_SECONDS = 1
-
 
 class MultiprocessingParallelManager(ParallelManager):
     def __init__(
         self,
         number_of_subprocesses=1,
-        timeout: TimeoutSpec = _DEFAULT_TIMEOUT_SECONDS,
         **kwargs,
     ):
         self.max_number_of_subprocesses = number_of_subprocesses
@@ -47,7 +42,6 @@ class MultiprocessingParallelManager(ParallelManager):
         # Future -> (process number, parameters). Used to keep track of the process number and parameters for
         # all in-progress futures
         self.running_futures = dict()
-        self.timeout = timeout
 
     def is_root_process(self):
         return True
@@ -121,9 +115,6 @@ class MultiprocessingParallelManager(ParallelManager):
                         do_execute,
                         divided_parameters[0],
                     ),
-                    kwargs={
-                        "timeout": self.timeout,
-                    },
                 )
             )
             self.actors[-1].start()
@@ -133,7 +124,7 @@ class MultiprocessingParallelManager(ParallelManager):
         # collect result from the actors
         while len(results) < self.expected_samples:
             try:
-                i, values, result = self.return_queue.get(timeout=self.timeout)
+                i, values, result = self.return_queue.get()
                 results.append(LocalResults(i, values, result))
             except EmptyQueue:
                 break
@@ -146,8 +137,9 @@ class MultiprocessingParallelManager(ParallelManager):
         n_shut_down = 0
         for process in self.actors:
             _logger.debug("Attempting to shut down %s", process)
-            process.join(timeout=self.timeout)
+            process.kill()
             n_shut_down += 1
+        self.actors.clear()
         _logger.debug("Shut down %d processes", n_shut_down)
 
     def results_from_local_tree(self, results):
@@ -162,12 +154,11 @@ def multiProcessingActor(
     do_build_kwargs,
     do_execute,
     local_parameters,
-    timeout: TimeoutSpec = _DEFAULT_TIMEOUT_SECONDS,
 ):
     actor = parallelActor(do_build, do_build_kwargs, do_execute, local_parameters)
     while True:
         try:
-            msg = queue.get(timeout=timeout)
+            msg = queue.get()
         except EmptyQueue:
             return
         i, local_parameters = msg
