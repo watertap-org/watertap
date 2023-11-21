@@ -226,7 +226,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             doc="P content of biomass, X_H, X_PAO, X_AUT, [kg P/kg COD]",
         )
         self.f_SI = pyo.Var(
-            initialize=0.00,
+            initialize=1e-20,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
             doc="Production of S_I in hydrolysis, [kg COD/kg COD]",
