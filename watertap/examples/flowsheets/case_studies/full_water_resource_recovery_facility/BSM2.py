@@ -365,6 +365,10 @@ def set_operating_conditions(m):
     m.fs.RADM.volume_vapor.fix(300)
     m.fs.RADM.liquid_outlet.temperature.fix(308.15)
 
+    # Dewatering Unit - fix either HRT or volume.
+
+    # Set specific energy consumption averaged for centrifuge
+    m.fs.unit.energy_electric_flow_vol_inlet[0] = 0.069 * pyunits.kWh/pyunits.m**3
 
 def initialize_system(m):
     # Initialize flowsheet
@@ -446,7 +450,7 @@ def add_costing(m):
     m.fs.R5.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.RADM.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-
+    m.fs.DU.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     # Leaving out mixer costs for now
     # m.fs.MX1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     # m.fs.MX6.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
@@ -458,8 +462,8 @@ def add_costing(m):
     m.fs.costing.cost_process()
     m.fs.costing.add_electricity_intensity(m.fs.FeedWater.properties[0].flow_vol)
     m.fs.costing.add_annual_water_production(m.fs.Treated.properties[0].flow_vol)
-    m.fs.costing.add_LCOW(m.fs.Treated.properties[0].flow_vol)
-    m.fs.costing.add_specific_energy_consumption(m.fs.Treated.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.FeedWater.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
 
@@ -504,7 +508,7 @@ def display_results(m):
 
 
 def display_costing(m):
-    print("Levelized cost of water: %.2f $/m3" % pyo.value(m.fs.costing.LCOW))
+    print("Levelized cost of treatment: %.2f $/m3" % pyo.value(m.fs.costing.LCOW))
 
     print(
         "Total operating cost: %.2f $/yr" % pyo.value(m.fs.costing.total_operating_cost)
@@ -516,12 +520,8 @@ def display_costing(m):
         % pyo.value(m.fs.costing.total_annualized_cost)
     )
     print(
-        "Energy consumption: %.1f kWh/m3"
+        "Specific energy consumption with respect to influent flowrate: %.1f kWh/m3"
         % pyo.value(m.fs.costing.specific_energy_consumption)
-    )
-    print(
-        "Electricity intensity: %.1f kWh/m3"
-        % pyo.value(m.fs.costing.electricity_intensity)
     )
 
     print(
@@ -544,44 +544,52 @@ def display_costing(m):
         pyo.value(m.fs.R5.electricity_consumption[0]),
         pyo.units.get_units(m.fs.R5.electricity_consumption[0]),
     )
-
     print(
-        "total flow",
+        "electricity consumption Dewatering Unit",
+        pyo.value(m.fs.DU.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.R5.electricity_consumption[0]),
+    )
+    print(
+        "Influent flow",
         pyo.value(m.fs.FeedWater.flow_vol[0]),
         pyo.units.get_units(m.fs.FeedWater.flow_vol[0]),
     )
     print(
-        "flow R3",
+        "flow into R3",
         pyo.value(m.fs.R3.control_volume.properties_in[0].flow_vol),
         pyo.units.get_units(m.fs.R3.control_volume.properties_in[0].flow_vol),
     )
     print(
-        "flow RADM",
+        "flow into RADM",
         pyo.value(m.fs.RADM.liquid_phase.properties_in[0].flow_vol),
         pyo.units.get_units(m.fs.RADM.liquid_phase.properties_in[0].flow_vol),
     )
 
     print(
-        "cost AD",
+        "capital cost AD",
         pyo.value(m.fs.RADM.costing.capital_cost),
         pyo.units.get_units(m.fs.RADM.costing.capital_cost),
     )
     print(
-        "cost R3",
+        "capital cost R3",
         pyo.value(m.fs.R3.costing.capital_cost),
         pyo.units.get_units(m.fs.R3.costing.capital_cost),
     )
     print(
-        "cost R4",
+        "capital cost R4",
         pyo.value(m.fs.R4.costing.capital_cost),
         pyo.units.get_units(m.fs.R4.costing.capital_cost),
     )
     print(
-        "cost R5",
+        "capital cost R5",
         pyo.value(m.fs.R5.costing.capital_cost),
         pyo.units.get_units(m.fs.R5.costing.capital_cost),
     )
-
+    print(
+        "capital cost Dewatering Unit",
+        pyo.value(m.fs.R5.costing.capital_cost),
+        pyo.units.get_units(m.fs.DU.costing.capital_cost),
+    ) 
 
 if __name__ == "__main__":
     m, results = main()
