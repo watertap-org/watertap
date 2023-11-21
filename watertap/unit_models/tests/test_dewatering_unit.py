@@ -157,7 +157,6 @@ class TestDu(object):
 
         m.fs.unit.hydraulic_retention_time.fix()
 
-
         return m
 
     @pytest.mark.build
@@ -349,7 +348,9 @@ class TestDu(object):
             costing_method=cost_centrifuge,
         )
         # Using average specific energy consumption of 0.069 for centrifuge as a function of capacity
-        m.fs.unit.energy_electric_flow_vol_inlet[0] = 0.069 * pyunits.kWh/pyunits.m**3
+        m.fs.unit.energy_electric_flow_vol_inlet[0] = (
+            0.069 * pyunits.kWh / pyunits.m**3
+        )
         m.fs.costing.cost_process()
 
         assert degrees_of_freedom(du) == 0
@@ -372,7 +373,7 @@ class TestDu(object):
                 to_units=m.fs.costing.base_currency,
             )
         )
-        assert pytest.approx(7.4361*0.069, rel=1e-5) == value(
+        assert pytest.approx(7.4361 * 0.069, rel=1e-5) == value(
             m.fs.unit.electricity_consumption[0]
         )
 
@@ -434,7 +435,9 @@ class TestDu(object):
             },
         )
         # Using average specific energy consumption of 0.0039 for screw press as a function of capacity
-        m.fs.unit.energy_electric_flow_vol_inlet[0] = 0.0039 * pyunits.kWh/pyunits.m**3
+        m.fs.unit.energy_electric_flow_vol_inlet[0] = (
+            0.0039 * pyunits.kWh / pyunits.m**3
+        )
         m.fs.costing.cost_process()
 
         assert degrees_of_freedom(du) == 0
@@ -457,7 +460,7 @@ class TestDu(object):
                 to_units=m.fs.costing.base_currency,
             )
         )
-        assert pytest.approx(7.4361*0.0039, rel=1e-5) == value(
+        assert pytest.approx(7.4361 * 0.0039, rel=1e-5) == value(
             m.fs.unit.electricity_consumption[0]
         )
 
@@ -478,7 +481,9 @@ class TestDu(object):
             },
         )
         # Using average specific energy consumption of 0.006 for screw press as a function of capacity
-        m.fs.unit.energy_electric_flow_vol_inlet[0] = 0.006 * pyunits.kWh/pyunits.m**3
+        m.fs.unit.energy_electric_flow_vol_inlet[0] = (
+            0.006 * pyunits.kWh / pyunits.m**3
+        )
         m.fs.costing.cost_process()
 
         assert degrees_of_freedom(du) == 0
@@ -501,9 +506,10 @@ class TestDu(object):
                 to_units=m.fs.costing.base_currency,
             )
         )
-        assert pytest.approx(7.4361*0.006, rel=1e-5) == value(
+        assert pytest.approx(7.4361 * 0.006, rel=1e-5) == value(
             m.fs.unit.electricity_consumption[0]
         )
+
 
 class TestDUASM2d(object):
     @pytest.fixture(scope="class")

@@ -372,8 +372,7 @@ def set_operating_conditions(m):
     m.fs.RADM.liquid_outlet.temperature.fix(308.15)
 
     # Dewatering Unit - fix either HRT or volume.
-    m.fs.DU.hydraulic_retention_time.fix(1800*pyo.units.s)
-
+    m.fs.DU.hydraulic_retention_time.fix(1800 * pyo.units.s)
 
 
 def initialize_system(m):
