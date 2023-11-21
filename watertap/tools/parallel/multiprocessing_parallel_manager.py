@@ -12,9 +12,7 @@
 
 import logging
 import multiprocessing
-from numbers import Number
 from queue import Empty as EmptyQueue
-from typing import Optional
 
 import numpy
 
