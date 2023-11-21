@@ -158,10 +158,11 @@ def build_flowsheet():
     m.fs.FeedWater.flow_vol.fix(0.00018359)
     m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
-    m.fs.FeedWater.conc_mass_comp[0, "S_O2"].fix(0.0079024)
+    # m.fs.FeedWater.conc_mass_comp[0, "S_O2"].fix(0.0079024)
+    m.fs.FeedWater.conc_mass_comp[0, "S_O2"].fix(1e-3)
     m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(0.00030596)
     # m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(4.1385e-05)
-    m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(3e-2)
+    m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(1e-3)
     m.fs.FeedWater.conc_mass_comp[0, "S_NH4"].fix(0.0070896)
     m.fs.FeedWater.conc_mass_comp[0, "S_NO3"].fix(1.1750e-07)
     m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(0.0027761)
@@ -246,16 +247,42 @@ def build_flowsheet():
 
     G = seq.create_graph(m)
 
+    # tear_guesses2 = {
+    #     "flow_vol": {0: 1.8e-4},
+    #     "conc_mass_comp": {
+    #         (0, "S_A"): 4.1e-5,
+    #         (0, "S_F"): 0.0003,
+    #         (0, "S_I"): 0.03,
+    #         (0, "S_N2"): 1e-9,
+    #         (0, "S_NH4"): 0.007,
+    #         (0, "S_NO3"): 1e-9,
+    #         (0, "S_O2"): 0.008,
+    #         (0, "S_PO4"): 0.003,
+    #         (0, "S_K"): 1e-9,
+    #         (0, "S_Mg"): 1e-9,
+    #         (0, "S_IC"): 0.1,
+    #         (0, "X_AUT"): 1.8e-5,
+    #         (0, "X_H"): 64.3,
+    #         (0, "X_I"): 19.8,
+    #         (0, "X_PAO"): 1e-9,
+    #         (0, "X_PHA"): 1e-9,
+    #         (0, "X_PP"): 1e-9,
+    #         (0, "X_S"): 1.3,
+    #     },
+    #     "temperature": {0: 308.15},
+    #     "pressure": {0: 101325},
+    # }
+
     tear_guesses2 = {
         "flow_vol": {0: 1.8e-4},
         "conc_mass_comp": {
-            (0, "S_A"): 4.1e-5,
+            (0, "S_A"): 1e-3,
             (0, "S_F"): 0.0003,
             (0, "S_I"): 0.03,
             (0, "S_N2"): 1e-9,
             (0, "S_NH4"): 0.007,
             (0, "S_NO3"): 1e-9,
-            (0, "S_O2"): 0.008,
+            (0, "S_O2"): 1e-4,
             (0, "S_PO4"): 0.003,
             (0, "S_K"): 1e-9,
             (0, "S_Mg"): 1e-9,
@@ -295,7 +322,7 @@ def build_flowsheet():
     # results.display_extreme_jacobian_entries()
     # results.display_variables_near_bounds()
 
-    seq.run(m, function)
+    # seq.run(m, function)
 
     # solver = get_solver()
     # results = solver.solve(m, tee=True)

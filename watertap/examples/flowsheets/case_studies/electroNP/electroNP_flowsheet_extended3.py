@@ -175,14 +175,14 @@ def build_flowsheet():
     )
 
     # Translators
-    # m.fs.translator_asm2d_adm1 = Translator_ASM2d_ADM1(
-    #     inlet_property_package=m.fs.props_ASM2D,
-    #     outlet_property_package=m.fs.props_ADM1,
-    #     inlet_reaction_package=m.fs.rxn_props_ASM2D,
-    #     outlet_reaction_package=m.fs.rxn_props_ADM1,
-    #     has_phase_equilibrium=False,
-    #     outlet_state_defined=True,
-    # )
+    m.fs.translator_asm2d_adm1 = Translator_ASM2d_ADM1(
+        inlet_property_package=m.fs.props_ASM2D,
+        outlet_property_package=m.fs.props_ADM1,
+        inlet_reaction_package=m.fs.rxn_props_ASM2D,
+        outlet_reaction_package=m.fs.rxn_props_ADM1,
+        has_phase_equilibrium=False,
+        outlet_state_defined=True,
+    )
 
     # Product Blocks
     m.fs.Treated = Product(property_package=m.fs.props_ASM2D)
@@ -214,9 +214,9 @@ def build_flowsheet():
     m.fs.stream_SP_thickener = Arc(
         source=m.fs.SP2.waste, destination=m.fs.thickener.inlet
     )
-    # m.fs.stream_thickener_translator = Arc(
-    #     source=m.fs.thickener.underflow, destination=m.fs.translator_asm2d_adm1.inlet
-    # )
+    m.fs.stream_thickener_translator = Arc(
+        source=m.fs.thickener.underflow, destination=m.fs.translator_asm2d_adm1.inlet
+    )
     # m.fs.stream_translator_AD = Arc(
     #     source=m.fs.translator_asm2d_adm1.outlet, destination=m.fs.AD.inlet
     # )
@@ -288,38 +288,40 @@ def build_flowsheet():
 
     # Feed Water Conditions
     print(f"DOF before feed: {degrees_of_freedom(m)}")
-    m.fs.FeedWater.flow_vol.fix(20648 * pyo.units.m**3 / pyo.units.day)
-    m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
+    m.fs.FeedWater.flow_vol.fix(20935.15 * pyo.units.m**3 / pyo.units.day)
+    m.fs.FeedWater.temperature.fix(298.15 * pyo.units.K)
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
     m.fs.FeedWater.conc_mass_comp[0, "S_O2"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(30 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(20 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_NH4"].fix(16 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(70 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_NH4"].fix(26.6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_NO3"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(3.6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(30 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_N2"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(25 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(125 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_H"].fix(30 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_PAO"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(57.45 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_N2"].fix(25.19 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(84 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(94.1 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_H"].fix(370 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_PAO"].fix(
+        51.5262 * pyo.units.g / pyo.units.m**3
+    )
     m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_PHA"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_AUT"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_IC"].fix(
-        0.07899 * pyo.units.kg / pyo.units.m**3
+    m.fs.FeedWater.conc_mass_comp[0, "S_IC"].fix(5.652 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_K"].fix(
+        374.6925 * pyo.units.g / pyo.units.m**3
     )
-    m.fs.FeedWater.conc_mass_comp[0, "S_K"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_Mg"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_Mg"].fix(20 * pyo.units.g / pyo.units.m**3)
 
     # Reactor sizing
     m.fs.R1.volume.fix(1000 * pyo.units.m**3)
     m.fs.R2.volume.fix(1000 * pyo.units.m**3)
-    m.fs.R3.volume.fix(1000 * pyo.units.m**3)
-    m.fs.R4.volume.fix(1000 * pyo.units.m**3)
-    m.fs.R5.volume.fix(1333 * pyo.units.m**3)
-    m.fs.R6.volume.fix(1333 * pyo.units.m**3)
-    m.fs.R7.volume.fix(1333 * pyo.units.m**3)
+    m.fs.R3.volume.fix(1500 * pyo.units.m**3)
+    m.fs.R4.volume.fix(1500 * pyo.units.m**3)
+    m.fs.R5.volume.fix(3000 * pyo.units.m**3)
+    m.fs.R6.volume.fix(3000 * pyo.units.m**3)
+    m.fs.R7.volume.fix(3000 * pyo.units.m**3)
 
     # Injection rates to Reactions 3, 4 and 5
     for j in m.fs.props_ASM2D.component_list:
@@ -380,8 +382,8 @@ def build_flowsheet():
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
-            if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
 
             # if "conc_mass_comp[S_O2]" in var.name:
             #     iscale.set_scaling_factor(var, 1e3)
@@ -454,86 +456,86 @@ def build_flowsheet():
 
     # Initial guesses for flow into first reactor
     tear_guesses = {
-        "flow_vol": {0: 1.17},
+        "flow_vol": {0: 1.19},
         "conc_mass_comp": {
-            (0, "S_A"): 0.018,
-            (0, "S_F"): 0.0006,
-            (0, "S_I"): 0.03,
-            (0, "S_N2"): 1e-9,
-            (0, "S_NH4"): 0.008,
+            (0, "S_A"): 0.2241e-3,
+            (0, "S_F"): 0.4798e-3,
+            (0, "S_I"): 26.5953e-3,
+            (0, "S_N2"): 13.0839e-3,
+            (0, "S_NH4"): 7.4792e-3,
+            (0, "S_NO3"): 1.0373e-3,
+            (0, "S_O2"): 0.0064e-3,
+            (0, "S_PO4"): 12.2457e-3,
+            (0, "S_K"): 23.8798e-3,
+            (0, "S_Mg"): 98.8044e-3,
+            (0, "S_IC"): 69.4651e-3,
+            (0, "X_AUT"): 114.3052e-3,
+            (0, "X_H"): 1861.6576e-3,
+            (0, "X_I"): 1832.5407e-3,
+            (0, "X_PAO"): 1025.0133e-3,
+            (0, "X_PHA"): 25.9029e-3,
+            (0, "X_PP"): 290.7061e-3,
+            (0, "X_S"): 62.0774e-3,
+        },
+        "temperature": {0: 298.15},
+        "pressure": {0: 101325},
+    }
+
+    # tear_guesses2 = {
+    #     "flow_vol": {0: 6.4e-4},
+    #     "conc_mass_comp": {
+    #         (0, "S_A"): 0.00031916,
+    #         (0, "S_F"): 0.0012020,
+    #         (0, "S_I"): 0.057450,
+    #         (0, "S_N2"): 0.025190,
+    #         (0, "S_NH4"): 0.026616,
+    #         (0, "S_NO3"): 1e-9,
+    #         (0, "S_O2"): 0.0032,
+    #         (0, "S_PO4"): 1e-9,
+    #         (0, "S_K"): 0.37362,
+    #         (0, "S_Mg"): 0.019334,
+    #         (0, "S_IC"): 0.068249,
+    #         (0, "X_AUT"): 1e-9,
+    #         (0, "X_H"): 43.672,
+    #         (0, "X_I"): 21.858,
+    #         (0, "X_PAO"): 12.040,
+    #         (0, "X_PHA"): 10.249,
+    #         (0, "X_PP"): 0.45648,
+    #         (0, "X_S"): 0.55163,
+    #     },
+    #     "temperature": {0: 308.15},
+    #     "pressure": {0: 101325},
+    # }
+
+    tear_guesses2 = {
+        "flow_vol": {0: 6.4e-4},
+        "conc_mass_comp": {
+            (0, "S_A"): 0.00031916,
+            (0, "S_F"): 0.0012020,
+            (0, "S_I"): 0.057450,
+            (0, "S_N2"): 0.025190,
+            (0, "S_NH4"): 0.026616,
             (0, "S_NO3"): 1e-9,
-            (0, "S_O2"): 0.002,
-            (0, "S_PO4"): 0.003,
-            (0, "S_K"): 1e-9,
-            (0, "S_Mg"): 1e-9,
-            (0, "S_IC"): 0.1,
+            (0, "S_O2"): 0.0032,
+            (0, "S_PO4"): 1e-9,
+            (0, "S_K"): 0.37362,
+            (0, "S_Mg"): 0.019334,
+            (0, "S_IC"): 0.068249,
             (0, "X_AUT"): 1e-9,
-            (0, "X_H"): 1.3,
-            (0, "X_I"): 0.38,
-            (0, "X_PAO"): 1e-9,
-            (0, "X_PHA"): 1e-9,
-            (0, "X_PP"): 1e-9,
-            (0, "X_S"): 0.04,
+            (0, "X_H"): 43.672,
+            (0, "X_I"): 21.858,
+            (0, "X_PAO"): 12.040,
+            (0, "X_PHA"): 10.249,
+            (0, "X_PP"): 0.45648,
+            (0, "X_S"): 0.55163,
         },
         "temperature": {0: 308.15},
         "pressure": {0: 101325},
     }
 
-    # tear_guesses2 = {
-    #     "flow_vol": {0: 1.8e-4},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 4.1e-5,
-    #         (0, "S_F"): 0.0003,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.007,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.008,
-    #         (0, "S_PO4"): 0.003,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.1,
-    #         (0, "X_AUT"): 1.8e-5,
-    #         (0, "X_H"): 64.3,
-    #         (0, "X_I"): 19.8,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 1.3,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    # tear_guesses2 = {
-    #     "flow_vol": {0: 1.8e-4},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 4.1e-5,
-    #         (0, "S_F"): 0.0003,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.007,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.008,
-    #         (0, "S_PO4"): 0.003,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.1,
-    #         (0, "X_AUT"): 1.8e-5,
-    #         (0, "X_H"): 64.3,
-    #         (0, "X_I"): 19.8,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 1.3,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
     # Pass the tear_guess to the SD tool
     seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
-    # seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
+    seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
@@ -566,24 +568,24 @@ def build_flowsheet():
     # print_close_to_bounds(m)
     # # print_infeasible_constraints(m)
 
-    # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
-    m.fs.R5.KLa.fix(240)
-    m.fs.R6.KLa.fix(240)
-    m.fs.R7.KLa.fix(84)
-    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-
-    # Resolve with controls in place
-    results = solver.solve(m, tee=False)
-
-    pyo.assert_optimal_termination(results)
-    check_solve(
-        results,
-        checkpoint="re-solve with controls in place",
-        logger=_log,
-        fail_flag=True,
-    )
+    # # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
+    # m.fs.R5.KLa.fix(240)
+    # m.fs.R6.KLa.fix(240)
+    # m.fs.R7.KLa.fix(84)
+    # m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    # m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    # m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    #
+    # # Resolve with controls in place
+    # results = solver.solve(m, tee=False)
+    #
+    # pyo.assert_optimal_termination(results)
+    # check_solve(
+    #     results,
+    #     checkpoint="re-solve with controls in place",
+    #     logger=_log,
+    #     fail_flag=True,
+    # )
 
     return m, results
 
