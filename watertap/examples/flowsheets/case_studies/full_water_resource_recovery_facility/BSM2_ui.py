@@ -2859,6 +2859,7 @@ def build_flowsheet():
     results = solve(m)
     assert_optimal_termination(results)
 
+    #TODO: incorporate costing when merged
     # add_costing(m)
     # assert_degrees_of_freedom(m, 0)
     # m.fs.costing.initialize()
