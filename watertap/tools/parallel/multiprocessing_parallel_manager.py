@@ -10,44 +10,32 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import functools
 import logging
 import multiprocessing
-from numbers import Number
-from queue import Empty as EmptyQueue
-from typing import Optional
 
 import numpy
 
 from watertap.tools.parallel.results import LocalResults
 from watertap.tools.parallel.parallel_manager import (
-    parallelActor,
+    build_and_execute,
     ParallelManager,
 )
 
 
 _logger = logging.getLogger(__name__)
 
-TimeoutSpec = Optional[Number]
-
-_DEFAULT_TIMEOUT_SECONDS = 1
-
 
 class MultiprocessingParallelManager(ParallelManager):
     def __init__(
         self,
         number_of_subprocesses=1,
-        timeout: TimeoutSpec = _DEFAULT_TIMEOUT_SECONDS,
         **kwargs,
     ):
         self.max_number_of_subprocesses = number_of_subprocesses
 
         # this will be updated when child processes are kicked off
         self.actual_number_of_subprocesses = None
-
-        # Future -> (process number, parameters). Used to keep track of the process number and parameters for
-        # all in-progress futures
-        self.running_futures = dict()
-        self.timeout = timeout
 
     def is_root_process(self):
         return True
@@ -99,77 +87,32 @@ class MultiprocessingParallelManager(ParallelManager):
         # split the parameters prameters for async run
         self.expected_samples = len(all_parameters)
         divided_parameters = numpy.array_split(all_parameters, self.expected_samples)
-        # create queues, run queue will be used to store paramters we want to run
-        # and return_queue is used to store results
-        self.run_queue = multiprocessing.Queue()
-        self.return_queue = multiprocessing.Queue()
-        for i, param in enumerate(divided_parameters):
-            # print(param)
-            self.run_queue.put([i, param])
-        # setup multiprocessing actors
-        self.actors = []
 
-        for cpu in range(self.actual_number_of_subprocesses):
-            self.actors.append(
-                multiprocessing.Process(
-                    target=multiProcessingActor,
-                    args=(
-                        self.run_queue,
-                        self.return_queue,
-                        do_build,
-                        do_build_kwargs,
-                        do_execute,
-                        divided_parameters[0],
-                    ),
-                    kwargs={
-                        "timeout": self.timeout,
-                    },
-                )
-            )
-            self.actors[-1].start()
+        build_and_execute_this_run = functools.partial(
+            build_and_execute, do_build, do_build_kwargs, do_execute
+        )
+
+        actor = functools.partial(multiProcessingActor, build_and_execute_this_run)
+
+        self._pool = multiprocessing.Pool(self.actual_number_of_subprocesses)
+        self._results = self._pool.map_async(actor, enumerate(divided_parameters))
+        self._pool.close()
 
     def gather(self):
-        results = []
-        # collect result from the actors
-        while len(results) < self.expected_samples:
-            try:
-                i, values, result = self.return_queue.get(timeout=self.timeout)
-                results.append(LocalResults(i, values, result))
-            except EmptyQueue:
-                break
-        self._shut_down()
+        results = self._results.get()
         # sort the results by the process number to keep a deterministic ordering
         results.sort(key=lambda result: result.process_number)
         return results
-
-    def _shut_down(self):
-        n_shut_down = 0
-        for process in self.actors:
-            _logger.debug("Attempting to shut down %s", process)
-            process.join(timeout=self.timeout)
-            n_shut_down += 1
-        _logger.debug("Shut down %d processes", n_shut_down)
 
     def results_from_local_tree(self, results):
         return results
 
 
-# This function is used for running the actors in multprocessing
 def multiProcessingActor(
-    queue,
-    return_queue,
-    do_build,
-    do_build_kwargs,
-    do_execute,
-    local_parameters,
-    timeout: TimeoutSpec = _DEFAULT_TIMEOUT_SECONDS,
+    build_and_execute_this_run,
+    i_local_parameters,
 ):
-    actor = parallelActor(do_build, do_build_kwargs, do_execute, local_parameters)
-    while True:
-        try:
-            msg = queue.get(timeout=timeout)
-        except EmptyQueue:
-            return
-        i, local_parameters = msg
-        result = actor.execute(local_parameters)
-        return_queue.put([i, local_parameters, result])
+    i, local_parameters = i_local_parameters
+    return LocalResults(
+        i, local_parameters, build_and_execute_this_run(local_parameters)
+    )
