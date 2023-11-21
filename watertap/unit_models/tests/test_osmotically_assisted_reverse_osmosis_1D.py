@@ -222,6 +222,7 @@ def test_option_pressure_change_calculated():
     assert isinstance(m.fs.unit.permeate_side.N_Re, Var)
     assert isinstance(m.fs.unit.eq_area, Constraint)
 
+
 @pytest.mark.unit
 def test_option_has_mass_transfer_model():
     m = ConcreteModel()
@@ -238,6 +239,7 @@ def test_option_has_mass_transfer_model():
 
     assert pytest.approx(0.9, rel=1e-3) == value(m.fs.unit.reflect_coeff)
     assert pytest.approx(1e8, rel=1e-3) == value(m.fs.unit.alpha)
+
 
 class TestOsmoticallyAssistedReverseOsmosis:
     @pytest.fixture(scope="class")
@@ -491,7 +493,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
             m.fs.unit.permeate_side.deltaP_stage[0]
         )
 
-    #NOTE Begin SKK tests
+    # NOTE Begin SKK tests
     @pytest.fixture(scope="class")
     def RO_SKK_frame(self):
         m = ConcreteModel()
@@ -745,7 +747,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
             m.fs.unit.permeate_side.deltaP_stage[0]
         )
 
-    #NOTE End SKK tests
+    # NOTE End SKK tests
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component

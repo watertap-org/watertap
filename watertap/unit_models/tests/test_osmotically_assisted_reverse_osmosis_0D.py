@@ -235,6 +235,7 @@ def test_option_friction_factor_spiral_wound():
     assert isinstance(m.fs.unit.permeate_side.velocity, Var)
     assert isinstance(m.fs.unit.permeate_side.eq_friction_factor, Constraint)
 
+
 @pytest.mark.unit
 def test_option_has_mass_transfer_model():
     m = ConcreteModel()

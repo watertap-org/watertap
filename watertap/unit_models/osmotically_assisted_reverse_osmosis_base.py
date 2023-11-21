@@ -445,7 +445,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
                         interface_feed.conc_mass_phase_comp[p, j]
                         - interface_perm.conc_mass_phase_comp[p, j]
                     )
-                
+
         elif self.config.transport_model == TransportModel.SKK:
 
             @self.Constraint(
