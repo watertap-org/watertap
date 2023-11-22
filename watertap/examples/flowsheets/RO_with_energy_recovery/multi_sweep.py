@@ -19,7 +19,7 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
 def set_up_sensitivity():
     outputs = {}
 
-    m = RO.build(erd_type=ERDtype.no_ERD)
+    m = RO.build(erd_type=ERDtype.pump_as_turbine)
     RO.set_operating_conditions(
         m,
         water_recovery=0.7,
@@ -40,9 +40,17 @@ def set_up_sensitivity():
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
     # Not used in Excel
+    outputs["RO Membrane Area"] = m.fs.RO.area
+    # No conversion in Excel
     outputs["RO Energy Consumption"] = m.fs.costing.specific_energy_consumption
     # No conversion in Excel
     outputs["System Capital Cost"] = m.fs.costing.aggregate_capital_cost
+    # Multiplied by flow rate scaling factor in Excel
+    outputs["RO Capital Cost"] = m.fs.RO.costing.capital_cost
+    # Multiplied by flow rate scaling factor in Excel
+    outputs["Pump Capital Cost"] = m.fs.P1.costing.capital_cost
+    # Multiplied by flow rate scaling factor in Excel
+    outputs["ERD Capital Cost"] = m.fs.ERD.costing.capital_cost
     # Multiplied by flow rate scaling factor in Excel
     outputs["RO Operating Cost"] = m.fs.RO.costing.fixed_operating_cost
     # Multiplied by flow rate scaling factor in Excel
@@ -109,11 +117,11 @@ def run_analysis(
         sweep_params["mass_concentration"] = LinearSample(
             m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
             0.963,
-            4.816,
+            1.927,
             nx,
         )
         sweep_params["volumetric_recovery"] = LinearSample(
-            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.9, nx
+            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.8, nx
         )
     else:
         raise ValueError(f"{case_num} is not yet implemented")
