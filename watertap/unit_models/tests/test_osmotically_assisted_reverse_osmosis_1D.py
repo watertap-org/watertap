@@ -607,12 +607,12 @@ class TestOsmoticallyAssistedReverseOsmosis:
     def test_skk_initialize(self, RO_SKK_frame):
         initialization_tester(RO_SKK_frame)
 
-    # @pytest.mark.component
-    # def test_skk_var_scaling(self, RO_SKK_frame):
-    #     m = RO_SKK_frame
-    #     badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-    #     [print(i[0], i[1]) for i in badly_scaled_var_lst]
-    #     assert badly_scaled_var_lst == []
+    @pytest.mark.component
+    def test_skk_var_scaling(self, RO_SKK_frame):
+        m = RO_SKK_frame
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        [print(i[0], i[1]) for i in badly_scaled_var_lst]
+        assert badly_scaled_var_lst == []
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
@@ -682,9 +682,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert pytest.approx(9.1204e-4, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
         )
-        # assert pytest.approx(1.51959-6, rel=1e-3) == value(
-        #     m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
-        # )
+        assert pytest.approx(1.51959 - 6, rel=1e-3) == value(
+            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
+        )
         assert pytest.approx(0.1156, rel=1e-3) == value(
             m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
