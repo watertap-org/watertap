@@ -553,7 +553,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.width.fix(width)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.reflect_coeff.fix(0.9)
+        m.fs.unit.reflect_coeff.fix(0.95)
 
         return m
 
@@ -679,16 +679,16 @@ class TestOsmoticallyAssistedReverseOsmosis:
     @pytest.mark.component
     def test_skk_solution(self, RO_SKK_frame):
         m = RO_SKK_frame
-        assert pytest.approx(9.1204e-4, rel=1e-3) == value(
+        assert pytest.approx(8.5717e-4, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
         )
-        assert pytest.approx(1.51959 - 6, rel=1e-3) == value(
+        assert pytest.approx(9.242e-06, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
         )
-        assert pytest.approx(0.1156, rel=1e-3) == value(
+        assert pytest.approx(1.241e-01, rel=1e-3) == value(
             m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
-        assert pytest.approx(0.01847, rel=1e-3) == value(
+        assert pytest.approx(1.940e-02, rel=1e-3) == value(
             m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
         )
         assert pytest.approx(
