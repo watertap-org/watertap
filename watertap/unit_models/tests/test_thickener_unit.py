@@ -256,6 +256,9 @@ class TestThickASM1(object):
         assert pytest.approx(0.004564, rel=1e-3) == value(
             tu.fs.unit.overflow.alkalinity[0]
         )
+        assert pytest.approx(3.82, rel=1e-3) == value(tu.fs.unit.height)
+        assert pytest.approx(300, rel=1e-3) == value(tu.fs.unit.volume[0])
+        assert pytest.approx(78.54, rel=1e-3) == value(tu.fs.unit.surface_area)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

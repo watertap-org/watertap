@@ -378,6 +378,7 @@ def set_operating_conditions(m):
     m.fs.TU.hydraulic_retention_time.fix(86400 * pyo.units.s)
     m.fs.TU.diameter.fix(10 * pyo.units.m)
 
+
 def initialize_system(m):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
