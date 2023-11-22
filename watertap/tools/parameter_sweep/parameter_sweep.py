@@ -1035,7 +1035,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         seed=None,
         build_model_kwargs=None,
         build_sweep_params_kwargs=None,
-        req_num_samples=None,
     ):
         build_model_kwargs = (
             build_model_kwargs if build_model_kwargs is not None else dict()
@@ -1097,8 +1096,8 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         if outputs is not None:
             self.assign_variable_names(model, outputs)
 
-        n_samples_remaining = req_num_samples
-        num_total_samples = req_num_samples
+        n_samples_remaining = num_samples
+        num_total_samples = num_samples
 
         local_output_collection = {}
         for loop_ctr in range(10):
@@ -1144,16 +1143,16 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             if (
                 self.parallel_manager.number_of_worker_processes() > 1
             ):  # pragma: no cover
-                global_success_count = np.zeros(1, dtype=float)
-                global_failure_count = np.zeros(1, dtype=float)
+                global_success_count = np.zeros(1, dtype=int)
+                global_failure_count = np.zeros(1, dtype=int)
 
                 self.parallel_manager.sum_values_and_sync(
-                    sendbuf=np.array(success_count, dtype=float),
+                    sendbuf=np.array(success_count, dtype=int),
                     recvbuf=global_success_count,
                 )
 
                 self.parallel_manager.sum_values_and_sync(
-                    sendbuf=np.array(failure_count, dtype=float),
+                    sendbuf=np.array(failure_count, dtype=int),
                     recvbuf=global_failure_count,
                 )
             else:
@@ -1200,7 +1199,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             global_filtered_dict,
             global_filtered_results,
             global_filtered_values,
-        ) = self._aggregate_filtered_results(local_filtered_dict, req_num_samples)
+        ) = self._aggregate_filtered_results(local_filtered_dict, num_samples)
 
         # Now we can save this
         self.parallel_manager.sync_with_peers()
@@ -1216,7 +1215,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             self.parallel_manager.get_rank(),
         )
 
-        return global_save_data
+        return global_save_data, global_filtered_dict
 
 
 def do_build(

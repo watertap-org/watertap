@@ -503,4 +503,4 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             self.parallel_manager.get_rank(),
         )
 
-        return global_results_dict, global_save_data
+        return global_save_data, global_results_dict
