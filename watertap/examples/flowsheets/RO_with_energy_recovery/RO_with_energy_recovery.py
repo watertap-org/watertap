@@ -30,6 +30,8 @@ from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
+from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+
 
 import watertap.property_models.NaCl_prop_pack as props
 from watertap.unit_models.reverse_osmosis_0D import (
@@ -65,12 +67,40 @@ def main(erd_type=ERDtype.pressure_exchanger):
     # build, set, and initialize
     m = build(erd_type=erd_type)
     set_operating_conditions(m)
+
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print("----------------   badly_scaled_var_list   ----------------")
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
+    print("Structural issues after setting operating conditions")
+    dt = DiagnosticsToolbox(model=m)
+    dt.report_structural_issues()
+
     initialize_system(m, solver=solver)
+
+    print("Numerical issues after initialization")
+    dt.report_numerical_issues()
+    dt.display_constraints_with_large_residuals()
+    dt.display_variables_with_extreme_jacobians()
+    dt.display_constraints_with_extreme_jacobians()
+
     results = solve(m, solver=solver)
     assert_optimal_termination(results)
+
+    print("Numerical issues after first solve")
+    dt.report_numerical_issues()
+    dt.display_variables_with_extreme_jacobians()
+    dt.display_constraints_with_extreme_jacobians()
+
     # optimize and display
     optimize_set_up(m)
     results = solve(m, solver=solver)
+
+    print("Numerical issues after final solve")
+    dt.report_numerical_issues()
+    dt.display_variables_with_extreme_jacobians()
+    dt.display_constraints_with_extreme_jacobians()
 
     print("\n***---Optimization results---***")
     display_system(m)
@@ -233,6 +263,15 @@ def set_operating_conditions(
     # unused scaling factors needed by IDAES base costing module
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
+
+    iscale.set_scaling_factor(
+        m.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"], 1
+    )
+    iscale.set_scaling_factor(m.fs.P1.work_fluid[0], 1)
+    iscale.set_scaling_factor(m.fs.RO.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e4)
+    iscale.set_scaling_factor(
+        m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e4
+    )
 
     # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
     # print("----------------   badly_scaled_var_list   ----------------")
@@ -626,4 +665,5 @@ def display_state(m):
 
 if __name__ == "__main__":
     # m = main(erd_type=ERDtype.pressure_exchanger)
-    m = main(erd_type=ERDtype.pump_as_turbine)
+    # m = main(erd_type=ERDtype.pump_as_turbine)
+    m = main(erd_type=ERDtype.no_ERD)
