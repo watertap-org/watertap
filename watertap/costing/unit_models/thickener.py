@@ -35,22 +35,19 @@ def build_cost_param_block(blk):
         units=pyo.units.USD_2007,
     )
 
+
 @register_costing_parameter_block(
     build_rule=build_cost_param_block,
     parameter_block_name="thickener",
 )
-def cost_thickener(
-    blk, cost_electricity_flow=True
-):
+def cost_thickener(blk, cost_electricity_flow=True):
     """
     Gravity Sludge Thickener costing method
     """
     make_capital_cost_var(blk)
     cost_blk = blk.costing_package.thickener
     t0 = blk.flowsheet().time.first()
-    x = diameter = pyo.units.convert(
-        blk.unit_model.diameter, to_units=pyo.units.feet
-    )
+    x = diameter = pyo.units.convert(blk.unit_model.diameter, to_units=pyo.units.feet)
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == pyo.units.convert(
