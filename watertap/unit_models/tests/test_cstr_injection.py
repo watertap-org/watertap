@@ -200,6 +200,9 @@ class TestSaponification(object):
         assert pytest.approx(0.76624, abs=1e-3) == value(
             sapon.fs.unit.electricity_consumption[0]
         )
+        assert pytest.approx(1.5, abs=1e-3) == value(
+            sapon.fs.unit.hydraulic_retention_time[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

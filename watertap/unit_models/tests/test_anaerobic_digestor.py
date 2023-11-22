@@ -344,6 +344,9 @@ class TestAdm(object):
         assert pytest.approx(424.9489, abs=1e-3) == value(
             adm.fs.unit.electricity_consumption[0]
         )
+        assert pytest.approx(1880470.588, abs=1e-3) == value(
+            adm.fs.unit.hydraulic_retention_time[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
