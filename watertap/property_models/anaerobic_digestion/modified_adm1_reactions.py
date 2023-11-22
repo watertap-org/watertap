@@ -241,7 +241,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             doc="Fraction of proteins from biomass",
         )
         self.f_si_xb = pyo.Var(
-            initialize=0,
+            initialize=1e-20,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
             doc="Fraction of soluble inerts from biomass",
