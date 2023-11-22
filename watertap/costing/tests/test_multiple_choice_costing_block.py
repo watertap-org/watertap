@@ -17,7 +17,7 @@ import re
 
 import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from watertap.costing import MultipleChoiceCostingBlock
+from watertap.costing import MultiUnitModelCostingBlock
 
 import watertap.property_models.NaCl_prop_pack as props
 from watertap.unit_models.reverse_osmosis_0D import (
@@ -48,7 +48,7 @@ def setup_flowsheet():
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
     )
-    m.fs.RO.costing = MultipleChoiceCostingBlock(
+    m.fs.RO.costing = MultiUnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing,
         costing_blocks={
             "normal_pressure": cost_reverse_osmosis,
@@ -65,7 +65,7 @@ def setup_flowsheet():
         "registered: fs.RO.costing. Each unit may only have a single "
         "UnitModelCostingBlock associated with it.",
     ):
-        m.fs.RO.costing_2 = MultipleChoiceCostingBlock(
+        m.fs.RO.costing_2 = MultiUnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing,
             costing_blocks={
                 "normal_pressure": cost_reverse_osmosis,
@@ -103,7 +103,7 @@ def setup_flowsheet():
         RuntimeError,
         match="Unrecognized key costing_mehtod for costing block foo.",
     ):
-        m.fs.RO2.costing = MultipleChoiceCostingBlock(
+        m.fs.RO2.costing = MultiUnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing,
             costing_blocks={
                 "normal_pressure": cost_reverse_osmosis,
@@ -121,7 +121,7 @@ def setup_flowsheet():
         KeyError,
         match="Must specify a `costing_method` key for costing block foo.",
     ):
-        m.fs.RO2.costing = MultipleChoiceCostingBlock(
+        m.fs.RO2.costing = MultiUnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing,
             costing_blocks={
                 "normal_pressure": cost_reverse_osmosis,
@@ -145,13 +145,13 @@ def setup_flowsheet():
         "using to ensure that all costing components are "
         "declared as variables.",
     ):
-        m.fs.RO2.costing = MultipleChoiceCostingBlock(
+        m.fs.RO2.costing = MultiUnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing,
             costing_blocks={"bar": dummy_method},
         )
     m.fs.RO2.del_component(m.fs.RO.costing)
 
-    m.fs.RO2.costing = MultipleChoiceCostingBlock(
+    m.fs.RO2.costing = MultiUnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing,
         costing_blocks={
             "normal_pressure": cost_reverse_osmosis,
@@ -183,7 +183,7 @@ def setup_flowsheet():
             == 42 * blk.costing_package.base_currency / blk.costing_package.base_period
         )
 
-    m.fs.RO3.costing = MultipleChoiceCostingBlock(
+    m.fs.RO3.costing = MultiUnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing,
         costing_blocks={
             "normal_pressure": cost_reverse_osmosis,
@@ -208,7 +208,7 @@ def setup_flowsheet():
             "added to UnitModelBlocks."
         ),
     ):
-        m.fs.foo.costing = MultipleChoiceCostingBlock(
+        m.fs.foo.costing = MultiUnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing,
             costing_blocks={
                 "normal_pressure": cost_reverse_osmosis,

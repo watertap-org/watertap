@@ -1,16 +1,16 @@
 .. _multiple_choice_costing_block:
 
-Multiple Choice Costing Block
-=============================
+Multiple Choice Unit Model Costing Block
+========================================
 
 .. currentmodule:: watertap.costing.multiple_choice_costing_block
 
-The MultipleChoiceCostingBlock class is a wrapper around the IDAES
+The MultiUnitModelCostingBlock class is a wrapper around the IDAES
 `UnitModelCostingBlock` which allows the modeller to easily explore the implications of
 different unit model costing choices on overall flowsheet costs without rebuilding
 a new flowsheet or replacing Pyomo components.
 
-MultipleChoiceCostingBlock objects instead construct every single costing relationship
+MultiUnitModelCostingBlock objects instead construct every single costing relationship
 specified for the unit model, and controls which one is active through the indexed
 mutable parameter `costing_block_selector`, which takes the value `1` when the
 associated costing block is active and the value `0` otherwise. The helper method
@@ -20,7 +20,7 @@ all other costing blocks.
 Usage
 -----
 
-The MultipleChoiceCostingBlock allows the user to pre-specify all costing methods
+The MultiUnitModelCostingBlock allows the user to pre-specify all costing methods
 on-the-fly and change between them without rebuilding the flowsheet or even the base
 costing relationships on the costing package.
 
@@ -38,7 +38,7 @@ The code below demonstrates its use on a reverse osmosis unit model.
         MassTransferCoefficient,
         PressureChangeType,
     )
-    from watertap.costing import WaterTAPCosting, MultipleChoiceCostingBlock
+    from watertap.costing import WaterTAPCosting, MultiUnitModelCostingBlock
     from watertap.costing.unit_models.reverse_osmosis import (
         cost_reverse_osmosis,
     )
@@ -68,7 +68,7 @@ The code below demonstrates its use on a reverse osmosis unit model.
             == 42 * blk.costing_package.base_currency / blk.costing_package.base_period
         )
 
-    m.fs.RO.costing = MultipleChoiceCostingBlock(
+    m.fs.RO.costing = MultiUnitModelCostingBlock(
         # always needed, just like for UnitModelCostingBlock
         flowsheet_costing_block=m.fs.costing,
 
@@ -142,4 +142,4 @@ The code below demonstrates its use on a reverse osmosis unit model.
 Class Documentation
 -------------------
 
-* :class:`MultipleChoiceCostingBlock`
+* :class:`MultiUnitModelCostingBlock`

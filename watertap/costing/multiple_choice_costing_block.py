@@ -26,8 +26,8 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("MultipleChoiceCostingBlock")
-class MultipleChoiceCostingBlockData(UnitModelCostingBlockData, UnitModelCostingBlock):
+@declare_process_block_class("MultiUnitModelCostingBlock")
+class MultiUnitModelCostingBlockData(UnitModelCostingBlockData, UnitModelCostingBlock):
     """
     Class for constructing several costing blocks on the same
     unit model and then allowing for choice between them
@@ -82,7 +82,7 @@ class MultipleChoiceCostingBlockData(UnitModelCostingBlockData, UnitModelCosting
         # Check to see if unit model already has costing
         for b in unit_model.component_objects(pyo.Block, descend_into=False):
             if b is not self and isinstance(
-                b, (UnitModelCostingBlock, MultipleChoiceCostingBlock)
+                b, (UnitModelCostingBlock, MultiUnitModelCostingBlock)
             ):
                 # Block already has costing, clean up and raise exception
                 raise RuntimeError(
