@@ -16,7 +16,7 @@ from ..util import (
     make_capital_cost_var,
 )
 from idaes.core.util.misc import StrEnum
-
+from idaes.core.util.exceptions import ConfigurationError
 """
 Ref: W. McGivney, S. Kawamura, Cost estimating manual for water treatment facilities, John Wiley & Sons, 2008. http://onlinelibrary.wiley.com/book/10.1002/9780470260036.
 """

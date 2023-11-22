@@ -294,222 +294,6 @@ class TestDu(object):
     def test_report(self, du):
         du.fs.unit.report()
 
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_du_default_costing(self, du):
-        m = du
-
-        m.fs.costing = WaterTAPCosting()
-
-        m.fs.unit.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-        )
-
-        m.fs.costing.cost_process()
-
-        assert degrees_of_freedom(du) == 0
-
-        results = solver.solve(m)
-
-        assert_optimal_termination(results)
-
-        assert hasattr(m.fs.costing, "centrifuge")
-        assert m.fs.unit.default_costing_method is cost_dewatering
-        assert value(m.fs.costing.centrifuge.capital_a_parameter) == 328.03
-        assert value(m.fs.costing.centrifuge.capital_b_parameter) == 751295
-
-        # Check solutions
-        assert pytest.approx(1964.42, rel=1e-5) == value(
-            pyunits.convert(
-                m.fs.unit.inlet.flow_vol[0], to_units=pyunits.gal / pyunits.hr
-            )
-        )
-        assert pytest.approx(1602087.9, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(1602087.9, rel=1e-5) == value(
-            pyunits.convert(
-                (328.03 * 1964.42 + 751295) * pyunits.USD_2007,
-                to_units=m.fs.costing.base_currency,
-            )
-        )
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_du_centrifuge_costing(self, du):
-        m = du
-
-        m.fs.costing = WaterTAPCosting()
-
-        m.fs.unit.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-            costing_method=cost_centrifuge,
-        )
-        # Using average specific energy consumption of 0.069 for centrifuge as a function of capacity
-        m.fs.unit.energy_electric_flow_vol_inlet[0] = (
-            0.069 * pyunits.kWh / pyunits.m**3
-        )
-        m.fs.costing.cost_process()
-
-        assert degrees_of_freedom(du) == 0
-
-        results = solver.solve(m)
-
-        assert_optimal_termination(results)
-
-        assert hasattr(m.fs.costing, "centrifuge")
-        assert value(m.fs.costing.centrifuge.capital_a_parameter) == 328.03
-        assert value(m.fs.costing.centrifuge.capital_b_parameter) == 751295
-
-        # Check solutions
-        assert pytest.approx(1602087.9, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(1602087.9, rel=1e-5) == value(
-            pyunits.convert(
-                (328.03 * 1964.42 + 751295) * pyunits.USD_2007,
-                to_units=m.fs.costing.base_currency,
-            )
-        )
-        assert pytest.approx(7.4361 * 0.069, rel=1e-5) == value(
-            m.fs.unit.electricity_consumption[0]
-        )
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_du_centrifuge_costing2(self, du):
-        m = du
-
-        m.fs.costing = WaterTAPCosting()
-
-        m.fs.unit.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-            costing_method=cost_dewatering,
-            costing_method_arguments={
-                "dewatering_type": DewateringType.centrifuge,
-                "cost_electricity_flow": False,
-            },
-        )
-
-        m.fs.costing.cost_process()
-
-        assert degrees_of_freedom(du) == 0
-
-        results = solver.solve(m)
-
-        assert_optimal_termination(results)
-
-        assert hasattr(m.fs.costing, "centrifuge")
-        assert value(m.fs.costing.centrifuge.capital_a_parameter) == 328.03
-        assert value(m.fs.costing.centrifuge.capital_b_parameter) == 751295
-        assert "electricity" not in m.fs.costing.aggregate_flow_costs.keys()
-
-        # Check solutions
-        assert pytest.approx(1602087.9, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(1602087.9, rel=1e-5) == value(
-            pyunits.convert(
-                (328.03 * 1964.42 + 751295) * pyunits.USD_2007,
-                to_units=m.fs.costing.base_currency,
-            )
-        )
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_du_filter_plate_press_costing(self, du):
-        m = du
-
-        m.fs.costing = WaterTAPCosting()
-
-        m.fs.unit.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-            costing_method=cost_dewatering,
-            costing_method_arguments={
-                "dewatering_type": DewateringType.filter_plate_press,
-                "cost_electricity_flow": True,
-            },
-        )
-        # Using average specific energy consumption of 0.0039 for screw press as a function of capacity
-        m.fs.unit.energy_electric_flow_vol_inlet[0] = (
-            0.0039 * pyunits.kWh / pyunits.m**3
-        )
-        m.fs.costing.cost_process()
-
-        assert degrees_of_freedom(du) == 0
-
-        results = solver.solve(m)
-
-        assert_optimal_termination(results)
-        assert_units_consistent(m)
-        assert hasattr(m.fs.costing, "filter_plate_press")
-        assert value(m.fs.costing.filter_plate_press.capital_a_parameter) == 102794
-        assert value(m.fs.costing.filter_plate_press.capital_b_parameter) == 0.4216
-
-        # Check solutions
-        assert pytest.approx(2885989.2, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(2885989.2, rel=1e-5) == value(
-            pyunits.convert(
-                (102794 * 1964.42**0.4216) * pyunits.USD_2007,
-                to_units=m.fs.costing.base_currency,
-            )
-        )
-        assert pytest.approx(7.4361 * 0.0039, rel=1e-5) == value(
-            m.fs.unit.electricity_consumption[0]
-        )
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_du_filter_belt_press_costing(self, du):
-        m = du
-
-        m.fs.costing = WaterTAPCosting()
-
-        m.fs.unit.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-            costing_method=cost_dewatering,
-            costing_method_arguments={
-                "dewatering_type": DewateringType.filter_belt_press,
-                "cost_electricity_flow": True,
-            },
-        )
-        # Using average specific energy consumption of 0.006 for screw press as a function of capacity
-        m.fs.unit.energy_electric_flow_vol_inlet[0] = (
-            0.006 * pyunits.kWh / pyunits.m**3
-        )
-        m.fs.costing.cost_process()
-
-        assert degrees_of_freedom(du) == 0
-
-        results = solver.solve(m)
-
-        assert_optimal_termination(results)
-        assert_units_consistent(m)
-        assert hasattr(m.fs.costing, "filter_belt_press")
-        assert value(m.fs.costing.filter_belt_press.capital_a_parameter) == 146.29
-        assert value(m.fs.costing.filter_belt_press.capital_b_parameter) == 433972
-
-        # Check solutions
-        assert pytest.approx(828025.2, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(828025.2, rel=1e-5) == value(
-            pyunits.convert(
-                (146.29 * 1964.42 + 433972) * pyunits.USD_2007,
-                to_units=m.fs.costing.base_currency,
-            )
-        )
-        assert pytest.approx(7.4361 * 0.006, rel=1e-5) == value(
-            m.fs.unit.electricity_consumption[0]
-        )
-
 
 class TestDUASM2d(object):
     @pytest.fixture(scope="class")
@@ -653,3 +437,377 @@ class TestDUModifiedASM2d(object):
         solver = get_solver()
         results = solver.solve(du_mod_asm2d)
         assert_optimal_termination(results)
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_du_default_costing():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.props = ASM1ParameterBlock()
+
+    m.fs.unit = DewateringUnit(property_package=m.fs.props)
+
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
+    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216.2434 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
+    m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+
+    m.fs.unit.hydraulic_retention_time.fix()
+
+    m.fs.costing = WaterTAPCosting()
+
+    m.fs.unit.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+    )
+
+    m.fs.costing.cost_process()
+
+    assert degrees_of_freedom(m) == 0
+
+    results = solver.solve(m)
+
+    assert_optimal_termination(results)
+
+    assert hasattr(m.fs.costing, "centrifuge")
+    assert m.fs.unit.default_costing_method is cost_dewatering
+    assert value(m.fs.costing.centrifuge.capital_a_parameter) == 328.03
+    assert value(m.fs.costing.centrifuge.capital_b_parameter) == 751295
+
+    # Check solutions
+    assert pytest.approx(1964.42, rel=1e-5) == value(
+        pyunits.convert(m.fs.unit.inlet.flow_vol[0], to_units=pyunits.gal / pyunits.hr)
+    )
+    assert pytest.approx(1602087.9, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(1602087.9, rel=1e-5) == value(
+        pyunits.convert(
+            (328.03 * 1964.42 + 751295) * pyunits.USD_2007,
+            to_units=m.fs.costing.base_currency,
+        )
+    )
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_du_centrifuge_costing():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.props = ASM1ParameterBlock()
+
+    m.fs.unit = DewateringUnit(property_package=m.fs.props)
+
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
+    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216.2434 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
+    m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+
+    m.fs.unit.hydraulic_retention_time.fix()
+
+    m.fs.costing = WaterTAPCosting()
+
+    m.fs.unit.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=cost_centrifuge,
+    )
+    # Using average specific energy consumption of 0.069 for centrifuge as a function of capacity
+    m.fs.unit.energy_electric_flow_vol_inlet[0] = 0.069 * pyunits.kWh / pyunits.m**3
+    m.fs.costing.cost_process()
+
+    assert degrees_of_freedom(m) == 0
+
+    results = solver.solve(m)
+
+    assert_optimal_termination(results)
+
+    assert hasattr(m.fs.costing, "centrifuge")
+    assert value(m.fs.costing.centrifuge.capital_a_parameter) == 328.03
+    assert value(m.fs.costing.centrifuge.capital_b_parameter) == 751295
+
+    # Check solutions
+    assert pytest.approx(1602087.9, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(1602087.9, rel=1e-5) == value(
+        pyunits.convert(
+            (328.03 * 1964.42 + 751295) * pyunits.USD_2007,
+            to_units=m.fs.costing.base_currency,
+        )
+    )
+    assert pytest.approx(7.4361 * 0.069, rel=1e-5) == value(
+        m.fs.unit.electricity_consumption[0]
+    )
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_du_centrifuge_costing2():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.props = ASM1ParameterBlock()
+
+    m.fs.unit = DewateringUnit(property_package=m.fs.props)
+
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
+    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216.2434 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
+    m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+
+    m.fs.unit.hydraulic_retention_time.fix()
+
+    m.fs.costing = WaterTAPCosting()
+
+    m.fs.unit.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=cost_dewatering,
+        costing_method_arguments={
+            "dewatering_type": DewateringType.centrifuge,
+            "cost_electricity_flow": False,
+        },
+    )
+
+    m.fs.costing.cost_process()
+
+    assert degrees_of_freedom(m) == 0
+
+    results = solver.solve(m)
+
+    assert_optimal_termination(results)
+
+    assert hasattr(m.fs.costing, "centrifuge")
+    assert value(m.fs.costing.centrifuge.capital_a_parameter) == 328.03
+    assert value(m.fs.costing.centrifuge.capital_b_parameter) == 751295
+    assert "electricity" not in m.fs.costing.aggregate_flow_costs.keys()
+
+    # Check solutions
+    assert pytest.approx(1602087.9, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(1602087.9, rel=1e-5) == value(
+        pyunits.convert(
+            (328.03 * 1964.42 + 751295) * pyunits.USD_2007,
+            to_units=m.fs.costing.base_currency,
+        )
+    )
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_du_filter_plate_press_costing():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.props = ASM1ParameterBlock()
+
+    m.fs.unit = DewateringUnit(property_package=m.fs.props)
+
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
+    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216.2434 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
+    m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+
+    m.fs.unit.hydraulic_retention_time.fix()
+
+    m.fs.costing = WaterTAPCosting()
+
+    m.fs.unit.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=cost_dewatering,
+        costing_method_arguments={
+            "dewatering_type": DewateringType.filter_plate_press,
+            "cost_electricity_flow": True,
+        },
+    )
+    # Using average specific energy consumption of 0.0039 for screw press as a function of capacity
+    m.fs.unit.energy_electric_flow_vol_inlet[0] = 0.0039 * pyunits.kWh / pyunits.m**3
+    m.fs.costing.cost_process()
+
+    assert degrees_of_freedom(m) == 0
+
+    results = solver.solve(m)
+
+    assert_optimal_termination(results)
+    assert_units_consistent(m)
+    assert hasattr(m.fs.costing, "filter_plate_press")
+    assert value(m.fs.costing.filter_plate_press.capital_a_parameter) == 102794
+    assert value(m.fs.costing.filter_plate_press.capital_b_parameter) == 0.4216
+
+    # Check solutions
+    assert pytest.approx(2885989.2, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(2885989.2, rel=1e-5) == value(
+        pyunits.convert(
+            (102794 * 1964.42**0.4216) * pyunits.USD_2007,
+            to_units=m.fs.costing.base_currency,
+        )
+    )
+    assert pytest.approx(7.4361 * 0.0039, rel=1e-5) == value(
+        m.fs.unit.electricity_consumption[0]
+    )
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_du_filter_belt_press_costing():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.props = ASM1ParameterBlock()
+
+    m.fs.unit = DewateringUnit(property_package=m.fs.props)
+
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
+    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216.2434 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
+    m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+
+    m.fs.unit.hydraulic_retention_time.fix()
+
+    m.fs.costing = WaterTAPCosting()
+
+    m.fs.unit.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=cost_dewatering,
+        costing_method_arguments={
+            "dewatering_type": DewateringType.filter_belt_press,
+            "cost_electricity_flow": True,
+        },
+    )
+    # Using average specific energy consumption of 0.006 for screw press as a function of capacity
+    m.fs.unit.energy_electric_flow_vol_inlet[0] = 0.006 * pyunits.kWh / pyunits.m**3
+    m.fs.costing.cost_process()
+
+    assert degrees_of_freedom(m) == 0
+
+    results = solver.solve(m)
+
+    assert_optimal_termination(results)
+    assert_units_consistent(m)
+    assert hasattr(m.fs.costing, "filter_belt_press")
+    assert value(m.fs.costing.filter_belt_press.capital_a_parameter) == 146.29
+    assert value(m.fs.costing.filter_belt_press.capital_b_parameter) == 433972
+
+    # Check solutions
+    assert pytest.approx(828025.2, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(828025.2, rel=1e-5) == value(
+        pyunits.convert(
+            (146.29 * 1964.42 + 433972) * pyunits.USD_2007,
+            to_units=m.fs.costing.base_currency,
+        )
+    )
+    assert pytest.approx(7.4361 * 0.006, rel=1e-5) == value(
+        m.fs.unit.electricity_consumption[0]
+    )
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_du_costing_config_err():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.props = ASM1ParameterBlock()
+
+    m.fs.unit = DewateringUnit(property_package=m.fs.props)
+
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
+    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216.2434 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
+    m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+
+    m.fs.unit.hydraulic_retention_time.fix()
+
+    m.fs.costing = WaterTAPCosting()
+
+    with pytest.raises(
+        ConfigurationError,
+        match="fs.unit received invalid argument for dewatering_type: foo. Argument must be a member of the DewateringType Enum class.",
+    ):
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_dewatering,
+            costing_method_arguments={
+                "dewatering_type": "foo",
+            },
+        )
