@@ -138,9 +138,6 @@ class TestClarifierCosting:
 
         # Check solutions
         assert pytest.approx(1681573, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(604041.3, rel=1e-5) == value(
-            m.fs.unit.costing.fixed_operating_cost
-        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -161,10 +158,7 @@ class TestClarifierCosting:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(3458422, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(115455.4, rel=1e-5) == value(
-            m.fs.unit.costing.fixed_operating_cost
-        )
+        assert pytest.approx(2131584, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

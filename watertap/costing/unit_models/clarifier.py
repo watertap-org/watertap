@@ -24,7 +24,6 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import StrEnum
 from ..util import (
     make_capital_cost_var,
-    make_fixed_operating_cost_var,
     register_costing_parameter_block,
 )
 
@@ -58,52 +57,22 @@ def cost_clarifier(blk, clarifier_type=ClarifierType.circular, **kwargs):
 
 def build_circular_clarifier_cost_param_block(blk):
 
-    blk.construction_a_parameter = pyo.Param(
+    blk.construction_a_parameter = pyo.Var(
         initialize=-6e-4,
         doc="A parameter for construction cost",
         units=pyo.units.USD_2011 / pyo.units.ft**4,
     )
 
-    blk.construction_b_parameter = pyo.Param(
+    blk.construction_b_parameter = pyo.Var(
         initialize=98.952,
         doc="B parameter for construction cost",
         units=pyo.units.USD_2011 / pyo.units.ft**2,
     )
 
-    blk.construction_c_parameter = pyo.Param(
+    blk.construction_c_parameter = pyo.Var(
         initialize=191806,
         doc="C parameter for construction cost",
         units=pyo.units.USD_2011,
-    )
-
-    blk.O_and_M_a_parameter = pyo.Param(
-        initialize=8e-10,
-        doc="A parameter for operation and maintenance cost",
-        units=pyo.units.USD_2011 / pyo.units.ft**6 / pyo.units.year,
-    )
-
-    blk.O_and_M_b_parameter = pyo.Param(
-        initialize=-5e-5,
-        doc="B parameter for operation and maintenance cost",
-        units=pyo.units.USD_2011 / pyo.units.ft**4 / pyo.units.year,
-    )
-
-    blk.O_and_M_c_parameter = pyo.Param(
-        initialize=1.6945,
-        doc="C parameter for operation and maintenance cost",
-        units=pyo.units.USD_2011 / pyo.units.ft**2 / pyo.units.year,
-    )
-
-    blk.O_and_M_d_parameter = pyo.Param(
-        initialize=7207,
-        doc="D parameter for operation and maintenance cost",
-        units=pyo.units.USD_2011 / pyo.units.year,
-    )
-
-    blk.electricity_percentage = pyo.Param(
-        initialize=0.04,
-        doc="Percentage of electricity cost over O & M cost",
-        units=pyo.units.dimensionless,
     )
 
 
@@ -116,7 +85,6 @@ def cost_circular_clarifier(blk, cost_electricity_flow=True):
     Circular clarifier costing method [1]
     """
     make_capital_cost_var(blk)
-    make_fixed_operating_cost_var(blk)
 
     surface_area = pyo.units.convert(
         blk.unit_model.surface_area, to_units=pyo.units.ft**2
@@ -132,46 +100,6 @@ def cost_circular_clarifier(blk, cost_electricity_flow=True):
         )
     )
 
-    max_surface_area_limit = 200 * pyo.units.ft**2
-    if pyo.value(surface_area) > pyo.value(max_surface_area_limit):
-        num_O_and_M = math.ceil(
-            pyo.value(surface_area) / pyo.value(max_surface_area_limit)
-        )
-        blk.fixed_operating_cost_constraint = pyo.Constraint(
-            expr=blk.fixed_operating_cost
-            == pyo.units.convert(
-                num_O_and_M
-                * (1 - blk.costing_package.circular.electricity_percentage)
-                * (
-                    blk.costing_package.circular.O_and_M_a_parameter
-                    * max_surface_area_limit**3
-                    + blk.costing_package.circular.O_and_M_b_parameter
-                    * max_surface_area_limit**2
-                    + blk.costing_package.circular.O_and_M_c_parameter
-                    * max_surface_area_limit
-                    + blk.costing_package.circular.O_and_M_d_parameter
-                ),
-                to_units=blk.costing_package.base_currency
-                / blk.costing_package.base_period,
-            )
-        )
-    else:
-        blk.fixed_operating_cost_constraint = pyo.Constraint(
-            expr=blk.fixed_operating_cost
-            == pyo.units.convert(
-                (1 - blk.costing_package.circular.electricity_percentage)
-                * (
-                    blk.costing_package.circular.O_and_M_a_parameter * surface_area**3
-                    + blk.costing_package.circular.O_and_M_b_parameter
-                    * surface_area**2
-                    + blk.costing_package.circular.O_and_M_c_parameter * surface_area
-                    + blk.costing_package.circular.O_and_M_d_parameter
-                ),
-                to_units=blk.costing_package.base_currency
-                / blk.costing_package.base_period,
-            )
-        )
-
     t0 = blk.flowsheet().time.first()
     if cost_electricity_flow:
         blk.costing_package.cost_flow(
@@ -185,40 +113,22 @@ def cost_circular_clarifier(blk, cost_electricity_flow=True):
 
 def build_rectangular_clarifier_cost_param_block(blk):
 
-    blk.construction_a_parameter = pyo.Param(
+    blk.construction_a_parameter = pyo.Var(
         initialize=-2.9e-3,
         doc="A parameter for construction cost",
         units=pyo.units.USD_2011 / pyo.units.ft**4,
     )
 
-    blk.construction_b_parameter = pyo.Param(
+    blk.construction_b_parameter = pyo.Var(
         initialize=169.19,
         doc="B parameter for construction cost",
         units=pyo.units.USD_2011 / pyo.units.ft**2,
     )
 
-    blk.construction_c_parameter = pyo.Param(
+    blk.construction_c_parameter = pyo.Var(
         initialize=94365,
         doc="C parameter for construction cost",
         units=pyo.units.USD_2011,
-    )
-
-    blk.O_and_M_a_parameter = pyo.Param(
-        initialize=4.2948,
-        doc="A parameter for operation and maintenance cost",
-        units=pyo.units.USD_2011 / pyo.units.ft**2 / pyo.units.year,
-    )
-
-    blk.O_and_M_b_parameter = pyo.Param(
-        initialize=8283,
-        doc="B parameter for operation and maintenance cost",
-        units=pyo.units.USD_2011 / pyo.units.year,
-    )
-
-    blk.electricity_percentage = pyo.Param(
-        initialize=0.03,
-        doc="Percentage of electricity cost over O & M cost",
-        units=pyo.units.dimensionless,
     )
 
 
@@ -231,93 +141,41 @@ def cost_rectangular_clarifier(blk, cost_electricity_flow=True):
     Rectangular clarifier costing method [1]
     """
     make_capital_cost_var(blk)
-    make_fixed_operating_cost_var(blk)
 
     surface_area = pyo.units.convert(
         blk.unit_model.surface_area, to_units=pyo.units.ft**2
     )
-    max_surface_area_limit = 4800 * pyo.units.ft**2
 
-    if pyo.value(surface_area) > pyo.value(max_surface_area_limit):
-        num_clarifier = math.ceil(
-            pyo.value(surface_area) / pyo.value(max_surface_area_limit)
+    blk.capital_cost_constraint = pyo.Constraint(
+        expr=blk.capital_cost
+        == pyo.units.convert(
+            blk.costing_package.rectangular.construction_a_parameter * surface_area**2
+            + blk.costing_package.rectangular.construction_b_parameter * surface_area
+            + blk.costing_package.rectangular.construction_c_parameter,
+            to_units=blk.costing_package.base_currency,
         )
-        blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost
-            == pyo.units.convert(
-                num_clarifier
-                * (
-                    blk.costing_package.rectangular.construction_a_parameter
-                    * max_surface_area_limit**2
-                    + blk.costing_package.rectangular.construction_b_parameter
-                    * max_surface_area_limit
-                    + blk.costing_package.rectangular.construction_c_parameter
-                ),
-                to_units=blk.costing_package.base_currency,
-            )
-        )
+    )
 
-        blk.fixed_operating_cost_constraint = pyo.Constraint(
-            expr=blk.fixed_operating_cost
-            == pyo.units.convert(
-                num_clarifier
-                * (1 - blk.costing_package.rectangular.electricity_percentage)
-                * (
-                    blk.costing_package.rectangular.O_and_M_a_parameter
-                    * max_surface_area_limit
-                    + blk.costing_package.rectangular.O_and_M_b_parameter
-                ),
-                to_units=blk.costing_package.base_currency
-                / blk.costing_package.base_period,
-            )
+    t0 = blk.flowsheet().time.first()
+    if cost_electricity_flow:
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                blk.unit_model.electricity_consumption[t0],
+                to_units=pyo.units.kW,
+            ),
+            "electricity",
         )
-
-    else:
-        blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost
-            == pyo.units.convert(
-                blk.costing_package.rectangular.construction_a_parameter
-                * surface_area**2
-                + blk.costing_package.rectangular.construction_b_parameter
-                * surface_area
-                + blk.costing_package.rectangular.construction_c_parameter,
-                to_units=blk.costing_package.base_currency,
-            )
-        )
-
-        blk.fixed_operating_cost_constraint = pyo.Constraint(
-            expr=blk.fixed_operating_cost
-            == pyo.units.convert(
-                (1 - blk.costing_package.rectangular.electricity_percentage)
-                * (
-                    blk.costing_package.rectangular.O_and_M_a_parameter * surface_area
-                    + blk.costing_package.rectangular.O_and_M_b_parameter
-                ),
-                to_units=blk.costing_package.base_currency
-                / blk.costing_package.base_period,
-            )
-        )
-
-        t0 = blk.flowsheet().time.first()
-        if cost_electricity_flow:
-            blk.costing_package.cost_flow(
-                pyo.units.convert(
-                    blk.unit_model.electricity_consumption[t0],
-                    to_units=pyo.units.kW,
-                ),
-                "electricity",
-            )
 
 
 def build_primary_clarifier_cost_param_block(blk):
 
-    blk.capital_a_parameter = pyo.Param(
+    blk.capital_a_parameter = pyo.Var(
         initialize=120000 / 2776 * 12463,
         doc="A parameter for capital cost",
         units=pyo.units.USD_2021,
     )
 
-    blk.capital_b_parameter = pyo.Param(
+    blk.capital_b_parameter = pyo.Var(
         initialize=0.7,
         doc="B parameter for construction cost",
         units=pyo.units.dimensionless,
