@@ -143,6 +143,7 @@ class TestSaponification(object):
 
         assert hasattr(sapon.fs.unit, "cstr_performance_eqn")
         assert hasattr(sapon.fs.unit, "volume")
+        assert hasattr(sapon.fs.unit, "hydraulic_retention_time")
         assert hasattr(sapon.fs.unit, "heat_duty")
         assert hasattr(sapon.fs.unit, "deltaP")
 
@@ -302,5 +303,8 @@ class TestSaponification(object):
                 ],
                 "Heat Duty": sapon.fs.unit.heat_duty[0],
                 "Pressure Change": sapon.fs.unit.deltaP[0],
+                "Electricity Consumption": sapon.fs.unit.unit_electricity_consumption[
+                    0
+                ],
             }
         }
