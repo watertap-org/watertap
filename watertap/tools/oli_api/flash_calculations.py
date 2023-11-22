@@ -42,7 +42,7 @@
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
 
-__author__ = "Oluwamayowa Amusat, Paul Vecchiarelli"
+__author__ = "Paul Vecchiarelli"
 
 from pyomo.environ import units as pyunits
 
@@ -51,6 +51,12 @@ from numpy import linspace
 from watertap.tools.oli_api.flash import Flash
 from watertap.tools.oli_api.client import OLIApi
 from watertap.tools.oli_api.credentials import CredentialManager
+
+from watertap.tools.oli_api.util.fixed_keys_dict import (
+    default_water_analysis_properties,
+    default_optional_properties,
+    default_unit_set_info,
+)
 
 if __name__ == "__main__":
     source_water = {
@@ -72,92 +78,101 @@ if __name__ == "__main__":
             "components": pyunits.mg / pyunits.L,
         },
     }
-    
+
     # initialize flash instance
-    f = Flash()    
-    f.build_input_list()
-    
+    f = Flash(
+        default_water_analysis_properties,
+        default_optional_properties,
+        default_unit_set_info,
+    )
+    # modify water_analysis_properties and create input list
+    f.set_input_value("AllowSolidsToForm", True)
+    # modify optional properties
+    output_props = {"prescalingTendencies": True, "scalingTendencies": True}
+    f.optional_properties.update(output_props)
+    water_analysis_base_case = f.build_flash_calculation_input(
+        method="wateranalysis", state_vars=source_water
+    )
+    # specify objects to extract
+    output_props_to_extract = {
+        "basic": ["osmoticPressure", "ph"],
+        "optional": output_props.keys(),
+        "additional_inputs": {
+            "phases": ["liquid1"],
+            "species": ["CACO3", "CASO4.2H2O"],
+        },
+    }
+
     # log in to OLI Cloud
-    '''
-    credentials = {}
-    credential_manager = CredentialManager(**credentials)
-    '''
-    '''
-    key = ""
-    credential_manager = CredentialManager(encryption_key=key)
-    '''
-    
+    credential_manager = CredentialManager()
+
     with OLIApi(credential_manager) as oliapi:
-        
-        dbs_file_id = oliapi.get_dbs_file_id(chemistry_source=source_water["components"],
-                                             phases=["liquid1", "solid"],
-                                             model_name="remote_file_from_dict")                        
-        
+        dbs_file_id = oliapi.get_dbs_file_id(
+            chemistry_source=source_water["components"],
+            phases=["liquid1", "solid"],
+            model_name="silica_groundwater",
+        )
 
-
-    
-        f.water_analysis_properties["AllowSolidsToForm"] = True
-        props = {
-            "scalingIndex": False,
-            "prescalingTendencies": True,
-            "prescalingTendenciesRigorous": True,
-            "scalingTendencies": True,
-            "MBGComposition": False,
-            "materialBalanceGroup": False,
+        # define analysis survey parameters
+        survey_vars = {  # "SO4_2-": linspace(0, 1e2, 3),
+            # "Cl_-": linspace(0, 1e3, 3),
+            # "Na_+": linspace(0, 1e3, 3),
+            # "Ca_2+": linspace(0, 1e2, 3),
+            "Temperature": linspace(273, 373, 5)
         }
-        f.optional_properties.update(props)
-        # specify scalants of interest
-        get_scalants = ["CACO3", "CASO4.2H2O"]
-        # specify phase-dependent parameters 
-        get_phase="liquid1"
-        get_properties=["osmoticPressure", "ph"]
-    
-        # define survey parameters
-        survey_vars = {#"SO4_2-": linspace(0, 1e2, 3),
-                       #"Cl_-": linspace(0, 1e3, 3),
-                       #"Na_+": linspace(0, 1e3, 3),
-                       #"Ca_2+": linspace(0, 1e2, 3),
-                       "Temperature": linspace(273, 373, 5)}
-        water_analysis_survey = build_survey(survey_vars, get_oli_names=True)
-        
-        # generate water analysis feedwater input
-        #f.build_water_calculation_input(f.water_analysis_input_list)
-        '''
+        water_analysis_survey = f.build_survey(survey_vars, get_oli_names=True)
+
         # run single point water analysis
-        water_analysis_single_point = run_flash(oliapi, dbs_file_id, initial_input=f.water_analysis_inputs, flash_method="wateranalysis")
-        #f.write_output_to_yaml(water_analysis_single_point, "water_analysis_single_point")
-        water_analysis_single_point_scaling_tendencies = extract_scaling_tendencies(raw_result=water_analysis_single_point, scalants=get_scalants)
-        #print(water_analysis_single_point_scaling_tendencies)
-        water_analysis_single_point_basic_properties = extract_basic_properties(raw_result=water_analysis_single_point, phase=get_phase, properties=get_properties)
-        #print(water_analysis_single_point_basic_properties)
-        '''
-        '''
+        water_analysis_single_point = f.run_flash(
+            "wateranalysis", oliapi, dbs_file_id, water_analysis_base_case, write=True
+        )
+        wa_sp_basic_props, wa_sp_optional_props = f.extract_properties(
+            water_analysis_single_point, output_props_to_extract, write=False
+        )
+        print(wa_sp_basic_props)
+        print(wa_sp_optional_props)
+
         # run composition survey water analysis
-        water_analysis_composition_survey = run_flash(oliapi, dbs_file_id, initial_input=f.water_analysis_inputs, survey=water_analysis_survey, flash_method="wateranalysis")
-        #f.write_output_to_yaml(water_analysis_composition_survey, "water_analysis_composition_survey")
-        water_analysis_composition_survey_scaling_tendencies = extract_scaling_tendencies(raw_result=water_analysis_composition_survey, scalants=get_scalants)
-        #print(water_analysis_composition_survey_scaling_tendencies)
-        water_analysis_composition_survey_basic_properties = extract_basic_properties(raw_result=water_analysis_composition_survey, phase=get_phase, properties=get_properties)
-        #print(water_analysis_composition_survey_basic_properties)
-        '''
-        '''
+        water_analysis_composition_survey = f.run_flash(
+            "wateranalysis",
+            oliapi,
+            dbs_file_id,
+            water_analysis_base_case,
+            water_analysis_survey,
+            write=True,
+        )
+        wa_cs_basic_props, wa_cs_optional_props = f.extract_properties(
+            water_analysis_composition_survey, output_props_to_extract, write=False
+        )
+        print(wa_cs_basic_props)
+        print(wa_cs_optional_props)
+
         # generate isothermal flash feedwater input
-        f.build_flash_calculation_input(method="isothermal", state_vars=source_water, water_analysis_output=water_analysis_single_point["base"])
-        
-        # run single point isothermal flash
-        isothermal_flash_single_point = run_flash(oliapi, dbs_file_id, initial_input=f.flash_analysis_inputs, flash_method="isothermal")
-        #f.write_output_to_yaml(isothermal_flash_single_point, "isothermal_flash_single_point")
-        isothermal_flash_single_point_scaling_tendencies = extract_scaling_tendencies(raw_result=isothermal_flash_single_point, scalants=get_scalants)
-        #print(isothermal_flash_single_point_scaling_tendencies)
-        isothermal_flash_single_point_basic_properties = extract_basic_properties(raw_result=isothermal_flash_single_point, phase=get_phase, properties=get_properties)
-        #print(isothermal_flash_single_point_basic_properties)
-        '''
-        '''
-        # run composition survey isothermal flash    
-        isothermal_flash_composition_survey = run_flash(oliapi, dbs_file_id, initial_input=f.flash_analysis_inputs, survey=water_analysis_survey, flash_method="isothermal")
-        #f.write_output_to_yaml(isothermal_composition_survey, "isothermal_flash_composition_survey")
-        isothermal_flash_composition_survey_scaling_tendencies = extract_scaling_tendencies(raw_result=isothermal_composition_survey, scalants=get_scalants)
-        #print(isothermal_flash_composition_survey_scaling_tendencies)
-        isothermal_flash_composition_survey_basic_properties = extract_basic_properties(raw_result=isothermal_composition_survey, phase=get_phase, properties=get_properties)
-        #print(isothermal_flash_composition_survey_basic_properties)
-        '''
+        isothermal_analysis_base_case = f.build_flash_calculation_input(
+            method="isothermal",
+            state_vars=source_water,
+            water_analysis_output=water_analysis_single_point[0],
+        )
+
+        # run single point isothermal analysis
+        isothermal_analysis_single_point = f.run_flash(
+            "isothermal", oliapi, dbs_file_id, isothermal_analysis_base_case, write=True
+        )
+        ia_sp_basic_props, ia_sp_optional_props = f.extract_properties(
+            isothermal_analysis_single_point, output_props_to_extract, write=False
+        )
+        print(ia_sp_basic_props)
+        print(ia_sp_optional_props)
+
+        # run composition survey isothermal flash
+        isothermal_analysis_composition_survey = f.run_flash(
+            "isothermal",
+            oliapi,
+            dbs_file_id,
+            isothermal_analysis_base_case,
+            water_analysis_survey,
+            write=True,
+        )
+        ia_cs_basic_props, ia_cs_optional_props = f.extract_properties(
+            isothermal_analysis_composition_survey, output_props_to_extract, write=True
+        )

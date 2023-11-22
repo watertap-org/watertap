@@ -23,7 +23,7 @@ from watertap.tools.oli_api.util.state_block_helper_functions import (
 from watertap.tools.oli_api.credentials import CredentialManager
 from watertap.tools.oli_api.client import OLIApi
 
-from watertap.tools.oli_api.core.water_analysis import WaterAnalysis
+from watertap.tools.oli_api.flash import Flash
 
 source_water = {
     "temperature": 298.15,
@@ -68,7 +68,8 @@ props = {
 }
 water_analysis.oli_optional_properties.update(props)
 
-credential_manager = CredentialManager(encryption_key=encryption_key)
+# uncomment line below and input credentials
+#credential_manager = CredentialManager()
 
 # will take 20-30 seconds to run
 
@@ -78,13 +79,12 @@ solute_list = source_water["components"]
 phases = ["liquid1", "solid"]
 
 with OLIApi(credential_manager) as oliapi:
-        
     dbs_file_id = oliapi.get_dbs_file_id(
         chemistry_source=solute_list, phases=phases, model_name="remote_file_from_dict"
     )
-    
+
     water_analysis.run(oliapi=oliapi, dbs_file_id=dbs_file_id)
-    
+
 
 print(water_analysis.survey)
 print("\nPhase Properties:")
