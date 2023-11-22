@@ -19,7 +19,7 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
 def set_up_sensitivity():
     outputs = {}
 
-    m = RO.build(erd_type=ERDtype.pump_as_turbine)
+    m = RO.build(erd_type=ERDtype.no_ERD)
     RO.set_operating_conditions(
         m,
         water_recovery=0.7,
@@ -40,8 +40,10 @@ def set_up_sensitivity():
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
     # Not used in Excel
+    outputs["RO Water Flux"] = m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
+    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Membrane Area"] = m.fs.RO.area
-    # No conversion in Excel
+    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Energy Consumption"] = m.fs.costing.specific_energy_consumption
     # No conversion in Excel
     outputs["System Capital Cost"] = m.fs.costing.aggregate_capital_cost
@@ -50,7 +52,7 @@ def set_up_sensitivity():
     # Multiplied by flow rate scaling factor in Excel
     outputs["Pump Capital Cost"] = m.fs.P1.costing.capital_cost
     # Multiplied by flow rate scaling factor in Excel
-    outputs["ERD Capital Cost"] = m.fs.ERD.costing.capital_cost
+    # outputs["ERD Capital Cost"] = m.fs.ERD.costing.capital_cost
     # Multiplied by flow rate scaling factor in Excel
     outputs["RO Operating Cost"] = m.fs.RO.costing.fixed_operating_cost
     # Multiplied by flow rate scaling factor in Excel
@@ -87,7 +89,7 @@ def set_up_sensitivity():
 
 
 def run_analysis(
-    case_num=1, nx=3, interpolate_nan_outputs=True, withERD=True, output_filename=None
+    case_num=1, nx=5, interpolate_nan_outputs=True, withERD=True, output_filename=None
 ):
 
     if output_filename is None:
@@ -117,11 +119,11 @@ def run_analysis(
         sweep_params["mass_concentration"] = LinearSample(
             m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
             0.963,
-            1.927,
+            4.816,
             nx,
         )
         sweep_params["volumetric_recovery"] = LinearSample(
-            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.8, nx
+            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.9, nx
         )
     else:
         raise ValueError(f"{case_num} is not yet implemented")
