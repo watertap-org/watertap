@@ -608,6 +608,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
 
+    # TODO: uncomment and revise below once costing is merged
     # System costing
     # exports.add(
     #     obj=fs.costing.utilization_factor,
@@ -2858,6 +2859,7 @@ def build_flowsheet(build_options=None, **kwargs):
     results = solve(m)
     assert_optimal_termination(results)
 
+    # TODO: incorporate costing when merged
     # add_costing(m)
     # assert_degrees_of_freedom(m, 0)
     # m.fs.costing.initialize()
