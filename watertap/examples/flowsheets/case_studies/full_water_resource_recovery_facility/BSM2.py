@@ -374,6 +374,9 @@ def set_operating_conditions(m):
     # Dewatering Unit - fix either HRT or volume.
     m.fs.DU.hydraulic_retention_time.fix(1800 * pyo.units.s)
 
+    # Thickener unit
+    m.fs.TU.hydraulic_retention_time.fix(86400 * pyo.units.s)
+    m.fs.TU.diameter.fix(10 * pyo.units.m)
 
 def initialize_system(m):
     # Initialize flowsheet
