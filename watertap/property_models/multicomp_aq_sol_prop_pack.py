@@ -2194,15 +2194,13 @@ class MCASStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.pressure_osm_phase) is None:
                 sf_gas_constant = value(1 / Constants.gas_constant)
                 sf_temp = iscale.get_scaling_factor(self.temperature)
-                sf_conc_mol = value(
-                    1
-                    / (
-                        sum(
-                            self.conc_mol_phase_comp["Liq", j]
-                            for j in self.params.solute_set
-                        )
+                sf_conc_mol = (
+                    sum(
+                        iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
+                        ** -1
+                        for j in self.params.solute_set
                     )
-                )
+                ) ** -1
                 sf = sf_gas_constant * sf_temp * sf_conc_mol
                 iscale.set_scaling_factor(self.pressure_osm_phase, sf)
 
@@ -2236,22 +2234,22 @@ class MCASStateBlockData(StateBlockData):
                                 iscale.get_scaling_factor(
                                     self.elec_mobility_phase_comp["Liq", j]
                                 )
-                                ** 2
+                                ** -1
                                 * iscale.get_scaling_factor(
                                     self.conc_mol_phase_comp["Liq", j]
                                 )
-                                ** 2
+                                ** -1
                                 for j in self.params.ion_set
                             )
-                            ** 0.5
+                            ** -1
                             / sum(
                                 iscale.get_scaling_factor(
                                     self.conc_mol_phase_comp["Liq", j]
                                 )
-                                ** 2
+                                ** -1
                                 for j in self.params.cation_set
                             )
-                            ** 0.5
+                            ** -1
                         )
                     else:
                         sf = self.params.config.equiv_conductivity_phase_data[ind] ** -1
@@ -2263,12 +2261,16 @@ class MCASStateBlockData(StateBlockData):
                     sf_equiv_cond_phase = iscale.get_scaling_factor(
                         self.equiv_conductivity_phase[ind]
                     )
-                    sf_conc_mol_z = value(
-                        1
-                        / sum(
-                            self.conc_mol_phase_comp["Liq", j] * self.charge_comp[j]
+                    sf_conc_mol_z = (
+                        sum(
+                            iscale.get_scaling_factor(
+                                self.conc_mol_phase_comp["Liq", j]
+                            )
+                            ** -1
+                            * iscale.get_scaling_factor(self.charge_comp[j]) ** -1
                             for j in self.params.cation_set
                         )
+                        ** -1
                     )
                     sf = sf_equiv_cond_phase * sf_conc_mol_z
                     iscale.set_scaling_factor(self.elec_cond_phase[ind], sf)
@@ -2316,9 +2318,15 @@ class MCASStateBlockData(StateBlockData):
 
         if self.is_property_constructed("ionic_strength_molal"):
             if iscale.get_scaling_factor(self.ionic_strength_molal) is None:
-                sf = min(
-                    iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
-                    for j in self.params.solute_set
+                sf = (
+                    sum(
+                        iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
+                        ** -1
+                        * iscale.get_scaling_factor(self.charge_comp[j]) ** -1
+                        for j in self.params.solute_set
+                    )
+                    ** -1
+                    * 2
                 )
                 iscale.set_scaling_factor(self.ionic_strength_molal, sf)
 
