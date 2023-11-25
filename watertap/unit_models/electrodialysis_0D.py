@@ -23,7 +23,7 @@ from pyomo.environ import (
     Constraint,
     units as pyunits,
 )
-from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
@@ -33,7 +33,6 @@ from idaes.core import (
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
-    MaterialFlowBasis,
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
@@ -57,8 +56,8 @@ _log = idaeslog.getLogger(__name__)
 
 class LimitingCurrentDensityMethod(Enum):
     InitialValue = 0
-    Empirical = 1
-    Theoretical = 2
+    # Empirical = 1
+    # Theoretical = 2 TODO: 1 and 2
 
 
 class ElectricalOperationMode(Enum):
@@ -190,8 +189,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
     CONFIG.declare(
         "operation_mode",
         ConfigValue(
-            # default=ElectricalOperationMode.Constant_Current,
-            default=ElectricalOperationMode.Constant_Voltage,
+            default=ElectricalOperationMode.Constant_Current,
             domain=In(ElectricalOperationMode),
             description="The electrical operation mode. To be selected between Constant Current and Constant Voltage",
         ),
@@ -2056,7 +2054,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         super().calculate_scaling_factors()
         # Scaling factors that user may setup
         # The users are highly encouraged to provide scaling factors for assessable vars below.
-        # Not providing these vgitars will give a warning.
+        # Not providing these vars will give a warning.
         if (
             iscale.get_scaling_factor(self.solute_diffusivity_membrane, warning=True)
             is None
@@ -2348,14 +2346,6 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     * iscale.get_scaling_factor(self.hydraulic_diameter) ** -1
                 )
             iscale.set_scaling_factor(self.pressure_drop, sf)
-
-        # if hasattr(self, "pressure_drop_total") and (
-        #         iscale.get_scaling_factor(self.pressure_drop_total, warning=True) is None
-        # ):
-        #     sf = iscale.get_scaling_factor(
-        #         self.pressure_drop
-        #     ) * iscale.get_scaling_factor(self.cell_length)
-        #     iscale.set_scaling_factor(self.pressure_drop_total, sf)
 
         if hasattr(self, "pressure_drop_total") and (
             iscale.get_scaling_factor(self.pressure_drop_total, warning=True) is None

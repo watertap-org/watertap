@@ -1807,7 +1807,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                         == 2
                         * self.channel_height
                         * self.cell_width
-                        * (1 - self.spacer_porosity)
+                        * self.spacer_porosity
                         * (self.channel_height + self.cell_width) ** -1
                     )
                 else:
@@ -2412,7 +2412,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     self.config.limiting_current_density_method
                     == LimitingCurrentDensityMethod.Theoretical
                 ):
-
                     for ind in self.current_dens_lim_x:
                         sf = (
                             iscale.get_scaling_factor(self.N_Sh)

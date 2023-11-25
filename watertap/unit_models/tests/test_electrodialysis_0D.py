@@ -35,8 +35,8 @@ from idaes.core import (
     EnergyBalanceType,
     MaterialBalanceType,
     MomentumBalanceType,
-    UnitModelCostingBlock,
 )
+from idaes.core import UnitModelCostingBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
@@ -71,11 +71,8 @@ class TestElectrodialysisVoltageConst:
     @pytest.mark.unit
     def test_build_model(self, electrodialysis_cell1):
         m = electrodialysis_cell1
-        # test configrations
-        print("configurations:", m.fs.unit.config)
-
+        # test configurations
         assert len(m.fs.unit.config) == 17
-
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -516,16 +513,6 @@ class TestElectrodialysisCurrentConst:
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
         ) == pytest.approx(1.330e-3, rel=5e-3)
-
-        # assert pytest.approx(388.6800, rel=1e-3) == value(
-        #     m.fs.costing.aggregate_capital_cost
-        # )
-        # assert pytest.approx(47.16423, rel=1e-3) == value(
-        #     m.fs.costing.total_operating_cost
-        # )
-        # assert pytest.approx(777.3600, rel=1e-3) == value(
-        #     m.fs.costing.total_capital_cost
-        # )
 
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_cell2):

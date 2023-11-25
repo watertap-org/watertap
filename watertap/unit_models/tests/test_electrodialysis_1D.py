@@ -74,7 +74,7 @@ class TestElectrodialysisVoltageConst:
     @pytest.mark.unit
     def test_build_model(self, electrodialysis_1d_cell1):
         m = electrodialysis_1d_cell1
-        # test configrations
+        # test configurations
         assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -1755,13 +1755,14 @@ class Test_ED_pressure_drop_components:
         )
         return m
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.unit
     def test_deltaP_various_methods(self, ed_m0, ed_m1, ed_m2, ed_m3, ed_m4, ed_m5):
         ed_m = (ed_m0, ed_m1, ed_m2, ed_m3, ed_m4, ed_m5)
         for m in ed_m:
-            m.fs.unit.inlet_diluate.pressure.fix(5013250)
+            m.fs.unit.inlet_diluate.pressure.fix(201325)
             m.fs.unit.inlet_diluate.temperature.fix(298.15)
-            m.fs.unit.inlet_concentrate.pressure.fix(5013250)
+            m.fs.unit.inlet_concentrate.pressure.fix(201325)
             m.fs.unit.inlet_concentrate.temperature.fix(298.15)
             m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(17.875)
             m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(5.56e-2)
@@ -1813,7 +1814,7 @@ class Test_ED_pressure_drop_components:
 
         # Test ed_m0
         ed_m[0].fs.unit.pressure_drop.fix(40000)
-        iscale.calculate_scaling_factors(ed_m[0])
+        iscale.calculate_scaling_factors(ed_m[0], outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(ed_m[0]) == 0
         initialization_tester(ed_m[0])
         badly_scaled_var_values = {
@@ -1834,48 +1835,46 @@ class Test_ED_pressure_drop_components:
         initialization_tester(ed_m[1])
         results = solver.solve(ed_m[1])
         assert_optimal_termination(results)
-        assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(12.02, rel=1e-3)
-
+        assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
         assert value(ed_m[1].fs.unit.pressure_drop[0]) == pytest.approx(
-            103900.45, rel=1e-3
+            21280.815, rel=1e-3
         )
 
         assert value(ed_m[1].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            174552.76, rel=1e-3
+            35751.769, rel=1e-3
         )
 
         # Test ed_m3
         ed_m[2].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(ed_m[2])
         assert degrees_of_freedom(ed_m[2]) == 0
-        initialization_tester(ed_m[2])
+        initialization_tester(ed_m[2], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[2])
         assert_optimal_termination(results)
         assert value(ed_m[2].fs.unit.N_Re) == pytest.approx(12.02, rel=1e-3)
 
         assert value(ed_m[2].fs.unit.pressure_drop[0]) == pytest.approx(
-            325863.42, rel=1e-3
+            13670.276, rel=1e-3
         )
 
         assert value(ed_m[2].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            5.4745e05, rel=1e-3
+            22966.063, rel=1e-3
         )
 
         # Test ed_m4
         ed_m[3].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(ed_m[3])
         assert degrees_of_freedom(ed_m[3]) == 0
-        initialization_tester(ed_m[3])
+        initialization_tester(ed_m[3], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[3])
         assert_optimal_termination(results)
-        assert value(ed_m[3].fs.unit.N_Re) == pytest.approx(12.02, rel=1e-3)
-
+        assert value(ed_m[3].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
         assert value(ed_m[3].fs.unit.pressure_drop[0]) == pytest.approx(
-            69311.46, rel=1e-3
+            6424.825, rel=1e-3
         )
 
         assert value(ed_m[3].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            116443.26, rel=1e-3
+            10793.706, rel=1e-3
         )
 
         # Test ed_m5
@@ -1883,7 +1882,7 @@ class Test_ED_pressure_drop_components:
         ed_m[4].fs.unit.hydraulic_diameter.fix(1.5e-3)
         iscale.calculate_scaling_factors(ed_m[4])
         assert degrees_of_freedom(ed_m[4]) == 0
-        initialization_tester(ed_m[4])
+        initialization_tester(ed_m[4], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[4])
         assert_optimal_termination(results)
         assert value(ed_m[4].fs.unit.N_Re) == pytest.approx(74.987, rel=1e-3)
@@ -1901,16 +1900,17 @@ class Test_ED_pressure_drop_components:
         ed_m[5].fs.unit.spacer_specific_area.fix(10700)
         iscale.calculate_scaling_factors(ed_m[5])
         assert degrees_of_freedom(ed_m[5]) == 0
-        initialization_tester(ed_m[5])
+        initialization_tester(ed_m[5], outlvl=idaeslog.DEBUG)
         iscale.calculate_scaling_factors(ed_m[5])
         results = solver.solve(ed_m[5])
         assert_optimal_termination(results)
         assert value(ed_m[5].fs.unit.N_Re) == pytest.approx(35.801, rel=1e-3)
-
+        assert value(ed_m[5].fs.unit.outlet_diluate.pressure[0]) == pytest.approx(
+            178659.214, rel=1e-3
+        )
         assert value(ed_m[5].fs.unit.pressure_drop[0]) == pytest.approx(
             13491.540, rel=1e-3
         )
-
         assert value(ed_m[5].fs.unit.pressure_drop_total[0]) == pytest.approx(
             22665.786, rel=1e-3
         )
