@@ -56,8 +56,8 @@ _log = idaeslog.getLogger(__name__)
 
 class LimitingCurrentDensityMethod(Enum):
     InitialValue = 0
-    Empirical = 1
-    Theoretical = 2
+    # Empirical = 1
+    # Theoretical = 2 TODO: 1 and 2
 
 
 class ElectricalOperationMode(Enum):
@@ -208,8 +208,8 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
            :header: "Configuration Options", "Description"
 
            "``LimitingCurrentDensityMethod.InitialValue``", "Limiting current is calculated from a single initial value of the feed solution tested by the user."
-           "``LimitingCurrentDensityMethod.Empirical``", "Limiting current density is caculated from the empirical equation."
-           "``LimitingCurrentDensityMethod.Theoretical``", "Limiting current density is calculated from a theoretical equation."
+           "``LimitingCurrentDensityMethod.Empirical``", "Limiting current density is caculated from the empirical equation: TODO"
+           "``LimitingCurrentDensityMethod.Theoretical``", "Limiting current density is calculated from a theoretical equation: TODO"
        """,
         ),
     )
@@ -1234,60 +1234,6 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                         for j in self.cation_set
                     )
                 )
-            elif (
-                self.config.limiting_current_density_method
-                == LimitingCurrentDensityMethod.Theoretical
-            ):
-                return self.current_dens_lim_ioa[t] == self.N_Sh[
-                    t
-                ] * self.diffus_mass * self.hydraulic_diameter**-1 * Constants.faraday_constant * (
-                    sum(
-                        self.ion_trans_number_membrane["cem", j]
-                        / self.config.property_package.charge_comp[j]
-                        for j in self.cation_set
-                    )
-                    - sum(
-                        self.diluate.properties_in[t].trans_num_phase_comp["Liq", j]
-                        / self.config.property_package.charge_comp[j]
-                        for j in self.cation_set
-                    )
-                ) ** -1 * sum(
-                    self.config.property_package.charge_comp[j]
-                    * 0.5
-                    * (
-                        self.diluate.properties_in[t].conc_mol_phase_comp["Liq", j]
-                        + self.diluate.properties_out[t].conc_mol_phase_comp["Liq", j]
-                    )
-                    for j in self.cation_set
-                )
-            elif (
-                self.config.limiting_current_density_method
-                == LimitingCurrentDensityMethod.Empirical
-            ):
-                self.param_b = Param(
-                    initialize=0.5,
-                    units=pyunits.dimensionless,
-                    doc="emprical parameter b to calculate limitting current density",
-                )
-                self.param_a = Param(
-                    initialize=25,
-                    units=pyunits.coulomb
-                    * pyunits.mol**-1
-                    * pyunits.meter ** (1 - self.param_b)
-                    * pyunits.second ** (self.param_b - 1),
-                    doc="emprical parameter a to calculate limitting current density",
-                )
-                return self.current_dens_lim_ioa[
-                    t
-                ] == self.param_a * self.velocity_diluate[t] ** self.param_b * sum(
-                    self.config.property_package.charge_comp[j]
-                    * 0.5
-                    * (
-                        self.diluate.properties_in[t].conc_mol_phase_comp["Liq", j]
-                        + self.diluate.properties_out[t].conc_mol_phase_comp["Liq", j]
-                    )
-                    for j in self.cation_set
-                )
 
         @self.Constraint(
             self.membrane_set,
@@ -1884,12 +1830,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 "Do not forget to FIX the experimental pressure drop value in [Pa/m]!"
             )
         else:  # PressureDropMethod.Darcy_Weisbach is used
-            if not (
-                self.config.has_Nernst_diffusion_layer
-                == True
-                # and self.config.limiting_current_density_method
-                # == LimitingCurrentDensityMethod.Theoretical
-            ):
+            if not (self.config.has_Nernst_diffusion_layer == True):
                 self._get_fluid_dimensionless_quantities()
 
             self.friction_factor = Var(
