@@ -44,7 +44,7 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
-__author__ = "Xiangyu Bi"
+__author__ = "Xiangyu Bi, Kejia Hu"
 
 solver = get_solver()
 

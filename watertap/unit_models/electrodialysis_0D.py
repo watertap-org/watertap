@@ -56,8 +56,8 @@ _log = idaeslog.getLogger(__name__)
 
 class LimitingCurrentDensityMethod(Enum):
     InitialValue = 0
-    # Empirical = 1
-    # Theoretical = 2 TODO: 1 and 2
+    Empirical = 1
+    Theoretical = 2
 
 
 class ElectricalOperationMode(Enum):
@@ -1209,20 +1209,6 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.m,
             doc="Thickness of the diffusion layer",
         )
-
-        # self.param_b = Param(
-        #     initialize=0.5,
-        #     units=pyunits.dimensionless,
-        #     doc="empirical parameter b to calculate limiting current density",
-        # )
-        # self.param_a = Param(
-        #     initialize=25,
-        #     units=pyunits.coulomb
-        #           * pyunits.mol ** -1
-        #           * pyunits.meter ** (1 - self.param_b)
-        #           * pyunits.second ** (self.param_b - 1),
-        #     doc="empirical parameter a to calculate limiting current density",
-        # )
 
         @self.Constraint(
             self.flowsheet().time,
