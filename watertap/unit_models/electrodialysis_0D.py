@@ -1832,7 +1832,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                         == 2
                         * self.channel_height
                         * self.cell_width
-                        * (1 - self.spacer_porosity)
+                        * self.spacer_porosity
                         * (self.channel_height + self.cell_width) ** -1
                     )
                 else:

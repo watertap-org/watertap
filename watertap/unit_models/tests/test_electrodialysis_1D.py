@@ -1814,9 +1814,9 @@ class Test_ED_pressure_drop_components:
 
         # Test ed_m0
         ed_m[0].fs.unit.pressure_drop.fix(40000)
-        iscale.calculate_scaling_factors(ed_m[0], outlvl=idaeslog.DEBUG)
+        iscale.calculate_scaling_factors(ed_m[0])
         assert degrees_of_freedom(ed_m[0]) == 0
-        initialization_tester(ed_m[0])
+        initialization_tester(ed_m[0], outlvl=idaeslog.DEBUG)
         badly_scaled_var_values = {
             var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[0])
         }
@@ -1851,8 +1851,7 @@ class Test_ED_pressure_drop_components:
         initialization_tester(ed_m[2], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[2])
         assert_optimal_termination(results)
-        assert value(ed_m[2].fs.unit.N_Re) == pytest.approx(12.02, rel=1e-3)
-
+        assert value(ed_m[2].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
         assert value(ed_m[2].fs.unit.pressure_drop[0]) == pytest.approx(
             13670.276, rel=1e-3
         )

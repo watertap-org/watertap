@@ -1588,9 +1588,9 @@ class Test_ED_pressure_drop_components:
             )
 
             # 2 temperature and pressure for each chamber ,4
-            m.fs.unit.inlet_diluate.pressure[0].fix(5013150)
+            m.fs.unit.inlet_diluate.pressure[0].fix(201035)
             m.fs.unit.inlet_diluate.temperature.fix(298.15)
-            m.fs.unit.inlet_concentrate.pressure[0].fix(5013150)
+            m.fs.unit.inlet_concentrate.pressure[0].fix(201035)
             m.fs.unit.inlet_concentrate.temperature.fix(298.15)
 
             m.fs.unit.voltage.fix(0.5)
@@ -1656,14 +1656,14 @@ class Test_ED_pressure_drop_components:
         initialization_tester(ed_m[1])
         results = solver.solve(ed_m[1])
         assert_optimal_termination(results)
-        assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(1.750457413, rel=1e-3)
+        assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(8.546, rel=1e-3)
 
         assert value(ed_m[1].fs.unit.pressure_drop[0]) == pytest.approx(
-            39928.97, rel=1e-3
+            8178.223, rel=1e-3
         )
 
         assert value(ed_m[1].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            31543.89, rel=1e-3
+            6460.796, rel=1e-3
         )
 
         # Test ed_m2
@@ -1673,14 +1673,14 @@ class Test_ED_pressure_drop_components:
         initialization_tester(ed_m[2])
         results = solver.solve(ed_m[2])
         assert_optimal_termination(results)
-        assert value(ed_m[2].fs.unit.N_Re) == pytest.approx(1.750457413, rel=1e-3)
+        assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(8.546, rel=1e-3)
 
         assert value(ed_m[2].fs.unit.pressure_drop[0]) == pytest.approx(
-            860252.0788, rel=1e-3
+            36088.380, rel=1e-3
         )
 
         assert value(ed_m[2].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            679599.1422, rel=1e-3
+            28509.820, rel=1e-3
         )
 
         # Test ed_m3
@@ -1690,14 +1690,14 @@ class Test_ED_pressure_drop_components:
         initialization_tester(ed_m[3])
         results = solver.solve(ed_m[3])
         assert_optimal_termination(results)
-        assert value(ed_m[3].fs.unit.N_Re) == pytest.approx(1.750457413, rel=1e-3)
+        assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(8.546, rel=1e-3)
 
         assert value(ed_m[3].fs.unit.pressure_drop[0]) == pytest.approx(
-            69812.86504, rel=1e-3
+            6471.303, rel=1e-3
         )
 
         assert value(ed_m[3].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            55152.16339, rel=1e-3
+            5112.329, rel=1e-3
         )
 
         # Test ed_m4
