@@ -15,6 +15,7 @@ from ..util import (
     register_costing_parameter_block,
     make_capital_cost_var,
 )
+
 """
 Ref: W. McGivney, S. Kawamura, Cost estimating manual for water treatment facilities, John Wiley & Sons, 2008. http://onlinelibrary.wiley.com/book/10.1002/9780470260036.
 """
