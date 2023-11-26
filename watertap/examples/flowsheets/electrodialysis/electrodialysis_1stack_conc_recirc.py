@@ -15,6 +15,7 @@ from pyomo.environ import (
     Var,
     value,
     Constraint,
+    Expression,
     Objective,
     TransformationFactory,
     assert_optimal_termination,
@@ -71,7 +72,7 @@ def main():
     )
     m.fs.EDstack.voltage_applied[0].fix(10)
     m.fs.recovery_vol_H2O.fix(0.7)
-    condition_base(m)
+    _condition_base(m)
 
     # Initialize and solve the model
     initialize_system(m, solver=solver)
@@ -88,9 +89,9 @@ def main():
         * ed.current_dens_lim_x[0, 0].value
         * 1.5
     )
-    m.fs.prod.properties[0].conc_mol_phase_comp["Liq", "Na_+"].fix(34.188 * 0.2)
-    m.fs.EDstack.voltage_applied[0].unfix()
-    solve(m, solver=solver, tee=False)
+    # m.fs.prod.properties[0].conc_mol_phase_comp["Liq", "Na_+"].fix(34.188 * 0.2)
+    # m.fs.EDstack.voltage_applied[0].unfix()
+    # solve(m, solver=solver, tee=False)
     m.fs.EDstack.voltage_applied[0].unfix()
     m.fs.EDstack.voltage_applied[0].setlb(0.1)
     m.fs.EDstack.voltage_applied[0].setub(ulim)
@@ -189,54 +190,51 @@ def build():
         units=pyunits.dimensionless,
         doc="flowsheet level water recovery calculated by volumeric flow rate",
     )
-    m.fs.mem_area = Var(
+
+    m.fs.feed_salinity = Var(
         initialize=1,
-        bounds=(0, 1e3),
-        units=pyunits.meter**2,
-        doc="Total membrane area for cem (or aem) in one stack",
+        domain=NonNegativeReals,
+        units=pyunits.kg * pyunits.m**-3,
+        doc="Salinity of feed solution. Tested only with NaCl.",
     )
-    m.fs.product_salinity = Var(
-        initialize=1,
-        bounds=(0, 1000),
-        units=pyunits.kg * pyunits.meter**-3,
-        doc="Salinity of the product water",
-    )
-    m.fs.disposal_salinity = Var(
-        initialize=1,
-        bounds=(0, 1e6),
-        units=pyunits.kg * pyunits.meter**-3,
-        doc="Salinity of disposal water",
-    )
+
     m.fs.eq_recovery_vol_H2O = Constraint(
-        expr=m.fs.recovery_vol_H2O
+        expr=m.fs.recovery_vol_H2O * m.fs.feed.properties[0].flow_vol_phase["Liq"]
         == m.fs.prod.properties[0].flow_vol_phase["Liq"]
-        * m.fs.feed.properties[0].flow_vol_phase["Liq"] ** -1
     )
+
     m.fs.eq_electrodialysis_equal_flow = Constraint(
         expr=m.fs.EDstack.diluate.properties[0, 0].flow_vol_phase["Liq"]
         == m.fs.EDstack.concentrate.properties[0, 0].flow_vol_phase["Liq"]
     )
-
-    m.fs.eq_product_salinity = Constraint(
-        expr=m.fs.product_salinity
+    m.fs.eq_feed_salinity = Constraint(
+        expr=m.fs.feed_salinity
         == sum(
+            m.fs.feed.properties[0].conc_mass_phase_comp["Liq", j]
+            for j in m.fs.properties.ion_set
+        )
+    )
+    m.fs.product_salinity = Expression(
+        expr=sum(
             m.fs.prod.properties[0].conc_mass_phase_comp["Liq", j]
-            for j in m.fs.properties.ion_set | m.fs.properties.solute_set
+            for j in m.fs.properties.solute_set
         )
     )
-    m.fs.eq_disposal_salinity = Constraint(
-        expr=m.fs.disposal_salinity
-        == sum(
+    m.fs.disposal_salinity = Expression(
+        expr=sum(
             m.fs.disp.properties[0].conc_mass_phase_comp["Liq", j]
-            for j in m.fs.properties.ion_set | m.fs.properties.solute_set
+            for j in m.fs.properties.solute_set
         )
     )
 
-    m.fs.eq_mem_area = Constraint(
-        expr=m.fs.mem_area
-        == m.fs.EDstack.cell_width
+    m.fs.mem_area = Expression(
+        expr=m.fs.EDstack.cell_width
         * m.fs.EDstack.cell_length
         * m.fs.EDstack.cell_pair_num
+    )
+
+    m.fs.voltage_per_cp = Expression(
+        expr=m.fs.EDstack.voltage_applied[0] / m.fs.EDstack.cell_pair_num
     )
 
     # Add Arcs
@@ -262,13 +260,13 @@ def build():
     return m
 
 
-def condition_base(m):
+def _condition_base(m):
     # ---specifications---
     # Here is simulated a scenario of a defined EDstack and
     # specific water recovery and product salinity.
     m.fs.feed.properties[0].pressure.fix(101325)
     m.fs.feed.properties[0].temperature.fix(298.15)
-    m.fs.pump1.control_volume.properties_in[0].pressure.fix(101325)
+    m.fs.pump0.control_volume.properties_in[0].pressure.fix(101325)
     m.fs.pump1.efficiency_pump.fix(0.8)
     m.fs.pump0.efficiency_pump.fix(0.8)
 
@@ -310,7 +308,7 @@ def condition_base(m):
     m.fs.EDstack.current_utilization.fix(1)
     m.fs.EDstack.diffus_mass.fix(1.6e-9)
 
-    mstat.report_statistics(m)
+    assert mstat.degrees_of_freedom(m) == 0
 
 
 def solve(m, solver=None, tee=True, check_termination=True):
@@ -344,6 +342,20 @@ def initialize_system(m, solver=None):
     iscale.set_scaling_factor(m.fs.pump0.control_volume.work, 1e1)
     iscale.set_scaling_factor(m.fs.pump1.control_volume.work, 1e1)
     iscale.calculate_scaling_factors(m)
+    iscale.constraint_scaling_transform(
+        m.fs.eq_recovery_vol_H2O,
+        10 * iscale.get_scaling_factor(m.fs.feed.properties[0].flow_vol_phase["Liq"]),
+    )
+    iscale.constraint_scaling_transform(
+        m.fs.eq_electrodialysis_equal_flow,
+        10 * iscale.get_scaling_factor(m.fs.feed.properties[0].flow_vol_phase["Liq"]),
+    )
+    iscale.constraint_scaling_transform(
+        m.fs.eq_feed_salinity,
+        iscale.get_scaling_factor(
+            m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "Na_+"]
+        ),
+    )
 
     # populate intitial properties throughout the system
     m.fs.feed.initialize(optarg=optarg)
