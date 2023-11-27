@@ -25,7 +25,7 @@ from pyomo.network import Arc, SequentialDecomposition
 from watertap.unit_models.anaerobic_digestor import AD
 from watertap.unit_models.thickener import Thickener
 from watertap.unit_models.dewatering import DewateringUnit
-from watertap.unit_models.cstr import AnoxicCSTR
+from watertap.unit_models.cstr import CSTR
 
 from watertap.unit_models.translators.translator_asm1_adm1 import Translator_ASM1_ADM1
 from watertap.unit_models.translators.translator_adm1_asm1 import Translator_ADM1_ASM1
@@ -107,11 +107,11 @@ def build():
         property_package=m.fs.props_ASM1, inlet_list=["feed_water", "recycle"]
     )
     # First reactor (anoxic) - standard CSTR
-    m.fs.R1 = AnoxicCSTR(
+    m.fs.R1 = CSTR(
         property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
     )
     # Second reactor (anoxic) - standard CSTR
-    m.fs.R2 = AnoxicCSTR(
+    m.fs.R2 = CSTR(
         property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
     )
     # Third reactor (aerobic) - CSTR with injection
@@ -366,9 +366,11 @@ def set_operating_conditions(m):
     m.fs.RADM.liquid_outlet.temperature.fix(308.15)
 
     # Dewatering Unit - fix either HRT or volume.
+    m.fs.DU.hydraulic_retention_time.fix(1800 * pyo.units.s)
 
     # Set specific energy consumption averaged for centrifuge
-    m.fs.unit.energy_electric_flow_vol_inlet[0] = 0.069 * pyunits.kWh/pyunits.m**3
+    m.fs.DU.energy_electric_flow_vol_inlet[0] = 0.069 * pyo.units.kWh / pyo.units.m**3
+
 
 def initialize_system(m):
     # Initialize flowsheet
@@ -589,7 +591,8 @@ def display_costing(m):
         "capital cost Dewatering Unit",
         pyo.value(m.fs.R5.costing.capital_cost),
         pyo.units.get_units(m.fs.DU.costing.capital_cost),
-    ) 
+    )
+
 
 if __name__ == "__main__":
     m, results = main()
