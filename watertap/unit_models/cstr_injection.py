@@ -370,8 +370,8 @@ see reaction package for documentation.}""",
             var_dict["Heat Duty"] = self.heat_duty[time_point]
         if hasattr(self, "deltaP"):
             var_dict["Pressure Change"] = self.deltaP[time_point]
-        if hasattr(self, "unit_electricity_consumption"):
-            var_dict["Electricity Consumption"] = self.unit_electricity_consumption[
+        if hasattr(self, "electricity_consumption"):
+            var_dict["Electricity Consumption"] = self.electricity_consumption[
                 time_point
             ]
 

@@ -306,8 +306,6 @@ class TestSaponification(object):
                 ],
                 "Heat Duty": sapon.fs.unit.heat_duty[0],
                 "Pressure Change": sapon.fs.unit.deltaP[0],
-                "Electricity Consumption": sapon.fs.unit.unit_electricity_consumption[
-                    0
-                ],
+                "Electricity Consumption": sapon.fs.unit.electricity_consumption[0],
             }
         }
