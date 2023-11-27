@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-Anoxic CSTR unit model for BSM2 and plant-wide wastewater treatment modeling.
+CSTR unit model for BSM2 and plant-wide wastewater treatment modeling.
 This unit inherits from the IDAES CSTR unit.
 """
 
@@ -39,10 +39,10 @@ __author__ = "Marcus Holly"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("AnoxicCSTR")
-class AnoxicCSTRData(CSTRData):
+@declare_process_block_class("CSTR")
+class CSTRData(CSTRData):
     """
-    Anoxic CSTR unit block for BSM2
+    CSTR unit block for BSM2
     """
 
     CONFIG = CSTRData.CONFIG()
@@ -57,9 +57,9 @@ class AnoxicCSTRData(CSTRData):
         """
 
         # Call UnitModel.build to set up dynamics
-        super(AnoxicCSTRData, self).build()
+        super(CSTRData, self).build()
 
-        self.HRT = Var(
+        self.hydraulic_retention_time = Var(
             self.flowsheet().time,
             initialize=4,
             domain=NonNegativeReals,
@@ -69,7 +69,7 @@ class AnoxicCSTRData(CSTRData):
 
         def CSTR_retention_time_rule(self, t):
             return (
-                self.HRT[t]
+                self.hydraulic_retention_time[t]
                 == self.volume[t] / self.control_volume.properties_in[t].flow_vol
             )
 

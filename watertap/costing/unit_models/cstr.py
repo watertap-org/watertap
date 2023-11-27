@@ -36,7 +36,8 @@ def cost_cstr(blk):
     """
     cost_by_flow_volume(
         blk,
-        blk.unit_model.HRT[0] * blk.costing_package.cstr.sizing_cost,
+        blk.unit_model.hydraulic_retention_time[0]
+        * blk.costing_package.cstr.sizing_cost,
         pyo.units.convert(
             blk.unit_model.control_volume.properties_in[0].flow_vol,
             (pyo.units.meter**3 / pyo.units.hours),

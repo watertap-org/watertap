@@ -32,7 +32,7 @@ from idaes.core import (
     MomentumBalanceType,
     UnitModelCostingBlock,
 )
-from watertap.unit_models.cstr import AnoxicCSTR
+from watertap.unit_models.cstr import CSTR
 from watertap.costing import WaterTAPCosting
 
 from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
@@ -78,9 +78,7 @@ def test_config():
     m.fs.properties = PhysicalParameterTestBlock()
     m.fs.reactions = ReactionParameterTestBlock(property_package=m.fs.properties)
 
-    m.fs.unit = AnoxicCSTR(
-        property_package=m.fs.properties, reaction_package=m.fs.reactions
-    )
+    m.fs.unit = CSTR(property_package=m.fs.properties, reaction_package=m.fs.reactions)
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 14
@@ -111,7 +109,7 @@ class TestSaponification(object):
             property_package=m.fs.properties
         )
 
-        m.fs.unit = AnoxicCSTR(
+        m.fs.unit = CSTR(
             property_package=m.fs.properties,
             reaction_package=m.fs.reactions,
             has_equilibrium_reactions=False,
@@ -288,7 +286,7 @@ class TestInitializers:
             property_package=m.fs.properties
         )
 
-        m.fs.unit = AnoxicCSTR(
+        m.fs.unit = CSTR(
             property_package=m.fs.properties,
             reaction_package=m.fs.reactions,
             has_equilibrium_reactions=False,
@@ -405,7 +403,7 @@ class TestInitializers:
             property_package=m.fs.props_ASM1
         )
 
-        m.fs.unit = AnoxicCSTR(
+        m.fs.unit = CSTR(
             property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
         )
 
