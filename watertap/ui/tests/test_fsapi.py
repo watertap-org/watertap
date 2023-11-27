@@ -50,7 +50,7 @@ class SOLVE_RESULT_OK:
     solver = SOLVE_STATUS
 
 
-def build_ro(**kwargs):
+def build_ro(build_options=None, **kwargs):
     model = RO.build_flowsheet(erd_type=ERD_TYPE)
     return model
 
@@ -82,7 +82,7 @@ class OutputCategory:
     revenue = "Revenue"
 
 
-def export_to_ui(flowsheet=None, exports=None):
+def export_to_ui(flowsheet=None, exports=None, build_options=None, **kwargs):
     fs = flowsheet
     exports.add(
         obj=fs.feed.flow_vol[0],
@@ -162,7 +162,7 @@ def test_actions(add_variant: str):
     v1.value = 1
     print(v1.display())
 
-    def fake_build():
+    def fake_build(build_options=None, **kwargs):
         nonlocal built
         built = True
         nonlocal m
@@ -174,7 +174,7 @@ def test_actions(add_variant: str):
         assert flowsheet == m.fs
         return SOLVE_RESULT_OK
 
-    def fake_export(flowsheet=None, exports=None):
+    def fake_export(flowsheet=None, exports=None, build_options=None, **kwargs):
         with pytest.raises(Exception):
             exports.add(obj=garbage)
 

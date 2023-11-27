@@ -19,6 +19,7 @@ from pyomo.environ import (
 
 from idaes.core import declare_process_block_class, FlowDirection
 from idaes.core.util import scaling as iscale
+from idaes.core.util.misc import add_object_reference
 from watertap.core import (
     MembraneChannel0DBlock,
     MassTransferCoefficient,
@@ -47,47 +48,49 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
 
     _add_has_full_reporting(CONFIG)
 
-    def _add_membrane_channel_and_geometry(
-        self, side="feed_side", flow_direction=FlowDirection.forward
-    ):
-        if not isinstance(side, str):
-            raise TypeError(
-                f"{side} is not a string. Please provide a string for the side argument."
-            )
+    def _add_membrane_channels_and_geometry(self):
 
         # Build membrane channel control volume
-        setattr(
-            self,
-            side,
-            MembraneChannel0DBlock(
-                dynamic=False,
-                has_holdup=False,
-                property_package=self.config.property_package,
-                property_package_args=self.config.property_package_args,
-            ),
-        )
-        mem_side = getattr(self, side)
+        channel_kwargs = {
+            "dynamic": False,
+            "has_holdup": False,
+            "property_package": self.config.property_package,
+            "property_package_args": self.config.property_package_args,
+        }
+        self.feed_side = MembraneChannel0DBlock(**channel_kwargs)
+        self.permeate_side = MembraneChannel0DBlock(**channel_kwargs)
 
         if (self.config.pressure_change_type != PressureChangeType.fixed_per_stage) or (
             self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ):
-            if not hasattr(self, "length") and not hasattr(self, "width"):
-                self._add_length_and_width()
-            mem_side.add_geometry(
-                length_var=self.length,
-                width_var=self.width,
-                flow_direction=flow_direction,
+            self._add_length_and_width()
+            add_geometry_kwargs = {
+                "length_var": self.length,
+                "width_var": self.width,
+            }
+            self.feed_side.add_geometry(
+                flow_direction=FlowDirection.forward, **add_geometry_kwargs
             )
-            if not hasattr(self, "eq_area"):
-                add_eq_area = True
-            else:
-                add_eq_area = False
-            self._add_area(include_constraint=add_eq_area)
+            self.permeate_side.add_geometry(
+                flow_direction=FlowDirection.backward, **add_geometry_kwargs
+            )
+            self._add_area(include_constraint=True)
         else:
-            mem_side.add_geometry(
-                length_var=None, width_var=None, flow_direction=flow_direction
+            add_geometry_kwargs = {
+                "length_var": None,
+                "width_var": None,
+            }
+            self.feed_side.add_geometry(
+                flow_direction=FlowDirection.forward, **add_geometry_kwargs
+            )
+            self.permeate_side.add_geometry(
+                flow_direction=FlowDirection.backward, **add_geometry_kwargs
             )
             self._add_area(include_constraint=False)
+
+    def _add_deltaP(self, side):
+        mem_side = self.component(side)
+        add_object_reference(mem_side, "deltaP_stage", mem_side.deltaP)
 
     def _add_mass_transfer(self):
 
@@ -164,11 +167,3 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
             v = self.permeate_side.mass_transfer_term[t, p, j]
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
-
-        if hasattr(self, "length"):
-            if iscale.get_scaling_factor(self.length) is None:
-                iscale.set_scaling_factor(self.length, 1)
-
-        if hasattr(self, "width"):
-            if iscale.get_scaling_factor(self.width) is None:
-                iscale.set_scaling_factor(self.width, 1)
