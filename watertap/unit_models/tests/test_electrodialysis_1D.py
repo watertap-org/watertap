@@ -1832,7 +1832,7 @@ class Test_ED_pressure_drop_components:
         ed_m[1].fs.unit.friction_factor.fix(20)
         iscale.calculate_scaling_factors(ed_m[1])
         assert degrees_of_freedom(ed_m[1]) == 0
-        initialization_tester(ed_m[1])
+        initialization_tester(ed_m[1], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[1])
         assert_optimal_termination(results)
         assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)

@@ -18,7 +18,6 @@ from watertap.unit_models.electrodialysis_0D import (
     PressureDropMethod,
     FrictionFactorMethod,
     HydraulicDiameterMethod,
-    LimitingCurrentDensityMethod,
 )
 from watertap.costing import WaterTAPCosting
 from pyomo.environ import (
@@ -1622,7 +1621,7 @@ class Test_ED_pressure_drop_components:
         ed_m[0].fs.unit.pressure_drop.fix(1e4)
         iscale.calculate_scaling_factors(ed_m[0])
         assert degrees_of_freedom(ed_m[0]) == 0
-        initialization_tester(ed_m[0])
+        initialization_tester(ed_m[0], outlvl=idaeslog.DEBUG)
         badly_scaled_var_values = {
             var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[0])
         }
@@ -1638,7 +1637,7 @@ class Test_ED_pressure_drop_components:
         ed_m[1].fs.unit.friction_factor.fix(20)
         iscale.calculate_scaling_factors(ed_m[1])
         assert degrees_of_freedom(ed_m[1]) == 0
-        initialization_tester(ed_m[1])
+        initialization_tester(ed_m[1], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[1])
         assert_optimal_termination(results)
         assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(8.546, rel=1e-3)
@@ -1655,7 +1654,7 @@ class Test_ED_pressure_drop_components:
         ed_m[2].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(ed_m[2])
         assert degrees_of_freedom(ed_m[2]) == 0
-        initialization_tester(ed_m[2])
+        initialization_tester(ed_m[2], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[2])
         assert_optimal_termination(results)
         assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(8.546, rel=1e-3)
@@ -1672,7 +1671,7 @@ class Test_ED_pressure_drop_components:
         ed_m[3].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(ed_m[3])
         assert degrees_of_freedom(ed_m[3]) == 0
-        initialization_tester(ed_m[3])
+        initialization_tester(ed_m[3], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[3])
         assert_optimal_termination(results)
         assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(8.546, rel=1e-3)
@@ -1690,7 +1689,7 @@ class Test_ED_pressure_drop_components:
         ed_m[4].fs.unit.hydraulic_diameter.fix(1e-3)
         iscale.calculate_scaling_factors(ed_m[4])
         assert degrees_of_freedom(ed_m[4]) == 0
-        initialization_tester(ed_m[4])
+        initialization_tester(ed_m[4], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[4])
         assert_optimal_termination(results)
         assert value(ed_m[4].fs.unit.N_Re) == pytest.approx(19.11964758, rel=1e-3)
@@ -1708,7 +1707,7 @@ class Test_ED_pressure_drop_components:
         ed_m[5].fs.unit.spacer_specific_area.fix(10700)
         iscale.calculate_scaling_factors(ed_m[5])
         assert degrees_of_freedom(ed_m[5]) == 0
-        initialization_tester(ed_m[5])
+        initialization_tester(ed_m[5], outlvl=idaeslog.DEBUG)
         iscale.calculate_scaling_factors(ed_m[5])
         results = solver.solve(ed_m[5])
         assert_optimal_termination(results)
@@ -1721,3 +1720,44 @@ class Test_ED_pressure_drop_components:
         assert value(ed_m[5].fs.unit.pressure_drop_total[0]) == pytest.approx(
             7078.021345, rel=1e-3
         )
+
+    @pytest.mark.unit
+    def test_deltaP_configerr(self):
+        ion_dict = {
+            "solute_list": ["Na_+", "Cl_-"],
+            "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
+            "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
+            "charge": {"Na_+": 1, "Cl_-": -1},
+        }
+        with pytest.raises(
+            ConfigurationError,
+            match=(
+                re.escape(
+                    "A valid (not none) pressure_drop_method and has_pressure_change being True "
+                    "must be both used or unused at the same time. "
+                )
+            ),
+        ):
+            m = ConcreteModel()
+            m.fs = FlowsheetBlock(dynamic=False)
+
+            m.fs.properties = MCASParameterBlock(**ion_dict)
+            m.fs.unit = Electrodialysis0D(
+                property_package=m.fs.properties,
+                operation_mode=ElectricalOperationMode.Constant_Voltage,
+                has_nonohmic_potential_membrane=False,
+                has_Nernst_diffusion_layer=False,
+                pressure_drop_method=PressureDropMethod.none,
+                has_pressure_change=True,
+            )
+            m1 = ConcreteModel()
+            m1.fs = FlowsheetBlock(dynamic=False)
+            m1.fs.properties = MCASParameterBlock(**ion_dict)
+            m1.fs.unit = Electrodialysis0D(
+                property_package=m.fs.properties,
+                operation_mode=ElectricalOperationMode.Constant_Voltage,
+                has_nonohmic_potential_membrane=False,
+                has_Nernst_diffusion_layer=False,
+                pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
+                has_pressure_change=False,
+            )

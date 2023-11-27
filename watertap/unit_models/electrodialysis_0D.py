@@ -641,11 +641,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 doc="Express deltaP_term by the calculated pressure drop data, diluate.",
             )
             def eq_deltaP_diluate(self, t):
-                return (
-                    # self.diluate.deltaP[t] == -self.pressure_drop[t] * self.cell_length
-                    self.diluate.deltaP[t]
-                    == -self.pressure_drop_total[t]
-                )
+                return self.diluate.deltaP[t] == -self.pressure_drop_total[t]
 
             @self.Constraint(
                 self.flowsheet().time,
