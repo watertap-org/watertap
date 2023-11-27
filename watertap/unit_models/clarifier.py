@@ -14,7 +14,6 @@
 Clarifier unit model for BSM2 and plant-wide wastewater treatment modeling.
 This unit inherits from the IDAES separator unit.
 """
-from enum import Enum, auto
 
 # Import IDAES cores
 from idaes.core import (
