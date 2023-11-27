@@ -19,7 +19,7 @@ This unit inherits from the IDAES CSTR unit.
 from idaes.core import (
     declare_process_block_class,
 )
-from idaes.models.unit_models.cstr import CSTRData
+from idaes.models.unit_models.cstr import CSTRData as CSTRIDAESData
 
 import idaes.logger as idaeslog
 
@@ -40,12 +40,12 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("CSTR")
-class CSTRData(CSTRData):
+class CSTRData(CSTRIDAESData):
     """
     CSTR unit block for BSM2
     """
 
-    CONFIG = CSTRData.CONFIG()
+    CONFIG = CSTRIDAESData.CONFIG()
 
     def build(self):
         """
