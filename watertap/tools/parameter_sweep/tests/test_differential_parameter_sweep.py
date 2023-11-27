@@ -315,7 +315,7 @@ def test_differential_parameter_sweep(model, tmp_path):
     )
 
     # Call the parameter_sweep function
-    global_results_dict, _ = ps.parameter_sweep(
+    _, global_results_dict = ps.parameter_sweep(
         build_model,
         build_sweep_params_for_tps,
         build_outputs=None,
@@ -763,7 +763,7 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
         "fs.slack[cd_slack]": m.fs.slack["cd_slack"],
         "fs.slack_penalty": m.fs.slack_penalty,
     }
-    global_results_dict, _ = ps.parameter_sweep(
+    _, global_results_dict = ps.parameter_sweep(
         m,
         sweep_params,
         build_outputs=outputs,
@@ -1322,7 +1322,7 @@ def test_differential_parameter_sweep_function(model, tmp_path):
     }
 
     # Call the parameter_sweep function
-    global_results_dict, _ = differential_parameter_sweep(
+    _, global_results_dict = differential_parameter_sweep(
         build_model,
         build_sweep_params_for_tps,
         differential_sweep_specs,

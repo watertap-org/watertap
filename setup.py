@@ -107,6 +107,10 @@ setup(
             "jupyter",
             "ipykernel",
         ],
+        "oli_api": [
+            "requests",
+            "cryptography",  # for encrypting OLI credentials
+        ],
         "dev": [
             "nbsphinx",  # jupyter notebook support for sphinx
             "jinja2<3.1.0",  # see watertap-org/watertap#449
@@ -156,6 +160,7 @@ setup(
             "dye_desalination = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination_ui",
             "swine_wwt = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.swine_wwt.swine_wwt_ui",
             "GLSD anaerobic digestion = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.GLSD_anaerobic_digester.GLSD_anaerobic_digestion_ui",
+            "RO = watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery_ui",
         ],
     },
 )
