@@ -319,7 +319,7 @@ see reaction package for documentation.}""",
         )
         # The value is taken from Maravelias' data
         self.energy_electric_flow_vol_inlet = Param(
-            initialize=0.212845,
+            initialize=0.0108,
             units=pyunits.kWh / pyunits.m**3,
             mutable=True,
             doc="Electricity intensity with respect to inlet flow",

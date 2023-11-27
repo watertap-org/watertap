@@ -341,7 +341,7 @@ class TestAdm(object):
         assert pytest.approx(0.0271, abs=1e-3) == value(adm.fs.unit.KH_co2[0])
         assert pytest.approx(0.00116, abs=1e-3) == value(adm.fs.unit.KH_ch4[0])
         assert pytest.approx(7.38e-4, rel=1e-2) == value(adm.fs.unit.KH_h2[0])
-        assert pytest.approx(424.9489, abs=1e-3) == value(
+        assert pytest.approx(23.7291, abs=1e-3) == value(
             adm.fs.unit.electricity_consumption[0]
         )
         assert pytest.approx(1880470.588, abs=1e-3) == value(
@@ -413,7 +413,7 @@ class TestAdm(object):
         assert pytest.approx(1083290.8, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(9.24109, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(5.2754, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_get_performance_contents(self, adm):
