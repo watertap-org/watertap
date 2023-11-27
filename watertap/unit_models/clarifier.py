@@ -42,18 +42,6 @@ __author__ = "Chenyu Wang"
 _log = idaeslog.getLogger(__name__)
 
 
-class ActivatedSludgeModelType(Enum):
-    """
-    ASM1: ASM1 model
-    ASM2D: ASM2D model
-    modified_ASM2D: modified ASM2D model for ADM1 compatibility
-    """
-
-    ASM1 = auto()
-    ASM2D = auto()
-    modified_ASM2D = auto()
-
-
 @declare_process_block_class("Clarifier")
 class ClarifierData(SeparatorData):
     """
