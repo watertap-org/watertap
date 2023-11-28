@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
+from watertap.tools.parameter_sweep import PredeterminedFixedSample, parameter_sweep
 import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     ERDtype,
@@ -33,6 +33,7 @@ def set_up_sensitivity():
     m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix()
     RO.optimize_set_up(m)
+    m.fs.eq_minimum_water_flux.deactivate()
     RO.solve(m)
     print("\n***---Optimization results---***")
     RO.display_system(m)
@@ -116,15 +117,14 @@ def run_analysis(
         # Need to unfix mass recovery of water (or simply sweep across it instead of recovery_vol)
         m.fs.RO.recovery_mass_phase_comp.unfix()
 
-        sweep_params["mass_concentration"] = LinearSample(
+        sweep_params["mass_concentration"] = PredeterminedFixedSample(
             m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-            0.963,
-            4.816,
-            nx,
+            [0.963, 
+             1.927, 
+             4.816]
         )
-        sweep_params["volumetric_recovery"] = LinearSample(
-            m.fs.RO.recovery_vol_phase[0, "Liq"], 0.7, 0.9, nx
-        )
+        sweep_params["volumetric_recovery"] = PredeterminedFixedSample(
+            m.fs.RO.recovery_vol_phase[0, "Liq"], [0.7, 0.8, 0.9])
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 
