@@ -535,7 +535,7 @@ def optimize_set_up(m):
     # RO
     m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(1)
-    m.fs.RO.area.setub(150)
+    m.fs.RO.area.setub(1500)
 
     # additional specifications
     m.fs.product_salinity = Param(
