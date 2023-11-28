@@ -19,7 +19,7 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
 def set_up_sensitivity():
     outputs = {}
 
-    m = RO.build(erd_type=ERDtype.no_ERD)
+    m = RO.build(erd_type=ERDtype.pump_as_turbine)
     RO.set_operating_conditions(
         m,
         # water_recovery=0.7,
