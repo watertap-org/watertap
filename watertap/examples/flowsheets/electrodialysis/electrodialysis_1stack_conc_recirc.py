@@ -89,9 +89,6 @@ def main():
         * ed.current_dens_lim_x[0, 0].value
         * 1.5
     )
-    # m.fs.prod.properties[0].conc_mol_phase_comp["Liq", "Na_+"].fix(34.188 * 0.2)
-    # m.fs.EDstack.voltage_applied[0].unfix()
-    # solve(m, solver=solver, tee=False)
     m.fs.EDstack.voltage_applied[0].unfix()
     m.fs.EDstack.voltage_applied[0].setlb(0.1)
     m.fs.EDstack.voltage_applied[0].setub(ulim)
