@@ -107,6 +107,10 @@ setup(
             "jupyter",
             "ipykernel",
         ],
+        "oli_api": [
+            "requests",
+            "cryptography",  # for encrypting OLI credentials
+        ],
         "dev": [
             "nbsphinx",  # jupyter notebook support for sphinx
             "jinja2<3.1.0",  # see watertap-org/watertap#449
