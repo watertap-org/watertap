@@ -20,13 +20,7 @@ def set_up_sensitivity():
     outputs = {}
 
     m = RO.build(erd_type=ERDtype.pump_as_turbine)
-    RO.set_operating_conditions(
-        m,
-        # water_recovery=0.7,
-        # over_pressure=0.3,
-        # flow_vol=1e-3,
-        # salt_mass_conc=5e-3,
-    )
+    RO.set_operating_conditions(m)
     RO.initialize_system(m)
     RO.solve(m)
     m.fs.feed.properties[0].flow_mass_phase_comp.unfix()
