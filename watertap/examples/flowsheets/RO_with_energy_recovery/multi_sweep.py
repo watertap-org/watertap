@@ -22,10 +22,10 @@ def set_up_sensitivity():
     m = RO.build(erd_type=ERDtype.no_ERD)
     RO.set_operating_conditions(
         m,
-        water_recovery=0.7,
-        over_pressure=0.3,
-        flow_vol=1e-3,
-        salt_mass_conc=5e-3,
+        # water_recovery=0.7,
+        # over_pressure=0.3,
+        # flow_vol=1e-3,
+        # salt_mass_conc=5e-3,
     )
     RO.initialize_system(m)
     RO.solve(m)

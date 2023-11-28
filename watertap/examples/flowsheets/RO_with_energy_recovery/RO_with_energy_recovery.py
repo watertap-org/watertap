@@ -301,7 +301,7 @@ def set_operating_conditions(
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
     m.fs.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
-    m.fs.RO.feed_side.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
+    m.fs.RO.feed_side.spacer_porosity.fix(0.9)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO.width.fix(5)  # stage width [m]
     # initialize RO
@@ -536,7 +536,7 @@ def optimize_set_up(m):
     m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(1)
     m.fs.RO.area.setub(1500)
-
+    m.fs.RO.feed_side.friction_factor_darcy[...].setub(None)
     # additional specifications
     m.fs.product_salinity = Param(
         initialize=500e-6, mutable=True
