@@ -82,8 +82,6 @@ class Flash:
 
         self.water_analysis_input_list = []
 
-    # TODO: add zero_species argument so users can track specific additives/scalants - not sure if necessary
-
     def build_survey(self, survey_vars={}, get_oli_names=False, tee=False):
         """
         Builds a DataFrame used to modify flash calculation parameters.

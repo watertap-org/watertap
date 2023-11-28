@@ -58,6 +58,9 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
     default_unit_set_info,
 )
 
+
+# TODO: convert to jupyter notebook, combine with incorporating_oli_calculations notebook
+
 if __name__ == "__main__":
     source_water = {
         "temperature": 298.15,
