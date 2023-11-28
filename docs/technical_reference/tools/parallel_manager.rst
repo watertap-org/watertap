@@ -83,53 +83,16 @@ Alternatively, the user can specify the parameter sweep class directly, for exam
         )
 
 Each of the parallel manager classes inherits from the base ``ParallelManager``
-class and defines the abstract methods. The methods include:
+class and defines the abstract methods. The methods can be found in the
+class documentation below. 
 
-* ``is_root_process`` : Return whether the current process should be considered as the root of the parallel group it is a part of.
-* ``get_rank`` : Get the process's rank number in its parallel peer group.
-* ``number_of_worker_processes`` : Return how many total processes are running local simulations.
-* ``sync_with_peers`` : Implement a synchronization point with any peer processes.
-* ``sync_array_with_peers``: Synchronize an array with all peers processes. The data parameter is either
-
-    - (if root) the source of truth that will be broadcast to all processes
-    - (if not root) an empty buffer that will hold the data sent from root once the function returns
-* ``sync_pyobject_with_peers`` : Synchronize a python object with all peer processes. The ``obj`` parameter is either
-
-    - (if root) the source of truth that will be broadcast to all processes
-    - (if not root) ignored
-
-    It is different from ``sync_array_with_peers`` in that it returns the synced object rather than
-    using an existing buffer.
-* ``combine_data_with_peers`` : Combine the data from each peer into a list. The return value will be a list of all the data elements provided by each process that calls this function. With multiple processes, this must:
-
-    - act as a synchronization point
-    - return the list in the same order on each process
-* ``gather_arrays_to_root`` : Gather the data in the send buffer to the root process. Parameters are:
-
-    - ``sendbuf``: the data to be sent from this process
-    - ``recvbuf_spec``: a tuple of (receive buffer, list of sizes) where the list of sizes is how much data will come from each process. Ignored if not the root process.
-* ``sum_values_and_sync`` : Sum a list of values from each process and sync the result to all processes. Parameters are:
-
-    - ``sendbuf``: an array of values the local process is contributing to the sum
-    - ``recvbuf``: an array of a single value that will hold the summed result (same on each process) when the function returns.
-
-    .. note::
-        This is a specific case of a global reduce (with ``sum()`` as the reducing function).
-        If more than ``sum()`` is needed in the future, this function should be extended to receive
-        an Op argument.
-
-* ``scatter`` : Scatter the specified execution out, as defined by the implementation's parallelism, for a list of parameters. Arguments are
-
-    - ``do_build``: a function that builds the arguments necessary for the execution function. It is expected to return a list that will be exploded and passed into the do_execute function as arguments.
-    - ``do_build_kwargs``: a dictionary of keyword arguments for the do_build function
-    - ``do_execute``: the execution function. It is expected to take in the list of local parameters as its first argument. Any arguments after that should match the list returned by the ``do_build`` function.
-    - ``all_parameters``: a list of all parameters to be run. It is included so that different implementations of the parallel manager can make decisions about splitting and parallelization.
-
-* ``gather`` : Gather the results of the computation that was kicked off via a previous scatter. Returns a list of ``LocalResults``, representing the results for each process. Each result will be the return value of the do_execute function from ``scatter()`` for one process.
-
-* ``results_from_local_tree`` : Given a list of ``LocalResults`` objects, return a sublist of the ones the current process is responsible for.
-
-The developer may use these methods to enable parallelism in their code using the parallel manager.
+* :mod:`watertap.tools.parallel.parallel_manager`
+* :mod:`watertap.tools.parallel.parallel_manager_factory`
+* :mod:`watertap.tools.parallel.concurrent_futures_parallel_manager`
+* :mod:`watertap.tools.parallel.mpi_parallel_manager`
+* :mod:`watertap.tools.parallel.multiprocessing_parallel_manager`
+* :mod:`watertap.tools.parallel.ray_io_parallel_manager`
+* :mod:`watertap.tools.parallel.single_process_parallel_manager`
 
 
 Adding Features to the Parallel Manager
