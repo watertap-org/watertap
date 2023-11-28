@@ -40,7 +40,7 @@ def export_to_ui():
     )
 
 
-def export_variables(flowsheet=None, exports=None):
+def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
     """
     Exports the variables to the GUI.
     """
@@ -608,6 +608,7 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
 
+    # TODO: uncomment and revise below once costing is merged
     # System costing
     # exports.add(
     #     obj=fs.costing.utilization_factor,
@@ -2843,7 +2844,7 @@ def export_variables(flowsheet=None, exports=None):
     )
 
 
-def build_flowsheet():
+def build_flowsheet(build_options=None, **kwargs):
     """
     Builds the initial flowsheet.
     """
@@ -2858,6 +2859,7 @@ def build_flowsheet():
     results = solve(m)
     assert_optimal_termination(results)
 
+    # TODO: incorporate costing when merged
     # add_costing(m)
     # assert_degrees_of_freedom(m, 0)
     # m.fs.costing.initialize()
