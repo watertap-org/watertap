@@ -119,12 +119,11 @@ def run_analysis(
 
         sweep_params["mass_concentration"] = PredeterminedFixedSample(
             m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-            [0.963, 
-             1.927, 
-             4.816]
+            [0.963, 1.927, 4.816],
         )
         sweep_params["volumetric_recovery"] = PredeterminedFixedSample(
-            m.fs.RO.recovery_vol_phase[0, "Liq"], [0.7, 0.8, 0.9])
+            m.fs.RO.recovery_vol_phase[0, "Liq"], [0.7, 0.8, 0.9]
+        )
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 
