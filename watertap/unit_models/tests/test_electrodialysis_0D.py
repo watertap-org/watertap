@@ -1133,7 +1133,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstV:
         iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
         iscale.set_scaling_factor(m.fs.unit.cell_pair_num, 0.1)
         iscale.calculate_scaling_factors(m.fs)
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
         badly_scaled_var_values = {
             var.name: val for (var, val) in iscale.badly_scaled_var_generator(m)
         }

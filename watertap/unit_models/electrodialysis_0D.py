@@ -56,8 +56,8 @@ _log = idaeslog.getLogger(__name__)
 
 class LimitingCurrentDensityMethod(Enum):
     InitialValue = 0
-    # Empirical = 1
-    # Theoretical = 2 TODO: 1 and 2
+    Empirical = 1
+    Theoretical = 2
 
 
 class ElectricalOperationMode(Enum):
@@ -628,7 +628,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 initialize=500,
                 bounds=(0, 1000),
                 units=pyunits.amp * pyunits.meter**-2,
-                doc="Limiting Current Density across the membrane as a function of the normalized length",
+                doc="Limiting Current Density across the membrane",
             )
             self._make_performance_dl_polarization()
         if (
@@ -648,12 +648,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 doc="Express deltaP_term by the calculated pressure drop data, concentrate.",
             )
             def eq_deltaP_concentrate(self, t):
-                return (
-                    # self.concentrate.deltaP[t]
-                    # == -self.pressure_drop[t] * self.cell_length
-                    self.concentrate.deltaP[t]
-                    == -self.pressure_drop_total[t]
-                )
+                return self.concentrate.deltaP[t] == -self.pressure_drop_total[t]
 
         elif self.config.pressure_drop_method == PressureDropMethod.none and (
             not self.config.has_pressure_change
@@ -1219,16 +1214,93 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     self.config.limiting_current_density_data
                     * pyunits.amp
                     * pyunits.meter**-2
-                    / sum(
-                        self.diluate.properties_in[t].conc_mol_phase_comp["Liq", j]
-                        for j in self.cation_set
-                    )
                     * 0.5
                     * sum(
                         self.diluate.properties_in[t].conc_mol_phase_comp["Liq", j]
                         + self.diluate.properties_out[t].conc_mol_phase_comp["Liq", j]
                         for j in self.cation_set
                     )
+                    / (
+                        0.5
+                        * sum(
+                            self.diluate.properties_in[0].conc_mol_phase_comp["Liq", j]
+                            + self.diluate.properties_out[0].conc_mol_phase_comp[
+                                "Liq", j
+                            ]
+                            for j in self.cation_set
+                        )
+                    )
+                )
+            elif (
+                self.config.limiting_current_density_method
+                == LimitingCurrentDensityMethod.Theoretical
+            ):
+                self._get_fluid_dimensionless_quantities()
+                return self.current_dens_lim_ioa[t] == (
+                    self.N_Sh
+                    * self.diffus_mass
+                    * self.hydraulic_diameter**-1
+                    * Constants.faraday_constant
+                    * (
+                        sum(
+                            self.ion_trans_number_membrane["cem", j]
+                            / self.config.property_package.charge_comp[j]
+                            for j in self.cation_set
+                        )
+                        - sum(
+                            0.5
+                            * (
+                                self.diluate.properties_in[t].trans_num_phase_comp[
+                                    "Liq", j
+                                ]
+                                + self.diluate.properties_out[t].trans_num_phase_comp[
+                                    "Liq", j
+                                ]
+                            )
+                            / self.config.property_package.charge_comp[j]
+                            for j in self.cation_set
+                        )
+                    )
+                    ** -1
+                    * sum(
+                        self.config.property_package.charge_comp[j]
+                        * 0.5
+                        * (
+                            self.diluate.properties_in[t].conc_mol_phase_comp["Liq", j]
+                            + self.diluate.properties_out[t].conc_mol_phase_comp[
+                                "Liq", j
+                            ]
+                        )
+                        for j in self.cation_set
+                    )
+                )
+            elif (
+                self.config.limiting_current_density_method
+                == LimitingCurrentDensityMethod.Empirical
+            ):
+                self.param_b = Param(
+                    initialize=0.5,
+                    units=pyunits.dimensionless,
+                    doc="empirical parameter b to calculate limiting current density",
+                )
+                self.param_a = Param(
+                    initialize=25,
+                    units=pyunits.coulomb
+                    * pyunits.mol**-1
+                    * pyunits.meter ** (1 - self.param_b)
+                    * pyunits.second ** (self.param_b - 1),
+                    doc="empirical parameter a to calculate limiting current density",
+                )
+                return self.current_dens_lim_ioa[
+                    t
+                ] == self.param_a * self.velocity_diluate[t] ** self.param_b * sum(
+                    self.config.property_package.charge_comp[j]
+                    * 0.5
+                    * (
+                        self.diluate.properties_in[t].conc_mol_phase_comp["Liq", j]
+                        + self.diluate.properties_out[t].conc_mol_phase_comp["Liq", j]
+                    )
+                    for j in self.cation_set
                 )
 
         @self.Constraint(
@@ -1782,7 +1854,6 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             doc="To calculate Re",
         )
         def eq_Re(self):
-
             return (
                 self.N_Re
                 == self.dens_mass
@@ -1826,7 +1897,11 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 "Do not forget to FIX the experimental pressure drop value in [Pa/m]!"
             )
         else:  # PressureDropMethod.Darcy_Weisbach is used
-            if not (self.config.has_Nernst_diffusion_layer == True):
+            if not (
+                self.config.has_Nernst_diffusion_layer
+                and self.config.limiting_current_density_method
+                == LimitingCurrentDensityMethod.Theoretical
+            ):
                 self._get_fluid_dimensionless_quantities()
 
             self.friction_factor = Var(
@@ -2135,15 +2210,6 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                             ),
                         )
 
-        if hasattr(self, "current_dens_lim_ioa"):
-            if iscale.get_scaling_factor(self.current_dens_lim_ioa) is None:
-                if (
-                    self.config.limiting_current_density_method
-                    == LimitingCurrentDensityMethod.InitialValue
-                ):
-                    sf = self.config.limiting_current_density_data**-1
-                    iscale.set_scaling_factor(self.current_dens_lim_ioa, sf)
-
         if hasattr(self, "potential_nonohm_membrane_ioa"):
             if iscale.get_scaling_factor(self.potential_nonohm_membrane_ioa) is None:
                 sf = (
@@ -2285,7 +2351,47 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     * iscale.get_scaling_factor(self.cell_length)
                 )
             iscale.set_scaling_factor(self.pressure_drop_total, sf)
-
+        if hasattr(self, "current_dens_lim_ioa"):
+            if iscale.get_scaling_factor(self.current_dens_lim_ioa) is None:
+                if (
+                    self.config.limiting_current_density_method
+                    == LimitingCurrentDensityMethod.InitialValue
+                ):
+                    sf = self.config.limiting_current_density_data**-1
+                    iscale.set_scaling_factor(self.current_dens_lim_ioa, sf)
+                elif (
+                    self.config.limiting_current_density_method
+                    == LimitingCurrentDensityMethod.Empirical
+                ):
+                    sf = 25**-1 * sum(
+                        iscale.get_scaling_factor(
+                            self.diluate.properties_in[0].conc_mol_phase_comp["Liq", j]
+                        )
+                        ** 2
+                        for j in self.cation_set
+                    ) ** (0.5 * 0.5)
+                    iscale.set_scaling_factor(self.current_dens_lim_ioa, sf)
+                elif (
+                    self.config.limiting_current_density_method
+                    == LimitingCurrentDensityMethod.Theoretical
+                ):
+                    sf = (
+                        iscale.get_scaling_factor(self.N_Sh)
+                        * iscale.get_scaling_factor(self.diffus_mass)
+                        * iscale.get_scaling_factor(self.hydraulic_diameter) ** -1
+                        * 96485**-1
+                        * sum(
+                            iscale.get_scaling_factor(
+                                self.diluate.properties_in[0].conc_mol_phase_comp[
+                                    "Liq", j
+                                ]
+                            )
+                            ** 2
+                            for j in self.cation_set
+                        )
+                        ** 0.5
+                    )
+                    iscale.set_scaling_factor(self.current_dens_lim_ioa, sf)
         # Constraint scaling
         for ind, c in self.eq_current_voltage_relation.items():
             iscale.constraint_scaling_transform(
