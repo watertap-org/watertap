@@ -28,7 +28,7 @@ These operations are listed below:
     #. Gather : Gathers an array or list on one or all parallel workers.
     #. Scatter : Divides up the array or list across all the parallel workers
     #. Broadcast : Sends the array or list to all parallel workers
-    #. Reduce : Collects the data from all parallel worker and performs a mathematical operation. The current behavior sums the values from all workers.
+    #. Reduce : Collects the data from all parallel workers and performs a mathematical operation. The current behavior sums the values from all workers.
 
 Usage
 --------
