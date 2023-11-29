@@ -407,25 +407,49 @@ class TestInitializers:
             property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
         )
 
-        m.fs.unit.inlet.flow_vol[0].set_value(1.2199)
-        m.fs.unit.inlet.alkalinity[0].set_value(4.5102)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].set_value(0.061909)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].set_value(0.012366)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].set_value(1.4258)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].set_value(0.090508)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].set_value(2.8404)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].set_value(0.20512)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].set_value(0.58681)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].set_value(0.00036092)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].set_value(0.012424)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].set_value(0.0076936)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].set_value(0.0019068)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].set_value(0.0053166)
+        m.fs.unit.inlet.flow_vol[0].set_value(1.2199 * units.m**3 / units.s)
+        m.fs.unit.inlet.alkalinity[0].set_value(4.5102 * units.mole / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].set_value(
+            0.061909 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].set_value(
+            0.012366 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].set_value(
+            1.4258 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].set_value(
+            0.090508 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].set_value(
+            2.8404 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].set_value(
+            0.20512 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].set_value(
+            0.58681 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].set_value(
+            0.00036092 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].set_value(
+            0.012424 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].set_value(
+            0.0076936 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].set_value(
+            0.0019068 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].set_value(
+            0.0053166 * units.kg / units.m**3
+        )
 
-        m.fs.unit.inlet.temperature[0].set_value(308.15)
-        m.fs.unit.inlet.pressure[0].set_value(84790.0)
+        m.fs.unit.inlet.temperature[0].set_value(308.15 * units.K)
+        m.fs.unit.inlet.pressure[0].set_value(84790.0 * units.Pa)
 
-        m.fs.unit.volume[0].fix(1000)
+        m.fs.unit.volume[0].fix(1000 * units.m**3)
 
         m.fs.costing = WaterTAPCosting()
 
@@ -438,7 +462,7 @@ class TestInitializers:
 
         # Check solutions
         assert pytest.approx(526.45, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(9.0847e-8, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(1.07948e-5, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, model):
