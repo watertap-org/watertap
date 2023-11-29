@@ -40,10 +40,10 @@ If the user is simply invoking the parameter sweep tool, they only need to
 specify parallel backend by using the keyword argument ``parallel_back_end``
 when constructing a parameter sweep object. Valid keyword values are
 
-    #. "MPI"
-    #. "ConcurrentFutures"
-    #. "MultiProcessing"
-    #. "RayIo"
+    #. "MPI" : For use on distributed memory systems such as a cluster or supercomputer. We have run the parameter sweep on 100 compute nodes with 10400 total workers.
+    #. "ConcurrentFutures" : For use on shared memory systems (e.g. your workstation) with flow sheets that initialize quickly.
+    #. "MultiProcessing" : For use on shared memory systems with flow sheets that take a long time to initialize.
+    #. "RayIo" : For distributed memory systems where MPI is not stable, or hybrid computing.
 
 If any other keyword is provided, the parallel manager reverts to serial. Note
 that, when using MPI, the end user must still use the ``mpiexec`` or ``mpirun``
