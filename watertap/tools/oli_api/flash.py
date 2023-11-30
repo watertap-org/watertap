@@ -49,7 +49,7 @@ from copy import deepcopy
 from itertools import product
 from datetime import datetime
 from pandas import DataFrame, MultiIndex
-from pyomo.environ import value, units as pyunits
+from pyomo.environ import Var, value, units as pyunits
 
 from watertap.tools.oli_api.util.state_block_helper_functions import (
     create_state_block,
@@ -64,11 +64,15 @@ from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
 from watertap.tools.oli_api.util.fixed_keys_dict import (
     default_water_analysis_properties,
     default_optional_properties,
+    default_input_unit_set,
     default_unit_set_info,
 )
 
 
 class Flash:
+    """
+    """
+    
     def __init__(
         self,
         water_analysis_properties=default_water_analysis_properties,
@@ -82,44 +86,37 @@ class Flash:
 
         self.water_analysis_input_list = []
 
-    def build_survey(self, survey_vars={}, get_oli_names=False, tee=False):
+    def build_survey(self, survey_arrays, get_oli_names=False, tee=False):
         """
         Builds a DataFrame used to modify flash calculation parameters.
 
-        :param survey_vars: dictionary containing variables: arrays to survey
+        :param survey_arrays: dictionary containing variables: arrays to survey
         :param get_oli_names: boolean switch to convert name into OLI form
 
-        :return survey: DataFrame containing surveys
+        :return survey: DataFrame containing surveys (or empty)
         """
 
         exclude_items = ["Temperature", "Pressure"]
-        if bool(survey_vars):
-            survey_vars = {
-                (
-                    get_oli_name(k)
-                    if bool(get_oli_names) and (k not in exclude_items)
-                    else k
-                ): v
-                for k, v in survey_vars.items()
-            }
-            survey_prod = list(product(*(survey_vars[key] for key in survey_vars)))
-            survey = DataFrame(
-                columns=survey_vars.keys(),
-                index=range(len(survey_prod)),
-                data=survey_prod,
-            )
-            if bool(tee):
-                print(f"Number of survey conditions: {len(survey)}.")
-            return survey
-        else:
-            return DataFrame()
+        convert_name = lambda k: get_oli_name(k) if get_oli_names and k not in exclude_items else k
+        survey_vars = {convert_name(k): v for k, v in survey_arrays.items()}
+        survey_vars_product = list(product(*(survey_vars[key] for key in survey_vars)))
+        survey = DataFrame(data=survey_vars_product, columns=survey_vars.keys())
+        if tee:
+            print(f"Survey contains {len(survey)} items.")
+        return survey
 
     def set_input_value(self, k, v):
+        """
+        """
+        
         self.water_analysis_properties[k]["value"] = v
 
     def build_input_list(self, state_vars):
+        """
+        """
+        
         self.water_analysis_input_list = []
-
+        
         # build entries for temperature and pressure
         self.water_analysis_properties["Temperature"].update(
             {"value": state_vars["temperature"]}
@@ -133,33 +130,46 @@ class Flash:
         self.water_analysis_input_list.append(
             self.water_analysis_properties["Pressure"]
         )
-
+            
         # build entries for components
         for component in state_vars["components"]:
             charge = get_charge(component)
             name = get_oli_name(component)
+            # TODO: consider adding other concentration units (mol/L, etc.)
+            value, unit = self.oli_units(state_vars["components"][component],
+                                         state_vars["units"]["components"])
+            
             self.water_analysis_input_list.append(
                 {
                     "group": get_charge_group(charge),
                     "name": name,
-                    "unit": str(state_vars["units"]["components"]),
-                    "value": state_vars["components"][component],
+                    "unit": unit,
+                    "value": value,
                     "charge": charge,
                 }
             )
-
+            
         # build entries for other specified properties
         for k, v in self.water_analysis_properties.items():
             if isinstance(v["value"], list):
                 self.water_analysis_properties[k]["value"] = v["value"][0]
-            if v["value"] is not None:
-                self.water_analysis_input_list.append(v)
-
+            if k not in [i["name"] for i in self.water_analysis_input_list]:
+                if v["value"] is not None:
+                    self.water_analysis_input_list.append(v)
+                                                    
         return deepcopy(self.water_analysis_input_list)
 
-    def build_flash_calculation_input(
-        self, method="", state_vars={}, water_analysis_output=None
-    ):
+    def oli_units(self, component, unit):
+        """
+        """
+        to_units = default_input_unit_set["molecularConcentration"]
+        converted_value = pyunits.convert_value(component, unit, to_units["pyomo_unit"])
+        return converted_value, to_units["oli_unit"]
+    
+    def build_flash_calculation_input(self, state_vars, method, water_analysis_output=None):
+        """
+        """
+        
         inputs = {"params": {}}
 
         if method == "wateranalysis":
@@ -167,7 +177,7 @@ class Flash:
                 "waterAnalysisInputs": self.build_input_list(state_vars)
             }
         else:
-            if not bool(water_analysis_output):
+            if not water_analysis_output:
                 raise IOError(
                     "Run wateranalysis flash to generate water_analysis_output data."
                 )
@@ -184,7 +194,6 @@ class Flash:
                 "inflows": self.extract_inflows(water_analysis_output),
             }
 
-        # TODO: enable other flash functions by updating flash_analysis_inputs with additional_params required for flash
         inputs["params"].update(
             {
                 "optionalProperties": {
@@ -192,30 +201,33 @@ class Flash:
                 }
             }
         )
-        inputs["params"].update({"unitSetInfo": dict(self.unit_set_info)})
+        inputs["params"].update({"unitSetInfo": dict(self.unit_set_info)}) 
+        
+        print(inputs["params"]["optionalProperties"])
         return inputs
 
     def extract_inflows(self, water_analysis_output):
         return water_analysis_output["result"]["total"]["molecularConcentration"]
 
-    # TODO: enable parallel flash
+    # TODO: consider enabling parallel flash
     def run_flash(
         self,
-        flash_method="",
-        oliapi_instance=None,
-        dbs_file_id="",
-        initial_input=None,
+        flash_method,
+        oliapi_instance,
+        dbs_file_id,
+        initial_input,
         survey=None,
-        num_workers=5,
         write=False,
     ):
         """
         Conducts a composition survey with a given set of clones.
 
-        :param oliapi: instance of OLI Cloud API to call
+        :param flash_method:
+        :param oliapi_instance: instance of OLI Cloud API to call
+        :param dbs_file_id:
         :param initial_input: dictionary containing feed base case, to be modified by survey
         :param survey: DataFrame containing names and ranges of input variables to survey
-        :param num_workers: integer value indicating how many parallel requests to make
+        :param write: integer value indicating how many parallel requests to make
 
         :return result: dictionary containing IDs and output streams for each flash calculation
         """
@@ -236,14 +248,14 @@ class Flash:
             result = {0: oliapi_instance.call(flash_method, dbs_file_id, initial_input)}
             suffix = "single_point"
 
-        if bool(write):
+        if write:
             t = datetime.utcnow()
             self.write_output_to_yaml(
                 result, filename=f"{t.day}{t.month}{t.year}_{flash_method}_{suffix}"
             )
         return result
 
-    def modify_inputs(self, initial_flash_input, survey, flash_method=""):
+    def modify_inputs(self, initial_flash_input, survey, flash_method):
         """
         Iterates over a survey to create modified clones of an initial flash analysis output.
 
@@ -305,7 +317,7 @@ class Flash:
             print(f"{file_path} saved to working directory.")
         return file_path
 
-    def extract_properties(self, raw_result={}, properties={}, tee=False, write=False):
+    def extract_properties(self, raw_result, properties, tee=False, write=False):
         """
         Extracts properties from OLI Cloud flash calculation output stream.
 
@@ -315,8 +327,11 @@ class Flash:
         :return extracted_basic_properties: copy of DataFrame containing values for specified basic properties
         :return extracted_optional_properties: DataFrame containing values for specified optional properties
         """
-
+                
         def build_df(properties, prop_key, input_key, subcolumns, subindices):
+            """
+            """
+            
             if not properties["additional_inputs"][input_key]:
                 raise RuntimeError(
                     f" Please specify {input_key} to filter search results."
@@ -347,6 +362,7 @@ class Flash:
                         root_path["phases"][phase]["properties"][prop]["unit"],
                     )
                     extracted_basic_properties.loc[k, prop] = val
+            # TODO: add support for non-scaling tendency properties
             for prop in properties["optional"]:
                 values = root_path["additionalProperties"][prop]["values"]
                 for species in properties["additional_inputs"]["species"]:
