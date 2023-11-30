@@ -1959,11 +1959,6 @@ class NaClStateBlockData(StateBlockData):
                         ) / iscale.get_scaling_factor(self.dens_mass_solute[p])
                         iscale.set_scaling_factor(self.flow_vol_phase[p], sf)
 
-        # Scaling for flow volume
-        if self.is_property_constructed("flow_vol"):
-            sf = iscale.get_scaling_factor(self.flow_vol_phase)
-            iscale.set_scaling_factor(self.flow_vol, sf)
-
         # Scaling material heat capacities
         if self.is_property_constructed("cp_mass_solute"):
             for p in ["Sol", "Liq"]:
