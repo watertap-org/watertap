@@ -456,6 +456,7 @@ class TestInitializers:
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
+        assert_units_consistent(m)
         results = solver.solve(m)
 
         assert_optimal_termination(results)
