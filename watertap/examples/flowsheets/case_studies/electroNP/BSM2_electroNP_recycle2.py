@@ -98,6 +98,68 @@ def automate_rescale_variables(m):
         iscale.calculate_scaling_factors(m)
 
 
+def main():
+    m = build_flowsheet()
+    set_operating_conditions(m)
+
+    initialize_system(m)
+
+    results = solve(m)
+
+    # # Use of Degeneracy Hunter for troubleshooting model.
+    # m.obj = pyo.Objective(expr=0)
+    # solver = get_solver()
+    # solver.options["max_iter"] = 10000
+    # results = solver.solve(m, tee=True)
+    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    # # badly_scaled_var_list = iscale.badly_scaled_var_generator(
+    # #     m, large=1e1, small=1e-1
+    # # )
+    # # for x in badly_scaled_var_list:
+    # #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    # dh.check_residuals(tol=1e-8)
+    # # dh.check_variable_bounds(tol=1e-8)
+    # # dh.check_rank_equality_constraints(dense=True)
+    # # ds = dh.find_candidate_equations(verbose=True, tee=True)
+    # # ids = dh.find_irreducible_degenerate_sets(verbose=True)
+    # print_close_to_bounds(m)
+    # # print_infeasible_constraints(m)
+
+    # # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
+    # m.fs.R5.KLa.fix(240)
+    # m.fs.R6.KLa.fix(240)
+    # m.fs.R7.KLa.fix(84)
+    # m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    # m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    # m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    # # Resolve with controls in place
+    # results = solver.solve(m, tee=False)
+
+    # pyo.assert_optimal_termination(results)
+    # check_solve(
+    #     results,
+    #     checkpoint="re-solve with controls in place",
+    #     logger=_log,
+    #     fail_flag=True,
+    # )
+
+    # print("Numerical issues after solving")
+    # dt.report_numerical_issues()
+
+    # add_costing(m)
+    # # Assert DOF = 0 after adding costing
+    # # assert_degrees_of_freedom(m, 0)
+    #
+    # # TODO: initialize costing after adding to flowsheet
+    # # m.fs.costing.initialize()
+    #
+    # # results = solve(m)
+
+    # display_results(m)
+
+    return m, results
+
+
 def build_flowsheet():
     m = pyo.ConcreteModel()
 
@@ -224,31 +286,23 @@ def build_flowsheet():
     # ElectroNP
     m.fs.electroNP = ElectroNPZO(property_package=m.fs.props_ASM2D)
 
-    # m.fs.MX3 = Mixer(
-    #     property_package=m.fs.props_ASM2D, inlet_list=["feed_water1", "recycle1"]
-    # )
-    m.fs.MX4 = Mixer(
-        property_package=m.fs.props_ASM2D, inlet_list=["feed_water2", "recycle2"]
+    m.fs.MX3 = Mixer(
+        property_package=m.fs.props_ASM2D, inlet_list=["feed_water1", "recycle1"]
     )
+    # m.fs.MX4 = Mixer(
+    #     property_package=m.fs.props_ASM2D, inlet_list=["feed_water2", "recycle2"]
+    # )
     m.fs.MX5 = Mixer(
         property_package=m.fs.props_ASM2D, inlet_list=["thickener", "clarifier"]
     )
 
     # Product Blocks
     m.fs.Treated = Product(property_package=m.fs.props_ASM2D)
-    # m.fs.Sludge = Product(property_package=m.fs.props_ASM2D)
+    m.fs.Sludge = Product(property_package=m.fs.props_ASM2D)
     # Recycle pressure changer - use a simple isothermal unit for now
     m.fs.P1 = PressureChanger(property_package=m.fs.props_ASM2D)
 
-    # Link units
-    # m.fs.stream1 = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX1.feed_water)
-
-    m.fs.stream1a = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX4.feed_water2)
-    # m.fs.stream1a = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX3.feed_water1)
-    # m.fs.stream1b = Arc(source=m.fs.MX3.outlet, destination=m.fs.MX4.feed_water2)
-
-    m.fs.stream1c = Arc(source=m.fs.MX4.outlet, destination=m.fs.CL.inlet)
-    m.fs.stream1d = Arc(source=m.fs.CL.effluent, destination=m.fs.MX1.feed_water)
+    # Link units related to ASM section
     m.fs.stream2 = Arc(source=m.fs.MX1.outlet, destination=m.fs.R1.inlet)
     m.fs.stream3 = Arc(source=m.fs.R1.outlet, destination=m.fs.R2.inlet)
     m.fs.stream4 = Arc(source=m.fs.R2.outlet, destination=m.fs.MX2.reactor)
@@ -266,34 +320,49 @@ def build_flowsheet():
     m.fs.stream16 = Arc(source=m.fs.SP2.recycle, destination=m.fs.P1.inlet)
     m.fs.stream17 = Arc(source=m.fs.P1.outlet, destination=m.fs.MX1.recycle)
 
+    # Link units related to AD section
+    m.fs.stream_AD_translator = Arc(
+        source=m.fs.AD.liquid_outlet, destination=m.fs.translator_adm1_asm2d.inlet
+    )
     m.fs.stream_SP_thickener = Arc(
         source=m.fs.SP2.waste, destination=m.fs.thickener.inlet
     )
-
     m.fs.stream3adm = Arc(
         source=m.fs.thickener.underflow, destination=m.fs.MX5.thickener
     )
-    m.fs.stream7adm = Arc(source=m.fs.thickener.overflow, destination=m.fs.MX4.recycle2)
+    # m.fs.stream7adm = Arc(source=m.fs.thickener.overflow, destination=m.fs.MX4.recycle2)
     m.fs.stream9adm = Arc(source=m.fs.CL.underflow, destination=m.fs.MX5.clarifier)
+
+    m.fs.stream_translator_dewater = Arc(
+        source=m.fs.translator_adm1_asm2d.outlet, destination=m.fs.dewater.inlet
+    )
+    m.fs.stream_dewater_electroNP = Arc(
+        source=m.fs.dewater.overflow, destination=m.fs.electroNP.inlet
+    )
+    m.fs.stream_electroNP_mixer = Arc(
+        source=m.fs.electroNP.treated, destination=m.fs.MX3.recycle1
+    )
+
+    # m.fs.stream1a = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.CL.inlet)
+    m.fs.stream1a = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX3.feed_water1)
+    m.fs.stream1b = Arc(source=m.fs.MX3.outlet, destination=m.fs.CL.inlet)
+    # m.fs.stream1a = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX4.feed_water2)
+    # m.fs.stream1a = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX3.feed_water1)
+    # m.fs.stream1b = Arc(source=m.fs.MX3.outlet, destination=m.fs.MX4.feed_water2)
+    # m.fs.stream1c = Arc(source=m.fs.MX4.outlet, destination=m.fs.CL.inlet)
+    # m.fs.stream1b = Arc(source=m.fs.MX3.outlet, destination=m.fs.CL.inlet)
+    m.fs.stream1d = Arc(source=m.fs.CL.effluent, destination=m.fs.MX1.feed_water)
+
     m.fs.stream10adm = Arc(
         source=m.fs.MX5.outlet, destination=m.fs.translator_asm2d_adm1.inlet
     )
     m.fs.stream_translator_AD = Arc(
         source=m.fs.translator_asm2d_adm1.outlet, destination=m.fs.AD.inlet
     )
-    m.fs.stream_AD_translator = Arc(
-        source=m.fs.AD.liquid_outlet, destination=m.fs.translator_adm1_asm2d.inlet
-    )
-    m.fs.stream_translator_dewater = Arc(
-        source=m.fs.translator_adm1_asm2d.outlet, destination=m.fs.dewater.inlet
-    )
+
     # m.fs.stream_dewater_mixer = Arc(
     #     source=m.fs.dewater.overflow, destination=m.fs.MX3.recycle1
     # )
-
-    m.fs.stream_dewater_electroNP = Arc(
-        source=m.fs.dewater.overflow, destination=m.fs.electroNP.inlet
-    )
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -351,6 +420,10 @@ def build_flowsheet():
             * (m.fs.S_O_eq - m.fs.R7.outlet.conc_mass_comp[t, "S_O2"])
         )
 
+    return m
+
+
+def set_operating_conditions(m):
     # Feed Water Conditions
     print(f"DOF before feed: {degrees_of_freedom(m)}")
     m.fs.FeedWater.flow_vol.fix(20648 * pyo.units.m**3 / pyo.units.day)
@@ -477,9 +550,9 @@ def build_flowsheet():
             # if "translator_adm1_asm2d.properties_in[0.0].flow_vol" in var.name:
             #     iscale.set_scaling_factor(var, 1e3)
             # if "dewater.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
+            #     iscale.set_scaling_factor(var, 1e0)
             # if "electroNP.mixed_state[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
+            #     iscale.set_scaling_factor(var, 1e0)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
@@ -539,14 +612,28 @@ def build_flowsheet():
     scale_variables(m)
     iscale.calculate_scaling_factors(m)
 
+
+def initialize_system(m):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
-    seq.options.select_tear_method = "heuristic"
-    seq.options.tear_method = "Wegstein"
+    # seq.options.select_tear_method = "heuristic"
+    seq.options.tear_method = "Direct"
     seq.options.iterLim = 1
+    seq.options.tear_set = [m.fs.stream5, m.fs.stream10adm]
+    # seq.options.tear_set = [m.fs.stream2, m.fs.stream5, m.fs.stream10adm]
+
+    # seq = SequentialDecomposition()
+    # seq.options.select_tear_method = "heuristic"
+    # seq.options.tear_method = "Wegstein"
+    # seq.options.iterLim = 1
 
     G = seq.create_graph(m)
+    # Uncomment this code to see tear set and initialization order
+    order = seq.calculation_order(G)
+    print("Initialization Order")
+    for o in order:
+        print(o[0].name)
 
     # # Uncomment this code to see tear set and initialization order
     # heuristic_tear_set = seq.tear_set_arcs(G, method="heuristic")
@@ -557,59 +644,34 @@ def build_flowsheet():
     #     print(o[0].name)
 
     # Initial guesses for flow into first reactor
-    # tear_guesses = {
-    #     "flow_vol": {0: 1.17},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.018,
-    #         (0, "S_F"): 0.0006,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.008,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.002,
-    #         (0, "S_PO4"): 0.003,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.1,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 1.3,
-    #         (0, "X_I"): 0.38,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 0.04,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
 
-    # tear_guesses = {
-    #     "flow_vol": {0: 1.16},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.013,
-    #         (0, "S_F"): 0.0006,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.01,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.002,
-    #         (0, "S_PO4"): 0.003,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.09,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 0.81,
-    #         (0, "X_I"): 0.21,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 0.02,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
+    tear_guesses1 = {
+        "flow_vol": {0: 0.48},
+        "conc_mass_comp": {
+            (0, "S_A"): 0.01,
+            (0, "S_F"): 0.015,
+            (0, "S_I"): 0.03,
+            (0, "S_N2"): 1e-9,
+            (0, "S_NH4"): 0.013,
+            (0, "S_NO3"): 1e-9,
+            (0, "S_O2"): 0.0016,
+            (0, "S_PO4"): 0.0033,
+            (0, "S_K"): 1e-9,
+            (0, "S_Mg"): 1e-9,
+            (0, "S_IC"): 0.087,
+            (0, "X_AUT"): 1e-9,
+            (0, "X_H"): 0.79,
+            (0, "X_I"): 0.21,
+            (0, "X_PAO"): 1e-9,
+            (0, "X_PHA"): 1e-9,
+            (0, "X_PP"): 1e-9,
+            (0, "X_S"): 0.0466,
+        },
+        "temperature": {0: 308.15},
+        "pressure": {0: 101325},
+    }
 
-    tear_guesses = {
+    tear_guesses2 = {
         "flow_vol": {0: 1.1861},
         "conc_mass_comp": {
             (0, "S_A"): 0.013,
@@ -635,59 +697,7 @@ def build_flowsheet():
         "pressure": {0: 101325},
     }
 
-    # tear_guesses2 = {
-    #     "flow_vol": {0: 1.8e-4},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 4.1e-5,
-    #         (0, "S_F"): 0.0003,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.007,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.008,
-    #         (0, "S_PO4"): 0.003,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.1,
-    #         (0, "X_AUT"): 1.8e-5,
-    #         (0, "X_H"): 64.3,
-    #         (0, "X_I"): 19.8,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 1.3,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    # tear_guesses2 = {
-    #     "flow_vol": {0: 1.8e-4},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.019,
-    #         (0, "S_F"): 0.028,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.0156,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 2e-4,
-    #         (0, "S_PO4"): 0.003,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.08,
-    #         (0, "X_AUT"): 1e-5,
-    #         (0, "X_H"): 6.14,
-    #         (0, "X_I"): 2.7,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 8.1,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    tear_guesses2 = {
+    tear_guesses3 = {
         "flow_vol": {0: 1.82e-3},
         "conc_mass_comp": {
             (0, "S_A"): 0.018,
@@ -714,8 +724,9 @@ def build_flowsheet():
     }
 
     # Pass the tear_guess to the SD tool
-    seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
-    seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
+    # seq.set_guesses_for(m.fs.R1.inlet, tear_guesses1)
+    seq.set_guesses_for(m.fs.R3.inlet, tear_guesses2)
+    seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses3)
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
@@ -726,71 +737,35 @@ def build_flowsheet():
     # print("Structural issues after setting operating conditions")
     # dt = DiagnosticsToolbox(model=m)
     # dt.report_structural_issues()
-
+    # # dt.report_numerical_issues()
+    # # dt.display_variables_with_extreme_jacobians()
+    # # dt.display_constraints_with_extreme_jacobians()
+    #
     seq.run(m, function)
-
+    #
     # print("Numerical issues after initialization")
     # dt.report_numerical_issues()
 
-    solver = get_solver()
+
+def solve(m, solver=None):
+    if solver is None:
+        solver = get_solver()
     results = solver.solve(m, tee=True)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
-
-    # print("Numerical issues after solve")
-    # dt.report_numerical_issues()
-    # dt.display_variables_with_extreme_jacobians()
-
-    # # Use of Degeneracy Hunter for troubleshooting model.
-    # m.obj = pyo.Objective(expr=0)
-    # solver = get_solver()
-    # solver.options["max_iter"] = 10000
-    # results = solver.solve(m, tee=True)
-    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
-    # # badly_scaled_var_list = iscale.badly_scaled_var_generator(
-    # #     m, large=1e1, small=1e-1
-    # # )
-    # # for x in badly_scaled_var_list:
-    # #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    # dh.check_residuals(tol=1e-8)
-    # # dh.check_variable_bounds(tol=1e-8)
-    # # dh.check_rank_equality_constraints(dense=True)
-    # # ds = dh.find_candidate_equations(verbose=True, tee=True)
-    # # ids = dh.find_irreducible_degenerate_sets(verbose=True)
-    # print_close_to_bounds(m)
-    # # print_infeasible_constraints(m)
-
-    # # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
-    # m.fs.R5.KLa.fix(240)
-    # m.fs.R6.KLa.fix(240)
-    # m.fs.R7.KLa.fix(84)
-    # m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    # m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    # m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    # # Resolve with controls in place
-    # results = solver.solve(m, tee=False)
-
     pyo.assert_optimal_termination(results)
-    check_solve(
-        results,
-        checkpoint="re-solve with controls in place",
-        logger=_log,
-        fail_flag=True,
-    )
-
-    # print("Numerical issues after solving")
-    # dt.report_numerical_issues()
-
-    return m, results
+    return results
+    # results = solver.solve(m, tee=True)
 
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge
     # flowsheet.
-    m, results = build_flowsheet()
+    m, results = main()
 
     stream_table = create_stream_table_dataframe(
         {
             "Feed": m.fs.FeedWater.outlet,
+            "Primary clarifier inlet": m.fs.CL.inlet,
             "R1 inlet": m.fs.R1.inlet,
             # "R1": m.fs.R1.outlet,
             # "R2": m.fs.R2.outlet,
@@ -800,8 +775,8 @@ if __name__ == "__main__":
             # "R5": m.fs.R5.outlet,
             # "R6": m.fs.R6.outlet,
             "R7": m.fs.R7.outlet,
-            "thickener inlet": m.fs.thickener.inlet,
             "thickener outlet": m.fs.thickener.underflow,
+            "thickener overflow": m.fs.thickener.overflow,
             "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
             # "ASM-ADM translator outlet": m.fs.translator_asm2d_adm1.outlet,
             # "AD liquid inlet": m.fs.AD.inlet,
@@ -809,6 +784,7 @@ if __name__ == "__main__":
             # "AD vapor outlet": m.fs.AD.vapor_outlet,
             "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
             "dewater outlet": m.fs.dewater.overflow,
+            "electroN-P outlet": m.fs.electroNP.treated,
         },
         time_point=0,
     )
