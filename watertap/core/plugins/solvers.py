@@ -14,7 +14,6 @@ import pyomo.environ as pyo
 from pyomo.core.base.block import _BlockData
 from pyomo.core.kernel.block import IBlock
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
-import pyomo.repn.plugins.nl_writer as _nl_writer
 
 import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import (
@@ -25,17 +24,6 @@ from idaes.core.util.scaling import (
 from idaes.logger import getLogger
 
 _log = getLogger("watertap.core")
-_SuffixData = _nl_writer._SuffixData
-
-
-class _WTSuffixData(_SuffixData):
-    def update(self, suffix):
-        self.datatype.add(suffix.datatype)
-        for obj, val in suffix.items():
-            self._store(obj, val)
-
-    def store(self, obj, val):
-        self._store(obj, val)
 
 
 @pyo.SolverFactory.register(
@@ -57,10 +45,6 @@ class IpoptWaterTAP(IPOPT):
             raise TypeError(
                 "IpoptWaterTAP.solve takes 1 positional argument: a Pyomo ConcreteModel or Block"
             )
-
-        # hot patch _SuffixData to prevent an overload
-        # on error reporting about `scaling_factor`
-        _nl_writer._SuffixData = _WTSuffixData
 
         # until proven otherwise
         self._cleanup_needed = False
@@ -154,7 +138,6 @@ class IpoptWaterTAP(IPOPT):
             raise
 
     def _cleanup(self):
-        _nl_writer._SuffixData = _SuffixData
         if self._cleanup_needed:
             self._reset_scaling_factors()
             # remove our reference to the model
