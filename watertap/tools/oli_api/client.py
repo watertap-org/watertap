@@ -371,7 +371,6 @@ class OLIApi:
         request_time = end_time - start_time
         if tee:
             print("First request time =", request_time)
-
         if bool(request_result1):
             if request_result1["status"] == "SUCCESS":
                 if "data" in request_result1:

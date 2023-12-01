@@ -21,7 +21,7 @@ from pyomo.environ import units as pyunits
 
 from numpy import linspace
 
-from watertap.tools.oli_api.credentials import CredentialManager
+from watertap.tools.oli_api.credentials import CredentialManager, cryptography_available
 from watertap.tools.oli_api.client import OLIApi
 
 from watertap.tools.oli_api.core.water_analysis import WaterAnalysis
@@ -29,6 +29,8 @@ from watertap.tools.oli_api.core.water_analysis import WaterAnalysis
 
 @pytest.fixture
 def credential_manager():
+    if not cryptography_available:
+        pytest.skip(reason="cryptography module not available")
     credentials = {
         "username": "dummy_username@email.com",
         "password": "dummy_password",

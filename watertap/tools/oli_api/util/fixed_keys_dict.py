@@ -183,7 +183,10 @@ default_optional_properties = FixedKeysDict(
 
 default_input_unit_set = FixedKeysDict(
     {
-        "molecularConcentration": {"oli_unit": "mg/L", "pyomo_unit": pyunits.mg/pyunits.L},
+        "molecularConcentration": {
+            "oli_unit": "mg/L",
+            "pyomo_unit": pyunits.mg / pyunits.L,
+        },
         "temperature": {"oli_unit": "K", "pyomo_unit": pyunits.K},
         "pressure": {"oli_unit": "Pa", "pyomo_unit": pyunits.Pa},
         "enthalpy": {"oli_unit": "J", "pyomo_unit": pyunits.J},
@@ -256,9 +259,9 @@ stream_output_options = FixedKeysDict(
             "totalMolecularMoles",
             "totalTrueMoles",
             "trueConcentration",
-            ],
+        ],
         "properties": [
-            "absoluteViscosity", 
+            "absoluteViscosity",
             "density",
             "enthalpy",
             "entropy",
@@ -287,10 +290,10 @@ stream_output_options = FixedKeysDict(
             "totalDissolvedSolids",
             "volume",
             "volumeStdConditions",
-            ],
+        ],
         "waterAnalysisOutput": [
             "addedIonsToBalance",
-            ],
+        ],
         "additionalProperties": [
             "kValuesMBased",
             "kValuesXBased",
@@ -299,6 +302,6 @@ stream_output_options = FixedKeysDict(
             "scalingIndex",
             "scalingTendencies",
             "vaporToInflowMoleFraction",
-            ],
+        ],
     }
-)       
+)

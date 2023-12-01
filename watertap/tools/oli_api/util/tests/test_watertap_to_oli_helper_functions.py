@@ -14,7 +14,6 @@
 import pytest
 
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
-    OLIName,
     watertap_to_oli,
     get_oli_names,
     oli_reverse_lookup,
@@ -75,3 +74,22 @@ def test_reverse_lookup_exception():
 def test_get_oli_names():
     source_dict = {"Ca_2+": 500, "Cl_-": 1000, "Mg_2+": 500, "SO4_2-": 50}
     source_dict = get_oli_names(source_dict)
+
+
+@pytest.mark.unit
+def verify_names_db_contents():
+    initial_names_db = {
+        "NAION": "Na_+",
+        "CLION": "Cl_-",
+        "SO4ION": "SO4_2-",
+        "MGION": "Mg_2+",
+        "CAION": "Ca_2+",
+        "KION": "K_+",
+        "HCO3ION": "HCO3_-",
+        "NA2CO3": "Na2CO3",
+        "CO2": "CO2",
+        "H2O": "H2O",
+    }
+
+    for k, v in initial_names_db.items():
+        assert v == names_db[k]

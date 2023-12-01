@@ -15,7 +15,6 @@ __author__ = "Paul Vecchiarelli, Adam Atia"
 
 from pyomo.environ import (
     units as pyunits,
-    value,
     ConcreteModel,
     assert_optimal_termination,
 )

@@ -61,61 +61,75 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
     default_unit_set_info,
 )
 
+
 @pytest.fixture
 def flash_instance():
-    flash = Flash(default_water_analysis_properties, default_optional_properties, default_unit_set_info)
+    flash = Flash(
+        default_water_analysis_properties,
+        default_optional_properties,
+        default_unit_set_info,
+    )
     yield flash
-    
+
+
 @pytest.fixture
 def source_water():
-    return {"temperature": 298.15,
-            "pressure": 101325,
-            "components": {
-                "Cl_-": 870,
-                "Na_+": 739,
-                "SO4_2-": 1011,
-                "Mg_2+": 90,
-                "Ca_2+": 258,
-                "K_+": 9,
-                "HCO3_-": 385,
-                "SiO2": 30,
-            },
-            "units": {
-                "temperature": pyunits.K,
-                "pressure": pyunits.Pa,
-                "components": pyunits.mg / pyunits.L,
+    return {
+        "temperature": 298.15,
+        "pressure": 101325,
+        "components": {
+            "Cl_-": 870,
+            "Na_+": 739,
+            "SO4_2-": 1011,
+            "Mg_2+": 90,
+            "Ca_2+": 258,
+            "K_+": 9,
+            "HCO3_-": 385,
+            "SiO2": 30,
+        },
+        "units": {
+            "temperature": pyunits.K,
+            "pressure": pyunits.Pa,
+            "components": pyunits.mg / pyunits.L,
         },
     }
-    
+
+
 @pytest.fixture
 def oliapi_instance(source_water):
-    credentials = {"root_url": "",
-                   "auth_url": "",
-                   "access_keys": [""]}
+    credentials = {"root_url": "", "auth_url": "", "access_keys": [""]}
     try:
         with OLIApi(CredentialManager(**credentials)) as oliapi:
-            oliapi.get_dbs_file_id(source_water["components"], ["liquid1", "solid"], "silica_groundwater")
+            oliapi.get_dbs_file_id(
+                source_water["components"], ["liquid1", "solid"], "silica_groundwater"
+            )
             yield oliapi
     except:
         pytest.xfail("Unable to test OLI logins.")
-    
+
+
 @pytest.fixture
 def survey_params():
-    return {"SO4_2-": linspace(0, 1e2, 3),
-            "Cl_-": linspace(0, 1e3, 3),
-            "Na_+": linspace(0, 1e3, 3),
-            "Ca_2+": linspace(0, 1e2, 3),
-            "Temperature": linspace(273, 373, 5),
-            }
+    return {
+        "SO4_2-": linspace(0, 1e2, 3),
+        "Cl_-": linspace(0, 1e3, 3),
+        "Na_+": linspace(0, 1e3, 3),
+        "Ca_2+": linspace(0, 1e2, 3),
+        "Temperature": linspace(273, 373, 5),
+    }
+
 
 @pytest.fixture
 def composition_survey(flash_instance, survey_params):
     survey = flash_instance.build_survey(survey_params, get_oli_names=True, tee=True)
     assert len(survey) == prod([len(v) for v in survey_params.values()])
     yield survey
-    
+
+
 @pytest.mark.unit
-def test_flash_methods(flash_instance, source_water, oliapi_instance, composition_survey):
+def test_flash_methods(
+    flash_instance, source_water, oliapi_instance, composition_survey
+):
 
     flash_instance.set_input_value("AllowSolidsToForm", True)
     output_props = {"prescalingTendencies": True, "scalingTendencies": True}
@@ -128,11 +142,19 @@ def test_flash_methods(flash_instance, source_water, oliapi_instance, compositio
             "species": ["CACO3", "CASO4.2H2O"],
         },
     }
-    
-    input_list = flash_instance.build_flash_calculation_input(source_water, "wateranalysis")
-    base_case = flash_instance.run_flash("wateranalysis", oliapi_instance, dbs_file_id, input_list)
+
+    input_list = flash_instance.build_flash_calculation_input(
+        source_water, "wateranalysis"
+    )
+    base_case = flash_instance.run_flash(
+        "wateranalysis", oliapi_instance, dbs_file_id, input_list
+    )
     flash_instance.extract_properties(base_case, output_props_to_extract)
-    survey_results = flash_instance.run_flash("wateranalysis", oliapi_instance, dbs_file_id, input_list, composition_survey)
-    
-    iso_input_list = flash_instance.build_flash_calculation_input(source_water, "isothermal", base_case[0])
+    survey_results = flash_instance.run_flash(
+        "wateranalysis", oliapi_instance, dbs_file_id, input_list, composition_survey
+    )
+
+    iso_input_list = flash_instance.build_flash_calculation_input(
+        source_water, "isothermal", base_case[0]
+    )
     flash_instance.run_flash("isothermal", oliapi_instance, dbs_file_id, iso_input_list)

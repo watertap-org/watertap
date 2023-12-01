@@ -71,15 +71,14 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
 
 
 class Flash:
-    """
-    """
-    
+    """ """
+
     def __init__(
         self,
         water_analysis_properties=default_water_analysis_properties,
         optional_properties=default_optional_properties,
         unit_set_info=default_unit_set_info,
-        stream_output_options=stream_output_options
+        stream_output_options=stream_output_options,
     ):
         # set values based on inputs
         self.water_analysis_properties = water_analysis_properties
@@ -99,7 +98,9 @@ class Flash:
         """
 
         exclude_items = ["Temperature", "Pressure"]
-        convert_name = lambda k: get_oli_name(k) if get_oli_names and k not in exclude_items else k
+        convert_name = (
+            lambda k: get_oli_name(k) if get_oli_names and k not in exclude_items else k
+        )
         survey_vars = {convert_name(k): v for k, v in survey_arrays.items()}
         survey_vars_product = list(product(*(survey_vars[key] for key in survey_vars)))
         survey = DataFrame(data=survey_vars_product, columns=survey_vars.keys())
@@ -108,17 +109,15 @@ class Flash:
         return survey
 
     def set_input_value(self, k, v):
-        """
-        """
-        
+        """ """
+
         self.water_analysis_properties[k]["value"] = v
 
     def build_input_list(self, state_vars):
-        """
-        """
-        
+        """ """
+
         self.water_analysis_input_list = []
-        
+
         # build entries for temperature and pressure
         self.water_analysis_properties["Temperature"].update(
             {"value": state_vars["temperature"]}
@@ -132,15 +131,16 @@ class Flash:
         self.water_analysis_input_list.append(
             self.water_analysis_properties["Pressure"]
         )
-            
+
         # build entries for components
         for component in state_vars["components"]:
             charge = get_charge(component)
             name = get_oli_name(component)
             # TODO: consider adding other concentration units (mol/L, etc.)
-            value, unit = self.oli_units(state_vars["components"][component],
-                                         state_vars["units"]["components"])
-            
+            value, unit = self.oli_units(
+                state_vars["components"][component], state_vars["units"]["components"]
+            )
+
             self.water_analysis_input_list.append(
                 {
                     "group": get_charge_group(charge),
@@ -150,7 +150,7 @@ class Flash:
                     "charge": charge,
                 }
             )
-            
+
         # build entries for other specified properties
         for k, v in self.water_analysis_properties.items():
             if isinstance(v["value"], list):
@@ -158,20 +158,20 @@ class Flash:
             if k not in [i["name"] for i in self.water_analysis_input_list]:
                 if v["value"] is not None:
                     self.water_analysis_input_list.append(v)
-                                                    
+
         return deepcopy(self.water_analysis_input_list)
 
     def oli_units(self, component, unit):
-        """
-        """
+        """ """
         to_units = default_input_unit_set["molecularConcentration"]
         converted_value = pyunits.convert_value(component, unit, to_units["pyomo_unit"])
         return converted_value, to_units["oli_unit"]
-    
-    def build_flash_calculation_input(self, state_vars, method, water_analysis_output=None):
-        """
-        """
-        
+
+    def build_flash_calculation_input(
+        self, state_vars, method, water_analysis_output=None
+    ):
+        """ """
+
         inputs = {"params": {}}
 
         if method == "wateranalysis":
@@ -203,7 +203,7 @@ class Flash:
                 }
             }
         )
-        inputs["params"].update({"unitSetInfo": dict(self.unit_set_info)})         
+        inputs["params"].update({"unitSetInfo": dict(self.unit_set_info)})
         return inputs
 
     def extract_inflows(self, water_analysis_output):
@@ -251,7 +251,8 @@ class Flash:
         if write:
             t = datetime.utcnow()
             self.write_output_to_yaml(
-                result, filename=f"{t.day:02}{t.month:02}{t.year:04}_{flash_method}_{suffix}"
+                result,
+                filename=f"{t.day:02}{t.month:02}{t.year:04}_{flash_method}_{suffix}",
             )
         return result
 
@@ -327,11 +328,10 @@ class Flash:
         :return extracted_basic_properties: copy of DataFrame containing values for specified basic properties
         :return extracted_optional_properties: DataFrame containing values for specified optional properties
         """
-                
+
         def build_df(properties, prop_key, input_key, subcolumns, subindices):
-            """
-            """
-            
+            """ """
+
             if not properties["additional_inputs"][input_key]:
                 raise RuntimeError(
                     f" Please specify {input_key} to filter search results."
@@ -342,14 +342,15 @@ class Flash:
                 ),
                 index=raw_result,
             )
-        
+
         def get_scaling(key, path, method, species, tee=False, write=False):
             p = f"prescaling{method.capitalize()}"
             s = f"scaling{method.capitalize()}"
-            result = {x: {p: path[p]["values"][x],
-                          s: path[s]["values"][x]} for x in species}
+            result = {
+                x: {p: path[p]["values"][x], s: path[s]["values"][x]} for x in species
+            }
             _get_output(key, result, tee, write)
-            
+
         def _get_output(key, result, tee, write):
             if tee:
                 print(result)
@@ -360,8 +361,8 @@ class Flash:
                 file_name = f"{t.day}{t.month}{t.year}_{key}.csv"
                 result.to_csv(file_name)
                 if tee:
-                    print(f"Extracted property .csv files saved to working directory.")                
-            
+                    print(f"Extracted property .csv files saved to working directory.")
+
         for prop in properties:
             if prop == "scaling":
                 method = properties[prop]["method"]
@@ -378,7 +379,7 @@ class Flash:
                 print(f"{prop} in additionalProperties")
             if prop in self.stream_output_options["waterAnalysisOutput"]:
                 print(f"{prop} in waterAnalysisOutput")
-            
+
         """
         extracted_basic_properties = build_df(
             properties, "basic", "phases", ["value", "unit"], ["property", "label"]
