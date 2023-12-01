@@ -19,7 +19,7 @@ __author__ = "Dan Gunter"
 import logging
 from collections import namedtuple
 from enum import Enum
-from typing import Any, Callable, Optional, Dict, Union, TypeVar
+from typing import Any, Callable, List, Optional, Dict, Union, TypeVar
 from types import ModuleType
 
 try:
@@ -32,9 +32,6 @@ import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pydantic import BaseModel, validator, Field
 import pyomo.environ as pyo
-from pyomo.core.expr.numeric_expr import ExpressionBase
-from pyomo.core.base.expression import Expression, _ExpressionData
-from pyomo.core.base.param import ScalarParam
 
 #: Forward-reference to a FlowsheetInterface type, used in
 #: :meth:`FlowsheetInterface.find`
@@ -181,6 +178,41 @@ class ModelExport(BaseModel):
         return v
 
 
+class ModelOption(BaseModel):
+    """An option for building/running the model."""
+
+    name: str
+    display_name: str = None
+    description: str = None
+    display_values: List[Any] = []
+    values_allowed: List[Any] = []
+    value: Any = None
+
+    @validator("display_name", always=True)
+    @classmethod
+    def validate_display_name(cls, v, values):
+        if v is None:
+            v = values.get("name")
+        return v
+
+    @validator("description", always=True)
+    @classmethod
+    def validate_description(cls, v, values):
+        if v is None:
+            v = values.get("display_name")
+        return v
+
+    @validator("value")
+    @classmethod
+    def validate_value(cls, v, values):
+        allowed = values.get("values_allowed", None)
+        # allowed = list(allowed.keys())
+        if v in allowed:
+            return v
+        else:
+            raise ValueError(f"'value' ({v}) not in allowed values: {allowed}")
+
+
 class FlowsheetExport(BaseModel):
     """A flowsheet and its contained exported model objects."""
 
@@ -193,6 +225,7 @@ class FlowsheetExport(BaseModel):
     requires_idaes_solver: bool = False
     dof: int = 0
     sweep_results: Union[None, dict] = {}
+    build_options: Dict[str, ModelOption] = {}
 
     # set name dynamically from object
     @validator("name", always=True)
@@ -272,6 +305,21 @@ class FlowsheetExport(BaseModel):
         self.model_objects[key] = model_export
         return model_export
 
+    def add_option(self, name: str, **kwargs) -> ModelOption:
+        """Add an 'option' to the flowsheet that can be displayed and manipulated
+        from the UI.
+
+        Constructs a :class:`ModelOption` instance with provided args and adds it to
+        the dict of options, keyed by its `name`.
+
+        Args:
+            name: Name of option (internal, for accessing the option)
+            kwargs: Fields of :class:`ModelOption`
+        """
+        option = ModelOption(name=name, **kwargs)
+        self.build_options[name] = option
+        return option
+
 
 class Actions(str, Enum):
     """Known actions that can be run.
@@ -282,6 +330,14 @@ class Actions(str, Enum):
     build = "build"
     solve = "solve"
     export = "_export"
+    diagram = "diagram"
+
+
+class FlowsheetCategory(str, Enum):
+    """Flowsheet Categories"""
+
+    wastewater = "Wasterwater Recovery"
+    desalination = "Desalination"
 
 
 class FlowsheetInterface:
@@ -320,6 +376,8 @@ class FlowsheetInterface:
         do_build: Callable = None,
         do_export: Callable = None,
         do_solve: Callable = None,
+        get_diagram: Callable = None,
+        category: FlowsheetCategory = None,
         custom_do_param_sweep_kwargs: Dict = None,
         **kwargs,
     ):
@@ -357,6 +415,11 @@ class FlowsheetInterface:
                 self.add_action(getattr(Actions, name), arg)
             else:
                 raise ValueError(f"'do_{name}' argument is required")
+        if callable(get_diagram):
+            self.add_action("diagram", get_diagram)
+        else:
+            self.add_action("diagram", None)
+
         self._actions["custom_do_param_sweep_kwargs"] = custom_do_param_sweep_kwargs
 
     def build(self, **kwargs):
@@ -395,6 +458,20 @@ class FlowsheetInterface:
             raise RuntimeError(f"Solving flowsheet: {err}") from err
         return result
 
+    def get_diagram(self, **kwargs):
+        """Return diagram image name.
+
+        Args:
+            **kwargs: User-defined values
+
+        Returns:
+            Return image file name if get_diagram function is callable. Otherwise, return none
+        """
+        if self.get_action(Actions.diagram) is not None:
+            return self.run_action(Actions.diagram, **kwargs)
+        else:
+            return None
+
     def dict(self) -> Dict:
         """Serialize.
 
@@ -425,43 +502,86 @@ class FlowsheetInterface:
             # set value in this flowsheet
             ui_units = dst.ui_units
             if dst.is_input and not dst.is_readonly:
-                # create a Var so Pyomo can do the unit conversion for us
-                tmp = pyo.Var(initialize=src.value, units=ui_units)
-                tmp.construct()
-                # Convert units when setting value in the model
-                dst.obj.value = u.convert(tmp, to_units=u.get_units(dst.obj))
-                # Don't convert units when setting the exported value
-                dst.value = src.value
+                # only update if value has changed
+                if dst.value != src.value:
+                    # print(f'changing value for {key} from {dst.value} to {src.value}')
+                    # create a Var so Pyomo can do the unit conversion for us
+                    tmp = pyo.Var(initialize=src.value, units=ui_units)
+                    tmp.construct()
+                    # Convert units when setting value in the model
+                    new_val = pyo.value(u.convert(tmp, to_units=u.get_units(dst.obj)))
+                    # print(f'changing value for {key} from {dst.value} to {new_val}')
+                    dst.obj.set_value(new_val)
+                    # Don't convert units when setting the exported value
+                    dst.value = src.value
 
-                dst.obj.fixed = src.fixed
-                dst.fixed = src.fixed
-                dst.is_sweep = src.is_sweep
-                dst.num_samples = src.num_samples
+                if dst.obj.fixed != src.fixed:
+                    # print(f'changing fixed for {key} from {dst.obj.fixed} to {src.fixed}')
+                    if src.fixed:
+                        dst.obj.fix()
+                    else:
+                        dst.obj.unfix()
+                    dst.fixed = src.fixed
+
+                if dst.is_sweep != src.is_sweep:
+                    dst.is_sweep = src.is_sweep
+
+                if dst.num_samples != src.num_samples:
+                    dst.num_samples = src.num_samples
+
                 # update bounds
-                if src.lb is None or src.lb == "":
-                    dst.obj.lb = None
-                    dst.lb = None
-                else:
-                    tmp = pyo.Var(initialize=src.lb, units=ui_units)
-                    tmp.construct()
-                    dst.obj.lb = pyo.value(
-                        u.convert(tmp, to_units=u.get_units(dst.obj))
-                    )
-                    dst.lb = src.lb
-                if src.ub is None or src.ub == "":
-                    dst.obj.ub = None
-                    dst.ub = None
-                else:
-                    tmp = pyo.Var(initialize=src.ub, units=ui_units)
-                    tmp.construct()
-                    dst.obj.ub = pyo.value(
-                        u.convert(tmp, to_units=u.get_units(dst.obj))
-                    )
-                    dst.ub = src.ub
+                if dst.lb != src.lb:
+                    # print(f'changing lb for {key} from {dst.lb} to {src.lb}')
+                    if src.lb is None or src.lb == "":
+                        dst.obj.setlb(None)
+                        dst.lb = None
+                    else:
+                        tmp = pyo.Var(initialize=src.lb, units=ui_units)
+                        tmp.construct()
+                        new_lb = pyo.value(
+                            u.convert(tmp, to_units=u.get_units(dst.obj))
+                        )
+                        dst.obj.setlb(new_lb)
+                        dst.lb = src.lb
+                if dst.ub != src.ub:
+                    # print(f'changing ub for {key} from {dst.ub} to {src.ub}')
+                    if src.ub is None or src.ub == "":
+                        dst.obj.setub(None)
+                        dst.ub = None
+                    else:
+                        tmp = pyo.Var(initialize=src.ub, units=ui_units)
+                        tmp.construct()
+                        new_ub = pyo.value(
+                            u.convert(tmp, to_units=u.get_units(dst.obj))
+                        )
+                        # print(f'changing ub for {key} from {dst.obj.ub} to {new_ub}')
+                        dst.obj.setub(new_ub)
+                        dst.ub = src.ub
+
         # update degrees of freedom (dof)
         self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         if missing:
             raise self.MissingObjectError(missing)
+
+    def select_option(self, option_name: str, new_option: str):
+        """Update flowsheet with selected option.
+
+        Args:
+            data: The input flowsheet
+            option_name: Name of selected option
+
+        Returns:
+            None
+        """
+
+        # fs = FlowsheetExport.parse_obj(data)  # new instance from data
+        self.fs_exp.build_options[option_name].value = new_option
+
+        # # get function name from model options
+        # func_name = self.fs_exp.build_options[option_name].values_allowed[new_option]
+
+        # # add functino name as new build function
+        # self.add_action("build", func_name)
 
     def add_action(self, action_name: str, action_func: Callable):
         """Add an action for the flowsheet.
@@ -473,7 +593,8 @@ class FlowsheetInterface:
         Returns:
             None
         """
-
+        # print(f'ADDING ACTION: {action_name}')
+        # print(action_func)
         def action_wrapper(**kwargs):
             if action_name == Actions.build:
                 # set new model object from return value of build action
@@ -485,7 +606,6 @@ class FlowsheetInterface:
                     )
                 self.fs_exp.obj = action_result.fs
                 self.fs_exp.m = action_result
-
                 # [re-]create exports (new model object)
                 if Actions.export not in self._actions:
                     raise KeyError(
@@ -497,8 +617,13 @@ class FlowsheetInterface:
                 # clear model_objects dict, since duplicates not allowed
                 self.fs_exp.model_objects.clear()
                 # use get_action() since run_action() will refuse to call it directly
-                self.get_action(Actions.export)(exports=self.fs_exp)
+                self.get_action(Actions.export)(
+                    exports=self.fs_exp, build_options=self.fs_exp.build_options
+                )
                 result = None
+            elif action_name == Actions.diagram:
+                self._actions[action_name] = action_func
+                return
             elif self.fs_exp.obj is None:
                 raise RuntimeError(
                     f"Cannot run any flowsheet action (except "
@@ -555,16 +680,9 @@ class FlowsheetInterface:
         self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         for key, mo in self.fs_exp.model_objects.items():
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
-            if not isinstance(
-                mo.obj,
-                (
-                    Expression,
-                    ExpressionBase,
-                    _ExpressionData,
-                    ScalarParam,
-                    type(None),
-                ),
-            ):
+            # print(f'{key} is being set to: {mo.value}')
+            if hasattr(mo.obj, "bounds"):
+                # print(f'{key} is being set to: {mo.value} from {mo.obj.value}')
                 if mo.obj.ub is None:
                     mo.ub = mo.obj.ub
                 else:

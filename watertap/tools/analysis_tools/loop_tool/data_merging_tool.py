@@ -47,11 +47,19 @@ def merge_data_into_file(
     # check if there is a back up
     if isinstance(backup_file_name, str):
         f_old_solutions = h5py.File(backup_file_name, "r")
-        solved_values = sum(
-            np.array(
-                f_old_solutions[directory]["solve_successful"]["solve_successful"][()]
+        if (
+            directory in f_old_solutions
+            and "solve_successful" in f_old_solutions[directory]
+        ):
+            solved_values = sum(
+                np.array(
+                    f_old_solutions[directory]["solve_successful"]["solve_successful"][
+                        ()
+                    ]
+                )
             )
-        )
+        else:
+            solved_values = None
     else:
         solved_values = None
     if force_rerun:
