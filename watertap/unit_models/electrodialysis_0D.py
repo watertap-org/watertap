@@ -1801,7 +1801,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             )
 
         @self.Constraint(
-            doc="To calculate Sc",
+            doc="To calculate Sh",
         )
         def eq_Sh(self):
 
