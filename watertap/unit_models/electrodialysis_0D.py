@@ -514,7 +514,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().time,
             initialize=0.01,
             units=pyunits.meter * pyunits.second**-1,
-            doc="Linear velocity of flow",
+            doc="Linear velocity of flow in the concentrate",
         )
 
         # Fluxes Vars for constructing mass transfer terms
