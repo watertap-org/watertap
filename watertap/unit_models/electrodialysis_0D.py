@@ -628,7 +628,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 initialize=500,
                 bounds=(0, 1000),
                 units=pyunits.amp * pyunits.meter**-2,
-                doc="Limiting Current Density across the membrane as a function of the normalized length",
+                doc="Limiting current density across the membrane as a function of the normalized length",
             )
             self._make_performance_dl_polarization()
         if (
