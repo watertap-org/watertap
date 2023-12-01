@@ -46,6 +46,7 @@ def main():
     m = build()
     initialize_model(m)
     res = solve_model(m)
+    m.fs.display()
 
     return m, res
 
