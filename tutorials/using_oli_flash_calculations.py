@@ -42,6 +42,7 @@
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
 
+
 __author__ = "Paul Vecchiarelli"
 
 from pyomo.environ import units as pyunits
@@ -57,7 +58,6 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
     default_optional_properties,
     default_unit_set_info,
 )
-
 
 # TODO: convert to jupyter notebook, combine with incorporating_oli_calculations notebook
 
@@ -91,32 +91,11 @@ if __name__ == "__main__":
     # modify water_analysis_properties and create input list
     f.set_input_value("AllowSolidsToForm", True)
     # modify optional properties
-    output_props = {'scalingIndex': False,
-                    "prescalingTendencies": False,
-                    "prescalingTendenciesRigorous": False,
-                    'scalingTendencies': False,
-                    'ionicStrengthXBased': False,
-                    'ionicStrengthMBased': False,
-                    'activityCoefficientsXBased': False,
-                    'activityCoefficientsMBased': False,
-                    "MBGComposition": False,
-                    "materialBalanceGroup": False,
-                    }
-    f.optional_properties.update(output_props)
-    
-    # specify objects to extract
-    output_props_to_extract = {
-        "basic": ["osmoticPressure", "ph"],
-        "optional": [k for k in output_props.keys() if output_props[k]],
-        "additional_inputs": {
-            "phases": ["liquid1"],
-            "species": ["CACO3", "CASO4.2H2O"],
-        },
-    }
-    
+    for k, v in f.optional_properties.items():
+        f.optional_properties[k] = True
+            
     # log in to OLI Cloud
-    encryption_key = ""
-    credential_manager = CredentialManager(encryption_key=encryption_key)
+    credential_manager = CredentialManager(encryption_key="")
 
     with OLIApi(credential_manager) as oliapi:
         dbs_file_id = oliapi.get_dbs_file_id(
@@ -124,97 +103,56 @@ if __name__ == "__main__":
             phases=["liquid1", "solid"],
             model_name="silica_groundwater",
         )
-        """
-        # define analysis survey parameters
-        survey_vars = {  # "SO4_2-": linspace(0, 1e2, 3),
-            # "Cl_-": linspace(0, 1e3, 3),
-            # "Na_+": linspace(0, 1e3, 3),
-            # "Ca_2+": linspace(0, 1e2, 3),
-            "Temperature": linspace(273, 373, 10)
-        }
-        water_analysis_survey = f.build_survey(survey_vars, get_oli_names=True)
-        """
+
         water_analysis_base_case = f.build_flash_calculation_input(state_vars=source_water, method="wateranalysis")
         
         # run single point water analysis
         water_analysis_single_point = f.run_flash(
             "wateranalysis", oliapi, dbs_file_id, water_analysis_base_case, write=True
         )
-        """        
-        wa_sp_basic_props, wa_sp_optional_props = f.extract_properties(
-            water_analysis_single_point, output_props_to_extract, write=False
-        )
-        print(wa_sp_basic_props)
-        print(wa_sp_optional_props)
-
-        # run composition survey water analysis
-        water_analysis_composition_survey = f.run_flash(
-            "wateranalysis",
-            oliapi,
-            dbs_file_id,
-            water_analysis_base_case,
-            water_analysis_survey,
-            write=True,
-        )
-        wa_cs_basic_props, wa_cs_optional_props = f.extract_properties(
-            water_analysis_composition_survey, output_props_to_extract, write=False
-        )
-        print(wa_cs_basic_props)
-        print(wa_cs_optional_props)
+        
+        properties = {
+            "scaling": {
+                "species": ["CASO4.2H2O", "SIO2"],
+                "method": "index",
+                },
+            "entropy": {
+                "phases": [],
+                "species": [],
+                },
+            "gibbsFreeEnergy": {
+                "phases": ["solid"],
+                "species": [],
+                },
+            "selfDiffusivities": {
+                "species": ["CAION", "MGION"],
+                },
+            "molecularConcentration": {
+                "phases": [],
+                "species": [],
+                },
+            "kValuesMBased": {
+                "species": ["SIO2"],
+                }
+            }
+        
+        f.extract_properties(water_analysis_single_point[0], properties, write=False)
+        
         """
-        
-        # modify optional properties
-        output_props = {'scalingIndex': True,
-                        "prescalingTendencies": True,
-                        "prescalingTendenciesRigorous": True,
-                        'scalingTendencies': True,
-                        'ionicStrengthXBased': True,
-                        'ionicStrengthMBased': True,
-                        'activityCoefficientsXBased': True,
-                        'activityCoefficientsMBased': True,
-                        "MBGComposition": False,
-                        "materialBalanceGroup": False,
-                        }
-        f.optional_properties.update(output_props)
-        
-        # specify objects to extract
-        output_props_to_extract = {
-            "basic": ["osmoticPressure", "ph"],
-            "optional": [k for k in output_props.keys() if output_props[k]],
-            "additional_inputs": {
-                "phases": ["liquid1"],
-                "species": ["CACO3", "CASO4.2H2O"],
-            },
-        }
-        
         # generate isothermal flash feedwater input
         isothermal_analysis_base_case = f.build_flash_calculation_input(
             method="isothermal",
             state_vars=source_water,
             water_analysis_output=water_analysis_single_point[0],
         )
-
+        
         # run single point isothermal analysis
         isothermal_analysis_single_point = f.run_flash(
             "isothermal", oliapi, dbs_file_id, isothermal_analysis_base_case, write=True
         )
-        """
         ia_sp_basic_props, ia_sp_optional_props = f.extract_properties(
             isothermal_analysis_single_point, output_props_to_extract, write=False
         )
         print(ia_sp_basic_props)
         print(ia_sp_optional_props)
-
-        # run composition survey isothermal flash
-        isothermal_analysis_composition_survey = f.run_flash(
-            "isothermal",
-            oliapi,
-            dbs_file_id,
-            isothermal_analysis_base_case,
-            water_analysis_survey,
-            write=True,
-        )
-        ia_cs_basic_props, ia_cs_optional_props = f.extract_properties(
-            isothermal_analysis_composition_survey, output_props_to_extract, write=True
-        )
         """

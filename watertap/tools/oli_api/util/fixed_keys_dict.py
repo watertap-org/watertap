@@ -237,3 +237,68 @@ default_unit_set_info = FixedKeysDict(
         "molecularConcentration": "mg/L",
     }
 )
+
+# This dictionary describes the stream outputs for OLI flash calculations
+stream_output_options = FixedKeysDict(
+    {
+        "result": [
+            "MBGComposition",
+            "activityCoefficientsMBased",
+            "activityCoefficientsXBased",
+            "entropy",
+            "entropyStandardStateXBased",
+            "gibbsFreeEnergy",
+            "gibbsFreeEnergyStandardStateXBased",
+            "mobilities",
+            "molecularConcentration",
+            "selfDiffusivities",
+            "totalMBGMoles",
+            "totalMolecularMoles",
+            "totalTrueMoles",
+            "trueConcentration",
+            ],
+        "properties": [
+            "absoluteViscosity", 
+            "density",
+            "enthalpy",
+            "entropy",
+            "entropyStandardState",
+            "gibbsFreeEnergy",
+            "gibbsFreeEnergyStandardState",
+            "hardness",
+            "heatCapacity",
+            "idealStandardLiquidVolume",
+            "interfacialTension",
+            "ionicStrength",
+            "ionicStrengthMBased",
+            "ionicStrengthXBased",
+            "mass",
+            "mixHeatCapacity",
+            "molarElectricalConductivity",
+            "orp",
+            "osmoticPressure",
+            "ph",
+            "pressure",
+            "relativeViscosity",
+            "specificElectricalConductivity",
+            "surfaceTension",
+            "temperature",
+            "thermalConductivity",
+            "totalDissolvedSolids",
+            "volume",
+            "volumeStdConditions",
+            ],
+        "waterAnalysisOutput": [
+            "addedIonsToBalance",
+            ],
+        "additionalProperties": [
+            "kValuesMBased",
+            "kValuesXBased",
+            "prescalingIndex",
+            "prescalingTendencies",
+            "scalingIndex",
+            "scalingTendencies",
+            "vaporToInflowMoleFraction",
+            ],
+    }
+)       

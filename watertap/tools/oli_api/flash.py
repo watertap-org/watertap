@@ -66,6 +66,7 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
     default_optional_properties,
     default_input_unit_set,
     default_unit_set_info,
+    stream_output_options,
 )
 
 
@@ -78,12 +79,13 @@ class Flash:
         water_analysis_properties=default_water_analysis_properties,
         optional_properties=default_optional_properties,
         unit_set_info=default_unit_set_info,
+        stream_output_options=stream_output_options
     ):
         # set values based on inputs
         self.water_analysis_properties = water_analysis_properties
         self.optional_properties = optional_properties
         self.unit_set_info = unit_set_info
-
+        self.stream_output_options = stream_output_options
         self.water_analysis_input_list = []
 
     def build_survey(self, survey_arrays, get_oli_names=False, tee=False):
@@ -201,9 +203,7 @@ class Flash:
                 }
             }
         )
-        inputs["params"].update({"unitSetInfo": dict(self.unit_set_info)}) 
-        
-        print(inputs["params"]["optionalProperties"])
+        inputs["params"].update({"unitSetInfo": dict(self.unit_set_info)})         
         return inputs
 
     def extract_inflows(self, water_analysis_output):
@@ -251,7 +251,7 @@ class Flash:
         if write:
             t = datetime.utcnow()
             self.write_output_to_yaml(
-                result, filename=f"{t.day}{t.month}{t.year}_{flash_method}_{suffix}"
+                result, filename=f"{t.day:02}{t.month:02}{t.year:04}_{flash_method}_{suffix}"
             )
         return result
 
@@ -342,7 +342,44 @@ class Flash:
                 ),
                 index=raw_result,
             )
-
+        
+        def get_scaling(key, path, method, species, tee=False, write=False):
+            p = f"prescaling{method.capitalize()}"
+            s = f"scaling{method.capitalize()}"
+            result = {x: {p: path[p]["values"][x],
+                          s: path[s]["values"][x]} for x in species}
+            _get_output(key, result, tee, write)
+            
+        def _get_output(key, result, tee, write):
+            if tee:
+                print(result)
+            if write:
+                if tee:
+                    print(f"Saving files...")
+                t = datetime.utcnow()
+                file_name = f"{t.day}{t.month}{t.year}_{key}.csv"
+                result.to_csv(file_name)
+                if tee:
+                    print(f"Extracted property .csv files saved to working directory.")                
+            
+        for prop in properties:
+            if prop == "scaling":
+                method = properties[prop]["method"]
+                result_path = raw_result["result"]["additionalProperties"]
+                get_scaling(prop, result_path, method, properties[prop]["species"])
+            if prop in self.stream_output_options["result"]:
+                print(f"{prop} in result")
+            if prop in self.stream_output_options["properties"]:
+                print(f"{prop} in properties")
+            if prop in self.stream_output_options["additionalProperties"]:
+                path = raw_result["result"]["additionalProperties"]
+                if "kValues" in prop:
+                    print("kinetics")
+                print(f"{prop} in additionalProperties")
+            if prop in self.stream_output_options["waterAnalysisOutput"]:
+                print(f"{prop} in waterAnalysisOutput")
+            
+        """
         extracted_basic_properties = build_df(
             properties, "basic", "phases", ["value", "unit"], ["property", "label"]
         )
@@ -381,3 +418,4 @@ class Flash:
             if tee:
                 print(f"Extracted property .csv files saved to working directory.")
         return extracted_basic_properties, extracted_optional_properties
+        """
