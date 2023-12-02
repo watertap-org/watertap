@@ -62,37 +62,49 @@ from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
     get_molar_mass,
 )
 from watertap.tools.oli_api.util.fixed_keys_dict import (
-    default_water_analysis_properties,
-    default_optional_properties,
-    default_input_unit_set,
-    default_unit_set_info,
+    water_analysis_properties,
+    optional_properties,
+    input_unit_set,
+    output_unit_set,
     stream_output_options,
 )
 
 
 class Flash:
-    """ """
+    """
+    A class to execute OLI Cloud flash calculations, replacing and augmenting WaterAnalysis class functionality.
+    
+    :param water_analysis_properties: dictionary containing pre-built water analysis input template blocks
+    :param optional_properties: dictionary containing pre-configured optional properties to attach to OLI calls (defaults to True for all properties)
+    :param input_unit_set: dictionary containing conversions between OLI and Pyomo unit names
+    :param output_unit_set: dictionary containing preferred units for output expression
+    :param stream_output_options: dictionary pointing to properties that can be extracted from flash stream outputs
+    """
 
     def __init__(
         self,
-        water_analysis_properties=default_water_analysis_properties,
-        optional_properties=default_optional_properties,
-        unit_set_info=default_unit_set_info,
+        water_analysis_properties=water_analysis_properties,
+        optional_properties=optional_properties,
+        input_unit_set=input_unit_set,
+        output_unit_set=output_unit_set,
         stream_output_options=stream_output_options,
     ):
         # set values based on inputs
         self.water_analysis_properties = water_analysis_properties
         self.optional_properties = optional_properties
-        self.unit_set_info = unit_set_info
+        self.input_unit_set = input_unit_set
+        self.output_unit_set = output_unit_set
         self.stream_output_options = stream_output_options
         self.water_analysis_input_list = []
-
+    
+    # TODO: consider using yaml/json to contain surveys instead of DataFrame
     def build_survey(self, survey_arrays, get_oli_names=False, tee=False):
         """
         Builds a DataFrame used to modify flash calculation parameters.
 
         :param survey_arrays: dictionary containing variables: arrays to survey
         :param get_oli_names: boolean switch to convert name into OLI form
+        :param tee: boolean switch to show printable output
 
         :return survey: DataFrame containing surveys (or empty)
         """
@@ -163,12 +175,21 @@ class Flash:
 
     def oli_units(self, component, unit):
         """ """
-        to_units = default_input_unit_set["molecularConcentration"]
+        to_units = input_unit_set["molecularConcentration"]
         converted_value = pyunits.convert_value(component, unit, to_units["pyomo_unit"])
         return converted_value, to_units["oli_unit"]
 
+    def _set_prescaling_calculation_mode(self, use_scaling_rigorous):
+        if use_scaling_rigorous:
+            if self.optional_properties["prescalingTendenciesRigorous"] == True:
+                new_values = {k: not v for k,v in self.optional_properties.items() if "prescaling" in k}
+        else:
+            if not self.optional_properties["prescalingTendenciesRigorous"] == True:
+                new_values = {k: not v for k,v in self.optional_properties.items() if "prescaling" in k}
+        self.optional_properties.update(new_values)
+        
     def build_flash_calculation_input(
-        self, state_vars, method, water_analysis_output=None
+        self, state_vars, method, water_analysis_output=None, use_scaling_rigorous=True
     ):
         """ """
 
@@ -195,18 +216,16 @@ class Flash:
                 },
                 "inflows": self.extract_inflows(water_analysis_output),
             }
-
-        inputs["params"].update(
-            {
-                "optionalProperties": {
-                    k: v for k, v in self.optional_properties.items() if v
-                }
-            }
-        )
-        inputs["params"].update({"unitSetInfo": dict(self.unit_set_info)})
+            
+        self._set_prescaling_calculation_mode(use_scaling_rigorous)
+        inputs["params"].update({"optionalProperties": dict(self.optional_properties)})
+        inputs["params"].update({"unitSetInfo": dict(self.output_unit_set)})
         return inputs
 
     def extract_inflows(self, water_analysis_output):
+        """
+        """
+        
         return water_analysis_output["result"]["total"]["molecularConcentration"]
 
     # TODO: consider enabling parallel flash
@@ -292,7 +311,7 @@ class Flash:
                             ]
             else:
                 raise IOError(
-                    " Flash calculations besides 'wateranalysis' and 'isothermal' not yet implemented."
+                    " Only 'wateranalysis' and 'isothermal' currently supported."
                 )
             clones[clone_index] = modified_clone
         return clones
@@ -317,8 +336,8 @@ class Flash:
         if tee:
             print(f"{file_path} saved to working directory.")
         return file_path
-
-    def extract_properties(self, raw_result, properties, tee=False, write=False):
+        
+    def extract_properties(self, raw_result, properties, filter_zero=True, tee=False, write=False):
         """
         Extracts properties from OLI Cloud flash calculation output stream.
 
@@ -328,84 +347,45 @@ class Flash:
         :return extracted_basic_properties: copy of DataFrame containing values for specified basic properties
         :return extracted_optional_properties: DataFrame containing values for specified optional properties
         """
+        
+        def _filter_zeroes(data, filter_zero):
+            if "values" in data:
+                if filter_zero:
+                    data["values"] = {k:v for k,v in data["values"].items() if v != 0}
+            return data
+        
+        def _get_nested_phase_keys(phase, group):
+            keys = ["phases", phase] if phase != "total" else ["total"]
+            keys.extend(["properties", prop] if group == "properties" else [prop])
+            return keys
+        
+        def _get_nested_data(data, keys):
+            for key in keys:
+                data = data[key]
+            return data
 
-        def build_df(properties, prop_key, input_key, subcolumns, subindices):
-            """ """
-
-            if not properties["additional_inputs"][input_key]:
-                raise RuntimeError(
-                    f" Please specify {input_key} to filter search results."
-                )
-            return DataFrame(
-                columns=MultiIndex.from_product(
-                    [properties[prop_key], subcolumns], names=subindices
-                ),
-                index=raw_result,
-            )
-
-        def get_scaling(key, path, method, species, tee=False, write=False):
-            p = f"prescaling{method.capitalize()}"
-            s = f"scaling{method.capitalize()}"
-            result = {
-                x: {p: path[p]["values"][x], s: path[s]["values"][x]} for x in species
-            }
-            _get_output(key, result, tee, write)
-
-        def _get_output(key, result, tee, write):
-            if tee:
-                print(result)
-            if write:
-                if tee:
-                    print(f"Saving files...")
-                t = datetime.utcnow()
-                file_name = f"{t.day}{t.month}{t.year}_{key}.csv"
-                result.to_csv(file_name)
-                if tee:
-                    print(f"Extracted property .csv files saved to working directory.")
-
-        for prop in properties:
-            if prop == "scaling":
-                method = properties[prop]["method"]
-                result_path = raw_result["result"]["additionalProperties"]
-                get_scaling(prop, result_path, method, properties[prop]["species"])
-            if prop in self.stream_output_options["result"]:
-                print(f"{prop} in result")
-            if prop in self.stream_output_options["properties"]:
-                print(f"{prop} in properties")
-            if prop in self.stream_output_options["additionalProperties"]:
-                path = raw_result["result"]["additionalProperties"]
-                if "kValues" in prop:
-                    print("kinetics")
-                print(f"{prop} in additionalProperties")
-            if prop in self.stream_output_options["waterAnalysisOutput"]:
-                print(f"{prop} in waterAnalysisOutput")
-
-        """
-        extracted_basic_properties = build_df(
-            properties, "basic", "phases", ["value", "unit"], ["property", "label"]
-        )
-        extracted_optional_properties = build_df(
-            properties,
-            "optional",
-            "species",
-            properties["additional_inputs"]["species"],
-            ["property", "species"],
-        )
-        for k in raw_result:
-            root_path = raw_result[k]["result"]
-            for prop in properties["basic"]:
-                for phase in properties["additional_inputs"]["phases"]:
-                    val = (
-                        root_path["phases"][phase]["properties"][prop]["value"],
-                        root_path["phases"][phase]["properties"][prop]["unit"],
-                    )
-                    extracted_basic_properties.loc[k, prop] = val
-            # TODO: add support for non-scaling tendency properties
-            for prop in properties["optional"]:
-                values = root_path["additionalProperties"][prop]["values"]
-                for species in properties["additional_inputs"]["species"]:
-                    extracted_optional_properties.loc[k, prop] = values[species]
-
+        extracted_properties = {}
+        for i in raw_result:
+            extracted_properties[i] = {}
+            root_path = [i, "result"]
+            for prop in properties:
+                base_result = _get_nested_data(raw_result, root_path)
+                phases = [k for k in base_result["phases"].keys() if prop in base_result["phases"][k]]
+                if prop in base_result["total"]:
+                    phases.append("total")
+                prop_groups = [k for k in self.stream_output_options if prop in self.stream_output_options[k]]
+                for group in prop_groups:
+                    if group in ["result", "properties"]:
+                        for phase in phases:
+                            deep_path = deepcopy(root_path)
+                            deep_path.extend(_get_nested_phase_keys(phase, group))
+                            result = _filter_zeroes(_get_nested_data(raw_result, deep_path), filter_zero)
+                            extracted_properties[i][f"{prop}_{phase}"] = result
+                    if group in ["additionalProperties", "waterAnalysisOutput"]:
+                        deep_path = deepcopy(root_path)
+                        deep_path.extend([group, prop])
+                        result = _filter_zeroes(_get_nested_data(raw_result, deep_path), filter_zero)
+                        extracted_properties[i][prop] = result
         if write:
             if tee:
                 print(f"Saving files...")
@@ -418,5 +398,5 @@ class Flash:
             )
             if tee:
                 print(f"Extracted property .csv files saved to working directory.")
-        return extracted_basic_properties, extracted_optional_properties
-        """
+        return extracted_properties
+        

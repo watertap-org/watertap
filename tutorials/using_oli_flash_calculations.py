@@ -53,12 +53,6 @@ from watertap.tools.oli_api.flash import Flash
 from watertap.tools.oli_api.client import OLIApi
 from watertap.tools.oli_api.credentials import CredentialManager
 
-from watertap.tools.oli_api.util.fixed_keys_dict import (
-    default_water_analysis_properties,
-    default_optional_properties,
-    default_unit_set_info,
-)
-
 # TODO: convert to jupyter notebook, combine with incorporating_oli_calculations notebook
 
 if __name__ == "__main__":
@@ -83,16 +77,7 @@ if __name__ == "__main__":
     }
 
     # initialize flash instance
-    f = Flash(
-        default_water_analysis_properties,
-        default_optional_properties,
-        default_unit_set_info,
-    )
-    # modify water_analysis_properties and create input list
-    f.set_input_value("AllowSolidsToForm", True)
-    # modify optional properties
-    for k, v in f.optional_properties.items():
-        f.optional_properties[k] = True
+    f = Flash()
             
     # log in to OLI Cloud
     credential_manager = CredentialManager(encryption_key="")
@@ -111,32 +96,16 @@ if __name__ == "__main__":
             "wateranalysis", oliapi, dbs_file_id, water_analysis_base_case, write=True
         )
         
-        properties = {
-            "scaling": {
-                "species": ["CASO4.2H2O", "SIO2"],
-                "method": "index",
-                },
-            "entropy": {
-                "phases": [],
-                "species": [],
-                },
-            "gibbsFreeEnergy": {
-                "phases": ["solid"],
-                "species": [],
-                },
-            "selfDiffusivities": {
-                "species": ["CAION", "MGION"],
-                },
-            "molecularConcentration": {
-                "phases": [],
-                "species": [],
-                },
-            "kValuesMBased": {
-                "species": ["SIO2"],
-                }
-            }
-        
-        f.extract_properties(water_analysis_single_point[0], properties, write=False)
+        properties = [
+            "prescalingTendencies",
+            "entropy",
+            "gibbsFreeEnergy",
+            "selfDiffusivities",
+            "molecularConcentration",
+            "kValuesMBased",
+        ]
+        print(water_analysis_single_point[0]["result"].keys())
+        f.extract_properties(water_analysis_single_point, properties, filter_zero=True)
         
         """
         # generate isothermal flash feedwater input
