@@ -19,9 +19,14 @@ __author__ = "Dan Gunter"
 from collections import namedtuple
 from csv import reader
 from enum import Enum
+try:
+    from importlib.resources import files
+except ImportError:
+    from importlib_resources import files
 import inspect
 import logging
 from pathlib import Path
+import re
 from typing import Any, Callable, List, Optional, Dict, Union, TypeVar
 from types import ModuleType
 
@@ -349,61 +354,69 @@ class FlowsheetExport(BaseModel):
 
         # compute path
         path = Path(file) if not isinstance(file, Path) else file
-        if not path.is_absolute():
+        if path.is_absolute():
+            _log.debug(f"Reading CSV data for interface exports from "
+                       f"absolute path: {path}")
+            text = open(path, "r", encoding="utf-8").read()
+        else:
             caller = inspect.getouterframes(inspect.currentframe())[1]
-            caller_dir = Path(caller.filename).parent
-            abs_path = caller_dir / path
-            if not abs_path.exists():
+            caller_mod = inspect.getmodule(caller.frame).__name__
+            caller_pkg = ".".join(caller_mod.split(".")[:-1])  # strip module name off end
+            _log.debug(f"Reading CSV data for interface exports from: "
+                       f"file={path}, module={caller_pkg}")
+            try:
+                text = files(caller_pkg).joinpath(path).read_text()
+            except Exception as err:
                 raise IOError(f"Could not find CSV file '{path}' relative to file "
-                                 f"calling .add() at '{caller_dir}'")
-            path = abs_path
+                                 f"calling .add() in '{caller_mod}': {err}")
 
         # process CSV file
-        with open(path, "r") as infile:
-            rows = reader(infile)
-            # read and pre-process the header row
-            raw_header = next(rows)
-            header = [s.strip().lower() for s in raw_header]
-            for req in "name", "obj", "ui_units":
-                if req not in header:
-                    raise ValueError(f"Bad CSV header: '{req}' column is required")
-            # process each row
-            num = 0
-            for row in rows:
-                # build raw dict from values and header
-                data = {k: v for k, v in zip(header, row)}
-                # evaluate the object in the flowsheet
+        rows = reader(re.split(r"\r?\n", text))
+        # read and pre-process the header row
+        raw_header = next(rows)
+        header = [s.strip().lower() for s in raw_header]
+        for req in "name", "obj", "ui_units":
+            if req not in header:
+                raise ValueError(f"Bad CSV header: '{req}' column is required. data="
+                                 f"{header}")
+        num = 0
+        for row in rows:
+            if len(row) == 0:
+                continue
+            # build raw dict from values and header
+            data = {k: v for k, v in zip(header, row)}
+            # evaluate the object in the flowsheet
+            try:
+                data["obj"] = eval(data["obj"], {"fs": flowsheet})
+            except Exception as err:
+                raise ValueError(f"Cannot find object in flowsheet: {data['obj']}")
+            # evaluate the units
+            norm_units = data["ui_units"].strip().lower()
+            if norm_units in ("", "none", "-"):
+                data["ui_units"] = pyo.units.dimensionless
+            else:
                 try:
-                    data["obj"] = eval(data["obj"], {"fs": flowsheet})
+                    data["ui_units"] = eval(norm_units, {"units": pyo.units})
                 except Exception as err:
-                    raise ValueError(f"Cannot find object in flowsheet: {data['obj']}")
-                # evaluate the units
-                norm_units = data["ui_units"].strip().lower()
-                if norm_units in ("", "none", "-"):
-                    data["ui_units"] = pyo.units.dimensionless
-                else:
-                    try:
-                        data["ui_units"] = eval(norm_units, {"units": pyo.units})
-                    except Exception as err:
-                        raise ValueError(f"Bad units '{norm_units}': {err}")
-                # process boolean values (starting with 'is_')
-                for k in data:
-                    if k.startswith("is_"):
-                        v = data[k].lower()
-                        if v == "true":
-                            data[k] = True
-                        elif v == "false":
-                            data[k] = False
-                        else:
-                            raise ValueError(f"Bad value '{data[k]}' "
-                                             f"for boolean argument '{k}': "
-                                             f"must be 'true' or 'false' "
-                                             f"(case-insensitive)")
-                # add parsed export
-                self.add(data=data)
-                num += 1
+                    raise ValueError(f"Bad units '{norm_units}': {err}")
+            # process boolean values (starting with 'is_')
+            for k in data:
+                if k.startswith("is_"):
+                    v = data[k].lower()
+                    if v == "true":
+                        data[k] = True
+                    elif v == "false":
+                        data[k] = False
+                    else:
+                        raise ValueError(f"Bad value '{data[k]}' "
+                                         f"for boolean argument '{k}': "
+                                         f"must be 'true' or 'false' "
+                                         f"(case-insensitive)")
+            # add parsed export
+            self.add(data=data)
+            num += 1
 
-            return num
+        return num
 
     def add_option(self, name: str, **kwargs) -> ModelOption:
         """Add an 'option' to the flowsheet that can be displayed and manipulated

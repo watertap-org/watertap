@@ -229,7 +229,7 @@ def csv_from_localfile(exports=None, flowsheet=None, **kw):
     path = Path(__file__).parent / "test.csv"
     _populate_csv_exports(path.open("w"))
     try:
-        exports.from_csv(file=path, flowsheet=flowsheet)
+        exports.from_csv(file="test.csv", flowsheet=flowsheet)
     finally:
         path.unlink()
 

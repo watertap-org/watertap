@@ -93,6 +93,7 @@ setup(
         # for watertap.ui.api_model (though may be generally useful)
         "pydantic < 2",
         "numpy",
+        "importlib-resources"
     ],
     extras_require={
         "testing": [
