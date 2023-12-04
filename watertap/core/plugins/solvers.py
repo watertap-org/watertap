@@ -10,6 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import logging
+
 import pyomo.environ as pyo
 from pyomo.core.base.block import _BlockData
 from pyomo.core.kernel.block import IBlock
@@ -24,6 +26,15 @@ from idaes.core.util.scaling import (
 from idaes.logger import getLogger
 
 _log = getLogger("watertap.core")
+
+_pyomo_nl_writer_log = logging.getLogger("pyomo.repn.plugins.nl_writer")
+
+
+def _pyomo_nl_writer_logger_filter(record):
+    msg = record.getMessage()
+    if "scaling_factor" in msg and "model contains export suffix" in msg:
+        return False
+    return True
 
 
 @pyo.SolverFactory.register(
@@ -87,6 +98,7 @@ class IpoptWaterTAP(IPOPT):
         self._model = args[0]
         self._cache_scaling_factors()
         self._cleanup_needed = True
+        _pyomo_nl_writer_log.addFilter(_pyomo_nl_writer_logger_filter)
 
         # NOTE: This function sets the scaling factors on the
         #       constraints. Hence we cache the constraint scaling
@@ -142,6 +154,7 @@ class IpoptWaterTAP(IPOPT):
             self._reset_scaling_factors()
             # remove our reference to the model
             del self._model
+            _pyomo_nl_writer_log.removeFilter(_pyomo_nl_writer_logger_filter)
 
     def _postsolve(self):
         self._cleanup()

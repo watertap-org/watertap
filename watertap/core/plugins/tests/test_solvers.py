@@ -21,7 +21,7 @@ from idaes.core.util.scaling import (
     constraints_with_scale_factor_generator,
 )
 from idaes.core.solvers import get_solver
-from watertap.core.plugins.solvers import IpoptWaterTAP
+from watertap.core.plugins.solvers import IpoptWaterTAP, _pyomo_nl_writer_log
 
 
 class TestIpoptWaterTAP:
@@ -119,6 +119,7 @@ class TestIpoptWaterTAP:
         pyo.assert_optimal_termination(results)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _pyomo_nl_writer_log.filters == []
         del s.options["ignore_variable_scaling"]
 
     @pytest.mark.unit
@@ -135,6 +136,7 @@ class TestIpoptWaterTAP:
         s._presolve(m, tee=True)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _pyomo_nl_writer_log.filters == []
         s.options["nlp_scaling_method"] = "user-scaling"
 
     @pytest.mark.unit
@@ -144,6 +146,7 @@ class TestIpoptWaterTAP:
         del s.options["nlp_scaling_method"]
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _pyomo_nl_writer_log.filters == []
 
     @pytest.mark.unit
     def test_passthrough_negative(self, m, s):
@@ -155,6 +158,7 @@ class TestIpoptWaterTAP:
         del s.options["ignore_variable_scaling"]
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _pyomo_nl_writer_log.filters == []
 
     @pytest.mark.unit
     def test_presolve_incorrect_number_of_arguments(self, m, s):
@@ -175,6 +179,7 @@ class TestIpoptWaterTAP:
             s.solve(m)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _pyomo_nl_writer_log.filters == []
         m.a.value = 1
 
     @pytest.mark.unit
@@ -192,6 +197,7 @@ class TestIpoptWaterTAP:
             s.solve(m)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _pyomo_nl_writer_log.filters == []
         m.a.value = 1
 
     @pytest.mark.unit
@@ -209,6 +215,7 @@ class TestIpoptWaterTAP:
             s.solve(m)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _pyomo_nl_writer_log.filters == []
         IPOPT._presolve = IPOPT_presolve
 
     @pytest.mark.unit
@@ -226,6 +233,7 @@ class TestIpoptWaterTAP:
             s.solve(m)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
+        assert _pyomo_nl_writer_log.filters == []
         iscale.constraint_autoscale_large_jac = constraint_autoscale_large_jac
 
     @pytest.fixture(scope="class")
