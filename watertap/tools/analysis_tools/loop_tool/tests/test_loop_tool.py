@@ -208,7 +208,7 @@ def test_sweep_run(loop_sweep_setup):
             "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/LCOW/value"
         ]
 
-        true_vals = [0.37203417, 0.39167574, 0.41117995]
+        true_vals = [0.38265415, 0.39908421, 0.41551427]
         d = data[()]
         # print(true_vals, d)
         for i, tv in enumerate(true_vals):
@@ -217,7 +217,7 @@ def test_sweep_run(loop_sweep_setup):
             "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/LCOW/value"
         ]
 
-        true_vals = [0.50886109, 0.52850266, 0.54814424]
+        true_vals = [0.519239, 0.53566907, 0.54814424]
         d = data[()]
         # print(true_vals, d)
         for i, tv in enumerate(true_vals):
@@ -227,10 +227,10 @@ def test_sweep_run(loop_sweep_setup):
         ]
 
         true_vals = [
-            0.3810009713006634,
-            0.3916757385992817,
-            0.3985075912766517,
-            0.4111799488092862,
+            0.3901548266020976,
+            0.3990842091271465,
+            0.4047990139431831,
+            0.41551427457321827,
         ]
         d = data[()]
         # print(true_vals, d)
@@ -241,9 +241,9 @@ def test_sweep_run(loop_sweep_setup):
         ]
 
         true_vals = [
-            0.5178278972844322,
-            0.5285026645830471,
-            0.5353345156541605,
+            0.5267396909076865,
+            0.535669073432733,
+            0.5413838782487631,
             0.5481442364124981,
         ]
         d = data[()]
@@ -272,14 +272,14 @@ def test_sweep_backup(loop_sweep_setup):
             "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/LCOW/value"
         ]
 
-        true_vals = [0.37203417, 0.39167574, 0.41117995]
+        true_vals = [0.38265415, 0.3990842, 0.41551427]
         d = data[()]
         for i, tv in enumerate(true_vals):
             assert d[i] == pytest.approx(tv, rel=1e-2)
         data = h5file[
             "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/LCOW/value"
         ]
-        true_vals = [0.50886109, 0.52850266, 0.54814424]
+        true_vals = [0.519239, 0.53566907, 0.54814424]
         d = data[()]
 
         for i, tv in enumerate(true_vals):
