@@ -183,9 +183,13 @@ class Flash:
         if use_scaling_rigorous:
             if self.optional_properties["prescalingTendenciesRigorous"] == True:
                 new_values = {k: not v for k,v in self.optional_properties.items() if "prescaling" in k}
+            else:
+                return
         else:
             if not self.optional_properties["prescalingTendenciesRigorous"] == True:
                 new_values = {k: not v for k,v in self.optional_properties.items() if "prescaling" in k}
+            else:
+                return
         self.optional_properties.update(new_values)
         
     def build_flash_calculation_input(
@@ -390,13 +394,10 @@ class Flash:
             if tee:
                 print(f"Saving files...")
             t = datetime.utcnow()
-            extracted_basic_properties.to_csv(
-                f"{t.day}{t.month}{t.year}_extracted_basic_properties.csv"
-            )
-            extracted_optional_properties.to_csv(
-                f"{t.day}{t.month}{t.year}_extracted_optional_properties.csv"
-            )
+            file_path = f"{t.day:02}{t.month:02}{t.year:04}_extracted_properties.yaml"
+            with open(file_path, "w") as yamlfile:
+                yaml.dump(extracted_properties, yamlfile)
             if tee:
-                print(f"Extracted property .csv files saved to working directory.")
+                print(f"Extracted properties saved to {file_path}.")
         return extracted_properties
         
