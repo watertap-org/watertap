@@ -17,8 +17,9 @@ __author__ = "Dan Gunter"
 
 # stdlib
 from collections import namedtuple
-from csv import reader
+from csv import reader, writer
 from enum import Enum
+from io import TextIOBase
 try:
     from importlib.resources import files
 except ImportError:
@@ -38,6 +39,7 @@ except ImportError:
 # third-party
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
+from pandas import DataFrame
 from pydantic import BaseModel, validator, Field
 import pyomo.environ as pyo
 
@@ -361,14 +363,18 @@ class FlowsheetExport(BaseModel):
         else:
             caller = inspect.getouterframes(inspect.currentframe())[1]
             caller_mod = inspect.getmodule(caller.frame).__name__
-            caller_pkg = ".".join(caller_mod.split(".")[:-1])  # strip module name off end
-            _log.debug(f"Reading CSV data for interface exports from: "
-                       f"file={path}, module={caller_pkg}")
-            try:
-                text = files(caller_pkg).joinpath(path).read_text()
-            except Exception as err:
-                raise IOError(f"Could not find CSV file '{path}' relative to file "
-                                 f"calling .add() in '{caller_mod}': {err}")
+            if caller_mod == "__main__":  # special case for execution from a script
+                path = Path(caller.filename).parent / file
+                text = open(path, "r", encoding="utf-8").read()
+            else:
+                caller_pkg = ".".join(caller_mod.split(".")[:-1])   # strip module
+                _log.debug(f"Reading CSV data for interface exports from: "
+                           f"file={path}, module={caller_mod}, package={caller_pkg}")
+                try:
+                    text = files(caller_pkg).joinpath(path).read_text()
+                except Exception as err:
+                    raise IOError(f"Could not find CSV file '{path}' relative to file "
+                                     f"calling .add() in '{caller_mod}': {err}")
 
         # process CSV file
         rows = reader(re.split(r"\r?\n", text))
@@ -417,6 +423,65 @@ class FlowsheetExport(BaseModel):
             num += 1
 
         return num
+
+    def to_csv(self, output: Union[TextIOBase, Path, str] = None) -> int:
+        """Write wrapped objects as CSV.
+
+        Args:
+            output: Where to write CSV file. Can be a stream, path, or filename.
+
+        Returns:
+            Number of objects written into file.
+
+        Raises:
+            IOError: If path is given, and not writable
+        """
+        # open file for writing
+        if isinstance(output, TextIOBase):
+            output_file = output
+        else:
+            p = Path(output)
+            output_file = p.open("w")
+
+        # initialize
+        csv_output_file = writer(output_file)
+
+        # write header row
+        obj = next(iter(self.model_objects.values()))
+        values = ["obj", "ui_units"]
+        col_idx_map = {}
+        for i, field_name in enumerate(obj.dict()):
+            # add to mapping of field name to column number
+            col_idx_map[field_name] = i + 2
+            # add column name
+            values.append(field_name)
+        csv_output_file.writerow(values)
+        ncol = len(values)
+
+        # write a row for each object
+        for key, obj in self.model_objects.items():
+            # initialize values list
+            #   first 2 column values are object name and units
+            obj_name = self._massage_object_name(key)
+            units_str = self._massage_ui_units(str(obj.ui_units))
+            values = [obj_name, units_str] + [""] * (ncol - 2)
+            # add columns
+            for field_name, field_value in obj.dict().items():
+                values[col_idx_map[field_name]] = field_value
+            # write row
+            csv_output_file.writerow(values)
+
+    @staticmethod
+    def _massage_object_name(s):
+        s1 = re.sub(r"\[([^]]*)\]", r"['\1']", s)  # quote everything in [brackets]
+        s2 = re.sub(r"\['([0-9.]+)'\]", r"[\1]", s1)  # unquote [0.0] numbers
+        return s2
+
+    @staticmethod
+    def _massage_ui_units(s):
+        if s == "dimensionless":
+            return ""
+        return s
 
     def add_option(self, name: str, **kwargs) -> ModelOption:
         """Add an 'option' to the flowsheet that can be displayed and manipulated
