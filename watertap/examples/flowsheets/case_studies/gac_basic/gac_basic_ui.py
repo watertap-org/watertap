@@ -117,29 +117,29 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     category = "Treated"
     exports.add(
         obj=fs.product.properties[0].flow_vol_phase["Liq"],
-        name="Feed volumetric flow rate",
+        name="Treated water volumetric flow rate",
         ui_units=pyunits.Mgallon / pyunits.day,
         display_units="MGD",
         rounding=rounding,
-        description="Inlet volumetric flow rate",
+        description="Outlet volumetric flow rate",
         is_input=False,
         is_output=True,
         output_category=category,
     )
     exports.add(
         obj=fs.product.properties[0].conc_mass_phase_comp["Liq", solute_name],
-        name="Feed solute concentration",
+        name="Treated water solute concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=rounding,
-        description="Inlet solute concentration",
+        description="Outlet solute concentration",
         is_input=False,
         is_output=True,
         output_category=category,
     )
     # ---------------------------------------------------------------------
     # gac media
-    category = "GAC Media"
+    category = "GAC media"
     exports.add(
         obj=fs.gac.particle_dens_app,
         name="Media apparent density",

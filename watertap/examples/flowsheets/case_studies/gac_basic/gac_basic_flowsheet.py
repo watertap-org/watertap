@@ -46,7 +46,8 @@ def main():
     m = build()
     initialize_model(m)
     res = solve_model(m)
-    m.fs.display()
+    print("solver termination condition:", res.solver.termination_condition)
+    # m.fs.display()
 
     return m, res
 
@@ -85,6 +86,10 @@ def build():
 
     # add flowsheet level blocks
     m.fs.costing.cost_process()
+    treated_flow = m.fs.product.properties[0].flow_vol
+    m.fs.costing.add_annual_water_production(treated_flow)
+    m.fs.costing.add_LCOW(treated_flow)
+    m.fs.costing.add_specific_energy_consumption(treated_flow)
 
     return m
 
@@ -184,6 +189,30 @@ def solve_model(m, solver=None):
     pyo.assert_optimal_termination(res)
 
     return res
+
+
+def _auto_scaling_fixed_var(m):
+
+    for ind in m.fs.feed.properties[0].flow_mol_phase_comp.index_set():
+        var = m.fs.feed.properties[0].flow_mol_phase_comp[ind[0], ind[1]]
+        dsf = 10 ** -math.ceil(math.log10(abs(var.value)))
+        fs = m.fs.feed.flowsheet()
+        fs.properties.set_default_scaling("flow_mol_phase_comp", dsf, index=ind)
+
+    for var in m.fs.gac.component_data_objects(
+        ctype=pyo.Var, active=True, descend_into=False
+    ):
+        if var.fixed:
+            # calculate sf to the inverse fixed value
+            if var.value == 0:
+                sf = 1
+            else:
+                sf = 1 * 10 ** -math.ceil(math.log10(abs(var.value)))
+            # set sf for vars, sf is redundantly set for is_indexed vars
+            if var.parent_component().is_indexed():
+                iscale.set_scaling_factor(var.parent_component(), sf)
+            else:
+                iscale.set_scaling_factor(var, sf)
 
 
 if __name__ == "__main__":
