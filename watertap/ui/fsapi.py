@@ -40,7 +40,6 @@ except ImportError:
 # third-party
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
-from pandas import DataFrame
 from pydantic import BaseModel, validator, Field
 import pyomo.environ as pyo
 
