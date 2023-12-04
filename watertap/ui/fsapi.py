@@ -20,6 +20,7 @@ from collections import namedtuple
 from csv import reader, writer
 from enum import Enum
 from io import TextIOBase
+
 try:
     from importlib.resources import files
 except ImportError:
@@ -357,8 +358,9 @@ class FlowsheetExport(BaseModel):
         # compute path
         path = Path(file) if not isinstance(file, Path) else file
         if path.is_absolute():
-            _log.debug(f"Reading CSV data for interface exports from "
-                       f"absolute path: {path}")
+            _log.debug(
+                f"Reading CSV data for interface exports from " f"absolute path: {path}"
+            )
             text = open(path, "r", encoding="utf-8").read()
         else:
             caller = inspect.getouterframes(inspect.currentframe())[1]
@@ -367,14 +369,18 @@ class FlowsheetExport(BaseModel):
                 path = Path(caller.filename).parent / file
                 text = open(path, "r", encoding="utf-8").read()
             else:
-                caller_pkg = ".".join(caller_mod.split(".")[:-1])   # strip module
-                _log.debug(f"Reading CSV data for interface exports from: "
-                           f"file={path}, module={caller_mod}, package={caller_pkg}")
+                caller_pkg = ".".join(caller_mod.split(".")[:-1])  # strip module
+                _log.debug(
+                    f"Reading CSV data for interface exports from: "
+                    f"file={path}, module={caller_mod}, package={caller_pkg}"
+                )
                 try:
                     text = files(caller_pkg).joinpath(path).read_text()
                 except Exception as err:
-                    raise IOError(f"Could not find CSV file '{path}' relative to file "
-                                     f"calling .add() in '{caller_mod}': {err}")
+                    raise IOError(
+                        f"Could not find CSV file '{path}' relative to file "
+                        f"calling .add() in '{caller_mod}': {err}"
+                    )
 
         # process CSV file
         rows = reader(re.split(r"\r?\n", text))
@@ -383,8 +389,9 @@ class FlowsheetExport(BaseModel):
         header = [s.strip().lower() for s in raw_header]
         for req in "name", "obj", "ui_units":
             if req not in header:
-                raise ValueError(f"Bad CSV header: '{req}' column is required. data="
-                                 f"{header}")
+                raise ValueError(
+                    f"Bad CSV header: '{req}' column is required. data=" f"{header}"
+                )
         num = 0
         for row in rows:
             if len(row) == 0:
@@ -414,10 +421,12 @@ class FlowsheetExport(BaseModel):
                     elif v == "false":
                         data[k] = False
                     else:
-                        raise ValueError(f"Bad value '{data[k]}' "
-                                         f"for boolean argument '{k}': "
-                                         f"must be 'true' or 'false' "
-                                         f"(case-insensitive)")
+                        raise ValueError(
+                            f"Bad value '{data[k]}' "
+                            f"for boolean argument '{k}': "
+                            f"must be 'true' or 'false' "
+                            f"(case-insensitive)"
+                        )
             # add parsed export
             self.add(data=data)
             num += 1

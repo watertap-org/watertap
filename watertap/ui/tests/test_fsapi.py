@@ -150,7 +150,7 @@ def test_build():
         "model_export_arg",
         "model_export_data_kwarg",
         "model_export_dict_data_kwarg",
-        "csv"
+        "csv",
     ],
 )
 @pytest.mark.unit
@@ -211,9 +211,7 @@ def test_actions(add_variant: str):
 def test_csv_exports():
     for export_func in (csv_from_tempfile, csv_from_localfile):
         fsi = fsapi.FlowsheetInterface(
-            do_build=build_ro,
-            do_solve=solve_ro,
-            do_export=export_func
+            do_build=build_ro, do_solve=solve_ro, do_export=export_func
         )
         fsi.build()
 
@@ -237,7 +235,7 @@ def csv_from_localfile(exports=None, flowsheet=None, **kw):
 def _populate_csv_exports(f):
     rows = [
         "name,obj,description,ui_units,display_units,rounding,is_input,input_category,is_output,output_category",
-        "feed,fs.feed.flow_vol[0],feed flow volume,units.m**3/units.s,m^3/s,3,TRUE,something,FALSE,"
+        "feed,fs.feed.flow_vol[0],feed flow volume,units.m**3/units.s,m^3/s,3,TRUE,something,FALSE,",
     ]
     for row in rows:
         f.write(row)
@@ -368,4 +366,3 @@ def test_has_version():
     d = fsi.dict()
     assert "version" in d
     assert d["version"] > 0
-
