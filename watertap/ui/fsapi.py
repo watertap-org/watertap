@@ -363,7 +363,7 @@ class FlowsheetExport(BaseModel):
         else:
             caller = inspect.getouterframes(inspect.currentframe())[1]
             caller_mod = inspect.getmodule(caller.frame).__name__
-            if caller_mod == "__main__":  # special case for execution from a script
+            if "." not in caller_mod:  # not in a package
                 path = Path(caller.filename).parent / file
                 text = open(path, "r", encoding="utf-8").read()
             else:
