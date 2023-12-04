@@ -584,6 +584,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change,
         )
+        # den_mass and visc_d in diluate and concentrate channels are the same
         add_object_reference(
             self, "dens_mass", self.diluate.properties_in[0].dens_mass_phase["Liq"]
         )
@@ -1723,7 +1724,12 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.meter**2 * pyunits.second**-1,
             doc="The mass diffusivity of the solute as molecules (not individual ions)",
         )
-        self.hydraulic_diameter = Var(initialize=1e-3, units=pyunits.meter)
+        self.hydraulic_diameter = Var(
+            initialize=1e-3,
+            bounds=(0, None),
+            units=pyunits.meter,
+            doc="The hydraulic diameter of the channel",
+        )
         self.N_Re = Var(
             initialize=50,
             bounds=(0, None),

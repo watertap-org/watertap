@@ -1766,7 +1766,12 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.meter**2 * pyunits.second**-1,
             doc="The mass diffusivity of the solute as molecules (not individual ions)",
         )
-        self.hydraulic_diameter = Var(initialize=1e-3, units=pyunits.meter)
+        self.hydraulic_diameter = Var(
+            initialize=1e-3,
+            bounds=(0, None),
+            units=pyunits.meter,
+            doc="The hydraulic diameter of the channel",
+        )
         self.N_Re = Var(
             initialize=50,
             bounds=(0, None),
