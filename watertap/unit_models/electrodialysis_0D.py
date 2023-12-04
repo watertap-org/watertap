@@ -1214,21 +1214,15 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     self.config.limiting_current_density_data
                     * pyunits.amp
                     * pyunits.meter**-2
+                    / sum(
+                        self.diluate.properties_in[t].conc_mol_phase_comp["Liq", j]
+                        for j in self.cation_set
+                    )
                     * 0.5
                     * sum(
                         self.diluate.properties_in[t].conc_mol_phase_comp["Liq", j]
                         + self.diluate.properties_out[t].conc_mol_phase_comp["Liq", j]
                         for j in self.cation_set
-                    )
-                    / (
-                        0.5
-                        * sum(
-                            self.diluate.properties_in[0].conc_mol_phase_comp["Liq", j]
-                            + self.diluate.properties_out[0].conc_mol_phase_comp[
-                                "Liq", j
-                            ]
-                            for j in self.cation_set
-                        )
                     )
                 )
             elif (
