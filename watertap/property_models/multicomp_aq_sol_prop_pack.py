@@ -1557,7 +1557,6 @@ class MCASStateBlockData(StateBlockData):
             self.params.solute_set,
             initialize=0.7,
             domain=NonNegativeReals,
-            bounds=(0, 1.001),
             units=pyunits.dimensionless,
             doc="activity coefficient of component",
         )
