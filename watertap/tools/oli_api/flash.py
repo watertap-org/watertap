@@ -75,7 +75,7 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
 class Flash:
     """
     A class to execute OLI Cloud flash calculations, replacing and augmenting WaterAnalysis class functionality.
-    
+
     :param water_analysis_properties: dictionary containing pre-built water analysis input template blocks
     :param optional_properties: dictionary containing pre-configured optional properties to attach to OLI calls (defaults to True for all properties)
     :param input_unit_set: dictionary containing conversions between OLI and Pyomo unit names
@@ -98,7 +98,7 @@ class Flash:
         self.output_unit_set = output_unit_set
         self.stream_output_options = stream_output_options
         self.water_analysis_input_list = []
-    
+
     # TODO: consider using yaml/json to contain surveys instead of DataFrame
     def build_survey(self, survey_arrays, get_oli_names=False, tee=False):
         """
@@ -182,31 +182,38 @@ class Flash:
         return converted_value, to_units["oli_unit"]
 
     def _set_prescaling_calculation_mode(self, use_scaling_rigorous):
-        """
-        """
+        """ """
         if use_scaling_rigorous:
             if self.optional_properties["prescalingTendenciesRigorous"] == True:
-                new_values = {k: not v for k,v in self.optional_properties.items() if "prescaling" in k}
+                new_values = {
+                    k: not v
+                    for k, v in self.optional_properties.items()
+                    if "prescaling" in k
+                }
             else:
                 return
         else:
             if not self.optional_properties["prescalingTendenciesRigorous"] == True:
-                new_values = {k: not v for k,v in self.optional_properties.items() if "prescaling" in k}
+                new_values = {
+                    k: not v
+                    for k, v in self.optional_properties.items()
+                    if "prescaling" in k
+                }
             else:
                 return
         self.optional_properties.update(new_values)
-        
+
     def build_flash_calculation_input(
         self, state_vars, method, water_analysis_output=None, use_scaling_rigorous=True
     ):
         """
         Builds a base dictionary required for OLI flash analysis.
-        
+
         :param state_vars: dictionary containing solutes, temperatures, pressure, and units
         :param method: string name of OLI flash method to use
         :water_analysis_output: dictionary to extract inflows from (required if not wateranalysis flash)
         :use_scaling_rigorous: boolean switch to use estimated or rigorous solving for prescaling metrics
-        
+
         :return inputs: dictionary containing inputs for specified OLI flash analysis
         """
 
@@ -233,7 +240,7 @@ class Flash:
                 },
                 "inflows": self.extract_inflows(water_analysis_output),
             }
-            
+
         self._set_prescaling_calculation_mode(use_scaling_rigorous)
         inputs["params"].update({"optionalProperties": dict(self.optional_properties)})
         inputs["params"].update({"unitSetInfo": dict(self.output_unit_set)})
@@ -242,11 +249,11 @@ class Flash:
     def extract_inflows(self, water_analysis_output):
         """
         Extract molecular concentrations from OLI flash output.
-        
+
         :param water_analysis_output: stream output from OLI flash calculation
         :return: dictionary containing molecular concentrations
         """
-        
+
         return water_analysis_output["result"]["total"]["molecularConcentration"]
 
     # TODO: consider enabling parallel flash
@@ -357,7 +364,7 @@ class Flash:
         if tee:
             print(f"{file_path} saved to working directory.")
         return file_path
-        
+
     def extract_properties(self, raw_result, properties, filter_zero=True, write=False):
         """
         Extracts properties from OLI Cloud flash calculation output stream.
@@ -369,18 +376,18 @@ class Flash:
 
         :return extracted_properties: dictionary containing values for specified properties
         """
-        
+
         def _filter_zeroes(data, filter_zero):
             if "values" in data:
                 if filter_zero:
-                    data["values"] = {k:v for k,v in data["values"].items() if v != 0}
+                    data["values"] = {k: v for k, v in data["values"].items() if v != 0}
             return data
-        
+
         def _get_nested_phase_keys(phase, group):
             keys = ["phases", phase] if phase != "total" else ["total"]
             keys.extend(["properties", prop] if group == "properties" else [prop])
             return keys
-        
+
         def _get_nested_data(data, keys):
             for key in keys:
                 data = data[key]
@@ -392,7 +399,11 @@ class Flash:
             root_path = [i, "result"]
             for prop in properties:
                 base_result = _get_nested_data(raw_result, root_path)
-                phases = [k for k in base_result["phases"].keys() if prop in base_result["phases"][k]]
+                phases = [
+                    k
+                    for k in base_result["phases"].keys()
+                    if prop in base_result["phases"][k]
+                ]
                 if prop in base_result["total"]:
                     phases.append("total")
                 options = self.stream_output_options
@@ -402,14 +413,18 @@ class Flash:
                         for phase in phases:
                             deep_path = deepcopy(root_path)
                             deep_path.extend(_get_nested_phase_keys(phase, group))
-                            result = _filter_zeroes(_get_nested_data(raw_result, deep_path), filter_zero)
+                            result = _filter_zeroes(
+                                _get_nested_data(raw_result, deep_path), filter_zero
+                            )
                             extracted_properties[i][f"{prop}_{phase}"] = result
                     if group in ["additionalProperties", "waterAnalysisOutput"]:
                         deep_path = deepcopy(root_path)
                         deep_path.extend([group, prop])
-                        result = _filter_zeroes(_get_nested_data(raw_result, deep_path), filter_zero)
+                        result = _filter_zeroes(
+                            _get_nested_data(raw_result, deep_path), filter_zero
+                        )
                         extracted_properties[i][prop] = result
-        if write:            
+        if write:
             file_name = "extracted_properties.yaml"
             self.write_output_to_yaml(extracted_properties, file_name)
         return extracted_properties

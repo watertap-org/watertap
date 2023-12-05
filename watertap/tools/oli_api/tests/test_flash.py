@@ -57,10 +57,12 @@ from watertap.tools.oli_api.credentials import (
     cryptography_available,
 )
 
+
 @pytest.fixture
 def flash_instance():
     flash = Flash()
     yield flash
+
 
 @pytest.fixture
 def source_water():
@@ -84,19 +86,21 @@ def source_water():
         },
     }
 
+
 @pytest.fixture
 def oliapi_instance(source_water):
-    
     def _cleanup(file_list, file_path):
-        new_files = [f"{file_path}/{f}" for f in listdir(file_path) if f not in file_list]
+        new_files = [
+            f"{file_path}/{f}" for f in listdir(file_path) if f not in file_list
+        ]
         for f in new_files:
             remove(f)
-            
+
     root_dir = Path(__file__).parents[1]
     test_dir = Path(__file__).parents[0]
     root_contents = listdir(root_dir)
     test_contents = listdir(test_dir)
-    
+
     if not cryptography_available:
         pytest.skip(reason="cryptography module not available.")
     credentials = {
@@ -109,13 +113,16 @@ def oliapi_instance(source_water):
         credential_manager = CredentialManager(**credentials, test=True)
         credential_manager.login()
         with OLIApi(credential_manager, test=True) as oliapi:
-            oliapi.get_dbs_file_id(source_water["components"], ["liquid1", "solid"], "test")
+            oliapi.get_dbs_file_id(
+                source_water["components"], ["liquid1", "solid"], "test"
+            )
             yield oliapi
     except:
         pytest.xfail("Unable to test OLI logins.")
-    
+
     _cleanup(root_contents, root_dir)
     _cleanup(test_contents, test_dir)
+
 
 @pytest.mark.unit
 def test_flash_calc_basic_workflow(flash_instance, source_water, oliapi_instance):
@@ -156,7 +163,8 @@ def test_flash_calc_basic_workflow(flash_instance, source_water, oliapi_instance
         filter_zero=True,
         write=True,
     )
-    
+
+
 @pytest.mark.unit
 def test_survey(flash_instance, source_water, oliapi_instance):
     dbs_file_id = oliapi_instance.session_dbs_files[0]

@@ -14,21 +14,23 @@
 import pytest
 
 from watertap.tools.oli_api.util.fixed_keys_dict import (
-    default_oli_input_dict,
-    default_oli_optional_properties,
-    default_oli_unit_set_info,
+    input_unit_set,
+    water_analysis_properties,
+    optional_properties,
+    output_unit_set,
+    stream_output_options,
 )
 
 
 @pytest.mark.unit
 def test_fixed_keys_dict():
     with pytest.raises(RuntimeError):
-        default_oli_input_dict["invalid_key"] = "value"
+        output_unit_set["invalid_key"] = "value"
 
     with pytest.raises(Exception):
-        del default_oli_input_dict["any_key"]
+        del output_unit_set["any_key"]
 
     with pytest.raises(RuntimeError):
-        default_oli_input_dict._check_value("temperature_unit", ["not_K"])
+        output_unit_set._check_value("mass", ["not_kg"])
 
-    default_oli_input_dict.pprint()
+    output_unit_set.pprint()
