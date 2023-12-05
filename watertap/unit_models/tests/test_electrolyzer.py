@@ -68,6 +68,7 @@ class TestElectrolyzer:
                 "OH-": 0.017007,
             },
             charge={"NA+": 1, "CL-": -1, "OH-": -1},
+            ignore_neutral_charge=True,
         )
 
         m.fs.unit = Electrolyzer(
