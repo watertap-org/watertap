@@ -18,7 +18,12 @@ from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
     get_oli_names,
     oli_reverse_lookup,
     names_db,
+    get_charge,
+    get_molar_mass,
+    get_molar_mass_quantity,
 )
+from pyomo.environ import units as pyunits, value
+from pyomo.util.check_units import assert_units_equivalent
 
 
 @pytest.mark.parametrize(
@@ -48,11 +53,57 @@ def test_case_exception():
     )
 
 
+@pytest.mark.unit
 def test_charge_exception():
     with pytest.raises(IOError) as excinfo:
         val = "Na_2#"
         watertap_to_oli(val)
     assert str(excinfo.value) == " Only + and - are valid charge indicators."
+
+
+@pytest.mark.unit
+def test_get_charge():
+    z = {
+        "NaCl": 0,
+        "Na_+": 1,
+        "Cl_-": -1,
+        "Ca_2+": 2,
+        "SO4_2-": -2,
+    }
+    for solute_name, charge_value in z.items():
+        assert get_charge(solute_name) == charge_value
+
+
+@pytest.mark.unit
+def test_get_mw():
+    z = {
+        "NaCl": 58.44,
+        "Na_+": 22.99,
+        "Cl_-": 35.45,
+        "Ca_2+": 40.08,
+        "SO4_2-": 96.066,
+    }
+    for solute_name, mw_value in z.items():
+        assert get_molar_mass(solute_name) == mw_value
+
+
+@pytest.mark.unit
+def test_get_mw_quantity():
+    z = {
+        "NaCl": 58.44,
+        "Na_+": 22.99,
+        "Cl_-": 35.45,
+        "Ca_2+": 40.08,
+        "SO4_2-": 96.066,
+    }
+    for solute_name, mw_value in z.items():
+        result = get_molar_mass_quantity(solute_name)
+        assert value(result) == mw_value / 1000
+        assert_units_equivalent(result, pyunits.kg / pyunits.mol)
+
+        result2 = get_molar_mass_quantity(solute_name, units=pyunits.g / pyunits.mol)
+        assert value(result2) == mw_value
+        assert_units_equivalent(result2, pyunits.g / pyunits.mol)
 
 
 @pytest.mark.unit

@@ -1462,6 +1462,7 @@ def test_solute_list_errormsg():
             solute_list=["H2O", "Na_+", "Cl_-", "N"],
             mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
             charge={"Na_+": 1, "Cl_-": -1},
+            ignore_neutral_charge=True,
         )
 
 

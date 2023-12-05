@@ -78,6 +78,10 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
+from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
+    get_charge,
+    get_molar_mass,
+)
 
 __author__ = "Adam Atia, Xiangyu Bi, Hunter Barber, Kurban Sitterley"
 # Set up logger
@@ -362,6 +366,24 @@ class MCASParameterData(PhysicalParameterBlock):
             raise ConfigurationError(
                 "The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings)."
             )
+        if self.config.ignore_neutral_charge:
+            # The "advanced" user can set ignore_neutral_charge = True to avoid having to provide charge=0 for neutral solutes, assuming they are aware of risks of supplying incorrect charge data mistakenly.
+            # Thus, we will not raise any exceptions and will just pass.
+            pass
+        else:
+            # ignore_neutral_charge = False by default to be more strict and safeguard the "new" user from unintentionally omitting charge data for ions.
+            if not len(self.config.charge):
+                raise ConfigurationError(
+                    "The charge argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated charge as keys and values, respectively."
+                )
+            missing_charge = []
+            for i in self.config.solute_list:
+                if i not in self.config.charge.keys():
+                    missing_charge.append(i)
+            if len(missing_charge) > 0:
+                raise ConfigurationError(
+                    f"Charge data was not provided for {', '.join(charge for charge in missing_charge)}. Provide the missing charge data to the charge argument."
+                )
         # Group components into different sets
         for j in self.config.solute_list:
             if j == "H2O":
@@ -394,29 +416,6 @@ class MCASParameterData(PhysicalParameterBlock):
                     self.neutral_set.add(j)
                 else:
                     pass
-        if self.config.ignore_neutral_charge:
-            # The "advanced" user can set ignore_neutral_charge = True to avoid having to provide charge=0 for neutral solutes, assuming they are aware of risks of supplying incorrect charge data mistakenly.
-            # Thus, we will not raise any exceptions and will just pass.
-            pass
-        else:
-            # ignore_neutral_charge = False by default to be more strict and safeguard the "new" user from unintentionally omitting charge data for ions.
-            if not len(self.config.charge):
-                raise ConfigurationError(
-                    "The charge argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated charge as keys and values, respectively."
-                )
-            missing_charge = []
-            for i in self.config.solute_list:
-                if i not in self.config.charge.keys():
-                    missing_charge.append(i)
-            if len(missing_charge) > 0:
-                raise ConfigurationError(
-                    f"Charge data was not provided for {', '.join(charge for charge in missing_charge)}. Provide the missing charge data to the charge argument."
-                )
-
-        # if len(self.neutral_set) > 0 and not len(self.ion_set):
-        #     _log.warning(
-        #         "Since the charge argument was not provided for any solutes while instantiating the MCAS property model, all solutes are assumed to be neutral and have no charge. If any ions exist in solute_list, make sure to provide charge data to avoid erroneous property calculations."
-        #     )
 
         # Check for molecular weight data
         if not len(self.config.mw_data):
@@ -1654,7 +1653,7 @@ class MCASStateBlockData(StateBlockData):
         def rule_pressure_osm_phase(b, p):
             return (
                 b.pressure_osm_phase[p]
-                == sum(b.conc_mol_phase_comp[p, j] for j in self.params.solute_set)
+                == sum(b.conc_mol_phase_comp[p, j] for j in b.params.solute_set)
                 * Constants.gas_constant
                 * b.temperature
             )

@@ -26,6 +26,8 @@ from re import findall
 from pathlib import Path
 from os.path import join
 from pandas import read_csv
+from pyomo.environ import units as pyunits
+from typing import Optional
 
 # TODO: maybe replace some functionality with molmass: https://pypi.org/project/molmass
 
@@ -179,6 +181,23 @@ def get_molar_mass(watertap_name: str) -> float:
         )
         molar_mass += element_counts[element] * atomic_mass
     return molar_mass
+
+
+def get_molar_mass_quantity(watertap_name: str, units=pyunits.kg / pyunits.mol):
+    """
+    Extracts atomic weight data from a periodic table file
+    to generate the molar mass of a chemical substance in pint units.
+    Since get_molar_mass returns only the value, which has inherent units of g/mol,
+    this function converts to kg/mol by default, the units used for molecular weight by convention in WaterTAP.
+
+    :param watertap_name: string name of a solute in WaterTAP format
+
+    :return desired_quantity: molar mass of solute in pint units. Conversion from g/mol to kg/mol by default.
+    """
+    molar_mass_value = get_molar_mass(watertap_name)
+    inherent_quantity = molar_mass_value * pyunits.g / pyunits.mol
+    desired_quantity = pyunits.convert(inherent_quantity, to_units=units)
+    return desired_quantity
 
 
 def get_oli_names(source: dict):
