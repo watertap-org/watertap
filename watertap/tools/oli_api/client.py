@@ -293,6 +293,7 @@ class OLIApi:
             for dbs_file_id in dbs_file_ids:
                 self._delete_dbs_file(dbs_file_id)
 
+    # TODO: consider adding r as input to run more of the code during tests (e.g., r = 'y')
     def _delete_permission(self, dbs_file_ids):
         """
         Ensures user permits deletion of specified files.

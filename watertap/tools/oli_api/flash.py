@@ -45,6 +45,8 @@
 __author__ = "Oluwamayowa Amusat, Paul Vecchiarelli"
 
 import yaml
+from os.path import join
+from pathlib import Path
 from copy import deepcopy
 from itertools import product
 from datetime import datetime
@@ -180,6 +182,8 @@ class Flash:
         return converted_value, to_units["oli_unit"]
 
     def _set_prescaling_calculation_mode(self, use_scaling_rigorous):
+        """
+        """
         if use_scaling_rigorous:
             if self.optional_properties["prescalingTendenciesRigorous"] == True:
                 new_values = {k: not v for k,v in self.optional_properties.items() if "prescaling" in k}
@@ -195,7 +199,16 @@ class Flash:
     def build_flash_calculation_input(
         self, state_vars, method, water_analysis_output=None, use_scaling_rigorous=True
     ):
-        """ """
+        """
+        Builds a base dictionary required for OLI flash analysis.
+        
+        :param state_vars: dictionary containing solutes, temperatures, pressure, and units
+        :param method: string name of OLI flash method to use
+        :water_analysis_output: dictionary to extract inflows from (required if not wateranalysis flash)
+        :use_scaling_rigorous: boolean switch to use estimated or rigorous solving for prescaling metrics
+        
+        :return inputs: dictionary containing inputs for specified OLI flash analysis
+        """
 
         inputs = {"params": {}}
 
@@ -228,6 +241,10 @@ class Flash:
 
     def extract_inflows(self, water_analysis_output):
         """
+        Extract molecular concentrations from OLI flash output.
+        
+        :param water_analysis_output: stream output from OLI flash calculation
+        :return: dictionary containing molecular concentrations
         """
         
         return water_analysis_output["result"]["total"]["molecularConcentration"]
@@ -272,11 +289,8 @@ class Flash:
             suffix = "single_point"
 
         if write:
-            t = datetime.utcnow()
-            self.write_output_to_yaml(
-                result,
-                filename=f"{t.day:02}{t.month:02}{t.year:04}_{flash_method}_{suffix}",
-            )
+            file_name = f"{flash_method}_{suffix}"
+            self.write_output_to_yaml(result, file_name)
         return result
 
     def modify_inputs(self, initial_flash_input, survey, flash_method):
@@ -320,7 +334,7 @@ class Flash:
             clones[clone_index] = modified_clone
         return clones
 
-    def write_output_to_yaml(self, flash_output, filename=None, tee=True):
+    def write_output_to_yaml(self, flash_output, file_name, tee=True):
         """
         Writes OLI API flash output to .yaml file.
 
@@ -330,26 +344,30 @@ class Flash:
         :return file_path: string name of file written
         """
 
+        t = datetime.utcnow()
+        file_path = join(
+            Path(__file__).parents[0],
+            f"{t.day:02}{t.month:02}{t.year:04}_{file_name}.yaml",
+        )
+
         if tee:
             print(f"Saving file...")
-        if filename is None:
-            filename = "oli_results"
-        with open(f"{filename}.yaml", "w") as yamlfile:
+        with open(file_path, "w") as yamlfile:
             yaml.dump(flash_output, yamlfile)
-        file_path = f"{filename}.yaml"
         if tee:
             print(f"{file_path} saved to working directory.")
         return file_path
         
-    def extract_properties(self, raw_result, properties, filter_zero=True, tee=False, write=False):
+    def extract_properties(self, raw_result, properties, filter_zero=True, write=False):
         """
         Extracts properties from OLI Cloud flash calculation output stream.
 
         :param raw_result: dictionary containing raw data to extract from
         :param properties: dictionary containing properties for use in extraction
+        :param filter_zero: boolean switch to remove zero values from extracted properties
+        :param write: boolean switch to write extracted properties to yaml
 
-        :return extracted_basic_properties: copy of DataFrame containing values for specified basic properties
-        :return extracted_optional_properties: DataFrame containing values for specified optional properties
+        :return extracted_properties: dictionary containing values for specified properties
         """
         
         def _filter_zeroes(data, filter_zero):
@@ -377,7 +395,8 @@ class Flash:
                 phases = [k for k in base_result["phases"].keys() if prop in base_result["phases"][k]]
                 if prop in base_result["total"]:
                     phases.append("total")
-                prop_groups = [k for k in self.stream_output_options if prop in self.stream_output_options[k]]
+                options = self.stream_output_options
+                prop_groups = [k for k in options if prop in options[k]]
                 for group in prop_groups:
                     if group in ["result", "properties"]:
                         for phase in phases:
@@ -390,14 +409,7 @@ class Flash:
                         deep_path.extend([group, prop])
                         result = _filter_zeroes(_get_nested_data(raw_result, deep_path), filter_zero)
                         extracted_properties[i][prop] = result
-        if write:
-            if tee:
-                print(f"Saving files...")
-            t = datetime.utcnow()
-            file_path = f"{t.day:02}{t.month:02}{t.year:04}_extracted_properties.yaml"
-            with open(file_path, "w") as yamlfile:
-                yaml.dump(extracted_properties, yamlfile)
-            if tee:
-                print(f"Extracted properties saved to {file_path}.")
+        if write:            
+            file_name = "extracted_properties.yaml"
+            self.write_output_to_yaml(extracted_properties, file_name)
         return extracted_properties
-        
