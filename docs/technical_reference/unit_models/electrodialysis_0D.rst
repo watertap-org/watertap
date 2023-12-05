@@ -235,6 +235,7 @@ Some other modifications to previously defined equations are made to accommodate
 
  :sup:`1` :math:`\phi_m, \phi_d^{ohm}` or  :math:`\phi_d^{nonohm}` takes 0 if its corresponding configuration is turned off (`value == False`).
 
+
 Frictional pressure drop
 ^^^^^^^^^^^^^^^^^^^^^^^^
 This model can optionally calculate pressured drops along the flow path in the diluate and concentrate channels through config ``has_pressure_change`` and ``pressure_drop_method``.  Under the assumption of identical diluate and concentrate channels and starting flow rates, the flow velocities in the two channels are approximated equal and invariant over the channel length when calculating the frictional pressure drops. This approximation is based on the evaluation that the actual velocity variation over the channel length caused by water mass transfer across the consecutive channels leads to negligible errors as compared to the uncertainties carried by the frictional pressure method itself. **Table 7** gives essential equations to simulate the pressure drop. Among extensive literatures using these equations, a good reference paper is by Wright et. al., 2018 (*References*).
@@ -331,6 +332,7 @@ Electrodialysis for water desalination: A critical assessment of recent developm
 fundamentals, models and applications. Desalination, 434, 121-160.
 
 Spiegler, K. S. (1971). Polarization at ion exchange membrane-solution interfaces. Desalination, 9(4), 367-385.
+
 Wright, N. C., Shah, S. R., & Amrose, S. E. (2018).
 A robust model of brackish water electrodialysis desalination with experimental comparison at different size scales.
 Desalination, 443, 27-43.
