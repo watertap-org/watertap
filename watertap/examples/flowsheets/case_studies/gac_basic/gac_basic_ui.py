@@ -38,6 +38,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     """
     fs = flowsheet
     rounding = 3
+    sci_not_rounding = 20
     solute_name = "solute"
 
     # input data
@@ -46,55 +47,57 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     category = "Feed"
     exports.add(
         obj=fs.feed.properties[0].temperature,
-        name="Feed temperature",
+        name="Temperature",
         ui_units=pyunits.kelvin,
         display_units="K",
         rounding=rounding,
-        description="Inlet temperature",
+        description="Feed temperature",
         is_input=True,
         input_category=category,
-        is_output=False,
+        is_output=True,
+        output_category=category,
     )
     exports.add(
         obj=fs.feed.properties[0].pressure,
-        name="Feed pressure",
+        name="Pressure",
         ui_units=pyunits.bar,
         display_units="bar",
         rounding=rounding,
-        description="Inlet pressure",
+        description="Feed pressure",
         is_input=True,
         input_category=category,
-        is_output=False,
+        is_output=True,
+        output_category=category,
     )
     exports.add(
         obj=fs.feed.properties[0].flow_vol_phase["Liq"],
-        name="Feed volumetric flow rate",
+        name="Volumetric flow rate",
         ui_units=pyunits.Mgallon / pyunits.day,
         display_units="MGD",
         rounding=rounding,
-        description="Inlet volumetric flow rate",
+        description="Feed volumetric flow rate",
         is_input=False,
         is_output=True,
         output_category=category,
     )
     exports.add(
         obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", solute_name],
-        name="Feed solute concentration",
+        name="Solute concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=rounding,
-        description="Inlet solute concentration",
+        description="Feed solute concentration",
         is_input=False,
         is_output=True,
         output_category=category,
     )
     exports.add(
         obj=fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"],
-        name="Feed water molar flow rate",
+        name="Molar flow rate water",
         ui_units=pyunits.mol / pyunits.s,
         display_units="mol/s",
         rounding=rounding,
-        description="Inlet water molar flow rate",
+        description="Feed molar flow rate of water",
         is_input=True,
         input_category=category,
         is_output=True,
@@ -102,11 +105,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].flow_mol_phase_comp["Liq", solute_name],
-        name="Feed solute molar flow rate",
+        name="Molar flow rate solute",
         ui_units=pyunits.mol / pyunits.s,
         display_units="mol/s",
         rounding=rounding,
-        description="Inlet solute molar flow rate",
+        description="Feed molar flow rate of solute",
         is_input=True,
         input_category=category,
         is_output=True,
@@ -114,76 +117,116 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # ---------------------------------------------------------------------
     # product conditions
-    category = "Treated"
+    category = "Product"
+    exports.add(
+        obj=fs.product.properties[0].temperature,
+        name="Temperature",
+        ui_units=pyunits.kelvin,
+        display_units="K",
+        rounding=rounding,
+        description="Product temperature",
+        is_input=False,
+        is_output=True,
+        output_category=category,
+    )
+    exports.add(
+        obj=fs.product.properties[0].pressure,
+        name="Pressure",
+        ui_units=pyunits.bar,
+        display_units="bar",
+        rounding=rounding,
+        description="Product pressure",
+        is_input=False,
+        is_output=True,
+        output_category=category,
+    )
     exports.add(
         obj=fs.product.properties[0].flow_vol_phase["Liq"],
-        name="Treated water volumetric flow rate",
+        name="Volumetric flow rate",
         ui_units=pyunits.Mgallon / pyunits.day,
         display_units="MGD",
         rounding=rounding,
-        description="Outlet volumetric flow rate",
+        description="Product volumetric flow rate",
         is_input=False,
         is_output=True,
         output_category=category,
     )
     exports.add(
         obj=fs.product.properties[0].conc_mass_phase_comp["Liq", solute_name],
-        name="Treated water solute concentration",
+        name="Solute concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=rounding,
-        description="Outlet solute concentration",
+        description="Product solute concentration",
+        is_input=False,
+        is_output=True,
+        output_category=category,
+    )
+    exports.add(
+        obj=fs.product.properties[0].flow_mol_phase_comp["Liq", "H2O"],
+        name="Molar flow rate water",
+        ui_units=pyunits.mol / pyunits.s,
+        display_units="mol/s",
+        rounding=rounding,
+        description="Product molar flow rate of water",
+        is_input=False,
+        is_output=True,
+        output_category=category,
+    )
+    exports.add(
+        obj=fs.product.properties[0].flow_mol_phase_comp["Liq", solute_name],
+        name="Molar flow rate solute",
+        ui_units=pyunits.mol / pyunits.s,
+        display_units="mol/s",
+        rounding=rounding,
+        description="Product molar flow rate of solute",
         is_input=False,
         is_output=True,
         output_category=category,
     )
     # ---------------------------------------------------------------------
     # gac media
-    category = "GAC media"
+    category = "GAC media properties"
     exports.add(
         obj=fs.gac.particle_dens_app,
-        name="Media apparent density",
+        name="Apparent density",
         ui_units=pyunits.kg * pyunits.m**-3,
         display_units="kg/m3",
         rounding=rounding,
         description="Apparent density of the GAC media",
         is_input=True,
         input_category=category,
-        is_output=True,
-        output_category=category,
+        is_output=False,
     )
     exports.add(
         obj=fs.gac.particle_dens_bulk,
-        name="Media bulk density in the bed",
+        name="Bulk density",
         ui_units=pyunits.kg * pyunits.m**-3,
         display_units="kg/m3",
         rounding=rounding,
-        description="Media bulk density in the bed",
-        is_input=True,
-        input_category=category,
-        is_output=True,
-        output_category=category,
+        description="Bulk density of the GAC media in the bed",
+        is_input=False,
+        is_output=False,
     )
     exports.add(
         obj=fs.gac.particle_dia,
-        name="Media particle diameter",
+        name="Particle diameter",
         ui_units=pyunits.mm,
         display_units="mm",
         rounding=rounding,
         description="Particle diameter of the GAC media",
         is_input=True,
         input_category=category,
-        is_output=True,
-        output_category=category,
+        is_output=False,
     )
     # ---------------------------------------------------------------------
     # adsorption parameters
     category = "Adsorption parameters"
     exports.add(
         obj=fs.gac.freund_k,
-        name="Freundlich isotherm parameter k",
+        name="Freundlich k",
         ui_units=pyunits.dimensionless,
-        display_units="(m3/kg)**(1/n)",
+        display_units="(m3/kg)(1/n)",
         rounding=rounding,
         description="Freundlich isotherm parameter k",
         is_input=True,
@@ -192,9 +235,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.freund_ninv,
-        name="Freundlich isotherm parameter 1/n",
+        name="Freundlich 1/n",
         ui_units=pyunits.dimensionless,
-        display_units="",
+        display_units="-",
         rounding=rounding,
         description="Freundlich isotherm parameter 1/n",
         is_input=True,
@@ -206,7 +249,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         name="Surface diffusion coefficient",
         ui_units=pyunits.m**2 * pyunits.s**-1,
         display_units="m2/s",
-        rounding=rounding,
+        rounding=sci_not_rounding,
         description="Surface diffusion coefficient",
         is_input=True,
         input_category=category,
@@ -217,7 +260,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         name="Film transfer coefficient",
         ui_units=pyunits.m * pyunits.s**-1,
         display_units="m/s",
-        rounding=rounding,
+        rounding=sci_not_rounding,
         description="Liquid phase film transfer coefficient",
         is_input=True,
         input_category=category,
@@ -264,7 +307,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.bed_diameter,
-        name="Effective bed diameter",
+        name="Bed diameter",
         ui_units=pyunits.m,
         display_units="m",
         rounding=rounding,
@@ -276,7 +319,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.bed_area,
-        name="Effective total bed area",
+        name="Bed area",
         ui_units=pyunits.m**2,
         display_units="m2",
         rounding=rounding,
@@ -288,7 +331,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.bed_volume,
-        name="Effective total bed volume",
+        name="Bed volume",
         ui_units=pyunits.m**3,
         display_units="m3",
         rounding=rounding,
@@ -300,7 +343,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.ebct,
-        name="Empty bed contact time",
+        name="EBCT",
         ui_units=pyunits.min,
         display_units="min",
         rounding=rounding,
@@ -326,7 +369,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         obj=fs.gac.bed_voidage,
         name="Bed voidage",
         ui_units=pyunits.dimensionless,
-        display_units="",
+        display_units="-",
         rounding=rounding,
         description="Voidage of the GAC bed",
         is_input=True,
@@ -336,7 +379,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.bed_mass_gac,
-        name="Mass of media in the bed",
+        name="Media mass",
         ui_units=pyunits.kg,
         display_units="kg",
         rounding=rounding,
@@ -351,9 +394,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     category = "System performance"
     exports.add(
         obj=fs.gac.conc_ratio_replace,
-        name="Concentration ratio at breakthrough",
+        name="Breakthrough concentration ratio",
         ui_units=pyunits.dimensionless,
-        display_units="",
+        display_units="-",
         rounding=rounding,
         description="Concentration ratio at breakthrough, corresponding to the time of replacing the media",
         is_input=True,
@@ -363,11 +406,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.conc_ratio_avg,
-        name="Average concentration ratio in operational time",
+        name="Average concentration ratio",
         ui_units=pyunits.dimensionless,
-        display_units="",
+        display_units="-",
         rounding=rounding,
-        description="Average concentration ratio in operational time",
+        description="Average concentration ratio during operational time",
         is_input=True,
         input_category=category,
         is_output=True,
@@ -375,7 +418,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.operational_time,
-        name="Time operating until breakthrough",
+        name="Breakthrough time",
         ui_units=pyunits.day,
         display_units="days",
         rounding=rounding,
@@ -387,9 +430,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.bed_volumes_treated,
-        name="Bed volumes treated",
+        name="BVT",
         ui_units=pyunits.dimensionless,
-        display_units="",
+        display_units="-",
         rounding=rounding,
         description="Bed volumes treated",
         is_input=True,
@@ -399,11 +442,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.mass_adsorbed,
-        name="Total mass of solute adsorbed in operational time",
+        name="Solute adsorption rate",
         ui_units=pyunits.kg,
         display_units="kg",
         rounding=rounding,
-        description="Total mass of solute adsorbed in operational time",
+        description="Mass adsorption rate of solute during operational time",
         is_input=True,
         input_category=category,
         is_output=True,
@@ -411,11 +454,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.gac_usage_rate,
-        name="Mass usage rate of media in operational time",
+        name="Media usage rate",
         ui_units=pyunits.kg * pyunits.day**-1,
-        display_units="kg/d",
+        display_units="kg/day",
         rounding=rounding,
-        description="Mass usage rate of media in operational time",
+        description="Mass usage rate of media during operational time",
         is_input=True,
         input_category=category,
         is_output=True,
@@ -426,77 +469,77 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     category = "Empirical parameters"
     exports.add(
         obj=fs.gac.a0,
-        name="Stanton equation parameter 0",
+        name="Stanton parameter 0",
         ui_units=pyunits.dimensionless,
-        display_units="",
-        rounding=rounding,
-        description="Stanton equation parameter 0",
+        display_units="-",
+        rounding=6,
+        description="Stanton parameter 0",
         is_input=True,
         input_category=category,
         is_output=False,
     )
     exports.add(
         obj=fs.gac.a1,
-        name="Stanton equation parameter 1",
+        name="Stanton parameter 1",
         ui_units=pyunits.dimensionless,
-        display_units="",
-        rounding=rounding,
-        description="Stanton equation parameter 1",
+        display_units="-",
+        rounding=6,
+        description="Stanton parameter 1",
         is_input=True,
         input_category=category,
         is_output=False,
     )
     exports.add(
         obj=fs.gac.b0,
-        name="Throughput equation parameter 0",
+        name="Throughput parameter 0",
         ui_units=pyunits.dimensionless,
-        display_units="",
-        rounding=rounding,
-        description="Throughput equation parameter 0",
+        display_units="-",
+        rounding=6,
+        description="Throughput parameter 0",
         is_input=True,
         input_category=category,
         is_output=False,
     )
     exports.add(
         obj=fs.gac.b1,
-        name="Throughput equation parameter 1",
+        name="Throughput parameter 1",
         ui_units=pyunits.dimensionless,
-        display_units="",
-        rounding=rounding,
-        description="Throughput equation parameter 1",
+        display_units="-",
+        rounding=6,
+        description="Throughput parameter 1",
         is_input=True,
         input_category=category,
         is_output=False,
     )
     exports.add(
         obj=fs.gac.b2,
-        name="Throughput equation parameter 2",
+        name="Throughput parameter 2",
         ui_units=pyunits.dimensionless,
-        display_units="",
-        rounding=rounding,
-        description="Throughput equation parameter 2",
+        display_units="-",
+        rounding=6,
+        description="Throughput parameter 2",
         is_input=True,
         input_category=category,
         is_output=False,
     )
     exports.add(
         obj=fs.gac.b3,
-        name="Throughput equation parameter 3",
+        name="Throughput parameter 3",
         ui_units=pyunits.dimensionless,
-        display_units="",
-        rounding=rounding,
-        description="Throughput equation parameter 3",
+        display_units="-",
+        rounding=6,
+        description="Throughput parameter 3",
         is_input=True,
         input_category=category,
         is_output=False,
     )
     exports.add(
         obj=fs.gac.b4,
-        name="Throughput equation parameter 4",
+        name="Throughput parameter 4",
         ui_units=pyunits.dimensionless,
-        display_units="",
-        rounding=rounding,
-        description="Throughput equation parameter 4",
+        display_units="-",
+        rounding=6,
+        description="Throughput parameter 4",
         is_input=True,
         input_category=category,
         is_output=False,
@@ -505,12 +548,24 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # costing options
     category = "Costing options"
     exports.add(
-        obj=fs.costing.gac_pressure.regen_frac,
-        name="Fraction of media regenerated after breakthrough",
-        ui_units=pyunits.dimensionless,
-        display_units="",
+        obj=fs.costing.electricity_cost,
+        name="Electricity cost",
+        ui_units=fs.costing.base_currency / pyunits.kWh,
+        display_units="$/kW",
         rounding=rounding,
-        description="Fraction of media regenerated after breakthrough",
+        description="Electricity cost",
+        is_input=True,
+        input_category=category,
+        is_output=True,
+        output_category=category,
+    )
+    exports.add(
+        obj=fs.costing.gac_pressure.regen_frac,
+        name="Regeneration fraction",
+        ui_units=pyunits.dimensionless,
+        display_units="-",
+        rounding=rounding,
+        description="Fraction of media that can be regenerated after breakthrough (remainder is replaced)",
         is_input=True,
         input_category=category,
         is_output=True,
@@ -520,9 +575,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         obj=fs.costing.gac_pressure.num_contactors_op,
         name="Number of operating beds",
         ui_units=pyunits.dimensionless,
-        display_units="",
+        display_units="-",
         rounding=rounding,
-        description="Number of operating beds",
+        description="Number of beds in operation at any steady state time",
         is_input=True,
         input_category=category,
         is_output=True,
@@ -532,11 +587,58 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         obj=fs.costing.gac_pressure.num_contactors_redundant,
         name="Number of redundant beds",
         ui_units=pyunits.dimensionless,
-        display_units="",
+        display_units="-",
         rounding=rounding,
-        description="Number of redundant beds",
+        description="Number of beds offline (redundant) at any steady state time",
         is_input=True,
         input_category=category,
+        is_output=True,
+        output_category=category,
+    )
+    # ---------------------------------------------------------------------
+    # cost results
+    category = "Cost Results"
+    exports.add(
+        obj=fs.costing.aggregate_capital_cost,
+        name="Capital costs",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=0,
+        description="Capital costs",
+        is_input=False,
+        is_output=True,
+        output_category=category,
+    )
+    exports.add(
+        obj=fs.costing.aggregate_fixed_operating_cost,
+        name="Fixed operating costs",
+        ui_units=fs.costing.base_currency / pyunits.year,
+        display_units="$/yr",
+        rounding=0,
+        description="Fixed operating costs",
+        is_input=False,
+        is_output=True,
+        output_category=category,
+    )
+    exports.add(
+        obj=fs.costing.aggregate_flow_costs["electricity"],
+        name="Electricity costs",
+        ui_units=fs.costing.base_currency / pyunits.year,
+        display_units="$/yr",
+        rounding=0,
+        description="Electricity costs",
+        is_input=False,
+        is_output=True,
+        output_category=category,
+    )
+    exports.add(
+        obj=fs.costing.LCOW,
+        name="LCOW",
+        ui_units=fs.costing.base_currency / pyunits.meter**3,
+        display_units="$/yr",
+        rounding=rounding,
+        description="Levelized cost of water",
+        is_input=False,
         is_output=True,
         output_category=category,
     )

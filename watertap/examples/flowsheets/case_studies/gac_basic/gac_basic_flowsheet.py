@@ -44,7 +44,6 @@ __author__ = "Hunter Barber"
 def main():
 
     m = build()
-    initialize_model(m)
     res = solve_model(m)
     print("solver termination condition:", res.solver.termination_condition)
     # m.fs.display()
@@ -91,10 +90,15 @@ def build():
     m.fs.costing.add_LCOW(treated_flow)
     m.fs.costing.add_specific_energy_consumption(treated_flow)
 
+    initialize_model(m)
+
     return m
 
 
-def initialize_model(m):
+def initialize_model(m, solver=None):
+
+    if solver is None:
+        solver = get_solver()
 
     # touch properties and default scaling
     water_sf = 10 ** -math.ceil(
@@ -116,6 +120,8 @@ def initialize_model(m):
     iscale.calculate_scaling_factors(m)
 
     # feed specifications
+    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].unfix()
+    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "solute"].unfix()
     m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
     m.fs.feed.properties.calculate_state(
@@ -189,30 +195,6 @@ def solve_model(m, solver=None):
     pyo.assert_optimal_termination(res)
 
     return res
-
-
-def _auto_scaling_fixed_var(m):
-
-    for ind in m.fs.feed.properties[0].flow_mol_phase_comp.index_set():
-        var = m.fs.feed.properties[0].flow_mol_phase_comp[ind[0], ind[1]]
-        dsf = 10 ** -math.ceil(math.log10(abs(var.value)))
-        fs = m.fs.feed.flowsheet()
-        fs.properties.set_default_scaling("flow_mol_phase_comp", dsf, index=ind)
-
-    for var in m.fs.gac.component_data_objects(
-        ctype=pyo.Var, active=True, descend_into=False
-    ):
-        if var.fixed:
-            # calculate sf to the inverse fixed value
-            if var.value == 0:
-                sf = 1
-            else:
-                sf = 1 * 10 ** -math.ceil(math.log10(abs(var.value)))
-            # set sf for vars, sf is redundantly set for is_indexed vars
-            if var.parent_component().is_indexed():
-                iscale.set_scaling_factor(var.parent_component(), sf)
-            else:
-                iscale.set_scaling_factor(var, sf)
 
 
 if __name__ == "__main__":
