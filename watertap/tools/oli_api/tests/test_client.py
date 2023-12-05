@@ -72,7 +72,7 @@ def oliapi_instance():
     if not cryptography_available:
         pytest.skip(reason="cryptography module not available.")
     credentials = {
-        "access_key": "",
+        "access_keys": [""],
         "root_url": "",
         "auth_url": "",
     }
