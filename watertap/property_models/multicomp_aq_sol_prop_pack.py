@@ -365,31 +365,37 @@ class MCASParameterData(PhysicalParameterBlock):
             )
         charge_comp = self.config.charge
         if len(charge_comp) < len(self.config.solute_list):
-            missing_charge = []
+            track_comp = {}
             for solute in self.config.solute_list:
                 if solute not in charge_comp.keys():
-                    # try:
-                    charge_comp[solute] = get_charge(solute)
-                    # except:
-                    #     missing_charge.append(solute)
-        # if self.config.ignore_neutral_charge:
-        #     # The "advanced" user can set ignore_neutral_charge = True to avoid having to provide charge=0 for neutral solutes, assuming they are aware of risks of supplying incorrect charge data mistakenly.
-        #     # Thus, we will not raise any exceptions and will just pass.
-        #     pass
-        # else:
-        #     # ignore_neutral_charge = False by default to be more strict and safeguard the "new" user from unintentionally omitting charge data for ions.
-        #     # if not len(self.config.charge):
-        #     #     raise ConfigurationError(
-        #     #         "The charge argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated charge as keys and values, respectively."
-        #     #     )
-        #     missing_charge = []
-        #     for i in self.config.solute_list:
-        #         if i not in self.config.charge.keys():
-        #             missing_charge.append(i)
-        #     # if len(missing_charge) > 0:
-        #     #     raise ConfigurationError(
-        #     #         f"Charge data was not provided for {', '.join(charge for charge in missing_charge)}. Provide the missing charge data to the charge argument."
-        #     #     )
+                    try:
+                        charge_comp[solute] = get_charge(solute)
+                    except IOError as exc:
+                        track_comp.update({solute: exc})
+                else:
+                    pass
+            if self.config.ignore_neutral_charge:
+                # The "advanced" user can set ignore_neutral_charge = True to avoid having to provide charge=0 for neutral solutes, assuming they are aware of risks of supplying incorrect charge data mistakenly.
+                # Thus, we will not raise any exceptions and will just pass.
+                pass
+            else:
+                # ignore_neutral_charge = False by default to be more strict and safeguard the "new" user from unintentionally omitting charge data for ions.
+                # if not len(self.config.charge):
+            #     raise ConfigurationError(
+            #         "The charge argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated charge as keys and values, respectively."
+            #     )
+            # missing_charge = []
+            # for i in self.config.solute_list:
+            #     if i not in self.config.charge.keys():
+            #         missing_charge.append(i)
+                if len(track_comp) > 0:
+                    raise ConfigurationError(f'Charge data could not be obtained for the following solutes and no data were provided\n: {track_comp}')
+            # if len(missing_charge) > 0:
+            #     raise ConfigurationError(
+            #         f"Charge data was not provided for {', '.join(charge for charge in missing_charge)}. Provide the missing charge data to the charge argument."
+            #     )
+                    #   missing_charge.append(solute)
+        # 
         
         # Group components into different sets
         for j in self.config.solute_list:
@@ -400,26 +406,26 @@ class MCASParameterData(PhysicalParameterBlock):
             # Add valid members of solute_list into IDAES's Solute() class.
             # This triggers the addition of j into component_list and solute_set.
             self.add_component(j, Solute())
-            if j in self.config.charge:
-                if self.config.charge[j] > 0:
+            if j in charge_comp:
+                if charge_comp[j] > 0:
                     # Run a "del_component" and "add_component" to move ion j from IDAES's Solute to Cation class.
                     # Ion j has to be added into Solute to be registered in the component_list and solute_set.
                     # Reference to idaes.core.base.components.
                     self.del_component(j)
                     self.add_component(
                         j,
-                        Cation(charge=self.config.charge[j], _electrolyte=True),
+                        Cation(charge=charge_comp[j], _electrolyte=True),
                     )
                     self.ion_set.add(j)
-                elif self.config.charge[j] < 0:
+                elif charge_comp[j] < 0:
                     # The same comments above apply to anions.
                     self.del_component(j)
                     self.add_component(
                         j,
-                        Anion(charge=self.config.charge[j], _electrolyte=True),
+                        Anion(charge=charge_comp[j], _electrolyte=True),
                     )
                     self.ion_set.add(j)
-                elif not self.config.charge[j]:
+                elif not charge_comp[j]:
                     self.neutral_set.add(j)
                 else:
                     pass
@@ -483,7 +489,7 @@ class MCASParameterData(PhysicalParameterBlock):
             self.solute_set,
             mutable=True,
             default=0,
-            initialize=self.config.charge,
+            initialize=charge_comp,
             units=pyunits.dimensionless,
             doc="Ion charge",
         )
