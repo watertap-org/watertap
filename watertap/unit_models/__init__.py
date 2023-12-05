@@ -29,3 +29,4 @@ from .ion_exchange_0D import IonExchange0D
 from .thickener import Thickener
 from .dewatering import DewateringUnit
 from .electroNP_ZO import ElectroNPZO
+from .clarifier import Clarifier
