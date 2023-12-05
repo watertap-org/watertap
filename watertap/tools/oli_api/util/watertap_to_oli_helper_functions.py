@@ -100,9 +100,15 @@ def get_charge(watertap_name: str) -> int:
     elif len(components) == 2:
         molecule = components[0] + "ION"
         charge = components[1]
-        charge_sign = charge[-1]
+        try:
+            charge_sign = charge[-1]
+        except IndexError:
+            raise IOError(f"Charge sign could not be determined from the string '{watertap_name}'")
         if len(charge) > 1:
-            charge_magnitude = int(charge[:-1])
+            try:
+                charge_magnitude = int(charge[:-1])
+            except ValueError:
+                raise IOError(f"Charge sign could not be determined from the string '{watertap_name}'")
         else:
             charge_magnitude = 1
         if charge_sign == "+":
@@ -110,7 +116,9 @@ def get_charge(watertap_name: str) -> int:
         elif charge_sign == "-":
             charge = -charge_magnitude
         else:
-            raise IOError(" Only + and - are valid charge indicators.")
+            raise IOError(f"Only + and - are valid charge indicators and neither was provided in '{watertap_name}'.")
+    else:
+        raise IOError(f"Charge could not be determined from the string '{watertap_name}'")
     return charge
 
 

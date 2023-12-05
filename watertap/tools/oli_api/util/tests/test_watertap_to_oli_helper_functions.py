@@ -54,12 +54,16 @@ def test_case_exception():
 
 
 @pytest.mark.unit
-def test_charge_exception():
+def test_charge_exceptions():
     with pytest.raises(IOError) as excinfo:
         val = "Na_2#"
         watertap_to_oli(val)
-    assert str(excinfo.value) == " Only + and - are valid charge indicators."
-
+    assert str(excinfo.value) == "Only + and - are valid charge indicators and neither was provided in 'Na_2#'."
+    
+    with pytest.raises(IOError, match="Charge sign could not be determined from the string 'target_ion'"):   
+        get_charge("target_ion")
+    with pytest.raises(IOError, match="Charge could not be determined from the string 'my_target_ion'"):   
+        get_charge("my_target_ion")
 
 @pytest.mark.unit
 def test_get_charge():
@@ -72,8 +76,7 @@ def test_get_charge():
     }
     for solute_name, charge_value in z.items():
         assert get_charge(solute_name) == charge_value
-
-
+    
 @pytest.mark.unit
 def test_get_mw():
     z = {
