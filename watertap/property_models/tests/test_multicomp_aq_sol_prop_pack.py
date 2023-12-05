@@ -92,34 +92,47 @@ def test_config():
     )
 
     assert len(m.fs.properties.config) == 18
-    config_options= [
-        'default_arguments',
-        'solute_list',
-        'stokes_radius_data',
-        'diffusivity_data',
-        'molar_volume_data',
-        'mw_data',
-        'elec_mobility_data',
-        'trans_num_data',
-        'equiv_conductivity_phase_data',
-        'charge',
-        'ignore_neutral_charge',
-        'activity_coefficient_model',
-        'density_calculation',
-        'diffus_calculation',
-        'elec_mobility_calculation',
-        'trans_num_calculation',
-        'equiv_conductivity_calculation',
-        'material_flow_basis',]
+    config_options = [
+        "default_arguments",
+        "solute_list",
+        "stokes_radius_data",
+        "diffusivity_data",
+        "molar_volume_data",
+        "mw_data",
+        "elec_mobility_data",
+        "trans_num_data",
+        "equiv_conductivity_phase_data",
+        "charge",
+        "ignore_neutral_charge",
+        "activity_coefficient_model",
+        "density_calculation",
+        "diffus_calculation",
+        "elec_mobility_calculation",
+        "trans_num_calculation",
+        "equiv_conductivity_calculation",
+        "material_flow_basis",
+    ]
     for i in m.fs.properties.config:
         assert i in config_options
     assert not m.fs.properties.config.ignore_neutral_charge
-    assert m.fs.properties.config.activity_coefficient_model == ActivityCoefficientModel.ideal
+    assert (
+        m.fs.properties.config.activity_coefficient_model
+        == ActivityCoefficientModel.ideal
+    )
     assert m.fs.properties.config.density_calculation == DensityCalculation.constant
     assert m.fs.properties.config.diffus_calculation == DiffusivityCalculation.none
-    assert m.fs.properties.config.elec_mobility_calculation == ElectricalMobilityCalculation.none
-    assert m.fs.properties.config.trans_num_calculation == TransportNumberCalculation.ElectricalMobility
-    assert m.fs.properties.config.equiv_conductivity_calculation == EquivalentConductivityCalculation.ElectricalMobility
+    assert (
+        m.fs.properties.config.elec_mobility_calculation
+        == ElectricalMobilityCalculation.none
+    )
+    assert (
+        m.fs.properties.config.trans_num_calculation
+        == TransportNumberCalculation.ElectricalMobility
+    )
+    assert (
+        m.fs.properties.config.equiv_conductivity_calculation
+        == EquivalentConductivityCalculation.ElectricalMobility
+    )
     assert m.fs.properties.config.material_flow_basis == MaterialFlowBasis.molar
 
 
@@ -1559,8 +1572,10 @@ def test_flow_mass_basis():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
-        solute_list=["A"], material_flow_basis=MaterialFlowBasis.mass, mw_data={"A": 1}, charge={"A": 0},
-
+        solute_list=["A"],
+        material_flow_basis=MaterialFlowBasis.mass,
+        mw_data={"A": 1},
+        charge={"A": 0},
     )
 
     m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
@@ -1587,7 +1602,9 @@ def test_compatibility_with_mixer():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
-        solute_list=["Na_+", "Cl_-"], mw_data={"Na_+": 23, "Cl_-": 35}, charge={"Na_+": 1, "Cl_-": -1}
+        solute_list=["Na_+", "Cl_-"],
+        mw_data={"Na_+": 23, "Cl_-": 35},
+        charge={"Na_+": 1, "Cl_-": -1},
     )
 
     m.fs.mixer1 = Mixer(
@@ -2243,7 +2260,9 @@ def test_no_mw_data_provided():
             "The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively."
         ),
     ):
-        m.fs.properties = MCASParameterBlock(solute_list=["foo"], ignore_neutral_charge=True)
+        m.fs.properties = MCASParameterBlock(
+            solute_list=["foo"], ignore_neutral_charge=True
+        )
 
     with pytest.raises(
         ConfigurationError,
@@ -2252,7 +2271,9 @@ def test_no_mw_data_provided():
         ),
     ):
         m.fs.properties_partial_data = MCASParameterBlock(
-            solute_list=["foo", "bar"], mw_data={"foo": 1}, ignore_neutral_charge=True,
+            solute_list=["foo", "bar"],
+            mw_data={"foo": 1},
+            ignore_neutral_charge=True,
         )
 
     with pytest.raises(
@@ -2262,7 +2283,9 @@ def test_no_mw_data_provided():
         ),
     ):
         m.fs.properties_partial_data2 = MCASParameterBlock(
-            solute_list=["foo", "bar", "fubar"], mw_data={"bar": 1}, ignore_neutral_charge=True,
+            solute_list=["foo", "bar", "fubar"],
+            mw_data={"bar": 1},
+            ignore_neutral_charge=True,
         )
 
 
@@ -2270,7 +2293,11 @@ def test_no_mw_data_provided():
 def test_no_h2o_mw_data():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = MCASParameterBlock(solute_list=["NaCl"], mw_data={"NaCl": 58e-3}, ignore_neutral_charge=True,)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["NaCl"],
+        mw_data={"NaCl": 58e-3},
+        ignore_neutral_charge=True,
+    )
 
     m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
 
@@ -2286,7 +2313,9 @@ def test_no_h2o_mw_data_overwrite():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
-        solute_list=["NaCl"], mw_data={"H2O": 18.1e-3, "NaCl": 58e-3}, ignore_neutral_charge=True,
+        solute_list=["NaCl"],
+        mw_data={"H2O": 18.1e-3, "NaCl": 58e-3},
+        ignore_neutral_charge=True,
     )
 
     m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)

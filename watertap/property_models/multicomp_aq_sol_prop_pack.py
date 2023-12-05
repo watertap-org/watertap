@@ -183,10 +183,10 @@ class MCASParameterData(PhysicalParameterBlock):
         "charge", ConfigValue(default={}, domain=dict, description="Ion charge")
     )
     CONFIG.declare(
-        "ignore_neutral_charge", 
+        "ignore_neutral_charge",
         ConfigValue(
-            default=False, 
-            domain=Bool, 
+            default=False,
+            domain=Bool,
             description="Boolean flag to raise ConfigurationError related to neutral charge.",
             doc="""Level of reporting results.
             **default** - False.
@@ -371,7 +371,7 @@ class MCASParameterData(PhysicalParameterBlock):
             # Add valid members of solute_list into IDAES's Solute() class.
             # This triggers the addition of j into component_list and solute_set.
             self.add_component(j, Solute())
-            if j in self.config.charge:                   
+            if j in self.config.charge:
                 if self.config.charge[j] > 0:
                     # Run a "del_component" and "add_component" to move ion j from IDAES's Solute to Cation class.
                     # Ion j has to be added into Solute to be registered in the component_list and solute_set.
@@ -412,8 +412,6 @@ class MCASParameterData(PhysicalParameterBlock):
                 raise ConfigurationError(
                     f"Charge data was not provided for {', '.join(charge for charge in missing_charge)}. Provide the missing charge data to the charge argument."
                 )
-        
-    
 
         # if len(self.neutral_set) > 0 and not len(self.ion_set):
         #     _log.warning(

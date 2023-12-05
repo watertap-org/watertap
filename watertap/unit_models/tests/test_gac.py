@@ -689,7 +689,6 @@ class TestGACErrorLog:
                     ("Liq", "BGAN"): 1e-5,
                 },
                 ignore_neutral_charge=True,
-
             )
             me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
             me.fs.properties.dens_mass_const = 1000
