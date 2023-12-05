@@ -217,6 +217,8 @@ closer to the non-ideal physical conditions that can be encountered in real desa
 
  :sup:`1` When this configuration is turned off, :math:`i_{lim}` is considered as :math:`\infty` and the ratio becomes 1.
 
+
+
 Some other modifications to previously defined equations are made to accommodate the two extensions.  These are shown in **Table 6**.
 
 .. csv-table:: **Table 6** Other equation modifications under extensions
@@ -232,10 +234,32 @@ Some other modifications to previously defined equations are made to accommodate
 **Note**
 
  :sup:`1` :math:`\phi_m, \phi_d^{ohm}` or  :math:`\phi_d^{nonohm}` takes 0 if its corresponding configuration is turned off (`value == False`).
- 
+
+Frictional pressure drop
+^^^^^^^^^^^^^^^^^^^^^^^^
+This model can optionally calculate pressured drops along the flow path in the diluate and concentrate channels through config ``has_pressure_change`` and ``pressure_drop_method``.  Under the assumption of identical diluate and concentrate channels and starting flow rates, the flow velocities in the two channels are approximated equal and invariant over the channel length when calculating the frictional pressure drops. This approximation is based on the evaluation that the actual velocity variation over the channel length caused by water mass transfer across the consecutive channels leads to negligible errors as compared to the uncertainties carried by the frictional pressure method itself. **Table 7** gives essential equations to simulate the pressure drop. Among extensive literatures using these equations, a good reference paper is by Wright et. al., 2018 (*References*).
+
+.. csv-table:: **Table 7** Essential equations supporting the pressure drop calculation
+   :header: "Description", "Equation", "Condition"
+
+   "Frictional pressure drop, Darcy_Weisbach", ":math:`p_L=f\frac{\rho v^2}{2d_H}` \ :sup:`1`", "`has_pressure_change == True` and `pressure_drop_method == PressureDropMethod.Darcy_Weisbach`"
+   " ", ":math:`p_L=` user-input constant", "`has_pressure_change == True` and `pressure_drop_method == PressureDropMethod.Experimental`"
+   "Hydraulic diameter", ":math:`d_H=\frac{2db(1-\epsilon)}{d+b}`", "`hydraulic_diameter_method == HydraulicDiameterMethod.conventional`"
+   " ", ":math:`d_H=\frac{4\epsilon}{\frac{2}{h}+(1-\epsilon)S_{v,sp}}`", "`hydraulic_diameter_method == HydraulicDiameterMethod.spacer_specific_area_known`"
+   "Renold number", ":math:`Re=\frac{\rho v d_H}{\mu}`", "`has_pressure_change == True` or `limiting_current_density_method == LimitingCurrentDensityMethod.Theoretical`"
+   "Schmidt number", ":math:`Sc=\frac{\mu}{\rho D_b}`", "`has_pressure_change == True` or `limiting_current_density_method == LimitingCurrentDensityMethod.Theoretical`"
+   "Sherwood number", ":math:`Sh=0.29Re^{0.5}Sc^{0.33}`", "`has_pressure_change == True` or `limiting_current_density_method == LimitingCurrentDensityMethod.Theoretical`"
+   "Darcy's frictional factor", ":math:`f=4\times 50.6\epsilon^{-7.06}Re^{-1}`", "`friction_factor_method == FrictionFactorMethod.Gurreri`"
+   " ", ":math:`f=4\times 9.6 \epsilon^{-1} Re^{-0.5}`", "`friction_factor_method == FrictionFactorMethod.Kuroda`"
+   "Pressure balance", ":math:`p_{in}-p_L l =p_{out}`", "`has_pressure_change == True`"
+
+**Note**
+
+ :sup:`1` We assumed a constant linear velocity (in the cell length direction), :math:`v`, in both channels and along the flow path. This :math:`v` is calculated based on the average of inlet and outlet volumetric flow rate.
+
 Nomenclature
 ------------
-.. csv-table:: **Table 7.** Nomenclature
+.. csv-table:: **Table 8.** Nomenclature
    :header: "Symbol", "Description", "Unit"
    :widths: 10, 20, 10
 
@@ -307,3 +331,6 @@ Electrodialysis for water desalination: A critical assessment of recent developm
 fundamentals, models and applications. Desalination, 434, 121-160.
 
 Spiegler, K. S. (1971). Polarization at ion exchange membrane-solution interfaces. Desalination, 9(4), 367-385.
+Wright, N. C., Shah, S. R., & Amrose, S. E. (2018).
+A robust model of brackish water electrodialysis desalination with experimental comparison at different size scales.
+Desalination, 443, 27-43.

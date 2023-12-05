@@ -1813,7 +1813,10 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     )
                 else:
                     self.spacer_specific_area = Var(
-                        initialize=1e4, units=pyunits.meter**-1
+                        initialize=1e4,
+                        bounds=(0, None),
+                        units=pyunits.meter**-1,
+                        doc="The specific area of the channel",
                     )
                     return (
                         self.hydraulic_diameter

@@ -669,7 +669,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         # Build Constraints
         @self.Constraint(
             self.flowsheet().time,
-            doc="Calculate flow velocity in a single diluate channel",
+            doc="Calculate flow velocity in a single diluate channel, based on the average of inlet and outlet",
         )
         def eq_get_velocity_diluate(self, t):
             return self.velocity_diluate[
@@ -681,7 +681,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().time,
-            doc="Calculate flow velocity in a single concentrate channel",
+            doc="Calculate flow velocity in a single concentrate channel, based on the average of inlet and outlet",
         )
         def eq_get_velocity_concentrate(self, t):
             return self.velocity_concentrate[
@@ -1771,7 +1771,10 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     )
                 else:
                     self.spacer_specific_area = Var(
-                        initialize=1e4, units=pyunits.meter**-1
+                        initialize=1e4,
+                        bounds=(0, None),
+                        units=pyunits.meter**-1,
+                        doc="The specific area of the channel",
                     )
                     return (
                         self.hydraulic_diameter
