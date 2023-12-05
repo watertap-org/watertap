@@ -319,9 +319,9 @@ def test_diff_run(loop_diff_setup):
         )
 
         try:
-            data = h5file["ro_diff_analysis/membrane_cost/outputs/fs.costing.LCOW/value"][
-                ()
-            ]
+            data = h5file[
+                "ro_diff_analysis/membrane_cost/outputs/fs.costing.LCOW/value"
+            ][()]
 
             # for i, tv in enumerate(true_vals):
             assert len(data) == 4
