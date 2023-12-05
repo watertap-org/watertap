@@ -217,8 +217,6 @@ closer to the non-ideal physical conditions that can be encountered in real desa
 
  :sup:`1` When this configuration is turned off, :math:`i_{lim}` is considered as :math:`\infty` and the ratio becomes 1.
 
-
-
 Some other modifications to previously defined equations are made to accommodate the two extensions.  These are shown in **Table 6**.
 
 .. csv-table:: **Table 6** Other equation modifications under extensions
@@ -234,7 +232,6 @@ Some other modifications to previously defined equations are made to accommodate
 **Note**
 
  :sup:`1` :math:`\phi_m, \phi_d^{ohm}` or  :math:`\phi_d^{nonohm}` takes 0 if its corresponding configuration is turned off (`value == False`).
-
 
 Frictional pressure drop
 ^^^^^^^^^^^^^^^^^^^^^^^^
