@@ -56,7 +56,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        conda install --quiet --yes -c conda-forge mpi4py
+        conda install --quiet --yes mpi4py
         python -m pip install --upgrade pip
         pip install -r requirements-dev.txt
         idaes get-extensions --verbose

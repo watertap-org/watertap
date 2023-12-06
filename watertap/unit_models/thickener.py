@@ -30,12 +30,14 @@ from idaes.core import (
     declare_process_block_class,
 )
 from idaes.models.unit_models.separator import SeparatorData, SplittingType
-
+from idaes.core.util.constants import Constants
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 
 from pyomo.environ import (
     Param,
+    Var,
+    NonNegativeReals,
     units as pyunits,
 )
 from pyomo.common.config import ConfigValue, In
@@ -43,6 +45,7 @@ from pyomo.common.config import ConfigValue, In
 from idaes.core.util.exceptions import (
     ConfigurationError,
 )
+from watertap.costing.unit_models.thickener import cost_thickener
 
 __author__ = "Alejandro Garciadiego, Adam Atia"
 
@@ -128,6 +131,72 @@ class ThickenerData(SeparatorData):
             doc="Fraction of suspended solids removed",
         )
 
+        self.electricity_consumption = Var(
+            self.flowsheet().time,
+            units=pyunits.kW,
+            bounds=(0, None),
+            doc="Electricity consumption of unit",
+        )
+
+        # 0.01255 kWh/m3 average for centrifuge thickening in relation to flow capacity
+        self.energy_electric_flow_vol_inlet = Param(
+            self.flowsheet().time,
+            units=pyunits.kWh / (pyunits.m**3),
+            initialize=0.01255,
+            mutable=True,
+            doc="Specific electricity intensity of unit",
+        )
+
+        @self.Constraint(self.flowsheet().time, doc="Electricity consumption equation")
+        def eq_electricity_consumption(blk, t):
+            return blk.electricity_consumption[t] == pyunits.convert(
+                blk.energy_electric_flow_vol_inlet[t] * blk.inlet.flow_vol[t],
+                to_units=pyunits.kW,
+            )
+
+        self.hydraulic_retention_time = Var(
+            self.flowsheet().time,
+            initialize=86400,
+            domain=NonNegativeReals,
+            units=pyunits.s,
+            doc="Hydraulic retention time",
+        )
+        self.volume = Var(
+            self.flowsheet().time,
+            initialize=1800,
+            domain=NonNegativeReals,
+            units=pyunits.m**3,
+            doc="Hydraulic retention time",
+        )
+
+        self.diameter = Var(
+            initialize=10,
+            domain=NonNegativeReals,
+            units=pyunits.m,
+            doc="Thickener diameter",
+        )
+        self.height = Var(
+            initialize=5,
+            domain=NonNegativeReals,
+            units=pyunits.m,
+            doc="Thickener height",
+        )
+
+        @self.Constraint(self.flowsheet().time, doc="Hydraulic retention time equation")
+        def eq_hydraulic_retention(blk, t):
+            return (
+                self.hydraulic_retention_time[t] * self.inlet.flow_vol[t]
+                == self.volume[t]
+            )
+
+        @self.Expression(doc="Surface area of circular thickener")
+        def surface_area(blk):
+            return self.diameter**2 * Constants.pi / 4
+
+        @self.Constraint(self.flowsheet().time, doc="Total volume equation")
+        def eq_volume(blk, t):
+            return self.surface_area * self.height == self.volume[t]
+
         @self.Expression(self.flowsheet().time, doc="Suspended solids concentration")
         def TSS_in(blk, t):
             if blk.config.activated_sludge_model == ActivatedSludgeModelType.ASM1:
@@ -176,14 +245,23 @@ class ThickenerData(SeparatorData):
             return blk.split_fraction[t, "overflow", i] == 1 - blk.f_q_du[t]
 
     def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        expr_dict = {}
+        param_dict = {}
         if hasattr(self, "split_fraction"):
-            var_dict = {}
             for k in self.split_fraction.keys():
                 if k[0] == time_point:
                     var_dict[f"Split Fraction [{str(k[1:])}]"] = self.split_fraction[k]
-            return {"vars": var_dict}
-        else:
-            return None
+        var_dict["Electricity consumption"] = self.electricity_consumption[time_point]
+        param_dict[
+            "Specific electricity consumption"
+        ] = self.energy_electric_flow_vol_inlet[time_point]
+        var_dict["Unit Volume"] = self.volume[time_point]
+        var_dict["Hydraulic Retention Time"] = self.hydraulic_retention_time[time_point]
+        var_dict["Unit Height"] = self.height
+        var_dict["Unit Diameter"] = self.diameter
+        expr_dict["Surface Area"] = self.surface_area
+        return {"vars": var_dict, "params": param_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
         outlet_list = self.create_outlet_list()
@@ -198,3 +276,7 @@ class ThickenerData(SeparatorData):
             io_dict[o] = getattr(self, o + "_state")
 
         return create_stream_table_dataframe(io_dict, time_point=time_point)
+
+    @property
+    def default_costing_method(self):
+        return cost_thickener
