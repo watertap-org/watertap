@@ -36,8 +36,6 @@ from watertap.tools.parallel.parallel_manager_factory import create_parallel_man
 from watertap.tools.parameter_sweep.model_manager import ModelManager
 from watertap.tools.parameter_sweep.paramter_sweep_parallel_utils import (
     _ParameterSweepParallelUtils,
-    do_build,
-    do_execute,
     return_none,
 )
 

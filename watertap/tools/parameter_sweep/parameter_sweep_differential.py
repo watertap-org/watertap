@@ -16,9 +16,6 @@ from watertap.tools.parameter_sweep.sampling_types import NormalSample
 from watertap.tools.parameter_sweep.parameter_sweep import (
     _ParameterSweepBase,
     ParameterSweep,
-    return_none,
-    do_execute,
-    return_none,
 )
 from watertap.tools.parallel.single_process_parallel_manager import (
     SingleProcessParallelManager,
@@ -27,8 +24,6 @@ from watertap.tools.parallel.single_process_parallel_manager import (
 from pyomo.common.deprecation import deprecation_warning
 from watertap.tools.parameter_sweep.paramter_sweep_parallel_utils import (
     _ParameterSweepParallelUtils,
-    do_build,
-    do_execute,
     return_none,
 )
 
