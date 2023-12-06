@@ -611,6 +611,7 @@ class _ParameterSweepBase(ABC):
         if (
             self.model_manager.is_solved == False
             and self.model_manager.is_prior_parameter_solved == True
+            and self.model_manager.is_rebuild_and_init_enabled
         ):
             self.model_manager.build_and_init(sweep_params, local_value_k)
             self.model_manager.update_model_params(sweep_params, local_value_k)

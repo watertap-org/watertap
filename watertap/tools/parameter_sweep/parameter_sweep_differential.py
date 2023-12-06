@@ -336,6 +336,7 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
         # pass model_manager from refernce sweep, to diff sweep
         # so we don't have to reijnit he model
         diff_ps.model_manager = self.model_manager
+        diff_ps.model_manager.is_rebuild_and_init_enabled = False
         print(
             "diff model passed state",
             self.model_manager.is_initialized,
@@ -348,7 +349,7 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
             num_samples=self.config.num_diff_samples,
             seed=self.seed,
         )
-
+        diff_ps.model_manager.is_rebuild_and_init_enabled = True
         return differential_sweep_output_dict
 
     def _run_sample(
@@ -485,6 +486,8 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
                 process_number=results.process_number,
             )
 
-        global_save_data = np.hstack((all_parameter_combinations, combined_output_arr))
+        global_save_data = np.hstack(
+            (all_parameter_combinations_solved, combined_output_arr)
+        )
 
         return global_save_data, global_sweep_results_dict
