@@ -98,7 +98,5 @@ def oliapi_instance(credential_manager):
 @pytest.mark.unit
 def test_encryption(credential_manager):
     key = credential_manager.encryption_key
-    assert (
-        CredentialManager(encryption_key=key, test=True).credentials
-        == credential_manager.credentials
-    )
+    credential_manager_with_key = CredentialManager(key, test=True)
+    assert credential_manager_with_key.credentials == credential_manager.credentials

@@ -56,11 +56,15 @@ class CredentialManager:
         self.test = test
         self.access_key = ""
         self.encryption_key = encryption_key
+        self._set_config_file(config_file)
+        self._manage_credentials(
+            username,
+            password,
+            root_url,
+            auth_url,
+            access_keys,
+        )
         if not self.test:
-            self._set_config_file(config_file)
-            self._manage_credentials(
-                username, password, root_url, auth_url, access_keys
-            )
             self.login()
 
     def _set_config_file(self, config_file):
