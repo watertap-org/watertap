@@ -316,6 +316,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category=category,
         is_output=True,
         output_category=category,
+        is_readonly=True,
     )
     exports.add(
         obj=fs.gac.bed_area,
@@ -651,6 +652,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
     m = gac_fs.build()
     gac_fs.initialize_model(m)
+    res = gac_fs.solve_model(m)
 
     return m
 
@@ -663,3 +665,9 @@ def solve_flowsheet(flowsheet=None):
     res = gac_fs.solve_model(flowsheet)
 
     return res
+
+
+if __name__ == "__main__":
+    m = build_flowsheet()
+    res = solve_flowsheet(m)
+    print("solver termination condition:", res.solver.termination_condition)
