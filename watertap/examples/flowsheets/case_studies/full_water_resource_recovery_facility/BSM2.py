@@ -565,6 +565,16 @@ def display_costing(m):
         pyo.units.get_units(m.fs.R5.electricity_consumption[0]),
     )
     print(
+        "electricity consumption primary clarifier",
+        pyo.value(m.fs.CL.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.CL.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption secondary clarifier",
+        pyo.value(m.fs.CL1.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.CL1.electricity_consumption[0]),
+    )
+    print(
         "electricity consumption AD",
         pyo.value(m.fs.RADM.electricity_consumption[0]),
         pyo.units.get_units(m.fs.RADM.electricity_consumption[0]),

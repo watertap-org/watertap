@@ -118,7 +118,13 @@ class TestFullFlowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.32733, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.327896, rel=1e-3)
+        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
+            16324401.07, rel=1e-3
+        )
+        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
+            593159.13, rel=1e-3
+        )
 
     @pytest.mark.component
     def test_display(self, system_frame):

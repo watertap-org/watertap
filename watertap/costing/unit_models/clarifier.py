@@ -208,11 +208,11 @@ def cost_primary_clarifier(blk, cost_electricity_flow=True):
         )
     )
 
-    # if cost_electricity_flow:
-    #     blk.costing_package.cost_flow(
-    #         pyo.units.convert(
-    #             blk.unit_model.electricity_consumption[t0],
-    #             to_units=pyo.units.kW,
-    #         ),
-    #         "electricity",
-    #     )
+    if cost_electricity_flow:
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                blk.unit_model.electricity_consumption[t0],
+                to_units=pyo.units.kW,
+            ),
+            "electricity",
+        )
