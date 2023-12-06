@@ -488,6 +488,7 @@ class TestUV_with_multiple_comps:
         m.fs.properties = MCASParameterBlock(
             solute_list=["NDMA", "DCE"],
             mw_data={"H2O": 0.018, "NDMA": 0.0740819, "DCE": 0.09896},
+            ignore_neutral_charge=True,
         )
 
         m.fs.unit = Ultraviolet0D(
