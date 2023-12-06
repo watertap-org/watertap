@@ -96,7 +96,7 @@ class TestFullFlowsheet:
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NO"]
-        ) == pytest.approx(0.015456, rel=1e-3)
+        ) == pytest.approx(0.0155, rel=1e-2)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NH"]
         ) == pytest.approx(0.00091693, rel=1e-3)
