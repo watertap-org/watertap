@@ -216,15 +216,15 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
                 if key not in self.config.differential_sweep_specs.keys():
                     self.differential_outputs[key] = sweep_params[key].pyomo_object
 
-    # def _create_local_output_skeleton(self, model, sweep_params, outputs, num_samples):
-    #     output_dict = super()._create_local_output_skeleton(
-    #         model, sweep_params, outputs, num_samples
-    #     )
-    #     output_dict["nominal_idx"] = np.arange(
-    #         num_samples, dtype=float
-    #     )  # [*range(num_samples)]
-    #     output_dict["differential_idx"] = np.array([np.nan] * num_samples)
-    #     return output_dict
+    def _create_local_output_skeleton(self, model, sweep_params, outputs, num_samples):
+        output_dict = super()._create_local_output_skeleton(
+            model, sweep_params, outputs, num_samples
+        )
+        output_dict["nominal_idx"] = np.arange(
+            num_samples, dtype=float
+        )  # [*range(num_samples)]
+        output_dict["differential_idx"] = np.array([np.nan] * num_samples)
+        return output_dict
 
     def _append_differential_results(self, local_output_dict, diff_results_dict):
         for idx, diff_sol in diff_results_dict.items():
@@ -274,57 +274,57 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
                                 )
                             )
 
-    # def _create_global_output(self, local_output_dict):  # , req_num_samples=None):
-    #     global_output_dict = super()._create_global_output(local_output_dict)
+    def _create_global_output(self, local_output_dict):  # , req_num_samples=None):
+        global_output_dict = super()._create_global_output(local_output_dict)
 
-    #     # We now need to get the mapping array. This only needs to happen on root
-    #     local_num_cases_all = len(local_output_dict["solve_successful"])
-    #     # AllGather the total size of the value array on each MPI rank
-    #     sample_split_arr = self.parallel_manager.combine_data_with_peers(
-    #         local_num_cases_all
-    #     )
-    #     num_total_samples = sum(sample_split_arr)
+        # We now need to get the mapping array. This only needs to happen on root
+        local_num_cases_all = len(local_output_dict["solve_successful"])
+        # AllGather the total size of the value array on each MPI rank
+        sample_split_arr = self.parallel_manager.combine_data_with_peers(
+            local_num_cases_all
+        )
+        num_total_samples = sum(sample_split_arr)
 
-    #     # AllGather nominal values for creating the parallel offset
-    #     nominal_sample_split_arr = self.parallel_manager.combine_data_with_peers(
-    #         self.n_nominal_local
-    #     )
+        # AllGather nominal values for creating the parallel offset
+        nominal_sample_split_arr = self.parallel_manager.combine_data_with_peers(
+            self.n_nominal_local
+        )
 
-    #     # We need to create a global index and offset items accordingly. This
-    #     # needs to happen on all ranks/workers.
-    #     my_rank = self.parallel_manager.get_rank()
-    #     offset = 0
-    #     if my_rank > 0:
-    #         offset = sum(nominal_sample_split_arr[:my_rank])
-    #     local_output_dict["nominal_idx"] = local_output_dict["nominal_idx"] + offset
-    #     local_output_dict["differential_idx"] = (
-    #         local_output_dict["differential_idx"] + offset
-    #     )
+        # We need to create a global index and offset items accordingly. This
+        # needs to happen on all ranks/workers.
+        my_rank = self.parallel_manager.get_rank()
+        offset = 0
+        if my_rank > 0:
+            offset = sum(nominal_sample_split_arr[:my_rank])
+        local_output_dict["nominal_idx"] = local_output_dict["nominal_idx"] + offset
+        local_output_dict["differential_idx"] = (
+            local_output_dict["differential_idx"] + offset
+        )
 
-    #     # Resize global index array
-    #     if self.parallel_manager.is_root_process():
-    #         global_output_dict["nominal_idx"] = np.zeros(num_total_samples, dtype=float)
-    #         global_output_dict["differential_idx"] = np.zeros(
-    #             num_total_samples, dtype=float
-    #         )
+        # Resize global index array
+        if self.parallel_manager.is_root_process():
+            global_output_dict["nominal_idx"] = np.zeros(num_total_samples, dtype=float)
+            global_output_dict["differential_idx"] = np.zeros(
+                num_total_samples, dtype=float
+            )
 
-    #     # Now we need to collect it on global_output_dict
-    #     self.parallel_manager.gather_arrays_to_root(
-    #         sendbuf=local_output_dict["nominal_idx"],
-    #         recvbuf_spec=(
-    #             global_output_dict["nominal_idx"],
-    #             sample_split_arr,
-    #         ),
-    #     )
-    #     self.parallel_manager.gather_arrays_to_root(
-    #         sendbuf=local_output_dict["differential_idx"],
-    #         recvbuf_spec=(
-    #             global_output_dict["differential_idx"],
-    #             sample_split_arr,
-    #         ),
-    #     )
+        # Now we need to collect it on global_output_dict
+        self.parallel_manager.gather_arrays_to_root(
+            sendbuf=local_output_dict["nominal_idx"],
+            recvbuf_spec=(
+                global_output_dict["nominal_idx"],
+                sample_split_arr,
+            ),
+        )
+        self.parallel_manager.gather_arrays_to_root(
+            sendbuf=local_output_dict["differential_idx"],
+            recvbuf_spec=(
+                global_output_dict["differential_idx"],
+                sample_split_arr,
+            ),
+        )
 
-    #     return global_output_dict
+        return global_output_dict
 
     def _run_differential_sweep(self, local_value):
         diff_sweep_param_dict = self._create_differential_sweep_params(local_value)
@@ -468,17 +468,22 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
         all_parameter_combinations = self._build_combinations(
             sweep_params, sampling_type, num_samples
         )
+
         all_results = self.run_scatter_gather(
             all_parameter_combinations, DifferentialParameterSweep
         )
         global_sweep_results_dict = self._combine_gather_results(all_results)
         combined_output_arr = self._combine_output_array(global_sweep_results_dict)
+        all_parameter_combinations_solved = self._combine_input_array(
+            global_sweep_results_dict
+        )
+
         # save the results for all simulations run by this process and its children
         for results in self.parallel_manager.results_from_local_tree(all_results):
             self.writer.save_results(
                 sweep_params,
                 results.parameters,
-                all_parameter_combinations,
+                all_parameter_combinations_solved,
                 results.results,
                 global_sweep_results_dict,
                 combined_output_arr,
@@ -486,55 +491,5 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
             )
 
         global_save_data = np.hstack((all_parameter_combinations, combined_output_arr))
+
         return global_save_data, global_sweep_results_dict
-
-    # # divide the workload between processors
-    # local_values = self._divide_combinations(all_parameter_combinations)
-    # self.n_nominal_local = np.shape(local_values)[0]
-
-    # # Check if the outputs have the name attribute. If not, assign one.
-    # if self.outputs is not None:
-    #     self.assign_variable_names(model, self.outputs)
-
-    # # Create a dictionary to store all the differential ps_objects
-    # self.diff_ps_dict = {}
-
-    # # Do the Loop
-    # if self.config.custom_do_param_sweep is None:
-    #     local_results_dict = self._do_param_sweep(
-    #         sweep_params,
-    #         self.outputs,
-    #         local_values,
-    #     )
-    # else:
-    #     local_results_dict = self.config.custom_do_param_sweep(
-    #         self,
-    #         sweep_params,
-    #         self.outputs,
-    #         local_values,
-    #         **self.config.custom_do_param_sweep_kwargs,
-    #     )
-
-    # # re-writing local_values
-    # local_values = self._collect_local_inputs(local_results_dict)
-
-    # # Aggregate results on Master
-    # (
-    #     global_results_dict,
-    #     global_results_arr,
-    #     global_input_arr,
-    #     num_global_samples,
-    # ) = self._aggregate_results(local_results_dict)
-
-    # # Save to file
-    # global_save_data = self.writer.save_results(
-    #     sweep_params,
-    #     local_values,
-    #     global_input_arr,
-    #     local_results_dict,
-    #     global_results_dict,
-    #     global_results_arr,
-    #     self.parallel_manager.get_rank(),
-    # )
-
-    # return global_save_data, global_results_dict

@@ -779,13 +779,15 @@ class ParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUtils):
 
         global_sweep_results_dict = self._combine_gather_results(all_results)
         combined_output_arr = self._combine_output_array(global_sweep_results_dict)
-
+        all_parameter_combinations_solved = self._combine_input_array(
+            global_sweep_results_dict
+        )
         # save the results for all simulations run by this process and its children
         for results in self.parallel_manager.results_from_local_tree(all_results):
             self.writer.save_results(
                 sweep_params,
                 results.parameters,
-                all_parameter_combinations,
+                all_parameter_combinations_solved,
                 results.results,
                 global_sweep_results_dict,
                 combined_output_arr,

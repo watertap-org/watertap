@@ -237,7 +237,6 @@ class ParameterSweepWriter:
         process_number,
     ):
         # Create the dataframe that is going to be written to a CSV
-        print(global_values, global_results_arr)
         global_save_data = np.hstack((global_values, global_results_arr))
 
         if process_number == self.parallel_manager.ROOT_PROCESS_RANK:

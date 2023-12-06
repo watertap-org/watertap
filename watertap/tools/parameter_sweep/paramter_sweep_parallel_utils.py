@@ -129,6 +129,26 @@ class _ParameterSweepParallelUtils:
         return np.asarray(combined_outputs)
 
     """
+    Build up a list of the sweep_inputs for each result of the optimization.
+    Returned as a list of lists, where each inner list is the results from
+    one process's run.
+    """
+
+    def _combine_input_array(self, gathered_results):
+        inputs = gathered_results["sweep_params"]
+        if len(inputs) == 0:
+            return []
+
+        # assume all output arrays have the same length
+        combined_inputs = [
+            np.asarray([]) for _ in range(len(list(inputs.values())[0]["value"]))
+        ]
+        for _, inputv in inputs.items():
+            for i in range(len(inputv["value"])):
+                combined_inputs[i] = np.append(combined_inputs[i], inputv["value"][i])
+        return np.asarray(combined_inputs)
+
+    """
     Use the embedded ParallelManager to fan out and then back in the results.
     Args:
     - build_model: a function for building the flowsheet model
