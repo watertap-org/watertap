@@ -492,6 +492,7 @@ def add_costing(m):
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
     iscale.calculate_scaling_factors(m.fs)
 
+
 def solve(blk, solver=None):
     if solver is None:
         solver = get_solver()
