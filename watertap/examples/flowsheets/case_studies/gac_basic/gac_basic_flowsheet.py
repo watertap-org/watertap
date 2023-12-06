@@ -28,7 +28,6 @@ from idaes.models.unit_models import (
 )
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
-    DiffusivityCalculation,
 )
 from watertap.unit_models.gac import (
     GAC,
@@ -43,11 +42,12 @@ __author__ = "Hunter Barber"
 
 def main():
 
+    # testing ui functions
     m = build()
     initialize_model(m)
     res = solve_model(m)
     print("solver termination condition:", res.solver.termination_condition)
-    # m.fs.display()
+    m.fs.display()
 
     return m, res
 

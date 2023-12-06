@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-GUI configuration for the base GAC model.
+GUI configuration for the GAC model.
 """
 
 from pyomo.environ import units as pyunits
@@ -665,9 +665,3 @@ def solve_flowsheet(flowsheet=None):
     res = gac_fs.solve_model(flowsheet)
 
     return res
-
-
-if __name__ == "__main__":
-    m = build_flowsheet()
-    res = solve_flowsheet(m)
-    print("solver termination condition:", res.solver.termination_condition)
