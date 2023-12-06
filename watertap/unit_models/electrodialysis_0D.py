@@ -276,7 +276,6 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         # Create unit model parameters and vars
         self.water_density = Param(
             initialize=1000,
-            mutable=False,
             units=pyunits.kg * pyunits.m**-3,
             doc="density of water",
         )
