@@ -44,6 +44,7 @@ __author__ = "Hunter Barber"
 def main():
 
     m = build()
+    initialize_model(m)
     res = solve_model(m)
     print("solver termination condition:", res.solver.termination_condition)
     # m.fs.display()
@@ -89,8 +90,6 @@ def build():
     m.fs.costing.add_annual_water_production(treated_flow)
     m.fs.costing.add_LCOW(treated_flow)
     m.fs.costing.add_specific_energy_consumption(treated_flow)
-
-    initialize_model(m)
 
     return m
 
