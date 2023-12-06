@@ -520,4 +520,3 @@ class ASM1ReactionBlockData(ReactionBlockDataBase):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
         iscale.constraint_scaling_transform(self.rate_expression["R5"], 1e6)
-        
