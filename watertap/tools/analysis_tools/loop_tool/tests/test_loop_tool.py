@@ -204,53 +204,56 @@ def test_sweep_run(loop_sweep_setup):
         h5file = h5py.File(
             lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
         )
-        data = h5file[
-            "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/LCOW/value"
-        ]
+        try:
+            data = h5file[
+                "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/LCOW/value"
+            ]
 
-        true_vals = [0.38265415, 0.39908421, 0.41551427]
-        d = data[()]
-        # print(true_vals, d)
-        for i, tv in enumerate(true_vals):
-            assert d[i] == pytest.approx(tv, rel=1e-2)
-        data = h5file[
-            "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/LCOW/value"
-        ]
+            true_vals = [0.38265415, 0.39908421, 0.415514275]
+            d = data[()]
+            # print(true_vals, d)
+            for i, tv in enumerate(true_vals):
+                assert d[i] == pytest.approx(tv, rel=1e-2)
+            data = h5file[
+                "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/LCOW/value"
+            ]
 
-        true_vals = [0.519239, 0.53566907, 0.54814424]
-        d = data[()]
-        # print(true_vals, d)
-        for i, tv in enumerate(true_vals):
-            assert d[i] == pytest.approx(tv, rel=1e-2)
-        data = h5file[
-            "ro_analysis/erd_type/pressure_exchanger/membrane_group/outputs/LCOW/value"
-        ]
+            true_vals = [0.51923901, 0.53566907, 0.54814424]
+            d = data[()]
+            # print(true_vals, d)
+            for i, tv in enumerate(true_vals):
+                assert d[i] == pytest.approx(tv, rel=1e-2)
+            data = h5file[
+                "ro_analysis/erd_type/pressure_exchanger/membrane_group/outputs/LCOW/value"
+            ]
 
-        true_vals = [
-            0.3901548266020976,
-            0.3990842091271465,
-            0.4047990139431831,
-            0.41551427457321827,
-        ]
-        d = data[()]
-        # print(true_vals, d)
-        for i, tv in enumerate(true_vals):
-            assert d[i] == pytest.approx(tv, rel=1e-2)
-        data = h5file[
-            "ro_analysis/erd_type/pump_as_turbine/membrane_group/outputs/LCOW/value"
-        ]
+            true_vals = [
+                0.3901548266020976,
+                0.39908420912714665,
+                0.4047990139431831,
+                0.41551427457321816,
+            ]
+            d = data[()]
+            # print(true_vals, d)
+            for i, tv in enumerate(true_vals):
+                assert d[i] == pytest.approx(tv, rel=1e-2)
+            data = h5file[
+                "ro_analysis/erd_type/pump_as_turbine/membrane_group/outputs/LCOW/value"
+            ]
 
-        true_vals = [
-            0.5267396909076865,
-            0.535669073432733,
-            0.5413838782487631,
-            0.5481442364124981,
-        ]
-        d = data[()]
-        # print(true_vals, d)
-        for i, tv in enumerate(true_vals):
-            assert d[i] == pytest.approx(tv, rel=1e-2)
-        h5file.close()
+            true_vals = [
+                0.5267396909076865,
+                0.535669073432733,
+                0.5413838782487631,
+                0.5481442364124981,
+            ]
+            d = data[()]
+            # print(true_vals, d)
+            for i, tv in enumerate(true_vals):
+                assert d[i] == pytest.approx(tv, rel=1e-2)
+
+        finally:
+            h5file.close()
 
 
 @pytest.mark.component
@@ -268,27 +271,30 @@ def test_sweep_backup(loop_sweep_setup):
         h5file = h5py.File(
             lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
         )
-        data = h5file[
-            "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/LCOW/value"
-        ]
 
-        true_vals = [0.38265415, 0.3990842, 0.41551427]
-        d = data[()]
-        for i, tv in enumerate(true_vals):
-            assert d[i] == pytest.approx(tv, rel=1e-2)
-        data = h5file[
-            "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/LCOW/value"
-        ]
-        true_vals = [0.519239, 0.53566907, 0.54814424]
-        d = data[()]
+        try:
+            data = h5file[
+                "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/LCOW/value"
+            ]
 
-        for i, tv in enumerate(true_vals):
-            assert d[i] == pytest.approx(tv, rel=1e-2)
-        h5file.close()
+            true_vals = [0.38265415, 0.39908421, 0.415514275]
+            d = data[()]
+            for i, tv in enumerate(true_vals):
+                assert d[i] == pytest.approx(tv, rel=1e-2)
+            data = h5file[
+                "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/LCOW/value"
+            ]
+            true_vals = [0.51923901, 0.53566907, 0.54814424]
+            d = data[()]
 
-        os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
-        # try:
-        os.remove(lp.h5_backup_location)
+            for i, tv in enumerate(true_vals):
+                assert d[i] == pytest.approx(tv, rel=1e-2)
+        finally:
+            h5file.close()
+
+            os.remove(lp.h5_file_location_default + "_analysisType_ro_analysis.h5")
+            # try:
+            os.remove(lp.h5_backup_location)
 
 
 @pytest.mark.component
@@ -311,22 +317,24 @@ def test_diff_run(loop_diff_setup):
             lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5", "r"
         )
 
-        data = h5file["ro_diff_analysis/membrane_cost/outputs/fs.costing.LCOW/value"][
-            ()
-        ]
+        try:
+            data = h5file[
+                "ro_diff_analysis/membrane_cost/outputs/fs.costing.LCOW/value"
+            ][()]
 
-        # for i, tv in enumerate(true_vals):
-        assert len(data) == 4
+            # for i, tv in enumerate(true_vals):
+            assert len(data) == 4
 
-        data_a = h5file[
-            "ro_diff_analysis/membrane_group/sweep_params/fs.costing.reverse_osmosis.factor_membrane_replacement/value"
-        ][()]
-        data_b = h5file[
-            "ro_diff_analysis/membrane_group/sweep_params/fs.costing.reverse_osmosis.membrane_cost/value"
-        ][()]
-        # for i, tv in enumerate(true_vals):
-        assert len(data_a) == 4
-        assert len(data_b) == 4
-        h5file.close()
-        # try:
-        os.remove(lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5")
+            data_a = h5file[
+                "ro_diff_analysis/membrane_group/sweep_params/fs.costing.reverse_osmosis.factor_membrane_replacement/value"
+            ][()]
+            data_b = h5file[
+                "ro_diff_analysis/membrane_group/sweep_params/fs.costing.reverse_osmosis.membrane_cost/value"
+            ][()]
+            # for i, tv in enumerate(true_vals):
+            assert len(data_a) == 4
+            assert len(data_b) == 4
+        finally:
+            h5file.close()
+            # try:
+            os.remove(lp.h5_file_location_default + "_analysisType_ro_diff_analysis.h5")
