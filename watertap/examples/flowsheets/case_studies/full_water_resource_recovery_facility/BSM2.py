@@ -84,7 +84,7 @@ def main():
     assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
-
+    pyo.assert_optimal_termination(results)
     display_results(m)
     display_costing(m)
 
@@ -496,7 +496,7 @@ def add_costing(m):
 def solve(blk, solver=None):
     if solver is None:
         solver = get_solver()
-    results = solver.solve(blk)
+    results = solver.solve(blk, tee=True)
     pyo.assert_optimal_termination(results)
     return results
 
