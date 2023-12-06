@@ -710,8 +710,11 @@ class loopTool:
             ps_kwargs["build_outputs_kwargs"] = self.build_outputs_kwargs
 
         ps_kwargs[
-            "differential_sweep_specs"
-        ] = ParameterSweepReader()._dict_to_diff_spec(m, self.differential_sweep_specs)
+            "build_differential_sweep_specs"
+        ] = ParameterSweepReader()._dict_to_diff_spec
+        ps_kwargs["build_differential_sweep_specs_kwargs"] = {
+            "input_dict": self.differential_sweep_specs
+        }
         ps = DifferentialParameterSweep(**ps_kwargs)
 
         ps.parameter_sweep(
