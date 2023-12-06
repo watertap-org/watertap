@@ -30,7 +30,6 @@ from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
-from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
 
 import watertap.property_models.NaCl_prop_pack as props
