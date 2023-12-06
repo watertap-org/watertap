@@ -64,7 +64,6 @@ from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
-    cost_rectangular_clarifier,
     cost_primary_clarifier,
 )
 from pyomo.util.check_units import assert_units_consistent
