@@ -490,7 +490,7 @@ def add_costing(m):
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
-
+    iscale.calculate_scaling_factors(m.fs)
 
 def solve(blk, solver=None):
     if solver is None:
