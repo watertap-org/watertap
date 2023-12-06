@@ -46,11 +46,8 @@ import pytest
 
 from os.path import join
 from pathlib import Path
-from numpy import linspace
 from os import listdir, remove
-from pyomo.environ import units as pyunits
 
-from watertap.tools.oli_api.flash import Flash
 from watertap.tools.oli_api.client import OLIApi
 from watertap.tools.oli_api.credentials import (
     CredentialManager,

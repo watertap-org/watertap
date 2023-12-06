@@ -44,7 +44,6 @@
 
 import pytest
 
-from os.path import join
 from pathlib import Path
 from numpy import linspace
 from os import listdir, remove

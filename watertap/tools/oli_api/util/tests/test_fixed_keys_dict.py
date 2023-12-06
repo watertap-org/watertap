@@ -13,13 +13,7 @@
 
 import pytest
 
-from watertap.tools.oli_api.util.fixed_keys_dict import (
-    input_unit_set,
-    water_analysis_properties,
-    optional_properties,
-    output_unit_set,
-    stream_output_options,
-)
+from watertap.tools.oli_api.util.fixed_keys_dict import output_unit_set
 
 
 @pytest.mark.unit

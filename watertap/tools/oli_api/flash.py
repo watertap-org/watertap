@@ -50,18 +50,13 @@ from pathlib import Path
 from copy import deepcopy
 from itertools import product
 from datetime import datetime
-from pandas import DataFrame, MultiIndex
-from pyomo.environ import Var, value, units as pyunits
+from pandas import DataFrame
+from pyomo.environ import units as pyunits
 
-from watertap.tools.oli_api.util.state_block_helper_functions import (
-    create_state_block,
-    extract_state_vars,
-)
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
     get_oli_name,
     get_charge,
     get_charge_group,
-    get_molar_mass,
 )
 from watertap.tools.oli_api.util.fixed_keys_dict import (
     water_analysis_properties,
