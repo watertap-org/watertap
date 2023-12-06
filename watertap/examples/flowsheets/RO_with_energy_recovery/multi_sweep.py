@@ -32,53 +32,36 @@ def set_up_sensitivity():
     print("\n***---Optimization results---***")
     RO.display_system(m)
     RO.display_design(m)
+
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
-    # Not used in Excel
     outputs["RO Water Flux"] = m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
-    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Membrane Area"] = m.fs.RO.area
-    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Energy Consumption"] = m.fs.costing.specific_energy_consumption
-    # No conversion in Excel
     outputs["System Capital Cost"] = m.fs.costing.aggregate_capital_cost
-    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Capital Cost"] = m.fs.RO.costing.capital_cost
-    # Multiplied by flow rate scaling factor in Excel
     outputs["Pump Capital Cost"] = m.fs.P1.costing.capital_cost
-    # Multiplied by flow rate scaling factor in Excel
     # outputs["ERD Capital Cost"] = m.fs.ERD.costing.capital_cost
-    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Operating Cost"] = m.fs.RO.costing.fixed_operating_cost
-    # Multiplied by flow rate scaling factor in Excel
     outputs[
         "MLC Operating Cost"
     ] = m.fs.costing.maintenance_labor_chemical_operating_cost
-    # Multiplied by flow rate scaling factor in Excel
     outputs["Feed Flow Rate"] = m.fs.feed.properties[0].flow_vol_phase["Liq"]
-    # Fixed based on desired flow rates given by the dye desal team
     outputs["Permeate Flow Rate"] = m.fs.product.properties[0].flow_vol_phase["Liq"]
-    # Multiplied by flow rate scaling factor in Excel
     outputs["Retentate Flow Rate"] = m.fs.disposal.properties[0].flow_vol_phase["Liq"]
-    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Operating Pressure"] = m.fs.RO.inlet.pressure[0]
-    # No conversion in Excel
     outputs["RO Permeate H2O Mass Flow"] = m.fs.RO.permeate.flow_mass_phase_comp[
         0, "Liq", "H2O"
     ]
-    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Permeate Salt Mass Flow"] = m.fs.RO.permeate.flow_mass_phase_comp[
         0, "Liq", "NaCl"
     ]
-    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Retentate H2O Mass Flow"] = m.fs.RO.retentate.flow_mass_phase_comp[
         0, "Liq", "H2O"
     ]
-    # Multiplied by flow rate scaling factor in Excel
     outputs["RO Retentate Salt Mass Flow"] = m.fs.RO.retentate.flow_mass_phase_comp[
         0, "Liq", "NaCl"
     ]
-    # Multiplied by flow rate scaling factor in Excel
 
     return outputs, m
 
