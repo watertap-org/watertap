@@ -399,8 +399,8 @@ class TestGACRobust:
 
         cost = mr.fs.unit.costing
         # Check for known cost solution of default twin alternating contactors
-        assert pyo.value(mr.fs.costing.gac.num_contactors_op) == 1
-        assert pyo.value(mr.fs.costing.gac.num_contactors_redundant) == 1
+        assert pyo.value(mr.fs.costing.gac_pressure.num_contactors_op) == 1
+        assert pyo.value(mr.fs.costing.gac_pressure.num_contactors_redundant) == 1
         assert pytest.approx(56900, rel=1e-3) == pyo.value(cost.contactor_cost)
         assert pytest.approx(4.359, rel=1e-3) == pyo.value(cost.adsorbent_unit_cost)
         assert pytest.approx(17450, rel=1e-3) == pyo.value(cost.adsorbent_cost)
@@ -437,8 +437,8 @@ class TestGACRobust:
 
         cost = mr_grav.fs.unit.costing
         # Check for known cost solution of default twin alternating contactors
-        assert pyo.value(mr_grav.fs.costing.gac.num_contactors_op) == 1
-        assert pyo.value(mr_grav.fs.costing.gac.num_contactors_redundant) == 1
+        assert pyo.value(mr_grav.fs.costing.gac_gravity.num_contactors_op) == 1
+        assert pyo.value(mr_grav.fs.costing.gac_gravity.num_contactors_redundant) == 1
         assert pytest.approx(163200, rel=1e-3) == pyo.value(cost.contactor_cost)
         assert pytest.approx(4.359, rel=1e-3) == pyo.value(cost.adsorbent_unit_cost)
         assert pytest.approx(17450, rel=1e-3) == pyo.value(cost.adsorbent_cost)
@@ -461,15 +461,15 @@ class TestGACRobust:
         )
         mr.fs.costing.cost_process()
 
-        mr.fs.costing.gac.num_contactors_op.fix(4)
-        mr.fs.costing.gac.num_contactors_redundant.fix(2)
+        mr.fs.costing.gac_pressure.num_contactors_op.fix(4)
+        mr.fs.costing.gac_pressure.num_contactors_redundant.fix(2)
 
         results = solver.solve(mr)
 
         cost = mr.fs.unit.costing
         # Check for known cost solution when changing volume scale of vessels in parallel
-        assert pyo.value(mr.fs.costing.gac.num_contactors_op) == 4
-        assert pyo.value(mr.fs.costing.gac.num_contactors_redundant) == 2
+        assert pyo.value(mr.fs.costing.gac_pressure.num_contactors_op) == 4
+        assert pyo.value(mr.fs.costing.gac_pressure.num_contactors_redundant) == 2
         assert pytest.approx(89040, rel=1e-3) == pyo.value(cost.contactor_cost)
         assert pytest.approx(69690, rel=1e-3) == pyo.value(cost.other_process_cost)
         assert pytest.approx(176200, rel=1e-3) == pyo.value(cost.capital_cost)
@@ -497,10 +497,10 @@ class TestGACRobust:
         # Check for bed_mass_gac_cost_ref to be overwritten
         # if bed_mass_gac is greater than bed_mass_gac_cost_max_ref
         assert pyo.value(mr.fs.unit.bed_mass_gac) > pyo.value(
-            mr.fs.costing.gac.bed_mass_max_ref
+            mr.fs.costing.gac_pressure.bed_mass_max_ref
         )
         assert pyo.value(mr.fs.unit.costing.bed_mass_gac_ref) == (
-            pytest.approx(pyo.value(mr.fs.costing.gac.bed_mass_max_ref), 1e-5)
+            pytest.approx(pyo.value(mr.fs.costing.gac_pressure.bed_mass_max_ref), 1e-5)
         )
 
 
