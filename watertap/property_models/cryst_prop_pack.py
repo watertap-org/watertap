@@ -165,7 +165,6 @@ class NaClParameterData(PhysicalParameterBlock):
         mw_comp_data = {"H2O": 18.01528e-3, "NaCl": 58.44e-3}
         self.mw_comp = Param(
             self.component_list,
-            mutable=False,
             initialize=extract_data(mw_comp_data),
             units=pyunits.kg / pyunits.mol,
             doc="Molecular weight kg/mol",
@@ -1958,11 +1957,6 @@ class NaClStateBlockData(StateBlockData):
                             self.flow_mass_phase_comp[p, "NaCl"]
                         ) / iscale.get_scaling_factor(self.dens_mass_solute[p])
                         iscale.set_scaling_factor(self.flow_vol_phase[p], sf)
-
-        # Scaling for flow volume
-        if self.is_property_constructed("flow_vol"):
-            sf = iscale.get_scaling_factor(self.flow_vol_phase)
-            iscale.set_scaling_factor(self.flow_vol, sf)
 
         # Scaling material heat capacities
         if self.is_property_constructed("cp_mass_solute"):

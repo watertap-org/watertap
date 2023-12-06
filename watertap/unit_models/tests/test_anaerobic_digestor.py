@@ -71,6 +71,7 @@ from watertap.costing import WaterTAPCosting
 # Get default solver for testing
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_config():
@@ -167,7 +168,6 @@ class TestAdm(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, adm):
-
         assert hasattr(adm.fs.unit, "inlet")
         assert len(adm.fs.unit.inlet.vars) == 6
         assert hasattr(adm.fs.unit.inlet, "flow_vol")
@@ -194,13 +194,14 @@ class TestAdm(object):
         assert hasattr(adm.fs.unit.vapor_outlet, "pressure")
 
         assert hasattr(adm.fs.unit, "ad_performance_eqn")
+        assert hasattr(adm.fs.unit, "hydraulic_retention_time")
         assert hasattr(adm.fs.unit, "volume_AD")
         assert hasattr(adm.fs.unit, "volume_liquid")
         assert hasattr(adm.fs.unit, "volume_vapor")
         assert hasattr(adm.fs.unit, "heat_duty")
 
-        assert number_variables(adm.fs.unit) == 201
-        assert number_total_constraints(adm.fs.unit) == 169
+        assert number_variables(adm.fs.unit) == 202
+        assert number_total_constraints(adm.fs.unit) == 170
         assert number_unused_variables(adm.fs.unit) == 0
 
     @pytest.mark.component
@@ -221,7 +222,6 @@ class TestAdm(object):
 
     @pytest.mark.component
     def test_var_scaling(self, adm):
-
         unscaled_var_list = list(
             unscaled_variables_generator(adm.fs.unit, include_fixed=True)
         )
@@ -341,8 +341,11 @@ class TestAdm(object):
         assert pytest.approx(0.0271, abs=1e-3) == value(adm.fs.unit.KH_co2[0])
         assert pytest.approx(0.00116, abs=1e-3) == value(adm.fs.unit.KH_ch4[0])
         assert pytest.approx(7.38e-4, rel=1e-2) == value(adm.fs.unit.KH_h2[0])
-        assert pytest.approx(0.2054, abs=1e-3) == value(
+        assert pytest.approx(23.7291, abs=1e-3) == value(
             adm.fs.unit.electricity_consumption[0]
+        )
+        assert pytest.approx(1880470.588, abs=1e-3) == value(
+            adm.fs.unit.hydraulic_retention_time[0]
         )
 
     @pytest.mark.solver
@@ -410,7 +413,7 @@ class TestAdm(object):
         assert pytest.approx(1083290.8, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(5.04295, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(5.2754, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_get_performance_contents(self, adm):
