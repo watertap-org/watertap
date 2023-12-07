@@ -489,7 +489,6 @@ class TestOsmoticallyAssistedReverseOsmosis:
             m.fs.unit.permeate_side.deltaP_stage[0]
         )
 
-    # NOTE Begin SKK tests
     @pytest.fixture(scope="class")
     def RO_SKK_frame(self):
         m = ConcreteModel()
@@ -500,8 +499,8 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
             property_package=m.fs.properties,
             has_pressure_change=True,
-            concentration_polarization_type=ConcentrationPolarizationType.fixed,
-            mass_transfer_coefficient=MassTransferCoefficient.none,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
             transport_model=TransportModel.SKK,
             has_full_reporting=True,
         )
@@ -528,7 +527,6 @@ class TestOsmoticallyAssistedReverseOsmosis:
         )
         m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
-        m.fs.unit.feed_side.cp_modulus.fix(feed_cp_mod)
         m.fs.unit.feed_side.deltaP_stage.fix(0)
 
         permeate_flow_mass = 0.33 * feed_flow_mass
@@ -542,7 +540,6 @@ class TestOsmoticallyAssistedReverseOsmosis:
         )
         m.fs.unit.permeate_inlet.pressure[0].fix(5e5)
         m.fs.unit.permeate_inlet.temperature[0].fix(feed_temperature)
-        m.fs.unit.permeate_side.cp_modulus.fix(permeate_cp_mod)
         m.fs.unit.permeate_side.deltaP_stage.fix(0)
 
         m.fs.unit.area.fix(membrane_area)
@@ -550,7 +547,12 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.reflect_coeff.fix(0.95)
+        m.fs.unit.structural_parameter.fix(1200e-6)
 
+        m.fs.unit.permeate_side.channel_height.fix(0.002)
+        m.fs.unit.permeate_side.spacer_porosity.fix(0.97)
+        m.fs.unit.feed_side.channel_height.fix(0.002)
+        m.fs.unit.feed_side.spacer_porosity.fix(0.97)
         return m
 
     @pytest.mark.unit
@@ -570,9 +572,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert isinstance(m.fs.unit.permeate_side, MembraneChannel1DBlock)
 
         # test statistics
-        assert number_variables(m) == 754
-        assert number_total_constraints(m) == 684
-        assert number_unused_variables(m) == 30
+        assert number_variables(m) == 893
+        assert number_total_constraints(m) == 838
+        assert number_unused_variables(m) == 23
 
     @pytest.mark.unit
     def test_skk_dof(self, RO_SKK_frame):
@@ -671,16 +673,16 @@ class TestOsmoticallyAssistedReverseOsmosis:
     @pytest.mark.component
     def test_skk_solution(self, RO_SKK_frame):
         m = RO_SKK_frame
-        assert pytest.approx(8.5717e-4, rel=1e-3) == value(
+        assert pytest.approx(7.29e-4, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
         )
-        assert pytest.approx(9.242e-06, rel=1e-3) == value(
+        assert pytest.approx(8.5805e-06, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
         )
-        assert pytest.approx(1.241e-01, rel=1e-3) == value(
+        assert pytest.approx(1.4391e-01, rel=1e-3) == value(
             m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
-        assert pytest.approx(1.940e-02, rel=1e-3) == value(
+        assert pytest.approx(1.95033e-02, rel=1e-3) == value(
             m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
         )
         assert pytest.approx(
@@ -739,7 +741,6 @@ class TestOsmoticallyAssistedReverseOsmosis:
             m.fs.unit.permeate_side.deltaP_stage[0]
         )
 
-    # NOTE End SKK tests
 
     @pytest.mark.component
     def test_CP_calculation_with_kf_fixed(self):
