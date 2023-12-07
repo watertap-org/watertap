@@ -125,6 +125,14 @@ class ASM1ParameterData(PhysicalParameterBlock):
             doc="Reference temperature",
             units=pyo.units.K,
         )
+        #TODO: f_p exists on the rxn parameter block and duplicating here temporarily; consolidate
+        self.f_p = pyo.Var(
+            initialize=0.08,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Fraction of biomass yielding particulate products, f_p",
+        )
+        self.f_p.fix()
 
     @classmethod
     def define_metadata(cls, obj):
@@ -355,6 +363,45 @@ class ASM1StateBlockData(StateBlockData):
         self.energy_density_expression = pyo.Expression(
             rule=energy_density_expression, doc="Energy density term"
         )
+
+        def TSS(self):
+            tss = self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_I"] + self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"] + self.conc_mass_comp["X_P"]
+            return 0.75*tss
+
+        self.TSS_expression = pyo.Expression(
+            rule=TSS,
+            doc="Total suspended solids (TSS)",
+        )
+
+        def BOD5(self):
+            bod5 = self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_S"] + (1-self.params.f_p)*(self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"])
+            #TODO: 0.25 should be a parameter instead as it changes by influent/effluent
+            return 0.25*bod5
+
+        self.BOD5_expression = pyo.Expression(
+            rule=BOD5,
+            doc="Five-day Biological Oxygen Demand (BOD5)",
+        )
+
+        def COD(self):
+            cod = self.conc_mass_comp["S_S"] + self.conc_mass_comp["S_I"] +  self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_I"] + self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"]+ self.conc_mass_comp["X_P"]
+            return cod
+
+        self.COD_expression = pyo.Expression(
+            rule=COD,
+            doc="Chemical Oxygen Demand",
+        )
+        
+        #TODO: Total Kjeldahl N
+        # def TKN(self):
+        #     tkn = self.conc_mass_comp["S_S"] + self.conc_mass_comp["S_I"] +  self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_I"] + self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"]+ self.conc_mass_comp["X_P"]
+        #     return tkn
+
+        # self.TKN_expression = pyo.Expression(
+        #     rule=TKN,
+        #     doc="Total Kjeldahl N",
+        # )
+
 
         iscale.set_scaling_factor(self.flow_vol, 1e1)
         iscale.set_scaling_factor(self.temperature, 1e-1)
