@@ -582,7 +582,7 @@ def display_costing(m):
     print(
         "electricity consumption dewatering Unit",
         pyo.value(m.fs.DU.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.R5.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.DU.electricity_consumption[0]),
     )
     print(
         "electricity consumption thickening Unit",
