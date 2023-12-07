@@ -251,13 +251,13 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
                     )
                 else:
                     for subkey, subitem in item.items():
-                        local_output_dict[key][subkey]["value"] = np.concatenate(
-                            (
-                                local_output_dict[key][subkey]["value"],
-                                subitem["value"],
+                        if subkey in list(local_output_dict[key].keys()):
+                            local_output_dict[key][subkey]["value"] = np.concatenate(
+                                (
+                                    local_output_dict[key][subkey]["value"],
+                                    subitem["value"],
+                                )
                             )
-                        )
-
                     # We also need to capture sweep_params variables that are not a part of differential_sweep_specs
                     if key == "sweep_params":
                         missing_sub_keys = set(item.keys()) ^ set(
