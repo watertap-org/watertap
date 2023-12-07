@@ -489,7 +489,6 @@ class TestOsmoticallyAssistedReverseOsmosis:
             m.fs.unit.permeate_side.deltaP_stage[0]
         )
 
-    # NOTE Begin SKK tests
     @pytest.fixture(scope="class")
     def RO_SKK_frame(self):
         m = ConcreteModel()
@@ -968,8 +967,6 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert pytest.approx(-109664.455, abs=1e-1) == value(
             m.fs.unit.permeate_side.deltaP_stage[0]
         )
-
-    # NOTE End SKK tests
 
     @pytest.mark.component
     def test_CP_calculation_with_kf_fixed(self):
