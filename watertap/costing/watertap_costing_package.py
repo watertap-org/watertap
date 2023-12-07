@@ -115,6 +115,3 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
         calculate_variable_from_constraint(
             self.total_operating_cost, self.total_operating_cost_constraint
         )
-
-        for var, con in self._registered_LCOWs.values():
-            calculate_variable_from_constraint(var, con)

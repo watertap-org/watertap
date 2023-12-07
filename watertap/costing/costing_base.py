@@ -37,10 +37,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         CSTR: cost_cstr,
     }
 
-    def build(self):
-        super().build()
-        self._registered_LCOWs = {}
-
     def add_LCOW(self, flow_rate, name="LCOW"):
         """
         Add Levelized Cost of Water (LCOW) to costing block.
@@ -50,29 +46,22 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             name (optional) - name for the LCOW variable (default: LCOW)
         """
 
-        LCOW = pyo.Var(
-            doc=f"Levelized Cost of Water based on flow {flow_rate.name}",
-            units=self.base_currency / pyo.units.m**3,
-        )
-        self.add_component(name, LCOW)
-
-        LCOW_constraint = pyo.Constraint(
-            expr=LCOW
-            == (
-                self.total_capital_cost * self.capital_recovery_factor
-                + self.total_operating_cost
-            )
-            / (
-                pyo.units.convert(
-                    flow_rate, to_units=pyo.units.m**3 / self.base_period
+        self.add_component(
+            name,
+            pyo.Expression(
+                expr=(
+                    self.total_capital_cost * self.capital_recovery_factor
+                    + self.total_operating_cost
                 )
-                * self.utilization_factor
+                / (
+                    pyo.units.convert(
+                        flow_rate, to_units=pyo.units.m**3 / self.base_period
+                    )
+                    * self.utilization_factor
+                ),
+                doc=f"Levelized Cost of Water based on flow {flow_rate.name}",
             ),
-            doc=f"Constraint for Levelized Cost of Water based on flow {flow_rate.name}",
         )
-        self.add_component(name + "_constraint", LCOW_constraint)
-
-        self._registered_LCOWs[name] = (LCOW, LCOW_constraint)
 
     def add_specific_energy_consumption(
         self, flow_rate, name="specific_energy_consumption"
