@@ -606,7 +606,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         )
         m.fs.unit.permeate_inlet.pressure[0].fix(5e5)
         m.fs.unit.permeate_inlet.temperature[0].fix(feed_temperature)
-        
+
         # m.fs.unit.permeate_side.deltaP.fix(membrane_pressure_drop)
 
         m.fs.unit.area.fix(membrane_area)
@@ -621,7 +621,6 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.feed_side.channel_height.fix(0.002)
         m.fs.unit.feed_side.spacer_porosity.fix(0.97)
         return m
-
 
     @pytest.mark.unit
     def test_skk_build(self, RO_SKK_frame):
@@ -648,7 +647,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
     def test_skk_dof(self, RO_SKK_frame):
         m = RO_SKK_frame
         assert degrees_of_freedom(m) == 0
-    
+
     @pytest.mark.unit
     def test_skk_general_dof(self, RO_SKK_calculated_frame):
         m = RO_SKK_calculated_frame
@@ -817,7 +816,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
     @pytest.mark.component
     def test_skk_CP_calculation_with_kf_calculation(self, RO_SKK_calculated_frame):
         m = RO_SKK_calculated_frame
-    
+
         # Test units
         assert_units_consistent(m.fs.unit)
 
@@ -854,11 +853,12 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert_optimal_termination(results)
 
         assert (
-        m.fs.unit.config.concentration_polarization_type
-        == ConcentrationPolarizationType.calculated
+            m.fs.unit.config.concentration_polarization_type
+            == ConcentrationPolarizationType.calculated
         )
         assert (
-            m.fs.unit.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
+            m.fs.unit.config.mass_transfer_coefficient
+            == MassTransferCoefficient.calculated
         )
 
         assert number_variables(m) == 937
@@ -877,7 +877,6 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert pytest.approx(0.01952, rel=1e-3) == value(
             m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
         )
-
 
         assert pytest.approx(78.8775, rel=1e-3) == value(
             m.fs.unit.feed_side.properties[0, 0].conc_mass_phase_comp["Liq", "NaCl"]
@@ -963,7 +962,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         ) / value(
             m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
         )
-        assert pytest.approx(-197270.178, abs=1e-1) == value(m.fs.unit.feed_side.deltaP_stage[0])
+        assert pytest.approx(-197270.178, abs=1e-1) == value(
+            m.fs.unit.feed_side.deltaP_stage[0]
+        )
         assert pytest.approx(-109664.455, abs=1e-1) == value(
             m.fs.unit.permeate_side.deltaP_stage[0]
         )
