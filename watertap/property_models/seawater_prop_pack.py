@@ -112,7 +112,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
 
         self.mw_comp = Param(
             self.component_list,
-            mutable=False,
             initialize=mw_comp_data,
             units=pyunits.kg / pyunits.mol,
             doc="Molecular weight",

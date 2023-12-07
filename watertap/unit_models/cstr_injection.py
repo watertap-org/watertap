@@ -18,7 +18,14 @@ NOTE: This is likely a temporary model until a more detailed model is available.
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.environ import Reference
+from pyomo.environ import (
+    Reference,
+    Var,
+    Constraint,
+    Param,
+    units as pyunits,
+    NonNegativeReals,
+)
 
 # Import IDAES cores
 from idaes.core import (
@@ -36,6 +43,8 @@ from idaes.core.util.config import (
 )
 
 from watertap.core import InitializationMixin
+
+from watertap.costing.unit_models.cstr_injection import cost_cstr_injection
 
 __author__ = "Andrew Lee, Vibhav Dabadghao"
 
@@ -302,6 +311,56 @@ see reaction package for documentation.}""",
         ):
             self.deltaP = Reference(self.control_volume.deltaP[:])
 
+        self.electricity_consumption = Var(
+            self.flowsheet().time,
+            units=pyunits.kW,
+            bounds=(0, None),
+            doc="Electricity consumption of unit",
+        )
+        # The value is taken from Maravelias' data
+        self.energy_electric_flow_vol_inlet = Param(
+            initialize=0.0108,
+            units=pyunits.kWh / pyunits.m**3,
+            mutable=True,
+            doc="Electricity intensity with respect to inlet flow",
+        )
+
+        self.hydraulic_retention_time = Var(
+            self.flowsheet().time,
+            initialize=1460.407,
+            domain=NonNegativeReals,
+            units=pyunits.s,
+            doc="Hydraulic retention time",
+        )
+
+        def CSTR_injection_retention_time_rule(self, t):
+            return (
+                self.hydraulic_retention_time[t]
+                == self.volume[t] / self.control_volume.properties_in[t].flow_vol
+            )
+
+        self.CSTR_injection_retention_time = Constraint(
+            self.flowsheet().time,
+            rule=CSTR_injection_retention_time_rule,
+            doc="Total CSTR retention time",
+        )
+
+        # Electricity constraint
+        def rule_electricity_consumption(self, t):
+            return self.electricity_consumption[t] == (
+                self.energy_electric_flow_vol_inlet
+                * pyunits.convert(
+                    self.control_volume.properties_in[t].flow_vol,
+                    to_units=pyunits.m**3 / pyunits.hr,
+                )
+            )
+
+        self.unit_electricity_consumption = Constraint(
+            self.flowsheet().time,
+            rule=rule_electricity_consumption,
+            doc="Unit level electricity consumption",
+        )
+
     def _get_performance_contents(self, time_point=0):
         var_dict = {"Volume": self.volume[time_point]}
         for k, v in self.injection.items():
@@ -311,5 +370,13 @@ see reaction package for documentation.}""",
             var_dict["Heat Duty"] = self.heat_duty[time_point]
         if hasattr(self, "deltaP"):
             var_dict["Pressure Change"] = self.deltaP[time_point]
+        if hasattr(self, "electricity_consumption"):
+            var_dict["Electricity Consumption"] = self.electricity_consumption[
+                time_point
+            ]
 
         return {"vars": var_dict}
+
+    @property
+    def default_costing_method(self):
+        return cost_cstr_injection

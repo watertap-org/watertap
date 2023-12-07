@@ -68,7 +68,6 @@ from watertap.costing.unit_models.dewatering import (
     DewateringType,
 )
 from idaes.core import UnitModelCostingBlock
-from watertap.costing import WaterTAPCosting
 
 
 __author__ = "Alejandro Garciadiego, Adam Atia"
