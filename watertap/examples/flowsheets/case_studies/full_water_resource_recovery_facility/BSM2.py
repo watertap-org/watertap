@@ -85,7 +85,18 @@ def main():
 
     results = solve(m)
     pyo.assert_optimal_termination(results)
-    display_results(m)
+
+    print("\n\n=============SIMULATION RESULTS=============\n\n")
+    # display_results(m)
+    display_costing(m)
+
+    setup_optimization(m)
+    solver2 = get_solver()
+    solver2.options["bound_push"] = 1e-20
+    results = solver2.solve(m, tee=True)
+    pyo.assert_optimal_termination(results)
+    print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
+    # display_results(m)
     display_costing(m)
 
     return m, results
@@ -491,6 +502,24 @@ def add_costing(m):
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
     iscale.calculate_scaling_factors(m.fs)
+
+def setup_optimization(m):
+    # m.fs.R1.volume.unfix()
+    # m.fs.R2.volume.unfix()
+    # m.fs.R3.volume.unfix()
+    # m.fs.R4.volume.unfix()
+    m.fs.R5.volume.unfix()
+    
+    # # Dewatering Unit - fix either HRT or volume.
+    # m.fs.DU.hydraulic_retention_time.fix(1800 * pyo.units.s)
+
+    # # Set specific energy consumption averaged for centrifuge
+    # m.fs.DU.energy_electric_flow_vol_inlet[0] = 0.069 * pyo.units.kWh / pyo.units.m**3
+
+    # Thickener unit
+    # m.fs.TU.hydraulic_retention_time.fix(86400 * pyo.units.s)
+    # m.fs.TU.diameter.unfix()
+    # m.fs.TU.diameter.setub(20)
 
 
 def solve(blk, solver=None):
