@@ -142,7 +142,7 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
     ):
         # Initialize the base Class
         super().__init__(**options)
-
+        self.config.index_global_combo_array = True
         if self.config.guarantee_solves:
             raise NotImplementedError
 
@@ -153,8 +153,9 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
         )
 
         diff_sweep_param = {}
+        non_indexed_values = local_values[1:]
         for ctr, (param, specs) in enumerate(differential_sweep_specs.items()):
-            nominal_val = local_values[self.diff_spec_index[ctr]]
+            nominal_val = non_indexed_values[self.diff_spec_index[ctr]]
             pyomo_object = specs["pyomo_object"]
             if specs["diff_sample_type"] == NormalSample:
                 std_dev = specs["std_dev"]
@@ -222,7 +223,9 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
         output_dict["differential_idx"] = np.array([np.nan] * num_samples)
         return output_dict
 
-    def _append_differential_results(self, local_output_dict, diff_results_dict):
+    def _append_differential_results(
+        self, local_output_dict, diff_results_dict, local_values
+    ):
         for idx, diff_sol in diff_results_dict.items():
             for key, item in diff_sol.items():
                 # Solve status
@@ -231,19 +234,21 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
                     local_output_dict["solve_successful"].extend(item)
                     local_output_dict["nominal_idx"] = np.concatenate(
                         (
-                            local_output_dict["nominal_idx"],
-                            np.array([np.nan] * n_diff_samples),
-                        ),
-                        axis=0,
-                    )
-                    local_output_dict["differential_idx"] = np.concatenate(
-                        (
-                            local_output_dict["differential_idx"],
-                            np.array([idx] * n_diff_samples, dtype=float),
+                            local_values[:, 0],
+                            np.array(
+                                [np.nan] * np.repeat(local_values[:, 0], n_diff_samples)
+                            ),
                         ),
                         axis=0,
                     )
 
+                    local_output_dict["differential_idx"] = np.concatenate(
+                        (
+                            np.array(np.nan * local_values[:, 0]),
+                            np.repeat(local_values[:, 0], n_diff_samples),
+                        ),
+                        axis=0,
+                    )
                 else:
                     for subkey, subitem in item.items():
                         local_output_dict[key][subkey]["value"] = np.concatenate(
@@ -336,13 +341,10 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
         )
         # pass model_manager from refernce sweep, to diff sweep
         # so we don't have to reijnit he model
+        diff_ps.config.index_global_combo_array = True
         diff_ps.model_manager = self.model_manager
         diff_ps.model_manager.is_rebuild_and_init_enabled = False
-        print(
-            "diff model passed state",
-            self.model_manager.is_initialized,
-            diff_sweep_param_dict,
-        )
+
         _, differential_sweep_output_dict = diff_ps.parameter_sweep(
             diff_ps.model_manager.model,
             diff_sweep_param_dict,
@@ -379,7 +381,7 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
 
         # Now append the outputs of the differential solves
         self._append_differential_results(
-            local_output_dict, self.differential_sweep_output_dict
+            local_output_dict, self.differential_sweep_output_dict, local_values
         )
 
         return local_output_dict
@@ -396,6 +398,7 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
         build_sweep_params_kwargs=None,
     ):
         # Create a base sweep_params
+
         build_model_kwargs = (
             build_model_kwargs if build_model_kwargs is not None else dict()
         )
@@ -437,7 +440,6 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
                                 and will not work with future implementations of parallelism.",
                 version="0.10.0",
             )
-        print(self.config.differential_sweep_specs)
         if self.config.differential_sweep_specs is not None:
             _combined_outputs = build_outputs
             self.config.build_differential_sweep_specs = (

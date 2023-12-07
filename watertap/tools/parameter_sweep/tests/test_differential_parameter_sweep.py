@@ -123,7 +123,7 @@ def test_create_differential_sweep_params_normal(model):
     ps.model_manager = ModelManager(ps)
     ps.model_manager.model = m
 
-    local_values = np.array([0.0, 1.0, 2.0])
+    local_values = np.array([0.0, 0.0, 1.0, 2.0])
 
     ps.diff_spec_index = [0, 1]
     diff_sweep_param_dict = ps._create_differential_sweep_params(local_values)
@@ -161,7 +161,7 @@ def test_create_differential_sweep_params_sum_prod(model):
     ps = DifferentialParameterSweep(build_differential_sweep_specs=build_spec)
     ps.model_manager = ModelManager(ps)
     ps.model_manager.model = m
-    local_values = np.array([0.1, 1.0, 2.0])
+    local_values = np.array([0.0, 0.1, 1.0, 2.0])
 
     ps.diff_spec_index = [0, 1]
     diff_sweep_param_dict = ps._create_differential_sweep_params(local_values)
@@ -194,8 +194,7 @@ def test_create_differential_sweep_params_percentile(model):
     ps = DifferentialParameterSweep(build_differential_sweep_specs=build_spec)
     ps.model_manager = ModelManager(ps)
     ps.model_manager.model = m
-    local_values = np.array([0.1, 1.0, 2.0])
-
+    local_values = np.array([0.0, 0.1, 1.0, 2.0])
     ps.diff_spec_index = [0, 1]
     diff_sweep_param_dict = ps._create_differential_sweep_params(local_values)
 

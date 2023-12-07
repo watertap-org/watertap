@@ -258,6 +258,14 @@ class _ParameterSweepBase(ABC):
             description="Enables loging of model states during serial execution",
         ),
     )
+    CONFIG.declare(
+        "index_global_combo_array",
+        ConfigValue(
+            default=False,
+            domain=bool,
+            description="Will add indexing to global_combo_array, primarily used with differential parameter sweep tool",
+        ),
+    )
 
     def __init__(
         self,
@@ -349,7 +357,10 @@ class _ParameterSweepBase(ABC):
         if not global_combo_array.flags.c_contiguous:
             # If not, return a copy of this array with row-major memory order
             global_combo_array = np.ascontiguousarray(global_combo_array)
-
+        # add sample index for tracking of sample number in parallel schema
+        if self.config.index_global_combo_array:
+            sample_idx = np.arange(global_combo_array.shape[0]).reshape(-1, 1)
+            global_combo_array = np.hstack((sample_idx, global_combo_array))
         return global_combo_array
 
     """
@@ -391,16 +402,22 @@ class _ParameterSweepBase(ABC):
             return model.find_component(name)
 
     def _update_model_values(self, m, param_dict, values):
+        # remove index from values
+        if self.config.index_global_combo_array:
+            non_indexed_values = values[1:]
+        else:
+            non_indexed_values = values
+
         for k, item in enumerate(param_dict.values()):
             name = self._get_object(m, item.pyomo_object)
             param = m.find_component(name)
             if param.is_variable_type():
                 # Fix the single value to values[k]
-                param.fix(values[k])
+                param.fix(non_indexed_values[k])
 
             elif param.is_parameter_type():
                 # Fix the single value to values[k]
-                param.set_value(values[k])
+                param.set_value(non_indexed_values[k])
 
             else:
                 raise RuntimeError(f"Unrecognized Pyomo object {param}")
@@ -598,11 +615,15 @@ class _ParameterSweepBase(ABC):
         return global_output_dict
 
     def _param_sweep_kernel(self, sweep_params, local_value_k):
-        initialize_before_sweep = self.config.initialize_before_sweep
         # Forced reinitialization of the flowsheet if enabled
+        # and model is not already initalized at givel local sweep param set
         # or init if model was not initialized or prior solved failed (if solved failed, init state is false)
-        if initialize_before_sweep or self.model_manager.is_initialized == False:
-            self.model_manager.build_and_init(sweep_params, local_value_k)
+        if (
+            self.config.initialize_before_sweep
+            and all(self.model_manager.current_k == local_value_k) == False
+        ) or self.model_manager.is_initialized == False:
+            if self.model_manager.is_rebuild_and_init_enabled:
+                self.model_manager.build_and_init(sweep_params, local_value_k)
         # try to solve our model
         self.model_manager.update_model_params(sweep_params, local_value_k)
         self.model_manager.solve_model()
@@ -656,17 +677,18 @@ class _ParameterSweepBase(ABC):
         # setup model manager if not already specifid (Used in case of diff tool)
         # or if user wants to specify thier own model_manager before runing param sweep
         if self.model_manager == None:
-            print("model managerdoes notexists")
             self.model_manager = ModelManager(self)
-        else:
-            print("model manager exists")
 
         # build and init model, we also pass first set of paramters incase user wants
         # to update them before initlizeing the model
-        if self.model_manager.is_initialized == False:
-            self.model_manager.build_and_init(
-                sweep_params=sweep_params, local_value_k=local_values[0, :]
-            )
+        if (
+            self.config.initialize_before_sweep
+            or self.model_manager.is_initialized == False
+        ):
+            if self.model_manager.is_rebuild_and_init_enabled:
+                self.model_manager.build_and_init(
+                    sweep_params=sweep_params, local_value_k=local_values[0, :]
+                )
 
         local_num_cases = np.shape(local_values)[0]
 
