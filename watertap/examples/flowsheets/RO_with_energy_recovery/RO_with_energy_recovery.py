@@ -625,16 +625,23 @@ def display_state(m):
             % (flow_mass, mass_frac_ppm, pressure_bar)
         )
 
-    print_state("Feed      ", m.fs.feed.outlet)
-    print_state("Split 1   ", m.fs.S1.P1)
-    print_state("P1 out    ", m.fs.P1.outlet)
-    print_state("Split 2   ", m.fs.S1.PXR)
-    print_state("PXR LP out", m.fs.PXR.low_pressure_outlet)
-    print_state("P2 out    ", m.fs.P2.outlet)
-    print_state("Mix out   ", m.fs.M1.outlet)
-    print_state("RO perm   ", m.fs.RO.permeate)
-    print_state("RO reten  ", m.fs.RO.retentate)
-    print_state("PXR HP out", m.fs.PXR.high_pressure_outlet)
+    if m.fs.erd_type == ERDtype.no_ERD:
+        print_state("Feed      ", m.fs.feed.outlet)
+        print_state("P1 out    ", m.fs.P1.outlet)
+        print_state("RO perm   ", m.fs.RO.permeate)
+        print_state("RO reten  ", m.fs.RO.retentate)
+
+    else:
+        print_state("Feed      ", m.fs.feed.outlet)
+        print_state("Split 1   ", m.fs.S1.P1)
+        print_state("P1 out    ", m.fs.P1.outlet)
+        print_state("Split 2   ", m.fs.S1.PXR)
+        print_state("PXR LP out", m.fs.PXR.low_pressure_outlet)
+        print_state("P2 out    ", m.fs.P2.outlet)
+        print_state("Mix out   ", m.fs.M1.outlet)
+        print_state("RO perm   ", m.fs.RO.permeate)
+        print_state("RO reten  ", m.fs.RO.retentate)
+        print_state("PXR HP out", m.fs.PXR.high_pressure_outlet)
 
 
 if __name__ == "__main__":

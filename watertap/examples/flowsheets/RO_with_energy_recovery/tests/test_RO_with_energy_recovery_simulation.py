@@ -409,6 +409,233 @@ class TestROwithTurbine:
         )
         assert pytest.approx(0.55210, rel=1e-5) == value(fs.costing.LCOW)
 
+
+class TestROwithPX:
+    @pytest.fixture(scope="class")
+    def system_frame(self):
+        m = build(erd_type="no_ERD")
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, system_frame):
+        m = system_frame
+
+        # model set up
+        assert isinstance(m, ConcreteModel)
+        assert isinstance(m.fs, FlowsheetBlock)
+        assert isinstance(m.fs.properties, props.NaClParameterBlock)
+        assert isinstance(m.fs.costing, Block)
+
+        # unit models
+        fs = m.fs
+        assert isinstance(fs.feed, Feed)
+        assert isinstance(fs.P1, Pump)
+        assert isinstance(fs.RO, ReverseOsmosis0D)
+        assert isinstance(fs.product, Product)
+        assert isinstance(fs.disposal, Product)
+
+        # unit model options
+        # RO
+        assert isinstance(fs.RO.deltaP, Var)
+
+        # additional expressions
+        assert isinstance(fs.costing.annual_water_production, Expression)
+        assert isinstance(fs.costing.specific_energy_consumption, Expression)
+
+        # costing blocks
+        for blk_str in ("RO",):
+            blk = getattr(fs, blk_str)
+            c_blk = getattr(blk, "costing")
+            assert isinstance(c_blk, Block)
+            assert isinstance(getattr(c_blk, "capital_cost"), Var)
+            assert isinstance(getattr(c_blk, "fixed_operating_cost"), Var)
+
+        for blk_str in ("P1",):
+            blk = getattr(fs, blk_str)
+            c_blk = getattr(blk, "costing")
+            assert isinstance(c_blk, Block)
+            assert isinstance(getattr(c_blk, "capital_cost"), Var)
+
+        var_str_list = [
+            "total_capital_cost",
+            "maintenance_labor_chemical_operating_cost",
+            "total_operating_cost",
+        ]
+        for var_str in var_str_list:
+            var = getattr(fs.costing, var_str)
+            assert isinstance(var, Var)
+
+        # arcs
+        arc_dict = {
+            fs.s01: (fs.feed.outlet, fs.P1.inlet),
+            fs.s02: (fs.P1.outlet, fs.RO.inlet),
+            fs.s03: (fs.RO.permeate, fs.product.inlet),
+            fs.s04: (fs.RO.retentate, fs.disposal.inlet),
+        }
+        for arc, port_tpl in arc_dict.items():
+            assert arc.source is port_tpl[0]
+            assert arc.destination is port_tpl[1]
+
+        # units
+        assert_units_consistent(fs)
+
+    @pytest.mark.component
+    def test_set_operating_conditions(self, system_frame):
+        m = system_frame
+
+        set_operating_conditions(
+            m, water_recovery=0.5, over_pressure=0.3, solver=solver
+        )
+
+        # check fixed variables
+        # feed
+        assert m.fs.feed.pressure[0].is_fixed()
+        assert value(m.fs.feed.pressure[0]) == 101325
+        assert m.fs.feed.temperature[0].is_fixed()
+        assert value(m.fs.feed.temperature[0]) == 298.15
+        assert m.fs.feed.flow_mass_phase_comp[0, "Liq", "H2O"].is_fixed()
+        assert value(m.fs.feed.flow_mass_phase_comp[0, "Liq", "H2O"]) == pytest.approx(
+            0.9857, rel=1e-3
+        )
+        assert m.fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"].is_fixed()
+        assert value(m.fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"]) == pytest.approx(
+            3.575e-2, rel=1e-3
+        )
+        # pumps and pressure exchangers
+        assert m.fs.P1.efficiency_pump[0].is_fixed()
+        assert value(m.fs.P1.efficiency_pump[0]) == 0.8
+        assert m.fs.P1.control_volume.properties_out[0].pressure.is_fixed()
+        assert value(
+            m.fs.P1.control_volume.properties_out[0].pressure
+        ) == pytest.approx(7.493e6, rel=1e-3)
+        # RO
+        assert m.fs.RO.A_comp[0, "H2O"].is_fixed()
+        assert value(m.fs.RO.A_comp[0, "H2O"]) == 4.2e-12
+        assert m.fs.RO.B_comp[0, "NaCl"].is_fixed()
+        assert value(m.fs.RO.B_comp[0, "NaCl"]) == 3.5e-8
+        assert m.fs.RO.feed_side.channel_height.is_fixed()
+        assert value(m.fs.RO.feed_side.channel_height) == 1e-3
+        assert m.fs.RO.feed_side.spacer_porosity.is_fixed()
+        assert value(m.fs.RO.feed_side.spacer_porosity) == 0.85
+        assert m.fs.RO.permeate.pressure[0].is_fixed()
+        assert value(m.fs.RO.permeate.pressure[0]) == 101325
+        assert m.fs.RO.width.is_fixed()
+        assert value(m.fs.RO.width) == 5
+        assert not m.fs.RO.area.is_fixed()
+        assert value(m.fs.RO.area) == pytest.approx(50, rel=1e-3)
+
+        # check degrees of freedom
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.component
+    def test_initialize_system(self, system_frame):
+        m = system_frame
+
+        initialize_system(m, solver=solver)
+
+    @pytest.mark.component
+    def test_simulation(self, system_frame):
+        m = system_frame
+
+        solve(m, solver=solver)
+
+        # check system metrics
+        assert value(m.fs.RO.recovery_vol_phase[0, "Liq"]) == pytest.approx(
+            0.4954, rel=1e-3
+        )
+        assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
+            5.1811, rel=1e-3
+        )
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.7418, rel=1e-3)
+
+        # check mass balance
+        assert pytest.approx(
+            value(m.fs.feed.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]), rel=1e-3
+        ) == value(m.fs.product.inlet.flow_mass_phase_comp[0, "Liq", "H2O"]) + value(
+            m.fs.disposal.inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        )
+        assert pytest.approx(
+            value(m.fs.feed.outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]), rel=1e-3
+        ) == value(m.fs.product.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]) + value(
+            m.fs.disposal.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+        )
+
+    @pytest.mark.component
+    def test_display_system(self, system_frame, capsys):
+        m = system_frame
+        display_system(m)
+
+        captured = capsys.readouterr()
+
+        assert (
+            captured.out
+            == """---system metrics---
+Feed: 1.02 kg/s, 35000 ppm
+Product: 0.493 kg/s, 240 ppm
+Volumetric recovery: 49.5%
+Water recovery: 50.0%
+Energy Consumption: 5.2 kWh/m3
+Levelized cost of water: 0.74 $/m3
+"""
+        )
+
+    @pytest.mark.component
+    def test_display_design(self, system_frame, capsys):
+        m = system_frame
+        display_design(m)
+
+        captured = capsys.readouterr()
+
+        assert (
+            captured.out
+            == """---decision variables---
+Operating pressure 74.9 bar
+Membrane area 54.3 m2
+---design variables---
+Pump 1
+outlet pressure: 74.9 bar
+power 9.24 kW
+"""
+        )
+
+    @pytest.mark.component
+    def test_display_state(self, system_frame, capsys):
+        m = system_frame
+        display_state(m)
+
+        captured = capsys.readouterr()
+
+        assert (
+            captured.out
+            == """---state---
+Feed      : 1.021 kg/s, 35000 ppm, 1.0 bar
+P1 out    : 1.021 kg/s, 35000 ppm, 74.9 bar
+RO perm   : 0.493 kg/s, 240 ppm, 1.0 bar
+RO reten  : 0.528 kg/s, 67424 ppm, 72.4 bar
+"""
+        )
+
+    @pytest.mark.component
+    def test_optimization(self, system_frame):
+        m = system_frame
+
+        optimize_set_up(m)
+        assert number_total_objectives(m) == 1
+        optimize(m, solver=solver)
+
+        # check decision variables
+        assert value(m.fs.RO.inlet.pressure[0]) == pytest.approx(5.846e6, rel=1e-3)
+        assert value(m.fs.RO.area) == pytest.approx(100.5, rel=1e-3)
+        # check system metrics
+        assert value(m.fs.RO.recovery_vol_phase[0, "Liq"]) == pytest.approx(
+            0.4954, rel=1e-3
+        )
+        assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
+            4.026, rel=1e-3
+        )
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.6336, rel=1e-3)
+
     @pytest.mark.component
     def test_config_error(self, system_frame):
         with pytest.raises(Exception):
