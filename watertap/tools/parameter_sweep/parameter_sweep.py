@@ -265,6 +265,7 @@ class _ParameterSweepBase(ABC):
     ):
         parallel_manager_class = options.pop("parallel_manager_class", None)
         self.model = None
+
         self.model_manager = None
         self.config = self.CONFIG(options)
         self.parallel_manager = create_parallel_manager(

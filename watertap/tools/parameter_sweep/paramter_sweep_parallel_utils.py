@@ -203,7 +203,7 @@ def do_build(
     outputs = ps_config.build_outputs(model, **ps_config.build_outputs_kwargs)
     # for when differential parameter tool is used
     if hasattr(param_sweep_instance, "_define_differential_sweep_outputs"):
-        param_sweep_instance._define_differential_sweep_outputs(outputs, sweep_params)
+        param_sweep_instance._define_differential_sweep_outputs(model, sweep_params)
 
     if outputs is not None:
         param_sweep_instance.assign_variable_names(model, outputs)

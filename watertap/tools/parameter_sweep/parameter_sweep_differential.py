@@ -52,8 +52,8 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
     CONFIG.declare(
         "differential_sweep_specs",
         ConfigValue(
-            default=dict(),
-            domain=dict,
+            default=None,
+            domain=None,
             description="Dictionary containing the specifications for the differential sweep",
             doc="""
             A specification dictionary that contains details for how to construct the parameter sweep dictionary for differential sweep.
@@ -147,14 +147,10 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
             raise NotImplementedError
 
     def _create_differential_sweep_params(self, local_values):
-        if self.config.differential_sweep_specs is None:
-            # TODO: this should be removd once we get rid of differential_sweep_specs
-            differential_sweep_specs = self.config.differential_sweep_specs
-        else:
-            differential_sweep_specs = self.config.build_differential_sweep_specs(
-                self.model_manager.model,
-                **self.config.build_differential_sweep_specs_kwargs,
-            )
+        differential_sweep_specs = self.config.build_differential_sweep_specs(
+            self.model_manager.model,
+            **self.config.build_differential_sweep_specs_kwargs,
+        )
 
         diff_sweep_param = {}
         for ctr, (param, specs) in enumerate(differential_sweep_specs.items()):
@@ -203,12 +199,17 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
                 "differential_sweep_specs keys don't match with sweep_param keys"
             )
 
-    def _define_differential_sweep_outputs(self, outputs, sweep_params):
+    def _define_differential_sweep_outputs(self, model, sweep_params):
         # Currently used in do_build function only (check paramter_sweep_parallel_utils.py)
-        self.differential_outputs = outputs
-        if outputs is not None:
+        self.differential_outputs = self.config.build_outputs(
+            model, **self.config.build_outputs_kwargs
+        )
+        differential_sweep_spec = self.config.build_differential_sweep_specs(
+            model, **self.config.build_differential_sweep_specs_kwargs
+        )
+        if self.differential_outputs is not None:
             for key in sweep_params.keys():
-                if key not in self.config.differential_sweep_specs.keys():
+                if key not in differential_sweep_spec.keys():
                     self.differential_outputs[key] = sweep_params[key].pyomo_object
 
     def _create_local_output_skeleton(self, model, sweep_params, outputs, num_samples):
@@ -436,7 +437,18 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
                                 and will not work with future implementations of parallelism.",
                 version="0.10.0",
             )
-
+        print(self.config.differential_sweep_specs)
+        if self.config.differential_sweep_specs is not None:
+            _combined_outputs = build_outputs
+            self.config.build_differential_sweep_specs = (
+                lambda model: self.config.differential_sweep_specs
+            )
+            deprecation_warning(
+                "Passing the differential sweep spec dict directly to the parameter_sweep function is deprecated \
+                                and will not work with future implementations of parallelism. Please instead pass \
+                                    a build_differential_sweep_specs function instead",
+                version="0.10.0",
+            )
         # This should be depreciated in future versions
         self.config.build_model = build_model
         self.config.build_sweep_params = build_sweep_params
