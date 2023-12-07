@@ -211,13 +211,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
     @staticmethod
     def add_cost_factor(blk, factor):
         if factor == "TPEC":
-            blk.cost_factor = pyo.Expression(
-                expr=blk.config.flowsheet_costing_block.TPEC
-            )
+            blk.cost_factor = pyo.Expression(expr=blk.costing_package.TPEC)
         elif factor == "TIC":
-            blk.cost_factor = pyo.Expression(
-                expr=blk.config.flowsheet_costing_block.TIC
-            )
+            blk.cost_factor = pyo.Expression(expr=blk.costing_package.TIC)
         else:
             blk.cost_factor = pyo.Expression(expr=1.0)
         blk.direct_capital_cost = pyo.Expression(
