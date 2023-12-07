@@ -9,8 +9,10 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from watertap.ui.fsapi import FlowsheetInterface
+from watertap.ui.fsapi import FlowsheetInterface, FlowsheetCategory
 from watertap.examples.flowsheets.nf_dspmde import nf
+from watertap.examples.flowsheets.nf_dspmde import nf_with_bypass
+from watertap.unit_models.nanofiltration_DSPMDE_0D import ConcentrationPolarizationType
 from pyomo.environ import units as pyunits
 from idaes.core.solvers import get_solver
 
@@ -21,11 +23,27 @@ def export_to_ui():
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
+        get_diagram=get_diagram,
         requires_idaes_solver=True,
+        category=FlowsheetCategory.wastewater,
+        build_options={
+            "Bypass": {
+                "name": "bypass option",
+                "display_name": "With Bypass",
+                "values_allowed": ["false", "true"],
+                "value": "false",
+            },
+            "ConcentrationPolarization": {
+                "name": "ConcentrationPolarization",
+                "display_name": "Concentration Polarization Type",
+                "values_allowed": ["calculated", "none"],
+                "value": "calculated",
+            },
+        },
     )
 
 
-def export_variables(flowsheet=None, exports=None):
+def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
     fs = flowsheet
     # --- Input data ---
     # Feed conditions
@@ -337,6 +355,22 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Process cost and operating metrics",
     )
+    try:
+        if build_options["Bypass"].value == "true":
+            exports.add(
+                obj=fs.by_pass_splitter.split_fraction[0, "bypass"],
+                name="NF bypass",
+                ui_units=pyunits.dimensionless,
+                display_units="fraction",
+                rounding=4,
+                description="Bypass design",
+                is_input=True,
+                input_category="Bypass design",
+                is_output=True,
+                output_category="Bypass design",
+            )
+    except Exception as e:
+        print(f"error adding bypass: {e}")
 
     for (t, phase, ion), obj in fs.NF.nfUnit.rejection_intrinsic_phase_comp.items():
         exports.add(
@@ -366,14 +400,46 @@ def export_variables(flowsheet=None, exports=None):
         )
 
 
-def build_flowsheet():
+def build_flowsheet(build_options=None, **kwargs):
     # build and solve initial flowsheet
-    solver = get_solver()
-    m = nf.build()
-    nf.initialize(m, solver)
-    nf.add_objective(m)
-    nf.unfix_opt_vars(m)
+    if build_options is not None:
+        if build_options["Bypass"].value == "true":  # build with bypass
+            solver = get_solver()
+            m = nf_with_bypass.build()
+            concentrationType = build_options["ConcentrationPolarization"].value
+            # print(f'setting concentration polarization type to {concentrationType}')
+            m.fs.NF.nfUnit.config.concentration_polarization_type = (
+                ConcentrationPolarizationType[concentrationType]
+            )
+            nf_with_bypass.initialize(m, solver)
+            nf_with_bypass.unfix_opt_vars(m)
+            nf.add_objective(m)
+        else:  # build without bypass
+            solver = get_solver()
+            m = nf.build()
+            concentrationType = build_options["ConcentrationPolarization"].value
+            # print(f'setting concentration polarization type to {concentrationType}')
+            m.fs.NF.nfUnit.config.concentration_polarization_type = (
+                ConcentrationPolarizationType[concentrationType]
+            )
+            nf.initialize(m, solver)
+            nf.add_objective(m)
+            nf.unfix_opt_vars(m)
+    else:  # build without bypass
+        solver = get_solver()
+        m = nf.build()
+        nf.initialize(m, solver)
+        nf.add_objective(m)
+        nf.unfix_opt_vars(m)
+
     return m
+
+
+def get_diagram(build_options):
+    if build_options["Bypass"].value == "true":
+        return "nf_with_bypass_ui.png"
+    else:
+        return "nf_ui.png"
 
 
 def solve_flowsheet(flowsheet=None):

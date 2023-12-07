@@ -139,6 +139,7 @@ class TestBoronRemoval_IonPropPack_Min:
             "charge": {
                 "B[OH]4_-": -1,
                 "Na_+": 1,
+                "B[OH]3": 0,
             },
         }
 
@@ -310,7 +311,7 @@ class TestBoronRemoval_IonPropPack_with_ResAlk:
                 "Na_+": 23e-3,
                 "HCO3_-": 61e-3,
             },
-            "charge": {"B[OH]4_-": -1, "Na_+": 1, "HCO3_-": -1},
+            "charge": {"B[OH]3": 0, "B[OH]4_-": -1, "Na_+": 1, "HCO3_-": -1},
         }
 
         # attach prop pack to flowsheet
@@ -459,6 +460,7 @@ class TestBoronRemoval_IonPropPack_with_ResBase:
                 "Na_+": 23e-3,
             },
             "charge": {
+                "B[OH]3": 0,
                 "B[OH]4_-": -1,
                 "Na_+": 1,
             },
@@ -927,7 +929,7 @@ class TestBoronRemoval_BadConfigs:
         }
 
         # attach prop pack to flowsheet
-        m.fs.properties = MCASParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict, ignore_neutral_charge=True)
 
         return m
 

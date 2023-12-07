@@ -86,15 +86,12 @@ class NDMAParameterData(PhysicalParameterBlock):
         self.Liq = LiquidPhase()
 
         # heat capacity
-        self.cp = Param(
-            mutable=False, initialize=4.2e3, units=pyunits.J / (pyunits.kg * pyunits.K)
-        )
+        self.cp = Param(initialize=4.2e3, units=pyunits.J / (pyunits.kg * pyunits.K))
 
         # molecular weight
         mw_comp_data = {"H2O": 18.01528e-3, "NDMA": 74.0819e-3}
         self.mw_comp = Param(
             self.component_list,
-            mutable=False,
             initialize=extract_data(mw_comp_data),
             units=pyunits.kg / pyunits.mol,
             doc="Molecular weight kg/mol",
