@@ -1140,7 +1140,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert pytest.approx(0.9906, rel=1e-3) == value(
             m.fs.unit.permeate_side.cp_modulus[0, 1, "NaCl"]
         )
- 
+
     @pytest.mark.component
     def test_CP_calculation_with_kf_calculation(self):
         """Testing 1D-OARO with ConcentrationPolarizationType.calculated option and MassTransferCoefficient.calculated
