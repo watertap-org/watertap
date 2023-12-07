@@ -517,7 +517,7 @@ class TestElectrodialysis_withNeutralSPecies:
             "solute_list": ["Na_+", "Cl_-", "N"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3, "N": 61.8e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
-            "charge": {"Na_+": 1, "Cl_-": -1},
+            "charge": {"Na_+": 1, "Cl_-": -1, "N": 0},
         }
         m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(

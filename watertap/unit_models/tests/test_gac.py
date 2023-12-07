@@ -52,6 +52,7 @@ class TestGACSimplified:
         ms.fs.properties = MCASParameterBlock(
             solute_list=["DCE"],
             mw_data={"H2O": 0.018, "DCE": 0.09896},
+            ignore_neutral_charge=True,
         )
         ms.fs.unit = GAC(
             property_package=ms.fs.properties,
@@ -210,6 +211,7 @@ class TestGACRobust:
             mw_data={"H2O": 0.018, "TCE": 0.1314},
             diffus_calculation=DiffusivityCalculation.HaydukLaudie,
             molar_volume_data={("Liq", "TCE"): 9.81e-5},
+            ignore_neutral_charge=True,
         )
         mr.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
         mr.fs.properties.dens_mass_const = 999.7
@@ -530,6 +532,7 @@ class TestGACMulti:
                 ("Liq", "BGCAT"): 1e-5,
                 ("Liq", "BGAN"): 1e-5,
             },
+            ignore_neutral_charge=True,
         )
         mm.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
         mm.fs.properties.dens_mass_const = 1000
@@ -685,6 +688,7 @@ class TestGACErrorLog:
                     ("Liq", "BGCAT"): 1e-5,
                     ("Liq", "BGAN"): 1e-5,
                 },
+                ignore_neutral_charge=True,
             )
             me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
             me.fs.properties.dens_mass_const = 1000
@@ -709,6 +713,7 @@ class TestGACErrorLog:
                 mw_data={"H2O": 0.018, "TCE": 0.1314},
                 diffus_calculation=DiffusivityCalculation.HaydukLaudie,
                 molar_volume_data={("Liq", "TCE"): 9.81e-5},
+                charge={"TCE": 0},
             )
             me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
             me.fs.properties.dens_mass_const = 1000
@@ -753,6 +758,7 @@ class TestGACErrorLog:
                     ("Liq", "BGCAT"): 1e-5,
                     ("Liq", "BGAN"): 1e-5,
                 },
+                ignore_neutral_charge=True,
             )
             me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
             me.fs.properties.dens_mass_const = 1000
@@ -791,6 +797,7 @@ class TestGACErrorLog:
                     ("Liq", "BGCAT"): 1e-5,
                     ("Liq", "BGAN"): 1e-5,
                 },
+                ignore_neutral_charge=True,
             )
             me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
             me.fs.properties.dens_mass_const = 1000
