@@ -68,23 +68,23 @@ def build_flowsheet():
     m.fs.FeedWater = Feed(property_package=m.fs.props)
     # Mixer for feed water and recycled sludge
     m.fs.MX1 = Mixer(property_package=m.fs.props, inlet_list=["feed_water", "recycle"])
-    # First reactor (anoxic) - standard CSTR
+    # First reactor (anaerobic) - standard CSTR
     m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
-    # First reactor (anoxic) - standard CSTR
+    # First reactor (anaerobic) - standard CSTR
     m.fs.R2 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
-    # Second reactor (anoxic) - standard CSTR
+    # Third reactor (anoxic) - standard CSTR
     m.fs.R3 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
-
+    # Forth reactor (anoxic) - standard CSTR
     m.fs.R4 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
-    # Third reactor (aerobic) - CSTR with injection
+    # Fifth reactor (aerobic) - CSTR with injection
     m.fs.R5 = CSTR_Injection(
         property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
-    # Fourth reactor (aerobic) - CSTR with injection
+    # Sixth reactor (aerobic) - CSTR with injection
     m.fs.R6 = CSTR_Injection(
         property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
-    # Fifth reactor (aerobic) - CSTR with injection
+    # Seventh reactor (aerobic) - CSTR with injection
     m.fs.R7 = CSTR_Injection(
         property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
@@ -267,7 +267,6 @@ def build_flowsheet():
     m.fs.P1.outlet.pressure.fix(101325)
 
     # Check degrees of freedom
-    print(f"DOF after all: {degrees_of_freedom(m)}")
     assert degrees_of_freedom(m) == 0
 
     def scale_variables(m):
