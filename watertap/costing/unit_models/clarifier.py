@@ -84,6 +84,7 @@ def cost_circular_clarifier(blk, cost_electricity_flow=True):
     Circular clarifier costing method [1]
     """
     make_capital_cost_var(blk)
+    blk.costing_package.add_cost_factor(blk, "TIC")
 
     surface_area = pyo.units.convert(
         blk.unit_model.surface_area, to_units=pyo.units.ft**2
@@ -91,7 +92,8 @@ def cost_circular_clarifier(blk, cost_electricity_flow=True):
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.cost_factor
+        * pyo.units.convert(
             blk.costing_package.circular.construction_a_parameter * surface_area**2
             + blk.costing_package.circular.construction_b_parameter * surface_area
             + blk.costing_package.circular.construction_c_parameter,
@@ -140,6 +142,7 @@ def cost_rectangular_clarifier(blk, cost_electricity_flow=True):
     Rectangular clarifier costing method [1]
     """
     make_capital_cost_var(blk)
+    blk.costing_package.add_cost_factor(blk, "TIC")
 
     surface_area = pyo.units.convert(
         blk.unit_model.surface_area, to_units=pyo.units.ft**2
@@ -147,7 +150,8 @@ def cost_rectangular_clarifier(blk, cost_electricity_flow=True):
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.cost_factor
+        * pyo.units.convert(
             blk.costing_package.rectangular.construction_a_parameter * surface_area**2
             + blk.costing_package.rectangular.construction_b_parameter * surface_area
             + blk.costing_package.rectangular.construction_c_parameter,
@@ -190,6 +194,7 @@ def cost_primary_clarifier(blk, cost_electricity_flow=True):
     Primary clarifier costing method [2]
     """
     make_capital_cost_var(blk)
+    blk.costing_package.add_cost_factor(blk, "TIC")
 
     t0 = blk.flowsheet().time.first()
     flow_in = pyo.units.convert(
@@ -197,7 +202,8 @@ def cost_primary_clarifier(blk, cost_electricity_flow=True):
     )
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.cost_factor
+        * pyo.units.convert(
             blk.costing_package.primary.capital_a_parameter
             * pyo.units.convert(
                 flow_in / (1e6 * pyo.units.gallon / pyo.units.day),
