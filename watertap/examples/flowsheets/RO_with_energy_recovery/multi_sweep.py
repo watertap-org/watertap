@@ -33,35 +33,36 @@ def set_up_sensitivity():
     RO.display_system(m)
     RO.display_design(m)
 
-    # create outputs
-    outputs["LCOW"] = m.fs.costing.LCOW
-    outputs["RO Water Flux"] = m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
-    outputs["RO Membrane Area"] = m.fs.RO.area
-    outputs["RO Energy Consumption"] = m.fs.costing.specific_energy_consumption
-    outputs["System Capital Cost"] = m.fs.costing.aggregate_capital_cost
-    outputs["RO Capital Cost"] = m.fs.RO.costing.capital_cost
-    outputs["Pump Capital Cost"] = m.fs.P1.costing.capital_cost
+    # uncomment to create outputs
+
+    # outputs["LCOW"] = m.fs.costing.LCOW
+    # outputs["RO Water Flux"] = m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
+    # outputs["RO Membrane Area"] = m.fs.RO.area
+    # outputs["RO Energy Consumption"] = m.fs.costing.specific_energy_consumption
+    # outputs["System Capital Cost"] = m.fs.costing.aggregate_capital_cost
+    # outputs["RO Capital Cost"] = m.fs.RO.costing.capital_cost
+    # outputs["Pump Capital Cost"] = m.fs.P1.costing.capital_cost
     # outputs["ERD Capital Cost"] = m.fs.ERD.costing.capital_cost
-    outputs["RO Operating Cost"] = m.fs.RO.costing.fixed_operating_cost
-    outputs[
-        "MLC Operating Cost"
-    ] = m.fs.costing.maintenance_labor_chemical_operating_cost
-    outputs["Feed Flow Rate"] = m.fs.feed.properties[0].flow_vol_phase["Liq"]
-    outputs["Permeate Flow Rate"] = m.fs.product.properties[0].flow_vol_phase["Liq"]
-    outputs["Retentate Flow Rate"] = m.fs.disposal.properties[0].flow_vol_phase["Liq"]
-    outputs["RO Operating Pressure"] = m.fs.RO.inlet.pressure[0]
-    outputs["RO Permeate H2O Mass Flow"] = m.fs.RO.permeate.flow_mass_phase_comp[
-        0, "Liq", "H2O"
-    ]
-    outputs["RO Permeate Salt Mass Flow"] = m.fs.RO.permeate.flow_mass_phase_comp[
-        0, "Liq", "NaCl"
-    ]
-    outputs["RO Retentate H2O Mass Flow"] = m.fs.RO.retentate.flow_mass_phase_comp[
-        0, "Liq", "H2O"
-    ]
-    outputs["RO Retentate Salt Mass Flow"] = m.fs.RO.retentate.flow_mass_phase_comp[
-        0, "Liq", "NaCl"
-    ]
+    # outputs["RO Operating Cost"] = m.fs.RO.costing.fixed_operating_cost
+    # outputs[
+    #     "MLC Operating Cost"
+    # ] = m.fs.costing.maintenance_labor_chemical_operating_cost
+    # outputs["Feed Flow Rate"] = m.fs.feed.properties[0].flow_vol_phase["Liq"]
+    # outputs["Permeate Flow Rate"] = m.fs.product.properties[0].flow_vol_phase["Liq"]
+    # outputs["Retentate Flow Rate"] = m.fs.disposal.properties[0].flow_vol_phase["Liq"]
+    # outputs["RO Operating Pressure"] = m.fs.RO.inlet.pressure[0]
+    # outputs["RO Permeate H2O Mass Flow"] = m.fs.RO.permeate.flow_mass_phase_comp[
+    #     0, "Liq", "H2O"
+    # ]
+    # outputs["RO Permeate Salt Mass Flow"] = m.fs.RO.permeate.flow_mass_phase_comp[
+    #     0, "Liq", "NaCl"
+    # ]
+    # outputs["RO Retentate H2O Mass Flow"] = m.fs.RO.retentate.flow_mass_phase_comp[
+    #     0, "Liq", "H2O"
+    # ]
+    # outputs["RO Retentate Salt Mass Flow"] = m.fs.RO.retentate.flow_mass_phase_comp[
+    #     0, "Liq", "NaCl"
+    # ]
 
     return outputs, m
 
