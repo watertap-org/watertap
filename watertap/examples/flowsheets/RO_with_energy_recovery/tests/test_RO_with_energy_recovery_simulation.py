@@ -410,7 +410,7 @@ class TestROwithTurbine:
         assert pytest.approx(0.55210, rel=1e-5) == value(fs.costing.LCOW)
 
 
-class TestROwithPX:
+class TestROnoERD:
     @pytest.fixture(scope="class")
     def system_frame(self):
         m = build(erd_type="no_ERD")
