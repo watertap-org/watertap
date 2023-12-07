@@ -348,7 +348,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         for i in badly_scaled_var_generator(m):
             print(i[0].name, i[1])
 
-    @pytest.mark.requires_idaes_solver
+    
     @pytest.mark.component
     def test_initialize(self, RO_frame):
         initialization_tester(RO_frame)
@@ -360,7 +360,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         [print(i[0], i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
-    @pytest.mark.requires_idaes_solver
+    
     @pytest.mark.component
     def test_solve(self, RO_frame):
         m = RO_frame
@@ -369,7 +369,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
+    
     @pytest.mark.component
     def test_conservation(self, RO_frame):
         m = RO_frame
@@ -421,7 +421,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
             <= 1e-5
         )
 
-    @pytest.mark.requires_idaes_solver
+    
     @pytest.mark.component
     def test_solution(self, RO_frame):
         m = RO_frame
@@ -602,7 +602,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         for i in badly_scaled_var_generator(m):
             print(i[0].name, i[1])
 
-    @pytest.mark.requires_idaes_solver
+    
     @pytest.mark.component
     def test_skk_initialize(self, RO_SKK_frame):
         initialization_tester(RO_SKK_frame)
@@ -614,7 +614,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         [print(i[0], i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
-    @pytest.mark.requires_idaes_solver
+    
     @pytest.mark.component
     def test_skk_solve(self, RO_SKK_frame):
         m = RO_SKK_frame
@@ -623,7 +623,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
+    
     @pytest.mark.component
     def test_skk_conservation(self, RO_SKK_frame):
         m = RO_SKK_frame
@@ -675,7 +675,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
             <= 1e-5
         )
 
-    @pytest.mark.requires_idaes_solver
+    
     @pytest.mark.component
     def test_skk_solution(self, RO_SKK_frame):
         m = RO_SKK_frame
@@ -749,7 +749,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
 
     # NOTE End SKK tests
 
-    @pytest.mark.requires_idaes_solver
+    
     @pytest.mark.component
     def test_CP_calculation_with_kf_fixed(self):
         """Testing 1D-OARO with ConcentrationPolarizationType.calculated option enabled.
@@ -920,7 +920,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
             m.fs.unit.permeate_side.cp_modulus[0, 1, "NaCl"]
         )
 
-    @pytest.mark.requires_idaes_solver
+    
     @pytest.mark.component
     def test_CP_calculation_with_kf_calculation(self):
         """Testing 1D-OARO with ConcentrationPolarizationType.calculated option and MassTransferCoefficient.calculated
@@ -1063,7 +1063,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
             ].conc_mass_phase_comp["Liq", "NaCl"]
         )
 
-    @pytest.mark.requires_idaes_solver
+    
     @pytest.mark.component
     def test_Pdrop_fixed_per_unit_length(self):
         """Testing 1D-OARO with PressureChangeType.fixed_per_unit_length option."""
@@ -1226,7 +1226,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
             ].conc_mass_phase_comp["Liq", "NaCl"]
         )
 
-    @pytest.mark.requires_idaes_solver
+    
     @pytest.mark.component
     def test_Pdrop_calculation(self):
         """Testing 1D-OARO with PressureChangeType.calculated option."""
@@ -1394,7 +1394,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
 
     water_recovery_list = [0.15, 0.2, 0.3, 0.4, 0.5, 0.55]
 
-    @pytest.mark.requires_idaes_solver
+    
     @pytest.mark.parametrize("water_recovery", water_recovery_list)
     @pytest.mark.component
     def test_water_recovery_sweep(self, water_recovery):
