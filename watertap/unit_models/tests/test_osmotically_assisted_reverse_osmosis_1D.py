@@ -489,6 +489,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
             m.fs.unit.permeate_side.deltaP_stage[0]
         )
 
+    # NOTE Begin SKK tests
     @pytest.fixture(scope="class")
     def RO_SKK_frame(self):
         m = ConcreteModel()
@@ -499,8 +500,8 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
             property_package=m.fs.properties,
             has_pressure_change=True,
-            concentration_polarization_type=ConcentrationPolarizationType.calculated,
-            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.fixed,
+            mass_transfer_coefficient=MassTransferCoefficient.none,
             transport_model=TransportModel.SKK,
             has_full_reporting=True,
         )
@@ -527,6 +528,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         )
         m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.feed_side.cp_modulus.fix(feed_cp_mod)
         m.fs.unit.feed_side.deltaP_stage.fix(0)
 
         permeate_flow_mass = 0.33 * feed_flow_mass
@@ -540,7 +542,73 @@ class TestOsmoticallyAssistedReverseOsmosis:
         )
         m.fs.unit.permeate_inlet.pressure[0].fix(5e5)
         m.fs.unit.permeate_inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.permeate_side.cp_modulus.fix(permeate_cp_mod)
         m.fs.unit.permeate_side.deltaP_stage.fix(0)
+
+        m.fs.unit.area.fix(membrane_area)
+        m.fs.unit.width.fix(width)
+        m.fs.unit.A_comp.fix(A)
+        m.fs.unit.B_comp.fix(B)
+        m.fs.unit.reflect_coeff.fix(0.95)
+
+        return m
+
+    @pytest.fixture(scope="class")
+    def RO_SKK_calculated_frame(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = props.NaClParameterBlock()
+
+        m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            pressure_change_type=PressureChangeType.calculated,
+            transport_model=TransportModel.SKK,
+            has_full_reporting=True,
+        )
+
+        # fully specify system
+        feed_flow_mass = 5 / 18
+        feed_mass_frac_NaCl = 0.075
+        feed_pressure = 65e5
+        feed_temperature = 273.15 + 25
+        membrane_area = 155
+        width = 1.1
+        A = 1e-12
+        B = 7.7e-8
+
+        feed_cp_mod = 1.05
+        permeate_cp_mod = 0.9
+
+        membrane_pressure_drop = -0.5e-5
+
+        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+            feed_flow_mass * feed_mass_frac_NaCl
+        )
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            feed_flow_mass * feed_mass_frac_H2O
+        )
+        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+        # m.fs.unit.feed_side.deltaP.fix(membrane_pressure_drop)
+
+        permeate_flow_mass = 0.33 * feed_flow_mass
+        permeate_mass_frac_NaCl = 0.1
+        permeate_mass_frac_H2O = 1 - permeate_mass_frac_NaCl
+        m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            permeate_flow_mass * permeate_mass_frac_H2O
+        )
+        m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+            permeate_flow_mass * permeate_mass_frac_NaCl
+        )
+        m.fs.unit.permeate_inlet.pressure[0].fix(5e5)
+        m.fs.unit.permeate_inlet.temperature[0].fix(feed_temperature)
+        
+        # m.fs.unit.permeate_side.deltaP.fix(membrane_pressure_drop)
 
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.width.fix(width)
@@ -554,6 +622,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.feed_side.channel_height.fix(0.002)
         m.fs.unit.feed_side.spacer_porosity.fix(0.97)
         return m
+
 
     @pytest.mark.unit
     def test_skk_build(self, RO_SKK_frame):
@@ -572,13 +641,18 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert isinstance(m.fs.unit.permeate_side, MembraneChannel1DBlock)
 
         # test statistics
-        assert number_variables(m) == 893
-        assert number_total_constraints(m) == 838
-        assert number_unused_variables(m) == 23
+        assert number_variables(m) == 754
+        assert number_total_constraints(m) == 684
+        assert number_unused_variables(m) == 30
 
     @pytest.mark.unit
     def test_skk_dof(self, RO_SKK_frame):
         m = RO_SKK_frame
+        assert degrees_of_freedom(m) == 0
+    
+    @pytest.mark.unit
+    def test_skk_general_dof(self, RO_SKK_calculated_frame):
+        m = RO_SKK_calculated_frame
         assert degrees_of_freedom(m) == 0
 
     @pytest.mark.unit
@@ -673,16 +747,16 @@ class TestOsmoticallyAssistedReverseOsmosis:
     @pytest.mark.component
     def test_skk_solution(self, RO_SKK_frame):
         m = RO_SKK_frame
-        assert pytest.approx(7.29e-4, rel=1e-3) == value(
+        assert pytest.approx(8.5717e-4, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
         )
-        assert pytest.approx(8.5805e-06, rel=1e-3) == value(
+        assert pytest.approx(9.242e-06, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
         )
-        assert pytest.approx(1.4391e-01, rel=1e-3) == value(
+        assert pytest.approx(1.241e-01, rel=1e-3) == value(
             m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
-        assert pytest.approx(1.95033e-02, rel=1e-3) == value(
+        assert pytest.approx(1.940e-02, rel=1e-3) == value(
             m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
         )
         assert pytest.approx(
@@ -741,6 +815,161 @@ class TestOsmoticallyAssistedReverseOsmosis:
             m.fs.unit.permeate_side.deltaP_stage[0]
         )
 
+    @pytest.mark.component
+    def test_skk_CP_calculation_with_kf_calculation(self, RO_SKK_calculated_frame):
+        m = RO_SKK_calculated_frame
+    
+        # Test units
+        assert_units_consistent(m.fs.unit)
+
+        # test degrees of freedom
+        assert degrees_of_freedom(m) == 0
+
+        # test scaling
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e1, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e3, index=("Liq", "NaCl")
+        )
+        calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors.
+        unscaled_var_list = list(
+            unscaled_variables_generator(m.fs.unit, include_fixed=True)
+        )
+        [print(i) for i in unscaled_var_list]
+        assert len(unscaled_var_list) == 0
+
+        # # test initialization
+        initialization_tester(m)
+
+        # test variable scaling
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        assert badly_scaled_var_lst == []
+
+        # test solve
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+        assert (
+        m.fs.unit.config.concentration_polarization_type
+        == ConcentrationPolarizationType.calculated
+        )
+        assert (
+            m.fs.unit.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
+        )
+
+        assert number_variables(m) == 937
+        assert number_total_constraints(m) == 884
+        assert number_unused_variables(m) == 23
+
+        assert pytest.approx(7.215e-4, rel=1e-3) == value(
+            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
+        )
+        assert pytest.approx(8.463e-06, rel=1e-3) == value(
+            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
+        )
+        assert pytest.approx(0.1451, rel=1e-3) == value(
+            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        )
+        assert pytest.approx(0.01952, rel=1e-3) == value(
+            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+        )
+
+
+        assert pytest.approx(78.8775, rel=1e-3) == value(
+            m.fs.unit.feed_side.properties[0, 0].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+        x_interface_in = m.fs.unit.length_domain.at(2)
+        assert pytest.approx(88.360, rel=1e-3) == value(
+            m.fs.unit.feed_side.properties_interface[
+                0, x_interface_in
+            ].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+        assert pytest.approx(128.619, rel=1e-3) == value(
+            m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+        assert pytest.approx(132.351, rel=1e-3) == value(
+            m.fs.unit.feed_side.properties_interface[0, 1.0].conc_mass_phase_comp[
+                "Liq", "NaCl"
+            ]
+        )
+        assert pytest.approx(107.06, rel=1e-3) == value(
+            m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+        assert pytest.approx(74.889, rel=1e-3) == value(
+            m.fs.unit.permeate_side.properties_interface[0, 1].conc_mass_phase_comp[
+                "Liq", "NaCl"
+            ]
+        )
+        assert pytest.approx(52.882, rel=1e-3) == value(
+            m.fs.unit.permeate_side.properties[0, 0].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+        assert pytest.approx(27.392, rel=1e-3) == value(
+            m.fs.unit.permeate_side.properties_interface[
+                0, x_interface_in
+            ].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+        assert pytest.approx(
+            value(
+                m.fs.unit.feed_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ]
+            ),
+            rel=1e-3,
+        ) == value(
+            m.fs.unit.feed_side.properties_interface[
+                0, m.fs.unit.difference_elements.first()
+            ].conc_mass_phase_comp["Liq", "NaCl"]
+        ) / value(
+            m.fs.unit.feed_side.properties[
+                0, m.fs.unit.difference_elements.first()
+            ].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+        assert pytest.approx(
+            value(m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"]), rel=1e-3
+        ) == value(
+            m.fs.unit.feed_side.properties_interface[0, 1].conc_mass_phase_comp[
+                "Liq", "NaCl"
+            ]
+        ) / value(
+            m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+
+        assert pytest.approx(
+            value(
+                m.fs.unit.permeate_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ]
+            ),
+            rel=1e-3,
+        ) == value(
+            m.fs.unit.permeate_side.properties_interface[
+                0, m.fs.unit.difference_elements.first()
+            ].conc_mass_phase_comp["Liq", "NaCl"]
+        ) / value(
+            m.fs.unit.permeate_side.properties[
+                0, m.fs.unit.difference_elements.first()
+            ].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+        assert pytest.approx(
+            value(m.fs.unit.permeate_side.cp_modulus[0, 1.0, "NaCl"]), rel=1e-3
+        ) == value(
+            m.fs.unit.permeate_side.properties_interface[0, 1.0].conc_mass_phase_comp[
+                "Liq", "NaCl"
+            ]
+        ) / value(
+            m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+        assert pytest.approx(-197270.178, abs=1e-1) == value(m.fs.unit.feed_side.deltaP_stage[0])
+        assert pytest.approx(-109664.455, abs=1e-1) == value(
+            m.fs.unit.permeate_side.deltaP_stage[0]
+        )
+
+    # NOTE End SKK tests
 
     @pytest.mark.component
     def test_CP_calculation_with_kf_fixed(self):
