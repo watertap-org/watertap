@@ -499,28 +499,49 @@ def set_operating_conditions(m):
 
     # Secondary Clarifier
     # TODO: Update once more detailed model available
-    m.fs.CL1.split_fraction[0, "effluent", "H2O"].fix(0.49986)
-    m.fs.CL1.split_fraction[0, "effluent", "S_A"].fix(0.49986)
-    m.fs.CL1.split_fraction[0, "effluent", "S_F"].fix(0.49986)
-    m.fs.CL1.split_fraction[0, "effluent", "S_I"].fix(0.49986)
-    m.fs.CL1.split_fraction[0, "effluent", "S_N2"].fix(0.49986)
-    m.fs.CL1.split_fraction[0, "effluent", "S_NH4"].fix(0.49986)
-    m.fs.CL1.split_fraction[0, "effluent", "S_NO3"].fix(0.49986)
-    m.fs.CL1.split_fraction[0, "effluent", "S_O2"].fix(0.49986)
-    m.fs.CL1.split_fraction[0, "effluent", "S_PO4"].fix(0.49986)
-    m.fs.CL1.split_fraction[0, "effluent", "S_IC"].fix(0.49986)
-    m.fs.CL1.split_fraction[0, "effluent", "S_K"].fix(0.49986)
-    m.fs.CL1.split_fraction[0, "effluent", "S_Mg"].fix(0.49986)
-    m.fs.CL1.split_fraction[0, "effluent", "X_AUT"].fix(0.022117)
-    m.fs.CL1.split_fraction[0, "effluent", "X_H"].fix(0.021922)
-    m.fs.CL1.split_fraction[0, "effluent", "X_I"].fix(0.021715)
-    m.fs.CL1.split_fraction[0, "effluent", "X_PAO"].fix(0.022)
-    m.fs.CL1.split_fraction[0, "effluent", "X_PHA"].fix(0.02147)
-    m.fs.CL1.split_fraction[0, "effluent", "X_PP"].fix(0.02144)
-    m.fs.CL1.split_fraction[0, "effluent", "X_S"].fix(0.02221)
+    # m.fs.CL1.split_fraction[0, "effluent", "H2O"].fix(0.49986)
+    # m.fs.CL1.split_fraction[0, "effluent", "S_A"].fix(0.49986)
+    # m.fs.CL1.split_fraction[0, "effluent", "S_F"].fix(0.49986)
+    # m.fs.CL1.split_fraction[0, "effluent", "S_I"].fix(0.49986)
+    # m.fs.CL1.split_fraction[0, "effluent", "S_N2"].fix(0.49986)
+    # m.fs.CL1.split_fraction[0, "effluent", "S_NH4"].fix(0.49986)
+    # m.fs.CL1.split_fraction[0, "effluent", "S_NO3"].fix(0.49986)
+    # m.fs.CL1.split_fraction[0, "effluent", "S_O2"].fix(0.49986)
+    # m.fs.CL1.split_fraction[0, "effluent", "S_PO4"].fix(0.49986)
+    # m.fs.CL1.split_fraction[0, "effluent", "S_IC"].fix(0.49986)
+    # m.fs.CL1.split_fraction[0, "effluent", "S_K"].fix(0.49986)
+    # m.fs.CL1.split_fraction[0, "effluent", "S_Mg"].fix(0.49986)
+    # m.fs.CL1.split_fraction[0, "effluent", "X_AUT"].fix(0.022117)
+    # m.fs.CL1.split_fraction[0, "effluent", "X_H"].fix(0.021922)
+    # m.fs.CL1.split_fraction[0, "effluent", "X_I"].fix(0.021715)
+    # m.fs.CL1.split_fraction[0, "effluent", "X_PAO"].fix(0.022)
+    # m.fs.CL1.split_fraction[0, "effluent", "X_PHA"].fix(0.02147)
+    # m.fs.CL1.split_fraction[0, "effluent", "X_PP"].fix(0.02144)
+    # m.fs.CL1.split_fraction[0, "effluent", "X_S"].fix(0.02221)
+
+    m.fs.CL1.split_fraction[0, "effluent", "H2O"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_A"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_F"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_I"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_N2"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_NH4"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_NO3"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_O2"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_PO4"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_IC"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_K"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "S_Mg"].fix(0.48956)
+    m.fs.CL1.split_fraction[0, "effluent", "X_AUT"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_H"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_I"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_PAO"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_PHA"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_PP"].fix(0.00187)
+    m.fs.CL1.split_fraction[0, "effluent", "X_S"].fix(0.00187)
 
     # Sludge purge separator
-    m.fs.SP2.split_fraction[:, "recycle"].fix(0.97955)
+    # m.fs.SP2.split_fraction[:, "recycle"].fix(0.97955)
+    m.fs.SP2.split_fraction[:, "recycle"].fix(0.985)
 
     # Outlet pressure from recycle pump
     m.fs.P1.outlet.pressure.fix(101325)
@@ -529,6 +550,13 @@ def set_operating_conditions(m):
     # m.fs.AD.volume_liquid.fix(3400)
     # m.fs.AD.volume_vapor.fix(300)
     # m.fs.AD.liquid_outlet.temperature.fix(298.15)
+    #
+    # # Dewatering Unit - fix either HRT or volume.
+    # m.fs.dewater.hydraulic_retention_time.fix(1800 * pyo.units.s)
+    #
+    # # Thickener unit
+    # m.fs.thickener.hydraulic_retention_time.fix(86400 * pyo.units.s)
+    # m.fs.thickener.diameter.fix(10 * pyo.units.m)
     #
     # # ElectroNP
     # m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * pyunits.kWh / pyunits.kg)

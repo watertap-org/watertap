@@ -623,6 +623,13 @@ def set_operating_conditions(m):
     m.fs.AD.volume_vapor.fix(300)
     m.fs.AD.liquid_outlet.temperature.fix(308.15)
 
+    # Dewatering Unit - fix either HRT or volume.
+    m.fs.dewater.hydraulic_retention_time.fix(1800 * pyo.units.s)
+
+    # Thickener unit
+    m.fs.thickener.hydraulic_retention_time.fix(86400 * pyo.units.s)
+    m.fs.thickener.diameter.fix(10 * pyo.units.m)
+
     # ElectroNP
     m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * pyunits.kWh / pyunits.kg)
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
@@ -1258,9 +1265,8 @@ if __name__ == "__main__":
             # "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
             "dewater outlet": m.fs.dewater.overflow,
             "electroN-P outlet": m.fs.electroNP.treated,
-            # "MX3 feed water": m.fs.MX3.feed_water1,
-            # "MX3 recycle": m.fs.MX3.recycle1,
-            # "MX3 outlet": m.fs.MX3.outlet,
+            "treated effluent": m.fs.CL1.effluent,
+            # "sludge": m.fs.dewater.underflow,
         },
         time_point=0,
     )

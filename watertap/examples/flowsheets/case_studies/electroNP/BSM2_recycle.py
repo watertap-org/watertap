@@ -623,6 +623,13 @@ def set_operating_conditions(m):
     m.fs.AD.volume_vapor.fix(300)
     m.fs.AD.liquid_outlet.temperature.fix(308.15)
 
+    # Dewatering Unit - fix either HRT or volume.
+    m.fs.dewater.hydraulic_retention_time.fix(1800 * pyo.units.s)
+
+    # Thickener unit
+    m.fs.thickener.hydraulic_retention_time.fix(86400 * pyo.units.s)
+    m.fs.thickener.diameter.fix(10 * pyo.units.m)
+
     # # ElectroNP
     # m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * pyunits.kWh / pyunits.kg)
     # m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
@@ -881,19 +888,19 @@ if __name__ == "__main__":
             # "R5": m.fs.R5.outlet,
             # "R6": m.fs.R6.outlet,
             # "R7": m.fs.R7.outlet,
+            "ASM outlet": m.fs.SP2.waste,
             # "thickener outlet": m.fs.thickener.underflow,
             # "thickener overflow": m.fs.thickener.overflow,
             "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
-            # "ASM-ADM translator outlet": m.fs.translator_asm2d_adm1.outlet,
+            "AD outlet": m.fs.translator_adm1_asm2d.outlet,
             # "AD liquid inlet": m.fs.AD.inlet,
             # "AD liquid outlet": m.fs.AD.liquid_outlet,
             # "AD vapor outlet": m.fs.AD.vapor_outlet,
             # "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
-            # "dewater outlet": m.fs.dewater.overflow,
+            "dewater outlet": m.fs.dewater.overflow,
             # "electroN-P outlet": m.fs.electroNP.treated,
-            # "MX3 feed water": m.fs.MX3.feed_water1,
-            # "MX3 recycle": m.fs.MX3.recycle1,
-            # "MX3 outlet": m.fs.MX3.outlet,
+            "treated effluent": m.fs.CL1.effluent,
+            # "sludge": m.fs.dewater.underflow,
         },
         time_point=0,
     )
