@@ -126,7 +126,6 @@ setup(
             "pytest-cov",  # code coverage
             "mongomock",  # mongodb mocking for testing
             "nbmake",
-            "cryptography",  # for encrypting OLI credentials
         ],
     },
     package_data={  # Optional
