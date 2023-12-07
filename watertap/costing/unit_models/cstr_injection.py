@@ -61,6 +61,7 @@ def cost_cstr_injection_capital(blk, capital_a_parameter, capital_b_parameter):
     Generic function for costing an CSTR injection system.
     """
     make_capital_cost_var(blk)
+    blk.costing_package.add_cost_factor(blk, "TIC")
 
     blk.capital_a_parameter = pyo.Expression(expr=capital_a_parameter)
     blk.capital_b_parameter = pyo.Expression(expr=capital_b_parameter)
@@ -68,7 +69,8 @@ def cost_cstr_injection_capital(blk, capital_a_parameter, capital_b_parameter):
     print(f"base_currency: {blk.costing_package.base_currency}")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.cost_factor
+        * pyo.units.convert(
             blk.capital_a_parameter
             * (blk.unit_model.control_volume.volume[0] / pyo.units.m**3)
             ** blk.capital_b_parameter,

@@ -244,7 +244,7 @@ class ATHTLZOData(ZeroOrderBaseData):
 
         expr = reactor_cost + pump_cost + other_cost + solid_filter_cost + heat_cost
 
-        blk.unit_model._add_cost_factor(
+        blk.costing_package.add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 

@@ -307,16 +307,16 @@ class TestIonExchangeLangmuir:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(8894349.86900, rel=1e-3) == value(
+        assert pytest.approx(2.0 * 8894349.86900 / 1.65, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(2498819.7327, rel=1e-3) == value(
+        assert pytest.approx(2288575.0472, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(17788699.7380, rel=1e-3) == value(
+        assert pytest.approx(17788699.7380 / 1.65, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
-        assert pytest.approx(0.30125629, rel=1e-3) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.2370983, rel=1e-3) == value(m.fs.costing.LCOW)
         assert pytest.approx(0.0572452, rel=1e-3) == value(
             m.fs.costing.specific_energy_consumption
         )
@@ -611,16 +611,16 @@ class TestIonExchangeFreundlich:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(9701947.4187, rel=1e-3) == value(
+        assert pytest.approx(2.0 * 9701947.4187 / 1.65, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(1448862.0602, rel=1e-3) == value(
+        assert pytest.approx(1219532.1263, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(19403894.837, rel=1e-3) == value(
+        assert pytest.approx(19403894.837 / 1.65, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
-        assert pytest.approx(0.238664, rel=1e-3) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.168688, rel=1e-3) == value(m.fs.costing.LCOW)
         assert pytest.approx(0.04382530, rel=1e-3) == value(
             m.fs.costing.specific_energy_consumption
         )
@@ -910,16 +910,16 @@ class TestIonExchangeInert:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(9701947.4187, rel=1e-3) == value(
+        assert pytest.approx(2.0 * 9701947.4187 / 1.65, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(695243.5958, rel=1e-3) == value(
+        assert pytest.approx(465913.6619, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(19403894.837, rel=1e-3) == value(
+        assert pytest.approx(19403894.837 / 1.65, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
-        assert pytest.approx(0.18559, rel=1e-3) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.115619, rel=1e-3) == value(m.fs.costing.LCOW)
         assert pytest.approx(0.04382530, rel=1e-3) == value(
             m.fs.costing.specific_energy_consumption
         )
