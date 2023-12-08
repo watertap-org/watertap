@@ -67,7 +67,7 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 from pyomo.util.check_units import assert_units_consistent
-from watertap.tools.local_tools import autoscaling, ill_conditioning
+# from watertap.tools.local_tools import autoscaling, ill_conditioning
 from idaes.core.util.scaling import (
     get_jacobian,
     extreme_jacobian_columns,
@@ -98,12 +98,12 @@ def main():
     # display_costing(m)
     print(f"Original Condition No.: {jacobian_cond(m, scaled=False)}")
 
-    autoscaling.autoscale_variables_by_magnitude(m, overwrite=True)
+    # autoscaling.autoscale_variables_by_magnitude(m, overwrite=True)
     # scaling = pyo.TransformationFactory('core.scale_model')
     # sm_inter = scaling.create_using(m, rename=False)
     # print(f"Intermediate Condition No.: {jacobian_cond(sm_inter, scaled=False)}")
 
-    autoscaling.autoscale_constraints_by_jacobian_norm(m, overwrite=True)
+    # autoscaling.autoscale_constraints_by_jacobian_norm(m, overwrite=True)
 
     # sm_final = scaling.create_using(m, rename=False)
     # print(f"Final Condition No.: {jacobian_cond(sm_final, scaled=False)}")
