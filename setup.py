@@ -136,6 +136,9 @@ setup(
             "*.csv",
             "*.png",
         ],
+        "watertap.tools.oli_api.tests": [
+            "test.dbs",
+        ],
     },
     entry_points={
         # add edb CLI commands
