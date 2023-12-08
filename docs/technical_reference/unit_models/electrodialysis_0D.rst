@@ -203,6 +203,7 @@ closer to the non-ideal physical conditions that can be encountered in real desa
 
 .. csv-table:: **Table 5** Essential equations supporting model extensions 
    :header: "Description", "Equation", "Condition"
+
     "Limiting current density", ":math:`i_{lim} = i_{lim,0}\frac{c^D}{c^D(0)}`", "`has_Nernst_diffusion_layer==True` and `limiting_current_density_method == LimitingCurrentDensityMethod.InitialValue`"
     " ", ":math:`i_{lim} = A v^B c_b^D`", "`has_Nernst_diffusion_layer==True` and `limiting_current_density_method == LimitingCurrentDensityMethod.Empirical`"
     " ", ":math:`i_{lim} = \frac{Sh F D_b c^D}{d_H \left(t_+^{cem}-t_+ \right)}`", "`has_Nernst_diffusion_layer==True` and `limiting_current_density_method == LimitingCurrentDensityMethod.Theoretical`"
