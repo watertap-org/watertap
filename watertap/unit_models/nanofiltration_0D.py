@@ -230,7 +230,7 @@ class NanoFiltrationData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             self.solute_list,
             initialize=1e-8,
-            bounds=(1e-11, 1e-5),
+            bounds=(1e-11, 1e-4),
             domain=NonNegativeReals,
             units=units_meta("length") * units_meta("time") ** -1,
             doc="Solute permeability coeff.",

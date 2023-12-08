@@ -77,9 +77,7 @@ class PropParameterData(PhysicalParameterBlock):
         self.NaCl = Component()
 
         # parameters
-        self.cp = Param(
-            mutable=False, initialize=4.2e3, units=pyunits.J / (pyunits.kg * pyunits.K)
-        )
+        self.cp = Param(initialize=4.2e3, units=pyunits.J / (pyunits.kg * pyunits.K))
 
         dens_mass_param_dict = {"0": 995, "1": 756}
         self.dens_mass_param = Param(

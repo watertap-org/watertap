@@ -243,7 +243,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
 
     # process costing and add system level metrics
     m.fs.costing.utilization_factor.fix(0.9)
-    m.fs.costing.factor_total_investment.fix(2)
+    m.fs.costing.TIC.fix(2)
     m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
     m.fs.costing.factor_capital_annualization.fix(0.1)
     m.fs.costing.electricity_cost.set_value(0.07)
