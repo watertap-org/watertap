@@ -44,9 +44,7 @@
 
 import pytest
 
-from os.path import join
 from pathlib import Path
-from os import listdir, remove
 
 from watertap.tools.oli_api.client import OLIApi
 from watertap.tools.oli_api.credentials import (
@@ -56,25 +54,17 @@ from watertap.tools.oli_api.credentials import (
 
 
 @pytest.fixture
-def oliapi_instance():
-    def _cleanup(file_list, file_path):
-        new_files = [
-            f"{file_path}/{f}" for f in listdir(file_path) if f not in file_list
-        ]
-        for f in new_files:
-            remove(f)
-
-    root_dir = Path(__file__).parents[1]
-    test_dir = Path(__file__).parents[0]
-    root_contents = listdir(root_dir)
-    test_contents = listdir(test_dir)
+def oliapi_instance(tmp_path: Path):
 
     if not cryptography_available:
         pytest.skip(reason="cryptography module not available.")
+    cred_file_path = tmp_path / "pytest-credentials.txt"
+
     credentials = {
         "access_keys": [""],
         "root_url": "",
         "auth_url": "",
+        "config_file": cred_file_path,
     }
     try:
         credential_manager = CredentialManager(**credentials, test=True)
@@ -85,9 +75,8 @@ def oliapi_instance():
             yield oliapi
     except:
         pytest.xfail("Unable to test OLI logins.")
-
-    _cleanup(root_contents, root_dir)
-    _cleanup(test_contents, test_dir)
+    finally:
+        cred_file_path.unlink()
 
 
 @pytest.mark.unit
