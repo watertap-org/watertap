@@ -88,9 +88,7 @@ class CoagulationParameterData(PhysicalParameterBlock):
         self.Sludge = Component()
 
         #   heat capacity of liquid
-        self.cp = Param(
-            mutable=False, initialize=4184, units=pyunits.J / (pyunits.kg * pyunits.K)
-        )
+        self.cp = Param(initialize=4184, units=pyunits.J / (pyunits.kg * pyunits.K))
 
         #   reference density of liquid
         self.ref_dens_liq = Param(

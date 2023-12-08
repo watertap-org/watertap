@@ -68,6 +68,7 @@ class TestElectrolyzer:
                 "OH-": 0.017007,
             },
             charge={"NA+": 1, "CL-": -1, "OH-": -1},
+            ignore_neutral_charge=True,
         )
 
         m.fs.unit = Electrolyzer(
@@ -316,7 +317,7 @@ class TestElectrolyzer:
         assert pyo.check_optimal_termination(results)
 
         # check solution values
-        assert pytest.approx(17930, rel=1e-3) == pyo.value(
+        assert pytest.approx(2.0 * 17930, rel=1e-3) == pyo.value(
             m.fs.unit.costing.capital_cost
         )
         assert pytest.approx(82.50, rel=1e-3) == pyo.value(

@@ -52,6 +52,7 @@ class TestGACSimplified:
         ms.fs.properties = MCASParameterBlock(
             solute_list=["DCE"],
             mw_data={"H2O": 0.018, "DCE": 0.09896},
+            ignore_neutral_charge=True,
         )
         ms.fs.unit = GAC(
             property_package=ms.fs.properties,
@@ -210,6 +211,7 @@ class TestGACRobust:
             mw_data={"H2O": 0.018, "TCE": 0.1314},
             diffus_calculation=DiffusivityCalculation.HaydukLaudie,
             molar_volume_data={("Liq", "TCE"): 9.81e-5},
+            ignore_neutral_charge=True,
         )
         mr.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
         mr.fs.properties.dens_mass_const = 999.7
@@ -405,7 +407,7 @@ class TestGACRobust:
         assert pytest.approx(4.359, rel=1e-3) == pyo.value(cost.adsorbent_unit_cost)
         assert pytest.approx(17450, rel=1e-3) == pyo.value(cost.adsorbent_cost)
         assert pytest.approx(81690, rel=1e-3) == pyo.value(cost.other_process_cost)
-        assert pytest.approx(156000, rel=1e-3) == pyo.value(cost.capital_cost)
+        assert pytest.approx(2.0 * 156000, rel=1e-3) == pyo.value(cost.capital_cost)
         assert pytest.approx(12680, rel=1e-3) == pyo.value(cost.gac_makeup_cost)
         assert pytest.approx(27660, rel=1e-3) == pyo.value(cost.gac_regen_cost)
         assert pytest.approx(0.01631, rel=1e-3) == pyo.value(cost.energy_consumption)
@@ -443,7 +445,7 @@ class TestGACRobust:
         assert pytest.approx(4.359, rel=1e-3) == pyo.value(cost.adsorbent_unit_cost)
         assert pytest.approx(17450, rel=1e-3) == pyo.value(cost.adsorbent_cost)
         assert pytest.approx(159500, rel=1e-3) == pyo.value(cost.other_process_cost)
-        assert pytest.approx(340200, rel=1e-3) == pyo.value(cost.capital_cost)
+        assert pytest.approx(2.0 * 340200, rel=1e-3) == pyo.value(cost.capital_cost)
         assert pytest.approx(12680, rel=1e-3) == pyo.value(cost.gac_makeup_cost)
         assert pytest.approx(27660, rel=1e-3) == pyo.value(cost.gac_regen_cost)
         assert pytest.approx(2.476, rel=1e-3) == pyo.value(cost.energy_consumption)
@@ -472,7 +474,7 @@ class TestGACRobust:
         assert pyo.value(mr.fs.costing.gac_pressure.num_contactors_redundant) == 2
         assert pytest.approx(89040, rel=1e-3) == pyo.value(cost.contactor_cost)
         assert pytest.approx(69690, rel=1e-3) == pyo.value(cost.other_process_cost)
-        assert pytest.approx(176200, rel=1e-3) == pyo.value(cost.capital_cost)
+        assert pytest.approx(2.0 * 176200, rel=1e-3) == pyo.value(cost.capital_cost)
 
     @pytest.mark.component
     def test_robust_costing_max_gac_ref(self, gac_frame_robust):
@@ -530,6 +532,7 @@ class TestGACMulti:
                 ("Liq", "BGCAT"): 1e-5,
                 ("Liq", "BGAN"): 1e-5,
             },
+            ignore_neutral_charge=True,
         )
         mm.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
         mm.fs.properties.dens_mass_const = 1000
@@ -685,6 +688,7 @@ class TestGACErrorLog:
                     ("Liq", "BGCAT"): 1e-5,
                     ("Liq", "BGAN"): 1e-5,
                 },
+                ignore_neutral_charge=True,
             )
             me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
             me.fs.properties.dens_mass_const = 1000
@@ -709,6 +713,7 @@ class TestGACErrorLog:
                 mw_data={"H2O": 0.018, "TCE": 0.1314},
                 diffus_calculation=DiffusivityCalculation.HaydukLaudie,
                 molar_volume_data={("Liq", "TCE"): 9.81e-5},
+                charge={"TCE": 0},
             )
             me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
             me.fs.properties.dens_mass_const = 1000
@@ -753,6 +758,7 @@ class TestGACErrorLog:
                     ("Liq", "BGCAT"): 1e-5,
                     ("Liq", "BGAN"): 1e-5,
                 },
+                ignore_neutral_charge=True,
             )
             me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
             me.fs.properties.dens_mass_const = 1000
@@ -791,6 +797,7 @@ class TestGACErrorLog:
                     ("Liq", "BGCAT"): 1e-5,
                     ("Liq", "BGAN"): 1e-5,
                 },
+                ignore_neutral_charge=True,
             )
             me.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
             me.fs.properties.dens_mass_const = 1000

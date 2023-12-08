@@ -1069,7 +1069,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert badly_scaled_var_lst == []
 
         # test solve
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -1116,7 +1116,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert pytest.approx(43.7056, rel=1e-3) == value(
             m.fs.unit.permeate_side.properties[0, 0].conc_mass_phase_comp["Liq", "NaCl"]
         )
-        assert pytest.approx(45.156, rel=1e-3) == value(
+        assert pytest.approx(45.111, rel=1e-3) == value(
             m.fs.unit.permeate_side.properties_interface[
                 0, x_interface_in
             ].conc_mass_phase_comp["Liq", "NaCl"]
