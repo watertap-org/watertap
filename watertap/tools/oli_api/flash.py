@@ -47,7 +47,6 @@ __author__ = "Oluwamayowa Amusat, Paul Vecchiarelli"
 import yaml
 from copy import deepcopy
 from itertools import product
-from pandas import DataFrame
 from pyomo.environ import units as pyunits
 
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
@@ -91,14 +90,14 @@ class Flash:
         self.stream_output_options = stream_output_options
         self.water_analysis_input_list = []
 
-    # TODO: consider allowing user to write output as yaml
-    def build_survey(self, survey_arrays, get_oli_names=False, logging=False):
+    def build_survey(self, survey_arrays, get_oli_names=False, logging=False, file_name=None):
         """
         Builds a dictionary used to modify flash calculation parameters.
 
         :param survey_arrays: dictionary containing variables: arrays to survey
         :param get_oli_names: boolean switch to convert name into OLI form
         :param logging: boolean switch to show printable output
+        :param file_name: string indicating desired write location, if any
 
         :return survey: dictionary containing each point in survey
         """
@@ -114,15 +113,19 @@ class Flash:
             i = i + 1
         if logging:
             print(f"Survey contains {len(survey)} items.")
+        if file_name:
+            self.write_output_to_yaml(survey, file_name)
         return survey
 
-    def set_input_value(self, k, v):
-        """ """
+    # TODO: reduce compute time for this process
+    def _build_input_list(self, state_vars):
+        """
+        Build input list for wateranalysis flash method.
 
-        self.water_analysis_properties[k]["value"] = v
+        :param state_vars: dictionary containing solutes, temperatures, pressure, and units
 
-    def build_input_list(self, state_vars):
-        """ """
+        :return input_list: deepcopy of self.water_analysis_input_list
+        """
 
         self.water_analysis_input_list = []
 
@@ -140,11 +143,10 @@ class Flash:
             self.water_analysis_properties["Pressure"]
         )
 
-        # build entries for components
         for component in state_vars["components"]:
             charge = get_charge(component)
             name = get_oli_name(component)
-            value, unit = self.oli_units(
+            conc = self._oli_units(
                 state_vars["components"][component], state_vars["units"]["components"]
             )
 
@@ -152,13 +154,12 @@ class Flash:
                 {
                     "group": get_charge_group(charge),
                     "name": name,
-                    "unit": unit,
-                    "value": value,
+                    "unit": conc[1],
+                    "value": conc[0],
                     "charge": charge,
                 }
             )
 
-        # build entries for other specified properties
         for k, v in self.water_analysis_properties.items():
             if v["value"] is not None:
                 if isinstance(v["value"], list):
@@ -166,13 +167,24 @@ class Flash:
                 if all(k != i["name"] for i in self.water_analysis_input_list):
                     self.water_analysis_input_list.append(v)
 
-        return deepcopy(self.water_analysis_input_list)
+        input_list = deepcopy(self.water_analysis_input_list)
+        return input_list
 
-    def oli_units(self, component, unit):
-        """ """
+    def _oli_units(self, conc, unit):
+        """
+        Converts concentrations between specified units.
+
+        :param conc: concentration value for a solute
+        :param unit: concentration unit for a solute
+
+        :return converted_value: tuple with converted concentration and OLI unit string
+        """
         to_units = input_unit_set["molecularConcentration"]
-        converted_value = pyunits.convert_value(component, unit, to_units["pyomo_unit"])
-        return converted_value, to_units["oli_unit"]
+        converted_value = (
+            pyunits.convert_value(conc, unit, to_units["pyomo_unit"]),
+            to_units["oli_unit"],
+        )
+        return converted_value
 
     def _set_prescaling_calculation_mode(self, use_scaling_rigorous):
         """
@@ -200,8 +212,8 @@ class Flash:
         """
         Builds a base dictionary required for OLI flash analysis.
 
-        :param state_vars: dictionary containing solutes, temperatures, pressure, and units
         :param flash_method: string name of OLI flash flash_method to use
+        :param state_vars: dictionary containing solutes, temperatures, pressure, and units
         :water_analysis_output: dictionary to extract inflows from (required if not wateranalysis flash)
         :use_scaling_rigorous: boolean switch to use estimated or rigorous solving for prescaling metrics
 
@@ -212,7 +224,7 @@ class Flash:
 
         if flash_method == "wateranalysis":
             inputs["params"] = {
-                "waterAnalysisInputs": self.build_input_list(state_vars)
+                "waterAnalysisInputs": self._build_input_list(state_vars)
             }
         else:
             if not water_analysis_output:
@@ -229,7 +241,7 @@ class Flash:
                     "unit": str(state_vars["units"]["pressure"]),
                     "value": float(state_vars["pressure"]),
                 },
-                "inflows": self.extract_inflows(water_analysis_output),
+                "inflows": self._extract_inflows(water_analysis_output),
             }
 
         self._set_prescaling_calculation_mode(use_scaling_rigorous)
@@ -237,15 +249,17 @@ class Flash:
         inputs["params"].update({"unitSetInfo": dict(self.output_unit_set)})
         return inputs
 
-    def extract_inflows(self, water_analysis_output):
+    def _extract_inflows(self, water_analysis_output):
         """
         Extract molecular concentrations from OLI flash output.
 
         :param water_analysis_output: stream output from OLI flash calculation
-        :return: dictionary containing molecular concentrations
+
+        :return inflows: dictionary containing molecular concentrations
         """
 
-        return water_analysis_output["result"]["total"]["molecularConcentration"]
+        inflows = water_analysis_output["result"]["total"]["molecularConcentration"]
+        return inflows
 
     # TODO: consider enabling parallel flash
     def run_flash(
@@ -260,9 +274,9 @@ class Flash:
         """
         Conducts a composition survey with a given set of clones.
 
-        :param flash_method:
+        :param flash_method: string name of OLI flash flash_method to use
         :param oliapi_instance: instance of OLI Cloud API to call
-        :param dbs_file_id:
+        :param dbs_file_id: string ID of DBS file
         :param initial_input: dictionary containing feed base case, to be modified by survey
         :param survey: dictionary containing names and input values to modify
         :param file_name: string indicating desired write location, if any
@@ -332,6 +346,7 @@ class Flash:
 
         :param flash_output: dictionary output from OLI API call
         :param filename: string name of file to write
+        :param logging: boolean switch to show printable output
 
         :return f: string name of file written
         """
@@ -354,13 +369,12 @@ class Flash:
         :param raw_result: dictionary containing raw data to extract from
         :param properties: dictionary containing properties for use in extraction
         :param filter_zero: boolean switch to remove zero values from extracted properties
-        :param write: boolean switch to write extracted properties to yaml
+        :param file_name: string indicating desired write location, if any
 
         :return extracted_properties: dictionary containing values for specified properties
         """
 
         if filter_zero:
-
             def _filter_zeroes(data):
                 if "values" in data:
                     data["values"] = {k: v for k, v in data["values"].items() if v != 0}
