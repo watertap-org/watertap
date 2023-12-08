@@ -14,8 +14,8 @@ GUI configuration for the GAC model.
 """
 
 from pyomo.environ import units as pyunits
-from watertap.examples.flowsheets.case_studies.gac_basic import (
-    gac_basic_flowsheet as gac_fs,
+from watertap.examples.flowsheets.case_studies.gac import (
+    gac_flowsheet as gac_fs,
 )
 from watertap.ui.fsapi import FlowsheetInterface
 
