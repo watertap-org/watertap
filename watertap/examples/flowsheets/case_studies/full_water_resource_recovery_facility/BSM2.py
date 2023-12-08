@@ -67,7 +67,14 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 from pyomo.util.check_units import assert_units_consistent
-
+from watertap.tools.local_tools import autoscaling, ill_conditioning
+from idaes.core.util.scaling import (
+    get_jacobian,
+    extreme_jacobian_columns,
+    extreme_jacobian_rows,
+    extreme_jacobian_entries,
+    jacobian_cond,
+)
 
 def main():
     m = build()
@@ -88,17 +95,28 @@ def main():
 
     print("\n\n=============SIMULATION RESULTS=============\n\n")
     # display_results(m)
-    display_costing(m)
+    # display_costing(m)
+    print(f"Original Condition No.: {jacobian_cond(m, scaled=False)}")
 
+    autoscaling.autoscale_variables_by_magnitude(m, overwrite=True)
+    # scaling = pyo.TransformationFactory('core.scale_model')
+    # sm_inter = scaling.create_using(m, rename=False)
+    # print(f"Intermediate Condition No.: {jacobian_cond(sm_inter, scaled=False)}")
+
+    autoscaling.autoscale_constraints_by_jacobian_norm(m, overwrite=True)
+
+    # sm_final = scaling.create_using(m, rename=False)
+    # print(f"Final Condition No.: {jacobian_cond(sm_final, scaled=False)}")
     setup_optimization(m)
     solver2 = get_solver()
-    solver2.options["bound_push"] = 1e-20
-    results = solver2.solve(m, tee=True)
+    solver2.options["halt_on_ampl_error"] = 'yes'
+    # solver2.options["bound_push"] = 1e-20
+    results = solver2.solve(m, tee=True, symbolic_solver_labels=True)
     pyo.assert_optimal_termination(results)
-    print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
-    # display_results(m)
+    # print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
+    # # display_results(m)
 
-    display_costing(m)
+    # display_costing(m)
 
     return m, results
 
@@ -506,12 +524,16 @@ def add_costing(m):
 
 
 def setup_optimization(m):
-    # m.fs.R1.volume.unfix()
-    # m.fs.R2.volume.unfix()
-    # m.fs.R3.volume.unfix()
-    # m.fs.R4.volume.unfix()
+    m.fs.R1.volume.unfix()
+    m.fs.R2.volume.unfix()
+    m.fs.R3.volume.unfix()
+    m.fs.R4.volume.unfix()
     m.fs.R5.volume.unfix()
-    
+    m.fs.R3.volume.setlb(1e-5)
+    m.fs.R4.volume.setlb(1e-5)
+    m.fs.R5.volume.setlb(1e-5)
+
+    # m.fs.CL1.surface_area.unfix()
     # # Dewatering Unit - fix either HRT or volume.
     # m.fs.DU.hydraulic_retention_time.fix(1800 * pyo.units.s)
 
@@ -522,8 +544,34 @@ def setup_optimization(m):
     # m.fs.TU.hydraulic_retention_time.fix(86400 * pyo.units.s)
     # m.fs.TU.diameter.unfix()
     # m.fs.TU.diameter.setub(20)
-    m.fs.CL1.effluent_state[0].TSS.setub(0.03)
+    m.fs.TSS_max = pyo.Var(
+        initialize=0.03,
+        units=pyo.units.kg/pyo.units.m**3
+    )
+    m.fs.TSS_max.fix() 
+    @m.fs.Constraint(m.fs.time)
+    def eq_TSS_max(self, t):
+        return m.fs.CL1.effluent_state[0].TSS <= m.fs.TSS_max
 
+    m.fs.COD_max = pyo.Var(
+        initialize=0.1,
+        units=pyo.units.kg/pyo.units.m**3
+    )
+    m.fs.COD_max.fix() 
+
+    @m.fs.Constraint(m.fs.time)
+    def eq_COD_max(self, t):
+        return m.fs.CL1.effluent_state[0].COD <= m.fs.COD_max
+
+    m.fs.totalN_max = pyo.Var(
+        initialize=0.018,
+        units=pyo.units.kg/pyo.units.m**3
+    )
+    m.fs.totalN_max.fix() 
+
+    @m.fs.Constraint(m.fs.time)
+    def eq_totalN_max(self, t):
+        return m.fs.CL1.effluent_state[0].Total_N <= m.fs.totalN_max
 
 def solve(blk, solver=None):
     if solver is None:

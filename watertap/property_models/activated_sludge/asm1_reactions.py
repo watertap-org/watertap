@@ -49,7 +49,7 @@ _log = idaeslog.getLogger(__name__)
 @declare_process_block_class("ASM1ReactionParameterBlock")
 class ASM1ReactionParameterData(ReactionParameterBlock):
     """
-    Property Parameter Block Class
+    Reaction Parameter Block Class
     """
 
     def build(self):
@@ -87,25 +87,11 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Yield of cell COD formed per g COD oxidized, Y_H",
         )
-        self.f_p = pyo.Var(
-            initialize=0.08,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Fraction of biomass yielding particulate products, f_p",
-        )
-        self.i_xb = pyo.Var(
-            initialize=0.08,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Mass fraction of N per COD in biomass, i_xb",
-        )
-        self.i_xp = pyo.Var(
-            initialize=0.06,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Mass fraction of N per COD in particulates, i_xp",
-        )
 
+        add_object_reference(self, "f_p", self.config.property_package.f_p)
+        add_object_reference(self, "i_xb", self.config.property_package.i_xb)
+        add_object_reference(self, "i_xp", self.config.property_package.i_xp)
+        
         # Kinetic Parameters
         self.mu_A = pyo.Var(
             initialize=0.5,
@@ -520,5 +506,5 @@ class ASM1ReactionBlockData(ReactionBlockDataBase):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
         iscale.constraint_scaling_transform(self.rate_expression["R5"], 1e3)
-        iscale.constraint_scaling_transform(self.rate_expression["R3"], 1e3)
+        # iscale.constraint_scaling_transform(self.rate_expression["R3"], 1e3)
 
