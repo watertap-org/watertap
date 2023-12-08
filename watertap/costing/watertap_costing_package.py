@@ -10,12 +10,15 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import sys
 import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.common.formatting import tabular_writer
 
 from idaes.core import declare_process_block_class
 from idaes.core.base.costing_base import register_idaes_currency_units
+from idaes.core.util.units_of_measurement import report_quantity
 
 from watertap.costing.costing_base import WaterTAPCostingBlockData
 
@@ -36,7 +39,7 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
         # Build flowsheet level costing components
         # These are the global parameters
         self.factor_total_investment = pyo.Var(
-            initialize=2,
+            initialize=1.0,
             doc="Total investment factor [investment cost/equipment cost]",
             units=pyo.units.dimensionless,
         )
@@ -116,5 +119,61 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
             self.total_operating_cost, self.total_operating_cost_constraint
         )
 
-        for var, con in self._registered_LCOWs.values():
-            calculate_variable_from_constraint(var, con)
+    def report(self):
+        # (I think) this would overwrite call from FlowsheetCostingBlockData report() in idaes which is empty
+        # or the FlowsheetCostingBlockData report() would inherit this? Need some help confirming the implementation
+
+        # default formatting in terminal
+        ostream = sys.stdout
+        max_str_length = 84
+        tab = " " * 4
+
+        # costing variables
+        cost_var_dict = {
+            "Total annualized cost": self.total_annualized_cost,
+            "Aggregate capital cost": self.aggregate_capital_cost,
+            "Total capital cost": self.total_capital_cost,
+            "Total operating cost": self.total_operating_cost,
+            "Maintenance labor chemical operating cost": self.maintenance_labor_chemical_operating_cost,
+            "Aggregate fixed operating cost": self.aggregate_fixed_operating_cost,
+            "Aggregate variable operating cost": self.aggregate_variable_operating_cost,
+        }
+        indexed_cost_var_dict = {
+            "Aggregate flow costs": self.aggregate_flow_costs,
+        }
+        for label, indexed_var in indexed_cost_var_dict.items():
+            for ind in self.aggregate_flow_costs.keys():
+                cost_var_dict[f"{label} for {ind}"] = self.aggregate_flow_costs[ind]
+        on_demand_var = {
+            "LCOW": "LCOW",
+            "Specific energy consumption": "specific_energy_consumption",
+            "Annual water production": "annual_water_production",
+            "Electricity intensity": "electricity_intensity",
+            "Specific electrical carbon intensity": "specific_electrical_carbon_intensity",
+        }
+        for key, local_name in on_demand_var.items():
+            if hasattr(self, local_name):
+                cost_var_dict[key] = getattr(self, local_name)
+
+        # header
+        ostream.write("\n")
+        ostream.write("\n" + "=" * max_str_length + "\n")
+        lead_str = f"Costing : {self.name}"
+        trail_str = f""
+        mid_str = " " * (max_str_length - len(lead_str) - len(trail_str))
+        ostream.write(lead_str + mid_str + trail_str)
+        ostream.write("\n" + "=" * max_str_length + "\n")
+
+        # TODO: write in year base units
+        # variable writer
+        ostream.write(f"{tab}Costing Variables: \n\n")
+        tabular_writer(
+            ostream,
+            tab,
+            ((k, v) for k, v in cost_var_dict.items()),
+            ("Value", "Units"),
+            lambda k, v: [
+                "{:#.5g}".format(report_quantity(v).m),
+                report_quantity(v).u,
+            ],
+        )
