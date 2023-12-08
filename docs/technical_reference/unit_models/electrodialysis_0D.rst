@@ -204,15 +204,15 @@ closer to the non-ideal physical conditions that can be encountered in real desa
 .. csv-table:: **Table 5** Essential equations supporting model extensions 
    :header: "Description", "Equation", "Condition"
     "Limiting current density", ":math:`i_{lim} = i_{lim,0}\frac{c^D}{c^D(0)}`", "`has_Nernst_diffusion_layer==True` and `limiting_current_density_method == LimitingCurrentDensityMethod.InitialValue`"
-   " ", ":math:`i_{lim} = A v^B F c_b^D`", "`has_Nernst_diffusion_layer==True` and `limiting_current_density_method == LimitingCurrentDensityMethod.Empirical`"
-   " ", ":math:`i_{lim} = \frac{Sh F D_b c^D}{d_H \left(t_+^{cem}-t_+ \right)}`", "`has_Nernst_diffusion_layer==True` and `limiting_current_density_method == LimitingCurrentDensityMethod.Theoretical`"
-   "Nonohmic potential, membrane", ":math:`\phi_m=\frac{RT}{F} \left( t_+^{iem} - t_-^{iem} \right) \ln \left( \frac{c_s^R}{c_s^L} \right)`", "`has_nonohmic_potential_membrane == True`"
-   "Ohmic potential, NDL", ":math:`\phi_d^{ohm}=\frac{FD_b}{\left(t_+^{iem}-t_+\right)\lambda}\ln\left(\frac{c_s^Lc_b^R}{c_s^Rc_b^L}\right)`", "`has_Nernst_diffusion_layer==True`"
-   "Nonohmic potential, NDL", ":math:`\phi_d^{nonohm}=\frac{RT}{F}\left(t_+-t_-\right) \ln\left(\frac{c_s^Lc_b^R}{c_s^Rc_b^L}\right)`", "`has_Nernst_diffusion_layer==True`"
-   "NDL thickness, cem", ":math:`\Delta^{L/R} = \frac{F D_b c_b^{L/R}}{\left(t_+^{iem}-t_+ \right) i_{lim}}`", "`has_Nernst_diffusion_layer==True`"
-   "NDL thickness, aem", ":math:`\Delta^{L/R} = - \frac{F D_b c_b^{L/R}}{\left(t_+^{iem}-t_+\right) i_{lim}}`", "`has_Nernst_diffusion_layer==True`"
-   "Concentration polarization ratio, cem", ":math:`\frac{c_s^L}{c_b^L} = 1+\frac{i}{i_{lim}},\qquad \frac{c_s^R}{c_b^R} = 1-\frac{i}{i_{lim}}`", "`has_Nernst_diffusion_layer==True` \ :sup:`1`"
-   "Concentration polarization ratio, aem", ":math:`\frac{c_s^L}{c_b^L} = 1-\frac{i}{i_{lim}},\qquad \frac{c_s^R}{c_b^R} = 1+\frac{i}{i_{lim}}`", "`has_Nernst_diffusion_layer==True`"
+    " ", ":math:`i_{lim} = A v^B c_b^D`", "`has_Nernst_diffusion_layer==True` and `limiting_current_density_method == LimitingCurrentDensityMethod.Empirical`"
+    " ", ":math:`i_{lim} = \frac{Sh F D_b c^D}{d_H \left(t_+^{cem}-t_+ \right)}`", "`has_Nernst_diffusion_layer==True` and `limiting_current_density_method == LimitingCurrentDensityMethod.Theoretical`"
+    "Nonohmic potential, membrane", ":math:`\phi_m=\frac{RT}{F} \left( t_+^{iem} - t_-^{iem} \right) \ln \left( \frac{c_s^R}{c_s^L} \right)`", "`has_nonohmic_potential_membrane == True`"
+    "Ohmic potential, NDL", ":math:`\phi_d^{ohm}=\frac{FD_b}{\left(t_+^{iem}-t_+\right)\lambda}\ln\left(\frac{c_s^Lc_b^R}{c_s^Rc_b^L}\right)`", "`has_Nernst_diffusion_layer==True`"
+    "Nonohmic potential, NDL", ":math:`\phi_d^{nonohm}=\frac{RT}{F}\left(t_+-t_-\right) \ln\left(\frac{c_s^Lc_b^R}{c_s^Rc_b^L}\right)`", "`has_Nernst_diffusion_layer==True`"
+    "NDL thickness, cem", ":math:`\Delta^{L/R} = \frac{F D_b c_b^{L/R}}{\left(t_+^{iem}-t_+ \right) i_{lim}}`", "`has_Nernst_diffusion_layer==True`"
+    "NDL thickness, aem", ":math:`\Delta^{L/R} = - \frac{F D_b c_b^{L/R}}{\left(t_+^{iem}-t_+\right) i_{lim}}`", "`has_Nernst_diffusion_layer==True`"
+    "Concentration polarization ratio, cem", ":math:`\frac{c_s^L}{c_b^L} = 1+\frac{i}{i_{lim}},\qquad \frac{c_s^R}{c_b^R} = 1-\frac{i}{i_{lim}}`", "`has_Nernst_diffusion_layer==True` \ :sup:`1`"
+    "Concentration polarization ratio, aem", ":math:`\frac{c_s^L}{c_b^L} = 1-\frac{i}{i_{lim}},\qquad \frac{c_s^R}{c_b^R} = 1+\frac{i}{i_{lim}}`", "`has_Nernst_diffusion_layer==True`"
    
 
 **Note**

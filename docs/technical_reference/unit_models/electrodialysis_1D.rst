@@ -217,7 +217,7 @@ closer to the non-ideal physical conditions that can be encountered in real desa
    :header: "Description", "Equation", "Condition"
 
    "Limiting current density", ":math:`i_{lim}(x) = i_{lim,0}\frac{c_b^D(x)}{c_b^D(0)}`", "`has_Nernst_diffusion_layer==True` and `limiting_current_density_method == LimitingCurrentDensityMethod.InitialValue`"
-   " ", ":math:`i_{lim}(x) = A v^B F c_b^D (x)`", "`has_Nernst_diffusion_layer==True` and `limiting_current_density_method == LimitingCurrentDensityMethod.Empirical`"
+   " ", ":math:`i_{lim}(x) = A v^B c_b^D (x)`", "`has_Nernst_diffusion_layer==True` and `limiting_current_density_method == LimitingCurrentDensityMethod.Empirical`"
    " ", ":math:`i_{lim}(x) = \frac{Sh F D_b c_b^D(x)}{d_H \left(t_+^{cem}-t_+ \right)}`", "`has_Nernst_diffusion_layer==True` and `limiting_current_density_method == LimitingCurrentDensityMethod.Theoretical`"
    "Nonohmic potential, membrane", ":math:`\phi_m(x)=\frac{RT}{F} \left( t_+^{iem} - t_-^{iem} \right) \ln \left( \frac{c_s^R(x)}{c_s^L(x)} \right)`", "`has_nonohmic_potential_membrane == True`"
    "Ohmic potential, NDL", ":math:`\phi_d^{ohm}(x)=\frac{FD_b}{\left(t_+^{iem}-t_+\right)\lambda}\ln\left(\frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`", "`has_Nernst_diffusion_layer==True`"
