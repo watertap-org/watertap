@@ -36,7 +36,7 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
         # Build flowsheet level costing components
         # These are the global parameters
         self.factor_total_investment = pyo.Var(
-            initialize=2,
+            initialize=1.0,
             doc="Total investment factor [investment cost/equipment cost]",
             units=pyo.units.dimensionless,
         )
@@ -115,6 +115,3 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
         calculate_variable_from_constraint(
             self.total_operating_cost, self.total_operating_cost_constraint
         )
-
-        for var, con in self._registered_LCOWs.values():
-            calculate_variable_from_constraint(var, con)

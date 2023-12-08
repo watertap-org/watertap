@@ -95,7 +95,7 @@ class SuboxicASMZOData(ZeroOrderBaseData):
 
         expr = aeration_basin_cost + other_equipment_cost + control_system_cost
 
-        blk.unit_model._add_cost_factor(
+        blk.costing_package.add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
