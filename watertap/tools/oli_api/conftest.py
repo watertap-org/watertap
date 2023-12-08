@@ -65,7 +65,7 @@ def local_dbs_file() -> Path:
 @pytest.fixture(scope="session")
 def auth_credentials() -> dict:
     "Credentials that allow running tests with an authenticated client"
-    creds = {"auth_url": ""}
+    creds = {"auth_url": "not required when using access keys"}
     try:
         creds["access_keys"] = [os.environ["OLI_API_KEY"]]
         creds["root_url"] = os.environ["OLI_API_ROOT_URL"]
