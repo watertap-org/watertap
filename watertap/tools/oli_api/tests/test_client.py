@@ -53,8 +53,15 @@ from watertap.tools.oli_api.credentials import (
 )
 
 
+@pytest.fixture(scope="session")
+def local_dbs_file():
+    test_dir = Path(__file__).parent
+    dbs_file_path = test_dir / "test.dbs"
+    return dbs_file_path
+
+
 @pytest.fixture
-def oliapi_instance(tmp_path: Path):
+def oliapi_instance(tmp_path: Path, local_dbs_file: Path):
 
     if not cryptography_available:
         pytest.skip(reason="cryptography module not available.")
@@ -70,8 +77,7 @@ def oliapi_instance(tmp_path: Path):
         credential_manager = CredentialManager(**credentials, test=True)
         credential_manager.login()
         with OLIApi(credential_manager, test=True) as oliapi:
-            local_dbs_file = join(test_dir, "test.dbs")
-            oliapi.get_dbs_file_id(local_dbs_file)
+            oliapi.get_dbs_file_id(str(local_dbs_file))
             yield oliapi
     except:
         pytest.xfail("Unable to test OLI logins.")
@@ -80,10 +86,8 @@ def oliapi_instance(tmp_path: Path):
 
 
 @pytest.mark.unit
-def test_dbs_file_cleanup(oliapi_instance):
-    test_dir = Path(__file__).parents[0]
-    local_dbs_file = join(test_dir, "test.dbs")
-    ids = [oliapi_instance.get_dbs_file_id(local_dbs_file) for i in range(10)]
+def test_dbs_file_cleanup(oliapi_instance, local_dbs_file: Path):
+    ids = [oliapi_instance.get_dbs_file_id(str(local_dbs_file)) for i in range(10)]
     oliapi_instance.dbs_file_cleanup(ids)
 
 
