@@ -403,7 +403,7 @@ class FlowsheetExport(BaseModel):
             except Exception as err:
                 raise ValueError(f"Cannot find object in flowsheet: {data['obj']}")
             # evaluate the units
-            norm_units = data["ui_units"].strip().lower()
+            norm_units = data["ui_units"].strip()
             if norm_units in ("", "none", "-"):
                 data["ui_units"] = pyo.units.dimensionless
             else:
