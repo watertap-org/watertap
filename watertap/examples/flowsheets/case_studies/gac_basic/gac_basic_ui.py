@@ -46,6 +46,17 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # feed conditions
     category = "Feed"
     exports.add(
+        obj=fs.properties.mw_comp["solute"],
+        name="MW solute",
+        ui_units=pyunits.gram / pyunits.mol,
+        display_units="g/mol",
+        rounding=rounding,
+        description="Molecular weight",
+        is_input=True,
+        input_category=category,
+        is_output=False,
+    )
+    exports.add(
         obj=fs.feed.properties[0].temperature,
         name="Temperature",
         ui_units=pyunits.kelvin,
