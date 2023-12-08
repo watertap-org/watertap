@@ -11,7 +11,7 @@
 #################################################################################
 """
 Tests for ASM1 thermo property package.
-Authors: Andrew Lee
+Authors: Andrew Lee, Adam Atia
 """
 
 import pytest
@@ -320,3 +320,11 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def check_units(self, model):
         assert_units_consistent(model)
+
+    @pytest.mark.unit
+    def test_expressions(self, model):
+        assert value(model.props[1].TSS) == 0.375
+        assert value(model.props[1].COD) == pytest.approx(0.7999, rel=1e-3)     
+        assert value(model.props[1].BOD5) == 0.096
+        assert value(model.props[1].TKN) == pytest.approx(0.328, rel=1e-3)
+        assert value(model.props[1].Total_N) == pytest.approx(0.428, rel=1e-3)

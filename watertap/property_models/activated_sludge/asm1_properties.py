@@ -134,6 +134,22 @@ class ASM1ParameterData(PhysicalParameterBlock):
         )
         self.f_p.fix()
 
+        #TODO: i_xb and i_xp exist on rxn param block, duplicating temporarily; consolidate later
+        self.i_xb = pyo.Var(
+            initialize=0.08,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Mass fraction of N per COD in biomass, i_xb",
+        )
+        self.i_xp = pyo.Var(
+            initialize=0.06,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Mass fraction of N per COD in particulates, i_xp",
+        )
+        self.i_xb.fix()
+        self.i_xp.fix()
+
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties(
@@ -147,6 +163,11 @@ class ASM1ParameterData(PhysicalParameterBlock):
         obj.define_custom_properties(
             {
                 "alkalinity": {"method": None},
+                "TSS": {"method": "_TSS"},
+                "BOD5": {"method": "_BOD5"},
+                "TKN": {"method": "_TKN"},
+                "Total_N": {"method": "_Total_N"},
+                "COD": {"method": "_COD"},
             }
         )
         obj.add_default_units(
@@ -364,43 +385,51 @@ class ASM1StateBlockData(StateBlockData):
             rule=energy_density_expression, doc="Energy density term"
         )
 
-        def TSS(self):
+        def _TSS(self):
             tss = self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_I"] + self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"] + self.conc_mass_comp["X_P"]
             return 0.75*tss
 
-        self.TSS_expression = pyo.Expression(
-            rule=TSS,
+        self.TSS = pyo.Expression(
+            rule=_TSS,
             doc="Total suspended solids (TSS)",
         )
 
-        def BOD5(self):
+        def _BOD5(self):
             bod5 = self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_S"] + (1-self.params.f_p)*(self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"])
             #TODO: 0.25 should be a parameter instead as it changes by influent/effluent
             return 0.25*bod5
 
-        self.BOD5_expression = pyo.Expression(
-            rule=BOD5,
+        self.BOD5 = pyo.Expression(
+            rule=_BOD5,
             doc="Five-day Biological Oxygen Demand (BOD5)",
         )
 
-        def COD(self):
+        def _COD(self):
             cod = self.conc_mass_comp["S_S"] + self.conc_mass_comp["S_I"] +  self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_I"] + self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"]+ self.conc_mass_comp["X_P"]
             return cod
 
-        self.COD_expression = pyo.Expression(
-            rule=COD,
+        self.COD = pyo.Expression(
+            rule=_COD,
             doc="Chemical Oxygen Demand",
         )
         
-        #TODO: Total Kjeldahl N
-        # def TKN(self):
-        #     tkn = self.conc_mass_comp["S_S"] + self.conc_mass_comp["S_I"] +  self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_I"] + self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"]+ self.conc_mass_comp["X_P"]
-        #     return tkn
+        def _TKN(self):
+            tkn = self.conc_mass_comp["S_NH"] + self.conc_mass_comp["S_ND"] +  self.conc_mass_comp["X_ND"] + self.params.i_xb * (self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"]) + self.params.i_xp * (self.conc_mass_comp["X_P"] + self.conc_mass_comp["X_I"])
+            return tkn
 
-        # self.TKN_expression = pyo.Expression(
-        #     rule=TKN,
-        #     doc="Total Kjeldahl N",
-        # )
+        self.TKN = pyo.Expression(
+            rule=_TKN,
+            doc="Total Kjeldahl Nitrogen",
+        )
+
+        def _Total_N(self):
+            totaln = self.TKN + self.conc_mass_comp["S_NO"]
+            return totaln
+
+        self.Total_N = pyo.Expression(
+            rule=_Total_N,
+            doc="Total Nitrogen",
+        )
 
 
         iscale.set_scaling_factor(self.flow_vol, 1e1)
