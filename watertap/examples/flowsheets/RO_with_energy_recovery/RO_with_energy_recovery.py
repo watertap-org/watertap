@@ -31,7 +31,6 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
 
-
 import watertap.property_models.NaCl_prop_pack as props
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
@@ -66,7 +65,6 @@ def main(erd_type=ERDtype.pressure_exchanger):
     # build, set, and initialize
     m = build(erd_type=erd_type)
     set_operating_conditions(m)
-
     initialize_system(m, solver=solver)
 
     results = solve(m, solver=solver)
@@ -219,7 +217,7 @@ def set_operating_conditions(
     # state variables
     m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
-    # properties (cannot be fixed for initialization routines, must calculate the state variables)
+
     # scaling
     # set default property values
 
@@ -231,7 +229,6 @@ def set_operating_conditions(
     )
 
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
-    # m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
 
     # unused scaling factors needed by IDAES base costing module
@@ -247,11 +244,7 @@ def set_operating_conditions(
         m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e4
     )
 
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    # print("----------------   badly_scaled_var_list   ----------------")
-    # for x in badly_scaled_var_list:
-    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
+    # properties (cannot be fixed for initialization routines, must calculate the state variables)
     m.fs.feed.properties.calculate_state(
         var_args={
             ("flow_vol_phase", "Liq"): flow_vol,  # feed volumetric flow rate [m3/s]
