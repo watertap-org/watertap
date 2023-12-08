@@ -125,16 +125,12 @@ class ASM1ParameterData(PhysicalParameterBlock):
             doc="Reference temperature",
             units=pyo.units.K,
         )
-        #TODO: f_p exists on the rxn parameter block and duplicating here temporarily; consolidate
         self.f_p = pyo.Var(
             initialize=0.08,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="Fraction of biomass yielding particulate products, f_p",
         )
-        self.f_p.fix()
-
-        #TODO: i_xb and i_xp exist on rxn param block, duplicating temporarily; consolidate later
         self.i_xb = pyo.Var(
             initialize=0.08,
             units=pyo.units.dimensionless,
@@ -147,8 +143,22 @@ class ASM1ParameterData(PhysicalParameterBlock):
             domain=pyo.PositiveReals,
             doc="Mass fraction of N per COD in particulates, i_xp",
         )
-        self.i_xb.fix()
-        self.i_xp.fix()
+        self.COD_to_SS = pyo.Var(
+            initialize=0.75,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Conversion factor applied for TSS calculation",
+        ) 
+        self.BOD5_factor = pyo.Var(
+            ["raw", "effluent"],
+            initialize={"raw": 0.65, "effluent": 0.25},
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Conversion factor for BOD5",
+        ) 
+        # Fix Vars that are treated as Params
+        for v in self.component_objects(pyo.Var):
+            v.fix()
 
     @classmethod
     def define_metadata(cls, obj):
@@ -387,19 +397,20 @@ class ASM1StateBlockData(StateBlockData):
 
         def _TSS(self):
             tss = self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_I"] + self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"] + self.conc_mass_comp["X_P"]
-            return 0.75*tss
+            return self.params.COD_to_SS * tss
 
         self.TSS = pyo.Expression(
             rule=_TSS,
             doc="Total suspended solids (TSS)",
         )
 
-        def _BOD5(self):
+        def _BOD5(self, i):
             bod5 = self.conc_mass_comp["X_S"] + self.conc_mass_comp["X_S"] + (1-self.params.f_p)*(self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"])
             #TODO: 0.25 should be a parameter instead as it changes by influent/effluent
-            return 0.25*bod5
+            return self.params.BOD5_factor[i]*bod5
 
         self.BOD5 = pyo.Expression(
+            ["raw", "effluent"],
             rule=_BOD5,
             doc="Five-day Biological Oxygen Demand (BOD5)",
         )
