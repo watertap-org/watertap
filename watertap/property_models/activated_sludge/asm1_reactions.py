@@ -34,6 +34,7 @@ from idaes.core import (
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast
+import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 
@@ -366,7 +367,7 @@ class _ASM1ReactionBlock(ReactionBlockBase):
 @declare_process_block_class("ASM1ReactionBlock", block_class=_ASM1ReactionBlock)
 class ASM1ReactionBlockData(ReactionBlockDataBase):
     """
-    ReactionBlcok for ASM1.
+    ReactionBlock for ASM1.
     """
 
     def build(self):
@@ -515,3 +516,8 @@ class ASM1ReactionBlockData(ReactionBlockDataBase):
 
     def get_reaction_rate_basis(self):
         return MaterialFlowBasis.mass
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        iscale.constraint_scaling_transform(self.rate_expression["R5"], 1e3)
+        iscale.constraint_scaling_transform(self.rate_expression["R3"], 1e3)
