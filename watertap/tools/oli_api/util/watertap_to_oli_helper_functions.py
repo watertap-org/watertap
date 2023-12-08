@@ -27,7 +27,6 @@ from pathlib import Path
 from os.path import join
 from pandas import read_csv
 from pyomo.environ import units as pyunits
-from typing import Optional
 
 # TODO: maybe replace some functionality with molmass: https://pypi.org/project/molmass
 
