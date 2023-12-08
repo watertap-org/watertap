@@ -165,7 +165,9 @@ class ModelExport(BaseModel):
         if v is None:
             v = True
             obj = cls._get_supported_obj(values, allow_none=False)
-            if obj.is_variable_type() or (obj.is_parameter_type() and obj.mutable):
+            if obj.is_variable_type() or (
+                obj.is_parameter_type() and obj.parent_component().mutable
+            ):
                 v = False
         return v
 
@@ -499,6 +501,9 @@ class FlowsheetInterface:
             except KeyError:
                 missing.append((key, src.name))
                 continue
+            print(key, "\n")
+            print(src, "\n")
+            print(dst, "\n")
             # set value in this flowsheet
             ui_units = dst.ui_units
             if dst.is_input and not dst.is_readonly:
@@ -515,48 +520,49 @@ class FlowsheetInterface:
                     # Don't convert units when setting the exported value
                     dst.value = src.value
 
-                if dst.obj.fixed != src.fixed:
-                    # print(f'changing fixed for {key} from {dst.obj.fixed} to {src.fixed}')
-                    if src.fixed:
-                        dst.obj.fix()
-                    else:
-                        dst.obj.unfix()
-                    dst.fixed = src.fixed
+                # update other variable properties if changed, not applicable for parameters
+                if dst.obj.is_variable_type():
+                    if dst.obj.fixed != src.fixed:
+                        # print(f'changing fixed for {key} from {dst.obj.fixed} to {src.fixed}')
+                        if src.fixed:
+                            dst.obj.fix()
+                        else:
+                            dst.obj.unfix()
+                        dst.fixed = src.fixed
+                    # update bounds
+                    if dst.lb != src.lb:
+                        # print(f'changing lb for {key} from {dst.lb} to {src.lb}')
+                        if src.lb is None or src.lb == "":
+                            dst.obj.setlb(None)
+                            dst.lb = None
+                        else:
+                            tmp = pyo.Var(initialize=src.lb, units=ui_units)
+                            tmp.construct()
+                            new_lb = pyo.value(
+                                u.convert(tmp, to_units=u.get_units(dst.obj))
+                            )
+                            dst.obj.setlb(new_lb)
+                            dst.lb = src.lb
+                    if dst.ub != src.ub:
+                        # print(f'changing ub for {key} from {dst.ub} to {src.ub}')
+                        if src.ub is None or src.ub == "":
+                            dst.obj.setub(None)
+                            dst.ub = None
+                        else:
+                            tmp = pyo.Var(initialize=src.ub, units=ui_units)
+                            tmp.construct()
+                            new_ub = pyo.value(
+                                u.convert(tmp, to_units=u.get_units(dst.obj))
+                            )
+                            # print(f'changing ub for {key} from {dst.obj.ub} to {new_ub}')
+                            dst.obj.setub(new_ub)
+                            dst.ub = src.ub
 
                 if dst.is_sweep != src.is_sweep:
                     dst.is_sweep = src.is_sweep
 
                 if dst.num_samples != src.num_samples:
                     dst.num_samples = src.num_samples
-
-                # update bounds
-                if dst.lb != src.lb:
-                    # print(f'changing lb for {key} from {dst.lb} to {src.lb}')
-                    if src.lb is None or src.lb == "":
-                        dst.obj.setlb(None)
-                        dst.lb = None
-                    else:
-                        tmp = pyo.Var(initialize=src.lb, units=ui_units)
-                        tmp.construct()
-                        new_lb = pyo.value(
-                            u.convert(tmp, to_units=u.get_units(dst.obj))
-                        )
-                        dst.obj.setlb(new_lb)
-                        dst.lb = src.lb
-                if dst.ub != src.ub:
-                    # print(f'changing ub for {key} from {dst.ub} to {src.ub}')
-                    if src.ub is None or src.ub == "":
-                        dst.obj.setub(None)
-                        dst.ub = None
-                    else:
-                        tmp = pyo.Var(initialize=src.ub, units=ui_units)
-                        tmp.construct()
-                        new_ub = pyo.value(
-                            u.convert(tmp, to_units=u.get_units(dst.obj))
-                        )
-                        # print(f'changing ub for {key} from {dst.obj.ub} to {new_ub}')
-                        dst.obj.setub(new_ub)
-                        dst.ub = src.ub
 
         # update degrees of freedom (dof)
         self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)

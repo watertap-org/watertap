@@ -47,9 +47,7 @@ def main():
     initialize_model(m)
     res = solve_model(m)
     print("solver termination condition:", res.solver.termination_condition)
-    m.fs.display()
-
-    return m, res
+    # m.fs.display()
 
 
 def build():
@@ -119,17 +117,10 @@ def initialize_model(m, solver=None):
     iscale.calculate_scaling_factors(m)
 
     # feed specifications
-    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].unfix()
-    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "solute"].unfix()
-    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
-    m.fs.feed.properties.calculate_state(
-        var_args={
-            ("flow_vol_phase", "Liq"): 0.043813,
-            ("conc_mass_phase_comp", ("Liq", "solute")): 0.1,
-        },
-        hold_state=True,  # fixes the calculated component mass flow rates
-    )
+    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
+    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix(2433.81215)
+    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "solute"].fix(0.05476625)
 
     # gac specifications
     # performance parameters

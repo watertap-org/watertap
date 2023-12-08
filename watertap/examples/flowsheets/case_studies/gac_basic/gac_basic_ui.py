@@ -43,8 +43,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # input data
     # ---------------------------------------------------------------------
-    # feed conditions
-    category = "Feed"
+    # solute properties
+    category = "Solute properties"
     exports.add(
         obj=fs.properties.mw_comp["solute"],
         name="MW solute",
@@ -55,7 +55,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_input=True,
         input_category=category,
         is_output=False,
-    )
+    )  # ---------------------------------------------------------------------
+    # feed conditions
+    category = "Feed"
     exports.add(
         obj=fs.feed.properties[0].temperature,
         name="Temperature",
