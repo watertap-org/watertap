@@ -39,7 +39,7 @@ import idaes.logger as idaeslog
 
 
 # Some more information about this module
-__author__ = "Andrew Lee, Xinhong Liu"
+__author__ = "Andrew Lee, Xinhong Liu, Adam Atia"
 
 
 # Set up logger
