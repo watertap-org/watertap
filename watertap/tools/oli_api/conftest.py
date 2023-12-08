@@ -47,14 +47,39 @@ from pathlib import Path
 import pytest
 
 from watertap.tools.oli_api.client import OLIApi
+from watertap.tools.oli_api.credentials import (
+    CredentialManager,
+    cryptography_available,
+)
 
 
-@pytest.mark.unit
-def test_dbs_file_cleanup(oliapi_instance: OLIApi, local_dbs_file: Path):
-    ids = [oliapi_instance.get_dbs_file_id(str(local_dbs_file)) for i in range(10)]
-    oliapi_instance.dbs_file_cleanup(ids)
+@pytest.fixture(scope="session")
+def local_dbs_file() -> Path:
+    test_dir = Path(__file__).parent / "tests"
+    dbs_file_path = test_dir / "test.dbs"
+    return dbs_file_path
 
 
-@pytest.mark.unit
-def test_get_user_summary(oliapi_instance: OLIApi):
-    oliapi_instance.get_user_summary()
+@pytest.fixture(scope="function")
+def oliapi_instance(tmp_path: Path, local_dbs_file: Path) -> OLIApi:
+
+    if not cryptography_available:
+        pytest.skip(reason="cryptography module not available.")
+    cred_file_path = tmp_path / "pytest-credentials.txt"
+
+    credentials = {
+        "access_keys": [""],
+        "root_url": "",
+        "auth_url": "",
+        "config_file": cred_file_path,
+    }
+    try:
+        credential_manager = CredentialManager(**credentials, test=True)
+        credential_manager.login()
+        with OLIApi(credential_manager, test=True) as oliapi:
+            oliapi.get_dbs_file_id(str(local_dbs_file))
+            yield oliapi
+    except:
+        pytest.xfail("Unable to test OLI logins.")
+    finally:
+        cred_file_path.unlink()
