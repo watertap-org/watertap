@@ -161,7 +161,7 @@ class TestStateBlock(object):
                 "X_ND",
             ]
             assert value(model.props[1].conc_mass_comp[i]) == 0.1
-        
+
         assert isinstance(model.props[1].params.f_p, Var)
         assert value(model.props[1].params.f_p) == 0.08
         assert isinstance(model.props[1].params.i_xb, Var)
@@ -336,8 +336,8 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def test_expressions(self, model):
         assert value(model.props[1].TSS) == 0.375
-        assert value(model.props[1].COD) == pytest.approx(0.7999, rel=1e-3)     
+        assert value(model.props[1].COD) == pytest.approx(0.7999, rel=1e-3)
         assert value(model.props[1].BOD5["effluent"]) == 0.096
-        assert value(model.props[1].BOD5["raw"]) == 0.096 *0.65/0.25
+        assert value(model.props[1].BOD5["raw"]) == 0.096 * 0.65 / 0.25
         assert value(model.props[1].TKN) == pytest.approx(0.328, rel=1e-3)
         assert value(model.props[1].Total_N) == pytest.approx(0.428, rel=1e-3)
