@@ -136,6 +136,7 @@ def build_dummy_cost_rectifier(blk):
 )
 def dummy_cost_rectifier(blk):
     cost_rectifier(blk)
+    blk.costing_package.add_cost_factor(blk, "TIC")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost == blk.capital_cost_rectifier
     )

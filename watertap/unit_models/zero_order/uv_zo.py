@@ -98,7 +98,7 @@ class UVZOData(ZeroOrderBaseData):
         expr = blk.unit_model._get_uv_capital_cost(blk, A, B)
 
         # Determine if a costing factor is required
-        blk.unit_model._add_cost_factor(
+        blk.costing_package.add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
