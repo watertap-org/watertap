@@ -45,11 +45,8 @@
 __author__ = "Oluwamayowa Amusat, Paul Vecchiarelli"
 
 import yaml
-from os.path import join
-from pathlib import Path
 from copy import deepcopy
 from itertools import product
-from datetime import datetime
 from pandas import DataFrame
 from pyomo.environ import units as pyunits
 
@@ -94,26 +91,28 @@ class Flash:
         self.stream_output_options = stream_output_options
         self.water_analysis_input_list = []
 
-    # TODO: consider using yaml/json to contain surveys instead of DataFrame
-    def build_survey(self, survey_arrays, get_oli_names=False, tee=False):
+    # TODO: consider allowing user to write output as yaml
+    def build_survey(self, survey_arrays, get_oli_names=False, logging=False):
         """
-        Builds a DataFrame used to modify flash calculation parameters.
+        Builds a dictionary used to modify flash calculation parameters.
 
         :param survey_arrays: dictionary containing variables: arrays to survey
         :param get_oli_names: boolean switch to convert name into OLI form
-        :param tee: boolean switch to show printable output
+        :param logging: boolean switch to show printable output
 
-        :return survey: DataFrame containing surveys (or empty)
+        :return survey: dictionary containing each point in survey
         """
 
-        exclude_items = ["Temperature", "Pressure"]
-        convert_name = (
-            lambda k: get_oli_name(k) if get_oli_names and k not in exclude_items else k
-        )
-        survey_vars = {convert_name(k): v for k, v in survey_arrays.items()}
-        survey_vars_product = list(product(*(survey_vars[key] for key in survey_vars)))
-        survey = DataFrame(data=survey_vars_product, columns=survey_vars.keys())
-        if tee:
+        keys = list(survey_arrays.keys())
+        num_keys = range(len(keys))
+        values = product(*(survey_arrays.values()))
+
+        i = 0
+        survey = {}
+        for v in values:
+            survey[i] = {keys[j]: v[j] for j in range(len(v)) for j in num_keys}
+            i = i + 1
+        if logging:
             print(f"Survey contains {len(survey)} items.")
         return survey
 
@@ -145,7 +144,6 @@ class Flash:
         for component in state_vars["components"]:
             charge = get_charge(component)
             name = get_oli_name(component)
-            # TODO: consider adding other concentration units (mol/L, etc.)
             value, unit = self.oli_units(
                 state_vars["components"][component], state_vars["units"]["components"]
             )
@@ -162,10 +160,10 @@ class Flash:
 
         # build entries for other specified properties
         for k, v in self.water_analysis_properties.items():
-            if isinstance(v["value"], list):
-                self.water_analysis_properties[k]["value"] = v["value"][0]
-            if k not in [i["name"] for i in self.water_analysis_input_list]:
-                if v["value"] is not None:
+            if v["value"] is not None:
+                if isinstance(v["value"], list):
+                    self.water_analysis_properties[k]["value"] = v["value"][0]
+                if all(k != i["name"] for i in self.water_analysis_input_list):
                     self.water_analysis_input_list.append(v)
 
         return deepcopy(self.water_analysis_input_list)
@@ -177,35 +175,33 @@ class Flash:
         return converted_value, to_units["oli_unit"]
 
     def _set_prescaling_calculation_mode(self, use_scaling_rigorous):
-        """ """
-        if use_scaling_rigorous:
-            if self.optional_properties["prescalingTendenciesRigorous"] == True:
-                new_values = {
-                    k: not v
-                    for k, v in self.optional_properties.items()
-                    if "prescaling" in k
-                }
-            else:
-                return
-        else:
-            if not self.optional_properties["prescalingTendenciesRigorous"] == True:
-                new_values = {
-                    k: not v
-                    for k, v in self.optional_properties.items()
-                    if "prescaling" in k
-                }
-            else:
-                return
+        """
+        Sets prescaling computation method based on argument.
+
+        :param use_scaling_rigorous: boolean indicating desired state of 'rigorous' and 'estimated' optional properties
+        """
+
+        if bool(use_scaling_rigorous) == bool(
+            self.optional_properties["prescalingTendenciesRigorous"]
+        ):
+            return
+        new_values = {
+            k: not v for k, v in self.optional_properties.items() if "prescaling" in k
+        }
         self.optional_properties.update(new_values)
 
     def build_flash_calculation_input(
-        self, state_vars, method, water_analysis_output=None, use_scaling_rigorous=True
+        self,
+        flash_method,
+        state_vars,
+        water_analysis_output=None,
+        use_scaling_rigorous=True,
     ):
         """
         Builds a base dictionary required for OLI flash analysis.
 
         :param state_vars: dictionary containing solutes, temperatures, pressure, and units
-        :param method: string name of OLI flash method to use
+        :param flash_method: string name of OLI flash flash_method to use
         :water_analysis_output: dictionary to extract inflows from (required if not wateranalysis flash)
         :use_scaling_rigorous: boolean switch to use estimated or rigorous solving for prescaling metrics
 
@@ -214,7 +210,7 @@ class Flash:
 
         inputs = {"params": {}}
 
-        if method == "wateranalysis":
+        if flash_method == "wateranalysis":
             inputs["params"] = {
                 "waterAnalysisInputs": self.build_input_list(state_vars)
             }
@@ -259,7 +255,7 @@ class Flash:
         dbs_file_id,
         initial_input,
         survey=None,
-        write=False,
+        file_name=None,
     ):
         """
         Conducts a composition survey with a given set of clones.
@@ -268,13 +264,16 @@ class Flash:
         :param oliapi_instance: instance of OLI Cloud API to call
         :param dbs_file_id:
         :param initial_input: dictionary containing feed base case, to be modified by survey
-        :param survey: DataFrame containing names and ranges of input variables to survey
-        :param write: integer value indicating how many parallel requests to make
+        :param survey: dictionary containing names and input values to modify
+        :param file_name: string indicating desired write location, if any
 
         :return result: dictionary containing IDs and output streams for each flash calculation
         """
 
-        if survey is not None:
+        if survey is None:
+            result = {0: oliapi_instance.call(flash_method, dbs_file_id, initial_input)}
+
+        else:
             clones = self.modify_inputs(
                 initial_flash_input=initial_input,
                 survey=survey,
@@ -284,15 +283,10 @@ class Flash:
                 k: oliapi_instance.call(flash_method, dbs_file_id, v)
                 for k, v in clones.items()
             }
-            suffix = "composition_survey"
 
-        else:
-            result = {0: oliapi_instance.call(flash_method, dbs_file_id, initial_input)}
-            suffix = "single_point"
-
-        if write:
-            file_name = f"{flash_method}_{suffix}"
+        if file_name:
             self.write_output_to_yaml(result, file_name)
+
         return result
 
     def modify_inputs(self, initial_flash_input, survey, flash_method):
@@ -300,67 +294,60 @@ class Flash:
         Iterates over a survey to create modified clones of an initial flash analysis output.
 
         :param initial_flash_input: flash analysis input to copy
-        :param survey: DataFrame containing modifications for each test
+        :param survey: dictionary containing modifications for each test
         :param flash_method: string name of flash method to use
 
         :return clones: dictionary containing modified state variables and survey index
         """
 
         clones = {}
-        for clone_index in survey.index:
+        for i in survey.keys():
             modified_clone = deepcopy(initial_flash_input)
             if flash_method == "wateranalysis":
                 for param in modified_clone["params"]["waterAnalysisInputs"]:
                     key = param["name"]
-                    if key in survey.columns:
-                        param.update({"value": survey.loc[clone_index, key]})
+                    if key in survey.keys():
+                        param.update({"value": survey[i][key]})
             elif flash_method == "isothermal":
                 for param in survey:
-                    if param == "Temperature":
-                        modified_clone["params"]["temperature"]["value"] = survey.loc[
-                            clone_index, param
-                        ]
-                    elif param == "Pressure":
-                        modified_clone["params"]["pressure"]["value"] = survey.loc[
-                            clone_index, param
-                        ]
+                    path == None
+                    if param in ["Temperature", "Pressure"]:
+                        path = modified_clone["params"][param.lower()]["value"]
                     else:
                         if param in modified_clone["inflows"]["values"]:
-                            modified_clone["inflows"]["values"][param] = survey.loc[
-                                clone_index, param
-                            ]
+                            path = modified_clone["inflows"]["values"][param]
+                    if path:
+                        path = survey[i][param]
+
             else:
                 raise IOError(
                     " Only 'wateranalysis' and 'isothermal' currently supported."
                 )
-            clones[clone_index] = modified_clone
+            clones[i] = modified_clone
         return clones
 
-    def write_output_to_yaml(self, flash_output, file_name, tee=True):
+    def write_output_to_yaml(self, flash_output, file_name, logging=True):
         """
         Writes OLI API flash output to .yaml file.
 
         :param flash_output: dictionary output from OLI API call
         :param filename: string name of file to write
 
-        :return file_path: string name of file written
+        :return f: string name of file written
         """
 
-        t = datetime.utcnow()
-        file_path = join(
-            Path(__file__).parents[0],
-            f"{t.day:02}{t.month:02}{t.year:04}_{file_name}.yaml",
-        )
-
-        if tee:
+        f = f"{file_name}.yaml"
+        if logging:
             print(f"Saving file...")
-        with open(file_path, "w") as yamlfile:
+        with open(f, "w") as yamlfile:
             yaml.dump(flash_output, yamlfile)
-        if tee:
-            print(f"{file_path} saved to working directory.")
-        return file_path
+        if logging:
+            print(f"{f} saved to working directory.")
+        return f
 
-    def extract_properties(self, raw_result, properties, filter_zero=True, write=False):
+    def extract_properties(
+        self, raw_result, properties, filter_zero=True, file_name=False
+    ):
         """
         Extracts properties from OLI Cloud flash calculation output stream.
 
@@ -372,11 +359,15 @@ class Flash:
         :return extracted_properties: dictionary containing values for specified properties
         """
 
-        def _filter_zeroes(data, filter_zero):
-            if "values" in data:
-                if filter_zero:
+        if filter_zero:
+
+            def _filter_zeroes(data):
+                if "values" in data:
                     data["values"] = {k: v for k, v in data["values"].items() if v != 0}
-            return data
+                return data
+
+        else:
+            _filter_zeroes = lambda data: data
 
         def _get_nested_phase_keys(phase, group):
             keys = ["phases", phase] if phase != "total" else ["total"]
@@ -389,37 +380,43 @@ class Flash:
             return data
 
         extracted_properties = {}
+        property_groups = {p: [] for p in properties}
+        groups_with_phase = set(("result", "properties"))
+        groups_additional = set(("additionalProperties", "waterAnalysisOutput"))
+        for group, props in self.stream_output_options.items():
+            for p in props:
+                if p in properties:
+                    property_groups[p].append(group)
+
         for i in raw_result:
             extracted_properties[i] = {}
             root_path = [i, "result"]
+
             for prop in properties:
                 base_result = _get_nested_data(raw_result, root_path)
-                phases = [
-                    k
-                    for k in base_result["phases"].keys()
-                    if prop in base_result["phases"][k]
-                ]
-                if prop in base_result["total"]:
-                    phases.append("total")
-                options = self.stream_output_options
-                prop_groups = [k for k in options if prop in options[k]]
-                for group in prop_groups:
-                    if group in ["result", "properties"]:
-                        for phase in phases:
+                phases = {p: [] for p in properties}
+                for phase, prop in base_result.items():
+                    if prop in properties:
+                        phases[prop].append(phase)
+                for prop in properties:
+                    if prop in base_result["total"]:
+                        phases[prop].append("total")
+                    for group in property_groups[prop]:
+                        if group in groups_with_phase:
+                            for phase in phases[prop]:
+                                deep_path = deepcopy(root_path)
+                                deep_path.extend(_get_nested_phase_keys(phase, group))
+                                result = _filter_zeroes(
+                                    _get_nested_data(raw_result, deep_path)
+                                )
+                                extracted_properties[i][f"{prop}_{phase}"] = result
+                        if group in groups_additional:
                             deep_path = deepcopy(root_path)
-                            deep_path.extend(_get_nested_phase_keys(phase, group))
+                            deep_path.extend([group, prop])
                             result = _filter_zeroes(
-                                _get_nested_data(raw_result, deep_path), filter_zero
+                                _get_nested_data(raw_result, deep_path)
                             )
-                            extracted_properties[i][f"{prop}_{phase}"] = result
-                    if group in ["additionalProperties", "waterAnalysisOutput"]:
-                        deep_path = deepcopy(root_path)
-                        deep_path.extend([group, prop])
-                        result = _filter_zeroes(
-                            _get_nested_data(raw_result, deep_path), filter_zero
-                        )
-                        extracted_properties[i][prop] = result
-        if write:
-            file_name = "extracted_properties.yaml"
+                            extracted_properties[i][prop] = result
+        if file_name:
             self.write_output_to_yaml(extracted_properties, file_name)
         return extracted_properties

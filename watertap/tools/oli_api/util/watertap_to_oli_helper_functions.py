@@ -27,7 +27,7 @@ from pathlib import Path
 from os.path import join
 from pandas import read_csv
 
-# TODO: maybe replace some functionality with molmass: https://pypi.org/project/molmass
+# TODO: consider replacing some functionality with molmass: https://pypi.org/project/molmass
 
 OLIName = namedtuple(
     "OLIName", ["oli_name", "watertap_name", "charge", "charge_group", "molar_mass"]
@@ -58,7 +58,6 @@ def watertap_to_oli(watertap_name: str) -> OLIName:
     return OLIName(oli_name, watertap_name, charge, charge_group, molar_mass)
 
 
-# TODO: merge with other helper functions in this file
 def get_oli_name(watertap_name: str) -> str:
     """
     Converts an WaterTAP formatted name, i.e., "Na_+"
@@ -69,15 +68,19 @@ def get_oli_name(watertap_name: str) -> str:
     :return oli_name: string name of a solute in OLI format
     """
 
-    components = watertap_name.split("_")
-    if len(components) == 0:
-        raise IOError(f" Unable to parse solute '{watertap_name}'.")
-    if len(components) == 1:
-        molecule = components[0]
-    elif len(components) == 2:
-        molecule = components[0] + "ION"
-    oli_name = molecule.replace("[", "").replace("]", "").upper()
-    return oli_name
+    exclude_items = ["temperature", "pressure", "volume"]
+    if watertap_name.lower() in exclude_items:
+        return watertap_name
+    else:
+        components = watertap_name.split("_")
+        if len(components) == 0:
+            raise IOError(f" Unable to parse solute '{watertap_name}'.")
+        if len(components) == 1:
+            molecule = components[0]
+        elif len(components) == 2:
+            molecule = components[0] + "ION"
+        oli_name = molecule.replace("[", "").replace("]", "").upper()
+        return oli_name
 
 
 def get_charge(watertap_name: str) -> int:

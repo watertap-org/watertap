@@ -61,6 +61,7 @@ class CredentialManager:
     A class to handle credentials for OLI Cloud.
     """
 
+    # TODO: add write argument to bypass raw_input
     def __init__(
         self,
         username="",

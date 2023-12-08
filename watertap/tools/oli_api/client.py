@@ -46,7 +46,7 @@ __author__ = "Adam Atia, Adi Bannady, Paul Vecchiarelli"
 
 
 from os.path import isfile, islink
-import requests  # from requests import get, post, request
+import requests
 import json
 import time
 
@@ -328,12 +328,12 @@ class OLIApi:
 
     def call(
         self,
-        flash_method="",
-        dbs_file_id="",
-        input_params=dict(),
+        flash_method=None,
+        dbs_file_id=None,
+        input_params=None,
         poll_time=1.0,
         max_request=1000,
-        tee=False,
+        logging=False,
     ):
         """ """
 
@@ -370,7 +370,7 @@ class OLIApi:
         request_result1 = self.request_auto_login(add_additional_header)
         end_time = time.time()
         request_time = end_time - start_time
-        if tee:
+        if logging:
             print("First request time =", request_time)
         if bool(request_result1):
             if request_result1["status"] == "SUCCESS":
@@ -382,7 +382,7 @@ class OLIApi:
                         ):
                             if "resultsLink" in request_result1["data"]:
                                 results_link = request_result1["data"]["resultsLink"]
-        if tee:
+        if logging:
             print(results_link)
         # TODO: raise error
         if results_link == "":
@@ -400,7 +400,7 @@ class OLIApi:
             request_result2 = self.request_auto_login(add_additional_header)
             end_time = time.time()
             request_time = end_time - start_time
-            if tee:
+            if logging:
                 print("Second request time =", request_time)
 
             # check if max requests exceeded
@@ -409,12 +409,12 @@ class OLIApi:
                 break
 
             # extract
-            if tee:
+            if logging:
                 print(request_result2)
             if bool(request_result2):
                 if "status" in request_result2:
                     status = request_result2["status"]
-                    if tee:
+                    if logging:
                         print(status)
                     if status == "PROCESSED" or status == "FAILED":
                         if "data" in request_result2:
