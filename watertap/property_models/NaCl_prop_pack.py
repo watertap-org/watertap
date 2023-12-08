@@ -94,7 +94,6 @@ class NaClParameterData(PhysicalParameterBlock):
         mw_comp_data = {"H2O": 18.01528e-3, "NaCl": 58.44e-3}
         self.mw_comp = Param(
             self.component_list,
-            mutable=False,
             initialize=extract_data(mw_comp_data),
             units=pyunits.kg / pyunits.mol,
             doc="Molecular weight kg/mol",

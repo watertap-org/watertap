@@ -281,9 +281,6 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
             self.total_fixed_operating_cost, self.total_fixed_operating_cost_constraint
         )
 
-        for var, con in self._registered_LCOWs.values():
-            calculate_variable_from_constraint(var, con)
-
 
 def _load_case_study_definition(self):
     """

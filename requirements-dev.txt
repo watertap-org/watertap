@@ -4,4 +4,4 @@ pre-commit
 pylint<3
 astroid
 # Defer to setup.py contents
--e .[dev,notebooks]
+-e .[dev,notebooks,oli_api]

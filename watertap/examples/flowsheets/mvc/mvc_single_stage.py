@@ -409,7 +409,7 @@ def set_operating_conditions(m):
     m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp["Liq", "TDS"].fix(1e-5)
 
     # Costing
-    m.fs.costing.factor_total_investment.fix(2)
+    m.fs.costing.TIC.fix(2)
     m.fs.costing.electricity_cost = 0.1  # 0.15
     m.fs.costing.heat_exchanger.material_factor_cost.fix(5)
     m.fs.costing.evaporator.material_factor_cost.fix(5)

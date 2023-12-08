@@ -110,9 +110,11 @@ def cost_electrolyzer(blk):
             to_units=blk.costing_package.base_currency,
         )
     )
+    blk.costing_package.add_cost_factor(blk, "TIC")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == (blk.membrane_cost + blk.anode_cost + blk.cathode_cost)
+        == blk.cost_factor
+        * (blk.membrane_cost + blk.anode_cost + blk.cathode_cost)
         / blk.costing_package.electrolyzer.fraction_material_cost
     )
 
