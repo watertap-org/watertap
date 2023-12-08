@@ -598,7 +598,9 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             )
         )
 
-        ec._add_cost_factor(blk, parameter_dict["capital_cost"]["cost_factor"])
+        blk.costing_package.add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
         blk.capital_cost_constraint = Constraint(
             expr=blk.capital_cost

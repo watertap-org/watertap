@@ -22,14 +22,14 @@ __author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia"
 import pyomo.environ as pyo
 
 from pyomo.network import Arc, SequentialDecomposition
-from idaes.core import FlowsheetBlock
 from watertap.unit_models.anaerobic_digestor import AD
 from watertap.unit_models.thickener import Thickener
 from watertap.unit_models.dewatering import DewateringUnit
+from watertap.unit_models.cstr import CSTR
+from watertap.unit_models.clarifier import Clarifier
 
 from watertap.unit_models.translators.translator_asm1_adm1 import Translator_ASM1_ADM1
 from watertap.unit_models.translators.translator_adm1_asm1 import Translator_ADM1_ASM1
-from idaes.models.unit_models import Separator, Mixer
 
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
@@ -37,9 +37,6 @@ import idaes.core.util.scaling as iscale
 
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
-)
-from watertap.property_models.activated_sludge.asm1_properties import (
-    ASM1ParameterBlock,
 )
 from watertap.property_models.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
@@ -49,9 +46,8 @@ from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
 )
 
-from idaes.core import FlowsheetBlock
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.models.unit_models import (
-    CSTR,
     Feed,
     Mixer,
     Separator,
@@ -65,6 +61,11 @@ from watertap.property_models.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
 from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.costing import WaterTAPCosting
+from watertap.costing.unit_models.clarifier import (
+    cost_circular_clarifier,
+    cost_primary_clarifier,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 
@@ -79,15 +80,13 @@ def main():
     results = solve(m)
 
     add_costing(m)
-    # Assert DOF = 0 after adding costing
-    # assert_degrees_of_freedom(m, 0)
+    m.fs.costing.initialize()
+    assert_degrees_of_freedom(m, 0)
 
-    # TODO: initialize costing after adding to flowsheet
-    # m.fs.costing.initialize()
-
-    # results = solve(m)
-
+    results = solve(m)
+    pyo.assert_optimal_termination(results)
     display_results(m)
+    display_costing(m)
 
     return m, results
 
@@ -137,7 +136,7 @@ def build():
     )
     # Clarifier
     # TODO: Replace with more detailed model when available
-    m.fs.CL1 = Separator(
+    m.fs.CL1 = Clarifier(
         property_package=m.fs.props_ASM1,
         outlet_list=["underflow", "effluent"],
         split_basis=SplittingType.componentFlow,
@@ -240,7 +239,7 @@ def build():
 
     # ====================================================================
     # Primary Clarifier
-    m.fs.CL = Separator(
+    m.fs.CL = Clarifier(
         property_package=m.fs.props_ASM1,
         outlet_list=["underflow", "effluent"],
         split_basis=SplittingType.componentFlow,
@@ -343,6 +342,8 @@ def set_operating_conditions(m):
     m.fs.CL1.split_fraction[0, "effluent", "X_ND"].fix(0.00187)
     m.fs.CL1.split_fraction[0, "effluent", "S_ALK"].fix(0.48956)
 
+    m.fs.CL1.surface_area.fix(1500 * pyo.units.m**2)
+
     # Sludge purge separator
     m.fs.SP6.split_fraction[:, "recycle"].fix(0.985)
 
@@ -373,6 +374,9 @@ def set_operating_conditions(m):
 
     # Dewatering Unit - fix either HRT or volume.
     m.fs.DU.hydraulic_retention_time.fix(1800 * pyo.units.s)
+
+    # Set specific energy consumption averaged for centrifuge
+    m.fs.DU.energy_electric_flow_vol_inlet[0] = 0.069 * pyo.units.kWh / pyo.units.m**3
 
     # Thickener unit
     m.fs.TU.hydraulic_retention_time.fix(86400 * pyo.units.s)
@@ -448,14 +452,51 @@ def initialize_system(m):
 
 
 def add_costing(m):
-    # TODO: implement unit model and flowsheet level costing
-    pass
+    m.fs.costing = WaterTAPCosting()
+    m.fs.costing.base_currency = pyo.units.USD_2020
+
+    # Costing Blocks
+    m.fs.R1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.R2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.R3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.R4.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.R5.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.CL.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=cost_primary_clarifier,
+    )
+
+    m.fs.CL1.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=cost_circular_clarifier,
+    )
+
+    m.fs.RADM.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.DU.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.TU.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    # Leaving out mixer costs for now
+    # m.fs.MX1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.MX6.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.MX2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.MX3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.MX4.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    # process costing and add system level metrics
+    m.fs.costing.cost_process()
+    m.fs.costing.add_electricity_intensity(m.fs.FeedWater.properties[0].flow_vol)
+    m.fs.costing.add_annual_water_production(m.fs.Treated.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.FeedWater.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
+
+    m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
+    iscale.calculate_scaling_factors(m.fs)
 
 
 def solve(blk, solver=None):
     if solver is None:
         solver = get_solver()
-    results = solver.solve(blk)
+    results = solver.solve(blk, tee=True)
     pyo.assert_optimal_termination(results)
     return results
 
@@ -489,6 +530,131 @@ def display_results(m):
     ]
     for u in unit_list:
         m.fs.component(u).report()
+
+
+def display_costing(m):
+    print("Levelized cost of treatment: %.2f $/m3" % pyo.value(m.fs.costing.LCOW))
+
+    print(
+        "Total operating cost: %.2f $/yr" % pyo.value(m.fs.costing.total_operating_cost)
+    )
+    print("Total capital cost: %.2f $" % pyo.value(m.fs.costing.total_capital_cost))
+
+    print(
+        "Total annualized cost: %.2f $/yr"
+        % pyo.value(m.fs.costing.total_annualized_cost)
+    )
+    print(
+        "Specific energy consumption with respect to influent flowrate: %.1f kWh/m3"
+        % pyo.value(m.fs.costing.specific_energy_consumption)
+    )
+
+    print(
+        "electricity consumption R3",
+        pyo.value(m.fs.R3.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.R3.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption R4",
+        pyo.value(m.fs.R4.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.R4.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption R5",
+        pyo.value(m.fs.R5.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.R5.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption primary clarifier",
+        pyo.value(m.fs.CL.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.CL.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption secondary clarifier",
+        pyo.value(m.fs.CL1.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.CL1.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption AD",
+        pyo.value(m.fs.RADM.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.RADM.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption dewatering Unit",
+        pyo.value(m.fs.DU.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.DU.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption thickening Unit",
+        pyo.value(m.fs.TU.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.TU.electricity_consumption[0]),
+    )
+    print(
+        "Influent flow",
+        pyo.value(m.fs.FeedWater.flow_vol[0]),
+        pyo.units.get_units(m.fs.FeedWater.flow_vol[0]),
+    )
+    print(
+        "flow into R3",
+        pyo.value(m.fs.R3.control_volume.properties_in[0].flow_vol),
+        pyo.units.get_units(m.fs.R3.control_volume.properties_in[0].flow_vol),
+    )
+    print(
+        "flow into RADM",
+        pyo.value(m.fs.RADM.liquid_phase.properties_in[0].flow_vol),
+        pyo.units.get_units(m.fs.RADM.liquid_phase.properties_in[0].flow_vol),
+    )
+
+    print(
+        "capital cost R1",
+        pyo.value(m.fs.R1.costing.capital_cost),
+        pyo.units.get_units(m.fs.R1.costing.capital_cost),
+    )
+    print(
+        "capital cost R2",
+        pyo.value(m.fs.R2.costing.capital_cost),
+        pyo.units.get_units(m.fs.R2.costing.capital_cost),
+    )
+    print(
+        "capital cost R3",
+        pyo.value(m.fs.R3.costing.capital_cost),
+        pyo.units.get_units(m.fs.R3.costing.capital_cost),
+    )
+    print(
+        "capital cost R4",
+        pyo.value(m.fs.R4.costing.capital_cost),
+        pyo.units.get_units(m.fs.R4.costing.capital_cost),
+    )
+    print(
+        "capital cost R5",
+        pyo.value(m.fs.R5.costing.capital_cost),
+        pyo.units.get_units(m.fs.R5.costing.capital_cost),
+    )
+    print(
+        "capital cost primary clarifier",
+        pyo.value(m.fs.CL.costing.capital_cost),
+        pyo.units.get_units(m.fs.CL.costing.capital_cost),
+    )
+    print(
+        "capital cost secondary clarifier",
+        pyo.value(m.fs.CL1.costing.capital_cost),
+        pyo.units.get_units(m.fs.CL1.costing.capital_cost),
+    )
+    print(
+        "capital cost AD",
+        pyo.value(m.fs.RADM.costing.capital_cost),
+        pyo.units.get_units(m.fs.RADM.costing.capital_cost),
+    )
+    print(
+        "capital cost dewatering Unit",
+        pyo.value(m.fs.DU.costing.capital_cost),
+        pyo.units.get_units(m.fs.DU.costing.capital_cost),
+    )
+    print(
+        "capital cost thickener unit",
+        pyo.value(m.fs.TU.costing.capital_cost),
+        pyo.units.get_units(m.fs.TU.costing.capital_cost),
+    )
 
 
 if __name__ == "__main__":

@@ -773,7 +773,9 @@ def test_costing():
     assert value(m.fs.costing.thickener.capital_b_parameter) == 37068
 
     # Check solutions
-    assert pytest.approx(220675.79, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(220675.79 * 2, rel=1e-5) == value(
+        m.fs.unit.costing.capital_cost
+    )
     assert pytest.approx(220675.79, rel=1e-5) == value(
         units.convert(
             (4729.8 * value(units.convert(10 * units.m, to_units=units.feet)) + 37068)
