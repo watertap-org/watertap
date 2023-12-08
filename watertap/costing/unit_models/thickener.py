@@ -44,12 +44,14 @@ def cost_thickener(blk, cost_electricity_flow=True):
     Gravity Sludge Thickener costing method
     """
     make_capital_cost_var(blk)
+    blk.costing_package.add_cost_factor(blk, "TIC")
     cost_blk = blk.costing_package.thickener
     t0 = blk.flowsheet().time.first()
     x = diameter = pyo.units.convert(blk.unit_model.diameter, to_units=pyo.units.feet)
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.cost_factor
+        * pyo.units.convert(
             cost_blk.capital_a_parameter * x + cost_blk.capital_b_parameter,
             to_units=blk.costing_package.base_currency,
         )

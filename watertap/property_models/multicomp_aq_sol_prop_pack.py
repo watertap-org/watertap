@@ -12,10 +12,10 @@
 """
 This property package computes a multi-component aqueous solution that can
 contain ionic and/or neutral solute species. It supports basic calculation 
-of component quanitities and some physical, chemical and electrical properties. 
+of component quantities and some physical, chemical and electrical properties. 
 
-This property package was formerly named the "ion_DSPMDE_prop_pack" for its originally 
-intended use with the Donnan Steric Pore Model with Dielectric Exclusion (DSPMDE) for
+This property package was formerly named the "ion_DSPMDE_prop_pack" and was originally 
+designed for use with the Donnan Steric Pore Model with Dielectric Exclusion (DSPMDE) for
 nanofiltration.
 """
 
@@ -43,7 +43,7 @@ from pyomo.environ import (
     check_optimal_termination,
     units as pyunits,
 )
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.core.base.units_container import InconsistentUnitsError
 
@@ -181,6 +181,19 @@ class MCASParameterData(PhysicalParameterBlock):
 
     CONFIG.declare(
         "charge", ConfigValue(default={}, domain=dict, description="Ion charge")
+    )
+    CONFIG.declare(
+        "ignore_neutral_charge",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="Boolean flag to raise ConfigurationError related to neutral charge.",
+            doc="""Level of reporting results.
+            **default** - False.
+            **Valid values:** {
+            **False** - raise ConfigurationError when charge value not provided for ALL solutes, including neutral solutes (charge=0),
+            **True** - will not raise ConfigurationError when charge not provided for particular solutes, assuming said solutes are meant to be designated as neutral.""",
+        ),
     )
     CONFIG.declare(
         "activity_coefficient_model",
@@ -359,12 +372,6 @@ class MCASParameterData(PhysicalParameterBlock):
             # This triggers the addition of j into component_list and solute_set.
             self.add_component(j, Solute())
             if j in self.config.charge:
-                if self.config.charge[j] == 0:
-                    raise ConfigurationError(
-                        "The charge property should not be assigned to the neutral component: {}".format(
-                            j
-                        )
-                    )
                 if self.config.charge[j] > 0:
                     # Run a "del_component" and "add_component" to move ion j from IDAES's Solute to Cation class.
                     # Ion j has to be added into Solute to be registered in the component_list and solute_set.
@@ -375,7 +382,7 @@ class MCASParameterData(PhysicalParameterBlock):
                         Cation(charge=self.config.charge[j], _electrolyte=True),
                     )
                     self.ion_set.add(j)
-                else:
+                elif self.config.charge[j] < 0:
                     # The same comments above apply to anions.
                     self.del_component(j)
                     self.add_component(
@@ -383,15 +390,33 @@ class MCASParameterData(PhysicalParameterBlock):
                         Anion(charge=self.config.charge[j], _electrolyte=True),
                     )
                     self.ion_set.add(j)
-            else:
-                self.neutral_set.add(j)
+                elif not self.config.charge[j]:
+                    self.neutral_set.add(j)
+                else:
+                    pass
+        if self.config.ignore_neutral_charge:
+            # The "advanced" user can set ignore_neutral_charge = True to avoid having to provide charge=0 for neutral solutes, assuming they are aware of risks of supplying incorrect charge data mistakenly.
+            # Thus, we will not raise any exceptions and will just pass.
+            pass
+        else:
+            # ignore_neutral_charge = False by default to be more strict and safeguard the "new" user from unintentionally omitting charge data for ions.
+            if not len(self.config.charge):
+                raise ConfigurationError(
+                    "The charge argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated charge as keys and values, respectively."
+                )
+            missing_charge = []
+            for i in self.config.solute_list:
+                if i not in self.config.charge.keys():
+                    missing_charge.append(i)
+            if len(missing_charge) > 0:
+                raise ConfigurationError(
+                    f"Charge data was not provided for {', '.join(charge for charge in missing_charge)}. Provide the missing charge data to the charge argument."
+                )
 
-        if len(self.neutral_set) > 0 and not len(self.ion_set):
-            _log.warning(
-                "Since the charge argument was not provided for any solutes while instantiating the MCAS property model, all solutes are assumed to be neutral and have no charge. If any ions exist in solute_list, make sure to provide charge data to avoid erroneous property calculations."
-            )
-        # reference
-        # Todo: enter any relevant references
+        # if len(self.neutral_set) > 0 and not len(self.ion_set):
+        #     _log.warning(
+        #         "Since the charge argument was not provided for any solutes while instantiating the MCAS property model, all solutes are assumed to be neutral and have no charge. If any ions exist in solute_list, make sure to provide charge data to avoid erroneous property calculations."
+        #     )
 
         # Check for molecular weight data
         if not len(self.config.mw_data):
@@ -449,9 +474,9 @@ class MCASParameterData(PhysicalParameterBlock):
 
         # Ion charge
         self.charge_comp = Param(
-            self.ion_set,
+            self.solute_set,
             mutable=True,
-            default=1,
+            default=0,
             initialize=self.config.charge,
             units=pyunits.dimensionless,
             doc="Ion charge",

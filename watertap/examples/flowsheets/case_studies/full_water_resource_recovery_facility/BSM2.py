@@ -97,6 +97,7 @@ def main():
     pyo.assert_optimal_termination(results)
     print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
     # display_results(m)
+
     display_costing(m)
 
     return m, results
@@ -503,6 +504,7 @@ def add_costing(m):
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
     iscale.calculate_scaling_factors(m.fs)
 
+
 def setup_optimization(m):
     # m.fs.R1.volume.unfix()
     # m.fs.R2.volume.unfix()
@@ -611,12 +613,13 @@ def display_costing(m):
     print(
         "electricity consumption dewatering Unit",
         pyo.value(m.fs.DU.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.R5.electricity_consumption[0]),
+
+        pyo.units.get_units(m.fs.DU.electricity_consumption[0]),
     )
     print(
         "electricity consumption thickening Unit",
-        pyo.value(m.fs.DU.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.R5.electricity_consumption[0]),
+        pyo.value(m.fs.TU.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.TU.electricity_consumption[0]),
     )
     print(
         "Influent flow",
