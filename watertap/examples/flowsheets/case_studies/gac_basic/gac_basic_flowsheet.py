@@ -29,11 +29,7 @@ from idaes.models.unit_models import (
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
 )
-from watertap.unit_models.gac import (
-    GAC,
-    FilmTransferCoefficientType,
-    SurfaceDiffusionCoefficientType,
-)
+from watertap.unit_models.gac import GAC
 from watertap.costing import WaterTAPCosting
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
@@ -42,28 +38,66 @@ __author__ = "Hunter Barber"
 
 def main():
 
+    # TODO: mass or mole basis
+    #       surrogates to replace empirical parameters
+    #       autoscaling, check robustness of solve over sweeps
+
     # testing ui functions
-    m = build()
-    initialize_model(m)
+    m = build(
+        film_transfer_coefficient_type="calculated",
+        surface_diffusion_coefficient_type="calculated",
+        diffusivity_calculation="HaydukLaudie",
+    )
     res = solve_model(m)
     print("solver termination condition:", res.solver.termination_condition)
     # m.fs.display()
 
+    return m, res
 
-def build():
+
+def build(
+    film_transfer_coefficient_type="fixed",
+    surface_diffusion_coefficient_type="fixed",
+    diffusivity_calculation="none",
+):
 
     # blocks
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = MCASParameterBlock(
-        solute_list=["solute"],
-        mw_data={"H2O": 0.018, "solute": 0.08},
-    )
+    if (
+        film_transfer_coefficient_type == "calculated"
+        or surface_diffusion_coefficient_type == "calculated"
+    ):
+        if diffusivity_calculation == "none":
+            m.fs.properties = MCASParameterBlock(
+                material_flow_basis="molar",
+                ignore_neutral_charge=True,
+                solute_list=["solute"],
+                mw_data={"H2O": 0.018, "solute": 0.08},
+                diffus_calculation=diffusivity_calculation,
+                diffusivity_data={("Liq", "solute"): 1e-9},
+            )
+        else:
+            m.fs.properties = MCASParameterBlock(
+                material_flow_basis="molar",
+                ignore_neutral_charge=True,
+                solute_list=["solute"],
+                mw_data={"H2O": 0.018, "solute": 0.08},
+                diffus_calculation=diffusivity_calculation,
+                molar_volume_data={("Liq", "solute"): 1e-4},
+            )
+    else:
+        m.fs.properties = MCASParameterBlock(
+            material_flow_basis="molar",
+            ignore_neutral_charge=True,
+            solute_list=["solute"],
+            mw_data={"H2O": 0.018, "solute": 0.08},
+        )
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.gac = GAC(
         property_package=m.fs.properties,
-        film_transfer_coefficient_type=FilmTransferCoefficientType.fixed,
-        surface_diffusion_coefficient_type=SurfaceDiffusionCoefficientType.fixed,
+        film_transfer_coefficient_type=film_transfer_coefficient_type,
+        surface_diffusion_coefficient_type=surface_diffusion_coefficient_type,
     )
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.adsorbed_removed = Product(property_package=m.fs.properties)
@@ -88,14 +122,6 @@ def build():
     m.fs.costing.add_annual_water_production(treated_flow)
     m.fs.costing.add_LCOW(treated_flow)
     m.fs.costing.add_specific_energy_consumption(treated_flow)
-
-    return m
-
-
-def initialize_model(m, solver=None):
-
-    if solver is None:
-        solver = get_solver()
 
     # touch properties and default scaling
     water_sf = 10 ** -math.ceil(
@@ -145,6 +171,14 @@ def initialize_model(m, solver=None):
     m.fs.gac.b2.fix(0.484422)
     m.fs.gac.b3.fix(0.003206)
     m.fs.gac.b4.fix(0.134987)
+    if film_transfer_coefficient_type == "calculated":
+        m.fs.gac.kf.unfix()
+        m.fs.gac.shape_correction_factor.fix()
+    if surface_diffusion_coefficient_type == "calculated":
+        m.fs.gac.ds.unfix()
+        m.fs.gac.particle_porosity.fix()
+        m.fs.gac.tort.fix()
+        m.fs.gac.spdfr.fix()
 
     # costing specifications
     m.fs.costing.gac_pressure.regen_frac.fix(0.7)

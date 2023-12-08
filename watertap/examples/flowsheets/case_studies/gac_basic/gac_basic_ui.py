@@ -29,6 +29,26 @@ def export_to_ui():
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
+        build_options={
+            "FilmTransferCoefficientType": {
+                "name": "FilmTransferCoefficientType",
+                "display_name": "Film Transfer Coefficient Type",
+                "values_allowed": ["fixed", "calculated"],
+                "value": "fixed",
+            },
+            "SurfaceDiffusionCoefficientType": {
+                "name": "SurfaceDiffusionCoefficientType",
+                "display_name": "Surface Diffusion Coefficient Type",
+                "values_allowed": ["fixed", "calculated"],
+                "value": "fixed",
+            },
+            "DiffusivityCalculation": {
+                "name": "DiffusivityCalculation",
+                "display_name": "Diffusivity Calculation",
+                "values_allowed": ["none", "HaydukLaudie"],
+                "value": "none",
+            },
+        },
     )
 
 
@@ -47,7 +67,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     category = "Solute properties"
     exports.add(
         obj=fs.properties.mw_comp["solute"],
-        name="MW solute",
+        name="MW",
         ui_units=pyunits.gram / pyunits.mol,
         display_units="g/mol",
         rounding=rounding,
@@ -55,7 +75,36 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_input=True,
         input_category=category,
         is_output=False,
-    )  # ---------------------------------------------------------------------
+    )
+    if (
+        build_options["FilmTransferCoefficientType"].value == "calculated"
+        or build_options["SurfaceDiffusionCoefficientType"].value == "calculated"
+    ):
+        if build_options["DiffusivityCalculation"].value == "none":
+            exports.add(
+                obj=fs.properties.diffus_phase_comp["Liq", "solute"],
+                name="Diffusivity",
+                ui_units=pyunits.m**2 / pyunits.s,
+                display_units="m2/s",
+                rounding=sci_not_rounding,
+                description="Diffusivity",
+                is_input=True,
+                input_category=category,
+                is_output=False,
+            )
+        else:
+            exports.add(
+                obj=fs.properties.molar_volume_phase_comp["Liq", "solute"],
+                name="Molar volume",
+                ui_units=pyunits.m**3 / pyunits.mol,
+                display_units="m3/mol",
+                rounding=sci_not_rounding,
+                description="Molar volume",
+                is_input=True,
+                input_category=category,
+                is_output=False,
+            )
+    # ---------------------------------------------------------------------
     # feed conditions
     category = "Feed"
     exports.add(
@@ -223,7 +272,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.particle_dia,
-        name="Particle diameter",
+        name="Diameter",
         ui_units=pyunits.mm,
         display_units="mm",
         rounding=rounding,
@@ -232,6 +281,18 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category=category,
         is_output=False,
     )
+    if build_options["SurfaceDiffusionCoefficientType"].value == "calculated":
+        exports.add(
+            obj=fs.gac.particle_porosity,
+            name="Porosity",
+            ui_units=pyunits.dimensionless,
+            display_units="-",
+            rounding=rounding,
+            description="Particle porosity of the GAC media",
+            is_input=True,
+            input_category=category,
+            is_output=False,
+        )
     # ---------------------------------------------------------------------
     # adsorption parameters
     category = "Adsorption parameters"
@@ -257,6 +318,32 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category=category,
         is_output=False,
     )
+    if build_options["SurfaceDiffusionCoefficientType"].value == "fixed":
+        ds_is_input = True
+    else:
+        ds_is_input = False
+        exports.add(
+            obj=fs.gac.tort,
+            name="Tortuosity",
+            ui_units=pyunits.dimensionless,
+            display_units="-",
+            rounding=rounding,
+            description="Tortuosity of the path that the adsorbate must take as compared to the radius",
+            is_input=True,
+            input_category=category,
+            is_output=False,
+        )
+        exports.add(
+            obj=fs.gac.spdfr,
+            name="SPDFR",
+            ui_units=pyunits.dimensionless,
+            display_units="-",
+            rounding=rounding,
+            description="Surface-to-pore diffusion flux ratio",
+            is_input=True,
+            input_category=category,
+            is_output=False,
+        )
     exports.add(
         obj=fs.gac.ds,
         name="Surface diffusion coefficient",
@@ -264,10 +351,25 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         display_units="m2/s",
         rounding=sci_not_rounding,
         description="Surface diffusion coefficient",
-        is_input=True,
+        is_input=ds_is_input,
         input_category=category,
         is_output=False,
     )
+    if build_options["FilmTransferCoefficientType"].value == "fixed":
+        kf_is_input = True
+    else:
+        kf_is_input = False
+        exports.add(
+            obj=fs.gac.shape_correction_factor,
+            name="SCF",
+            ui_units=pyunits.dimensionless,
+            display_units="-",
+            rounding=rounding,
+            description="Film transfer coefficient shape correction factor",
+            is_input=True,
+            input_category=category,
+            is_output=False,
+        )
     exports.add(
         obj=fs.gac.kf,
         name="Film transfer coefficient",
@@ -275,7 +377,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         display_units="m/s",
         rounding=sci_not_rounding,
         description="Liquid phase film transfer coefficient",
-        is_input=True,
+        is_input=kf_is_input,
         input_category=category,
         is_output=False,
     )
@@ -660,11 +762,18 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
 def build_flowsheet(build_options=None, **kwargs):
     """
-    Builds the initial flowsheet.
+    Build and solve the initial flowsheet.
     """
 
-    m = gac_fs.build()
-    gac_fs.initialize_model(m)
+    m = gac_fs.build(
+        film_transfer_coefficient_type=build_options[
+            "FilmTransferCoefficientType"
+        ].value,
+        surface_diffusion_coefficient_type=build_options[
+            "SurfaceDiffusionCoefficientType"
+        ].value,
+        diffusivity_calculation=build_options["DiffusivityCalculation"].value,
+    )
     res = gac_fs.solve_model(m)
 
     return m
@@ -672,7 +781,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
 def solve_flowsheet(flowsheet=None):
     """
-    Solves the initial flowsheet.
+    Solves the flowsheet.
     """
 
     res = gac_fs.solve_model(flowsheet)
