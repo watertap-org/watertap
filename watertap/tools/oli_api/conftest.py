@@ -42,6 +42,7 @@
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
 
+import contextlib
 import os
 from pathlib import Path
 
@@ -86,13 +87,10 @@ def oliapi_instance(
         **auth_credentials,
         "config_file": cred_file_path,
     }
-    try:
-        credential_manager = CredentialManager(**credentials, test=True)
-        credential_manager.login()
-        with OLIApi(credential_manager, test=True) as oliapi:
-            oliapi.get_dbs_file_id(str(local_dbs_file))
-            yield oliapi
-    except:
-        pytest.xfail("Unable to test OLI logins.")
-    finally:
+    credential_manager = CredentialManager(**credentials, test=True)
+    credential_manager.login()
+    with OLIApi(credential_manager, test=True) as oliapi:
+        oliapi.get_dbs_file_id(str(local_dbs_file))
+        yield oliapi
+    with contextlib.suppress(FileNotFoundError):
         cred_file_path.unlink()
