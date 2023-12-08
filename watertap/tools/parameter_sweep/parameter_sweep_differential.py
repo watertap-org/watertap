@@ -250,6 +250,7 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
                         axis=0,
                     )
                 else:
+                    # TODO review for correct implementation with selected outputs
                     for subkey, subitem in item.items():
                         if subkey in list(local_output_dict[key].keys()):
                             local_output_dict[key][subkey]["value"] = np.concatenate(
@@ -343,7 +344,7 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
         # so we don't have to reijnit he model
         diff_ps.config.index_global_combo_array = True
         diff_ps.model_manager = self.model_manager
-        diff_ps.model_manager.is_rebuild_and_init_enabled = False
+        diff_ps.model_manager._is_rebuild_and_init_enabled = False
 
         _, differential_sweep_output_dict = diff_ps.parameter_sweep(
             diff_ps.model_manager.model,
@@ -352,7 +353,7 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
             num_samples=self.config.num_diff_samples,
             seed=self.seed,
         )
-        diff_ps.model_manager.is_rebuild_and_init_enabled = True
+        diff_ps.model_manager._is_rebuild_and_init_enabled = True
         return differential_sweep_output_dict
 
     def _run_sample(
@@ -440,11 +441,9 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
                                 and will not work with future implementations of parallelism.",
                 version="0.10.0",
             )
-        if self.config.differential_sweep_specs is not None:
-            _combined_outputs = build_outputs
-            self.config.build_differential_sweep_specs = (
-                lambda model: self.config.differential_sweep_specs
-            )
+        if not callable(self.config.build_differential_sweep_specs):
+            _diff_spec = self.config.build_differential_sweep_specs
+            self.config.build_differential_sweep_specs = lambda model: _diff_spec
             deprecation_warning(
                 "Passing the differential sweep spec dict directly to the parameter_sweep function is deprecated \
                                 and will not work with future implementations of parallelism. Please instead pass \

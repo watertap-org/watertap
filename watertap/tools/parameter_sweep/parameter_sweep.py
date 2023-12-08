@@ -409,8 +409,7 @@ class _ParameterSweepBase(ABC):
             non_indexed_values = values
 
         for k, item in enumerate(param_dict.values()):
-            name = self._get_object(m, item.pyomo_object)
-            param = m.find_component(name)
+            param = self._get_object(m, item.pyomo_object)
             if param.is_variable_type():
                 # Fix the single value to values[k]
                 param.fix(non_indexed_values[k])
@@ -491,7 +490,6 @@ class _ParameterSweepBase(ABC):
                 ] = self._create_component_output_skeleton(
                     self._get_object(model, pyo_obj), num_samples
                 )
-
         return output_dict
 
     def _create_component_output_skeleton(self, component, num_samples):
@@ -622,7 +620,7 @@ class _ParameterSweepBase(ABC):
             self.config.initialize_before_sweep
             and all(self.model_manager.current_k == local_value_k) == False
         ) or self.model_manager.is_initialized == False:
-            if self.model_manager.is_rebuild_and_init_enabled:
+            if self.model_manager._is_rebuild_and_init_enabled:
                 self.model_manager.build_and_init(sweep_params, local_value_k)
         # try to solve our model
         self.model_manager.update_model_params(sweep_params, local_value_k)
@@ -633,7 +631,7 @@ class _ParameterSweepBase(ABC):
         if (
             self.model_manager.is_solved == False
             and self.model_manager.is_prior_parameter_solved == True
-            and self.model_manager.is_rebuild_and_init_enabled
+            and self.model_manager._is_rebuild_and_init_enabled
         ):
             self.model_manager.build_and_init(sweep_params, local_value_k)
             self.model_manager.update_model_params(sweep_params, local_value_k)
@@ -685,7 +683,7 @@ class _ParameterSweepBase(ABC):
             self.config.initialize_before_sweep
             or self.model_manager.is_initialized == False
         ):
-            if self.model_manager.is_rebuild_and_init_enabled:
+            if self.model_manager._is_rebuild_and_init_enabled:
                 self.model_manager.build_and_init(
                     sweep_params=sweep_params, local_value_k=local_values[0, :]
                 )

@@ -271,7 +271,6 @@ def test_differential_sweep_outputs(model):
 
     # Finally test for the keys
     expected_keys = ["fs.output[c]", "fs.input[a]"]
-    print(expected_keys, list(ps.differential_outputs.keys()))
     assert expected_keys == list(ps.differential_outputs.keys())
 
 
@@ -312,7 +311,7 @@ def test_differential_parameter_sweep(model, tmp_path):
         # debugging_data_dir=tmp_path, # Does not work at the moment
         interpolate_nan_outputs=True,
         optimize_function=_optimization,
-        differential_sweep_specs=differential_sweep_specs,
+        build_differential_sweep_specs=lambda model: differential_sweep_specs,
         initialize_function=_reinitialize,
         number_of_subprocesses=1,
     )

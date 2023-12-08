@@ -177,12 +177,18 @@ With the flowsheet defined and suitably initialized, along with the definitions 
     # Define the local results directory, num_samples, and seed (if desired)
     num_samples = 5
     seed = None
+
+    model = build_model()
+    sweep_params = build_sweep_params(model, num_samples=num_samples)
+    differential_sweep_specs = build_diff_sweep_param_specs(model)
+    outputs = build_outputs(model, sweep_params)
+
     # Run the parameter sweep
     global_results = differential_parameter_sweep(
             build_model, 
             build_sweep_params, 
-            build_diff_sweep_param_specs,
-            build_outputs, 
+            differential_sweep_specs,
+            outputs, 
             h5_results_file_name='monte_carlo_results.h5',
             optimize_function=RO_flowsheet.optimize,
             debugging_data_dir=None,

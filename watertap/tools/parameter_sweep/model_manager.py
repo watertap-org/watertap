@@ -29,7 +29,7 @@ class ModelManager:
         self.is_prior_parameter_solved = False
         # internal state option to be used by differntial sweep tool to
         # prevent model reintialization and state reset
-        self.is_rebuild_and_init_enabled = True
+        self._is_rebuild_and_init_enabled = True
         # this is isused for loggin states if enabled
         self.solved_states = {"state": [], "local_value_k": []}
         self.initialized_states = {"state": [], "local_value_k": []}
