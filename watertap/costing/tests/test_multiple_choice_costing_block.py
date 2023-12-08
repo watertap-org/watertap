@@ -238,7 +238,7 @@ def test_multiple_choice_costing_block():
         m.fs.RO2.costing.costing_blocks["high_pressure"].capital_cost
     )
 
-    assert m.fs.costing.total_capital_cost.value == 2 * (
+    assert m.fs.costing.total_capital_cost.value == (
         m.fs.RO.costing.costing_blocks["normal_pressure"].capital_cost.value
         + m.fs.RO2.costing.costing_blocks["high_pressure"].capital_cost.value
     )
@@ -250,13 +250,13 @@ def test_multiple_choice_costing_block():
     )
 
     # need to re-initialize
-    assert m.fs.costing.total_capital_cost.value == 2 * (
+    assert m.fs.costing.total_capital_cost.value == (
         m.fs.RO.costing.costing_blocks["normal_pressure"].capital_cost.value
         + m.fs.RO2.costing.costing_blocks["high_pressure"].capital_cost.value
     )
 
     m.fs.costing.initialize()
-    assert m.fs.costing.total_capital_cost.value == 2 * (
+    assert m.fs.costing.total_capital_cost.value == (
         m.fs.RO.costing.costing_blocks["high_pressure"].capital_cost.value
         + m.fs.RO2.costing.costing_blocks["high_pressure"].capital_cost.value
     )
@@ -264,7 +264,7 @@ def test_multiple_choice_costing_block():
 
     m.fs.RO3.costing.select_costing_block("high_pressure")
     m.fs.costing.initialize()
-    assert m.fs.costing.total_capital_cost.value == 2 * (
+    assert m.fs.costing.total_capital_cost.value == (
         m.fs.RO.costing.costing_blocks["high_pressure"].capital_cost.value
         + m.fs.RO2.costing.costing_blocks["high_pressure"].capital_cost.value
         + m.fs.RO3.costing.costing_blocks["high_pressure"].capital_cost.value

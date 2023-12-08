@@ -237,7 +237,7 @@ class GACZOData(ZeroOrderBaseData):
 
         expr = contactor_cost + adsorbent_cost + other_process_cost
 
-        blk.unit_model._add_cost_factor(
+        blk.costing_package.add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 

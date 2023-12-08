@@ -26,6 +26,7 @@ from watertap.examples.flowsheets.oaro.oaro_multi import (
     build,
     set_operating_conditions,
     initialize_system,
+    optimize_set_up,
     solve,
     ERDtype,
 )
@@ -78,12 +79,12 @@ class TestOAROwithTurbine:
     @pytest.mark.component
     def test_solution(self, system_frame):
         m = system_frame
+        optimize_set_up(m, number_of_stages=3, water_recovery=0.5)
         solve(m, solver=solver)
-        fs = m.fs
-        assert pytest.approx(3.98455e-3, rel=1e-5) == value(
-            fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]
+        assert pytest.approx(1.318023e-3, rel=1e-5) == value(
+            m.fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]
         )
-        assert pytest.approx(0.2888, rel=1e-5) == value(fs.water_recovery)
+        assert pytest.approx(0.5, rel=1e-5) == value(m.fs.mass_water_recovery)
 
     @pytest.mark.component
     def test_config_error(self, system_frame):
