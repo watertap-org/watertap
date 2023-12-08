@@ -39,7 +39,6 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    unused_variables_set,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import (
