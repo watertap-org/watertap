@@ -522,6 +522,7 @@ def setup_optimization(m):
     # m.fs.TU.hydraulic_retention_time.fix(86400 * pyo.units.s)
     # m.fs.TU.diameter.unfix()
     # m.fs.TU.diameter.setub(20)
+    m.fs.CL1.effluent_state[0].TSS.setub(0.03)
 
 
 def solve(blk, solver=None):
