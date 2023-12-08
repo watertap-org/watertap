@@ -50,6 +50,11 @@ from watertap.tools.oli_api.client import OLIApi
 
 
 @pytest.mark.unit
+def test_dbs_file_available_for_testing(local_dbs_file: Path):
+    assert local_dbs_file.is_file()
+
+
+@pytest.mark.unit
 def test_dbs_file_cleanup(oliapi_instance: OLIApi, local_dbs_file: Path):
     ids = [oliapi_instance.get_dbs_file_id(str(local_dbs_file)) for i in range(10)]
     oliapi_instance.dbs_file_cleanup(ids)
