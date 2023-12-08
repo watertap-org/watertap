@@ -42,6 +42,7 @@
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
 
+import os
 from pathlib import Path
 
 import pytest
@@ -60,17 +61,29 @@ def local_dbs_file() -> Path:
     return dbs_file_path
 
 
+@pytest.fixture(scope="session")
+def auth_credentials() -> dict:
+    "Credentials that allow running tests with an authenticated client"
+    creds = {"auth_url": ""}
+    try:
+        creds["access_keys"] = [os.environ["OLI_API_KEY"]]
+        creds["root_url"] = os.environ["OLI_API_ROOT_URL"]
+    except KeyError as e:
+        pytest.skip(f"Authenticated credentials not found in environment variable: {e}")
+    return creds
+
+
 @pytest.fixture(scope="function")
-def oliapi_instance(tmp_path: Path, local_dbs_file: Path) -> OLIApi:
+def oliapi_instance(
+    tmp_path: Path, auth_credentials: dict, local_dbs_file: Path
+) -> OLIApi:
 
     if not cryptography_available:
         pytest.skip(reason="cryptography module not available.")
     cred_file_path = tmp_path / "pytest-credentials.txt"
 
     credentials = {
-        "access_keys": [""],
-        "root_url": "",
-        "auth_url": "",
+        **auth_credentials,
         "config_file": cred_file_path,
     }
     try:
