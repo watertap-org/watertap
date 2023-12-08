@@ -501,9 +501,6 @@ class FlowsheetInterface:
             except KeyError:
                 missing.append((key, src.name))
                 continue
-            print(key, "\n")
-            print(src, "\n")
-            print(dst, "\n")
             # set value in this flowsheet
             ui_units = dst.ui_units
             if dst.is_input and not dst.is_readonly:
