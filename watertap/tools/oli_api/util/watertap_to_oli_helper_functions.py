@@ -19,7 +19,7 @@ It calculates molecular weights using the periodic_table.csv from:
 https://gist.github.com/GoodmanSciences/c2dd862cd38f21b0ad36b8f96b4bf1ee.
 """
 
-__author__ = "Paul Vecchiarelli, Ben Knueven"
+__author__ = "Paul Vecchiarelli, Ben Knueven, Adam Atia"
 
 from collections import namedtuple
 from re import findall
@@ -103,12 +103,16 @@ def get_charge(watertap_name: str) -> int:
         try:
             charge_sign = charge[-1]
         except IndexError:
-            raise IOError(f"Charge sign could not be determined from the string '{watertap_name}'")
+            raise IOError(
+                f"Charge sign could not be determined from the string '{watertap_name}'"
+            )
         if len(charge) > 1:
             try:
                 charge_magnitude = int(charge[:-1])
             except ValueError:
-                raise IOError(f"Charge sign could not be determined from the string '{watertap_name}'")
+                raise IOError(
+                    f"Charge sign could not be determined from the string '{watertap_name}'"
+                )
         else:
             charge_magnitude = 1
         if charge_sign == "+":
@@ -116,9 +120,13 @@ def get_charge(watertap_name: str) -> int:
         elif charge_sign == "-":
             charge = -charge_magnitude
         else:
-            raise IOError(f"Only + and - are valid charge indicators and neither was provided in '{watertap_name}'.")
+            raise IOError(
+                f"Only + and - are valid charge indicators and neither was provided in '{watertap_name}'."
+            )
     else:
-        raise IOError(f"Charge could not be determined from the string '{watertap_name}'")
+        raise IOError(
+            f"Charge could not be determined from the string '{watertap_name}'"
+        )
     return charge
 
 
@@ -174,6 +182,7 @@ def get_molar_mass(watertap_name: str) -> float:
             raise IOError(f" Too many characters in {element}.")
 
         element_location = components[0].find(element)
+
         if "[" in components[0]:
             boundary = (components[0].find("["), components[0].find("]"))
             coefficient = int(components[0][boundary[1] + 1])
@@ -188,6 +197,10 @@ def get_molar_mass(watertap_name: str) -> float:
             ]
         )
         molar_mass += element_counts[element] * atomic_mass
+
+    if not molar_mass:
+        raise IOError(f"Molecular weight data could not be found for {watertap_name}.")
+
     return molar_mass
 
 

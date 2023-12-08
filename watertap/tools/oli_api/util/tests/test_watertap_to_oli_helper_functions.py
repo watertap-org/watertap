@@ -25,6 +25,8 @@ from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
 from pyomo.environ import units as pyunits, value
 from pyomo.util.check_units import assert_units_equivalent
 
+__author__ = "Paul Vecchiarelli, Adam Atia"
+
 
 @pytest.mark.parametrize(
     "input_name,expected_output",
@@ -58,12 +60,21 @@ def test_charge_exceptions():
     with pytest.raises(IOError) as excinfo:
         val = "Na_2#"
         watertap_to_oli(val)
-    assert str(excinfo.value) == "Only + and - are valid charge indicators and neither was provided in 'Na_2#'."
-    
-    with pytest.raises(IOError, match="Charge sign could not be determined from the string 'target_ion'"):   
+    assert (
+        str(excinfo.value)
+        == "Only + and - are valid charge indicators and neither was provided in 'Na_2#'."
+    )
+
+    with pytest.raises(
+        IOError,
+        match="Charge sign could not be determined from the string 'target_ion'",
+    ):
         get_charge("target_ion")
-    with pytest.raises(IOError, match="Charge could not be determined from the string 'my_target_ion'"):   
+    with pytest.raises(
+        IOError, match="Charge could not be determined from the string 'my_target_ion'"
+    ):
         get_charge("my_target_ion")
+
 
 @pytest.mark.unit
 def test_get_charge():
@@ -76,7 +87,8 @@ def test_get_charge():
     }
     for solute_name, charge_value in z.items():
         assert get_charge(solute_name) == charge_value
-    
+
+
 @pytest.mark.unit
 def test_get_mw():
     z = {
@@ -88,6 +100,14 @@ def test_get_mw():
     }
     for solute_name, mw_value in z.items():
         assert get_molar_mass(solute_name) == mw_value
+
+
+@pytest.mark.unit
+def test_get_mw_exception():
+    with pytest.raises(
+        IOError, match="Molecular weight data could not be found for foo."
+    ):
+        get_molar_mass("foo")
 
 
 @pytest.mark.unit

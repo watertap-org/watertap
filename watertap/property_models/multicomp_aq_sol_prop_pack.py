@@ -78,7 +78,10 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
-from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import get_charge, get_molar_mass
+from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
+    get_charge,
+    get_molar_mass_quantity,
+)
 
 __author__ = "Adam Atia, Xiangyu Bi, Hunter Barber, Kurban Sitterley"
 # Set up logger
@@ -368,35 +371,24 @@ class MCASParameterData(PhysicalParameterBlock):
             track_comp = {}
             for solute in self.config.solute_list:
                 if solute not in charge_comp.keys():
+                    # if a solute was not provided any charge data, try grabbing automatically based on solute name
                     try:
                         charge_comp[solute] = get_charge(solute)
+                    # this overrides exception from helper functions so that we can track which solutes couldn't be populated with data
                     except IOError as exc:
                         track_comp.update({solute: exc})
                 else:
                     pass
             if self.config.ignore_neutral_charge:
-                # The "advanced" user can set ignore_neutral_charge = True to avoid having to provide charge=0 for neutral solutes, assuming they are aware of risks of supplying incorrect charge data mistakenly.
-                # Thus, we will not raise any exceptions and will just pass.
+                # if ignore_neutral_charge, we assume the user intended to omit charge data because all solutes are neutral
                 pass
             else:
-                # ignore_neutral_charge = False by default to be more strict and safeguard the "new" user from unintentionally omitting charge data for ions.
-                # if not len(self.config.charge):
-            #     raise ConfigurationError(
-            #         "The charge argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated charge as keys and values, respectively."
-            #     )
-            # missing_charge = []
-            # for i in self.config.solute_list:
-            #     if i not in self.config.charge.keys():
-            #         missing_charge.append(i)
+                # otherwise, we let the user know that there might be a mistake
                 if len(track_comp) > 0:
-                    raise ConfigurationError(f'Charge data could not be obtained for the following solutes and no data were provided\n: {track_comp}')
-            # if len(missing_charge) > 0:
-            #     raise ConfigurationError(
-            #         f"Charge data was not provided for {', '.join(charge for charge in missing_charge)}. Provide the missing charge data to the charge argument."
-            #     )
-                    #   missing_charge.append(solute)
-        # 
-        
+                    raise ConfigurationError(
+                        f"Charge data could not be obtained for the following solutes and no data were provided\n: {track_comp}."
+                    )
+
         # Group components into different sets
         for j in self.config.solute_list:
             if j == "H2O":
@@ -431,22 +423,31 @@ class MCASParameterData(PhysicalParameterBlock):
                     pass
 
         # Check for molecular weight data
-        if not len(self.config.mw_data):
-            raise ConfigurationError(
-                "The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively."
-            )
-        missing_mw = []
-        for i in self.config.solute_list:
-            if i not in self.config.mw_data.keys():
-                missing_mw.append(i)
-        if len(missing_mw) > 0:
-            raise ConfigurationError(
-                f"Molecular weight data was not provided for {', '.join(mw for mw in missing_mw)}. Provide the missing molecular weight data to the mw_data argument."
-            )
+        # if not len(self.config.mw_data):
+        #     raise ConfigurationError(
+        #         "The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively."
+        #     )
+        mw_comp = self.config.mw_data
+        if len(mw_comp) < len(self.config.solute_list):
+            track_mw = {}
+            for i in self.config.solute_list:
+                if i not in mw_comp.keys():
+                    # if a solute was not provided any mw data, try grabbing automatically based on solute name
+                    try:
+                        mw_comp[i] = get_molar_mass_quantity(i)
+                    # this overrides exception from helper functions so that we can track which solutes couldn't be populated with data
+                    except IOError as exc:
+                        track_mw.update({i: exc})
+                else:
+                    pass
+            if len(track_mw) > 0:
+                raise ConfigurationError(
+                    f"Molecular weight data could not be obtained for the following solutes and no data were provided\n: {track_mw}."
+                )
 
         # TODO: consider turning parameters into variables for future param estimation
         mw_temp = {"H2O": 18e-3}
-        mw_temp.update(self.config.mw_data)
+        mw_temp.update(mw_comp)
         # molecular weight
         self.mw_comp = Param(
             self.component_list,
