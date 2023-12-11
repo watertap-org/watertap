@@ -1795,7 +1795,12 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.meter**2 * pyunits.second**-1,
             doc="The mass diffusivity of the solute as molecules (not individual ions)",
         )
-        self.hydraulic_diameter = Var(initialize=1e-3, units=pyunits.meter)
+        self.hydraulic_diameter = Var(
+            initialize=1e-3,
+            bounds=(0, None),
+            units=pyunits.meter,
+            doc="The hydraulic diameter of the channel",
+        )
         self.N_Re = Var(
             initialize=50,
             bounds=(0, None),
@@ -2351,6 +2356,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     * iscale.get_scaling_factor(self.cell_length)
                 )
             iscale.set_scaling_factor(self.pressure_drop_total, sf)
+
         if hasattr(self, "current_dens_lim_ioa"):
             if iscale.get_scaling_factor(self.current_dens_lim_ioa) is None:
                 if (
