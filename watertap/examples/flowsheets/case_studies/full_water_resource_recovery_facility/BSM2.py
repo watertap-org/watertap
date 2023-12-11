@@ -41,6 +41,7 @@ from watertap.property_models.anaerobic_digestion.adm1_properties import (
 from watertap.property_models.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
+from idaes.models.unit_models.mixer import MomentumMixingType
 from idaes.models.unit_models.separator import SplittingType
 from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
@@ -79,10 +80,16 @@ from idaes.core.util.scaling import (
 def main():
     m = build()
     set_operating_conditions(m)
+    for mx in m.mixers:
+        mx.pressure_equality_constraints[0.0,2].deactivate()
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
     initialize_system(m)
+    # TODO: the mixer initializer will turn these constraints back on
+    for mx in m.mixers:
+        mx.pressure_equality_constraints[0.0,2].deactivate()
+    assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
 
@@ -96,7 +103,6 @@ def main():
     print("\n\n=============SIMULATION RESULTS=============\n\n")
     # display_results(m)
     # display_costing(m)
-    print(f"Original Condition No.: {jacobian_cond(m, scaled=False)}")
 
     # autoscaling.autoscale_variables_by_magnitude(m, overwrite=True)
     # scaling = pyo.TransformationFactory('core.scale_model')
@@ -114,7 +120,7 @@ def main():
     results = solver2.solve(m, tee=True, symbolic_solver_labels=True)
     pyo.assert_optimal_termination(results)
     # print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
-    # # display_results(m)
+    # display_results(m)
 
     # display_costing(m)
 
@@ -139,7 +145,8 @@ def build():
     # ==========================================================================
     # Mixer for inlet water and recycled sludge
     m.fs.MX1 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["feed_water", "recycle"]
+        property_package=m.fs.props_ASM1, inlet_list=["feed_water", "recycle"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
     # First reactor (anoxic) - standard CSTR
     m.fs.R1 = CSTR(
@@ -179,8 +186,10 @@ def build():
     )
     # Mixing sludge recycle and R5 underflow
     m.fs.MX6 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["clarifier", "reactor"]
+        property_package=m.fs.props_ASM1, inlet_list=["clarifier", "reactor"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
+
     # Product Blocks
     m.fs.Treated = Product(property_package=m.fs.props_ASM1)
     # Recycle pressure changer - use a simple isothermal unit for now
@@ -281,13 +290,16 @@ def build():
     m.fs.DU = DewateringUnit(property_package=m.fs.props_ASM1)
 
     m.fs.MX2 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["feed_water1", "recycle1"]
+        property_package=m.fs.props_ASM1, inlet_list=["feed_water1", "recycle1"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
     m.fs.MX3 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["feed_water2", "recycle2"]
+        property_package=m.fs.props_ASM1, inlet_list=["feed_water2", "recycle2"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
     m.fs.MX4 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["thickener", "clarifier"]
+        property_package=m.fs.props_ASM1, inlet_list=["thickener", "clarifier"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
 
     # Make connections related to AD section
@@ -310,6 +322,9 @@ def build():
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     iscale.calculate_scaling_factors(m.fs)
+
+    # keep handy all the mixers
+    m.mixers = (m.fs.MX1, m.fs.MX2, m.fs.MX3, m.fs.MX4, m.fs.MX6)
 
     return m
 
@@ -529,9 +544,6 @@ def setup_optimization(m):
     m.fs.R3.volume.unfix()
     m.fs.R4.volume.unfix()
     m.fs.R5.volume.unfix()
-    m.fs.R3.volume.setlb(1e-5)
-    m.fs.R4.volume.setlb(1e-5)
-    m.fs.R5.volume.setlb(1e-5)
 
     # m.fs.CL1.surface_area.unfix()
     # # Dewatering Unit - fix either HRT or volume.
