@@ -508,13 +508,13 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().time,
             initialize=0.01,
             units=pyunits.meter * pyunits.second**-1,
-            doc="Linear velocity of flow",
+            doc="Linear velocity of flow in the diluate",
         )
         self.velocity_concentrate = Var(
             self.flowsheet().time,
             initialize=0.01,
             units=pyunits.meter * pyunits.second**-1,
-            doc="Linear velocity of flow",
+            doc="Linear velocity of flow in the concentrate",
         )
 
         # Fluxes Vars for constructing mass transfer terms
@@ -584,6 +584,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change,
         )
+        # den_mass and visc_d in diluate and concentrate channels are the same
         add_object_reference(
             self, "dens_mass", self.diluate.properties_in[0].dens_mass_phase["Liq"]
         )
@@ -628,7 +629,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 initialize=500,
                 bounds=(0, 1000),
                 units=pyunits.amp * pyunits.meter**-2,
-                doc="Limiting Current Density across the membrane",
+                doc="Limiting current density across the membrane as a function of the normalized length",
             )
             self._make_performance_dl_polarization()
         if (
@@ -663,7 +664,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         # Build Constraints
         @self.Constraint(
             self.flowsheet().time,
-            doc="Calculate flow velocity in a single diluate channel",
+            doc="Calculate flow velocity in a single diluate channel, based on the average of inlet and outlet",
         )
         def eq_get_velocity_diluate(self, t):
             return self.velocity_diluate[
@@ -675,7 +676,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().time,
-            doc="Calculate flow velocity in a single concentrate channel",
+            doc="Pressure drop expression as calculated by the pressure drop data, diluate.",
         )
         def eq_get_velocity_concentrate(self, t):
             return self.velocity_concentrate[
