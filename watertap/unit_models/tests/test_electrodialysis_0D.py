@@ -1766,7 +1766,7 @@ class Test_ED_pressure_drop_components:
 
 class Test_Limiting_Current_Density_Method:
     @pytest.fixture(scope="class")
-    def ed_m0(self):
+    def ed_l0(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
@@ -1788,7 +1788,7 @@ class Test_Limiting_Current_Density_Method:
         return m
 
     @pytest.fixture(scope="class")
-    def ed_m1(self):
+    def ed_l1(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
@@ -1809,7 +1809,7 @@ class Test_Limiting_Current_Density_Method:
         return m
 
     @pytest.fixture(scope="class")
-    def ed_m2(self):
+    def ed_l2(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
@@ -1830,8 +1830,8 @@ class Test_Limiting_Current_Density_Method:
         return m
 
     @pytest.mark.unit
-    def test_limiting_current_various_methods(self, ed_m0, ed_m1, ed_m2):
-        ed_m = (ed_m0, ed_m1, ed_m2)
+    def test_limiting_current_various_methods(self, ed_l0, ed_l1, ed_l2):
+        ed_m = (ed_l0, ed_l1, ed_l2)
         for m in ed_m:
             m.fs.unit.water_trans_number_membrane["cem"].fix(5.8)
             m.fs.unit.water_trans_number_membrane["aem"].fix(4.3)
