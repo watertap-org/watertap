@@ -646,7 +646,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
 
             @self.Constraint(
                 self.flowsheet().time,
-                doc="Pressure drop expression as calculated by the pressure drop data,  concentrate.",
+                doc="Pressure drop expression as calculated by the pressure drop data, diluate.",
             )
             def eq_deltaP_concentrate(self, t):
                 return (
@@ -1837,7 +1837,10 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     )
                 else:
                     self.spacer_specific_area = Var(
-                        initialize=1e4, units=pyunits.meter**-1
+                        initialize=1e4,
+                        bounds=(0, None),
+                        units=pyunits.meter**-1,
+                        doc="The specific area of the channel",
                     )
                     return (
                         self.hydraulic_diameter
@@ -1854,6 +1857,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             doc="To calculate Re",
         )
         def eq_Re(self):
+
             return (
                 self.N_Re
                 == self.dens_mass
@@ -1897,11 +1901,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 "Do not forget to FIX the experimental pressure drop value in [Pa/m]!"
             )
         else:  # PressureDropMethod.Darcy_Weisbach is used
-            if not (
-                self.config.has_Nernst_diffusion_layer
-                and self.config.limiting_current_density_method
-                == LimitingCurrentDensityMethod.Theoretical
-            ):
+            if not (self.config.has_Nernst_diffusion_layer == True):
                 self._get_fluid_dimensionless_quantities()
 
             self.friction_factor = Var(
