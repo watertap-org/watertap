@@ -646,7 +646,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
 
             @self.Constraint(
                 self.flowsheet().time,
-                doc="Pressure drop expression as calculated by the pressure drop data, diluate.",
+                doc="Pressure drop expression as calculated by the pressure drop data,  concentrate.",
             )
             def eq_deltaP_concentrate(self, t):
                 return (
