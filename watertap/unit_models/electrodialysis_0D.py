@@ -639,17 +639,22 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
 
             @self.Constraint(
                 self.flowsheet().time,
-                doc="Express deltaP_term by the calculated pressure drop data, diluate.",
+                doc="Pressure drop expression as calculated by the pressure drop data, diluate.",
             )
             def eq_deltaP_diluate(self, t):
                 return self.diluate.deltaP[t] == -self.pressure_drop_total[t]
 
             @self.Constraint(
                 self.flowsheet().time,
-                doc="Express deltaP_term by the calculated pressure drop data, concentrate.",
+                doc="Pressure drop expression as calculated by the pressure drop data,  concentrate.",
             )
             def eq_deltaP_concentrate(self, t):
-                return self.concentrate.deltaP[t] == -self.pressure_drop_total[t]
+                return (
+                    # self.concentrate.deltaP[t]
+                    # == -self.pressure_drop[t] * self.cell_length
+                    self.concentrate.deltaP[t]
+                    == -self.pressure_drop_total[t]
+                )
 
         elif self.config.pressure_drop_method == PressureDropMethod.none and (
             not self.config.has_pressure_change
@@ -676,7 +681,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().time,
-            doc="Pressure drop expression as calculated by the pressure drop data, diluate.",
+            doc="Calculate flow velocity in a single concentrate channel, based on the average of inlet and outlet",
         )
         def eq_get_velocity_concentrate(self, t):
             return self.velocity_concentrate[
@@ -1867,7 +1872,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             )
 
         @self.Constraint(
-            doc="To calculate Sc",
+            doc="To calculate Sh",
         )
         def eq_Sh(self):
 
