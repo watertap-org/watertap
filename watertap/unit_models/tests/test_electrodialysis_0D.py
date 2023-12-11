@@ -18,8 +18,8 @@ from watertap.unit_models.electrodialysis_0D import (
     PressureDropMethod,
     FrictionFactorMethod,
     HydraulicDiameterMethod,
-    LimitingCurrentDensityMethod,
 )
+from watertap.unit_models.electrodialysis_0D import LimitingCurrentDensityMethod
 from watertap.costing import WaterTAPCosting
 from pyomo.environ import (
     ConcreteModel,
