@@ -17,7 +17,7 @@ The flowsheet follows the same formulation as benchmark simulation model no.2 (B
 but comprises different specifications for default values than BSM2.
 
 """
-__author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia"
+__author__ = "Alejandro Garciadiego, Adam Atia, Ben Knueven, Xinhong Liu,"
 
 import pyomo.environ as pyo
 
@@ -102,7 +102,7 @@ def main():
 
     print("\n\n=============SIMULATION RESULTS=============\n\n")
     # display_results(m)
-    # display_costing(m)
+    display_costing(m)
 
     # autoscaling.autoscale_variables_by_magnitude(m, overwrite=True)
     # scaling = pyo.TransformationFactory('core.scale_model')
@@ -115,6 +115,7 @@ def main():
     # print(f"Final Condition No.: {jacobian_cond(sm_final, scaled=False)}")
     setup_optimization(m)
     solver2 = get_solver()
+    # solver2.options['ma27_pivtol'] = 0.5
     solver2.options["halt_on_ampl_error"] = 'yes'
     # solver2.options["bound_push"] = 1e-20
     results = solver2.solve(m, tee=True, symbolic_solver_labels=True)
@@ -122,7 +123,7 @@ def main():
     # print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
     # display_results(m)
 
-    # display_costing(m)
+    display_costing(m)
 
     return m, results
 
@@ -544,6 +545,15 @@ def setup_optimization(m):
     m.fs.R3.volume.unfix()
     m.fs.R4.volume.unfix()
     m.fs.R5.volume.unfix()
+    for i in [
+    "R1", 
+    "R2", 
+    "R3", 
+    "R4", 
+    "R5"
+    ]:
+        reactor = getattr(m.fs, i)
+        reactor.volume.setlb(10)
 
     # m.fs.CL1.surface_area.unfix()
     # # Dewatering Unit - fix either HRT or volume.
