@@ -29,7 +29,7 @@ def export_to_ui():
     )
 
 
-def export_variables(flowsheet=None, exports=None):
+def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
     fs = flowsheet
     # --- Input data ---
     # Feed conditions
@@ -382,7 +382,7 @@ def export_variables(flowsheet=None, exports=None):
         )
 
 
-def build_flowsheet():
+def build_flowsheet(build_options=None, **kwargs):
     # build and solve initial flowsheet
     solver = get_solver()
     m = nf_with_bypass.build()

@@ -96,15 +96,18 @@ def add_wt_costing(m):
 def test_hrcs_case_1575_wtcosting():
     hrcs.add_costing = add_wt_costing
 
-    m, results = simple_main()
-    pyo.assert_optimal_termination(results)
+    try:
+        m, results = simple_main()
+        pyo.assert_optimal_termination(results)
 
-    # check costing -- baseline is 0.02003276
-    assert pyo.value(m.fs.costing.LCOW) == pytest.approx(
-        0.02605311, rel=1e-3
-    )  # in $/m**3
-
-    hrcs.add_costing = hrcs_original_costing
+        # check costing -- baseline is 0.02003276
+        assert pyo.value(m.fs.costing.LCOW) == pytest.approx(
+            0.02419106, rel=1e-3
+        )  # in $/m**3
+    except:
+        raise
+    finally:
+        hrcs.add_costing = hrcs_original_costing
 
 
 def add_zo_costing(m):
@@ -167,12 +170,15 @@ def add_zo_costing(m):
 def test_hrcs_case_1575_zocosting():
     hrcs.add_costing = add_zo_costing
 
-    m, results = simple_main()
-    pyo.assert_optimal_termination(results)
+    try:
+        m, results = simple_main()
+        pyo.assert_optimal_termination(results)
 
-    # check costing -- baseline is 0.02003276
-    assert pyo.value(m.fs.costing.LCOW) == pytest.approx(
-        0.02087999, rel=1e-3
-    )  # in $/m**3
-
-    hrcs.add_costing = hrcs_original_costing
+        # check costing -- baseline is 0.02003276
+        assert pyo.value(m.fs.costing.LCOW) == pytest.approx(
+            0.02172723, rel=1e-3
+        )  # in $/m**3
+    except:
+        raise
+    finally:
+        hrcs.add_costing = hrcs_original_costing

@@ -15,7 +15,13 @@ Authors: Andrew Lee, Vibhav Dabadghao
 """
 
 import pytest
-from pyomo.environ import check_optimal_termination, ConcreteModel, units, value
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    units,
+    value,
+    assert_optimal_termination,
+)
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
@@ -43,6 +49,8 @@ from idaes.core.solvers import get_solver
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from watertap.unit_models.cstr_injection import CSTR_Injection
+from idaes.core import UnitModelCostingBlock
+from watertap.costing import WaterTAPCosting
 
 
 # -----------------------------------------------------------------------------
@@ -119,7 +127,6 @@ class TestSaponification(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, sapon):
-
         assert hasattr(sapon.fs.unit, "inlet")
         assert len(sapon.fs.unit.inlet.vars) == 4
         assert hasattr(sapon.fs.unit.inlet, "flow_vol")
@@ -136,6 +143,7 @@ class TestSaponification(object):
 
         assert hasattr(sapon.fs.unit, "cstr_performance_eqn")
         assert hasattr(sapon.fs.unit, "volume")
+        assert hasattr(sapon.fs.unit, "hydraulic_retention_time")
         assert hasattr(sapon.fs.unit, "heat_duty")
         assert hasattr(sapon.fs.unit, "deltaP")
 
@@ -146,8 +154,8 @@ class TestSaponification(object):
                 == sapon.fs.unit.control_volume.mass_transfer_term[k]
             )
 
-        assert number_variables(sapon) == 32
-        assert number_total_constraints(sapon) == 16
+        assert number_variables(sapon) == 34
+        assert number_total_constraints(sapon) == 18
         assert number_unused_variables(sapon) == 0
 
     @pytest.mark.component
@@ -188,6 +196,12 @@ class TestSaponification(object):
         )
         assert pytest.approx(20.32, abs=1e-2) == value(
             sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.03888, abs=1e-3) == value(
+            sapon.fs.unit.electricity_consumption[0]
+        )
+        assert pytest.approx(1.5, abs=1e-3) == value(
+            sapon.fs.unit.hydraulic_retention_time[0]
         )
 
     @pytest.mark.solver
@@ -250,6 +264,28 @@ class TestSaponification(object):
             <= 1e-3
         )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_costing(self, sapon):
+        m = sapon
+
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.costing.cost_process()
+        m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
+        solver = get_solver()
+        results = solver.solve(m)
+
+        assert_optimal_termination(results)
+
+        # Check solutions
+        assert pytest.approx(7.75429 * 2, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
+        assert pytest.approx(0.00082698, rel=1e-5) == value(m.fs.costing.LCOW)
+
     @pytest.mark.unit
     def test_get_performance_contents(self, sapon):
         perf_dict = sapon.fs.unit._get_performance_contents()
@@ -272,5 +308,6 @@ class TestSaponification(object):
                 ],
                 "Heat Duty": sapon.fs.unit.heat_duty[0],
                 "Pressure Change": sapon.fs.unit.deltaP[0],
+                "Electricity Consumption": sapon.fs.unit.electricity_consumption[0],
             }
         }

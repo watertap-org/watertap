@@ -99,7 +99,7 @@ def dummy_kernel_logic(solution_succesful):
                 # kernel reinits model and then tries solving again
                 init_state.append(True)
                 solved_state.append(False)
-                # but it fails as again
+                # but it fails again
                 init_state.append(False)
                 solved_state.append(False)
             else:
@@ -244,6 +244,36 @@ class TestParameterSweep:
         assert global_combo_array[-1, 2] == pytest.approx(range_C[1])
 
     @pytest.mark.component
+    def test_predetermined_fixed_build_combinations(self):
+        ps = ParameterSweep()
+
+        A_param = pyo.Param(initialize=0.0, mutable=True)
+        B_param = pyo.Param(initialize=1.0, mutable=True)
+        C_param = pyo.Param(initialize=2.0, mutable=True)
+
+        nn_A = 2
+        nn_B = 3
+        nn_C = 4
+
+        A_values = nn_A + np.arange(nn_A)
+        B_values = nn_B + np.arange(nn_B)
+        C_values = nn_C + np.arange(nn_C)
+
+        param_dict = dict()
+        param_dict["var_A"] = PredeterminedFixedSample(A_param, A_values)
+        param_dict["var_B"] = PredeterminedFixedSample(B_param, B_values)
+        param_dict["var_C"] = PredeterminedFixedSample(C_param, C_values)
+
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
+        )
+
+        assert np.shape(global_combo_array)[0] == nn_A * nn_B * nn_C
+        assert np.shape(global_combo_array)[1] == len(param_dict)
+        assert (global_combo_array[0] == np.array([nn_A, nn_B, nn_C])).all()
+        assert (global_combo_array[-1] == 2 * np.array([nn_A, nn_B, nn_C]) - 1).all()
+
+    @pytest.mark.component
     def test_status_publishing(self):
         requests = pytest.importorskip(
             "requests",
@@ -314,6 +344,24 @@ class TestParameterSweep:
         assert (range_B[0] - range_B[1]) < np.mean(global_combo_array[:, 1])
 
         assert np.all(global_combo_array[:, 2] == range_C[0])
+
+        A_param = pyo.Param(initialize=0.0, mutable=True)
+        B_param = pyo.Param(initialize=0.0, mutable=True)
+        C_param = pyo.Param(initialize=0.0, mutable=True)
+
+        A_values = np.arange(nn)
+        B_values = 10.0 + A_values
+        C_values = 20.0 + A_values
+
+        param_dict = dict()
+        param_dict["var_A"] = PredeterminedRandomSample(A_param, A_values)
+        param_dict["var_B"] = PredeterminedRandomSample(B_param, B_values)
+        param_dict["var_C"] = PredeterminedRandomSample(C_param, C_values)
+
+        global_combo_array = ps._build_combinations(param_dict, SamplingType.RANDOM, nn)
+
+        assert np.shape(global_combo_array)[0] == nn
+        assert (global_combo_array == np.array([A_values, B_values, C_values]).T).all()
 
     @pytest.mark.component
     def test_divide_combinations(self):
@@ -916,6 +964,109 @@ class TestParameterSweep:
             read_dict = _read_output_h5(h5_results_file_name)
             _assert_dictionary_correctness(truth_dict, read_dict)
             _assert_h5_csv_agreement(csv_results_file_name, read_dict)
+
+    @pytest.mark.component
+    def test_parameter_sweep_optimize_with_added_var(self, model, tmp_path):
+        # this will run a solve function that adds a variable but only in some
+        # of the solves.
+        """THIS TEST IS DESIGNED FOR 2 Parallel workers!!!!!!"""
+        comm = MPI.COMM_WORLD
+
+        tmp_path = _get_rank0_path(comm, tmp_path)
+        results_fname = os.path.join(tmp_path, "global_results")
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
+
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            initialize_function=_initialize_with_added_var,
+            update_sweep_params_before_init=True,
+            initialize_before_sweep=True,
+            optimize_kwargs={"relax_feasibility": True},
+            probe_function=_good_test_function,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            debugging_data_dir=tmp_path,
+            interpolate_nan_outputs=False,
+            number_of_subprocesses=2,
+            parallel_back_end="MultiProcessing",
+        )
+
+        results_fname = os.path.join(tmp_path, "global_results")
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
+
+        # Call the parameter_sweep function
+        ps.parameter_sweep(
+            build_model_for_tps,
+            build_sweep_params_for_tps,
+        )
+
+        # NOTE: rank 0 "owns" tmp_path, so it needs to be
+        #       responsible for doing any output file checking
+        #       tmp_path can be deleted as soon as this method
+        #       returns
+        # Check that test var array was created
+        if ps.parallel_manager.is_root_process():
+            truth_dict = {
+                "outputs": {
+                    "fs.test_var": {
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 10,
+                        "value": np.array(
+                            [
+                                np.nan,
+                                np.nan,
+                                np.nan,
+                                np.nan,
+                                np.nan,
+                                5,
+                                np.nan,
+                                np.nan,
+                                np.nan,
+                            ]
+                        ),
+                    },
+                    "objective": {
+                        "value": np.array(
+                            [
+                                0.2,
+                                9.50000020e-01,
+                                -4.98799990e02,
+                                1.0,
+                                1.75,
+                                -4.97999990e02,
+                                -7.98999990e02,
+                                -7.98249990e02,
+                                2.0 - 1000.0 * ((2.0 * 0.9 - 1.0) + (3.0 * 0.5 - 1.0)),
+                            ]
+                        )
+                    },
+                },
+                "solve_successful": [True] * 9,
+                "sweep_params": {
+                    "fs.input[a]": {
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]
+                        ),
+                    },
+                    "fs.input[b]": {
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [0.0, 0.25, 0.5, 0.0, 0.25, 0.5, 0.0, 0.25, 0.5]
+                        ),
+                    },
+                },
+            }
+
+            read_dict = _read_output_h5(h5_results_file_name)
+            _assert_dictionary_correctness(truth_dict, read_dict, rtol=1e-2)
 
     @pytest.mark.component
     def test_parameter_sweep_bad_initialize_call_2(self, model, tmp_path):
@@ -1956,6 +2107,14 @@ def _optimization(m, relax_feasibility=False):
     return results
 
 
+def _initialize_with_added_var(m):
+    if (abs(m.fs.input["a"].value - 0.5) < 1e-6) and abs(
+        m.fs.input["b"].value - 0.5
+    ) < 1e-6:
+        m.fs.test_var = pyo.Var(initialize=5, bounds=(0, 10))
+        m.fs.test_var.fix()
+
+
 def _reinitialize(m, slack_penalty=10.0):
     m.fs.slack.setub(None)
     m.fs.slack_penalty.value = slack_penalty
@@ -1979,7 +2138,7 @@ def _bad_test_function(m):
     return False
 
 
-def _assert_dictionary_correctness(truth_dict, test_dict):
+def _assert_dictionary_correctness(truth_dict, test_dict, rtol=1e-05, atol=1e-08):
     assert truth_dict.keys() == test_dict.keys()
 
     for key, item in truth_dict.items():
@@ -1991,13 +2150,23 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
                             test_dict[key][subkey]["value"],
                             subitem["value"],
                             equal_nan=True,
+                            rtol=rtol,
+                            atol=atol,
                         )
                     else:
-                        assert subsubitem == test_dict[key][subkey][subsubkey]
+                        if (
+                            subsubkey in ["upper bound", "lower bound"]
+                            and test_dict[key][subkey][subsubkey] is None
+                        ):
+                            assert subsubitem in [np.finfo("d").min, np.finfo("d").max]
+                        else:
+                            assert subsubitem == test_dict[key][subkey][subsubkey]
         elif key == "solve_successful":
             assert item == test_dict[key]
         elif key in ["nominal_idx", "differential_idx"]:
-            assert np.allclose(test_dict[key], item, equal_nan=True)
+            assert np.allclose(
+                test_dict[key], item, equal_nan=True, rtol=rtol, atol=atol
+            )
 
 
 def _assert_h5_csv_agreement(csv_filename, h5_dict):

@@ -292,7 +292,7 @@ class TestElectrodialysisVoltageConst:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(584.6, rel=1e-3) == value(
+        assert pytest.approx(2.0 * 584.6, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
         assert pytest.approx(153.6471, rel=1e-3) == value(
@@ -323,7 +323,7 @@ class TestElectrodialysisVoltageConst:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(2979.6988, rel=1e-3) == value(
+        assert pytest.approx(2.0 * 2979.6988, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
         assert pytest.approx(297.5365, rel=1e-3) == value(
@@ -558,7 +558,7 @@ class TestElectrodialysis_withNeutralSPecies:
             "solute_list": ["Na_+", "Cl_-", "N"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3, "N": 61.8e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
-            "charge": {"Na_+": 1, "Cl_-": -1},
+            "charge": {"Na_+": 1, "Cl_-": -1, "N": 0},
         }
         m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(

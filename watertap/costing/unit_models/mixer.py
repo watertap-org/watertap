@@ -153,7 +153,7 @@ def build_caoh2_cost_param_block(blk):
 def build_caoh2_mixer_cost_param_block(blk):
 
     blk.unit_cost = pyo.Var(
-        initialize=792.8 * 2.20462,
+        initialize=792.8 * 2.20462 / 2.0,
         doc="Ca(OH)2 mixer cost",
         units=pyo.units.USD_2018 / (pyo.units.kg / pyo.units.day),
     )
@@ -184,8 +184,7 @@ def cost_caoh2_mixer(blk, dosing_rate):
     )
     cost_by_flow_volume(
         blk,
-        blk.costing_package.caoh2_mixer.unit_cost
-        / blk.costing_package.factor_total_investment,
+        blk.costing_package.caoh2_mixer.unit_cost,
         blk.lime_kg_per_day,
     )
     blk.costing_package.cost_flow(

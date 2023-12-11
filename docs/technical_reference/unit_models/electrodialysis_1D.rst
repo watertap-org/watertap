@@ -268,7 +268,7 @@ This model can optionally calculate pressured drops along the flow path in the d
 
 **Note**
 
- :sup:`1` As discussed in the last paragraph, in this section we assumed a constant linear velocity (in the cell length direction), :math:`v`, in both channels and along the flow path. This :math:`v` is calculated from the volume flow rate at :math:`x=0` by the property package. 
+ :sup:`1` As discussed in the last paragraph, in this section we assumed a constant linear velocity (in the cell length direction), :math:`v`, in both channels and along the flow path. This :math:`v` is calculated from the volume flow rate at :math:`x=0` by the property package.
 
 Nomenclature
 ------------

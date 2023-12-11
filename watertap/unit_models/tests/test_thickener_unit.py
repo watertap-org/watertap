@@ -59,6 +59,8 @@ from watertap.property_models.activated_sludge.modified_asm2d_properties import 
     ModifiedASM2dParameterBlock,
 )
 from pyomo.util.check_units import assert_units_consistent
+from watertap.costing import WaterTAPCosting
+from idaes.core import UnitModelCostingBlock
 
 __author__ = "Alejandro Garciadiego, Adam Atia"
 
@@ -141,6 +143,9 @@ class TestThickASM1(object):
         m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(4.7411 * units.mg / units.liter)
         m.fs.unit.inlet.alkalinity.fix(4.5646 * units.mol / units.m**3)
 
+        m.fs.unit.hydraulic_retention_time.fix()
+        m.fs.unit.diameter.fix()
+
         return m
 
     @pytest.mark.build
@@ -171,8 +176,8 @@ class TestThickASM1(object):
         assert hasattr(tu.fs.unit.overflow, "pressure")
         assert hasattr(tu.fs.unit.overflow, "alkalinity")
 
-        assert number_variables(tu) == 76
-        assert number_total_constraints(tu) == 60
+        assert number_variables(tu) == 81
+        assert number_total_constraints(tu) == 63
         assert number_unused_variables(tu) == 0
 
     @pytest.mark.unit
@@ -251,6 +256,9 @@ class TestThickASM1(object):
         assert pytest.approx(0.004564, rel=1e-3) == value(
             tu.fs.unit.overflow.alkalinity[0]
         )
+        assert pytest.approx(3.82, rel=1e-3) == value(tu.fs.unit.height)
+        assert pytest.approx(300, rel=1e-3) == value(tu.fs.unit.volume[0])
+        assert pytest.approx(78.54, rel=1e-3) == value(tu.fs.unit.surface_area)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -331,6 +339,9 @@ class TestThickASM2d(object):
         )
         m.fs.unit.inlet.alkalinity[0].fix(4.6663 * units.mmol / units.liter)
 
+        m.fs.unit.hydraulic_retention_time.fix()
+        m.fs.unit.diameter.fix()
+
         return m
 
     @pytest.mark.build
@@ -361,8 +372,8 @@ class TestThickASM2d(object):
         assert hasattr(tu_asm2d.fs.unit.overflow, "pressure")
         assert hasattr(tu_asm2d.fs.unit.overflow, "alkalinity")
 
-        assert number_variables(tu_asm2d) == 106
-        assert number_total_constraints(tu_asm2d) == 84
+        assert number_variables(tu_asm2d) == 111
+        assert number_total_constraints(tu_asm2d) == 87
         assert number_unused_variables(tu_asm2d) == 0
 
     @pytest.mark.unit
@@ -539,6 +550,9 @@ class TestThickModifiedASM2d(object):
             118.3582 * units.mg / units.liter
         )
 
+        m.fs.unit.hydraulic_retention_time.fix()
+        m.fs.unit.diameter.fix()
+
         return m
 
     @pytest.mark.build
@@ -566,8 +580,8 @@ class TestThickModifiedASM2d(object):
         assert hasattr(tu_mod_asm2d.fs.unit.overflow, "temperature")
         assert hasattr(tu_mod_asm2d.fs.unit.overflow, "pressure")
 
-        assert number_variables(tu_mod_asm2d) == 110
-        assert number_total_constraints(tu_mod_asm2d) == 83
+        assert number_variables(tu_mod_asm2d) == 115
+        assert number_total_constraints(tu_mod_asm2d) == 86
         assert number_unused_variables(tu_mod_asm2d) == 0
 
     @pytest.mark.unit
@@ -698,3 +712,77 @@ class TestThickModifiedASM2d(object):
     @pytest.mark.unit
     def test_report(self, tu_mod_asm2d):
         tu_mod_asm2d.fs.unit.report()
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_costing():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.props = ModifiedASM2dParameterBlock()
+
+    m.fs.unit = Thickener(
+        property_package=m.fs.props,
+        activated_sludge_model=ActivatedSludgeModelType.modified_ASM2D,
+    )
+
+    # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
+    EPS = 1e-8
+
+    m.fs.unit.inlet.flow_vol.fix(300 * units.m**3 / units.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
+    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O2"].fix(7.9707 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(29.0603 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(8.0209 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(6.6395 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(7.8953 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(0.4748 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(0.0336 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(7 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(6 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(10 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1695.7695 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(68.2975 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(1855.5067 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(214.5319 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(63.5316 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(2.7381 * units.mg / units.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(118.3582 * units.mg / units.liter)
+
+    m.fs.unit.hydraulic_retention_time.fix()
+    m.fs.unit.diameter.fix()
+
+    m.fs.costing = WaterTAPCosting()
+
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    m.fs.costing.cost_process()
+
+    assert degrees_of_freedom(m) == 0
+
+    results = solver.solve(m)
+
+    assert_optimal_termination(results)
+    assert_units_consistent(m)
+    assert hasattr(m.fs.costing, "thickener")
+    assert value(m.fs.costing.thickener.capital_a_parameter) == 4729.8
+    assert value(m.fs.costing.thickener.capital_b_parameter) == 37068
+
+    # Check solutions
+    assert pytest.approx(220675.79 * 2, rel=1e-5) == value(
+        m.fs.unit.costing.capital_cost
+    )
+    assert pytest.approx(220675.79, rel=1e-5) == value(
+        units.convert(
+            (4729.8 * value(units.convert(10 * units.m, to_units=units.feet)) + 37068)
+            * units.USD_2007,
+            to_units=m.fs.costing.base_currency,
+        )
+    )
+    assert pytest.approx(12.5 * 0.01255, rel=1e-5) == value(
+        m.fs.unit.electricity_consumption[0]
+    )
