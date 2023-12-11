@@ -101,7 +101,7 @@ class CredentialManager:
                     ["username", "password", "root_url", "auth_url"]
                 )
             else:
-                self._check_credentials(["root_url", "auth_url", "access_keys"])
+                self._check_credentials(["root_url", "access_keys"])
 
             if self._write_permission():
                 self.encryption_key = self._encrypt_credentials()

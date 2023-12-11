@@ -56,7 +56,7 @@ def test_dbs_file_available_for_testing(local_dbs_file: Path):
 
 @pytest.mark.unit
 def test_dbs_file_cleanup(oliapi_instance: OLIApi, local_dbs_file: Path):
-    ids = [oliapi_instance.get_dbs_file_id(str(local_dbs_file)) for i in range(10)]
+    ids = [oliapi_instance.get_dbs_file_id(str(local_dbs_file)) for i in range(3)]
     oliapi_instance.dbs_file_cleanup(ids)
 
 

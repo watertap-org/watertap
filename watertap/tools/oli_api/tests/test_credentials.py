@@ -44,59 +44,20 @@
 
 import pytest
 
-from os.path import join
 from pathlib import Path
-from os import listdir, remove
 
 from watertap.tools.oli_api.client import OLIApi
-from watertap.tools.oli_api.credentials import (
-    CredentialManager,
-    cryptography_available,
-)
-
-
-@pytest.fixture
-def credential_manager():
-    if not cryptography_available:
-        pytest.skip(reason="cryptography module not available.")
-    credentials = {
-        "access_keys": [""],
-        "root_url": "",
-        "auth_url": "",
-    }
-    try:
-        credential_manager = CredentialManager(**credentials, test=True)
-        yield credential_manager
-    except:
-        pytest.xfail("Unable to test OLI logins.")
-
-
-@pytest.fixture
-def oliapi_instance(credential_manager):
-    def _cleanup(file_list, file_path):
-        new_files = [
-            f"{file_path}/{f}" for f in listdir(file_path) if f not in file_list
-        ]
-        for f in new_files:
-            remove(f)
-
-    root_dir = Path(__file__).parents[1]
-    test_dir = Path(__file__).parents[0]
-    root_contents = listdir(root_dir)
-    test_contents = listdir(test_dir)
-
-    credential_manager.login()
-    with OLIApi(credential_manager, test=True) as oliapi:
-        local_dbs_file = join(test_dir, "test.dbs")
-        oliapi.get_dbs_file_id(local_dbs_file)
-        yield oliapi
-
-    _cleanup(root_contents, root_dir)
-    _cleanup(test_contents, test_dir)
+from watertap.tools.oli_api.credentials import CredentialManager
 
 
 @pytest.mark.unit
-def test_encryption(credential_manager):
-    key = credential_manager.encryption_key
-    credential_manager_with_key = CredentialManager(key, test=True)
-    assert credential_manager_with_key.credentials == credential_manager.credentials
+def test_encryption(oliapi_instance: OLIApi, tmp_path: Path):
+    key = oliapi_instance.credential_manager.encryption_key
+    cred_file_path = tmp_path / "pytest-credentials.txt"
+    credential_manager_with_key = CredentialManager(
+        config_file=cred_file_path, encryption_key=key, test=True
+    )
+    assert (
+        credential_manager_with_key.credentials
+        == oliapi_instance.credential_manager.credentials
+    )
