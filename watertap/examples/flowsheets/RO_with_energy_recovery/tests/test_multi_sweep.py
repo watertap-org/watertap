@@ -34,7 +34,7 @@ def test_multi_sweep(case_num, tmp_path):
         case_num,
         nx,
         interpolate_nan_outputs=False,
-        results_path=temp.name,
+        output_filename=None,
     )
     os.remove(temp.name)
     os.chdir(cwd)
