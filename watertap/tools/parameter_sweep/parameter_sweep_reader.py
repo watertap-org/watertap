@@ -224,13 +224,11 @@ class ParameterSweepReader:
 
             elif values["type"] == "PredeterminedFixedSample":
                 sweep_params[param] = PredeterminedFixedSample(
-                    component,
-                    values["array"],
+                    component, values["array"]
                 )
             elif values["type"] == "PredeterminedRandomSample":
                 sweep_params[param] = PredeterminedRandomSample(
-                    component,
-                    values["array"],
+                    component, values["array"]
                 )
         return sweep_params
 
