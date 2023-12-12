@@ -35,7 +35,7 @@ def set_up_sensitivity():
 
     # uncomment to create outputs
 
-    # outputs["LCOW"] = m.fs.costing.LCOW
+    outputs["LCOW"] = m.fs.costing.LCOW
     # outputs["RO Water Flux"] = m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
     # outputs["RO Membrane Area"] = m.fs.RO.area
     # outputs["RO Energy Consumption"] = m.fs.costing.specific_energy_consumption
@@ -67,24 +67,14 @@ def set_up_sensitivity():
     return outputs, m
 
 
-def run_analysis(
-    case_num=1, nx=5, interpolate_nan_outputs=True, withERD=True, output_filename=None
-):
+def run_analysis(case_num=1, nx=5, interpolate_nan_outputs=True, output_filename=None):
 
     if output_filename is None:
         output_filename = "sensitivity_" + str(case_num) + ".csv"
 
     # when from the command line
     case_num = int(case_num)
-    nx = int(nx)
     interpolate_nan_outputs = bool(interpolate_nan_outputs)
-    # withERD = bool(withERD)
-
-    # # select flowsheet configuration
-    # if withERD:
-    #     m = RO.main(erd_type=ERDtype.pump_as_turbine)[0]
-    # else:
-    #     m = RO.main(erd_type=ERDtype.pressure_exchanger)[0]
 
     outputs, m = set_up_sensitivity()
 

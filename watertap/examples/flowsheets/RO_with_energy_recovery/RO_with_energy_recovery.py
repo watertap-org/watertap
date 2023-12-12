@@ -67,14 +67,12 @@ def main(erd_type=ERDtype.pressure_exchanger):
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
 
-    results = solve(m, solver=solver)
-    assert_optimal_termination(results)
+    assert_optimal_termination(solve(m, solver=solver))
 
     # optimize and display
     optimize_set_up(m)
     results = solve(m, solver=solver)
 
-    print("\n***---Optimization results---***")
     display_system(m)
     display_design(m)
     if erd_type == ERDtype.pressure_exchanger:
