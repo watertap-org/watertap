@@ -25,6 +25,8 @@ from watertap.examples.flowsheets.gac import (
 )
 from watertap.ui.fsapi import FlowsheetInterface
 
+__author__ = "Hunter Barber"
+
 
 def export_to_ui():
     """
