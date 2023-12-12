@@ -14,7 +14,13 @@ GUI configuration for the GAC model.
 """
 
 from pyomo.environ import units as pyunits
-from watertap.examples.flowsheets.case_studies.gac import (
+from watertap.property_models.multicomp_aq_sol_prop_pack import DiffusivityCalculation
+from watertap.unit_models.gac import (
+    FilmTransferCoefficientType,
+    SurfaceDiffusionCoefficientType,
+)
+from watertap.costing.unit_models.gac import ContactorType
+from watertap.examples.flowsheets.gac import (
     gac_flowsheet as gac_fs,
 )
 from watertap.ui.fsapi import FlowsheetInterface
@@ -33,20 +39,26 @@ def export_to_ui():
             "FilmTransferCoefficientType": {
                 "name": "FilmTransferCoefficientType",
                 "display_name": "Film Transfer Coefficient Type",
-                "values_allowed": ["fixed", "calculated"],
-                "value": "fixed",
+                "values_allowed": [x.name for x in FilmTransferCoefficientType],
+                "value": FilmTransferCoefficientType.fixed.name,
             },
             "SurfaceDiffusionCoefficientType": {
                 "name": "SurfaceDiffusionCoefficientType",
                 "display_name": "Surface Diffusion Coefficient Type",
-                "values_allowed": ["fixed", "calculated"],
-                "value": "fixed",
+                "values_allowed": [x.name for x in SurfaceDiffusionCoefficientType],
+                "value": SurfaceDiffusionCoefficientType.fixed.name,
             },
             "DiffusivityCalculation": {
                 "name": "DiffusivityCalculation",
                 "display_name": "Diffusivity Calculation",
-                "values_allowed": ["none", "HaydukLaudie"],
-                "value": "none",
+                "values_allowed": [x.name for x in DiffusivityCalculation],
+                "value": DiffusivityCalculation.none.name,
+            },
+            "ContactorType": {
+                "name": "ContactorType",
+                "display_name": "Cost Contactor Type",
+                "values_allowed": [x.name for x in ContactorType],
+                "value": ContactorType.pressure.name,
             },
         },
     )
@@ -60,7 +72,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     rounding = 3
     sci_not_rounding = 20
     solute_name = "solute"
-
+    fs.costing.display()
     # input data
     # ---------------------------------------------------------------------
     # solute properties
@@ -675,8 +687,12 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category=category,
     )
+    if build_options["ContactorType"].value == "pressure":
+        unit_model_costing = fs.costing.gac_pressure
+    else:
+        unit_model_costing = fs.costing.gac_gravity
     exports.add(
-        obj=fs.costing.gac_pressure.regen_frac,
+        obj=unit_model_costing.regen_frac,
         name="Regeneration fraction",
         ui_units=pyunits.dimensionless,
         display_units="-",
@@ -688,7 +704,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category=category,
     )
     exports.add(
-        obj=fs.costing.gac_pressure.num_contactors_op,
+        obj=unit_model_costing.num_contactors_op,
         name="Number of operating beds",
         ui_units=pyunits.dimensionless,
         display_units="-",
@@ -700,7 +716,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category=category,
     )
     exports.add(
-        obj=fs.costing.gac_pressure.num_contactors_redundant,
+        obj=unit_model_costing.num_contactors_redundant,
         name="Number of redundant beds",
         ui_units=pyunits.dimensionless,
         display_units="-",
@@ -773,6 +789,7 @@ def build_flowsheet(build_options=None, **kwargs):
             "SurfaceDiffusionCoefficientType"
         ].value,
         diffusivity_calculation=build_options["DiffusivityCalculation"].value,
+        cost_contactor_type=build_options["ContactorType"].value,
     )
     res = gac_fs.solve_model(m)
 

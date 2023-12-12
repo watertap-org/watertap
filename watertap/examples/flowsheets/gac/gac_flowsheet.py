@@ -28,6 +28,7 @@ from idaes.models.unit_models import (
 )
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
+    DiffusivityCalculation,
 )
 from watertap.unit_models.gac import GAC
 from watertap.costing import WaterTAPCosting
@@ -38,19 +39,16 @@ __author__ = "Hunter Barber"
 
 def main():
 
-    # TODO: mass or mole basis
-    #       surrogates to replace empirical parameters
-    #       autoscaling, check robustness of solve over sweeps
-
     # testing ui functions
     m = build(
         film_transfer_coefficient_type="calculated",
         surface_diffusion_coefficient_type="calculated",
         diffusivity_calculation="HaydukLaudie",
+        cost_contactor_type="gravity",
     )
     res = solve_model(m)
     print("solver termination condition:", res.solver.termination_condition)
-    # m.fs.display()
+    m.fs.display()
 
     return m, res
 
@@ -59,7 +57,12 @@ def build(
     film_transfer_coefficient_type="fixed",
     surface_diffusion_coefficient_type="fixed",
     diffusivity_calculation="none",
+    cost_contactor_type="pressure",
 ):
+    # TODO: mass or mole basis
+    #       surrogates to replace empirical parameters
+    #       autoscaling, check robustness of solve over sweeps
+    #       build only supports string (Option.value.name) and not Option.value from import
 
     # blocks
     m = pyo.ConcreteModel()
@@ -113,7 +116,7 @@ def build(
     m.fs.costing.base_currency = pyo.units.USD_2021
     m.fs.gac.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing,
-        costing_method_arguments={"contactor_type": "pressure"},
+        costing_method_arguments={"contactor_type": cost_contactor_type},
     )
 
     # add flowsheet level blocks
@@ -181,9 +184,14 @@ def build(
         m.fs.gac.spdfr.fix()
 
     # costing specifications
-    m.fs.costing.gac_pressure.regen_frac.fix(0.7)
-    m.fs.costing.gac_pressure.num_contactors_op.fix(1)
-    m.fs.costing.gac_pressure.num_contactors_redundant.fix(1)
+    if cost_contactor_type == "pressure":
+        m.fs.costing.gac_pressure.regen_frac.fix(0.7)
+        m.fs.costing.gac_pressure.num_contactors_op.fix(1)
+        m.fs.costing.gac_pressure.num_contactors_redundant.fix(1)
+    else:
+        m.fs.costing.gac_gravity.regen_frac.fix(0.7)
+        m.fs.costing.gac_gravity.num_contactors_op.fix(1)
+        m.fs.costing.gac_gravity.num_contactors_redundant.fix(1)
 
     # check model
     assert_units_consistent(m)
