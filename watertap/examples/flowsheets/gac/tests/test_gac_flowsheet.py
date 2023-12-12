@@ -51,8 +51,6 @@ class TestGACFlowsheet:
         assert degrees_of_freedom(m) == 0
         assert_optimal_termination(res)
 
-        m.fs.display()
-
         assert value(
             m.fs.gac.process_flow.properties_in[0].flow_vol_phase["Liq"]
         ) == pytest.approx(0.043813, rel=1e-3)
@@ -67,6 +65,7 @@ class TestGACFlowsheet:
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
             626900, rel=1e-3
         )
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.5636, rel=1e-3)
 
     @pytest.mark.component
     def test_build_solve_options(self):
