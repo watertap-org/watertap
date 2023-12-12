@@ -68,6 +68,7 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 from pyomo.util.check_units import assert_units_consistent
+
 # from watertap.tools.local_tools import autoscaling, ill_conditioning
 from idaes.core.util.scaling import (
     get_jacobian,
@@ -77,18 +78,19 @@ from idaes.core.util.scaling import (
     jacobian_cond,
 )
 
+
 def main():
     m = build()
     set_operating_conditions(m)
     for mx in m.mixers:
-        mx.pressure_equality_constraints[0.0,2].deactivate()
+        mx.pressure_equality_constraints[0.0, 2].deactivate()
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
     initialize_system(m)
     # TODO: the mixer initializer will turn these constraints back on
     for mx in m.mixers:
-        mx.pressure_equality_constraints[0.0,2].deactivate()
+        mx.pressure_equality_constraints[0.0, 2].deactivate()
     assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
@@ -116,7 +118,7 @@ def main():
     setup_optimization(m)
     solver2 = get_solver()
     # solver2.options['ma27_pivtol'] = 0.5
-    solver2.options["halt_on_ampl_error"] = 'yes'
+    solver2.options["halt_on_ampl_error"] = "yes"
     # solver2.options["bound_push"] = 1e-20
     results = solver2.solve(m, tee=True, symbolic_solver_labels=True)
     pyo.assert_optimal_termination(results)
@@ -146,7 +148,8 @@ def build():
     # ==========================================================================
     # Mixer for inlet water and recycled sludge
     m.fs.MX1 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["feed_water", "recycle"],
+        property_package=m.fs.props_ASM1,
+        inlet_list=["feed_water", "recycle"],
         momentum_mixing_type=MomentumMixingType.equality,
     )
     # First reactor (anoxic) - standard CSTR
@@ -187,7 +190,8 @@ def build():
     )
     # Mixing sludge recycle and R5 underflow
     m.fs.MX6 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["clarifier", "reactor"],
+        property_package=m.fs.props_ASM1,
+        inlet_list=["clarifier", "reactor"],
         momentum_mixing_type=MomentumMixingType.equality,
     )
 
@@ -291,15 +295,18 @@ def build():
     m.fs.DU = DewateringUnit(property_package=m.fs.props_ASM1)
 
     m.fs.MX2 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["feed_water1", "recycle1"],
+        property_package=m.fs.props_ASM1,
+        inlet_list=["feed_water1", "recycle1"],
         momentum_mixing_type=MomentumMixingType.equality,
     )
     m.fs.MX3 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["feed_water2", "recycle2"],
+        property_package=m.fs.props_ASM1,
+        inlet_list=["feed_water2", "recycle2"],
         momentum_mixing_type=MomentumMixingType.equality,
     )
     m.fs.MX4 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["thickener", "clarifier"],
+        property_package=m.fs.props_ASM1,
+        inlet_list=["thickener", "clarifier"],
         momentum_mixing_type=MomentumMixingType.equality,
     )
 
@@ -545,13 +552,7 @@ def setup_optimization(m):
     m.fs.R3.volume.unfix()
     m.fs.R4.volume.unfix()
     m.fs.R5.volume.unfix()
-    for i in [
-    "R1", 
-    "R2", 
-    "R3", 
-    "R4", 
-    "R5"
-    ]:
+    for i in ["R1", "R2", "R3", "R4", "R5"]:
         reactor = getattr(m.fs, i)
         reactor.volume.setlb(10)
 
@@ -566,34 +567,27 @@ def setup_optimization(m):
     # m.fs.TU.hydraulic_retention_time.fix(86400 * pyo.units.s)
     # m.fs.TU.diameter.unfix()
     # m.fs.TU.diameter.setub(20)
-    m.fs.TSS_max = pyo.Var(
-        initialize=0.03,
-        units=pyo.units.kg/pyo.units.m**3
-    )
-    m.fs.TSS_max.fix() 
+    m.fs.TSS_max = pyo.Var(initialize=0.03, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.TSS_max.fix()
+
     @m.fs.Constraint(m.fs.time)
     def eq_TSS_max(self, t):
         return m.fs.CL1.effluent_state[0].TSS <= m.fs.TSS_max
 
-    m.fs.COD_max = pyo.Var(
-        initialize=0.1,
-        units=pyo.units.kg/pyo.units.m**3
-    )
-    m.fs.COD_max.fix() 
+    m.fs.COD_max = pyo.Var(initialize=0.1, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.COD_max.fix()
 
     @m.fs.Constraint(m.fs.time)
     def eq_COD_max(self, t):
         return m.fs.CL1.effluent_state[0].COD <= m.fs.COD_max
 
-    m.fs.totalN_max = pyo.Var(
-        initialize=0.018,
-        units=pyo.units.kg/pyo.units.m**3
-    )
-    m.fs.totalN_max.fix() 
+    m.fs.totalN_max = pyo.Var(initialize=0.018, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.totalN_max.fix()
 
     @m.fs.Constraint(m.fs.time)
     def eq_totalN_max(self, t):
         return m.fs.CL1.effluent_state[0].Total_N <= m.fs.totalN_max
+
 
 def solve(blk, solver=None):
     if solver is None:
@@ -684,7 +678,6 @@ def display_costing(m):
     print(
         "electricity consumption dewatering Unit",
         pyo.value(m.fs.DU.electricity_consumption[0]),
-
         pyo.units.get_units(m.fs.DU.electricity_consumption[0]),
     )
     print(

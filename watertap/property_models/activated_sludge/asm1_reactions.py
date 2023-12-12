@@ -91,7 +91,7 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
         add_object_reference(self, "f_p", self.config.property_package.f_p)
         add_object_reference(self, "i_xb", self.config.property_package.i_xb)
         add_object_reference(self, "i_xp", self.config.property_package.i_xp)
-        
+
         # Kinetic Parameters
         self.mu_A = pyo.Var(
             initialize=0.5,
@@ -508,4 +508,3 @@ class ASM1ReactionBlockData(ReactionBlockDataBase):
         iscale.constraint_scaling_transform(self.rate_expression["R5"], 1e3)
         iscale.constraint_scaling_transform(self.rate_expression["R3"], 1e3)
         iscale.constraint_scaling_transform(self.rate_expression["R4"], 1e3)
-
