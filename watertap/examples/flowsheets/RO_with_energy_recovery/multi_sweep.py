@@ -29,7 +29,6 @@ def set_up_sensitivity():
     RO.optimize_set_up(m)
     m.fs.eq_minimum_water_flux.deactivate()
     RO.solve(m)
-    print("\n***---Optimization results---***")
     RO.display_system(m)
     RO.display_design(m)
 

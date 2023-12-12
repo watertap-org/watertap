@@ -71,7 +71,7 @@ def main(erd_type=ERDtype.pressure_exchanger):
 
     # optimize and display
     optimize_set_up(m)
-    results = solve(m, solver=solver)
+    solve(m, solver=solver)
 
     display_system(m)
     display_design(m)
@@ -80,7 +80,7 @@ def main(erd_type=ERDtype.pressure_exchanger):
     else:
         pass
 
-    return m, results
+    return m
 
 
 def build(erd_type=ERDtype.pressure_exchanger):
