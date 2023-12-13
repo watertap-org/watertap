@@ -330,22 +330,6 @@ class ZeroOrderBaseData(UnitModelBlockData):
     # -------------------------------------------------------------------------
     # Unit operation costing methods
     @staticmethod
-    def _add_cost_factor(blk, factor):
-        if factor == "TPEC":
-            blk.cost_factor = pyo.Expression(
-                expr=blk.config.flowsheet_costing_block.TPEC
-            )
-        elif factor == "TIC":
-            blk.cost_factor = pyo.Expression(
-                expr=blk.config.flowsheet_costing_block.TIC
-            )
-        else:
-            blk.cost_factor = pyo.Expression(expr=1.0)
-        blk.direct_capital_cost = pyo.Expression(
-            expr=blk.capital_cost / blk.cost_factor
-        )
-
-    @staticmethod
     def _get_unit_cost_method(blk):
         """
         Get a specified cost_method if one is defined in the YAML file.
@@ -462,7 +446,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
 
         expr *= number_of_parallel_units
 
-        blk.unit_model._add_cost_factor(blk, factor)
+        blk.costing_package.add_cost_factor(blk, factor)
 
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost == blk.cost_factor * expr
