@@ -101,6 +101,7 @@ def cost_centrifuge(
     Centrifuge costing method
     """
     make_capital_cost_var(blk)
+    blk.costing_package.add_cost_factor(blk, "TIC")
     cost_blk = blk.costing_package.centrifuge
     t0 = blk.flowsheet().time.first()
     x = flow_in = pyo.units.convert(
@@ -108,7 +109,8 @@ def cost_centrifuge(
     )
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.cost_factor
+        * pyo.units.convert(
             cost_blk.capital_a_parameter * x + cost_blk.capital_b_parameter,
             to_units=blk.costing_package.base_currency,
         )
@@ -134,6 +136,7 @@ def cost_filter_belt_press(
     Belt Press Filter costing method
     """
     make_capital_cost_var(blk)
+    blk.costing_package.add_cost_factor(blk, "TIC")
     cost_blk = blk.costing_package.filter_belt_press
     t0 = blk.flowsheet().time.first()
     x = flow_in = pyo.units.convert(
@@ -142,7 +145,8 @@ def cost_filter_belt_press(
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.cost_factor
+        * pyo.units.convert(
             cost_blk.capital_a_parameter * x + cost_blk.capital_b_parameter,
             to_units=blk.costing_package.base_currency,
         )
@@ -168,6 +172,7 @@ def cost_filter_plate_press(
     Plate Press Filter costing method
     """
     make_capital_cost_var(blk)
+    blk.costing_package.add_cost_factor(blk, "TIC")
 
     cost_blk = blk.costing_package.filter_plate_press
     t0 = blk.flowsheet().time.first()
@@ -176,7 +181,8 @@ def cost_filter_plate_press(
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.cost_factor
+        * pyo.units.convert(
             cost_blk.capital_a_parameter
             * x_units
             * (x / x_units) ** cost_blk.capital_b_parameter,

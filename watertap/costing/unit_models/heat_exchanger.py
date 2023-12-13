@@ -40,9 +40,11 @@ def cost_heat_exchanger(blk):
     TODO: describe equations
     """
     make_capital_cost_var(blk)
+    blk.costing_package.add_cost_factor(blk, "TIC")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.cost_factor
+        * pyo.units.convert(
             blk.costing_package.heat_exchanger.unit_cost
             * blk.costing_package.heat_exchanger.material_factor_cost
             * (
