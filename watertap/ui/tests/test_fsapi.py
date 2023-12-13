@@ -13,8 +13,10 @@
 Tests for fsapi module
 """
 import logging
+import os
 from pathlib import Path
 import pytest
+import shutil
 import tempfile
 
 from pyomo.environ import units as pyunits
@@ -150,7 +152,6 @@ def test_build():
         "model_export_arg",
         "model_export_data_kwarg",
         "model_export_dict_data_kwarg",
-        "csv",
     ],
 )
 @pytest.mark.unit
@@ -216,27 +217,68 @@ def test_csv_exports():
         fsi.build()
 
 
+@pytest.mark.unit
+def test_csv_exports_bad_units():
+        def bad_units_csv(**kw):
+            return csv_from_localfile(bad_units=True, **kw)
+
+        with pytest.raises(RuntimeError):
+            fsi = fsapi.FlowsheetInterface(
+                do_build=build_ro, do_solve=solve_ro,
+                do_export=bad_units_csv
+            )
+            fsi.build()
+
+
+@pytest.mark.unit
+def test_csv_exports_bad_obj():
+        def bad_obj_csv(**kw):
+            return csv_from_localfile(bad_obj=True, **kw)
+
+        with pytest.raises(RuntimeError):
+            fsi = fsapi.FlowsheetInterface(
+                do_build=build_ro, do_solve=solve_ro,
+                do_export=bad_obj_csv
+            )
+            fsi.build()
+
+
 def csv_from_tempfile(exports=None, flowsheet=None, **kw):
     with tempfile.TemporaryDirectory() as tempdir:
         f = Path(tempdir) / "fake.csv"
-        _populate_csv_exports(f.open("w"))
+        populate_csv_exports(f.open("w"), **kw)
         exports.from_csv(file=f, flowsheet=flowsheet)
 
 
 def csv_from_localfile(exports=None, flowsheet=None, **kw):
     path = Path(__file__).parent / "test.csv"
-    _populate_csv_exports(path.open("w"))
+    populate_csv_exports(path.open("w"), **kw)
     try:
         exports.from_csv(file="test.csv", flowsheet=flowsheet)
     finally:
         path.unlink()
 
 
-def _populate_csv_exports(f):
+def populate_csv_exports(f, bad_units=False, bad_obj=False):
+    units = "units.foobar" if bad_units else "units.m**3/units.s"
+    obj = "dirt" if bad_obj else "fs.feed.flow_vol[0]"
     rows = [
         "name,obj,description,ui_units,display_units,rounding,is_input,input_category,is_output,output_category",
-        "feed,fs.feed.flow_vol[0],feed flow volume,units.m**3/units.s,m^3/s,3,TRUE,something,FALSE,",
+        f"feed,{obj},feed flow volume,{units},m^3/s,3,TRUE,something,FALSE,",
     ]
+    print(f"@@ writing rows: {rows}")
+    for row in rows:
+        f.write(row)
+        f.write("\n")
+
+def populate_csv_exports(f, bad_units=False, bad_obj=False, **kw):
+    units = "units.foobar" if bad_units else "units.m**3/units.s"
+    obj = "dirt" if bad_obj else "fs.feed.flow_vol[0]"
+    rows = [
+        "name,obj,description,ui_units,display_units,rounding,is_input,input_category,is_output,output_category",
+        f"feed,{obj},feed flow volume,{units},m^3/s,3,TRUE,something,FALSE,",
+    ]
+    print(f"@@ writing rows: {rows}")
     for row in rows:
         f.write(row)
         f.write("\n")

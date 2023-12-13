@@ -20,7 +20,6 @@ from collections import namedtuple
 from csv import reader, writer
 from enum import Enum
 from io import TextIOBase
-
 try:
     from importlib.resources import files
 except ImportError:
