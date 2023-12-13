@@ -42,63 +42,24 @@
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
 
+from pathlib import Path
+
 import pytest
 
-from os.path import join
-from pathlib import Path
-from os import listdir, remove
-
 from watertap.tools.oli_api.client import OLIApi
-from watertap.tools.oli_api.credentials import (
-    CredentialManager,
-    cryptography_available,
-)
-
-
-@pytest.fixture
-def oliapi_instance():
-    def _cleanup(file_list, file_path):
-        new_files = [
-            f"{file_path}/{f}" for f in listdir(file_path) if f not in file_list
-        ]
-        for f in new_files:
-            remove(f)
-
-    root_dir = Path(__file__).parents[1]
-    test_dir = Path(__file__).parents[0]
-    root_contents = listdir(root_dir)
-    test_contents = listdir(test_dir)
-
-    if not cryptography_available:
-        pytest.skip(reason="cryptography module not available.")
-    credentials = {
-        "username": "",
-        "password": "",
-        "root_url": "",
-        "auth_url": "",
-    }
-    try:
-        credential_manager = CredentialManager(**credentials, test=True)
-        credential_manager.login()
-        with OLIApi(credential_manager, test=True) as oliapi:
-            local_dbs_file = join(test_dir, "test.dbs")
-            oliapi.get_dbs_file_id(local_dbs_file)
-            yield oliapi
-    except:
-        pytest.xfail("Unable to test OLI logins.")
-
-    _cleanup(root_contents, root_dir)
-    _cleanup(test_contents, test_dir)
 
 
 @pytest.mark.unit
-def test_dbs_file_cleanup(oliapi_instance):
-    test_dir = Path(__file__).parents[0]
-    local_dbs_file = join(test_dir, "test.dbs")
-    ids = [oliapi_instance.get_dbs_file_id(local_dbs_file) for i in range(10)]
+def test_dbs_file_available_for_testing(local_dbs_file: Path):
+    assert local_dbs_file.is_file()
+
+
+@pytest.mark.unit
+def test_dbs_file_cleanup(oliapi_instance: OLIApi, local_dbs_file: Path):
+    ids = [oliapi_instance.get_dbs_file_id(str(local_dbs_file)) for i in range(3)]
     oliapi_instance.dbs_file_cleanup(ids)
 
 
 @pytest.mark.unit
-def test_get_user_summary(oliapi_instance):
+def test_get_user_summary(oliapi_instance: OLIApi):
     oliapi_instance.get_user_summary()

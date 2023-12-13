@@ -264,7 +264,7 @@ class MetabZOData(ZeroOrderBaseData):
             + blk.DCC_vacuum
         )
 
-        blk.unit_model._add_cost_factor(
+        blk.costing_package.add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 

@@ -17,39 +17,32 @@ from ..util import (
 )
 
 
-def build_anaerobic_digestor_cost_param_block(blk):
-
+def build_cstr_injection_cost_param_block(blk):
     # NOTE: costing data are from NREL Waste-to-Energy Model
     blk.capital_a_parameter = pyo.Var(
-        initialize=19.3552312e6,
+        initialize=1.1141e3,
         doc="A parameter for capital cost",
-        units=pyo.units.USD_2012,
+        units=pyo.units.USD_1997,
     )
     blk.capital_b_parameter = pyo.Var(
-        initialize=0.6,
+        initialize=0.8324,
         doc="B parameter for capital cost",
         units=pyo.units.dimensionless,
-    )
-    blk.reference_flow = pyo.Var(
-        initialize=911.054,
-        doc="Reference flow for capital cost",
-        units=pyo.units.m**3 / pyo.units.hr,
     )
 
 
 @register_costing_parameter_block(
-    build_rule=build_anaerobic_digestor_cost_param_block,
-    parameter_block_name="anaerobic_digestor",
+    build_rule=build_cstr_injection_cost_param_block,
+    parameter_block_name="cstr_injection",
 )
-def cost_anaerobic_digestor(blk, cost_electricity_flow=True):
+def cost_cstr_injection(blk, cost_electricity_flow=True):
     """
-    Anaerobic digestor costing method
+    CSTR injection costing method
     """
-    cost_anaerobic_digestor_capital(
+    cost_cstr_injection_capital(
         blk,
-        blk.costing_package.anaerobic_digestor.capital_a_parameter,
-        blk.costing_package.anaerobic_digestor.capital_b_parameter,
-        blk.costing_package.anaerobic_digestor.reference_flow,
+        blk.costing_package.cstr_injection.capital_a_parameter,
+        blk.costing_package.cstr_injection.capital_b_parameter,
     )
 
     t0 = blk.flowsheet().time.first()
@@ -63,32 +56,24 @@ def cost_anaerobic_digestor(blk, cost_electricity_flow=True):
         )
 
 
-def cost_anaerobic_digestor_capital(
-    blk, capital_a_parameter, capital_b_parameter, reference_flow
-):
+def cost_cstr_injection_capital(blk, capital_a_parameter, capital_b_parameter):
     """
-    Generic function for costing an anaerobic digestor system.
+    Generic function for costing an CSTR injection system.
     """
     make_capital_cost_var(blk)
+    blk.costing_package.add_cost_factor(blk, "TIC")
 
     blk.capital_a_parameter = pyo.Expression(expr=capital_a_parameter)
     blk.capital_b_parameter = pyo.Expression(expr=capital_b_parameter)
-    blk.reference_flow = pyo.Expression(expr=reference_flow)
 
-    flow_in = pyo.units.convert(
-        blk.unit_model.liquid_phase.properties_in[0].flow_vol,
-        to_units=pyo.units.m**3 / pyo.units.hr,
-    )
-    sizing_term = pyo.units.convert(
-        flow_in / blk.reference_flow, to_units=pyo.units.dimensionless
-    )
-
-    blk.costing_package.add_cost_factor(blk, "TIC")
+    print(f"base_currency: {blk.costing_package.base_currency}")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == blk.cost_factor
         * pyo.units.convert(
-            blk.capital_a_parameter * sizing_term**blk.capital_b_parameter,
+            blk.capital_a_parameter
+            * (blk.unit_model.control_volume.volume[0] / pyo.units.m**3)
+            ** blk.capital_b_parameter,
             to_units=blk.costing_package.base_currency,
         )
     )
