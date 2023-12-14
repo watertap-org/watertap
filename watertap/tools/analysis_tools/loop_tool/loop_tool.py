@@ -404,12 +404,14 @@ class loopTool:
 
     def get_num_samples(self, value_dict):
         num_samples = value_dict.get("num_samples")
-        if value_dict.get("num_samples") is not None:
-            return value_dict.get("num_samples")
-        elif value_dict.get("array") is not None:
-            return len(value_dict.get("array"))
-        else:
-            raise "Provide a valid sweep type, refer to parameter_sweep_reader for valid types"
+        array = value_dict.get("array")
+        if num_samples is not None and array is not None:
+            raise RuntimeError("Supply `num_samples` or `array`, not both")
+        if num_samples is not None:
+            return num_samples
+        if array is not None:
+            return len(array)
+        raise RuntimeError("Provide a valid sweep type, refer to parameter_sweep_reader for valid types")
 
     def get_sweep_params(self, key, loop_value):
         if "type" in loop_value[key]:
