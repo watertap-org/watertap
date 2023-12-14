@@ -49,6 +49,7 @@ from watertap.property_models.activated_sludge.asm2d_properties import (
 from watertap.property_models.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterBlock,
 )
+from idaes.models.unit_models.mixer import MomentumMixingType
 
 from watertap.core.util.initialization import check_solve
 
@@ -67,7 +68,11 @@ def build_flowsheet():
     # Feed water stream
     m.fs.FeedWater = Feed(property_package=m.fs.props)
     # Mixer for feed water and recycled sludge
-    m.fs.MX1 = Mixer(property_package=m.fs.props, inlet_list=["feed_water", "recycle"])
+    m.fs.MX1 = Mixer(
+        property_package=m.fs.props,
+        inlet_list=["feed_water", "recycle"],
+        momentum_mixing_type=MomentumMixingType.equality,
+    )
     # First reactor (anoxic) - standard CSTR
     m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     # First reactor (anoxic) - standard CSTR
@@ -99,7 +104,11 @@ def build_flowsheet():
         split_basis=SplittingType.componentFlow,
     )
     # Mixing sludge recycle and R5 underflow
-    m.fs.MX2 = Mixer(property_package=m.fs.props, inlet_list=["clarifier", "reactor"])
+    m.fs.MX2 = Mixer(
+        property_package=m.fs.props,
+        inlet_list=["reactor", "clarifier"],
+        momentum_mixing_type=MomentumMixingType.equality,
+    )
     # Sludge separator
     m.fs.SP2 = Separator(property_package=m.fs.props, outlet_list=["waste", "recycle"])
     # Product Blocks
@@ -107,6 +116,8 @@ def build_flowsheet():
     m.fs.Sludge = Product(property_package=m.fs.props)
     # Recycle pressure changer - use a simple isothermal unit for now
     m.fs.P1 = PressureChanger(property_package=m.fs.props)
+
+    m.fs.mixers = (m.fs.MX1, m.fs.MX2)
 
     # Link units
     m.fs.stream1 = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX1.feed_water)
@@ -264,6 +275,8 @@ def build_flowsheet():
     m.fs.P1.outlet.pressure.fix(101325)
 
     # Check degrees of freedom
+    for mx in m.fs.mixers:
+        mx.pressure_equality_constraints[0.0, 2].deactivate()
     assert degrees_of_freedom(m) == 0
 
     def scale_variables(m):
@@ -386,6 +399,9 @@ def build_flowsheet():
         #     automate_rescale_variables(unit)
 
     seq.run(m, function)
+    for mx in m.fs.mixers:
+        mx.pressure_equality_constraints[0.0, 2].deactivate()
+    assert degrees_of_freedom(m) == 0
 
     solver = get_solver()
     results = solver.solve(m, tee=False)
