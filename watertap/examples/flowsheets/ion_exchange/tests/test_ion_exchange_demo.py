@@ -80,7 +80,6 @@ class TestIXDemo:
 
         var_str_list = [
             "total_capital_cost",
-            "maintenance_labor_chemical_operating_cost",
             "total_operating_cost",
         ]
         for var_str in var_str_list:
@@ -151,7 +150,8 @@ class TestIXDemo:
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
             0.057245, rel=1e-3
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.265142128, rel=1e-3)
+
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.191008, rel=1e-3)
 
     @pytest.mark.component
     def test_optimization(self, ix_0D):
@@ -189,33 +189,35 @@ class TestIXDemo:
         results = solver.solve(m)
         assert_optimal_termination(results)
         assert degrees_of_freedom(m) == 0
-        assert value(m.fs.ion_exchange.number_columns) == 4
-        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.88055, rel=1e-3)
+
+        assert value(m.fs.ion_exchange.number_columns) == 7
+        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.38976, rel=1e-3)
         assert value(m.fs.ion_exchange.t_breakthru) == pytest.approx(
-            133635.328, rel=1e-3
+            133134.2829, rel=1e-3
         )
         assert value(m.fs.ion_exchange.dimensionless_time) == pytest.approx(
             1.33210077, rel=1e-3
         )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            0.06949, rel=1e-3
+            0.039173, rel=1e-3
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.18896, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.112747, rel=1e-3)
+
 
     @pytest.mark.unit
     def test_main_fun(self):
         m = ixf.main()
 
         assert degrees_of_freedom(m) == 0
-        assert value(m.fs.ion_exchange.number_columns) == 4
-        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.88055, rel=1e-3)
+        assert value(m.fs.ion_exchange.number_columns) == 7
+        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.38976, rel=1e-3)
         assert value(m.fs.ion_exchange.t_breakthru) == pytest.approx(
-            133635.328, rel=1e-3
+            133134.2829, rel=1e-3
         )
         assert value(m.fs.ion_exchange.dimensionless_time) == pytest.approx(
             1.33210077, rel=1e-3
         )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            0.06949, rel=1e-3
+            0.039173, rel=1e-3
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.18896, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.112747, rel=1e-3)

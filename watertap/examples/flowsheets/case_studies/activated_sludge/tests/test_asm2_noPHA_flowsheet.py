@@ -43,7 +43,6 @@ class TestASM2DFlowsheet:
         assert degrees_of_freedom(model) == 0
         assert_optimal_termination(model.results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.integration
     def test_results(self, model):
         # Treated water
@@ -144,10 +143,10 @@ class TestASM2DFlowsheet:
             0.101, rel=1e-2
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_MeOH"]) == pytest.approx(
-            1.36e-9, rel=1e2
+            1.81e-7, rel=1e2
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_MeP"]) == pytest.approx(
-            1.2e-8, rel=1e2
+            1.44e-6, rel=1e2
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
             1.95e-6, rel=1e2

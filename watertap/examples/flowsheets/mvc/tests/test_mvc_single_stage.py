@@ -109,7 +109,6 @@ class TestMVC:
 
         var_str_list = [
             "total_capital_cost",
-            "maintenance_labor_chemical_operating_cost",
             "total_operating_cost",
         ]
         for var_str in var_str_list:
@@ -229,8 +228,8 @@ class TestMVC:
         )
 
         # Costing
-        assert m.fs.costing.factor_total_investment.is_fixed()
-        assert value(m.fs.costing.factor_total_investment) == 2
+        assert m.fs.costing.TIC.is_fixed()
+        assert value(m.fs.costing.TIC) == 2
         assert m.fs.costing.heat_exchanger.material_factor_cost.is_fixed()
         assert value(m.fs.costing.heat_exchanger.material_factor_cost) == 5
         assert m.fs.costing.evaporator.material_factor_cost.is_fixed()
