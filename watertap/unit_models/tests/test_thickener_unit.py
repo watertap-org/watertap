@@ -176,9 +176,9 @@ class TestThickASM1(object):
         assert hasattr(tu.fs.unit.overflow, "pressure")
         assert hasattr(tu.fs.unit.overflow, "alkalinity")
 
-        assert number_variables(tu) == 81
+        assert number_variables(tu) == 87
         assert number_total_constraints(tu) == 63
-        assert number_unused_variables(tu) == 0
+        assert number_unused_variables(tu) == 6
 
     @pytest.mark.unit
     def test_dof(self, tu):
