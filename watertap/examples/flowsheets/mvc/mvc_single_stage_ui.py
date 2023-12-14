@@ -35,7 +35,7 @@ def export_to_ui():
     )
 
 
-def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
+def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     fs = flowsheet
     # --- Input data ---
     exports.add(
@@ -392,7 +392,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # Outlets
-    feed_salinity = 1e3 * fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]
+
+    feed_salinity = pyunits.convert(
+        fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"],
+        to_units=pyunits.g / pyunits.kg,
+    )
     exports.add(
         obj=feed_salinity,
         name="Feed salinity",
@@ -404,8 +408,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="Outlets",
     )
-    brine_salinity = (
-        1e3 * fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"]
+    brine_salinity = pyunits.convert(
+        fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"],
+        to_units=pyunits.g / pyunits.kg,
     )
     exports.add(
         obj=brine_salinity,
