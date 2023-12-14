@@ -19,7 +19,6 @@ import pytest
 from pyomo.environ import assert_optimal_termination
 
 from ..fsapi import FlowsheetInterface
-from ..fsapi import ModelOption
 
 
 @pytest.fixture(scope="class")
@@ -92,7 +91,6 @@ class TestFlowsheetInterface:
 
 @pytest.mark.parametrize("n_times", [2, 3], ids="{} times".format)
 def test_roundtrip_with_garbage_collection(fs_interface, n_times):
-
     for attempt in range(n_times):
         fs_interface.build(build_options=fs_interface.fs_exp.build_options)
         data = fs_interface.dict()
