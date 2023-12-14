@@ -13,7 +13,6 @@
 Tests for fsapi module
 """
 import logging
-import os
 from pathlib import Path
 import pytest
 import tempfile
