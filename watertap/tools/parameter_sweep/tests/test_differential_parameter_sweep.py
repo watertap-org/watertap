@@ -308,7 +308,7 @@ def test_differential_parameter_sweep(model, tmp_path):
     ps = DifferentialParameterSweep(
         csv_results_file_name=csv_results_file_name,
         h5_results_file_name=h5_results_file_name,
-        # debugging_data_dir=tmp_path, # Does not work at the moment
+        debugging_data_dir=None, # Does not work at the moment
         interpolate_nan_outputs=True,
         optimize_function=_optimization,
         build_differential_sweep_specs=lambda model: differential_sweep_specs,
@@ -746,7 +746,7 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
     ps = DifferentialParameterSweep(
         csv_results_file_name=csv_results_file_name,
         h5_results_file_name=h5_results_file_name,
-        # debugging_data_dir=tmp_path, # Does not work at the moment
+        debugging_data_dir=None, # Does not work at the moment
         interpolate_nan_outputs=True,
         optimize_function=_optimization,
         build_differential_sweep_specs=build_spec,
@@ -1332,7 +1332,7 @@ def test_differential_parameter_sweep_function(model, tmp_path):
         build_outputs=None,
         csv_results_file_name=csv_results_file_name,
         h5_results_file_name=h5_results_file_name,
-        # debugging_data_dir=tmp_path, # Does not work at the moment
+        debugging_data_dir=None, # Does not work at the moment
         interpolate_nan_outputs=True,
         optimize_function=_optimization,
         initialize_function=_reinitialize,
