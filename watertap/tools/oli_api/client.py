@@ -44,6 +44,7 @@
 
 __author__ = "Adam Atia, Adi Bannady, Paul Vecchiarelli"
 
+import logging
 
 from os.path import isfile, islink
 import requests
@@ -52,6 +53,7 @@ import time
 
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import get_oli_name
 
+_logger = logging.getLogger(__name__)
 
 class OLIApi:
     """
@@ -303,17 +305,17 @@ class OLIApi:
         :return boolean: status of user permission (to delete DBS files from OLI Cloud)
         """
 
+        print("WaterTAP will delete dbs files:")
+        for file in dbs_file_ids:
+            print(f"- {file}")
+        print("from OLI Cloud.")
         if self.test is True:
-            return True
+            r = "y"
         else:
-            print("WaterTAP will delete dbs files:")
-            for file in dbs_file_ids:
-                print(f"- {file}")
-            print("from OLI Cloud.")
             r = input("[y]/n: ")
-            if (r.lower() == "y") or (r == ""):
-                return True
-            return False
+        if (r.lower() == "y") or (r == ""):
+            return True
+        return False
 
     def _delete_dbs_file(self, dbs_file_id):
         """
@@ -336,7 +338,6 @@ class OLIApi:
         input_params=None,
         poll_time=1.0,
         max_request=1000,
-        logging=False,
     ):
         """ """
 
@@ -373,8 +374,7 @@ class OLIApi:
         request_result1 = self.request_auto_login(add_additional_header)
         end_time = time.time()
         request_time = end_time - start_time
-        if logging:
-            print("First request time =", request_time)
+        _logger.debug(f"First request time = {request_time}")
         if bool(request_result1):
             if request_result1["status"] == "SUCCESS":
                 if "data" in request_result1:
@@ -385,11 +385,11 @@ class OLIApi:
                         ):
                             if "resultsLink" in request_result1["data"]:
                                 results_link = request_result1["data"]["resultsLink"]
-        if logging:
-            print(results_link)
+        _logger.debug(results_link)
+
         # TODO: raise error
         if results_link == "":
-            return dict()
+            raise RuntimeError("No item 'resultsLink' in request response. Process failed.")
 
         # poll on results link until success
         data = ""
@@ -403,8 +403,7 @@ class OLIApi:
             request_result2 = self.request_auto_login(add_additional_header)
             end_time = time.time()
             request_time = end_time - start_time
-            if logging:
-                print("Second request time =", request_time)
+            _logger.debug(f"Second request time = {request_time}")
 
             # check if max requests exceeded
             request_iter = request_iter + 1
@@ -412,13 +411,11 @@ class OLIApi:
                 break
 
             # extract
-            if logging:
-                print(request_result2)
+            _logger.debug(request_result2)
             if bool(request_result2):
                 if "status" in request_result2:
                     status = request_result2["status"]
-                    if logging:
-                        print(status)
+                    _logger.debug(status)
                     if status == "PROCESSED" or status == "FAILED":
                         if "data" in request_result2:
                             return request_result2["data"]
@@ -434,5 +431,4 @@ class OLIApi:
                     break
             else:
                 break
-        # TODO: raise error
-        return dict()
+        raise RuntimeError("Request failed. Please check input.")

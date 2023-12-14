@@ -97,7 +97,7 @@ def test_flash_calc_basic_workflow(flash_instance: Flash, source_water: dict, ol
 def test_survey(flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path):
     dbs_file_id = oliapi_instance.session_dbs_files[0]
     survey_array = {"Temperature": linspace(273, 373, 2)}
-    survey = flash_instance.build_survey(survey_array, get_oli_names=True, logging=False)
+    survey = flash_instance.build_survey(survey_array, get_oli_names=True)
     water_analysis_base_case = flash_instance.build_flash_calculation_input(
         flash_method="wateranalysis",
         state_vars=source_water,

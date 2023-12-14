@@ -44,6 +44,8 @@
 
 __author__ = "Paul Vecchiarelli"
 
+import logging
+
 import json
 import requests
 from pathlib import Path
@@ -54,13 +56,13 @@ cryptography, cryptography_available = attempt_import("cryptography", defer_chec
 if cryptography_available:
     from cryptography.fernet import Fernet
 
+_logger = logging.getLogger(__name__)
 
 class CredentialManager:
     """
     A class to handle credentials for OLI Cloud.
     """
 
-    # TODO: add write argument to bypass raw_input
     def __init__(
         self,
         username="",
@@ -201,7 +203,7 @@ class CredentialManager:
         encryption_key = Fernet.generate_key()
 
         if not self.test:
-            print(f"Your secret key is:\n{encryption_key.decode()}\nKeep it safe.\n")
+            print(f"Secret key is:\n{encryption_key.decode()}\nKeep it safe.\n")
 
         try:
             cipher = Fernet(encryption_key)
@@ -227,7 +229,11 @@ class CredentialManager:
             print(" Specify an access key:")
             for i in range(len(self.credentials["access_keys"])):
                 print(f"{i}\t{self.credentials['access_keys'][i]}")
-            return self.credentials["access_keys"][int(input(" "))]
+                if self.test:
+                    r = 0
+                else:
+                    r = int(input(" "))
+            return self.credentials["access_keys"][r]
 
     # TODO: improve header management for class
     def generate_oliapi_access_key(self):
@@ -247,8 +253,7 @@ class CredentialManager:
         self.credentials["access_keys"].append(
             json.loads(response.text)["data"]["apiKey"]
         )
-        if not self.test:
-            print(response.text)
+        _logger.debug(response.text)
         return response.text
 
     def delete_oliapi_access_key(self, api_key):
@@ -266,8 +271,7 @@ class CredentialManager:
         headers.update({"Content-Type": "application/json"})
         payload = json.dumps({"apiKey": api_key})
         response = requests.delete(self.access_key_url, headers=headers, data=payload)
-        if not self.test:
-            print(response.text)
+        _logger.debug(response.text)
         return response.text
 
     def login(self):
@@ -283,8 +287,7 @@ class CredentialManager:
             headers.update({"authorization": "API-KEY " + self.access_key})
             req_result = requests.get(self.dbs_url, headers=headers)
             if req_result.status_code == 200:
-                if not self.test:
-                    print(f"Status code is {req_result.status_code}.\n")
+                _logger.debug(f"Status code is {req_result.status_code}.")
                 return True
         else:
             body = {
@@ -297,8 +300,8 @@ class CredentialManager:
                 self.credentials["auth_url"], headers=headers, data=body
             )
             if req_result.status_code == 200:
-                if not self.test:
-                    print(f"Status code is {req_result.status_code}.\n")
+                _logger.debug(f"Status code is {req_result.status_code}.")
+
                 req_result = req_result.json()
                 if "access_token" in req_result:
                     self.jwt_token = req_result["access_token"]

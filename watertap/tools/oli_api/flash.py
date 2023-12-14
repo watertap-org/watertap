@@ -44,6 +44,8 @@
 
 __author__ = "Oluwamayowa Amusat, Paul Vecchiarelli"
 
+import logging
+
 import yaml
 from copy import deepcopy
 from itertools import product
@@ -62,6 +64,9 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
     stream_output_options,
 )
 
+_logger = logging.getLogger(__name__)
+
+# TODO: consider config for file_name for each writing method
 
 class Flash:
     """
@@ -90,13 +95,14 @@ class Flash:
         self.stream_output_options = stream_output_options
         self.water_analysis_input_list = []
 
-    def build_survey(self, survey_arrays, get_oli_names=False, logging=False, file_name=None):
+    def build_survey(
+        self, survey_arrays, get_oli_names=False, file_name=None
+    ):
         """
         Builds a dictionary used to modify flash calculation parameters.
 
         :param survey_arrays: dictionary containing variables: arrays to survey
         :param get_oli_names: boolean switch to convert name into OLI form
-        :param logging: boolean switch to show printable output
         :param file_name: string indicating desired write location, if any
 
         :return survey: dictionary containing each point in survey
@@ -111,8 +117,7 @@ class Flash:
         for v in values:
             survey[i] = {keys[j]: v[j] for j in range(len(v)) for j in num_keys}
             i = i + 1
-        if logging:
-            print(f"Survey contains {len(survey)} items.")
+        _logger.debug(f"Survey contains {len(survey)} items.")
         if file_name:
             self.write_output_to_yaml(survey, file_name)
         return survey
@@ -340,24 +345,21 @@ class Flash:
             clones[i] = modified_clone
         return clones
 
-    def write_output_to_yaml(self, flash_output, file_name, logging=True):
+    def write_output_to_yaml(self, flash_output, file_name):
         """
         Writes OLI API flash output to .yaml file.
 
         :param flash_output: dictionary output from OLI API call
         :param filename: string name of file to write
-        :param logging: boolean switch to show printable output
 
         :return f: string name of file written
         """
 
         f = f"{file_name}.yaml"
-        if logging:
-            print(f"Saving file...")
+        _logger.debug("Saving file...")
         with open(f, "w") as yamlfile:
             yaml.dump(flash_output, yamlfile)
-        if logging:
-            print(f"{f} saved to working directory.")
+        _logger.debug(f"{f} saved to working directory.")
         return f
 
     def extract_properties(
@@ -375,6 +377,7 @@ class Flash:
         """
 
         if filter_zero:
+
             def _filter_zeroes(data):
                 if "values" in data:
                     data["values"] = {k: v for k, v in data["values"].items() if v != 0}
