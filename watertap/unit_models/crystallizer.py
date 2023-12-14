@@ -211,6 +211,13 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             doc="Crystallizer thermal energy requirement",
         )
 
+        self.energy_from_vapor = Var(
+            initialize=1e5,
+            bounds=(-5e6, 5e6),
+            units=pyunits.kJ / pyunits.s,
+            doc="Energy could be supplied from vapor",
+        )
+
         self.diameter_crystallizer = Var(
             initialize=3,
             bounds=(0, 25),
@@ -285,6 +292,12 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             **tmp_dict,
         )
 
+        self.properties_pure_water = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of pure water vapour at outlet",
+            **tmp_dict,
+        )
+
         # Add ports - oftentimes users interact with these rather than the state blocks
         self.add_port(name="inlet", block=self.properties_in)
         self.add_port(name="outlet", block=self.properties_out)
@@ -315,6 +328,18 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
                 for p in self.config.property_package.phase_list
                 if (p, j) in b.properties_solids[0].phase_component_set
             )
+
+        @self.Constraint()
+        def eq_pure_vapor_flow_rate(b):
+            return (b.properties_pure_water[0].flow_mass_phase_comp["Vap", "H2O"]
+                    == b.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"])
+        
+        self.properties_pure_water[0].flow_mass_phase_comp["Liq", "H2O"].fix(1e-8)
+        self.properties_pure_water[0].flow_mass_phase_comp["Liq", "NaCl"].fix(0)
+        self.properties_pure_water[0].flow_mass_phase_comp["Sol", "NaCl"].fix(0)
+        self.properties_pure_water[0].mass_frac_phase_comp["Liq", "NaCl"]
+        self.properties_in[0].conc_mass_phase_comp["Liq", "NaCl"]
+        self.properties_in[0].flow_vol_phase["Liq"]
 
         # 2. Constraint on outlet liquid composition based on solubility requirements
         @self.Constraint(
@@ -445,6 +470,14 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         @self.Constraint()
         def eq_p_con3(b):
             return b.properties_vapor[0].pressure == self.pressure_operating
+        
+        @self.Constraint()
+        def eq_p_con4(b):
+            return b.properties_pure_water[0].pressure == self.pressure_operating
+        
+        @self.Constraint()
+        def eq_p_con5(b):
+            return b.properties_pure_water[0].pressure_sat == self.pressure_operating
 
         @self.Constraint()
         def eq_T_con1(b):
@@ -558,6 +591,15 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
                 a + b + ((a - b) ** 2 + eps**2) ** 0.5
             )
 
+        # 13. Energy available from the vapor
+        @self.Constraint(doc="Thermal energy in the vapor")
+        def eq_vapor_energy_constraint(b):
+            return b.energy_from_vapor == (b.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"] 
+                    * (b.properties_pure_water[0].dh_vap_mass_solvent  # Latent heat from the vapor
+                       + b.properties_vapor[0].enth_mass_solvent["Vap"] 
+                       - b.properties_pure_water[0].enth_mass_solvent["Vap"])
+            )
+
     def initialize_build(
         self,
         state_args=None,
@@ -648,6 +690,13 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             solver=solver,
             state_args=state_args_vapor,
         )
+        self.properties_pure_water.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args_vapor,
+        )
+
         init_log.info_high("Initialization Step 2 Complete.")
         # ---------------------------------------------------------------------
         # Solve unit
@@ -708,6 +757,13 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
                 self.properties_in[0].flow_mass_phase_comp["Vap", "H2O"]
             )
             * iscale.get_scaling_factor(self.properties_in[0].enth_mass_solvent["Vap"]),
+        )        
+        iscale.set_scaling_factor(
+            self.energy_from_vapor,
+            iscale.get_scaling_factor(
+                self.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"]
+            )
+            * iscale.get_scaling_factor(self.properties_vapor[0].enth_mass_solvent["Vap"]),
         )
 
         # transforming constraints
@@ -723,6 +779,10 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.properties_in[0].temperature)
             iscale.constraint_scaling_transform(c, sf)
 
+        # for ind, c in self.eq_T_con4.items():
+        #     sf = iscale.get_scaling_factor(self.properties_pure_water[0].temperature)
+        #     iscale.constraint_scaling_transform(c, sf)
+
         for ind, c in self.eq_p_con1.items():
             sf = iscale.get_scaling_factor(self.properties_in[0].pressure)
             iscale.constraint_scaling_transform(c, sf)
@@ -733,6 +793,10 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
 
         for ind, c in self.eq_p_con3.items():
             sf = iscale.get_scaling_factor(self.properties_in[0].pressure)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_p_con4.items():
+            sf = iscale.get_scaling_factor(self.properties_pure_water[0].pressure)
             iscale.constraint_scaling_transform(c, sf)
 
         for j, c in self.eq_mass_balance_constraints.items():
