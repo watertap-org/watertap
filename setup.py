@@ -21,14 +21,14 @@ cwd = Path(__file__).parent
 long_description = (cwd / "README.md").read_text()
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse==2.2.*",  # from PyPI
+    "idaes-pse==2.3.*",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse==2.2.0",
+    "idaes-pse==2.3.0rc1",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -107,6 +107,10 @@ setup(
             "jupyter",
             "ipykernel",
         ],
+        "oli_api": [
+            "requests",
+            "cryptography",  # for encrypting OLI credentials
+        ],
         "dev": [
             "nbsphinx",  # jupyter notebook support for sphinx
             "jinja2<3.1.0",  # see watertap-org/watertap#449
@@ -131,6 +135,9 @@ setup(
             "*.yml",
             "*.csv",
             "*.png",
+        ],
+        "watertap.tools.oli_api.tests": [
+            "test.dbs",
         ],
     },
     entry_points={

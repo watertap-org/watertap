@@ -407,7 +407,7 @@ def set_operating_conditions(m):
     m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp["Liq", "TDS"].fix(1e-5)
 
     # Costing
-    m.fs.costing.factor_total_investment.fix(2)
+    m.fs.costing.TIC.fix(2)
     m.fs.costing.electricity_cost = 0.1  # 0.15
     m.fs.costing.heat_exchanger.material_factor_cost.fix(5)
     m.fs.costing.evaporator.material_factor_cost.fix(5)
@@ -619,7 +619,6 @@ def scale_costs(m):
     calculate_cost_sf(m.fs.costing.aggregate_capital_cost)
     calculate_cost_sf(m.fs.costing.aggregate_flow_costs["electricity"])
     calculate_cost_sf(m.fs.costing.total_capital_cost)
-    calculate_cost_sf(m.fs.costing.maintenance_labor_chemical_operating_cost)
     calculate_cost_sf(m.fs.costing.total_operating_cost)
 
     iscale.calculate_scaling_factors(m)

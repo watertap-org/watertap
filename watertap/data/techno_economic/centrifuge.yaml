@@ -8,7 +8,7 @@ default:
     HRT: # Hydraulic retention time
       value: 0.5
       units: hr
-    sizing_cost:
+    sizing_cost: # TODO: Update to 430892.24 based on cost curve values in watertap/unit_models/tests/test_dewatering_unit? 1 $/m3 is too unrealistic.
       value: 1
       units: USD_2020/m^3
   recovery_frac_mass_H2O:
