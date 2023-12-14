@@ -149,34 +149,28 @@ def main():
     m = build_flowsheet()
     set_operating_conditions(m)
 
-    results = initialize_system(m)
+    initialize_system(m)
 
-    results = solve(m)
+    # results = solve(m)
 
-    # try:
-    #     results = solve(m)
-    # except:
-    #     pass
-
+    # Use of Degeneracy Hunter for troubleshooting model.
+    m.obj = pyo.Objective(expr=0)
+    solver = get_solver()
+    solver.options["max_iter"] = 10000
+    results = solver.solve(m, tee=True)
+    dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    # badly_scaled_var_list = iscale.badly_scaled_var_generator(
+    #     m, large=1e1, small=1e-1
+    # )
+    # for x in badly_scaled_var_list:
+    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    dh.check_residuals(tol=1e-8)
+    # dh.check_variable_bounds(tol=1e-8)
+    # dh.check_rank_equality_constraints(dense=True)
+    # ds = dh.find_candidate_equations(verbose=True, tee=True)
+    # ids = dh.find_irreducible_degenerate_sets(verbose=True)
     # print_close_to_bounds(m)
     # print_infeasible_constraints(m)
-
-    # # Use of Degeneracy Hunter for troubleshooting model.
-    # m.obj = pyo.Objective(expr=0)
-    # solver = get_solver()
-    # solver.options["max_iter"] = 10000
-    # results = solver.solve(m, tee=True)
-    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
-    # # badly_scaled_var_list = iscale.badly_scaled_var_generator(
-    # #     m, large=1e1, small=1e-1
-    # # )
-    # # for x in badly_scaled_var_list:
-    # #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    # dh.check_residuals(tol=1e-8)
-    # # dh.check_variable_bounds(tol=1e-8)
-    # # dh.check_rank_equality_constraints(dense=True)
-    # # ds = dh.find_candidate_equations(verbose=True, tee=True)
-    # # ids = dh.find_irreducible_degenerate_sets(verbose=True)
 
     # # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
     # m.fs.R5.KLa.fix(240)
@@ -322,6 +316,7 @@ def build_flowsheet():
         has_pressure_change=False,
     )
 
+    # Translators
     m.fs.translator_adm1_asm2d = Translator_ADM1_ASM2D(
         inlet_property_package=m.fs.props_ADM1,
         outlet_property_package=m.fs.props_ASM2D,
@@ -336,22 +331,19 @@ def build_flowsheet():
         activated_sludge_model=dewater_type.modified_ASM2D,
     )
 
-    # ElectroNP
-    m.fs.electroNP = ElectroNPZO(property_package=m.fs.props_ASM2D)
+    # # ElectroNP
+    # m.fs.electroNP = ElectroNPZO(property_package=m.fs.props_ASM2D)
 
-    m.fs.MX3 = Mixer(
-        property_package=m.fs.props_ASM2D, inlet_list=["feed_water1", "recycle1"]
+    m.fs.MX4 = Mixer(
+        property_package=m.fs.props_ASM2D, inlet_list=["feed_water2", "recycle2"]
     )
-    # m.fs.MX4 = Mixer(
-    #     property_package=m.fs.props_ASM2D, inlet_list=["feed_water2", "recycle2"]
-    # )
     m.fs.MX5 = Mixer(
         property_package=m.fs.props_ASM2D, inlet_list=["thickener", "clarifier"]
     )
 
     # Product Blocks
     m.fs.Treated = Product(property_package=m.fs.props_ASM2D)
-    m.fs.Sludge = Product(property_package=m.fs.props_ASM2D)
+    # m.fs.Sludge = Product(property_package=m.fs.props_ASM2D)
     # Recycle pressure changer - use a simple isothermal unit for now
     m.fs.P1 = PressureChanger(property_package=m.fs.props_ASM2D)
 
@@ -383,31 +375,37 @@ def build_flowsheet():
     m.fs.stream3adm = Arc(
         source=m.fs.thickener.underflow, destination=m.fs.MX5.thickener
     )
-    # m.fs.stream7adm = Arc(source=m.fs.thickener.overflow, destination=m.fs.MX4.recycle2)
+    m.fs.stream7adm = Arc(source=m.fs.thickener.overflow, destination=m.fs.MX4.recycle2)
     m.fs.stream9adm = Arc(source=m.fs.CL.underflow, destination=m.fs.MX5.clarifier)
 
     m.fs.stream_translator_dewater = Arc(
         source=m.fs.translator_adm1_asm2d.outlet, destination=m.fs.dewater.inlet
     )
-    m.fs.stream_dewater_electroNP = Arc(
-        source=m.fs.dewater.overflow, destination=m.fs.electroNP.inlet
-    )
-    m.fs.stream_electroNP_mixer = Arc(
-        source=m.fs.electroNP.treated, destination=m.fs.MX3.recycle1
-    )
-    # m.fs.stream_dewater_mixer = Arc(
-    #     source=m.fs.dewater.overflow, destination=m.fs.MX3.recycle1
+    # m.fs.stream_dewater_electroNP = Arc(
+    #     source=m.fs.dewater.overflow, destination=m.fs.electroNP.inlet
     # )
+    # # m.fs.stream_electroNP_mixer = Arc(
+    # #     source=m.fs.electroNP.treated, destination=m.fs.MX3.recycle1
+    # # )
 
-    # m.fs.stream1a = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.CL.inlet)
+    # with recycle
+    m.fs.MX3 = Mixer(
+        property_package=m.fs.props_ASM2D, inlet_list=["feed_water1", "recycle1"]
+    )
+
     m.fs.stream1a = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX3.feed_water1)
-    m.fs.stream1b = Arc(source=m.fs.MX3.outlet, destination=m.fs.CL.inlet)
-    # m.fs.stream1a = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX4.feed_water2)
-    # m.fs.stream1a = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX3.feed_water1)
-    # m.fs.stream1b = Arc(source=m.fs.MX3.outlet, destination=m.fs.MX4.feed_water2)
-    # m.fs.stream1c = Arc(source=m.fs.MX4.outlet, destination=m.fs.CL.inlet)
-    # m.fs.stream1b = Arc(source=m.fs.MX3.outlet, destination=m.fs.CL.inlet)
+    m.fs.stream1b = Arc(source=m.fs.MX3.outlet, destination=m.fs.MX4.feed_water2)
+    m.fs.stream1c = Arc(source=m.fs.MX4.outlet, destination=m.fs.CL.inlet)
     m.fs.stream1d = Arc(source=m.fs.CL.effluent, destination=m.fs.MX1.feed_water)
+
+    m.fs.stream_dewater_mixer = Arc(
+        source=m.fs.dewater.overflow, destination=m.fs.MX3.recycle1
+    )
+
+    # # no recycle
+    # m.fs.stream1 = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX4.feed_water2)
+    # m.fs.stream1c = Arc(source=m.fs.MX4.outlet, destination=m.fs.CL.inlet)
+    # m.fs.stream1d = Arc(source=m.fs.CL.effluent, destination=m.fs.MX1.feed_water)
 
     m.fs.stream10adm = Arc(
         source=m.fs.MX5.outlet, destination=m.fs.translator_asm2d_adm1.inlet
@@ -476,99 +474,33 @@ def build_flowsheet():
 
 
 def set_operating_conditions(m):
-    # Mixer settings
-    # m.fs.MX3.recycle1_state[0].flow_vol.fix(0 * pyo.units.m**3 / pyo.units.s)
-    # m.fs.MX3.recycle1_state[0].temperature.fix(308.15 * pyo.units.K)
-    # m.fs.MX3.recycle1_state[0].pressure.fix(1 * pyo.units.atm)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_A"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_F"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_I"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_N2"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_NH4"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_NO3"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_O2"].fix(0 * pyo.units.kg / pyo.units.m**3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_PO4"].fix(0 * pyo.units.kg / pyo.units.m**3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_K"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_Mg"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_IC"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_AUT"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_H"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_I"].fix(0 * pyo.units.kg / pyo.units.m**3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_PAO"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_PHA"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_PP"].fix(0 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_S"].fix(0 * pyo.units.kg / pyo.units.m**3)
-
-    # # Initialize
-    # m.fs.MX3.recycle1_state[0].flow_vol.fix(0.0018543 * pyo.units.m**3 / pyo.units.s)
-    # m.fs.MX3.recycle1_state[0].temperature.fix(308.15 * pyo.units.K)
-    # m.fs.MX3.recycle1_state[0].pressure.fix(1 * pyo.units.atm)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_A"].fix(4.1811 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_F"].fix(10.964 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_I"].fix(0.03 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_N2"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_NH4"].fix(0.66789 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_NO3"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_O2"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_PO4"].fix(0.0044715 * pyo.units.kg / pyo.units.m**3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_K"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_Mg"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_IC"].fix(0.39137 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_AUT"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_H"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_I"].fix(0.074180 * pyo.units.kg / pyo.units.m**3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_PAO"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_PHA"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_PP"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_S"].fix(0.0015010 * pyo.units.kg / pyo.units.m**3)
-
-    # m.fs.MX3.recycle1_state[0].flow_vol.fix(0.0017727 * pyo.units.m**3 / pyo.units.s)
-    # m.fs.MX3.recycle1_state[0].temperature.fix(308.15 * pyo.units.K)
-    # m.fs.MX3.recycle1_state[0].pressure.fix(1 * pyo.units.atm)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_A"].fix(3.6148 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_F"].fix(9.5378 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_I"].fix(0.03 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_N2"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_NH4"].fix(0.53010 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_NO3"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_O2"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_PO4"].fix(0.0034553 * pyo.units.kg / pyo.units.m**3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_K"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_Mg"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["S_IC"].fix(0.30863 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_AUT"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_H"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_I"].fix(0.06691 * pyo.units.kg / pyo.units.m**3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_PAO"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_PHA"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_PP"].fix(1e-9 * pyo.units.kg / pyo.units.m ** 3)
-    # m.fs.MX3.recycle1_state[0].conc_mass_comp["X_S"].fix(0.0012503 * pyo.units.kg / pyo.units.m**3)
-
     # Feed Water Conditions
     print(f"DOF before feed: {degrees_of_freedom(m)}")
-    m.fs.FeedWater.flow_vol.fix(20648 * pyo.units.m**3 / pyo.units.day)
+    m.fs.FeedWater.flow_vol.fix(20935.15 * pyo.units.m**3 / pyo.units.day)
     m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
     m.fs.FeedWater.conc_mass_comp[0, "S_O2"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(30 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(20 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_NH4"].fix(16 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(70 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_NH4"].fix(26.6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_NO3"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(3.6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(30 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_N2"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(25 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(125 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_H"].fix(30 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_PAO"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(57.45 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_N2"].fix(25.19 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(84 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(94.1 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_H"].fix(370 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_PAO"].fix(
+        51.5262 * pyo.units.g / pyo.units.m**3
+    )
     m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_PHA"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_AUT"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_IC"].fix(
-        0.07899 * pyo.units.kg / pyo.units.m**3
+    m.fs.FeedWater.conc_mass_comp[0, "S_IC"].fix(5.652 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_K"].fix(
+        374.6925 * pyo.units.g / pyo.units.m**3
     )
-    m.fs.FeedWater.conc_mass_comp[0, "S_K"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_Mg"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_Mg"].fix(20 * pyo.units.g / pyo.units.m**3)
 
     # Primary Clarifier
     # TODO: Update primary clarifier once more detailed model available
@@ -595,11 +527,11 @@ def set_operating_conditions(m):
     # Reactor sizing
     m.fs.R1.volume.fix(1000 * pyo.units.m**3)
     m.fs.R2.volume.fix(1000 * pyo.units.m**3)
-    m.fs.R3.volume.fix(1000 * pyo.units.m**3)
-    m.fs.R4.volume.fix(1000 * pyo.units.m**3)
-    m.fs.R5.volume.fix(1333 * pyo.units.m**3)
-    m.fs.R6.volume.fix(1333 * pyo.units.m**3)
-    m.fs.R7.volume.fix(1333 * pyo.units.m**3)
+    m.fs.R3.volume.fix(1500 * pyo.units.m**3)
+    m.fs.R4.volume.fix(1500 * pyo.units.m**3)
+    m.fs.R5.volume.fix(3000 * pyo.units.m**3)
+    m.fs.R6.volume.fix(3000 * pyo.units.m**3)
+    m.fs.R7.volume.fix(3000 * pyo.units.m**3)
 
     # Injection rates to Reactions 3, 4 and 5
     for j in m.fs.props_ASM2D.component_list:
@@ -677,9 +609,9 @@ def set_operating_conditions(m):
     m.fs.thickener.hydraulic_retention_time.fix(86400 * pyo.units.s)
     m.fs.thickener.diameter.fix(10 * pyo.units.m)
 
-    # ElectroNP
-    m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * pyunits.kWh / pyunits.kg)
-    m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
+    # # ElectroNP
+    # m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * pyunits.kWh / pyunits.kg)
+    # m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
     # Check degrees of freedom
     print(f"DOF after all: {degrees_of_freedom(m)}")
@@ -689,16 +621,16 @@ def set_operating_conditions(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
-            # if "thickener.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
-            # if "translator_asm2d_adm1.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
+            if "thickener.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e3)
+            if "translator_asm2d_adm1.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e3)
             if "AD.liquid_phase.properties_in[0.0].flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e3)
-            # if "translator_adm1_asm2d.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
-            # if "dewater.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
+            if "translator_adm1_asm2d.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e3)
+            if "dewater.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e3)
             if "electroNP.mixed_state[0.0].flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e3)
             if "temperature" in var.name:
@@ -706,45 +638,38 @@ def set_operating_conditions(m):
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
             if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
-
-            # if "conc_mass_comp[S_IN]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e1)
-            # if "conc_mass_comp[S_IP]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-
-            # if "electroNP.mixed_state[0.0].conc_mass_comp[S_NH4]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
-            # if "electroNP.mixed_state[0.0].conc_mass_comp[S_PO4]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
+                iscale.set_scaling_factor(var, 1e2)
 
             # if "conc_mass_comp[S_O2]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e4)
+            #     iscale.set_scaling_factor(var, 1e3)
             # if "conc_mass_comp[S_F]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
+            #     iscale.set_scaling_factor(var, 1e3)
             # if "conc_mass_comp[S_A]" in var.name:
             #     iscale.set_scaling_factor(var, 1e2)
-
-            # if "conc_mass_comp[S_NO3]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e4)
+            # if "conc_mass_comp[S_NH4]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
+            # # if "conc_mass_comp[S_NO3]" in var.name:
+            # #     iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp[S_PO4]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e3)
             # if "conc_mass_comp[S_I]" in var.name:
             #     iscale.set_scaling_factor(var, 1e2)
-            # if "conc_mass_comp[S_N2]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e4)
+            # # if "conc_mass_comp[S_N2]" in var.name:
+            # #     iscale.set_scaling_factor(var, 1e2)
             # if "conc_mass_comp[X_I]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e0)
-            # if "conc_mass_comp[X_S]" in var.name:
             #     iscale.set_scaling_factor(var, 1e1)
+            # if "conc_mass_comp[X_S]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
             # if "conc_mass_comp[X_H]" in var.name:
             #     iscale.set_scaling_factor(var, 1e0)
             # if "conc_mass_comp[X_PAO]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e4)
+            #     iscale.set_scaling_factor(var, 1e1)
             # if "conc_mass_comp[X_PP]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e4)
+            #     iscale.set_scaling_factor(var, 1e2)
             # if "conc_mass_comp[X_PHA]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e4)
-            # if "conc_mass_comp[X_AUT]" in var.name:
-            #     iscale.set_scaling_factor(var, 1e4)
+            #     iscale.set_scaling_factor(var, 1e2)
+            # # if "conc_mass_comp[X_AUT]" in var.name:
+            # #     iscale.set_scaling_factor(var, 1e1)
             # if "conc_mass_comp[S_IC]" in var.name:
             #     iscale.set_scaling_factor(var, 1e2)
             # if "conc_mass_comp[S_K]" in var.name:
@@ -775,7 +700,8 @@ def initialize_system(m):
     # seq.options.select_tear_method = "heuristic"
     seq.options.tear_method = "Direct"
     seq.options.iterLim = 1
-    seq.options.tear_set = [m.fs.stream5, m.fs.stream10adm]
+    # seq.options.tear_set = [m.fs.stream5]
+    seq.options.tear_set = [m.fs.stream5, m.fs.stream_translator_AD]
     # seq.options.tear_set = [m.fs.stream2, m.fs.stream5, m.fs.stream10adm]
 
     # seq = SequentialDecomposition()
@@ -800,457 +726,79 @@ def initialize_system(m):
 
     # Initial guesses for flow into first reactor
 
-    tear_guesses1 = {
-        "flow_vol": {0: 0.48},
+    # Initial guesses for flow into first reactor
+    tear_guesses = {
+        "flow_vol": {0: 1.19},
         "conc_mass_comp": {
-            (0, "S_A"): 0.01,
-            (0, "S_F"): 0.015,
-            (0, "S_I"): 0.03,
-            (0, "S_N2"): 1e-9,
-            (0, "S_NH4"): 0.013,
-            (0, "S_NO3"): 1e-9,
-            (0, "S_O2"): 0.0016,
-            (0, "S_PO4"): 0.0033,
-            (0, "S_K"): 1e-9,
-            (0, "S_Mg"): 1e-9,
-            (0, "S_IC"): 0.087,
-            (0, "X_AUT"): 1e-9,
-            (0, "X_H"): 0.79,
-            (0, "X_I"): 0.21,
-            (0, "X_PAO"): 1e-9,
-            (0, "X_PHA"): 1e-9,
-            (0, "X_PP"): 1e-9,
-            (0, "X_S"): 0.0466,
+            (0, "S_A"): 0.2241e-3,
+            (0, "S_F"): 0.4798e-3,
+            (0, "S_I"): 26.5953e-3,
+            (0, "S_N2"): 13.0839e-3,
+            (0, "S_NH4"): 7.4792e-3,
+            (0, "S_NO3"): 1.0373e-3,
+            (0, "S_O2"): 0.0064e-3,
+            (0, "S_PO4"): 12.2457e-3,
+            (0, "S_K"): 23.8798e-3,
+            (0, "S_Mg"): 98.8044e-3,
+            (0, "S_IC"): 69.4651e-3,
+            (0, "X_AUT"): 114.3052e-3,
+            (0, "X_H"): 1861.6576e-3,
+            (0, "X_I"): 1832.5407e-3,
+            (0, "X_PAO"): 1025.0133e-3,
+            (0, "X_PHA"): 25.9029e-3,
+            (0, "X_PP"): 290.7061e-3,
+            (0, "X_S"): 62.0774e-3,
         },
         "temperature": {0: 308.15},
         "pressure": {0: 101325},
     }
-
-    # tear_guesses2 = {
-    #     "flow_vol": {0: 1.1861},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.013,
-    #         (0, "S_F"): 0.00059,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.01,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.0019,
-    #         (0, "S_PO4"): 0.0031,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.092,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 0.81,
-    #         (0, "X_I"): 0.21,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 0.022,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    # tear_guesses2 = {
-    #     "flow_vol": {0: 1.1717},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.0339,
-    #         (0, "S_F"): 0.00059,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.0079,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.00192,
-    #         (0, "S_PO4"): 0.0027,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.1036,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 1.38,
-    #         (0, "X_I"): 0.248,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 0.0258,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    # tear_guesses2 = {
-    #     "flow_vol": {0: 1.2},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.0378,
-    #         (0, "S_F"): 0.000717,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.008,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.00192,
-    #         (0, "S_PO4"): 0.0027,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.1036,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 1.38,
-    #         (0, "X_I"): 0.248,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 0.0258,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    # tear_guesses2 = {
-    #     "flow_vol": {0: 1.22},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.046,
-    #         (0, "S_F"): 0.0002,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.008,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.0019,
-    #         (0, "S_PO4"): 0.003,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.12,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 3.2,
-    #         (0, "X_I"): 0.88,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 0.04,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    # tear_guesses2 = {
-    #     "flow_vol": {0: 1.21},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.046,
-    #         (0, "S_F"): 0.0002,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.0116,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.00192,
-    #         (0, "S_PO4"): 0.0055,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.12,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 3.21,
-    #         (0, "X_I"): 0.88,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 0.04,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    # tear_guesses3 = {
-    #     "flow_vol": {0: 1.87e-3},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.042,
-    #         (0, "S_F"): 0.09,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.018,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 3.15e-4,
-    #         (0, "S_PO4"): 0.0035,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.08,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 8.725,
-    #         (0, "X_I"): 2.794,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 7.96,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    # tear_guesses3 = {
-    #     "flow_vol": {0: 1.87e-3},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.042,
-    #         (0, "S_F"): 0.09,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.018,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 3.15e-4,
-    #         (0, "S_PO4"): 0.0035,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.084,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 8.725,
-    #         (0, "X_I"): 2.794,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 7.78,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    # tear_guesses3 = {
-    #     "flow_vol": {0: 2e-4},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.047,
-    #         (0, "S_F"): 0.103,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.019545,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 3.15e-4,
-    #         (0, "S_PO4"): 0.0035,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.084,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 8.719,
-    #         (0, "X_I"): 2.7975,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 7.77,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    # tear_guesses2 = {
-    #     "flow_vol": {0: 1.21},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.0465,
-    #         (0, "S_F"): 0.0002,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.0077,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.0019,
-    #         (0, "S_PO4"): 0.003,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.12,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 2.65,
-    #         (0, "X_I"): 0.88,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 0.04,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-    #
-    # tear_guesses3 = {
-    #     "flow_vol": {0: 2e-3},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.05,
-    #         (0, "S_F"): 0.116,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.02,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 5e-4,
-    #         (0, "S_PO4"): 0.0035,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.091,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 12.918,
-    #         (0, "X_I"): 4.53,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 7.19,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    # tear_guesses2 = {
-    #     "flow_vol": {0: 1.2032},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.046474,
-    #         (0, "S_F"): 0.00024104,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.0077237,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.00192,
-    #         (0, "S_PO4"): 0.0029988,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.11901,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 3.2121,
-    #         (0, "X_I"): 0.87757,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 0.038734,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-    #
-    # tear_guesses3 = {
-    #     "flow_vol": {0: 0.0020324},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.051250,
-    #         (0, "S_F"): 0.11578,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.019672,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.00054398,
-    #         (0, "S_PO4"): 0.0034468,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.090817,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 12.918,
-    #         (0, "X_I"): 4.5299,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 7.1869,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    # tear_guesses2 = {
-    #     "flow_vol": {0: 1.2032},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.046474,
-    #         (0, "S_F"): 0.00024092,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.0084295,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.00192,
-    #         (0, "S_PO4"): 0.0030042,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.11901,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 3.2121,
-    #         (0, "X_I"): 0.87757,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 0.038734,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-    #
-    # tear_guesses3 = {
-    #     "flow_vol": {0: 0.0020324},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.051,
-    #         (0, "S_F"): 0.116,
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_N2"): 1e-9,
-    #         (0, "S_NH4"): 0.0204,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.00054397,
-    #         (0, "S_PO4"): 0.0034522,
-    #         (0, "S_K"): 1e-9,
-    #         (0, "S_Mg"): 1e-9,
-    #         (0, "S_IC"): 0.090817,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 12.918,
-    #         (0, "X_I"): 4.5299,
-    #         (0, "X_PAO"): 1e-9,
-    #         (0, "X_PHA"): 1e-9,
-    #         (0, "X_PP"): 1e-9,
-    #         (0, "X_S"): 7.1869,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
 
     tear_guesses2 = {
-        "flow_vol": {0: 1.2032},
+        "flow_vol": {0: 0.0026831},
         "conc_mass_comp": {
-            (0, "S_A"): 0.0465,
-            (0, "S_F"): 0.00024,
-            (0, "S_I"): 0.03,
-            (0, "S_N2"): 1e-9,
-            (0, "S_NH4"): 0.00843,
-            (0, "S_NO3"): 1e-9,
-            (0, "S_O2"): 0.00192,
-            (0, "S_PO4"): 0.003,
-            (0, "S_K"): 1e-9,
-            (0, "S_Mg"): 1e-9,
-            (0, "S_IC"): 0.119,
-            (0, "X_AUT"): 1e-9,
-            (0, "X_H"): 3.21,
-            (0, "X_I"): 0.878,
-            (0, "X_PAO"): 1e-9,
-            (0, "X_PHA"): 1e-9,
+            (0, "S_I"): 0.0263,
+            (0, "S_K"): 0.0129,
+            (0, "S_Mg"): 0.0001,
+            (0, "S_IC"): 0.089,
+            (0, "X_I"): 12.9232,
+            (0, "X_PAO"): 0.9154,
+            (0, "X_PHA"): 0.6697,
             (0, "X_PP"): 1e-9,
-            (0, "X_S"): 0.0387,
-        },
-        "temperature": {0: 308.15},
-        "pressure": {0: 101325},
-    }
-
-    tear_guesses3 = {
-        "flow_vol": {0: 0.0020324},
-        "conc_mass_comp": {
-            (0, "S_A"): 0.051,
-            (0, "S_F"): 0.116,
-            (0, "S_I"): 0.03,
-            (0, "S_N2"): 1e-9,
-            (0, "S_NH4"): 0.0204,
-            (0, "S_NO3"): 1e-9,
-            (0, "S_O2"): 0.000544,
-            (0, "S_PO4"): 0.00345,
-            (0, "S_K"): 1e-9,
-            (0, "S_Mg"): 1e-9,
-            (0, "S_IC"): 0.0908,
-            (0, "X_AUT"): 1e-9,
-            (0, "X_H"): 12.92,
-            (0, "X_I"): 4.53,
-            (0, "X_PAO"): 1e-9,
-            (0, "X_PHA"): 1e-9,
-            (0, "X_PP"): 1e-9,
-            (0, "X_S"): 7.19,
+            (0, "S_su"): 0.014,
+            (0, "S_aa"): 0.0062,
+            (0, "S_fa"): 0.126,
+            (0, "S_va"): 0.0129,
+            (0, "S_bu"): 0.0168,
+            (0, "S_pro"): 0.0204,
+            (0, "S_ac"): 0.0588,
+            (0, "S_h2"): 1e-9,
+            (0, "S_ch4"): 0.0544,
+            (0, "S_IN"): 0.0663,
+            (0, "S_IP"): 0.028,
+            (0, "X_ch"): 1.302,
+            (0, "X_pr"): 1.3613,
+            (0, "X_li"): 1.8127,
+            (0, "X_su"): 0.5146,
+            (0, "X_aa"): 0.4017,
+            (0, "X_fa"): 0.3749,
+            (0, "X_c4"): 0.1596,
+            (0, "X_pro"): 0.0896,
+            (0, "X_ac"): 0.5006,
+            (0, "X_h2"): 0.258,
         },
         "temperature": {0: 308.15},
         "pressure": {0: 101325},
     }
 
     # Pass the tear_guess to the SD tool
-    # seq.set_guesses_for(m.fs.R1.inlet, tear_guesses1)
-    seq.set_guesses_for(m.fs.R3.inlet, tear_guesses2)
-    seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses3)
+    seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
+    seq.set_guesses_for(m.fs.AD.inlet, tear_guesses2)
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
         # badly_scaled_vars = list(iscale.badly_scaled_var_generator(unit))
         # if len(badly_scaled_vars) > 0:
+        #     # automate_rescale_variables(unit)
         #     autoscale_variables_by_magnitude(unit, overwrite=True)
 
     # print("Structural issues after setting operating conditions")
@@ -1260,14 +808,7 @@ def initialize_system(m):
     # # dt.display_variables_with_extreme_jacobians()
     # # dt.display_constraints_with_extreme_jacobians()
     #
-
     seq.run(m, function)
-
-    # try:
-    #     seq.run(m, function)
-    # except:
-    #     pass
-
     #
     # print("Numerical issues after initialization")
     # dt.report_numerical_issues()
@@ -1292,7 +833,7 @@ if __name__ == "__main__":
         {
             "Feed": m.fs.FeedWater.outlet,
             # "Primary clarifier inlet": m.fs.CL.inlet,
-            # "R1 inlet": m.fs.R1.inlet,
+            "R1 inlet": m.fs.R1.inlet,
             # "R1": m.fs.R1.outlet,
             # "R2": m.fs.R2.outlet,
             "R3 inlet": m.fs.R3.inlet,
@@ -1300,20 +841,16 @@ if __name__ == "__main__":
             # "R4": m.fs.R4.outlet,
             # "R5": m.fs.R5.outlet,
             # "R6": m.fs.R6.outlet,
-            # "R7": m.fs.R7.outlet,
-            "ASM outlet": m.fs.SP2.waste,
+            "R7": m.fs.R7.outlet,
             # "thickener outlet": m.fs.thickener.underflow,
-            # "thickener overflow": m.fs.thickener.overflow,
             "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
-            "AD outlet": m.fs.translator_adm1_asm2d.outlet,
-            # "AD liquid inlet": m.fs.AD.inlet,
-            # "AD liquid outlet": m.fs.AD.liquid_outlet,
-            # "AD vapor outlet": m.fs.AD.vapor_outlet,
-            # "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
+            # # "ASM-ADM translator outlet": m.fs.translator_asm2d_adm1.outlet,
+            "AD liquid inlet": m.fs.AD.inlet,
+            # # "AD liquid outlet": m.fs.AD.liquid_outlet,
+            # # "AD vapor outlet": m.fs.AD.vapor_outlet,
+            "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
             "dewater outlet": m.fs.dewater.overflow,
-            "electroN-P outlet": m.fs.electroNP.treated,
-            "treated effluent": m.fs.CL1.effluent,
-            # "sludge": m.fs.dewater.underflow,
+            # "electroN-P outlet": m.fs.electroNP.treated,
         },
         time_point=0,
     )
