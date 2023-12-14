@@ -411,7 +411,9 @@ class loopTool:
             return num_samples
         if array is not None:
             return len(array)
-        raise RuntimeError("Provide a valid sweep type, refer to parameter_sweep_reader for valid types")
+        raise RuntimeError(
+            "Provide a valid sweep type, refer to parameter_sweep_reader for valid types"
+        )
 
     def get_sweep_params(self, key, loop_value):
         if "type" in loop_value[key]:
