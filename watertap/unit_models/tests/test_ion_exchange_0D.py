@@ -307,7 +307,7 @@ class TestIonExchangeLangmuir:
             "partition_ratio": 217.669,
             "fluid_mass_transfer_coeff": {"Ca_2+": 3.45609e-05},
             "pressure_drop": 9.450,
-            "bed_vol": 15.,
+            "bed_vol": 15.0,
             "t_rinse": 1200.0,
             "t_waste": 3600.0,
             "regen_pump_power": 13.574,
