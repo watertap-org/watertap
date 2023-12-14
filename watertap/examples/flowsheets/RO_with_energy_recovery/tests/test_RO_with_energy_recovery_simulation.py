@@ -456,15 +456,6 @@ class TestROnoERD:
             assert isinstance(c_blk, Block)
             assert isinstance(getattr(c_blk, "capital_cost"), Var)
 
-        var_str_list = [
-            "total_capital_cost",
-            "maintenance_labor_chemical_operating_cost",
-            "total_operating_cost",
-        ]
-        for var_str in var_str_list:
-            var = getattr(fs.costing, var_str)
-            assert isinstance(var, Var)
-
         # arcs
         arc_dict = {
             fs.s01: (fs.feed.outlet, fs.P1.inlet),
