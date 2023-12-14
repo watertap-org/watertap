@@ -208,8 +208,8 @@ def test_actions(add_variant: str):
 
 
 class CSVTestSettings:
-    """Settings for test_csv_exports used in other functions.
-    """
+    """Settings for test_csv_exports used in other functions."""
+
     bad_obj = False
     bad_units = False
 
@@ -397,7 +397,7 @@ def test_to_csv(tmpdir):
     outputs = [
         tmpdir / "path.csv",
         str(tmpdir / "filename.csv"),
-        open(tmpdir / "fileobj.csv", "w")
+        open(tmpdir / "fileobj.csv", "w"),
     ]
     for o in outputs:
         num = fsi.fs_exp.to_csv(o)

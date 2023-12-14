@@ -20,6 +20,7 @@ from collections import namedtuple
 from csv import reader, writer
 from enum import Enum
 from io import TextIOBase
+
 try:
     from importlib.resources import files
 except ImportError:
@@ -466,7 +467,7 @@ class FlowsheetExport(BaseModel):
         ncol = len(values)
 
         # write a row for each object
-        num= 0
+        num = 0
         for key, obj in self.model_objects.items():
             # initialize values list
             #   first 2 column values are object name and units
@@ -782,6 +783,7 @@ class FlowsheetInterface:
         Returns:
             None
         """
+
         # print(f'ADDING ACTION: {action_name}')
         # print(action_func)
         def action_wrapper(**kwargs):
