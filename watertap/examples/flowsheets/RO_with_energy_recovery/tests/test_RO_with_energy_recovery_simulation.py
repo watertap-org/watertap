@@ -110,7 +110,6 @@ class TestROwithPX:
 
         var_str_list = [
             "total_capital_cost",
-            "maintenance_labor_chemical_operating_cost",
             "total_operating_cost",
         ]
         for var_str in var_str_list:
