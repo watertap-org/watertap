@@ -55,6 +55,7 @@ from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import get_oli
 
 _logger = logging.getLogger(__name__)
 
+
 class OLIApi:
     """
     A class to wrap OLI Cloud API calls and access functions for interfacing with WaterTAP.
@@ -389,7 +390,9 @@ class OLIApi:
 
         # TODO: raise error
         if results_link == "":
-            raise RuntimeError("No item 'resultsLink' in request response. Process failed.")
+            raise RuntimeError(
+                "No item 'resultsLink' in request response. Process failed."
+            )
 
         # poll on results link until success
         data = ""

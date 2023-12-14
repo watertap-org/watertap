@@ -68,6 +68,7 @@ _logger = logging.getLogger(__name__)
 
 # TODO: consider config for file_name for each writing method
 
+
 class Flash:
     """
     A class to execute OLI Cloud flash calculations, replacing and augmenting WaterAnalysis class functionality.
@@ -95,9 +96,7 @@ class Flash:
         self.stream_output_options = stream_output_options
         self.water_analysis_input_list = []
 
-    def build_survey(
-        self, survey_arrays, get_oli_names=False, file_name=None
-    ):
+    def build_survey(self, survey_arrays, get_oli_names=False, file_name=None):
         """
         Builds a dictionary used to modify flash calculation parameters.
 

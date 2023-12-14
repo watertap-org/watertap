@@ -104,6 +104,7 @@ def flash_instance(scope="session"):
     flash = Flash()
     yield flash
 
+
 @pytest.fixture
 def source_water(scope="session"):
     return {

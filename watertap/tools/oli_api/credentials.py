@@ -58,6 +58,7 @@ if cryptography_available:
 
 _logger = logging.getLogger(__name__)
 
+
 class CredentialManager:
     """
     A class to handle credentials for OLI Cloud.
