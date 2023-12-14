@@ -466,6 +466,7 @@ class FlowsheetExport(BaseModel):
         ncol = len(values)
 
         # write a row for each object
+        num= 0
         for key, obj in self.model_objects.items():
             # initialize values list
             #   first 2 column values are object name and units
@@ -477,6 +478,9 @@ class FlowsheetExport(BaseModel):
                 values[col_idx_map[field_name]] = field_value
             # write row
             csv_output_file.writerow(values)
+            num += 1
+
+        return num
 
     @staticmethod
     def _massage_object_name(s):
