@@ -42,22 +42,55 @@
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
 
-import pytest
-
+import contextlib
+import os
 from pathlib import Path
 
+import pytest
+
 from watertap.tools.oli_api.client import OLIApi
-from watertap.tools.oli_api.credentials import CredentialManager
+from watertap.tools.oli_api.credentials import (
+    CredentialManager,
+    cryptography_available,
+)
 
 
-@pytest.mark.unit
-def test_encryption(oliapi_instance: OLIApi, tmp_path: Path):
-    key = oliapi_instance.credential_manager.encryption_key
+@pytest.fixture(scope="session")
+def local_dbs_file() -> Path:
+    test_dir = Path(__file__).parent / "tests"
+    dbs_file_path = test_dir / "test.dbs"
+    return dbs_file_path
+
+
+@pytest.fixture(scope="session")
+def auth_credentials() -> dict:
+    "Credentials that allow running tests with an authenticated client"
+    creds = {"auth_url": "not required when using access keys"}
+    try:
+        creds["access_keys"] = [os.environ["OLI_API_KEY"]]
+        creds["root_url"] = os.environ["OLI_API_ROOT_URL"]
+    except KeyError as e:
+        pytest.skip(f"Authenticated credentials not found in environment variable: {e}")
+    return creds
+
+
+@pytest.fixture(scope="function")
+def oliapi_instance(
+    tmp_path: Path, auth_credentials: dict, local_dbs_file: Path
+) -> OLIApi:
+
+    if not cryptography_available:
+        pytest.skip(reason="cryptography module not available.")
     cred_file_path = tmp_path / "pytest-credentials.txt"
-    credential_manager_with_key = CredentialManager(
-        config_file=cred_file_path, encryption_key=key, test=True
-    )
-    assert (
-        credential_manager_with_key.credentials
-        == oliapi_instance.credential_manager.credentials
-    )
+
+    credentials = {
+        **auth_credentials,
+        "config_file": cred_file_path,
+    }
+    credential_manager = CredentialManager(**credentials, test=True)
+    credential_manager.login()
+    with OLIApi(credential_manager, test=True) as oliapi:
+        oliapi.get_dbs_file_id(str(local_dbs_file))
+        yield oliapi
+    with contextlib.suppress(FileNotFoundError):
+        cred_file_path.unlink()
