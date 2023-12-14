@@ -14,6 +14,7 @@ GUI configuration for the GAC model.
 """
 
 from pyomo.environ import units as pyunits
+from idaes.core.solvers import get_solver
 from watertap.property_models.multicomp_aq_sol_prop_pack import DiffusivityCalculation
 from watertap.unit_models.gac import (
     FilmTransferCoefficientType,
@@ -21,9 +22,9 @@ from watertap.unit_models.gac import (
 )
 from watertap.costing.unit_models.gac import ContactorType
 from watertap.examples.flowsheets.gac import (
-    gac_flowsheet as gac_fs,
+    gac as gac_fs,
 )
-from watertap.ui.fsapi import FlowsheetInterface
+from watertap.ui.fsapi import FlowsheetInterface, FlowsheetCategory
 
 __author__ = "Hunter Barber"
 
@@ -37,6 +38,8 @@ def export_to_ui():
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
+        requires_idaes_solver=True,
+        category=FlowsheetCategory.wastewater,
         build_options={
             "FilmTransferCoefficientType": {
                 "name": "FilmTransferCoefficientType",
@@ -783,21 +786,17 @@ def build_flowsheet(build_options=None, **kwargs):
     Build and solve the initial flowsheet.
     """
 
-    if build_options is not None:
-        m = gac_fs.build(
-            film_transfer_coefficient_type=build_options[
-                "FilmTransferCoefficientType"
-            ].value,
-            surface_diffusion_coefficient_type=build_options[
-                "SurfaceDiffusionCoefficientType"
-            ].value,
-            diffusivity_calculation=build_options["DiffusivityCalculation"].value,
-            cost_contactor_type=build_options["ContactorType"].value,
-        )
-    else:
-        m = gac_fs.build()
-
-    res = gac_fs.solve_model(m)
+    m = gac_fs.build(
+        film_transfer_coefficient_type=build_options[
+            "FilmTransferCoefficientType"
+        ].value,
+        surface_diffusion_coefficient_type=build_options[
+            "SurfaceDiffusionCoefficientType"
+        ].value,
+        diffusivity_calculation=build_options["DiffusivityCalculation"].value,
+        cost_contactor_type=build_options["ContactorType"].value,
+    )
+    res = gac_fs.initialize(m)
 
     return m
 
@@ -807,6 +806,8 @@ def solve_flowsheet(flowsheet=None):
     Solves the flowsheet.
     """
 
-    res = gac_fs.solve_model(flowsheet)
+    fs = flowsheet
+    solver = get_solver()
+    res = gac_fs.optimize(fs, solver)
 
     return res

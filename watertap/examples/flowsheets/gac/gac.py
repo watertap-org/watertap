@@ -22,6 +22,7 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import (
     Feed,
     Product,
@@ -43,9 +44,9 @@ def main():
         diffusivity_calculation="HaydukLaudie",
         cost_contactor_type="gravity",
     )
-    res = solve_model(m)
+    initialize(m)
+    res = optimize(m)
     print("solver termination condition:", res.solver.termination_condition)
-    m.fs.display()
 
     return m, res
 
@@ -190,6 +191,15 @@ def build(
         m.fs.costing.gac_gravity.num_contactors_op.fix(1)
         m.fs.costing.gac_gravity.num_contactors_redundant.fix(1)
 
+    return m
+
+
+def initialize(m, solver=None):
+
+    if solver is None:
+        solver = get_solver()
+
+    print(f"Initializing model")
     # check model
     assert_units_consistent(m)
     assert_degrees_of_freedom(m, 0)
@@ -207,17 +217,20 @@ def build(
     m.fs.gac.costing.initialize()
     m.fs.costing.initialize()
 
-    return m
+    # solve model
+    res = solver.solve(m)
+    pyo.assert_optimal_termination(res)
+    print(f"Initial model solved")
 
 
-def solve_model(m, solver=None):
+def optimize(m, solver=None):
 
     if solver is None:
         solver = get_solver()
 
     # check model
     assert_units_consistent(m)
-    assert_degrees_of_freedom(m, 0)
+    print(f"Optimizing with {format(degrees_of_freedom(m))} degrees of freedom")
 
     # solve model
     res = solver.solve(m)
