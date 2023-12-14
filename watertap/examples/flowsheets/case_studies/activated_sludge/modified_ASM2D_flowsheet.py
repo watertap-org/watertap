@@ -105,7 +105,7 @@ def build_flowsheet():
     # Mixing sludge recycle and R5 underflow
     m.fs.MX2 = Mixer(
         property_package=m.fs.props,
-        inlet_list=["clarifier", "reactor"],
+        inlet_list=["reactor", "clarifier"],
         momentum_mixing_type=MomentumMixingType.equality,
     )
     # Sludge separator
