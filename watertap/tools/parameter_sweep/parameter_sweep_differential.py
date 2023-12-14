@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import numpy as np
+import warnings
 from pyomo.common.config import ConfigValue
 
 from watertap.tools.parameter_sweep.sampling_types import NormalSample
@@ -145,6 +146,11 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
         self.config.index_global_combo_array = True
         if self.config.guarantee_solves:
             raise NotImplementedError
+
+        if self.config.debugging_data_dir is not None:
+            warnings.warn(
+                "debugging_data_dir is not configured to work with differential parameter sweep."
+            )
 
     def _create_differential_sweep_params(self, local_values):
         differential_sweep_specs = self.config.build_differential_sweep_specs(
