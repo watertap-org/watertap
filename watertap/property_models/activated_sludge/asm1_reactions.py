@@ -39,7 +39,7 @@ import idaes.logger as idaeslog
 
 
 # Some more information about this module
-__author__ = "Andrew Lee, Xinhong Liu"
+__author__ = "Andrew Lee, Xinhong Liu, Adam Atia"
 
 
 # Set up logger
@@ -87,24 +87,10 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Yield of cell COD formed per g COD oxidized, Y_H",
         )
-        self.f_p = pyo.Var(
-            initialize=0.08,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Fraction of biomass yielding particulate products, f_p",
-        )
-        self.i_xb = pyo.Var(
-            initialize=0.08,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Mass fraction of N per COD in biomass, i_xb",
-        )
-        self.i_xp = pyo.Var(
-            initialize=0.06,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Mass fraction of N per COD in particulates, i_xp",
-        )
+
+        add_object_reference(self, "f_p", self.config.property_package.f_p)
+        add_object_reference(self, "i_xb", self.config.property_package.i_xb)
+        add_object_reference(self, "i_xp", self.config.property_package.i_xp)
 
         # Kinetic Parameters
         self.mu_A = pyo.Var(

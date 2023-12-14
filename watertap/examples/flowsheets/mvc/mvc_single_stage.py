@@ -619,7 +619,6 @@ def scale_costs(m):
     calculate_cost_sf(m.fs.costing.aggregate_capital_cost)
     calculate_cost_sf(m.fs.costing.aggregate_flow_costs["electricity"])
     calculate_cost_sf(m.fs.costing.total_capital_cost)
-    calculate_cost_sf(m.fs.costing.maintenance_labor_chemical_operating_cost)
     calculate_cost_sf(m.fs.costing.total_operating_cost)
 
     iscale.calculate_scaling_factors(m)
