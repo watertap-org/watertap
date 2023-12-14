@@ -45,108 +45,37 @@
 import pytest
 
 from pathlib import Path
-from numpy import linspace
-from os import listdir, remove
-from pyomo.environ import units as pyunits
 
 from watertap.tools.oli_api.flash import Flash
 from watertap.tools.oli_api.client import OLIApi
-from watertap.tools.oli_api.credentials import (
-    CredentialManager,
-    cryptography_available,
-)
+from watertap.tools.oli_api.credentials import CredentialManager
 
-
-@pytest.fixture
-def flash_instance():
-    flash = Flash()
-    yield flash
-
-
-@pytest.fixture
-def source_water():
-    return {
-        "temperature": 298.15,
-        "pressure": 101325,
-        "components": {
-            "Cl_-": 870,
-            "Na_+": 739,
-            "SO4_2-": 1011,
-            "Mg_2+": 90,
-            "Ca_2+": 258,
-            "K_+": 9,
-            "HCO3_-": 385,
-            "SiO2": 30,
-        },
-        "units": {
-            "temperature": pyunits.K,
-            "pressure": pyunits.Pa,
-            "components": pyunits.mg / pyunits.L,
-        },
-    }
-
-
-@pytest.fixture
-def oliapi_instance(source_water):
-    def _cleanup(file_list, file_path):
-        new_files = [
-            f"{file_path}/{f}" for f in listdir(file_path) if f not in file_list
-        ]
-        for f in new_files:
-            remove(f)
-
-    root_dir = Path(__file__).parents[1]
-    test_dir = Path(__file__).parents[0]
-    root_contents = listdir(root_dir)
-    test_contents = listdir(test_dir)
-
-    if not cryptography_available:
-        pytest.skip(reason="cryptography module not available.")
-    credentials = {
-        "username": "",
-        "password": "",
-        "root_url": "",
-        "auth_url": "",
-    }
-    try:
-        credential_manager = CredentialManager(**credentials, test=True)
-        credential_manager.login()
-        with OLIApi(credential_manager, test=True) as oliapi:
-            oliapi.get_dbs_file_id(
-                source_water["components"], ["liquid1", "solid"], "test"
-            )
-            yield oliapi
-    except:
-        pytest.xfail("Unable to test OLI logins.")
-
-    _cleanup(root_contents, root_dir)
-    _cleanup(test_contents, test_dir)
-
+from numpy import linspace
 
 @pytest.mark.unit
-def test_flash_calc_basic_workflow(flash_instance, source_water, oliapi_instance):
+def test_flash_calc_basic_workflow(flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path):
     dbs_file_id = oliapi_instance.session_dbs_files[0]
     water_analysis_base_case = flash_instance.build_flash_calculation_input(
-        source_water,
-        "wateranalysis",
+        flash_method="wateranalysis",
+        state_vars=source_water,
     )
     water_analysis_single_pt = flash_instance.run_flash(
-        "wateranalysis",
-        oliapi_instance,
-        dbs_file_id,
-        water_analysis_base_case,
-        write=True,
+        flash_method="wateranalysis",
+        oliapi_instance=oliapi_instance,
+        dbs_file_id=dbs_file_id,
+        initial_input=water_analysis_base_case,
+        file_name=tmp_path / "test_wa_sp",
     )
     isothermal_analysis_base_case = flash_instance.build_flash_calculation_input(
-        source_water,
-        "isothermal",
-        water_analysis_single_pt[0],
+        flash_method="isothermal",
+        state_vars=source_water,
+        water_analysis_output=water_analysis_single_pt[0],
     )
     isothermal_analysis_single_pt = flash_instance.run_flash(
-        "isothermal",
-        oliapi_instance,
-        dbs_file_id,
-        isothermal_analysis_base_case,
+        flash_method="isothermal",
+        oliapi_instance=oliapi_instance,
+        dbs_file_id=dbs_file_id,
+        initial_input=isothermal_analysis_base_case,
     )
     properties = [
         "prescalingTendencies",
@@ -160,24 +89,24 @@ def test_flash_calc_basic_workflow(flash_instance, source_water, oliapi_instance
         isothermal_analysis_single_pt,
         properties,
         filter_zero=True,
-        write=True,
+        file_name= tmp_path / "test_ext_props",
     )
 
 
 @pytest.mark.unit
-def test_survey(flash_instance, source_water, oliapi_instance):
+def test_survey(flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path):
     dbs_file_id = oliapi_instance.session_dbs_files[0]
     survey_array = {"Temperature": linspace(273, 373, 2)}
-    survey = flash_instance.build_survey(survey_array, get_oli_names=True, tee=False)
+    survey = flash_instance.build_survey(survey_array, get_oli_names=True, logging=False)
     water_analysis_base_case = flash_instance.build_flash_calculation_input(
-        source_water,
-        "wateranalysis",
+        flash_method="wateranalysis",
+        state_vars=source_water,
     )
     water_analysis_comp_svy = flash_instance.run_flash(
-        "wateranalysis",
-        oliapi_instance,
-        dbs_file_id,
-        water_analysis_base_case,
-        survey,
-        write=True,
+        flash_method="wateranalysis",
+        oliapi_instance=oliapi_instance,
+        dbs_file_id=dbs_file_id,
+        initial_input=water_analysis_base_case,
+        survey=survey,
+        file_name= tmp_path / "test_wa_cs",
     )
