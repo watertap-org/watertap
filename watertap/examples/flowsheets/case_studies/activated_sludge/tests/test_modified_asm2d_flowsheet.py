@@ -43,7 +43,7 @@ class TestASM2DFlowsheet:
     @pytest.mark.integration
     def test_structure(self, model):
         dt = DiagnosticsToolbox(model)
-        dt.assert_no_structural_warnings()
+        assert dt.get_dulmage_mendelsohn_partition() == ([], [], [], [])
 
     @pytest.mark.component
     def test_numerical_issues(self, model):
