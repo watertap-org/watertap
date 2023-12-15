@@ -796,7 +796,7 @@ def build_flowsheet(build_options=None, **kwargs):
         diffusivity_calculation=build_options["DiffusivityCalculation"].value,
         cost_contactor_type=build_options["ContactorType"].value,
     )
-    res = gac_fs.initialize(m)
+    gac_fs.initialize(m)
 
     return m
 
