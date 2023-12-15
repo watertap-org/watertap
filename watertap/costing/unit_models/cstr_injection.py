@@ -66,7 +66,6 @@ def cost_cstr_injection_capital(blk, capital_a_parameter, capital_b_parameter):
     blk.capital_a_parameter = pyo.Expression(expr=capital_a_parameter)
     blk.capital_b_parameter = pyo.Expression(expr=capital_b_parameter)
 
-    print(f"base_currency: {blk.costing_package.base_currency}")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == blk.cost_factor
