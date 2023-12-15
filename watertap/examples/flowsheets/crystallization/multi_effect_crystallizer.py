@@ -179,7 +179,7 @@ def initialize_and_unfix_dof(m):
 
     # Solve
     results = solver.solve(m)
-    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert_optimal_termination(results)
 
 
 def get_model_performance(m):
