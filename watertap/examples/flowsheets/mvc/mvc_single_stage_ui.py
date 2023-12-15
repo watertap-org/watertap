@@ -10,7 +10,6 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 from watertap.ui.fsapi import FlowsheetInterface
-from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.examples.flowsheets.mvc.mvc_single_stage import (
     build,
     set_operating_conditions,
@@ -22,7 +21,6 @@ from watertap.examples.flowsheets.mvc.mvc_single_stage import (
     set_up_optimization,
 )
 from pyomo.environ import units as pyunits, assert_optimal_termination, Objective
-from pyomo.util.check_units import assert_units_consistent
 from idaes.core.solvers import get_solver
 
 

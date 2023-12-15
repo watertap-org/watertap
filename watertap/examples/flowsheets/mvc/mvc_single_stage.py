@@ -24,7 +24,6 @@ from pyomo.environ import (
 from pyomo.network import Arc, SequentialDecomposition
 
 import pyomo.environ as pyo
-import pyomo.util.infeasible as infeas
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -39,7 +38,6 @@ from idaes.models.unit_models.heat_exchanger import (
 )
 from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
 
 from watertap.unit_models.mvc.components import Evaporator, Compressor, Condenser
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
