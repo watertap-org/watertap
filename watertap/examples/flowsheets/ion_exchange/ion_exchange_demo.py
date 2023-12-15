@@ -199,7 +199,6 @@ def set_operating_conditions(m, flow_in=0.05, conc_mass_in=0.1, solver=None):
     ix.resin_bulk_dens.fix()
     ix.bed_porosity.fix()
     ix.dimensionless_time.fix()
-    ix.regen_dose.fix()
 
 
 def initialize_system(m):
