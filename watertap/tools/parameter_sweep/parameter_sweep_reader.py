@@ -17,6 +17,8 @@ from watertap.tools.parameter_sweep.sampling_types import (
     UniformSample,
     NormalSample,
     LatinHypercubeSample,
+    PredeterminedFixedSample,
+    PredeterminedRandomSample,
 )
 import yaml
 import idaes.logger as idaeslog
@@ -220,6 +222,14 @@ class ParameterSweepReader:
                     values["num_samples"],
                 )
 
+            elif values["type"] == "PredeterminedFixedSample":
+                sweep_params[param] = PredeterminedFixedSample(
+                    component, values["array"]
+                )
+            elif values["type"] == "PredeterminedRandomSample":
+                sweep_params[param] = PredeterminedRandomSample(
+                    component, values["array"]
+                )
         return sweep_params
 
     @staticmethod
