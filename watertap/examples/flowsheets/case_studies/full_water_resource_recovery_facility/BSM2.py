@@ -122,7 +122,7 @@ def main():
     # solver2.options["bound_push"] = 1e-20
     results = solver2.solve(m, tee=True, symbolic_solver_labels=True)
     pyo.assert_optimal_termination(results)
-    # print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
+    print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
     # display_results(m)
 
     display_costing(m)
@@ -547,26 +547,21 @@ def add_costing(m):
 
 
 def setup_optimization(m):
-    m.fs.R1.volume.unfix()
-    m.fs.R2.volume.unfix()
-    m.fs.R3.volume.unfix()
-    m.fs.R4.volume.unfix()
-    m.fs.R5.volume.unfix()
-    for i in ["R1", "R2", "R3", "R4", "R5"]:
-        reactor = getattr(m.fs, i)
-        reactor.volume.setlb(10)
 
-    # m.fs.CL1.surface_area.unfix()
-    # # Dewatering Unit - fix either HRT or volume.
-    # m.fs.DU.hydraulic_retention_time.fix(1800 * pyo.units.s)
+    # for i in ["R1", "R2", "R3", "R4", "R5"]:
+    #     reactor = getattr(m.fs, i)
+    #     reactor.volume.unfix()
+    #     reactor.volume.setlb(10)
+    #     reactor.hydraulic_retention_time.fix()
 
-    # # Set specific energy consumption averaged for centrifuge
-    # m.fs.DU.energy_electric_flow_vol_inlet[0] = 0.069 * pyo.units.kWh / pyo.units.m**3
+    # Unfix fraction of outflow from reactor 5 that goes to recycle
+    m.fs.SP5.split_fraction[:, "underflow"].unfix()
+    m.fs.SP5.split_fraction[:, "underflow"].setlb(0.45)
+    
+    add_effluent_violations(m)
 
-    # Thickener unit
-    # m.fs.TU.hydraulic_retention_time.fix(86400 * pyo.units.s)
-    # m.fs.TU.diameter.unfix()
-    # m.fs.TU.diameter.setub(20)
+def add_effluent_violations(m):
+    #TODO: update "m" to blk; change ref to m.fs.Treated instead of CL1 effluent
     m.fs.TSS_max = pyo.Var(initialize=0.03, units=pyo.units.kg / pyo.units.m**3)
     m.fs.TSS_max.fix()
 
@@ -588,7 +583,13 @@ def setup_optimization(m):
     def eq_totalN_max(self, t):
         return m.fs.CL1.effluent_state[0].Total_N <= m.fs.totalN_max
 
+    m.fs.BOD5_max = pyo.Var(initialize=0.01, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.BOD5_max.fix()
 
+    @m.fs.Constraint(m.fs.time)
+    def eq_BOD5_max(self, t):
+        return m.fs.CL1.effluent_state[0].BOD5["effluent"] <= m.fs.BOD5_max
+    
 def solve(blk, solver=None):
     if solver is None:
         solver = get_solver()
