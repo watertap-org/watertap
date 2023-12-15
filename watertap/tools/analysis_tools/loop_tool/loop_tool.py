@@ -402,9 +402,22 @@ class loopTool:
             force_rerun,
         )
 
+    def get_num_samples(self, value_dict):
+        num_samples = value_dict.get("num_samples")
+        array = value_dict.get("array")
+        if num_samples is not None and array is not None:
+            raise RuntimeError("Supply `num_samples` or `array`, not both")
+        if num_samples is not None:
+            return num_samples
+        if array is not None:
+            return len(array)
+        raise RuntimeError(
+            "Provide a valid sweep type, refer to parameter_sweep_reader for valid types"
+        )
+
     def get_sweep_params(self, key, loop_value):
         if "type" in loop_value[key]:
-            num_samples = loop_value[key]["num_samples"]
+            num_samples = self.get_num_samples(loop_value[key])
             try:
                 expected_num_samples = loop_value[key]["expected_num_samples"]
             except KeyError:
@@ -425,7 +438,7 @@ class loopTool:
                 if isinstance(values, dict) and "type" in values:
                     param = values["param"]
                     params[param] = values
-                    num_samples = num_samples * values["num_samples"]
+                    num_samples = num_samples * self.get_num_samples(values)
             if expected_num_samples == None:
                 expected_num_samples = num_samples
         return (
@@ -710,8 +723,12 @@ class loopTool:
             ps_kwargs["build_outputs_kwargs"] = self.build_outputs_kwargs
 
         ps_kwargs[
-            "differential_sweep_specs"
-        ] = ParameterSweepReader()._dict_to_diff_spec(m, self.differential_sweep_specs)
+            "build_differential_sweep_specs"
+        ] = ParameterSweepReader()._dict_to_diff_spec
+        ps_kwargs["build_differential_sweep_specs_kwargs"] = {
+            "input_dict": self.differential_sweep_specs
+        }
+        ps_kwargs["num_diff_samples"] = self.diff_samples
         ps = DifferentialParameterSweep(**ps_kwargs)
 
         ps.parameter_sweep(
