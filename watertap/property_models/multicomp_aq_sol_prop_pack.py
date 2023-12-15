@@ -12,10 +12,10 @@
 """
 This property package computes a multi-component aqueous solution that can
 contain ionic and/or neutral solute species. It supports basic calculation 
-of component quanitities and some physical, chemical and electrical properties. 
+of component quantities and some physical, chemical and electrical properties. 
 
-This property package was formerly named the "ion_DSPMDE_prop_pack" for its originally 
-intended use with the Donnan Steric Pore Model with Dielectric Exclusion (DSPMDE) for
+This property package was formerly named the "ion_DSPMDE_prop_pack" and was originally 
+designed for use with the Donnan Steric Pore Model with Dielectric Exclusion (DSPMDE) for
 nanofiltration.
 """
 
@@ -43,7 +43,7 @@ from pyomo.environ import (
     check_optimal_termination,
     units as pyunits,
 )
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.core.base.units_container import InconsistentUnitsError
 
@@ -78,6 +78,10 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
+from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
+    get_charge,
+    get_molar_mass_quantity,
+)
 
 __author__ = "Adam Atia, Xiangyu Bi, Hunter Barber, Kurban Sitterley"
 # Set up logger
@@ -181,6 +185,19 @@ class MCASParameterData(PhysicalParameterBlock):
 
     CONFIG.declare(
         "charge", ConfigValue(default={}, domain=dict, description="Ion charge")
+    )
+    CONFIG.declare(
+        "ignore_neutral_charge",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="Boolean flag to raise ConfigurationError related to neutral charge.",
+            doc="""Level of reporting results.
+            **default** - False.
+            **Valid values:** {
+            **False** - raise ConfigurationError when charge value not provided for ALL solutes, including neutral solutes (charge=0),
+            **True** - will not raise ConfigurationError when charge not provided for particular solutes, assuming said solutes are meant to be designated as neutral.""",
+        ),
     )
     CONFIG.declare(
         "activity_coefficient_model",
@@ -349,6 +366,29 @@ class MCASParameterData(PhysicalParameterBlock):
             raise ConfigurationError(
                 "The solute_list argument was not provided while instantiating the MCAS property model. Provide a list of solutes to solute_list (as a list of strings)."
             )
+        charge_comp = self.config.charge
+        if len(charge_comp) < len(self.config.solute_list):
+            track_comp = {}
+            for solute in self.config.solute_list:
+                if solute not in charge_comp.keys():
+                    # if a solute was not provided any charge data, try grabbing automatically based on solute name
+                    try:
+                        charge_comp[solute] = get_charge(solute)
+                    # this overrides exception from helper functions so that we can track which solutes couldn't be populated with data
+                    except IOError as exc:
+                        track_comp.update({solute: exc})
+                else:
+                    pass
+            if self.config.ignore_neutral_charge:
+                # if ignore_neutral_charge, we assume the user intended to omit charge data because all solutes are neutral
+                pass
+            else:
+                # otherwise, we let the user know that there might be a mistake
+                if len(track_comp) > 0:
+                    raise ConfigurationError(
+                        f"Charge data could not be obtained for the following solutes and no data were provided\n: {track_comp}."
+                    )
+
         # Group components into different sets
         for j in self.config.solute_list:
             if j == "H2O":
@@ -358,58 +398,56 @@ class MCASParameterData(PhysicalParameterBlock):
             # Add valid members of solute_list into IDAES's Solute() class.
             # This triggers the addition of j into component_list and solute_set.
             self.add_component(j, Solute())
-            if j in self.config.charge:
-                if self.config.charge[j] == 0:
-                    raise ConfigurationError(
-                        "The charge property should not be assigned to the neutral component: {}".format(
-                            j
-                        )
-                    )
-                if self.config.charge[j] > 0:
+            if j in charge_comp:
+                if charge_comp[j] > 0:
                     # Run a "del_component" and "add_component" to move ion j from IDAES's Solute to Cation class.
                     # Ion j has to be added into Solute to be registered in the component_list and solute_set.
                     # Reference to idaes.core.base.components.
                     self.del_component(j)
                     self.add_component(
                         j,
-                        Cation(charge=self.config.charge[j], _electrolyte=True),
+                        Cation(charge=charge_comp[j], _electrolyte=True),
                     )
                     self.ion_set.add(j)
-                else:
+                elif charge_comp[j] < 0:
                     # The same comments above apply to anions.
                     self.del_component(j)
                     self.add_component(
                         j,
-                        Anion(charge=self.config.charge[j], _electrolyte=True),
+                        Anion(charge=charge_comp[j], _electrolyte=True),
                     )
                     self.ion_set.add(j)
-            else:
-                self.neutral_set.add(j)
-
-        if len(self.neutral_set) > 0 and not len(self.ion_set):
-            _log.warning(
-                "Since the charge argument was not provided for any solutes while instantiating the MCAS property model, all solutes are assumed to be neutral and have no charge. If any ions exist in solute_list, make sure to provide charge data to avoid erroneous property calculations."
-            )
-        # reference
-        # Todo: enter any relevant references
+                elif not charge_comp[j]:
+                    self.neutral_set.add(j)
+                else:
+                    pass
 
         # Check for molecular weight data
-        if not len(self.config.mw_data):
-            raise ConfigurationError(
-                "The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively."
-            )
-        missing_mw = []
-        for i in self.config.solute_list:
-            if i not in self.config.mw_data.keys():
-                missing_mw.append(i)
-        if len(missing_mw) > 0:
-            raise ConfigurationError(
-                f"Molecular weight data was not provided for {', '.join(mw for mw in missing_mw)}. Provide the missing molecular weight data to the mw_data argument."
-            )
+        # if not len(self.config.mw_data):
+        #     raise ConfigurationError(
+        #         "The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively."
+        #     )
+        mw_comp = self.config.mw_data
+        if len(mw_comp) < len(self.config.solute_list):
+            track_mw = {}
+            for i in self.config.solute_list:
+                if i not in mw_comp.keys():
+                    # if a solute was not provided any mw data, try grabbing automatically based on solute name
+                    try:
+                        mw_comp[i] = get_molar_mass_quantity(i)
+                    # this overrides exception from helper functions so that we can track which solutes couldn't be populated with data
+                    except IOError as exc:
+                        track_mw.update({i: exc})
+                else:
+                    pass
+            if len(track_mw) > 0:
+                raise ConfigurationError(
+                    f"Molecular weight data could not be obtained for the following solutes and no data were provided\n: {track_mw}."
+                )
 
         # TODO: consider turning parameters into variables for future param estimation
         mw_temp = {"H2O": 18e-3}
-        mw_temp.update(self.config.mw_data)
+        mw_temp.update(mw_comp)
         # molecular weight
         self.mw_comp = Param(
             self.component_list,
@@ -449,10 +487,10 @@ class MCASParameterData(PhysicalParameterBlock):
 
         # Ion charge
         self.charge_comp = Param(
-            self.ion_set,
+            self.solute_set,
             mutable=True,
-            default=1,
-            initialize=self.config.charge,
+            default=0,
+            initialize=charge_comp,
             units=pyunits.dimensionless,
             doc="Ion charge",
         )
@@ -1532,7 +1570,6 @@ class MCASStateBlockData(StateBlockData):
             self.params.solute_set,
             initialize=0.7,
             domain=NonNegativeReals,
-            bounds=(0, 1.001),
             units=pyunits.dimensionless,
             doc="activity coefficient of component",
         )
@@ -1630,7 +1667,7 @@ class MCASStateBlockData(StateBlockData):
         def rule_pressure_osm_phase(b, p):
             return (
                 b.pressure_osm_phase[p]
-                == sum(b.conc_mol_phase_comp[p, j] for j in self.params.solute_set)
+                == sum(b.conc_mol_phase_comp[p, j] for j in b.params.solute_set)
                 * Constants.gas_constant
                 * b.temperature
             )

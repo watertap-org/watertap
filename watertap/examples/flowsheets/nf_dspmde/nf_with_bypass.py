@@ -19,6 +19,7 @@ from pyomo.environ import (
     units as pyunits,
     Var,
     assert_optimal_termination,
+    value,
 )
 
 import idaes.core.util.scaling as iscale
@@ -53,7 +54,7 @@ def main():
     nf.add_objective(m)
     results = optimize(m, solver)
     assert_optimal_termination(results)
-    print("Optimal cost", m.fs.costing.LCOW.value)
+    print("Optimal cost", value(m.fs.costing.LCOW))
     print("Optimal NF pressure (Bar)", m.fs.NF.pump.outlet.pressure[0].value / 1e5)
     print("Optimal area (m2)", m.fs.NF.nfUnit.area.value)
     print(

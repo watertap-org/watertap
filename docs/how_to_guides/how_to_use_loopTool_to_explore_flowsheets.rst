@@ -80,7 +80,7 @@ This enables user to have multiple setup files that can be used to run simulatio
    * *build_defaults* – default arguments that are passed for every sweep. For example in ro_erd flowsheet, shown here, this could be erd_type, but in other flowsheets, this could define any default options, from file locations to the number of stages, etc. The defaults will be passed along with loop values unless the loop value overrides them. 
    * *init_defaults* - defaults for initialization_function, same behavior as build-defaults but used for initialization_function
    * *optimize_defaults* - defaults for optimize_function, same behavior as build or init defaults, but for optimize function. 
-   * *build_output_kwargs * - a list of keys to only save in .h5 file. loopTool provides a default build_outputs function that takes in a dict containing model key name and model key (e.g., to output only m.fs.costing.LCOW user would include following dict *LCOW : fs.costing.LCOW*). The default function uses model.find_component to construct an output dict. Alternatively user can provide  kwargs to a user-provided build_outputs function that would be linked to loopTool (shown below). 
+   * *build_output_kwargs* - a list of keys to only save in .h5 file. loopTool provides a default build_outputs function that takes in a dict containing model key name and model key (e.g., to output only m.fs.costing.LCOW user would include following dict *LCOW : fs.costing.LCOW*). The default function uses model.find_component to construct an output dict. Alternatively user can provide  kwargs to a user-provided build_outputs function that would be linked to loopTool (shown below). 
 
 **loop options:**
 

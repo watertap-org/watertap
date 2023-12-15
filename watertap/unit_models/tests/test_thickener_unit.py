@@ -176,9 +176,9 @@ class TestThickASM1(object):
         assert hasattr(tu.fs.unit.overflow, "pressure")
         assert hasattr(tu.fs.unit.overflow, "alkalinity")
 
-        assert number_variables(tu) == 81
+        assert number_variables(tu) == 87
         assert number_total_constraints(tu) == 63
-        assert number_unused_variables(tu) == 0
+        assert number_unused_variables(tu) == 6
 
     @pytest.mark.unit
     def test_dof(self, tu):
@@ -773,7 +773,9 @@ def test_costing():
     assert value(m.fs.costing.thickener.capital_b_parameter) == 37068
 
     # Check solutions
-    assert pytest.approx(220675.79, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(220675.79 * 2, rel=1e-5) == value(
+        m.fs.unit.costing.capital_cost
+    )
     assert pytest.approx(220675.79, rel=1e-5) == value(
         units.convert(
             (4729.8 * value(units.convert(10 * units.m, to_units=units.feet)) + 37068)

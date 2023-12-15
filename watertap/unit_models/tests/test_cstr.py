@@ -22,6 +22,7 @@ from pyomo.environ import (
     ConcreteModel,
     units,
     value,
+    Objective,
 )
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
@@ -456,14 +457,18 @@ class TestInitializers:
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
+        m.fs.costing.initialize()
+        m.objective = Objective(expr=m.fs.costing.LCOW)
         assert_units_consistent(m)
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(526.45, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(1.07948e-5, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(526.45 * 2, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
+        assert pytest.approx(8.95257e-07, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, model):

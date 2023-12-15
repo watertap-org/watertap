@@ -187,9 +187,9 @@ class TestDu(object):
         assert hasattr(du.fs.unit.overflow, "pressure")
         assert hasattr(du.fs.unit.overflow, "alkalinity")
 
-        assert number_variables(du) == 79
+        assert number_variables(du) == 85
         assert number_total_constraints(du) == 62
-        assert number_unused_variables(du) == 0
+        assert number_unused_variables(du) == 6
 
     @pytest.mark.unit
     def test_dof(self, du):
@@ -492,7 +492,9 @@ def test_du_default_costing():
     assert pytest.approx(1964.42, rel=1e-5) == value(
         pyunits.convert(m.fs.unit.inlet.flow_vol[0], to_units=pyunits.gal / pyunits.hr)
     )
-    assert pytest.approx(1602087.9, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(1602087.9 * 2, rel=1e-5) == value(
+        m.fs.unit.costing.capital_cost
+    )
     assert pytest.approx(1602087.9, rel=1e-5) == value(
         pyunits.convert(
             (328.03 * 1964.42 + 751295) * pyunits.USD_2007,
@@ -553,7 +555,9 @@ def test_du_centrifuge_costing():
     assert value(m.fs.costing.centrifuge.capital_b_parameter) == 751295
 
     # Check solutions
-    assert pytest.approx(1602087.9, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(1602087.9 * 2, rel=1e-5) == value(
+        m.fs.unit.costing.capital_cost
+    )
     assert pytest.approx(1602087.9, rel=1e-5) == value(
         pyunits.convert(
             (328.03 * 1964.42 + 751295) * pyunits.USD_2007,
@@ -621,7 +625,9 @@ def test_du_centrifuge_costing2():
     assert "electricity" not in m.fs.costing.aggregate_flow_costs.keys()
 
     # Check solutions
-    assert pytest.approx(1602087.9, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(1602087.9 * 2, rel=1e-5) == value(
+        m.fs.unit.costing.capital_cost
+    )
     assert pytest.approx(1602087.9, rel=1e-5) == value(
         pyunits.convert(
             (328.03 * 1964.42 + 751295) * pyunits.USD_2007,
@@ -686,7 +692,9 @@ def test_du_filter_plate_press_costing():
     assert value(m.fs.costing.filter_plate_press.capital_b_parameter) == 0.4216
 
     # Check solutions
-    assert pytest.approx(2885989.2, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(2885989.2 * 2, rel=1e-5) == value(
+        m.fs.unit.costing.capital_cost
+    )
     assert pytest.approx(2885989.2, rel=1e-5) == value(
         pyunits.convert(
             (102794 * 1964.42**0.4216) * pyunits.USD_2007,
@@ -754,7 +762,9 @@ def test_du_filter_belt_press_costing():
     assert value(m.fs.costing.filter_belt_press.capital_b_parameter) == 433972
 
     # Check solutions
-    assert pytest.approx(828025.2, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(828025.2 * 2, rel=1e-5) == value(
+        m.fs.unit.costing.capital_cost
+    )
     assert pytest.approx(828025.2, rel=1e-5) == value(
         pyunits.convert(
             (146.29 * 1964.42 + 433972) * pyunits.USD_2007,
