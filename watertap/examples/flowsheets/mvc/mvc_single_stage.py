@@ -84,6 +84,8 @@ def main():
     display_metrics(m)
     display_design(m)
 
+    return m, results
+
 
 def build():
     # flowsheet set up
@@ -367,20 +369,20 @@ def set_operating_conditions(m):
     m.fs.recovery[0].fix(0.5)
 
     # Feed pump
-    m.fs.pump_feed.efficiency_pump.fix(0.8)
+    m.fs.pump_feed.efficiency_pump[0].fix(0.8)
     m.fs.pump_feed.control_volume.deltaP[0].fix(7e3)
 
     # Separator
     m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"] = m.fs.recovery[0].value
 
     # Distillate HX
-    m.fs.hx_distillate.overall_heat_transfer_coefficient.fix(2e3)
+    m.fs.hx_distillate.overall_heat_transfer_coefficient[0].fix(2e3)
     m.fs.hx_distillate.area.fix(125)
     m.fs.hx_distillate.cold.deltaP[0].fix(7e3)
     m.fs.hx_distillate.hot.deltaP[0].fix(7e3)
 
     # Brine HX
-    m.fs.hx_brine.overall_heat_transfer_coefficient.fix(2e3)
+    m.fs.hx_brine.overall_heat_transfer_coefficient[0].fix(2e3)
     m.fs.hx_brine.area.fix(115)
     m.fs.hx_brine.cold.deltaP[0].fix(7e3)
     m.fs.hx_brine.hot.deltaP[0].fix(7e3)
@@ -396,11 +398,11 @@ def set_operating_conditions(m):
     m.fs.compressor.efficiency.fix(0.8)
 
     # Brine pump
-    m.fs.pump_brine.efficiency_pump.fix(0.8)
+    m.fs.pump_brine.efficiency_pump[0].fix(0.8)
     m.fs.pump_brine.control_volume.deltaP[0].fix(4e4)
 
     # Distillate pump
-    m.fs.pump_distillate.efficiency_pump.fix(0.8)
+    m.fs.pump_distillate.efficiency_pump[0].fix(0.8)
     m.fs.pump_distillate.control_volume.deltaP[0].fix(4e4)
 
     # Fix 0 TDS
