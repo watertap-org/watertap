@@ -786,16 +786,19 @@ def build_flowsheet(build_options=None, **kwargs):
     Build and solve the initial flowsheet.
     """
 
-    m = gac_fs.build(
-        film_transfer_coefficient_type=build_options[
-            "FilmTransferCoefficientType"
-        ].value,
-        surface_diffusion_coefficient_type=build_options[
-            "SurfaceDiffusionCoefficientType"
-        ].value,
-        diffusivity_calculation=build_options["DiffusivityCalculation"].value,
-        cost_contactor_type=build_options["ContactorType"].value,
-    )
+    if build_options is not None:
+        m = gac_fs.build(
+            film_transfer_coefficient_type=build_options[
+                "FilmTransferCoefficientType"
+            ].value,
+            surface_diffusion_coefficient_type=build_options[
+                "SurfaceDiffusionCoefficientType"
+            ].value,
+            diffusivity_calculation=build_options["DiffusivityCalculation"].value,
+            cost_contactor_type=build_options["ContactorType"].value,
+        )
+    else:
+        m = gac_fs.build()
     gac_fs.initialize(m)
 
     return m
