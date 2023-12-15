@@ -37,7 +37,7 @@ __author__ = "Hunter Barber"
 
 def main():
 
-    # testing ui functions
+    # example usage
     m = build(
         film_transfer_coefficient_type="calculated",
         surface_diffusion_coefficient_type="calculated",

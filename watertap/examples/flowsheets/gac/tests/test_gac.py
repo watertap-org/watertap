@@ -22,7 +22,7 @@ from watertap.unit_models.gac import (
     SurfaceDiffusionCoefficientType,
 )
 from watertap.costing.unit_models.gac import ContactorType
-from watertap.examples.flowsheets.gac import gac_flowsheet as gac_fs
+from watertap.examples.flowsheets.gac import gac as gac_fs
 
 __author__ = "Hunter Barber"
 
@@ -45,7 +45,8 @@ class TestGACFlowsheet:
     def test_solve(self, gac_frame):
 
         m = gac_frame
-        res = gac_fs.solve_model(m)
+        gac_fs.initialize(m)
+        res = gac_fs.optimize(m)
 
         assert_units_consistent(m)
         assert degrees_of_freedom(m) == 0
@@ -82,7 +83,8 @@ class TestGACFlowsheet:
                             diffusivity_calculation=diffus_option.name,
                             cost_contactor_type=cost_option.name,
                         )
-                        res = gac_fs.solve_model(m)
+                        gac_fs.initialize(m)
+                        res = gac_fs.optimize(m)
 
                         assert_units_consistent(m)
                         assert degrees_of_freedom(m) == 0
