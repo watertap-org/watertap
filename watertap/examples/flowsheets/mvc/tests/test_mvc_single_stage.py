@@ -20,7 +20,6 @@ from pyomo.environ import (
     Objective,
     assert_optimal_termination,
 )
-from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.models.unit_models import Feed, Product, Mixer, Separator
@@ -38,9 +37,6 @@ from watertap.examples.flowsheets.mvc.mvc_single_stage import (
     fix_outlet_pressures,
     solve,
     set_up_optimization,
-    display_metrics,
-    display_design,
-    main,
 )
 
 import watertap.property_models.seawater_prop_pack as props_seawater
@@ -109,7 +105,6 @@ class TestMVC:
 
         var_str_list = [
             "total_capital_cost",
-            "maintenance_labor_chemical_operating_cost",
             "total_operating_cost",
         ]
         for var_str in var_str_list:

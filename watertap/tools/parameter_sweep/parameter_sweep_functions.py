@@ -323,7 +323,7 @@ def recursive_parameter_sweep(
 def differential_parameter_sweep(
     build_model,
     build_sweep_params,
-    differential_sweep_specs,
+    build_differential_sweep_specs,
     build_outputs=None,
     csv_results_file_name=None,
     h5_results_file_name=None,
@@ -455,7 +455,7 @@ def differential_parameter_sweep(
     """
 
     kwargs = {}
-    kwargs["differential_sweep_specs"] = differential_sweep_specs
+    kwargs["build_differential_sweep_specs"] = build_differential_sweep_specs
     if csv_results_file_name is not None:
         kwargs["csv_results_file_name"] = csv_results_file_name
     if h5_results_file_name is not None:
