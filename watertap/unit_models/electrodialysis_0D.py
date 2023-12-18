@@ -1247,15 +1247,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                             for j in self.cation_set
                         )
                         - sum(
-                            0.5
-                            * (
-                                self.diluate.properties_in[t].trans_num_phase_comp[
-                                    "Liq", j
-                                ]
-                                + self.diluate.properties_out[t].trans_num_phase_comp[
-                                    "Liq", j
-                                ]
-                            )
+                            self.diluate.properties_in[t].trans_num_phase_comp["Liq", j]
                             / self.config.property_package.charge_comp[j]
                             for j in self.cation_set
                         )
