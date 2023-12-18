@@ -49,6 +49,7 @@ import logging
 import json
 import requests
 from pathlib import Path
+from datetime import datetime, timedelta, timezone
 
 from pyomo.common.dependencies import attempt_import
 
@@ -238,21 +239,39 @@ class CredentialManager:
 
     # TODO: improve header management for class
     # TODO: possibly save api keys as objects with expiry and other attributes
-    def generate_oliapi_access_key(self, expiry_timecode):
+    def generate_oliapi_access_key(self, key_lifetime=None):
         """
         Generate an access key for OLI Cloud.
 
-        :param expiry_timecode: unix time stamp in milliseconds
+        :param key_lifetime: integer number of days key will be valid
 
         :return string: Response text containing the access key information or an error message
         """
+
+        def _set_expiry_timestamp(key_lifetime):
+            """
+            Set expiry date for OLI Cloud access key.
+
+            :param key_lifetime: integer number of days key will be valid (up to 365)
+
+            :return unix_timestamp_ms: unix timestamp (in ms) for when key will expire
+            """
+
+            if key_lifetime < 1 or key_lifetime > 365:
+                key_lifetime = 365
+
+            _logger.debug(f"Maximum key lifetime is 365 days, {key_lifetime} provided.")
+            current_time = datetime.now(timezone.utc)
+            expiry_timestamp = (current_date + timedelta(days=key_lifetime)).timestamp()
+            unix_timestamp_ms = int(expiry_timestamp*1000)
+            return unix_timestamp_ms
 
         if self.access_key:
             headers = {"authorization": "API-KEY " + self.access_key}
         else:
             headers = {"authorization": "Bearer " + self.jwt_token}
         headers.update({"Content-Type": "application/json"})
-        payload = json.dumps({"expiry": expiry_timecode})
+        payload = json.dumps({"expiry": _set_expiry_timestamp(key_lifetime)})
         response = requests.post(self.access_key_url, headers=headers, data=payload)
         self.credentials["access_keys"].append(
             json.loads(response.text)["data"]["apiKey"]
