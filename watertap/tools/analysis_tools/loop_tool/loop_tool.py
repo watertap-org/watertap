@@ -13,23 +13,9 @@
 
 from idaes.core.solvers import get_solver
 
-from watertap.tools.parameter_sweep import (
-    ParameterSweep,
-    RecursiveParameterSweep,
-)
-
-from watertap.tools.parameter_sweep import (
-    DifferentialParameterSweep,
-)
-
+from watertap.tools.parameter_sweep import ParameterSweep, DifferentialParameterSweep
 from watertap.tools.parameter_sweep import ParameterSweepReader
-
-from watertap.tools.parameter_sweep.parameter_sweep_differential import (
-    DifferentialParameterSweep,
-)
-
 from watertap.tools.analysis_tools.loop_tool.data_merging_tool import *
-
 from watertap.tools.parallel.parallel_manager_factory import (
     has_mpi_peer_processes,
     get_mpi_comm_process,
@@ -161,7 +147,7 @@ class loopTool:
                 self.h5_directory,
             )
             if test_setups:
-                self.execute_sweep(self.sweep_directory[key], False)
+                self.execute_sweep(self.sweep_directory[key])
 
     def check_dict_keys(self, test_dict):
         """used to test supported key in provided .yaml file"""
