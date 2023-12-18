@@ -121,12 +121,9 @@ class loopTool:
             self.build_run_dict()
             self.run_simulations()
 
-    def build_run_dict(self, test_setups=False):
+    def build_run_dict(self):
         """
         This builds the dict that will be used for simulatiuons
-
-        Arguments:
-            test_setups : test if configuraiton will intilaize, but not run the simulatuons
         """
 
         loop_dict = ParameterSweepReader()._yaml_to_dict(self.loop_file)
@@ -146,8 +143,6 @@ class loopTool:
                 self.save_dir,
                 self.h5_directory,
             )
-            if test_setups:
-                self.execute_sweep(self.sweep_directory[key])
 
     def check_dict_keys(self, test_dict):
         """used to test supported key in provided .yaml file"""
