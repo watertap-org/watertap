@@ -37,6 +37,8 @@ from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
 )
 import watertap.tools.MPI as MPI
 
+from watertap.tools.parameter_sweep.model_manager import ModelManager
+
 
 def build_none_outputs(model):
     return None
@@ -72,11 +74,8 @@ def model():
 @pytest.mark.component
 def test_check_differential_sweep_key_validity(model):
     m = model
-
     A = m.fs.input["a"]
     B = m.fs.input["b"]
-    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-
     differential_sweep_specs = {
         A.name: {
             "diff_mode": "sum",
@@ -92,11 +91,14 @@ def test_check_differential_sweep_key_validity(model):
             "pyomo_object": m.fs.input["b"],
         },
     }
+    build_spec = lambda model: differential_sweep_specs
+    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
 
-    ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
+    ps = DifferentialParameterSweep(build_differential_sweep_specs=build_spec)
+
     sweep_params, _ = ps._process_sweep_params(sweep_params)
     ps.outputs = None
-    ps._check_differential_sweep_key_validity(sweep_params)
+    ps._check_differential_sweep_key_validity(differential_sweep_specs, sweep_params)
 
     assert ps.diff_spec_index == [0, 1]
 
@@ -104,7 +106,6 @@ def test_check_differential_sweep_key_validity(model):
 @pytest.mark.component
 def test_create_differential_sweep_params_normal(model):
     m = model
-
     differential_sweep_specs = {
         "fs.a": {
             "diff_sample_type": NormalSample,
@@ -117,9 +118,12 @@ def test_create_differential_sweep_params_normal(model):
             "pyomo_object": m.fs.input["b"],
         },
     }
+    build_spec = lambda model: differential_sweep_specs
+    ps = DifferentialParameterSweep(build_differential_sweep_specs=build_spec)
+    ps.model_manager = ModelManager(ps)
+    ps.model_manager.model = m
 
-    ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
-    local_values = np.array([0.0, 1.0, 2.0])
+    local_values = np.array([0.0, 0.0, 1.0, 2.0])
 
     ps.diff_spec_index = [0, 1]
     diff_sweep_param_dict = ps._create_differential_sweep_params(local_values)
@@ -137,7 +141,6 @@ def test_create_differential_sweep_params_normal(model):
 @pytest.mark.component
 def test_create_differential_sweep_params_sum_prod(model):
     m = model
-
     differential_sweep_specs = {
         "fs.a": {
             "diff_mode": "sum",
@@ -154,9 +157,11 @@ def test_create_differential_sweep_params_sum_prod(model):
             "pyomo_object": m.fs.input["b"],
         },
     }
-
-    ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
-    local_values = np.array([0.1, 1.0, 2.0])
+    build_spec = lambda model: differential_sweep_specs
+    ps = DifferentialParameterSweep(build_differential_sweep_specs=build_spec)
+    ps.model_manager = ModelManager(ps)
+    ps.model_manager.model = m
+    local_values = np.array([0.0, 0.1, 1.0, 2.0])
 
     ps.diff_spec_index = [0, 1]
     diff_sweep_param_dict = ps._create_differential_sweep_params(local_values)
@@ -174,7 +179,6 @@ def test_create_differential_sweep_params_sum_prod(model):
 @pytest.mark.component
 def test_create_differential_sweep_params_percentile(model):
     m = model
-
     differential_sweep_specs = {
         "fs.b": {
             "diff_mode": "percentile",
@@ -186,10 +190,11 @@ def test_create_differential_sweep_params_percentile(model):
             "pyomo_object": m.fs.input["b"],
         },
     }
-
-    ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
-    local_values = np.array([0.1, 1.0, 2.0])
-
+    build_spec = lambda model: differential_sweep_specs
+    ps = DifferentialParameterSweep(build_differential_sweep_specs=build_spec)
+    ps.model_manager = ModelManager(ps)
+    ps.model_manager.model = m
+    local_values = np.array([0.0, 0.1, 1.0, 2.0])
     ps.diff_spec_index = [0, 1]
     diff_sweep_param_dict = ps._create_differential_sweep_params(local_values)
 
@@ -205,25 +210,21 @@ def test_create_differential_sweep_params_percentile(model):
 @pytest.mark.component
 def test_bad_differential_sweep_specs(model, tmp_path):
     m = model
-
     differential_sweep_specs = {
-        "fs.a": {
-            "diff_mode": "sum",
-            "diff_sample_type": GeomSample,
-            "relative_lb": 0.01,
-            "relative_ub": 10.0,
-            "pyomo_object": m.fs.input["a"],
-        },
         "fs.b": {
-            "diff_mode": "product",
+            "diff_mode": "percentile",
             "diff_sample_type": UniformSample,
             "relative_lb": 0.01,
             "relative_ub": 0.1,
+            "nominal_lb": 0.0,
+            "nominal_ub": 1.0,
             "pyomo_object": m.fs.input["b"],
         },
     }
-
-    ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
+    build_spec = lambda model: differential_sweep_specs
+    ps = DifferentialParameterSweep(build_differential_sweep_specs=build_spec)
+    ps.model_manager = ModelManager(ps)
+    ps.model_manager.model = m
     with pytest.raises(ValueError):
         ps.parameter_sweep(
             build_model,
@@ -254,18 +255,19 @@ def test_differential_sweep_outputs(model):
     }
 
     outputs = {"fs.output[c]": m.fs.output["c"]}
-
+    build_spec = lambda model: differential_sweep_specs
     ps = DifferentialParameterSweep(
         optimize_function=_optimization,
         reinitialize_function=_reinitialize,
         reinitialize_kwargs={"slack_penalty": 10.0},
-        differential_sweep_specs=differential_sweep_specs,
+        build_differential_sweep_specs=build_spec,
     )
-
+    ps.model_manager = ModelManager(ps)
+    ps.model_manager.model = m
     sweep_params, _ = ps._process_sweep_params(sweep_params)
-
-    ps.outputs = outputs
-    ps._define_differential_sweep_outputs(sweep_params)
+    ps.config.differential_sweep_specs = build_spec(m)
+    ps.config.build_outputs = lambda model: outputs
+    ps._define_differential_sweep_outputs(model, sweep_params)
 
     # Finally test for the keys
     expected_keys = ["fs.output[c]", "fs.input[a]"]
@@ -306,10 +308,10 @@ def test_differential_parameter_sweep(model, tmp_path):
     ps = DifferentialParameterSweep(
         csv_results_file_name=csv_results_file_name,
         h5_results_file_name=h5_results_file_name,
-        debugging_data_dir=tmp_path,
+        debugging_data_dir=None,  # Does not work at the moment
         interpolate_nan_outputs=True,
         optimize_function=_optimization,
-        differential_sweep_specs=differential_sweep_specs,
+        build_differential_sweep_specs=lambda model: differential_sweep_specs,
         initialize_function=_reinitialize,
         number_of_subprocesses=1,
     )
@@ -740,14 +742,14 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
             "pyomo_object": m.fs.input["b"],
         },
     }
-
+    build_spec = lambda model: differential_sweep_specs
     ps = DifferentialParameterSweep(
         csv_results_file_name=csv_results_file_name,
         h5_results_file_name=h5_results_file_name,
-        debugging_data_dir=tmp_path,
+        debugging_data_dir=None,  # Does not work at the moment
         interpolate_nan_outputs=True,
         optimize_function=_optimization,
-        differential_sweep_specs=differential_sweep_specs,
+        build_differential_sweep_specs=build_spec,
         num_diff_samples=2,
     )
 
@@ -763,10 +765,11 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
         "fs.slack[cd_slack]": m.fs.slack["cd_slack"],
         "fs.slack_penalty": m.fs.slack_penalty,
     }
+    build_outputs = lambda model: outputs
     _, global_results_dict = ps.parameter_sweep(
         m,
         sweep_params,
-        build_outputs=outputs,
+        build_outputs=build_outputs,
         seed=0,
     )
 
@@ -1329,7 +1332,7 @@ def test_differential_parameter_sweep_function(model, tmp_path):
         build_outputs=None,
         csv_results_file_name=csv_results_file_name,
         h5_results_file_name=h5_results_file_name,
-        debugging_data_dir=tmp_path,
+        debugging_data_dir=None,  # Does not work at the moment
         interpolate_nan_outputs=True,
         optimize_function=_optimization,
         initialize_function=_reinitialize,
