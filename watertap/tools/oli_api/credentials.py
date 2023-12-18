@@ -239,7 +239,7 @@ class CredentialManager:
 
     # TODO: improve header management for class
     # TODO: possibly save api keys as objects with expiry and other attributes
-    def generate_oliapi_access_key(self, key_lifetime=None):
+    def generate_oliapi_access_key(self, key_lifetime=365):
         """
         Generate an access key for OLI Cloud.
 
