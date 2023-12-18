@@ -48,7 +48,6 @@ from pathlib import Path
 
 from watertap.tools.oli_api.flash import Flash
 from watertap.tools.oli_api.client import OLIApi
-from watertap.tools.oli_api.credentials import CredentialManager
 
 from numpy import linspace
 

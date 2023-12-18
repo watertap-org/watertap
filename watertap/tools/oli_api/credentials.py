@@ -237,11 +237,14 @@ class CredentialManager:
             return self.credentials["access_keys"][r]
 
     # TODO: improve header management for class
-    def generate_oliapi_access_key(self):
+    # TODO: possibly save api keys as objects with expiry and other attributes
+    def generate_oliapi_access_key(self, expiry_timecode):
         """
         Generate an access key for OLI Cloud.
 
-        :return string: Response text containing the access key information or an error message.
+        :param expiry_timecode: unix time stamp in milliseconds
+
+        :return string: Response text containing the access key information or an error message
         """
 
         if self.access_key:
@@ -249,7 +252,7 @@ class CredentialManager:
         else:
             headers = {"authorization": "Bearer " + self.jwt_token}
         headers.update({"Content-Type": "application/json"})
-        payload = json.dumps({})
+        payload = json.dumps({"expiry": expiry_timecode})
         response = requests.post(self.access_key_url, headers=headers, data=payload)
         self.credentials["access_keys"].append(
             json.loads(response.text)["data"]["apiKey"]
@@ -261,8 +264,9 @@ class CredentialManager:
         """
         Delete an access key for OLI Cloud.
 
-        :param api_key: The access key to delete.
-        :return string: Response text containing the success message or an error message.
+        :param api_key: The access key to delete
+
+        :return string: Response text containing the success message or an error message
         """
 
         if self.access_key:
