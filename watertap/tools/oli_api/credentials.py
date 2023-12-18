@@ -263,7 +263,7 @@ class CredentialManager:
             _logger.debug(f"Maximum key lifetime is 365 days, {key_lifetime} provided.")
             current_time = datetime.now(timezone.utc)
             expiry_timestamp = (current_date + timedelta(days=key_lifetime)).timestamp()
-            unix_timestamp_ms = int(expiry_timestamp*1000)
+            unix_timestamp_ms = int(expiry_timestamp * 1000)
             return unix_timestamp_ms
 
         if self.access_key:
