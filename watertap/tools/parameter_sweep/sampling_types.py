@@ -99,7 +99,7 @@ class ReverseGeomSample(FixedSample):
 
 class PredeterminedFixedSample(FixedSample):
     """
-    Similar to other fixed ssampling types except the setup function arguments.
+    Similar to other fixed sampling types except the setup function arguments.
     In this case a user needs to specify a numpy array (or a list) of
     predetermined values. For example:
 
@@ -136,11 +136,11 @@ class NormalSample(RandomSample):
 
 class PredeterminedRandomSample(RandomSample):
     """
-    Similar to other fixed ssampling types except the setup function arguments.
+    Similar to other fixed sampling types except the setup function arguments.
     In this case a user needs to specify a numpy array (or a list) of
     predetermined values. For example:
 
-    sample_obj = PredeterminedFixedSample(np.array([1,2,3,4]))
+    sample_obj = PredeterminedRandomSample(np.array([1,2,3,4]))
     """
 
     def sample(self):

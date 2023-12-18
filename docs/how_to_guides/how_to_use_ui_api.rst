@@ -1,37 +1,17 @@
 .. _howto_ui-api:
 
-How-to guide for the UI API
-===========================
+Add a flowsheet to the UI
+==========================
 .. py:currentmodule:: watertap.ui.fsapi
-
-.. contents:: Contents
-    :depth: 2
-    :local:
-
-Overview
---------
-
-.. image:: /_static/terminal-icon.png
-    :height: 30px
-    :align: left
 
 This API is intended for model developers who would like to connect their flowsheets to the UI.
 Developers can select which variables to "export" to the UI for each component of the model, 
 and provide extra metadata (display name, description) for them. For flowsheets, they should also 
 specify how to build and solve the flowsheets.
 
-See also: :ref:`the UI flowsheet API reference section <ref_ui-fsapi>`.
+For reference, see :class:`FlowsheetInterface` and :class:`FlowsheetExport` in the `watertap.ui.fsapi` module.
 
-
-Model Developers
-----------------
-
-.. image:: /_static/terminal-icon.png
-    :height: 30px
-    :align: left
-
-Add an interface to your flowsheet
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----
 
 In some Python module, define the function ``export_to_ui``, which will look
 similar to this::
@@ -58,7 +38,11 @@ similar to this::
 
 There are 3 required functions: 
 
-1. ``do_export`` - This function defines the variables that will be displayed on the UI. See example below::
+1. ``do_export`` - This function defines the variables that will be displayed on the UI.
+
+There are two ways to export the variables (which can be combined, if you really want to), using
+the `exports` variable, which is an instance of :class:`FlowsheetExport`.
+The first way is to use the Python API to call ``exports.add()`` (:meth:`FlowsheetExport.add`) for each variable. For example::
 
     def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
         fs = flowsheet
@@ -98,6 +82,30 @@ There are 3 required functions:
             is_output=True,
             output_category="NF design",
         )
+
+The second way to export variables is to create a comma-separated values (CSV) file with the same information, and
+read that in with ``exports.from_csv()`` (:meth:`FlowsheetExport.from_csv`). For example::
+
+    def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
+        exports.from_csv(file="nf_exports.csv", flowsheet=flowsheet)
+
+By default, the file is located in the same directory as the Python module.
+The format of the file is documented in the :meth:`FlowsheetExport.from_csv` method, but it basically puts the
+API keywords as columns in a table. For example, the CSV table for the API calls above would look like:
+
+.. csv-table:: nf_exports.csv
+    :header: "obj", "name", "descriptions", "ui_units", "display_units", "rounding", "is_input", "input_category", "is_output", "output_category"
+
+    "fs.feed.properties[0].flow_vol_phase['Liq']","Volumetric flow rate","Volumetric flow rate","units.L / units.hr","L/h",2,true,"Feed",false,""
+    "fs.NF.pump.outlet.pressure[0]","NF pump pressure","Nanofiltration pump outlet pressure","units.bar","bar",true,"NF design",true,"NF design"
+    "fs.NF.product.properties[0].flow_vol_phase['Liq']","NF product volume flow rate","Nanofiltration product volume flow rate","units.L / units.hr","L/h",2,false,"",true,"NF design"
+
+The raw text version is::
+
+    "obj", "name", "descriptions", "ui_units", "display_units", "rounding", "is_input", "input_category", "is_output", "output_category"
+    "fs.feed.properties[0].flow_vol_phase['Liq']","Volumetric flow rate","Volumetric flow rate","units.L / units.hr","L/h",2,true,"Feed",false,""
+    "fs.NF.pump.outlet.pressure[0]","NF pump pressure","Nanofiltration pump outlet pressure","units.bar","bar",true,"NF design",true,"NF design"
+    "fs.NF.product.properties[0].flow_vol_phase['Liq']","NF product volume flow rate","Nanofiltration product volume flow rate","units.L / units.hr","L/h",2,false,"",true,"NF design"
 
 2. ``do_build`` - This function defines the build function for a flowsheet. See example below::
 

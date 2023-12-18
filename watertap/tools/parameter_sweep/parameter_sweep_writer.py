@@ -23,7 +23,6 @@ from pyomo.common.config import ConfigDict, ConfigValue
 
 
 class ParameterSweepWriter:
-
     CONFIG = ConfigDict()
 
     CONFIG.declare(
@@ -72,7 +71,6 @@ class ParameterSweepWriter:
         parallel_manager,
         **options,
     ):
-
         self.parallel_manager = parallel_manager
         self.config = self.CONFIG(options)
 
@@ -106,7 +104,6 @@ class ParameterSweepWriter:
 
     @staticmethod
     def _interp_nan_values(global_values, global_results):
-
         global_results_clean = np.copy(global_results)
 
         n_vals = np.shape(global_values)[1]
@@ -142,7 +139,6 @@ class ParameterSweepWriter:
         write_csv,
         process_number,
     ):
-
         if write_h5:
             fname_h5 = f"local_results_{process_number:03}.h5"
             self._write_output_to_h5(
@@ -173,7 +169,6 @@ class ParameterSweepWriter:
             )
 
     def _write_outputs(self, output_dict, txt_options="metadata"):
-
         self._write_output_to_h5(output_dict, self.config["h5_results_file_name"])
 
         # We will also create a companion txt file by default which contains
@@ -201,7 +196,6 @@ class ParameterSweepWriter:
                 pprint.pprint(my_dict, log_file)
 
     def _write_output_to_h5(self, output_dict, h5_results_file_name):
-
         if self.config.h5_parent_group_name is None:
             # No parent groups exists, a new file will be created regardless
             f = h5py.File(h5_results_file_name, "w")
@@ -242,7 +236,6 @@ class ParameterSweepWriter:
         global_results_arr,
         process_number,
     ):
-
         # Create the dataframe that is going to be written to a CSV
         global_save_data = np.hstack((global_values, global_results_arr))
 
@@ -297,7 +290,6 @@ class ParameterSweepWriter:
         global_results_arr,
         process_number,
     ):
-
         if process_number == self.parallel_manager.ROOT_PROCESS_RANK:
             if self.config["debugging_data_dir"] is not None:
                 os.makedirs(self.config["debugging_data_dir"], exist_ok=True)
