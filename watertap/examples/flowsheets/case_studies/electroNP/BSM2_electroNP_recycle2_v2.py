@@ -95,7 +95,7 @@ def main():
 
     results = initialize_system(m)
 
-    results = solve(m)
+    # results = solve(m)
 
     # try:
     #     results = solve(m)
@@ -105,22 +105,22 @@ def main():
     # print_close_to_bounds(m)
     # print_infeasible_constraints(m)
 
-    # # Use of Degeneracy Hunter for troubleshooting model.
-    # m.obj = pyo.Objective(expr=0)
-    # solver = get_solver()
-    # solver.options["max_iter"] = 10000
-    # results = solver.solve(m, tee=True)
-    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
-    # # badly_scaled_var_list = iscale.badly_scaled_var_generator(
-    # #     m, large=1e1, small=1e-1
-    # # )
-    # # for x in badly_scaled_var_list:
-    # #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    # dh.check_residuals(tol=1e-8)
-    # # dh.check_variable_bounds(tol=1e-8)
-    # # dh.check_rank_equality_constraints(dense=True)
-    # # ds = dh.find_candidate_equations(verbose=True, tee=True)
-    # # ids = dh.find_irreducible_degenerate_sets(verbose=True)
+    # Use of Degeneracy Hunter for troubleshooting model.
+    m.obj = pyo.Objective(expr=0)
+    solver = get_solver()
+    solver.options["max_iter"] = 10000
+    results = solver.solve(m, tee=True)
+    dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    # badly_scaled_var_list = iscale.badly_scaled_var_generator(
+    #     m, large=1e1, small=1e-1
+    # )
+    # for x in badly_scaled_var_list:
+    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    dh.check_residuals(tol=1e-8)
+    # dh.check_variable_bounds(tol=1e-8)
+    # dh.check_rank_equality_constraints(dense=True)
+    # ds = dh.find_candidate_equations(verbose=True, tee=True)
+    # ids = dh.find_irreducible_degenerate_sets(verbose=True)
 
     # # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
     # m.fs.R5.KLa.fix(240)

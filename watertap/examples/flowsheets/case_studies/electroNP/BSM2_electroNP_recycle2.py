@@ -67,6 +67,7 @@ from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
 from watertap.unit_models.translators.translator_adm1_asm2d import (
     Translator_ADM1_ASM2D,
 )
+from idaes.models.unit_models.mixer import MomentumMixingType
 from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2d_ADM1
 from watertap.unit_models.anaerobic_digestor import AD
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
@@ -93,9 +94,17 @@ def main():
     m = build_flowsheet()
     set_operating_conditions(m)
 
+    for mx in m.fs.mixers:
+        mx.pressure_equality_constraints[0.0, 2].deactivate()
+    print(f"DOF before feed: {degrees_of_freedom(m)}")
+
     results = initialize_system(m)
 
-    results = solve(m)
+    for mx in m.fs.mixers:
+        mx.pressure_equality_constraints[0.0, 2].deactivate()
+    print(f"DOF before feed: {degrees_of_freedom(m)}")
+
+    # results = solve(m)
 
     # try:
     #     results = solve(m)
@@ -105,22 +114,22 @@ def main():
     # print_close_to_bounds(m)
     # print_infeasible_constraints(m)
 
-    # # Use of Degeneracy Hunter for troubleshooting model.
-    # m.obj = pyo.Objective(expr=0)
-    # solver = get_solver()
-    # solver.options["max_iter"] = 10000
-    # results = solver.solve(m, tee=True)
-    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
-    # # badly_scaled_var_list = iscale.badly_scaled_var_generator(
-    # #     m, large=1e1, small=1e-1
-    # # )
-    # # for x in badly_scaled_var_list:
-    # #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    # dh.check_residuals(tol=1e-8)
-    # # dh.check_variable_bounds(tol=1e-8)
-    # # dh.check_rank_equality_constraints(dense=True)
-    # # ds = dh.find_candidate_equations(verbose=True, tee=True)
-    # # ids = dh.find_irreducible_degenerate_sets(verbose=True)
+    # Use of Degeneracy Hunter for troubleshooting model.
+    m.obj = pyo.Objective(expr=0)
+    solver = get_solver()
+    solver.options["max_iter"] = 10000
+    results = solver.solve(m, tee=True)
+    dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    # badly_scaled_var_list = iscale.badly_scaled_var_generator(
+    #     m, large=1e1, small=1e-1
+    # )
+    # for x in badly_scaled_var_list:
+    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    dh.check_residuals(tol=1e-8)
+    # dh.check_variable_bounds(tol=1e-8)
+    # dh.check_rank_equality_constraints(dense=True)
+    # ds = dh.find_candidate_equations(verbose=True, tee=True)
+    # ids = dh.find_irreducible_degenerate_sets(verbose=True)
 
     # # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
     # m.fs.R5.KLa.fix(240)
@@ -189,7 +198,9 @@ def build_flowsheet():
     # Activated Sludge Process
     # Mixer for feed water and recycled sludge
     m.fs.MX1 = Mixer(
-        property_package=m.fs.props_ASM2D, inlet_list=["feed_water", "recycle"]
+        property_package=m.fs.props_ASM2D,
+        inlet_list=["feed_water", "recycle"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
     # First reactor (anoxic) - standard CSTR
     m.fs.R1 = CSTR(
@@ -231,7 +242,9 @@ def build_flowsheet():
     )
     # Mixing sludge recycle and R5 underflow
     m.fs.MX2 = Mixer(
-        property_package=m.fs.props_ASM2D, inlet_list=["clarifier", "reactor"]
+        property_package=m.fs.props_ASM2D,
+        inlet_list=["reactor", "clarifier"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
     # Sludge separator
     m.fs.SP2 = Separator(
@@ -284,14 +297,20 @@ def build_flowsheet():
     m.fs.electroNP = ElectroNPZO(property_package=m.fs.props_ASM2D)
 
     m.fs.MX3 = Mixer(
-        property_package=m.fs.props_ASM2D, inlet_list=["feed_water1", "recycle1"]
+        property_package=m.fs.props_ASM2D,
+        inlet_list=["feed_water1", "recycle1"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
     # m.fs.MX4 = Mixer(
-    #     property_package=m.fs.props_ASM2D, inlet_list=["feed_water2", "recycle2"]
+    #     property_package=m.fs.props_ASM2D, inlet_list=["feed_water2", "recycle2"], momentum_mixing_type=MomentumMixingType.equality,
     # )
     m.fs.MX5 = Mixer(
-        property_package=m.fs.props_ASM2D, inlet_list=["thickener", "clarifier"]
+        property_package=m.fs.props_ASM2D,
+        inlet_list=["thickener", "clarifier"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
+
+    m.fs.mixers = (m.fs.MX1, m.fs.MX2, m.fs.MX3, m.fs.MX5)
 
     # Product Blocks
     m.fs.Treated = Product(property_package=m.fs.props_ASM2D)
@@ -625,24 +644,24 @@ def set_operating_conditions(m):
     m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * pyunits.kWh / pyunits.kg)
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
-    # Check degrees of freedom
-    print(f"DOF after all: {degrees_of_freedom(m)}")
-    assert degrees_of_freedom(m) == 0
+    # # Check degrees of freedom
+    # print(f"DOF after all: {degrees_of_freedom(m)}")
+    # assert degrees_of_freedom(m) == 0
 
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
-            # if "thickener.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
-            # if "translator_asm2d_adm1.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
+            if "thickener.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e3)
+            if "translator_asm2d_adm1.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e3)
             if "AD.liquid_phase.properties_in[0.0].flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e3)
-            # if "translator_adm1_asm2d.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
-            # if "dewater.properties_in[0.0].flow_vol" in var.name:
-            #     iscale.set_scaling_factor(var, 1e3)
+            if "translator_adm1_asm2d.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e3)
+            if "dewater.properties_in[0.0].flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e3)
             if "electroNP.mixed_state[0.0].flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e3)
             if "temperature" in var.name:
