@@ -47,6 +47,7 @@ __author__ = "Oluwamayowa Amusat, Paul Vecchiarelli"
 import logging
 
 import yaml
+
 from copy import deepcopy
 from itertools import product
 from pyomo.environ import units as pyunits
@@ -111,17 +112,18 @@ class Flash:
         num_keys = range(len(keys))
         values = product(*(survey_arrays.values()))
 
+        _name = lambda k: get_oli_name(k) if get_oli_names else k
+
         i = 0
         survey = {}
         for v in values:
-            survey[i] = {keys[j]: v[j] for j in range(len(v)) for j in num_keys}
+            survey[i] = {_name(keys[j]): v[j] for j in range(len(v)) for j in num_keys}
             i = i + 1
         _logger.debug(f"Survey contains {len(survey)} items.")
         if file_name:
             self.write_output_to_yaml(survey, file_name)
         return survey
 
-    # TODO: reduce compute time for this process
     def _build_input_list(self, state_vars):
         """
         Build input list for wateranalysis flash method.
@@ -323,9 +325,8 @@ class Flash:
             modified_clone = deepcopy(initial_flash_input)
             if flash_method == "wateranalysis":
                 for param in modified_clone["params"]["waterAnalysisInputs"]:
-                    key = param["name"]
-                    if key in survey.keys():
-                        param.update({"value": survey[i][key]})
+                    if param["name"] in survey[i].keys():
+                        param.update({"value": survey[i][param["name"]]})
             elif flash_method == "isothermal":
                 for param in survey:
                     path == None
@@ -354,12 +355,12 @@ class Flash:
         :return f: string name of file written
         """
 
-        f = f"{file_name}.yaml"
         _logger.debug("Saving file...")
-        with open(f, "w") as yamlfile:
-            yaml.dump(flash_output, yamlfile)
+        yaml_file = f"{file_name}.yaml"
+        with open(yaml_file, "w", encoding="utf-8") as f:
+            yaml.dump(flash_output, f, indent=4)
         _logger.debug(f"{f} saved to working directory.")
-        return f
+        return yaml_file
 
     def extract_properties(
         self, raw_result, properties, filter_zero=True, file_name=False
@@ -391,9 +392,14 @@ class Flash:
             return keys
 
         def _get_nested_data(data, keys):
-            for key in keys:
-                data = data[key]
-            return data
+            try:
+                for key in keys:
+                    data = data[key]
+            except TypeError:
+                data = {}
+                _logger.debug(f"Output format unrecognized.")
+            finally:
+                return data
 
         extracted_properties = {}
         property_groups = {p: [] for p in properties}
@@ -407,32 +413,36 @@ class Flash:
         for i in raw_result:
             extracted_properties[i] = {}
             root_path = [i, "result"]
-
-            for prop in properties:
-                base_result = _get_nested_data(raw_result, root_path)
-                phases = {p: [] for p in properties}
-                for phase, prop in base_result.items():
-                    if prop in properties:
-                        phases[prop].append(phase)
+            # 417-418, workaround for failed JSON compilation bug (12/20/2023)
+            base_result = _get_nested_data(raw_result, root_path)
+            if base_result:
                 for prop in properties:
-                    if prop in base_result["total"]:
-                        phases[prop].append("total")
-                    for group in property_groups[prop]:
-                        if group in groups_with_phase:
-                            for phase in phases[prop]:
+                    phases = {p: [] for p in properties}
+                    for phase, prop in base_result.items():
+                        if prop in properties:
+                            phases[prop].append(phase)
+
+                    for prop in properties:
+                        if prop in base_result["total"]:
+                            phases[prop].append("total")
+                        for group in property_groups[prop]:
+                            if group in groups_with_phase:
+                                for phase in phases[prop]:
+                                    deep_path = deepcopy(root_path)
+                                    deep_path.extend(
+                                        _get_nested_phase_keys(phase, group)
+                                    )
+                                    result = _filter_zeroes(
+                                        _get_nested_data(raw_result, deep_path)
+                                    )
+                                    extracted_properties[i][f"{prop}_{phase}"] = result
+                            if group in groups_additional:
                                 deep_path = deepcopy(root_path)
-                                deep_path.extend(_get_nested_phase_keys(phase, group))
+                                deep_path.extend([group, prop])
                                 result = _filter_zeroes(
                                     _get_nested_data(raw_result, deep_path)
                                 )
-                                extracted_properties[i][f"{prop}_{phase}"] = result
-                        if group in groups_additional:
-                            deep_path = deepcopy(root_path)
-                            deep_path.extend([group, prop])
-                            result = _filter_zeroes(
-                                _get_nested_data(raw_result, deep_path)
-                            )
-                            extracted_properties[i][prop] = result
+                                extracted_properties[i][prop] = result
         if file_name:
             self.write_output_to_yaml(extracted_properties, file_name)
         return extracted_properties
