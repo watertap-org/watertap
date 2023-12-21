@@ -65,6 +65,9 @@ def build(
     # blocks
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
+    solute_mw = 0.10
+    solute_diffusivtiy = 1e-9
+    solute_mv = 1e-4
     if (
         film_transfer_coefficient_type == "calculated"
         or surface_diffusion_coefficient_type == "calculated"
@@ -74,25 +77,25 @@ def build(
                 material_flow_basis="molar",
                 ignore_neutral_charge=True,
                 solute_list=["solute"],
-                mw_data={"H2O": 0.018, "solute": 0.08},
+                mw_data={"H2O": 0.018, "solute": solute_mw},
                 diffus_calculation=diffusivity_calculation,
-                diffusivity_data={("Liq", "solute"): 1e-9},
+                diffusivity_data={("Liq", "solute"): solute_diffusivtiy},
             )
         else:
             m.fs.properties = MCASParameterBlock(
                 material_flow_basis="molar",
                 ignore_neutral_charge=True,
                 solute_list=["solute"],
-                mw_data={"H2O": 0.018, "solute": 0.08},
+                mw_data={"H2O": 0.018, "solute": solute_mw},
                 diffus_calculation=diffusivity_calculation,
-                molar_volume_data={("Liq", "solute"): 1e-4},
+                molar_volume_data={("Liq", "solute"): solute_mv},
             )
     else:
         m.fs.properties = MCASParameterBlock(
             material_flow_basis="molar",
             ignore_neutral_charge=True,
             solute_list=["solute"],
-            mw_data={"H2O": 0.018, "solute": 0.08},
+            mw_data={"H2O": 0.018, "solute": solute_mw},
         )
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.gac = GAC(
