@@ -197,7 +197,7 @@ class CredentialManager:
                 return True
             return False
 
-    # TODO: maybe only overwrite credentials that are changed
+    # TODO: consider updating credentials when writing, rather than resetting blank ones
     def _encrypt_credentials(self):
         """
         Basic encryption method for credentials
