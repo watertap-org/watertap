@@ -197,6 +197,7 @@ class CredentialManager:
                 return True
             return False
 
+    # TODO: maybe only overwrite credentials that are changed
     def _encrypt_credentials(self):
         """
         Basic encryption method for credentials
@@ -262,7 +263,7 @@ class CredentialManager:
 
             _logger.debug(f"Maximum key lifetime is 365 days, {key_lifetime} provided.")
             current_time = datetime.now(timezone.utc)
-            expiry_timestamp = (current_date + timedelta(days=key_lifetime)).timestamp()
+            expiry_timestamp = (current_time + timedelta(days=key_lifetime)).timestamp()
             unix_timestamp_ms = int(expiry_timestamp * 1000)
             return unix_timestamp_ms
 
