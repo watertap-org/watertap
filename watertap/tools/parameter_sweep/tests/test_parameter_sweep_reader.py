@@ -95,6 +95,16 @@ class TestInputParser:
                 "upper_limit": 10,
                 "num_samples": 3,
             },
+            "g_ val": {
+                "type": "PredeterminedFixedSample",
+                "param": "fs.a",
+                "array": [1, 2, 3, 4, 5],
+            },
+            "h_val": {
+                "type": "PredeterminedRandomSample",
+                "param": "fs.a",
+                "array": [1, 2, 3, 4, 5],
+            },
         }
 
         with open(filename, "w") as fp:
