@@ -56,7 +56,7 @@ from idaes.models.unit_models import (
     Product,
 )
 
-from watertap.unit_models.cstr_injection import CSTR_Injection
+from watertap.unit_models.cstr_injection import CSTR_Injection, ElectricityConsumption
 from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
 from watertap.property_models.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
@@ -162,15 +162,18 @@ def build():
     )
     # Third reactor (aerobic) - CSTR with injection
     m.fs.R3 = CSTR_Injection(
-        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props,
+        electricity_consumption=ElectricityConsumption.calculated
     )
     # Fourth reactor (aerobic) - CSTR with injection
     m.fs.R4 = CSTR_Injection(
-        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props,
+        electricity_consumption=ElectricityConsumption.calculated
     )
     # Fifth reactor (aerobic) - CSTR with injection
     m.fs.R5 = CSTR_Injection(
-        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props,
+        electricity_consumption=ElectricityConsumption.calculated
     )
     m.fs.SP5 = Separator(
         property_package=m.fs.props_ASM1, outlet_list=["underflow", "overflow"]
@@ -217,43 +220,46 @@ def build():
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
+    m.fs.R3.KLa = 7.6
+    m.fs.R4.KLa = 5.7
+    
     # Add additional parameter and constraints
-    m.fs.R3.KLa = pyo.Var(
-        initialize=7.6,
-        units=pyo.units.hour**-1,
-        doc="Lumped mass transfer coefficient for oxygen",
-    )
-    m.fs.R4.KLa = pyo.Var(
-        initialize=5.7,
-        units=pyo.units.hour**-1,
-        doc="Lumped mass transfer coefficient for oxygen",
-    )
-    m.fs.S_O_eq = pyo.Param(
-        default=8e-3,
-        units=pyo.units.kg / pyo.units.m**3,
-        mutable=True,
-        doc="Dissolved oxygen concentration at equilibrium",
-    )
+    # m.fs.R3.KLa = pyo.Var(
+    #     initialize=7.6,
+    #     units=pyo.units.hour**-1,
+    #     doc="Lumped mass transfer coefficient for oxygen",
+    # )
+    # m.fs.R4.KLa = pyo.Var(
+    #     initialize=5.7,
+    #     units=pyo.units.hour**-1,
+    #     doc="Lumped mass transfer coefficient for oxygen",
+    # )
+    # m.fs.S_O_eq = pyo.Param(
+    #     default=8e-3,
+    #     units=pyo.units.kg / pyo.units.m**3,
+    #     mutable=True,
+    #     doc="Dissolved oxygen concentration at equilibrium",
+    # )
 
-    @m.fs.R3.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
-    def mass_transfer_R3(self, t):
-        return pyo.units.convert(
-            m.fs.R3.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
-        ) == (
-            m.fs.R3.KLa
-            * m.fs.R3.volume[t]
-            * (m.fs.S_O_eq - m.fs.R3.outlet.conc_mass_comp[t, "S_O"])
-        )
+    # @m.fs.R3.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
+    # def mass_transfer_R3(self, t):
+    #     return pyo.units.convert(
+    #         m.fs.R3.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
+    #     ) == (
+    #         m.fs.R3.KLa
+    #         * m.fs.R3.volume[t]
+    #         * (m.fs.S_O_eq - m.fs.R3.outlet.conc_mass_comp[t, "S_O"])
+    #     )
 
-    @m.fs.R4.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
-    def mass_transfer_R4(self, t):
-        return pyo.units.convert(
-            m.fs.R4.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
-        ) == (
-            m.fs.R4.KLa
-            * m.fs.R4.volume[t]
-            * (m.fs.S_O_eq - m.fs.R4.outlet.conc_mass_comp[t, "S_O"])
-        )
+    # @m.fs.R4.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
+    # def mass_transfer_R4(self, t):
+    #     return pyo.units.convert(
+    #         m.fs.R4.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
+    #     ) == (
+    #         m.fs.R4.KLa
+    #         * m.fs.R4.volume[t]
+    #         * (m.fs.S_O_eq - m.fs.R4.outlet.conc_mass_comp[t, "S_O"])
+    #     )
 
     # ======================================================================
     # Anaerobic digester section
