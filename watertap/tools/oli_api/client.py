@@ -322,7 +322,10 @@ class OLIApi:
         """
 
         endpoint = f"{self.credential_manager._delete_dbs_url}{dbs_file_id}"
-        headers = {"Authorization": "Bearer " + self.credential_manager.jwt_token}
+        if self.credential_manager.access_key:
+            headers = {"authorization": "API-KEY " + self.credential_manager.access_key}
+        else:
+            headers = {"authorization": "Bearer " + self.credential_manager.jwt_token}
         requests.request("DELETE", endpoint, headers=headers, data={})
 
     def call(

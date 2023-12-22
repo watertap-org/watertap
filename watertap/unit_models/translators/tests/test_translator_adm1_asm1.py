@@ -91,9 +91,9 @@ def test_config():
 
 
 # -----------------------------------------------------------------------------
-class TestAsm1Adm1(object):
+class TestAdm1Asm1(object):
     @pytest.fixture(scope="class")
-    def asmadm(self):
+    def admasm(self):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
@@ -153,111 +153,110 @@ class TestAsm1Adm1(object):
 
     @pytest.mark.build
     @pytest.mark.unit
-    def test_build(self, asmadm):
+    def test_build(self, admasm):
 
-        assert hasattr(asmadm.fs.unit, "inlet")
-        assert len(asmadm.fs.unit.inlet.vars) == 6
-        assert hasattr(asmadm.fs.unit.inlet, "flow_vol")
-        assert hasattr(asmadm.fs.unit.inlet, "conc_mass_comp")
-        assert hasattr(asmadm.fs.unit.inlet, "temperature")
-        assert hasattr(asmadm.fs.unit.inlet, "pressure")
-        assert hasattr(asmadm.fs.unit.inlet, "anions")
-        assert hasattr(asmadm.fs.unit.inlet, "cations")
+        assert hasattr(admasm.fs.unit, "inlet")
+        assert len(admasm.fs.unit.inlet.vars) == 6
+        assert hasattr(admasm.fs.unit.inlet, "flow_vol")
+        assert hasattr(admasm.fs.unit.inlet, "conc_mass_comp")
+        assert hasattr(admasm.fs.unit.inlet, "temperature")
+        assert hasattr(admasm.fs.unit.inlet, "pressure")
+        assert hasattr(admasm.fs.unit.inlet, "anions")
+        assert hasattr(admasm.fs.unit.inlet, "cations")
 
-        assert hasattr(asmadm.fs.unit, "outlet")
-        assert len(asmadm.fs.unit.outlet.vars) == 5
-        assert hasattr(asmadm.fs.unit.outlet, "flow_vol")
-        assert hasattr(asmadm.fs.unit.outlet, "conc_mass_comp")
-        assert hasattr(asmadm.fs.unit.outlet, "temperature")
-        assert hasattr(asmadm.fs.unit.outlet, "pressure")
-        assert hasattr(asmadm.fs.unit.outlet, "alkalinity")
+        assert hasattr(admasm.fs.unit, "outlet")
+        assert len(admasm.fs.unit.outlet.vars) == 5
+        assert hasattr(admasm.fs.unit.outlet, "flow_vol")
+        assert hasattr(admasm.fs.unit.outlet, "conc_mass_comp")
+        assert hasattr(admasm.fs.unit.outlet, "temperature")
+        assert hasattr(admasm.fs.unit.outlet, "pressure")
+        assert hasattr(admasm.fs.unit.outlet, "alkalinity")
 
-        assert number_variables(asmadm) == 132
-        assert number_total_constraints(asmadm) == 16
-
-        assert number_unused_variables(asmadm.fs.unit) == 4
+        assert number_variables(admasm) == 138
+        assert number_total_constraints(admasm) == 16
+        assert number_unused_variables(admasm.fs.unit) == 4
 
     @pytest.mark.component
-    def test_units(self, asmadm):
-        assert_units_consistent(asmadm)
+    def test_units(self, admasm):
+        assert_units_consistent(admasm)
 
     @pytest.mark.unit
-    def test_dof(self, asmadm):
-        assert degrees_of_freedom(asmadm) == 0
+    def test_dof(self, admasm):
+        assert degrees_of_freedom(admasm) == 0
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_initialize(self, asmadm):
-        initialization_tester(asmadm)
+    def test_initialize(self, admasm):
+        initialization_tester(admasm)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solve(self, asmadm):
+    def test_solve(self, admasm):
         solver = get_solver()
-        results = solver.solve(asmadm)
+        results = solver.solve(admasm)
         assert_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solution(self, asmadm):
+    def test_solution(self, admasm):
         assert pytest.approx(101325.0, rel=1e-3) == value(
-            asmadm.fs.unit.outlet.pressure[0]
+            admasm.fs.unit.outlet.pressure[0]
         )
         assert pytest.approx(308.15, rel=1e-3) == value(
-            asmadm.fs.unit.outlet.temperature[0]
+            admasm.fs.unit.outlet.temperature[0]
         )
         assert pytest.approx(0.1308, rel=1e-3) == value(
-            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_I"]
+            admasm.fs.unit.outlet.conc_mass_comp[0, "S_I"]
         )
         assert pytest.approx(0.2585, rel=1e-3) == value(
-            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_S"]
+            admasm.fs.unit.outlet.conc_mass_comp[0, "S_S"]
         )
         assert pytest.approx(17.216, rel=1e-3) == value(
-            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_I"]
+            admasm.fs.unit.outlet.conc_mass_comp[0, "X_I"]
         )
         assert pytest.approx(3.2375, rel=1e-3) == value(
-            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_S"]
+            admasm.fs.unit.outlet.conc_mass_comp[0, "X_S"]
         )
         assert pytest.approx(1e-10, abs=1e-6) == value(
-            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_BH"]
+            admasm.fs.unit.outlet.conc_mass_comp[0, "X_BH"]
         )
         assert pytest.approx(1e-10, abs=1e-6) == value(
-            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_BA"]
+            admasm.fs.unit.outlet.conc_mass_comp[0, "X_BA"]
         )
         assert pytest.approx(1e-10, abs=1e-6) == value(
-            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_P"]
+            admasm.fs.unit.outlet.conc_mass_comp[0, "X_P"]
         )
         assert pytest.approx(1e-10, abs=1e-6) == value(
-            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_O"]
+            admasm.fs.unit.outlet.conc_mass_comp[0, "S_O"]
         )
         assert pytest.approx(1e-10, abs=1e-6) == value(
-            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_NO"]
+            admasm.fs.unit.outlet.conc_mass_comp[0, "S_NO"]
         )
         assert pytest.approx(1.322, rel=1e-3) == value(
-            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_NH"]
+            admasm.fs.unit.outlet.conc_mass_comp[0, "S_NH"]
         )
         assert pytest.approx(0.00839, rel=1e-3) == value(
-            asmadm.fs.unit.outlet.conc_mass_comp[0, "S_ND"]
+            admasm.fs.unit.outlet.conc_mass_comp[0, "S_ND"]
         )
         assert pytest.approx(0.251, rel=1e-3) == value(
-            asmadm.fs.unit.outlet.conc_mass_comp[0, "X_ND"]
+            admasm.fs.unit.outlet.conc_mass_comp[0, "X_ND"]
         )
         assert pytest.approx(0.095061, rel=1e-3) == value(
-            asmadm.fs.unit.outlet.alkalinity[0]
+            admasm.fs.unit.outlet.alkalinity[0]
         )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_conservation(self, asmadm):
+    def test_conservation(self, admasm):
         assert (
             abs(
                 value(
-                    asmadm.fs.unit.inlet.flow_vol[0] * asmadm.fs.props_ADM1.dens_mass
-                    - asmadm.fs.unit.outlet.flow_vol[0] * asmadm.fs.props_ASM1.dens_mass
+                    admasm.fs.unit.inlet.flow_vol[0] * admasm.fs.props_ADM1.dens_mass
+                    - admasm.fs.unit.outlet.flow_vol[0] * admasm.fs.props_ASM1.dens_mass
                 )
             )
             <= 1e-6
@@ -267,21 +266,21 @@ class TestAsm1Adm1(object):
             abs(
                 value(
                     (
-                        asmadm.fs.unit.inlet.flow_vol[0]
-                        * asmadm.fs.props_ADM1.dens_mass
-                        * asmadm.fs.props_ADM1.cp_mass
+                        admasm.fs.unit.inlet.flow_vol[0]
+                        * admasm.fs.props_ADM1.dens_mass
+                        * admasm.fs.props_ADM1.cp_mass
                         * (
-                            asmadm.fs.unit.inlet.temperature[0]
-                            - asmadm.fs.props_ADM1.temperature_ref
+                            admasm.fs.unit.inlet.temperature[0]
+                            - admasm.fs.props_ADM1.temperature_ref
                         )
                     )
                     - (
-                        asmadm.fs.unit.outlet.flow_vol[0]
-                        * asmadm.fs.props_ASM1.dens_mass
-                        * asmadm.fs.props_ASM1.cp_mass
+                        admasm.fs.unit.outlet.flow_vol[0]
+                        * admasm.fs.props_ASM1.dens_mass
+                        * admasm.fs.props_ASM1.cp_mass
                         * (
-                            asmadm.fs.unit.outlet.temperature[0]
-                            - asmadm.fs.props_ASM1.temperature_ref
+                            admasm.fs.unit.outlet.temperature[0]
+                            - admasm.fs.props_ASM1.temperature_ref
                         )
                     )
                 )

@@ -250,7 +250,6 @@ def test_costing():
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
     assert isinstance(m.fs.costing.total_capital_cost, Var)
-    assert isinstance(m.fs.costing.total_fixed_operating_cost, Var)
     assert isinstance(m.fs.costing.aggregate_flow_costs, Var)
 
 

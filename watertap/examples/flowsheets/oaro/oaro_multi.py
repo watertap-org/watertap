@@ -341,6 +341,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         * (
             1
             + m.fs.costing.factor_maintenance_labor_chemical
+            / m.fs.costing.factor_total_investment
             / m.fs.costing.factor_capital_annualization
         )
         + m.fs.costing.electricity_lcow
@@ -383,6 +384,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         * (
             1
             + m.fs.costing.factor_maintenance_labor_chemical
+            / m.fs.costing.factor_total_investment
             / m.fs.costing.factor_capital_annualization
         )
         + m.fs.costing.membrane_replacement_lcow

@@ -25,6 +25,16 @@ sweep_tests:
           min_num_samples: 10
           expected_num_samples: 20
           force_rerun: True
+        fixed_samples:
+          type: PredeterminedRandomSample
+          param: fs.costing.reverse_osmosis.membrane_cost
+          array: 
+            - 20
+            - 25
+            - 30
+          min_num_samples: 3
+          expected_num_samples: 3
+          force_rerun: True
         membrane_group:
           membrane_cost:
             type: UniformSample
