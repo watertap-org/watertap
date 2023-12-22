@@ -595,6 +595,18 @@ def setup_optimization(m):
         reactor.volume.setlb(10)
         # reactor.hydraulic_retention_time.fix()
 
+    @m.fs.Constraint(m.fs.time)
+    def Vol_1(self, t):
+        return m.fs.R1.volume[0] == m.fs.R2.volume[0]
+
+    @m.fs.Constraint(m.fs.time)
+    def Vol_2(self, t):
+        return m.fs.R3.volume[0] == m.fs.R4.volume[0]
+
+    @m.fs.Constraint(m.fs.time)
+    def Vol_3(self, t):
+        return m.fs.R4.volume[0] <= m.fs.R5.volume[0]
+
     # Unfix fraction of outflow from reactor 5 that goes to recycle
     # m.fs.SP5.split_fraction[:, "underflow"].unfix()
     # m.fs.SP5.split_fraction[:, "underflow"].setlb(0.45)
