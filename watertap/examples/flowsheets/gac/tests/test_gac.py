@@ -41,6 +41,7 @@ class TestGACFlowsheet:
 
         return m
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, gac_frame):
 
@@ -68,6 +69,7 @@ class TestGACFlowsheet:
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(0.5636, rel=1e-3)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_build_solve_options(self):
 

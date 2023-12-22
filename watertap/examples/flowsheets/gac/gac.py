@@ -65,7 +65,7 @@ def build(
     # blocks
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    solute_mw = 0.20
+    solute_mw = 0.08
     solute_diffusivtiy = 1e-9
     solute_mv = 1e-4
     if (
