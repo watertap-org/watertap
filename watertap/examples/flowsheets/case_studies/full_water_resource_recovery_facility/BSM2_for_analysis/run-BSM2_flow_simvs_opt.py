@@ -75,6 +75,8 @@ if __name__ == '__main__':
         pyo.value(m.fs.DU.electricity_consumption[0]),
         pyo.value(m.fs.TU.electricity_consumption[0]),
     ]
+
+    V1_1 = [pyo.value(m.fs.R1.volume[0]), pyo.value(m.fs.R2.volume[0]), pyo.value(m.fs.R3.volume[0]), pyo.value(m.fs.R4.volume[0]), pyo.value(m.fs.R5.volume[0])]
     unit1.append(unit)
     y1.append(y)
 
@@ -108,6 +110,8 @@ if __name__ == '__main__':
         pyo.value(m.fs.DU.electricity_consumption[0]),
         pyo.value(m.fs.TU.electricity_consumption[0]),
     ]
+    V1_2 = [pyo.value(m.fs.R1.volume[0]), pyo.value(m.fs.R2.volume[0]), pyo.value(m.fs.R3.volume[0]), pyo.value(m.fs.R4.volume[0]), pyo.value(m.fs.R5.volume[0])]
+
     unit1.append(unit)
     y1.append(y)
 
@@ -138,7 +142,7 @@ if __name__ == '__main__':
     dewatering_e = y2[:,3]
     thickening_e = y2[:,4]
 
-    groups = ["sim", "opt"]
+    groups = ["Simulation", "Optimization"]
     b1 = np.add(Primary, Secondary)
     b2 = np.add(b1, Digestion)
     b3 = np.add(b2, dewatering)
@@ -164,4 +168,21 @@ if __name__ == '__main__':
     plt.ylabel('LCOW \$/m$^3$')
     plt.title('Simulation vs. Optimization')
     ax.legend(bbox_to_anchor=(1.1, 1.05))
+    plt.show() 
+
+    reactors = ["Reactor 1", "Reactor 2", "Reactor 3", "Reactor 4", "Reactor 5"]
+    barWidth = 0.25
+    br1 = np.arange(len(reactors)) 
+    br2 = [x + barWidth for x in br1] 
+
+    fig, ax = plt.subplots()
+    ax.bar(br1, V1_1, color = "navy", width = barWidth, label ='Simulation')
+    ax.bar(br2, V1_2, color = "dodgerblue", width = barWidth, label ='Optimization')
+
+    # plt.xticks(x)
+    plt.ylabel('Volume m$^3$')
+    plt.title('Simulation vs. Optimization')
+    plt.xticks([r + barWidth for r in range(len(reactors))], 
+        ["Reactor 1", "Reactor 2", "Reactor 3", "Reactor 4", "Reactor 5"])
+    ax.legend()
     plt.show() 
