@@ -554,15 +554,18 @@ def add_costing(m):
 
 def setup_optimization(m):
 
-    # for i in ["R1", "R2", "R3", "R4", "R5"]:
-    #     reactor = getattr(m.fs, i)
-    #     reactor.volume.unfix()
-    #     reactor.volume.setlb(10)
+    for i in ["R1", "R2", "R3", "R4", "R5"]:
+        reactor = getattr(m.fs, i)
+        reactor.volume.unfix()
+        reactor.volume.setlb(500)
+        reactor.volume.setub(2000)
     #     reactor.hydraulic_retention_time.fix()
 
     # Unfix fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP5.split_fraction[:, "underflow"].unfix()
-    m.fs.SP5.split_fraction[:, "underflow"].setlb(0.45)
+    # m.fs.SP5.split_fraction[:, "underflow"].setlb(0.45)
+    m.fs.SP6.split_fraction[:, "recycle"].unfix()
+
     
     add_effluent_violations(m)
 
