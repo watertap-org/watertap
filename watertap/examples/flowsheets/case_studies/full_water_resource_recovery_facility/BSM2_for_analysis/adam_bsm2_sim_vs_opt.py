@@ -582,6 +582,7 @@ def add_costing(m):
     m.fs.costing.add_annual_water_production(m.fs.Treated.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.FeedWater.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
+    m.fs.costing.add_annual_water_production(m.fs.FeedWater.properties[0].flow_vol, name="annual_feedwater_volume")
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
     iscale.calculate_scaling_factors(m.fs)
@@ -595,17 +596,17 @@ def setup_optimization(m):
         reactor.volume.setlb(10)
         # reactor.hydraulic_retention_time.fix()
 
-    @m.fs.Constraint(m.fs.time)
-    def Vol_1(self, t):
-        return m.fs.R1.volume[0] == m.fs.R2.volume[0]
+    # @m.fs.Constraint(m.fs.time)
+    # def Vol_1(self, t):
+    #     return m.fs.R1.volume[0] == m.fs.R2.volume[0]
 
-    @m.fs.Constraint(m.fs.time)
-    def Vol_2(self, t):
-        return m.fs.R3.volume[0] == m.fs.R4.volume[0]
+    # @m.fs.Constraint(m.fs.time)
+    # def Vol_2(self, t):
+    #     return m.fs.R3.volume[0] == m.fs.R4.volume[0]
 
-    @m.fs.Constraint(m.fs.time)
-    def Vol_3(self, t):
-        return m.fs.R4.volume[0] <= m.fs.R5.volume[0]
+    # @m.fs.Constraint(m.fs.time)
+    # def Vol_3(self, t):
+    #     return m.fs.R5.volume[0] >= m.fs.R4.volume[0] * 0.5
 
     # Unfix fraction of outflow from reactor 5 that goes to recycle
     # m.fs.SP5.split_fraction[:, "underflow"].unfix()

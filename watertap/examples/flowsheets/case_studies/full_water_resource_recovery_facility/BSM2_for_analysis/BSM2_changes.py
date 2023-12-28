@@ -116,14 +116,13 @@ def main():
     # sm_final = scaling.create_using(m, rename=False)
     # print(f"Final Condition No.: {jacobian_cond(sm_final, scaled=False)}")
     setup_optimization(m)
-    # setup_metrics(m)
     solver2 = get_solver()
     # solver2.options['ma27_pivtol'] = 0.5
-    solver2.options["halt_on_ampl_error"] = "yes"
+    # solver2.options["halt_on_ampl_error"] = "yes"
     # solver2.options["bound_push"] = 1e-20
     results = solver2.solve(m, tee=True, symbolic_solver_labels=True)
     pyo.assert_optimal_termination(results)
-    print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
+    # print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
     # display_results(m)
 
     display_costing(m)
@@ -377,7 +376,7 @@ def set_operating_conditions(m):
     m.fs.R5.outlet.conc_mass_comp[:, "S_O"].fix(4.49e-4)
 
     # Set fraction of outflow from reactor 5 that goes to recycle
-    m.fs.SP5.split_fraction[:, "underflow"].fix(0.6)
+    m.fs.SP5.split_fraction[:, "underflow"].fix(0.7)
 
     # Secondary clarifier
     # TODO: Update once secondary clarifier with more detailed model available
@@ -547,96 +546,74 @@ def add_costing(m):
     iscale.calculate_scaling_factors(m.fs)
 
 
-# def setup_metrics(m):
-        
-#     for i in ["R1", "R2", "R3", "R4", "R5", "CL1", "RADM", "DU", "TU"]:
-#         unit = getattr(m.fs, i)
-#         m.fs.add_component(
-#         "cap_cost".join([str(unit)]),
-#         pyo.Expression(
-#             expr=unit.costing.capital_cost * 0.9 /(
-#                 pyo.units.convert(
-#                     unit.inlet.flow_vol[0], to_units=pyo.units.m**3 / pyo.units.year
-#                 )
-#                 * 10
-#             ),
-#             doc=f"unit cap cost {i}",
-#         ),
-
-#     )
-
-#     for i in ["R3", "R4", "R5", "CL1", "RADM", "DU", "TU"]:
-#         unit = getattr(m.fs, i)
-#         m.fs.add_component(
-#         "op_cost".join([str(unit)]),
-#         pyo.Expression(
-#             expr= unit.electricity_consumption[0] * 0.07 /(
-#                 pyo.units.convert(
-#                     unit.inlet.flow_vol[0], to_units=pyo.units.m**3 / pyo.units.year
-#                 )
-#             ),
-#             doc=f"unit op cost {i}",
-#         ),
-
-#     )
-
-
 def setup_optimization(m):
-
+    m.fs.R1.volume.unfix()
+    m.fs.R2.volume.unfix()
+    m.fs.R3.volume.unfix()
+    m.fs.R4.volume.unfix()
+    m.fs.R5.volume.unfix()
     for i in ["R1", "R2", "R3", "R4", "R5"]:
         reactor = getattr(m.fs, i)
-        reactor.volume.unfix()
         reactor.volume.setlb(10)
-        # reactor.hydraulic_retention_time.fix()
 
     # @m.fs.Constraint(m.fs.time)
-    # def Vol_1(self, t):
-    #     return m.fs.R1.volume[0] == m.fs.R2.volume[0]
+    # def vol_1(self, t):
+    #     return m.fs.R1.volume[t] == m.fs.R2.volume[t]
+
 
     # @m.fs.Constraint(m.fs.time)
-    # def Vol_2(self, t):
-    #     return m.fs.R3.volume[0] == m.fs.R4.volume[0]
+    # def vol_2(self, t):
+    #     return m.fs.R3.volume[t] == m.fs.R4.volume[t]
+
 
     # @m.fs.Constraint(m.fs.time)
-    # def Vol_3(self, t):
-    #     return m.fs.R4.volume[0] <= m.fs.R5.volume[0]
+    # def vol_3(self, t):
+    #     return m.fs.R3.volume[t] == m.fs.R5.volume[t]
 
-    # Unfix fraction of outflow from reactor 5 that goes to recycle
-    # m.fs.SP5.split_fraction[:, "underflow"].unfix()
-    # m.fs.SP5.split_fraction[:, "underflow"].setlb(0.45)
-    
-    add_effluent_violations(m)
+    m.fs.R1.hydraulic_retention_time.fix(819*pyo.units.s)
+    m.fs.R2.hydraulic_retention_time.fix(819*pyo.units.s)
+    m.fs.R3.hydraulic_retention_time.fix(1092*pyo.units.s)
+    m.fs.R4.hydraulic_retention_time.fix(1092*pyo.units.s)
+    m.fs.R5.hydraulic_retention_time.fix(1092*pyo.units.s)
 
-def add_effluent_violations(m):
-    #TODO: update "m" to blk; change ref to m.fs.Treated instead of CL1 effluent
-    m.fs.TSS_max = pyo.Var(initialize=0.03, units=pyo.units.kg / pyo.units.m**3)
-    m.fs.TSS_max.fix()
+    m.fs.SP5.split_fraction[:, "underflow"].unfix()
+    m.fs.SP5.split_fraction.setlb(0.45)
+    # m.fs.SP5.split_fraction.setub(0.61)
+
+    # m.fs.SP5.split_fraction[:, "underflow"].fix(0.55)
+    # m.fs.TU.diameter.unfix()
+    # m.fs.CL1.surface_area.unfix()
+    # # Dewatering Unit - fix either HRT or volume.
+    # m.fs.DU.hydraulic_retention_time.fix(1800 * pyo.units.s)
+
+    # # Set specific energy consumption averaged for centrifuge
+    # m.fs.DU.energy_electric_flow_vol_inlet[0] = 0.069 * pyo.units.kWh / pyo.units.m**3
+
+    # Thickener unit
+    # m.fs.TU.hydraulic_retention_time.fix(86400 * pyo.units.s)
+    # m.fs.TU.diameter.unfix()
+    # m.fs.TU.diameter.setub(20)
+    m.fs.TSS_max = pyo.Param(initialize=0.03, mutable=True, units=pyo.units.kg / pyo.units.m**3)
+    # m.fs.TSS_max.fix()
 
     @m.fs.Constraint(m.fs.time)
     def eq_TSS_max(self, t):
         return m.fs.CL1.effluent_state[0].TSS <= m.fs.TSS_max 
 
-    m.fs.COD_max = pyo.Var(initialize=0.1, units=pyo.units.kg / pyo.units.m**3)
-    m.fs.COD_max.fix()
+    m.fs.COD_max = pyo.Param(initialize=0.1, mutable=True, units=pyo.units.kg / pyo.units.m**3)
+    # m.fs.COD_max.fix()
 
     @m.fs.Constraint(m.fs.time)
     def eq_COD_max(self, t):
         return m.fs.CL1.effluent_state[0].COD <= m.fs.COD_max 
-
-    m.fs.totalN_max = pyo.Var(initialize=0.018, units=pyo.units.kg / pyo.units.m**3)
-    m.fs.totalN_max.fix()
+    m.fs.totalN_max = pyo.Param(initialize=0.018, mutable=True, units=pyo.units.kg / pyo.units.m**3)
+    # m.fs.totalN_max.fix()
 
     @m.fs.Constraint(m.fs.time)
     def eq_totalN_max(self, t):
-        return m.fs.CL1.effluent_state[0].Total_N <= m.fs.totalN_max *1.1
+        return m.fs.CL1.effluent_state[0].Total_N <= m.fs.totalN_max *1.01
 
-    m.fs.BOD5_max = pyo.Var(initialize=0.01, units=pyo.units.kg / pyo.units.m**3)
-    m.fs.BOD5_max.fix()
 
-    @m.fs.Constraint(m.fs.time)
-    def eq_BOD5_max(self, t):
-        return m.fs.CL1.effluent_state[0].BOD5["effluent"] <= m.fs.BOD5_max 
-    
 def solve(blk, solver=None):
     if solver is None:
         solver = get_solver()
