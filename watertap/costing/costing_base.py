@@ -23,7 +23,6 @@ from watertap.costing.unit_models.cstr import cost_cstr
 from watertap.costing.unit_models.heater_chiller import cost_heater_chiller
 
 
-
 @declare_process_block_class("WaterTAPCostingBlock")
 class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
     """
