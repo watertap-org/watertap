@@ -185,8 +185,8 @@ With the flowsheet defined and suitably initialized, along with the definitions 
 
     # Run the parameter sweep
     global_results = differential_parameter_sweep(
-            model, 
-            sweep_params, 
+            build_model, 
+            build_sweep_params, 
             differential_sweep_specs,
             outputs, 
             h5_results_file_name='monte_carlo_results.h5',

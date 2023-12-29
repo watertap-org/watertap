@@ -280,4 +280,4 @@ jobs:
         pyomo build-extensions || python -c "from pyomo.contrib.pynumero.asl import AmplInterface; exit(0) if AmplInterface.available() else exit(1)"
     - name: Run pytest
       run: |
-        pytest --pyargs watertap -k 'not (nf_dspmde.nf_ui or nf_dspmde.nf_with_bypass_ui)'
+        pytest --pyargs watertap -k 'not (nf_dspmde.nf_ui or nf_dspmde.nf_with_bypass_ui or mvc.mvc_single_stage_ui)'

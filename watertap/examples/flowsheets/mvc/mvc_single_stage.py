@@ -24,7 +24,6 @@ from pyomo.environ import (
 from pyomo.network import Arc, SequentialDecomposition
 
 import pyomo.environ as pyo
-import pyomo.util.infeasible as infeas
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -39,7 +38,6 @@ from idaes.models.unit_models.heat_exchanger import (
 )
 from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
 
 from watertap.unit_models.mvc.components import Evaporator, Compressor, Condenser
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
@@ -83,6 +81,8 @@ def main():
     print("Termination condition: ", results.solver.termination_condition)
     display_metrics(m)
     display_design(m)
+
+    return m, results
 
 
 def build():
@@ -367,20 +367,20 @@ def set_operating_conditions(m):
     m.fs.recovery[0].fix(0.5)
 
     # Feed pump
-    m.fs.pump_feed.efficiency_pump.fix(0.8)
+    m.fs.pump_feed.efficiency_pump[0].fix(0.8)
     m.fs.pump_feed.control_volume.deltaP[0].fix(7e3)
 
     # Separator
     m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"] = m.fs.recovery[0].value
 
     # Distillate HX
-    m.fs.hx_distillate.overall_heat_transfer_coefficient.fix(2e3)
+    m.fs.hx_distillate.overall_heat_transfer_coefficient[0].fix(2e3)
     m.fs.hx_distillate.area.fix(125)
     m.fs.hx_distillate.cold.deltaP[0].fix(7e3)
     m.fs.hx_distillate.hot.deltaP[0].fix(7e3)
 
     # Brine HX
-    m.fs.hx_brine.overall_heat_transfer_coefficient.fix(2e3)
+    m.fs.hx_brine.overall_heat_transfer_coefficient[0].fix(2e3)
     m.fs.hx_brine.area.fix(115)
     m.fs.hx_brine.cold.deltaP[0].fix(7e3)
     m.fs.hx_brine.hot.deltaP[0].fix(7e3)
@@ -396,18 +396,18 @@ def set_operating_conditions(m):
     m.fs.compressor.efficiency.fix(0.8)
 
     # Brine pump
-    m.fs.pump_brine.efficiency_pump.fix(0.8)
+    m.fs.pump_brine.efficiency_pump[0].fix(0.8)
     m.fs.pump_brine.control_volume.deltaP[0].fix(4e4)
 
     # Distillate pump
-    m.fs.pump_distillate.efficiency_pump.fix(0.8)
+    m.fs.pump_distillate.efficiency_pump[0].fix(0.8)
     m.fs.pump_distillate.control_volume.deltaP[0].fix(4e4)
 
     # Fix 0 TDS
     m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp["Liq", "TDS"].fix(1e-5)
 
     # Costing
-    m.fs.costing.factor_total_investment.fix(2)
+    m.fs.costing.TIC.fix(2)
     m.fs.costing.electricity_cost = 0.1  # 0.15
     m.fs.costing.heat_exchanger.material_factor_cost.fix(5)
     m.fs.costing.evaporator.material_factor_cost.fix(5)
@@ -619,7 +619,6 @@ def scale_costs(m):
     calculate_cost_sf(m.fs.costing.aggregate_capital_cost)
     calculate_cost_sf(m.fs.costing.aggregate_flow_costs["electricity"])
     calculate_cost_sf(m.fs.costing.total_capital_cost)
-    calculate_cost_sf(m.fs.costing.maintenance_labor_chemical_operating_cost)
     calculate_cost_sf(m.fs.costing.total_operating_cost)
 
     iscale.calculate_scaling_factors(m)

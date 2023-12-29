@@ -10,19 +10,28 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-import numpy
+import logging
+import multiprocessing
+from queue import Empty as EmptyQueue
 
+import numpy
 
 from watertap.tools.parallel.results import LocalResults
 from watertap.tools.parallel.parallel_manager import (
     parallelActor,
     ParallelManager,
 )
-import multiprocessing
+
+
+_logger = logging.getLogger(__name__)
 
 
 class MultiprocessingParallelManager(ParallelManager):
-    def __init__(self, number_of_subprocesses=1, **kwargs):
+    def __init__(
+        self,
+        number_of_subprocesses=1,
+        **kwargs,
+    ):
         self.max_number_of_subprocesses = number_of_subprocesses
 
         # this will be updated when child processes are kicked off
@@ -56,7 +65,7 @@ class MultiprocessingParallelManager(ParallelManager):
         return [data]
 
     def sum_values_and_sync(self, sendbuf, recvbuf):
-        recvbuf[0][:] = sendbuf[0][:]
+        recvbuf[:] = sendbuf
 
     def gather_arrays_to_root(self, sendbuf, recvbuf_spec):
         receive_arr = recvbuf_spec[0]
@@ -112,13 +121,24 @@ class MultiprocessingParallelManager(ParallelManager):
         results = []
         # collect result from the actors
         while len(results) < self.expected_samples:
-            if self.return_queue.empty() == False:
+            try:
                 i, values, result = self.return_queue.get()
-
                 results.append(LocalResults(i, values, result))
+            except EmptyQueue:
+                break
+        self._shut_down()
         # sort the results by the process number to keep a deterministic ordering
         results.sort(key=lambda result: result.process_number)
         return results
+
+    def _shut_down(self):
+        n_shut_down = 0
+        for process in self.actors:
+            _logger.debug("Attempting to shut down %s", process)
+            process.kill()
+            n_shut_down += 1
+        self.actors.clear()
+        _logger.debug("Shut down %d processes", n_shut_down)
 
     def results_from_local_tree(self, results):
         return results
@@ -135,9 +155,10 @@ def multiProcessingActor(
 ):
     actor = parallelActor(do_build, do_build_kwargs, do_execute, local_parameters)
     while True:
-        if queue.empty():
-            break
-        else:
-            i, local_parameters = queue.get()
-            result = actor.execute(local_parameters)
-            return_queue.put([i, local_parameters, result])
+        try:
+            msg = queue.get()
+        except EmptyQueue:
+            return
+        i, local_parameters = msg
+        result = actor.execute(local_parameters)
+        return_queue.put([i, local_parameters, result])

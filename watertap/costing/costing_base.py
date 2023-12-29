@@ -13,6 +13,7 @@
 import pyomo.environ as pyo
 from idaes.core import declare_process_block_class
 from idaes.core.base.costing_base import FlowsheetCostingBlockData
+
 from idaes.models.unit_models import Mixer, HeatExchanger, Heater, CSTR
 from watertap.core.util.misc import is_constant_up_to_units
 
@@ -20,6 +21,7 @@ from watertap.costing.unit_models.mixer import cost_mixer
 from watertap.costing.unit_models.heat_exchanger import cost_heat_exchanger
 from watertap.costing.unit_models.cstr import cost_cstr
 from watertap.costing.unit_models.heater_chiller import cost_heater_chiller
+
 
 
 @declare_process_block_class("WaterTAPCostingBlock")

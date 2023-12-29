@@ -27,6 +27,9 @@ class ModelManager:
         self.is_initialized = False
         self.is_solved = False
         self.is_prior_parameter_solved = False
+        # internal state option to be used by differntial sweep tool to
+        # prevent model reintialization and state reset
+        self._is_rebuild_and_init_enabled = True
         # this is isused for loggin states if enabled
         self.solved_states = {"state": [], "local_value_k": []}
         self.initialized_states = {"state": [], "local_value_k": []}
@@ -40,12 +43,14 @@ class ModelManager:
             # update paramters before init if enabled by user
             if (
                 self.ps_conf.update_sweep_params_before_init
-                and sweep_params != None
-                and local_value_k != None
+                and sweep_params is not None
+                and local_value_k is not None
             ):
                 self.update_model_params(sweep_params, local_value_k)
             # init
+
             self.init_model()
+
         # raise error if user sets to init before sweep, but does not provide
         # initilize function
         elif self.ps_conf.update_sweep_params_before_init:

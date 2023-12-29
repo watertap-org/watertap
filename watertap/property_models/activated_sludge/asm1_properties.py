@@ -99,14 +99,12 @@ class ASM1ParameterData(PhysicalParameterBlock):
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(
-            mutable=False,
             initialize=4182,
             doc="Specific heat capacity of water",
             units=pyo.units.J / pyo.units.kg / pyo.units.K,
         )
         # Density of water
         self.dens_mass = pyo.Param(
-            mutable=False,
             initialize=997,
             doc="Density of water",
             units=pyo.units.kg / pyo.units.m**3,
@@ -127,6 +125,40 @@ class ASM1ParameterData(PhysicalParameterBlock):
             doc="Reference temperature",
             units=pyo.units.K,
         )
+        self.f_p = pyo.Var(
+            initialize=0.08,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Fraction of biomass yielding particulate products, f_p",
+        )
+        self.i_xb = pyo.Var(
+            initialize=0.08,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Mass fraction of N per COD in biomass, i_xb",
+        )
+        self.i_xp = pyo.Var(
+            initialize=0.06,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Mass fraction of N per COD in particulates, i_xp",
+        )
+        self.COD_to_SS = pyo.Var(
+            initialize=0.75,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Conversion factor applied for TSS calculation",
+        )
+        self.BOD5_factor = pyo.Var(
+            ["raw", "effluent"],
+            initialize={"raw": 0.65, "effluent": 0.25},
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Conversion factor for BOD5",
+        )
+        # Fix Vars that are treated as Params
+        for v in self.component_objects(pyo.Var):
+            v.fix()
 
     @classmethod
     def define_metadata(cls, obj):
@@ -141,6 +173,11 @@ class ASM1ParameterData(PhysicalParameterBlock):
         obj.define_custom_properties(
             {
                 "alkalinity": {"method": None},
+                "TSS": {"method": "_TSS"},
+                "BOD5": {"method": "_BOD5"},
+                "TKN": {"method": "_TKN"},
+                "Total_N": {"method": "_Total_N"},
+                "COD": {"method": "_COD"},
             }
         )
         obj.add_default_units(
@@ -356,6 +393,81 @@ class ASM1StateBlockData(StateBlockData):
 
         self.energy_density_expression = pyo.Expression(
             rule=energy_density_expression, doc="Energy density term"
+        )
+
+        def _TSS(self):
+            tss = (
+                self.conc_mass_comp["X_S"]
+                + self.conc_mass_comp["X_I"]
+                + self.conc_mass_comp["X_BH"]
+                + self.conc_mass_comp["X_BA"]
+                + self.conc_mass_comp["X_P"]
+            )
+            return self.params.COD_to_SS * tss
+
+        self.TSS = pyo.Expression(
+            rule=_TSS,
+            doc="Total suspended solids (TSS)",
+        )
+
+        def _BOD5(self, i):
+            bod5 = (
+                self.conc_mass_comp["X_S"]
+                + self.conc_mass_comp["X_S"]
+                + (1 - self.params.f_p)
+                * (self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"])
+            )
+            # TODO: 0.25 should be a parameter instead as it changes by influent/effluent
+            return self.params.BOD5_factor[i] * bod5
+
+        self.BOD5 = pyo.Expression(
+            ["raw", "effluent"],
+            rule=_BOD5,
+            doc="Five-day Biological Oxygen Demand (BOD5)",
+        )
+
+        def _COD(self):
+            cod = (
+                self.conc_mass_comp["S_S"]
+                + self.conc_mass_comp["S_I"]
+                + self.conc_mass_comp["X_S"]
+                + self.conc_mass_comp["X_S"]
+                + self.conc_mass_comp["X_I"]
+                + self.conc_mass_comp["X_BH"]
+                + self.conc_mass_comp["X_BA"]
+                + self.conc_mass_comp["X_P"]
+            )
+            return cod
+
+        self.COD = pyo.Expression(
+            rule=_COD,
+            doc="Chemical Oxygen Demand",
+        )
+
+        def _TKN(self):
+            tkn = (
+                self.conc_mass_comp["S_NH"]
+                + self.conc_mass_comp["S_ND"]
+                + self.conc_mass_comp["X_ND"]
+                + self.params.i_xb
+                * (self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"])
+                + self.params.i_xp
+                * (self.conc_mass_comp["X_P"] + self.conc_mass_comp["X_I"])
+            )
+            return tkn
+
+        self.TKN = pyo.Expression(
+            rule=_TKN,
+            doc="Total Kjeldahl Nitrogen",
+        )
+
+        def _Total_N(self):
+            totaln = self.TKN + self.conc_mass_comp["S_NO"]
+            return totaln
+
+        self.Total_N = pyo.Expression(
+            rule=_Total_N,
+            doc="Total Nitrogen",
         )
 
         iscale.set_scaling_factor(self.flow_vol, 1e1)

@@ -109,7 +109,7 @@ class SurfaceDischargeData(ZeroOrderBaseData):
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
-        blk.unit_model._add_cost_factor(
+        blk.costing_package.add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
