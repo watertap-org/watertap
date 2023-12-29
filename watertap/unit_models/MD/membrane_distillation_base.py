@@ -35,6 +35,9 @@ from .MD_channel_base import (
     TemperaturePolarizationType,
     MassTransferCoefficient,
 )
+from watertap.costing.unit_models.membrane_distillation import (
+    cost_membrane_distillation,
+)
 
 __author__ = "Elmira Shamlou"
 
@@ -739,3 +742,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         if hasattr(self, "width"):
             if iscale.get_scaling_factor(self.width) is None:
                 iscale.set_scaling_factor(self.width, 1)
+
+    @property
+    def default_costing_method(self):
+        return cost_membrane_distillation
