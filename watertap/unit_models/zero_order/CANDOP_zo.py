@@ -139,7 +139,7 @@ class CANDOPData(ZeroOrderBaseData):
         )
 
         # Determine if a costing factor is required
-        blk.unit_model._add_cost_factor(
+        blk.costing_package.add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 

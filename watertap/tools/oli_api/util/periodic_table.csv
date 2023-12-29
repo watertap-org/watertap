@@ -1,0 +1,119 @@
+AtomicNumber,Element,Symbol,AtomicMass,NumberOfNeutrons,NumberOfProtons,NumberOfElectrons,Period,Group,Phase,Radioactive,Natural,Metal,Nonmetal,Metalloid,Type,AtomicRadius,Electronegativity,ionizationEnergy,Density,MeltingPoint,BoilingPoint,stableIsotopes,Discoverer,Year,SpecificHeat,NumberOfShells,NumberOfValence
+1,Hydrogen,H,1.008,0,1,1,1,1,Gas,,yes,,yes,,Non-Metal,120,2.20,13.5984,0.000090,13.81,20.28,2,Henry Cavendish,1766,14.304,1,1
+2,Helium,He,4.003,2,2,2,1,18,Gas,,yes,,yes,,Noble Gas,140,,24.5874,0.000179,0.95,4.22,2,Pierre Janssen - Norman Lockyer and Edward Frankland,1868,5.193,1,2
+3,Lithium,Li,7.000,4,3,3,2,1,Solid,,yes,yes,,,Alkali Metal,182,0.98,5.3917,0.534000,453.65,1615.00,2,Johan August Arfvedson - isolated Robert Bunsen and Augustus Mathhiesen,1817,3.582,2,1
+4,Beryllium,Be,9.012,5,4,4,2,2,Solid,,yes,yes,,,Alkaline Earth Metal,153,1.57,9.3227,1.850000,1560.00,2744.00,1,Nicholas Louis Vauquelin - isolated Friedrich Wöhler and Antoine A. Bussy [independently],1797,1.825,2,2
+5,Boron,B,10.810,6,5,5,2,13,Solid,,yes,,,yes,Metalloid,192,2.04,8.2980,2.370000,2348.00,4273.00,2,Joseph Louis Gay-Lussac with Louis Jacques Thénard and Sir Humphrey Davy [independently],1808,1.026,2,3
+6,Carbon,C,12.011,6,6,6,2,14,Solid,,yes,,yes,,Non-Metal,170,2.55,11.2603,2.267000,3823.00,4098.00,2,Prehistoric,,0.709,2,4
+7,Nitrogen,N,14.007,7,7,7,2,15,Gas,,yes,,yes,,Non-Metal,155,3.04,14.5341,0.001251,63.15,77.36,2,Daniel Rutherford,1772,1.040,2,5
+8,Oxygen,O,15.999,8,8,8,2,16,Gas,,yes,,yes,,Non-Metal,152,3.44,13.6181,0.001429,54.36,90.20,3,Joseph Priestly and  Carl Wilhelm Scheele [independently],1774,0.918,2,6
+9,Fluorine,F,18.998,10,9,9,2,17,Gas,,yes,,yes,,Halogen,135,3.98,17.4228,0.001696,53.53,85.03,1,Henri Moissan,1886,0.824,2,7
+10,Neon,Ne,20.180,10,10,10,2,18,Gas,,yes,,yes,,Noble Gas,154,,21.5645,0.000900,24.56,27.07,3,Sir William Ramsay and Morris Travers,1898,1.030,2,8
+11,Sodium,Na,22.990,12,11,11,3,1,Solid,,yes,yes,,,Alkali Metal,227,0.93,5.1391,0.970000,370.95,1156.00,1,Sir Humphrey Davy,1807,1.228,3,1
+12,Magnesium,Mg,24.305,12,12,12,3,2,Solid,,yes,yes,,,Alkaline Earth Metal,173,1.31,7.6462,1.740000,923.00,1363.00,3,Joseph Black - isolated Sir Humphrey Davy,1755,1.023,3,2
+13,Aluminum,Al,26.982,14,13,13,3,13,Solid,,yes,yes,,,Post-Transition Metal,184,1.61,5.9858,2.700000,933.44,2792.00,1,Hans Christian Ørsted and Friedrich Wöhler,1825,0.897,3,3
+14,Silicon,Si,28.085,14,14,14,3,14,Solid,,yes,,,yes,Metalloid,210,1.90,8.1517,2.329600,1687.00,3538.00,3,Jöns Jakob Berzelius,1824,0.705,3,4
+15,Phosphorus,P,30.974,16,15,15,3,15,Solid,,yes,,yes,,Non-Metal,180,2.19,10.4867,1.820000,317.30,553.65,1,Hennig Brandt,1669,0.769,3,5
+16,Sulfur,S,32.070,16,16,16,3,16,Solid,,yes,,yes,,Non-Metal,180,2.58,10.3600,2.067000,388.36,717.75,4,Prehistoric,,0.710,3,6
+17,Chlorine,Cl,35.450,18,17,17,3,17,Gas,,yes,,yes,,Halogen,175,3.16,12.9676,0.003214,171.65,239.11,2,Carl Wilhelm Scheele,1774,0.479,3,7
+18,Argon,Ar,39.900,22,18,18,3,18,Gas,,yes,,yes,,Noble Gas,188,,15.7596,0.001784,83.80,87.30,3,John William Strutt [3rd Baron Rayleigh] and Sir William Ramsay,1894,0.520,3,8
+19,Potassium,K,39.098,20,19,19,4,1,Solid,,yes,yes,,,Alkali Metal,275,0.82,4.3407,0.890000,336.53,1032.00,2,Sir Humphrey Davy,1807,0.757,4,1
+20,Calcium,Ca,40.080,20,20,20,4,2,Solid,,yes,yes,,,Alkaline Earth Metal,231,1.00,6.1132,1.540000,1115.00,1757.00,5,Sir Humphrey Davy,1808,0.647,4,2
+21,Scandium,Sc,44.956,24,21,21,4,3,Solid,,yes,yes,,,Transition Metal,211,1.36,6.5615,2.990000,1814.00,3109.00,1,Lars Fredrick Nilson,1879,0.568,4,2
+22,Titanium,Ti,47.867,26,22,22,4,4,Solid,,yes,yes,,,Transition Metal,187,1.54,6.8281,4.500000,1941.00,3560.00,5,William Gregor isolated Lars Fredrick Nilson,1791,0.523,4,2
+23,Vanadium,V,50.942,28,23,23,4,5,Solid,,yes,yes,,,Transition Metal,179,1.63,6.7462,6.000000,2183.00,3680.00,1,Andrés Manuel del Río,1801,0.489,4,2
+24,Chromium,Cr,51.996,28,24,24,4,6,Solid,,yes,yes,,,Transition Metal,189,1.66,6.7665,7.150000,2180.00,2944.00,4,Nicholas Louis Vauquelin,1797,0.449,4,1
+25,Manganese,Mn,54.938,30,25,25,4,7,Solid,,yes,yes,,,Transition Metal,197,1.55,7.4340,7.300000,1519.00,2334.00,1,Johan Gottlieb Gahn,1774,0.479,4,2
+26,Iron,Fe,55.840,30,26,26,4,8,Solid,,yes,yes,,,Transition Metal,194,1.83,7.9024,7.874000,1811.00,3134.00,4,Prehistoric,,0.449,4,2
+27,Cobalt,Co,58.933,32,27,27,4,9,Solid,,yes,yes,,,Transition Metal,192,1.88,7.8810,8.860000,1768.00,3200.00,1,Georg Brandt,1735,0.421,4,2
+28,Nickel,Ni,58.693,31,28,28,4,10,Solid,,yes,yes,,,Transition Metal,163,1.91,7.6398,8.912000,1728.00,3186.00,5,Baron Axel Fredrik Cronstedt,1751,0.444,4,2
+29,Copper,Cu,63.550,35,29,29,4,11,Solid,,yes,yes,,,Transition Metal,140,1.90,7.7264,8.933000,1357.77,2835.00,2,Prehistoric,,0.385,4,1
+30,Zinc,Zn,65.400,35,30,30,4,12,Solid,,yes,yes,,,Transition Metal,139,1.65,9.3942,7.134000,692.68,1180.00,5,Ancient – rediscovered Andreas Sigismund Marggraf,1746,0.388,4,2
+31,Gallium,Ga,69.723,39,31,31,4,13,Solid,,yes,yes,,,Post-Transition Metal,187,1.81,5.9993,5.910000,302.91,2477.00,2,Paul Émile Lecoq de Boisbaudran,1875,0.371,4,3
+32,Germanium,Ge,72.630,41,32,32,4,14,Solid,,yes,,,yes,Metalloid,211,2.01,7.8994,5.323000,1211.40,3106.00,4,Clemens A. Winkler,1886,0.320,4,4
+33,Arsenic,As,74.922,42,33,33,4,15,Solid,,yes,,,yes,Metalloid,185,2.18,9.7886,5.776000,1090.00,887.00,1,Ancient – obtained Albertus Magnus [Albert the Great],1250,0.329,4,5
+34,Selenium,Se,78.970,45,34,34,4,16,Solid,,yes,,yes,,Non-Metal,190,2.55,9.7524,4.809000,493.65,958.00,5,Jöns Jakob Berzelius,1817,0.321,4,6
+35,Bromine,Br,79.900,45,35,35,4,17,Liquid,,yes,,yes,,Halogen,183,2.96,11.8138,3.110000,265.95,331.95,2,Antoine J. Balard and C. Löwig [independently],1826,0.474,4,7
+36,Krypton,Kr,83.800,48,36,36,4,18,Gas,,yes,,yes,,Noble Gas,202,3.00,13.9996,0.003733,115.79,119.93,5,Sir William Ramsay and Morris Travers,1898,0.248,4,8
+37,Rubidium,Rb,85.468,48,37,37,5,1,Solid,,yes,yes,,,Alkali Metal,303,0.82,4.1771,1.530000,312.46,961.00,1,Robert Bunsen and Gustav R. Kirchhoff,1861,0.363,5,1
+38,Strontium,Sr,87.620,50,38,38,5,2,Solid,,yes,yes,,,Alkaline Earth Metal,249,0.95,5.6949,2.640000,1050.00,1655.00,4,Adair Crawford - isolated Sir Humphrey Davy,1808,0.301,5,2
+39,Yttrium,Y,88.906,50,39,39,5,3,Solid,,yes,yes,,,Transition Metal,219,1.22,6.2173,4.470000,1795.00,3618.00,1,Johan Gadolin,1794,0.298,5,2
+40,Zirconium,Zr,91.220,51,40,40,5,4,Solid,,yes,yes,,,Transition Metal,186,1.33,6.6339,6.520000,2128.00,4682.00,4,Martin Heinrich Klaproth – isolated Jöns Jakob Berzelius,1789,0.278,5,2
+41,Niobium,Nb,92.906,52,41,41,5,5,Solid,,yes,yes,,,Transition Metal,207,1.60,6.7589,8.570000,2750.00,5017.00,1,Charles Hatchett,1801,0.265,5,1
+42,Molybdenum,Mo,95.950,54,42,42,5,6,Solid,,yes,yes,,,Transition Metal,209,2.16,7.0924,10.200000,2896.00,4912.00,6,Peter J. Hjelm,1781,0.251,5,1
+43,Technetium,Tc,98.000,55,43,43,5,7,Solid,yes,,yes,,,Transition Metal,209,1.90,7.2800,11.000000,2430.00,4538.00,0,Carlo Perrier and Emilio Segrè,1937,,5,1
+44,Ruthenium,Ru,101.100,57,44,44,5,8,Solid,,yes,yes,,,Transition Metal,207,2.20,7.3605,12.100000,2607.00,4423.00,7,Jędrzej Śniadecki -isolated Karl Klaus,1844,0.238,5,1
+45,Rhodium,Rh,102.906,58,45,45,5,9,Solid,,yes,yes,,,Transition Metal,195,2.28,7.4589,12.400000,2237.00,3968.00,1,William Hyde Wollaston,1803,0.243,5,1
+46,Palladium,Pd,106.420,60,46,46,5,10,Solid,,yes,yes,,,Transition Metal,202,2.20,8.3369,12.000000,1828.05,3236.00,6,William Hyde Wollaston,1803,0.244,5,1
+47,Silver,Ag,107.868,61,47,47,5,11,Solid,,yes,yes,,,Transition Metal,172,1.93,7.5762,10.501000,1234.93,2435.00,2,Prehistoric,,0.235,5,2
+48,Cadmium,Cd,112.410,64,48,48,5,12,Solid,,yes,yes,,,Transition Metal,158,1.69,8.9938,8.690000,594.22,1040.00,6,Friedrich Strohmeyer,1817,0.232,5,3
+49,Indium,In,114.818,66,49,49,5,13,Solid,,yes,yes,,,Post-Transition Metal,193,1.78,5.7864,7.310000,429.75,2345.00,1,Ferdinand Reich and Hieronymous Richter,1863,0.233,5,4
+50,Tin,Sn,118.710,69,50,50,5,14,Solid,,yes,yes,,,Post-Transition Metal,217,1.96,7.3439,7.287000,505.08,2875.00,10,Prehistoric,,0.228,5,5
+51,Antimony,Sb,121.760,71,51,51,5,15,Solid,,yes,,,yes,Metalloid,206,2.05,8.6084,6.685000,903.78,1860.00,2,Prehistoric – studied Nicolas Lémery,1707,0.207,5,6
+52,Tellurium,Te,127.600,76,52,52,5,16,Solid,,yes,,,yes,Metalloid,206,2.10,9.0096,6.232000,722.66,1261.00,6,Baron Franz Joseph Müller von Reichenstein – isolated Martin-Heinrich Klaproth,1798,0.202,5,7
+53,Iodine,I,126.905,74,53,53,5,17,Solid,,yes,,yes,,Halogen,198,2.66,10.4513,4.930000,386.85,457.55,1,Bernard Courtois,1811,0.214,5,8
+54,Xenon,Xe,131.290,77,54,54,5,18,Gas,,yes,,yes,,Noble Gas,216,2.60,12.1298,0.005887,161.36,165.03,7,Sir William Ramsay and Morris Travers,1898,0.158,5,1
+55,Cesium,Cs,132.905,78,55,55,6,1,Solid,,yes,yes,,,Alkali Metal,343,0.79,3.8939,1.930000,301.59,944.00,1,Robert Bunsen and Gustav R. Kirchhoff,1860,0.242,6,2
+56,Barium,Ba,137.330,81,56,56,6,2,Solid,,yes,yes,,,Alkaline Earth Metal,268,0.89,5.2117,3.620000,1000.00,2170.00,6,Sir Humphrey Davy,1808,0.204,6,2
+57,Lanthanum,La,138.906,82,57,57,6,3,Solid,,yes,yes,,,Lanthanide,240,1.10,5.5769,6.150000,1191.00,3737.00,1,Carl Gustav Mosander,1839,0.195,6,2
+58,Cerium,Ce,140.116,82,58,58,6, ,Solid,,yes,yes,,,Lanthanide,235,1.12,5.5387,6.770000,1071.00,3697.00,4,Jöns Jakob Berzelius and Wilhelm von Hisinger - isolated William F. Hillebrand and Thomas H. Norton,1803,0.192,6,2
+59,Praseodymium,Pr,140.908,82,59,59,6, ,Solid,,yes,yes,,,Lanthanide,239,1.13,5.4730,6.770000,1204.00,3793.00,1,Baron Carl Auer von Welsbach,1885,0.193,6,2
+60,Neodymium,Nd,144.240,84,60,60,6, ,Solid,,yes,yes,,,Lanthanide,229,1.14,5.5250,7.010000,1294.00,3347.00,5,Baron Carl Auer von Welsbach,1885,0.190,6,2
+61,Promethium,Pm,144.913,84,61,61,6, ,Solid,yes,,yes,,,Lanthanide,236,1.13,5.5820,7.260000,1315.00,3273.00,0,Jacob A. Marinsky and Lawrence E. Glendenin and Charles D. Coryell,1945,,6,2
+62,Samarium,Sm,150.400,88,62,62,6, ,Solid,,yes,yes,,,Lanthanide,229,1.17,5.6437,7.520000,1347.00,2067.00,5,Paul Émile Lecoq de Boisbaudran,1879,0.197,6,2
+63,Europium,Eu,151.964,89,63,63,6, ,Solid,,yes,yes,,,Lanthanide,233,1.20,5.6704,5.240000,1095.00,1802.00,1,Eugène-Antole Demarçay,1901,0.182,6,2
+64,Gadolinium,Gd,157.200,93,64,64,6, ,Solid,,yes,yes,,,Lanthanide,237,1.20,6.1501,7.900000,1586.00,3546.00,6,Jean Charles Galissard de Marignac,1880,0.236,6,2
+65,Terbium,Tb,158.925,94,65,65,6, ,Solid,,yes,yes,,,Lanthanide,221,1.20,5.8638,8.230000,1629.00,3503.00,1,Carl Gustaf Mosander,1843,0.182,6,2
+66,Dysprosium,Dy,162.500,97,66,66,6, ,Solid,,yes,yes,,,Lanthanide,229,1.22,5.9389,8.550000,1685.00,2840.00,7,Paul Émile Lecoq de Boisbaudran,1886,0.170,6,2
+67,Holmium,Ho,164.930,98,67,67,6, ,Solid,,yes,yes,,,Lanthanide,216,1.23,6.0215,8.800000,1747.00,2973.00,1,Marc Delafontaine with Jacques-Louis Soret and Per Teodor Cleve,1878,0.165,6,2
+68,Erbium,Er,167.260,99,68,68,6, ,Solid,,yes,yes,,,Lanthanide,235,1.24,6.1077,9.070000,1802.00,3141.00,6,Carl Gustaf Mosander,1843,0.168,6,2
+69,Thulium,Tm,168.934,100,69,69,6, ,Solid,,yes,yes,,,Lanthanide,227,1.25,6.1843,9.320000,1818.00,2223.00,1,Per Teodor Cleve,1879,0.160,6,2
+70,Ytterbium,Yb,173.050,103,70,70,6, ,Solid,,yes,yes,,,Lanthanide,242,1.10,6.2542,6.900000,1092.00,1469.00,7,Jean Charles Galissard de Marignac,1878,0.155,6,2
+71,Lutetium,Lu,174.967,104,71,71,6, ,Solid,,yes,yes,,,Lanthanide,221,1.27,5.4259,9.840000,1936.00,3675.00,1,Georges Urbain and Charles James [independently],1907,0.154,6,2
+72,Hafnium,Hf,178.490,106,72,72,6,4,Solid,,yes,yes,,,Transition Metal,212,1.30,6.8251,13.300000,2506.00,4876.00,5,Dirk Coster and Georg von Hevesey,1923,0.144,6,2
+73,Tantalum,Ta,180.948,108,73,73,6,5,Solid,,yes,yes,,,Transition Metal,217,1.50,7.5496,16.400000,3290.00,5731.00,2,Anders Gustaf Ekenberg,1802,0.140,6,2
+74,Tungsten,W,183.840,110,74,74,6,6,Solid,,yes,yes,,,Transition Metal,210,2.36,7.8640,19.300000,3695.00,5828.00,4,José and Fausto Elhuijar,1783,0.132,6,2
+75,Rhenium,Re,186.207,111,75,75,6,7,Solid,,yes,yes,,,Transition Metal,217,1.90,7.8335,20.800000,3459.00,5869.00,1,Walter Noddack and Ida Tacke and and Otto Berg,1925,0.137,6,2
+76,Osmium,Os,190.200,114,76,76,6,8,Solid,,yes,yes,,,Transition Metal,216,2.20,8.4382,22.570000,3306.00,5285.00,6,Smithson Tennant and William Hyde Wollaston,1803,0.130,6,2
+77,Iridium,Ir,192.220,115,77,77,6,9,Solid,,yes,yes,,,Transition Metal,202,2.20,8.9670,22.420000,2719.00,4701.00,2,Smithson Tennant,1803,0.131,6,1
+78,Platinum,Pt,195.080,117,78,78,6,10,Solid,,yes,yes,,,Transition Metal,209,2.28,8.9587,21.460000,2041.55,4098.00,5,Prehistoric pre-Columbian South Americans - Don Antonio de Ulloa,1735,0.133,6,1
+79,Gold,Au,196.967,118,79,79,6,11,Solid,,yes,yes,,,Transition Metal,166,2.54,9.2255,19.282000,1337.33,3129.00,1,Prehistoric,,0.129,6,2
+80,Mercury,Hg,200.590,121,80,80,6,12,Liquid,,yes,yes,,,Transition Metal,209,2.00,10.4375,13.533600,234.32,629.88,7,Prehistoric,,0.140,6,3
+81,Thallium,Tl,204.383,123,81,81,6,13,Solid,,yes,yes,,,Post-Transition Metal,196,1.62,6.1082,11.800000,577.00,1746.00,2,William Crookes,1861,0.129,6,4
+82,Lead,Pb,207.000,125,82,82,6,14,Solid,,yes,yes,,,Post-Transition Metal,202,2.33,7.4167,11.342000,600.61,2022.00,4,Prehistoric,,0.129,6,5
+83,Bismuth,Bi,208.980,126,83,83,6,15,Solid,,yes,yes,,,Post-Transition Metal,207,2.02,7.2856,9.807000,544.55,1837.00,0,Ancient – isolated Claude-Francois Geoffroy,1753,0.122,6,6
+84,Polonium,Po,209.000,125,84,84,6,16,Solid,yes,yes,,,yes,Metalloid,197,2.00,8.4170,9.320000,527.00,1235.00,0,Marie Curie,1898,,6,7
+85,Astatine,At,209.987,125,85,85,6,17,Solid,yes,yes,,yes,,Halogen,202,2.20,9.3000,7.000000,575.00,503.00,0,Dale R. Corson and K. R. MacKenzie and Emilio Segrè,1940,,6,8
+86,Radon,Rn,222.018,136,86,86,6,18,Gas,yes,yes,,yes,,Noble Gas,220,2.20,10.7485,0.009730,202.00,211.45,0,Friederich Ernst Dorn,1900,0.094,6,1
+87,Francium,Fr,223.020,136,87,87,7,1,Solid,yes,yes,yes,,,Alkali Metal,348,0.70,4.0727,,300.00,890.00,0,Marguerite Perey,1939,,7,2
+88,Radium,Ra,226.025,138,88,88,7,2,Solid,yes,yes,yes,,,Alkaline Earth Metal,283,0.90,5.2784,5.500000,973.00,1413.00,0,Pierre and Marie Curie,1898,,7,2
+89,Actinium,Ac,227.028,138,89,89,7,3,Solid,yes,yes,yes,,,Actinide,260,1.10,5.1700,10.070000,1324.00,3471.00,0,André-Louis Debierne,1899,0.120,7,2
+90,Thorium,Th,232.038,142,90,90,7, ,Solid,yes,yes,yes,,,Actinide,237,1.30,6.3067,11.720000,2023.00,5061.00,0,Jöns Jakob Berzelius,1828,0.113,7,2
+91,Protactinium,Pa,231.036,140,91,91,7, ,Solid,yes,yes,yes,,,Actinide,243,1.50,5.8900,15.370000,1845.00,4300.00,0,Otto Hahn with Lise Meitner - Kasimir Fajans with O. H. Göhring - Frederick Soddy with John Cranston with Alexander Fleck [independently] – isolated Aristid V. Grosse,1934,,7,2
+92,Uranium,U,238.029,146,92,92,7, ,Solid,yes,yes,yes,,,Actinide,240,1.38,6.1941,18.950000,1408.00,4404.00,0,Martin-Heinrich Klaproth – isolated Eugène-Melchior Peligot,1841,0.116,7,2
+93,Neptunium,Np,237.048,144,93,93,7, ,Solid,yes,,yes,,,Actinide,221,1.36,6.2657,20.250000,917.00,4175.00,0,Edwin M. McMillan and Philip H. Abelson,1940,,7,2
+94,Plutonium,Pu,244.064,150,94,94,7, ,Solid,yes,,yes,,,Actinide,243,1.28,6.0262,19.840000,913.00,3501.00,0,Glenn T. Seaborg and Arthur C. Wahl and Joseph W. Kennedy,1940,,7,2
+95,Americium,Am,243.061,148,95,95,7, ,Solid,yes,,yes,,,Actinide,244,1.30,5.9738,13.690000,1449.00,2284.00,0,Glenn T. Seaborg and Ralph A. James and Leon O. Morgan and Albert Ghiorso,1944,,7,2
+96,Curium,Cm,247.070,151,96,96,7, ,Solid,yes,,yes,,,Actinide,245,1.30,5.9915,13.510000,1618.00,3400.00,0,Glenn T. Seaborg and Ralph A. James and and Albert Ghiorso,1944,,7,2
+97,Berkelium,Bk,247.070,150,97,97,7, ,Solid,yes,,yes,,,Actinide,244,1.30,6.1979,14.000000,1323.00,2900.00,0,Stanley G. Thompson and Albert Ghiorso and and Glenn T. Seaborg,1949,,7,2
+98,Californium,Cf,251.080,153,98,98,7, ,Solid,yes,,yes,,,Actinide,245,1.30,6.2817,15.100000,1173.00,1743.00,0,Stanley G. Thompson and Kenneth Street and Jr. and Albert Ghiorso and and Glenn T. Seaborg,1950,,7,2
+99,Einsteinium,Es,252.083,153,99,99,7, ,Solid,yes,,yes,,,Actinide,245,1.30,6.4200,8.840000,1133.00,1269.00,0,Gregory R. Choppin and Stanley G. Thompson and Albert Ghiorso and and Bernard G. Harvey,1952,,7,2
+100,Fermium,Fm,257.095,157,100,100,7, ,Solid,yes,,yes,,,Actinide,,1.30,6.5000,9.970000,1800.00,,0,Gregory R. Choppin and Stanley G. Thompson and Albert Ghiorso and and Bernard G. Harvey,1952,,7,2
+101,Mendelevium,Md,258.098,157,101,101,7, ,Solid,yes,,yes,,,Actinide,,1.30,6.5800,10.300000,1100.00,,0,Albert Ghiorso and Bernard G. Harvey and Greogory R. Chopin and Stanley G. Thompson and and Glenn T. Seaborg,1955,,7,2
+102,Nobelium,No,259.101,157,102,102,7, ,Solid,yes,,yes,,,Actinide,,1.30,6.6500,9.900000,1100.00,,0,Albert Ghiorso and Torbjorn Sikkeland and John R. Walton and and Glenn T. Seaborg,1958,,7,3
+103,Lawrencium,Lr,266.120,163,103,103,7, ,Solid,yes,,yes,,,Actinide,,1.30,,14.400000,1900.00,,0,Albert Ghiorso and Torbjorn Sikkeland and Almon Larsh and and Robert M. Latimer,1961,,7,2
+104,Rutherfordium,Rf,267.122,163,104,104,7,4,Solid,yes,,yes,,,Transition Metal,,,,17.000000,,,0,Researchers at the JINR and Albert Ghiorso et. al.,1964,,7,2
+105,Dubnium,Db,268.126,163,105,105,7,5,Solid,yes,,yes,,,Transition Metal,,,,21.600000,,,0,Researchers at the JINR and Albert Ghiorso et. al.,1967,,7,2
+106,Seaborgium,Sg,269.128,163,106,106,7,6,Solid,yes,,yes,,,Transition Metal,,,,23.500000,,,0,Albert Ghiorso et. al.,1974,,7,2
+107,Bohrium,Bh,270.133,163,107,107,7,7,Solid,yes,,yes,,,Transition Metal,,,,26.500000,,,0,Peter Armbruster and Gottfried Münzenberg et. al.,1981,,7,2
+108,Hassium,Hs,269.134,161,108,108,7,8,Solid,yes,,yes,,,Transition Metal,,,,28.000000,,,0,Peter Armbruster and Gottfried Münzenberg et. al.,1984,,7,
+109,Meitnerium,Mt,277.154,168,109,109,7,9,Solid,yes,,yes,,,Transition Metal,,,,27.500000,,,0,Peter Armbruster and Gottfried Münzenberg et. al.,1982,,7,
+110,Darmstadtium,Ds,282.166,172,110,110,7,10,Solid (Expected),yes,,yes,,,Transition Metal,,,,26.500000,,,0,Jorge Rigol et. al.,1994,,7,
+111,Roentgenium,Rg,282.169,171,111,111,7,11,Solid (Expected),yes,,yes,,,Transition Metal,,,,22.500000,,,0,Peter Armbruster and Gottfried Münzenberg et. al.,1994,,7,
+112,Copernicium,Cn,286.179,174,112,112,7,12,Solid (Expected),yes,,yes,,,Transition Metal,,,,23.700000,,,0,Peter Armbruster and Gottfried Münzenberg et. al.,1996,,7,
+113,Nihonium,Nh,286.182,173,113,113,7,13,Solid (Expected),yes,,yes,,,Post-Transition Metal,,,,11.850000,,,0,RIKEN Nishina Center for Accelerator-based Science,2004,,7,
+114,Flerovium,Fl,290.192,176,114,114,7,14,Solid (Expected),yes,,yes,,,Post-Transition Metal,,,,9.928000,,,0,Joint Institute for Nuclear Research,1998,,7,
+115,Moscovium,Mc,290.196,175,115,115,7,15,Solid (Expected),yes,,yes,,,Post-Transition Metal,,,,13.500000,,,0,Joint Institute for Nuclear Research and Lawrence Livermore National Laboratory and Oak Ridge National Laboratory,2003,,7,
+116,Livermorium,Lv,293.205,177,116,116,7,16,Solid (Expected),yes,,yes,,,Post-Transition Metal,,,,12.900000,,,0,Joint Institute for Nuclear Research and Lawrence Livermore National Laboratory,2000,,7,
+117,Tennessine,Ts,294.211,177,117,117,7,17,Solid (Expected),yes,,,yes,,Halogen,,,,7.200000,,,0,Joint Institute for Nuclear Research and Lawrence Livermore National Laboratory and Oak Ridge National Laboratory,2010,,7,
+118,Oganesson,Og,295.216,177,118,118,7,18,Gas (Expected),yes,,,yes,,Noble Gas,,,,7.200000,,,0,Joint Institute for Nuclear Research and Lawrence Livermore National Laboratory,2006,,7,

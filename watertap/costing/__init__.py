@@ -12,6 +12,7 @@
 
 from .watertap_costing_package import WaterTAPCosting
 from .zero_order_costing import ZeroOrderCosting
+from .multiple_choice_costing_block import MultiUnitModelCostingBlock
 
 from .util import (
     register_costing_parameter_block,

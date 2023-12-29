@@ -81,6 +81,59 @@ import idaes.logger as idaeslog
 
 solver = get_solver()
 # -----------------------------------------------------------------------------
+@pytest.mark.unit
+def test_config():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["A"],
+        mw_data={"H2O": 0.018, "A": 0.01},
+        charge={"A": 0},
+    )
+
+    assert len(m.fs.properties.config) == 18
+    config_options = [
+        "default_arguments",
+        "solute_list",
+        "stokes_radius_data",
+        "diffusivity_data",
+        "molar_volume_data",
+        "mw_data",
+        "elec_mobility_data",
+        "trans_num_data",
+        "equiv_conductivity_phase_data",
+        "charge",
+        "ignore_neutral_charge",
+        "activity_coefficient_model",
+        "density_calculation",
+        "diffus_calculation",
+        "elec_mobility_calculation",
+        "trans_num_calculation",
+        "equiv_conductivity_calculation",
+        "material_flow_basis",
+    ]
+    for i in m.fs.properties.config:
+        assert i in config_options
+    assert not m.fs.properties.config.ignore_neutral_charge
+    assert (
+        m.fs.properties.config.activity_coefficient_model
+        == ActivityCoefficientModel.ideal
+    )
+    assert m.fs.properties.config.density_calculation == DensityCalculation.constant
+    assert m.fs.properties.config.diffus_calculation == DiffusivityCalculation.none
+    assert (
+        m.fs.properties.config.elec_mobility_calculation
+        == ElectricalMobilityCalculation.none
+    )
+    assert (
+        m.fs.properties.config.trans_num_calculation
+        == TransportNumberCalculation.ElectricalMobility
+    )
+    assert (
+        m.fs.properties.config.equiv_conductivity_calculation
+        == EquivalentConductivityCalculation.ElectricalMobility
+    )
+    assert m.fs.properties.config.material_flow_basis == MaterialFlowBasis.molar
 
 
 @pytest.fixture(scope="module")
@@ -954,7 +1007,7 @@ def model4():
             ("Liq", "D"): 7.92e-08,
         },
         stokes_radius_data={"A": 1e-09, "B": 1e-09, "C": 1e-09, "D": 1e-10, "E": 1e-10},
-        charge={"A": 1, "B": -2, "C": 2, "D": -1},
+        charge={"A": 1, "B": -2, "C": 2, "D": -1, "E": 0},
     )
 
     # config
@@ -1189,7 +1242,7 @@ def model5():
     dic0 = {
         "solute_list": ["Na_+", "Cl_-", "N"],
         "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3, "N": 10e-3},
-        "charge": {"Na_+": 1, "Cl_-": -1},
+        "charge": {"Na_+": 1, "Cl_-": -1, "N": 0},
         "diffusivity_data": {
             ("Liq", "Na_+"): 1.33e-9,
             ("Liq", "Cl_-"): 2.03e-9,
@@ -1291,7 +1344,7 @@ def model6():
         "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3, "N": 10e-3},
     }
 
-    dic_charge = {"charge": {"Na_+": 1, "Cl_-": -1}}
+    dic_charge = {"charge": {"Na_+": 1, "Cl_-": -1, "N": 0}}
     dic_diffus = {
         "diffusivity_data": {
             ("Liq", "Na_+"): 1.33e-9,
@@ -1345,20 +1398,12 @@ def model6():
 @pytest.mark.unit
 def test_elec_properties_errormsg(model6):
     m = model6
-    with pytest.raises(
-        ConfigurationError,
-        match="The charge property should not be assigned to the neutral component",
-    ):
-        m[0].fs.properties = MCASParameterBlock(
-            solute_list=["Na_+", "Cl_-", "N"],
-            mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
-            charge={"N": 0, "Na_+": 1, "Cl_-": -1},
-        )
     m[0].fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Cl_-", "N"],
         mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
         charge={"Na_+": 1, "Cl_-": -1},
         elec_mobility_calculation=ElectricalMobilityCalculation.EinsteinRelation,
+        ignore_neutral_charge=True,
     )
     m[0].fs.stream = m[0].fs.properties.build_state_block([0], defined_state=True)
 
@@ -1400,6 +1445,7 @@ def test_solute_list_errormsg():
             solute_list=["H2O", "Na_+", "Cl_-", "N"],
             mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
             charge={"Na_+": 1, "Cl_-": -1},
+            ignore_neutral_charge=True,
         )
 
 
@@ -1412,6 +1458,7 @@ def model7():
     m_hl.fs.properties = MCASParameterBlock(
         solute_list=["A", "B", "C", "D", "E", "F", "G"],
         charge={"E": 1, "F": -1},
+        ignore_neutral_charge=True,
         diffus_calculation=DiffusivityCalculation.HaydukLaudie,
         molar_volume_data={
             ("Liq", "A"): 96e-6,  # tested for benzene
@@ -1483,6 +1530,7 @@ def test_solute_list_longer_than_diff_data():
     m.fs.properties = MCASParameterBlock(
         solute_list=["A", "B", "C", "D", "E", "F", "G", "H"],
         charge={"E": 1, "F": -1},
+        ignore_neutral_charge=True,
         mw_data={"A": 1, "B": 1, "C": 1, "D": 1, "E": 1, "F": 1, "G": 1, "H": 1},
         diffus_calculation=DiffusivityCalculation.none,
         molar_volume_data={
@@ -1508,7 +1556,10 @@ def test_flow_mass_basis():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
-        solute_list=["A"], material_flow_basis=MaterialFlowBasis.mass, mw_data={"A": 1}
+        solute_list=["A"],
+        material_flow_basis=MaterialFlowBasis.mass,
+        mw_data={"A": 1},
+        charge={"A": 0},
     )
 
     m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
@@ -1535,7 +1586,9 @@ def test_compatibility_with_mixer():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
-        solute_list=["Na_+", "Cl_-"], mw_data={"Na_+": 23, "Cl_-": 35}
+        solute_list=["Na_+", "Cl_-"],
+        mw_data={"Na_+": 23, "Cl_-": 35},
+        charge={"Na_+": 1, "Cl_-": -1},
     )
 
     m.fs.mixer1 = Mixer(
@@ -1563,6 +1616,7 @@ def test_calculate_state_with_flow_mol_stateVar(c):
     m.fs.properties = MCASParameterBlock(
         solute_list=["target_ion"],
         mw_data={"target_ion": mw, "H2O": 0.018 * pyunits.kg / pyunits.mol},
+        ignore_neutral_charge=True,
     )
     m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
     m.fs.stream2 = m.fs.properties.build_state_block([0], defined_state=True)
@@ -1624,6 +1678,7 @@ def test_calculate_state_with_flow_mass_stateVar(c):
         solute_list=["target_ion"],
         mw_data={"target_ion": mw, "H2O": 0.018 * pyunits.kg / pyunits.mol},
         material_flow_basis=MaterialFlowBasis.mass,
+        ignore_neutral_charge=True,
     )
     m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
     m.fs.stream2 = m.fs.properties.build_state_block([0], defined_state=True)
@@ -2104,6 +2159,7 @@ def test_flow_mass_basis_with_RO_unit():
         diffusivity_data={("Liq", "NaCl"): 1e-9},
         mw_data={"NaCl": 0.058, "H2O": 0.018},
         material_flow_basis=MaterialFlowBasis.mass,
+        ignore_neutral_charge=True,
     )
 
     # Import RO model
@@ -2182,32 +2238,20 @@ def test_no_solute_list_provided():
 def test_no_mw_data_provided():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    with pytest.raises(
-        ConfigurationError,
-        match=re.escape(
-            "The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively."
-        ),
-    ):
-        m.fs.properties = MCASParameterBlock(solute_list=["foo"])
-
-    with pytest.raises(
-        ConfigurationError,
-        match=re.escape(
-            "Molecular weight data was not provided for bar. Provide the missing molecular weight data to the mw_data argument."
-        ),
-    ):
-        m.fs.properties_partial_data = MCASParameterBlock(
-            solute_list=["foo", "bar"], mw_data={"foo": 1}
+    msg = "Molecular weight data could not be obtained for the following solutes and no data were provided\n: {'foo': OSError('Molecular weight data could not be found for foo.')}."
+    with pytest.raises(ConfigurationError, match=re.escape(msg)):
+        m.fs.properties = MCASParameterBlock(
+            solute_list=["foo"], ignore_neutral_charge=True
         )
-
-    with pytest.raises(
-        ConfigurationError,
-        match=re.escape(
-            "Molecular weight data was not provided for foo, fubar. Provide the missing molecular weight data to the mw_data argument."
-        ),
-    ):
-        m.fs.properties_partial_data2 = MCASParameterBlock(
-            solute_list=["foo", "bar", "fubar"], mw_data={"bar": 1}
+    msg = "Molecular weight data could not be obtained for the following solutes and no data were provided\n: {'blahblah': OSError('Molecular weight data could not be found for blahblah.'), 'booboo': OSError('Molecular weight data could not be found for booboo.')}."
+    with pytest.raises(ConfigurationError, match=re.escape(msg)):
+        m.fs.properties2 = MCASParameterBlock(
+            solute_list=["blahblah", "booboo"], ignore_neutral_charge=True
+        )
+    msg = "Molecular weight data could not be obtained for the following solutes and no data were provided\n: {'foo': OSError('Molecular weight data could not be found for foo.')}."
+    with pytest.raises(ConfigurationError, match=re.escape(msg)):
+        m.fs.properties = MCASParameterBlock(
+            solute_list=["foo", "Na_+", "Cl_-"], ignore_neutral_charge=True
         )
 
 
@@ -2215,7 +2259,11 @@ def test_no_mw_data_provided():
 def test_no_h2o_mw_data():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = MCASParameterBlock(solute_list=["NaCl"], mw_data={"NaCl": 58e-3})
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["NaCl"],
+        mw_data={"NaCl": 58e-3},
+        ignore_neutral_charge=True,
+    )
 
     m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
 
@@ -2231,7 +2279,9 @@ def test_no_h2o_mw_data_overwrite():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
-        solute_list=["NaCl"], mw_data={"H2O": 18.1e-3, "NaCl": 58e-3}
+        solute_list=["NaCl"],
+        mw_data={"H2O": 18.1e-3, "NaCl": 58e-3},
+        ignore_neutral_charge=True,
     )
 
     m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
@@ -2241,3 +2291,119 @@ def test_no_h2o_mw_data_overwrite():
     assert m.fs.properties.mw_comp["H2O"].value == 18.1e-3
     assert m.fs.stream[0].mw_comp["NaCl"].value == 58e-3
     assert m.fs.stream[0].mw_comp["H2O"].value == 18.1e-3
+
+
+@pytest.mark.unit
+def test_get_neutral_charge():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["Na_+", "Cl_-", "N"],
+        mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
+        charge={"Na_+": 1, "Cl_-": -1},
+    )
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+    m.fs.stream[0].charge_comp["N"] == 0
+
+
+@pytest.mark.unit
+def test_get_charge2():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["Na_+", "Cl_-", "N"],
+        mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
+    )
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+    m.fs.stream[0].charge_comp["Na_+"] == 1
+    m.fs.stream[0].charge_comp["Cl_-"] == -1
+    m.fs.stream[0].charge_comp["N"] == 0
+
+
+@pytest.mark.unit
+def test_get_charge_not_obtained():
+    msg = "Charge data could not be obtained for the following solutes and no data were provided\n: {'target_ion': OSError(\"Charge sign could not be determined from the string 'target_ion'\")}"
+    with pytest.raises(ConfigurationError, match=re.escape(msg)):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = MCASParameterBlock(
+            solute_list=["target_ion"],
+            mw_data={"target_ion": 0.023},
+        )
+
+    msg = "Charge data could not be obtained for the following solutes and no data were provided\n: {'target_ion': OSError(\"Charge sign could not be determined from the string 'target_ion'\"), 'my_target_ion_': OSError(\"Charge could not be determined from the string 'my_target_ion_'\")}"
+    with pytest.raises(ConfigurationError, match=re.escape(msg)):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = MCASParameterBlock(
+            solute_list=["target_ion", "my_target_ion_"],
+            mw_data={"target_ion": 0.023, "my_target_ion_": 1},
+        )
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["target_ion"],
+        mw_data={"target_ion": 0.023},
+        ignore_neutral_charge=True,
+    )
+
+
+@pytest.mark.unit
+def test_automatic_charge_mw_population():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=[
+            "Na_+",
+            "Cl_-",
+            "Ca_2+",
+            "K_+",
+            "HCO3_-",
+            "SO4_2-",
+            "Mg_2+",
+        ],
+    )
+
+    test_vals = {
+        "Na_+": (0.02299, 1),
+        "Cl_-": (0.03545, -1),
+        "Ca_2+": (0.04008, 2),
+        "K_+": (0.039098, 1),
+        "HCO3_-": (0.061016, -1),
+        "SO4_2-": (0.096066, -2),
+        "Mg_2+": (0.024305, 2),
+    }
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+    for comp, val in test_vals.items():
+        assert value(m.fs.stream[0].mw_comp[comp]) == val[0]
+        assert value(m.fs.stream[0].charge_comp[comp]) == val[1]
+
+    m.fs.properties2 = MCASParameterBlock(
+        solute_list=[
+            "target_ion",
+            "Na_+",
+            "Cl_-",
+            "Ca_2+",
+            "K_+",
+            "HCO3_-",
+            "SO4_2-",
+            "Mg_2+",
+        ],
+        mw_data={"target_ion": 0.023},
+        charge={"target_ion": 0},
+    )
+
+    test_vals = {
+        "target_ion": (0.023, 0),
+        "Na_+": (0.02299, 1),
+        "Cl_-": (0.03545, -1),
+        "Ca_2+": (0.04008, 2),
+        "K_+": (0.039098, 1),
+        "HCO3_-": (0.061016, -1),
+        "SO4_2-": (0.096066, -2),
+        "Mg_2+": (0.024305, 2),
+    }
+    m.fs.stream2 = m.fs.properties2.build_state_block([0], defined_state=True)
+    for comp, val in test_vals.items():
+        assert value(m.fs.stream2[0].mw_comp[comp]) == val[0]
+        assert value(m.fs.stream2[0].charge_comp[comp]) == val[1]

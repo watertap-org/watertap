@@ -90,22 +90,18 @@ class PropParameterData(PhysicalParameterBlock):
 
         self.mw_comp = Param(
             self.component_list,
-            mutable=False,
             initialize=extract_data(mw_comp_data),
             units=pyunits.kg / pyunits.mol,
             doc="Molecular weight",
         )
 
         self.dens_mass = Param(
-            mutable=False,
             initialize=1000,
             units=pyunits.kg / pyunits.m**3,
             doc="Density",
         )
 
-        self.cp = Param(
-            mutable=False, initialize=4.2e3, units=pyunits.J / (pyunits.kg * pyunits.K)
-        )
+        self.cp = Param(initialize=4.2e3, units=pyunits.J / (pyunits.kg * pyunits.K))
 
         # ---default scaling---
         self.set_default_scaling("temperature", 1e-2)

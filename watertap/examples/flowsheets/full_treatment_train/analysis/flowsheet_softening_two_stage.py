@@ -17,6 +17,7 @@ mutable parameters for optimization:
 from pyomo.environ import ConcreteModel, TransformationFactory
 
 from idaes.core import FlowsheetBlock
+from idaes.core.solvers import get_solver
 from idaes.core.util.scaling import calculate_scaling_factors
 
 from watertap.examples.flowsheets.full_treatment_train.util import (
@@ -75,7 +76,10 @@ def set_up_optimization(m, system_recovery=0.50, **kwargs):
 
 
 def optimize(m, check_termination=True):
-    return solve_block(m, tee=False, fail_flag=check_termination)
+    s = get_solver()
+    s.options["bound_relax_factor"] = 1e-20
+    s.options["bound_push"] = 1e-20
+    return solve_block(m, solver=s, tee=True, fail_flag=check_termination)
 
 
 def solve_flowsheet(**desal_kwargs):
@@ -95,7 +99,9 @@ def solve_flowsheet(**desal_kwargs):
     initialize(m, **desal_kwargs)
 
     check_dof(m)
-    solve_block(m, tee=False, fail_flag=True)
+    s = get_solver()
+    s.options["bound_relax_factor"] = 1e-20
+    solve_block(m, solver=s, tee=True, fail_flag=True)
 
     # report
     print("===================================" "\n          Simulation          ")
