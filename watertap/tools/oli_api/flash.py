@@ -88,6 +88,7 @@ class Flash:
         input_unit_set=input_unit_set,
         output_unit_set=output_unit_set,
         stream_output_options=stream_output_options,
+        relative_inflows=True,
     ):
         # set values based on inputs
         self.water_analysis_properties = water_analysis_properties
@@ -95,6 +96,7 @@ class Flash:
         self.input_unit_set = input_unit_set
         self.output_unit_set = output_unit_set
         self.stream_output_options = stream_output_options
+        self.relative_inflows=relative_inflows
         self.water_analysis_input_list = []
 
     def build_survey(self, survey_arrays, get_oli_names=False, file_name=None):
@@ -213,6 +215,7 @@ class Flash:
         flash_method,
         state_vars,
         water_analysis_output=None,
+        inflows_phase="total",
         use_scaling_rigorous=True,
     ):
         """
@@ -220,8 +223,9 @@ class Flash:
 
         :param flash_method: string name of OLI flash flash_method to use
         :param state_vars: dictionary containing solutes, temperatures, pressure, and units
-        :water_analysis_output: dictionary to extract inflows from (required if not wateranalysis flash)
-        :use_scaling_rigorous: boolean switch to use estimated or rigorous solving for prescaling metrics
+        :param water_analysis_output: dictionary to extract inflows from (required if not wateranalysis flash)
+        :param inflows_phase: string indicating desired phase of inflows
+        :param use_scaling_rigorous: boolean switch to use estimated or rigorous solving for prescaling metrics
 
         :return inputs: dictionary containing inputs for specified OLI flash analysis
         """
@@ -247,7 +251,7 @@ class Flash:
                     "unit": str(state_vars["units"]["pressure"]),
                     "value": float(state_vars["pressure"]),
                 },
-                "inflows": self._extract_inflows(water_analysis_output),
+                "inflows": self._extract_inflows(water_analysis_output, inflows_phase),
             }
 
         self._set_prescaling_calculation_mode(use_scaling_rigorous)
@@ -255,16 +259,20 @@ class Flash:
         inputs["params"].update({"unitSetInfo": dict(self.output_unit_set)})
         return inputs
 
-    def _extract_inflows(self, water_analysis_output):
+    def _extract_inflows(self, water_analysis_output, inflows_phase):
         """
         Extract molecular concentrations from OLI flash output.
 
         :param water_analysis_output: stream output from OLI flash calculation
+        :param inflows_phase: string indicating desired phase of inflows
 
         :return inflows: dictionary containing molecular concentrations
         """
 
-        inflows = water_analysis_output["result"]["total"]["molecularConcentration"]
+        if inflows_phase in ["total", "liquid1", "vapor"]:
+            inflows = water_analysis_output["result"][inflows_phase]["molecularConcentration"]
+        else:
+            raise ValueError(f" Invalid phase {inflows_phase} specified.")
         return inflows
 
     # TODO: consider enabling parallel flash
@@ -328,18 +336,20 @@ class Flash:
                     if param["name"] in survey[i].keys():
                         param.update({"value": survey[i][param["name"]]})
             elif flash_method == "isothermal":
-                for param in survey:
-                    path == None
+                for param in survey[i]:
                     if param in ["Temperature", "Pressure"]:
-                        path = modified_clone["params"][param.lower()]["value"]
+                        modified_clone[param.lower()]["value"] = survey[i][param]
+                    elif param in modified_clone["params"]["inflows"]["values"]:
+                        if self.relative_inflows:
+                            modified_clone["params"]["inflows"]["values"][param] += survey[i][param]
+                        else:
+                            modified_clone["params"]["inflows"]["values"][param] = survey[i][param]
                     else:
-                        if param in modified_clone["inflows"]["values"]:
-                            path = modified_clone["inflows"]["values"][param]
-                    if path:
-                        path = survey[i][param]
-
+                        raise ValueError(
+                            "Only composition and temperature/pressure surveys are currently supported."
+                        )
             else:
-                raise IOError(
+                raise ValueError(
                     " Only 'wateranalysis' and 'isothermal' currently supported."
                 )
             clones[i] = modified_clone
@@ -377,7 +387,6 @@ class Flash:
         """
 
         if filter_zero:
-
             def _filter_zeroes(data):
                 if "values" in data:
                     data["values"] = {k: v for k, v in data["values"].items() if v != 0}
