@@ -66,7 +66,11 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
 )
 
 _logger = logging.getLogger(__name__)
-
+handler = logging.StreamHandler()
+formatter = logging.Formatter("OLIAPI - %(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+_logger.addHandler(handler)
+_logger.setLevel(logging.INFO)
 # TODO: consider config for file_name for each writing method
 
 
@@ -79,6 +83,8 @@ class Flash:
     :param input_unit_set: dictionary containing conversions between OLI and Pyomo unit names
     :param output_unit_set: dictionary containing preferred units for output expression
     :param stream_output_options: dictionary pointing to properties that can be extracted from flash stream outputs
+    :param relative_inflows: bool to switch between additive and absolute substitutions for solutes when using surveys
+    :param interactive_mode: bool to switch level of logging display from info to debug only
     """
 
     def __init__(
@@ -89,6 +95,7 @@ class Flash:
         output_unit_set=output_unit_set,
         stream_output_options=stream_output_options,
         relative_inflows=True,
+        interactive_mode=True,
     ):
         # set values based on inputs
         self.water_analysis_properties = water_analysis_properties
@@ -98,6 +105,10 @@ class Flash:
         self.stream_output_options = stream_output_options
         self.relative_inflows=relative_inflows
         self.water_analysis_input_list = []
+        if interactive_mode:
+            _logger.setLevel(logging.INFO)
+        else:
+            _logger.setLevel(logging.DEBUG)
 
     def build_survey(self, survey_arrays, get_oli_names=False, file_name=None):
         """
@@ -297,8 +308,9 @@ class Flash:
 
         :return result: dictionary containing IDs and output streams for each flash calculation
         """
-
+        _logger.info("Running flash calculations")
         if survey is None:
+            _logger.info("Running single flash calculation")
             result = {0: oliapi_instance.call(flash_method, dbs_file_id, initial_input)}
 
         else:
@@ -307,11 +319,13 @@ class Flash:
                 survey=survey,
                 flash_method=flash_method,
             )
-            result = {
-                k: oliapi_instance.call(flash_method, dbs_file_id, v)
-                for k, v in clones.items()
-            }
+            _logger.info("Running flash survey with {} samples".format(len(clones)))
+            result = {}
+            for k, v in clones.items():
+                _logger.info("Running sample #{}".format(k))
+                result[k] = oliapi_instance.call(flash_method, dbs_file_id, v)
 
+        _logger.info("Completed running flash calculations")
         if file_name:
             self.write_output_to_yaml(result, file_name)
 
