@@ -20,7 +20,7 @@ Unit Models
    gac
    osmotically_assisted_reverse_osmosis_0D
    osmotically_assisted_reverse_osmosis_1D
-   anaerobic_digestor
+   anaerobic_digester
    ion_exchange_0D
    membrane_distillation_0D
    mvc
