@@ -32,7 +32,7 @@ the headworks of the plant while sludge is released for disposal. The flowsheet 
    * interfaces are provided to convert between the properties of ASM and ADM
 
 .. figure:: ../../_static/flowsheets/BSM2.png
-    :width: 400
+    :width: 800
     :align: center
 
     Figure 1. BSM2 flowsheet
@@ -43,8 +43,8 @@ Documentation for each of the unit models can be found here:
     * `Dewatering unit <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/dewatering_unit.html>`_
 
 Documentation for each of the property models can be found here:
-    * `ASM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_
-    * `ADM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ADM1.html>`_
+    * `Modified ASM2d <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/modified_ASM2D.html>`_
+    * `Modified ADM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/modified_ADM1.html>`_
 
 Future Refinements
 ------------------

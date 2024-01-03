@@ -29,7 +29,7 @@ the headworks of the plant while sludge is released for disposal. The flowsheet 
    * interfaces are provided to convert between the properties of ASM and ADM
 
 .. figure:: ../../_static/flowsheets/BSM2.png
-    :width: 400
+    :width: 800
     :align: center
 
     Figure 1. BSM2 flowsheet
