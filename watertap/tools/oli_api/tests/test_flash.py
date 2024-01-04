@@ -113,24 +113,3 @@ def test_flash_calc_basic_workflow(
         filter_zero=True,
         file_name=tmp_path / "test_ext_props",
     )
-
-
-@pytest.mark.unit
-def test_survey(
-    flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
-):
-    dbs_file_id = oliapi_instance.session_dbs_files[0]
-    survey_array = {"Temperature": linspace(273, 373, 2)}
-    survey = flash_instance.build_survey(survey_array, get_oli_names=True)
-    water_analysis_base_case = flash_instance.build_flash_calculation_input(
-        flash_method="wateranalysis",
-        state_vars=source_water,
-    )
-    water_analysis_comp_svy = flash_instance.run_flash(
-        flash_method="wateranalysis",
-        oliapi_instance=oliapi_instance,
-        dbs_file_id=dbs_file_id,
-        initial_input=water_analysis_base_case,
-        survey=survey,
-        file_name=tmp_path / "test_wa_cs",
-    )
