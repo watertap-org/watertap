@@ -42,7 +42,8 @@
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
 
-__author__ = "Oluwamayowa Amusat, Paul Vecchiarelli"
+__author__ = "Oluwamayowa Amusat, Alexander Dudchenko, Paul Vecchiarelli"
+
 
 import logging
 
@@ -67,10 +68,13 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
 
 _logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
-formatter = logging.Formatter("OLIAPI - %(levelname)s - %(message)s")
+formatter = logging.Formatter(
+    "OLIAPI - %(asctime)s - %(levelname)s - %(message)s", "%H:%M:%S"
+)
 handler.setFormatter(formatter)
 _logger.addHandler(handler)
-_logger.setLevel(logging.INFO)
+_logger.setLevel(logging.DEBUG)
+
 # TODO: consider config for file_name for each writing method
 
 
@@ -103,7 +107,7 @@ class Flash:
         self.input_unit_set = input_unit_set
         self.output_unit_set = output_unit_set
         self.stream_output_options = stream_output_options
-        self.relative_inflows=relative_inflows
+        self.relative_inflows = relative_inflows
         self.water_analysis_input_list = []
         if interactive_mode:
             _logger.setLevel(logging.INFO)
@@ -132,9 +136,9 @@ class Flash:
         for v in values:
             survey[i] = {_name(keys[j]): v[j] for j in range(len(v)) for j in num_keys}
             i = i + 1
-        _logger.debug(f"Survey contains {len(survey)} items.")
+        _logger.info(f"Survey contains {len(survey)} items.")
         if file_name:
-            self.write_output_to_yaml(survey, file_name)
+            self.write_output(survey, file_name)
         return survey
 
     def _build_input_list(self, state_vars):
@@ -280,8 +284,14 @@ class Flash:
         :return inflows: dictionary containing molecular concentrations
         """
 
-        if inflows_phase in ["total", "liquid1", "vapor"]:
-            inflows = water_analysis_output["result"][inflows_phase]["molecularConcentration"]
+        if inflows_phase in ["liquid1", "vapor"]:
+            inflows = water_analysis_output["result"]["phases"][inflows_phase][
+                "molecularConcentration"
+            ]
+        elif inflows_phase == "total":
+            inflows = water_analysis_output["result"][inflows_phase][
+                "molecularConcentration"
+            ]
         else:
             raise ValueError(f" Invalid phase {inflows_phase} specified.")
         return inflows
@@ -311,7 +321,11 @@ class Flash:
         _logger.info("Running flash calculations")
         if survey is None:
             _logger.info("Running single flash calculation")
-            result = {0: oliapi_instance.call(flash_method, dbs_file_id, initial_input)}
+            result = {
+                0: oliapi_instance.call(
+                    "POST", flash_method, dbs_file_id, initial_input
+                )
+            }
 
         else:
             clones = self.modify_inputs(
@@ -322,12 +336,12 @@ class Flash:
             _logger.info("Running flash survey with {} samples".format(len(clones)))
             result = {}
             for k, v in clones.items():
-                _logger.info("Running sample #{}".format(k))
-                result[k] = oliapi_instance.call(flash_method, dbs_file_id, v)
+                _logger.info("Running sample #{} of {}".format(k + 1, len(clones)))
+                result[k] = oliapi_instance.call("POST", flash_method, dbs_file_id, v)
 
         _logger.info("Completed running flash calculations")
         if file_name:
-            self.write_output_to_yaml(result, file_name)
+            self.write_output(result, file_name)
 
         return result
 
@@ -355,9 +369,13 @@ class Flash:
                         modified_clone[param.lower()]["value"] = survey[i][param]
                     elif param in modified_clone["params"]["inflows"]["values"]:
                         if self.relative_inflows:
-                            modified_clone["params"]["inflows"]["values"][param] += survey[i][param]
+                            modified_clone["params"]["inflows"]["values"][
+                                param
+                            ] += survey[i][param]
                         else:
-                            modified_clone["params"]["inflows"]["values"][param] = survey[i][param]
+                            modified_clone["params"]["inflows"]["values"][
+                                param
+                            ] = survey[i][param]
                     else:
                         raise ValueError(
                             "Only composition and temperature/pressure surveys are currently supported."
@@ -369,21 +387,21 @@ class Flash:
             clones[i] = modified_clone
         return clones
 
-    def write_output_to_yaml(self, flash_output, file_name):
+    def write_output(self, flash_output, file_name):
         """
         Writes OLI API flash output to .yaml file.
 
         :param flash_output: dictionary output from OLI API call
         :param filename: string name of file to write
 
-        :return f: string name of file written
+        :return yaml_file: string name of file written
         """
 
         _logger.debug("Saving file...")
         yaml_file = f"{file_name}.yaml"
         with open(yaml_file, "w", encoding="utf-8") as f:
             yaml.dump(flash_output, f, indent=4)
-        _logger.debug(f"{f} saved to working directory.")
+        _logger.info(f"{yaml_file} saved to working directory.")
         return yaml_file
 
     def extract_properties(
@@ -401,6 +419,7 @@ class Flash:
         """
 
         if filter_zero:
+
             def _filter_zeroes(data):
                 if "values" in data:
                     data["values"] = {k: v for k, v in data["values"].items() if v != 0}
@@ -432,40 +451,42 @@ class Flash:
             for p in props:
                 if p in properties:
                     property_groups[p].append(group)
-
+        _logger.debug(property_groups)
+        _logger.info("Extracting specified properties")
         for i in raw_result:
+            _logger.info(f"Extracting from sample #{i+1} of {len(raw_result)}")
             extracted_properties[i] = {}
             root_path = [i, "result"]
-            # 417-418, workaround for failed JSON compilation bug (12/20/2023)
             base_result = _get_nested_data(raw_result, root_path)
             if base_result:
-                for prop in properties:
-                    phases = {p: [] for p in properties}
-                    for phase, prop in base_result.items():
+                phases = {p: [] for p in properties}
+                for phase in base_result["phases"]:
+                    for prop in base_result["phases"][phase]:
                         if prop in properties:
                             phases[prop].append(phase)
-
-                    for prop in properties:
-                        if prop in base_result["total"]:
-                            phases[prop].append("total")
-                        for group in property_groups[prop]:
-                            if group in groups_with_phase:
-                                for phase in phases[prop]:
-                                    deep_path = deepcopy(root_path)
-                                    deep_path.extend(
-                                        _get_nested_phase_keys(phase, group)
-                                    )
-                                    result = _filter_zeroes(
-                                        _get_nested_data(raw_result, deep_path)
-                                    )
-                                    extracted_properties[i][f"{prop}_{phase}"] = result
-                            if group in groups_additional:
-                                deep_path = deepcopy(root_path)
-                                deep_path.extend([group, prop])
-                                result = _filter_zeroes(
-                                    _get_nested_data(raw_result, deep_path)
-                                )
-                                extracted_properties[i][prop] = result
+                for prop in phases:
+                    if prop in base_result["total"]:
+                        phases[prop].append("total")
+                _logger.debug(phases)
+            for prop in properties:
+                for group in property_groups[prop]:
+                    if group in groups_with_phase:
+                        for phase in phases[prop]:
+                            deep_path = deepcopy(root_path)
+                            deep_path.extend(_get_nested_phase_keys(phase, group))
+                            result = _filter_zeroes(
+                                _get_nested_data(raw_result, deep_path)
+                            )
+                            extracted_properties[i][f"{prop}_{phase}"] = result
+                            _logger.debug(result)
+                    if group in groups_additional:
+                        deep_path = deepcopy(root_path)
+                        deep_path.extend([group, prop])
+                        result = _filter_zeroes(_get_nested_data(raw_result, deep_path))
+                        extracted_properties[i][prop] = result
+                        _logger.debug(result)
         if file_name:
-            self.write_output_to_yaml(extracted_properties, file_name)
+            self.write_output(extracted_properties, file_name)
+        _logger.debug(extracted_properties)
+        _logger.info("Completed extracting properties from flash output")
         return extracted_properties
