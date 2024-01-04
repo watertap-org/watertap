@@ -290,7 +290,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             # Membrane area equation
             @self.Constraint(doc="Total Membrane area")
             def eq_area(b):
-                return b.area == b.length * b.width
+                return b.area == b.length * 2 * b.width
 
     def _add_flux_balance(self):
 

@@ -672,7 +672,7 @@ class MembraneChannelMixin:
 
         @self.Constraint(doc="Cross-sectional area")
         def eq_area(b):
-            return b.area == b.channel_height * (b.width/2) * b.spacer_porosity
+            return b.area == b.channel_height * b.width * b.spacer_porosity
 
         @self.Constraint(
             self.flowsheet().config.time, self.length_domain, doc="Reynolds number"
