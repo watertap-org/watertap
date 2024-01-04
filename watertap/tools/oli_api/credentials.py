@@ -116,8 +116,7 @@ class CredentialManager:
             _logger.setLevel(logging.INFO)
         else:
             _logger.setLevel(logging.DEBUG)
-        if not self.test:
-            self.set_headers()
+        self.set_headers()
 
     def set_headers(self):
         """
@@ -126,9 +125,9 @@ class CredentialManager:
 
         if self.access_key:
             self.headers = {"authorization": "API-KEY " + self.access_key}
-            self.login_with_access_key()
+            self.login()
         else:
-            self.login_with_credentials()
+            self.login()
             self.headers = {"authorization": "Bearer " + self.jwt_token}
 
     def update_headers(self, new_header):
@@ -334,65 +333,41 @@ class CredentialManager:
         _logger.info(response.text)
         return response.text
 
-    def login_with_access_key(self):
+    def login(self, refresh=False):
         """
-        Log in to OLI Cloud using access key.
+        Log in to OLI Cloud using access key or credentials.
 
         :return status: bool indicating success or failure
         """
 
-        _logger.info("Logging into OLI API using access key")
-        req_result = requests.get(
-            self.dbs_url,
-            headers=self.update_headers(
-                {"Content-Type": "application/x-www-form-urlencoded"}
-            ),
-        )
-        if req_result.status_code == 200:
-            _logger.debug(f"Status code is {req_result.status_code}.")
-            _logger.info("Log in successful")
-            return True
-        if not self.test:
-            raise ConnectionError(
-                f" OLI login failed. Status code is {req_result.status_code}.\n"
+        req_result = ""
+        if self.access_key:
+            _logger.info("Logging into OLI API using access key")
+            req_result = requests.get(
+                self.dbs_url,
+                headers=self.update_headers(
+                    {"Content-Type": "application/x-www-form-urlencoded"}
+                ),
             )
         else:
-            return False
+            _logger.info("Logging into OLI API using username and password")
+            if refresh:
+                body = {
+                    "refresh_token": self.refresh_token,
+                    "grant_type": "refresh_token",
+                    "client_id": "apiclient",
+                }
+            else:
+                body = {
+                    "username": self.credentials["username"],
+                    "password": self.credentials["password"],
+                    "grant_type": "password",
+                    "client_id": "apiclient",
+                }
+            status = self.auth_status(body, req_result)
+            return status
 
-    def login_with_credentials(self):
-        """
-        Log in to OLI Cloud using credentials.
-
-        :return status: bool indicating success or failure
-        """
-
-        _logger.info("Logging into OLI API using username and password")
-        body = {
-            "username": self.credentials["username"],
-            "password": self.credentials["password"],
-            "grant_type": "password",
-            "client_id": "apiclient",
-        }
-        status = self.auth_post(body)
-        return status
-
-    # This function is unused
-    def login_with_refresh_token(self):
-        """
-        Log in to OLI Cloud using refresh token.
-
-        :return status: bool indicating success or failure
-        """
-
-        body = {
-            "refresh_token": self.refresh_token,
-            "grant_type": "refresh_token",
-            "client_id": "apiclient",
-        }
-        status = self.auth_post(body)
-        return status
-
-    def auth_post(self, body):
+    def auth_status(self, body, req_result=None):
         """
         Posts authorization request to OLI Cloud.
 
@@ -401,25 +376,29 @@ class CredentialManager:
         :return bool: bool indicating success or failure
         """
 
-        req_result = requests.post(
-            self.credentials["auth_url"],
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            data=body,
-        )
+        if not req_result:
+            req_result = requests.post(
+                self.credentials["auth_url"],
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                data=body,
+            )
         if req_result.status_code == 200:
             _logger.debug(f"Status code is {req_result.status_code}")
             _logger.info("Log in successful")
-            req_result = req_result.json()
-            if "access_token" in req_result:
-                _logger.debug(f"Login access token: {req_result['access_token']}")
-                self.jwt_token = req_result["access_token"]
-                if "refresh_token" in req_result:
-                    _logger.debug(f"Login refresh token: {req_result['refresh_token']}")
-                    self.refresh_token = req_result["refresh_token"]
-                    return True
-        if not self.test:
+            if self.access_key:
+                return True
+            else:
+                req_result = req_result.json()
+                if "access_token" in req_result:
+                    _logger.debug(f"Login access token: {req_result['access_token']}")
+                    self.jwt_token = req_result["access_token"]
+                    if "refresh_token" in req_result:
+                        _logger.debug(
+                            f"Login refresh token: {req_result['refresh_token']}"
+                        )
+                        self.refresh_token = req_result["refresh_token"]
+                        return True
+        else:
             raise ConnectionError(
                 f" OLI login failed. Status code is {req_result.status_code}.\n"
             )
-        else:
-            return False

@@ -56,29 +56,49 @@ from numpy import linspace
 def test_flash_calc_basic_workflow(
     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
 ):
+
+    survey_arrays = {
+        "Temperature": linspace(273, 373, 3),
+        "SiO2": linspace(0, 1000, 3),
+    }
+    survey = flash_instance.build_survey(
+        survey_arrays,
+        get_oli_names=True,
+    )
+
     dbs_file_id = oliapi_instance.session_dbs_files[0]
-    water_analysis_base_case = flash_instance.build_flash_calculation_input(
-        flash_method="wateranalysis",
-        state_vars=source_water,
+
+    water_analysis_input = flash_instance.build_flash_calculation_input(
+        "wateranalysis",
+        source_water,
     )
-    water_analysis_single_pt = flash_instance.run_flash(
-        flash_method="wateranalysis",
-        oliapi_instance=oliapi_instance,
-        dbs_file_id=dbs_file_id,
-        initial_input=water_analysis_base_case,
-        file_name=tmp_path / "test_wa_sp",
+    water_analysis_base_case = flash_instance.run_flash(
+        "wateranalysis",
+        oliapi_instance,
+        dbs_file_id,
+        water_analysis_input,
+        file_name=tmp_path / "test_wa_singlepoint",
     )
-    isothermal_analysis_base_case = flash_instance.build_flash_calculation_input(
-        flash_method="isothermal",
-        state_vars=source_water,
-        water_analysis_output=water_analysis_single_pt[0],
+    water_analysis_apparent_composition = flash_instance.build_flash_calculation_input(
+        "isothermal",
+        source_water,
+        water_analysis_base_case[0],
     )
     isothermal_analysis_single_pt = flash_instance.run_flash(
-        flash_method="isothermal",
-        oliapi_instance=oliapi_instance,
-        dbs_file_id=dbs_file_id,
-        initial_input=isothermal_analysis_base_case,
+        "isothermal",
+        oliapi_instance,
+        dbs_file_id,
+        water_analysis_apparent_composition,
     )
+    isothermal_survey_result = flash_instance.run_flash(
+        "isothermal",
+        oliapi_instance,
+        dbs_file_id,
+        water_analysis_apparent_composition,
+        survey,
+        tmp_path / "test_iso_compsurvey",
+    )
+
     properties = [
         "prescalingTendencies",
         "entropy",

@@ -91,8 +91,7 @@ def oliapi_instance(
         "config_file": cred_file_path,
     }
     credential_manager = CredentialManager(**credentials, test=True)
-    credential_manager.login()
-    with OLIApi(credential_manager, test=True) as oliapi:
+    with OLIApi(credential_manager, interactive_mode=False) as oliapi:
         oliapi.get_dbs_file_id(str(local_dbs_file))
         yield oliapi
     with contextlib.suppress(FileNotFoundError):

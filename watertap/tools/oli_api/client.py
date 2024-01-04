@@ -46,8 +46,6 @@ __author__ = "Adam Atia, Adi Bannady, Paul Vecchiarelli"
 
 import logging
 
-from copy import deepcopy
-
 import yaml
 
 from os.path import isfile, islink
@@ -236,20 +234,22 @@ class OLIApi:
                 raise RuntimeError(" Failed to generate chemistry file.")
 
     # TODO: think about writing to different file formats
-    def get_user_summary(self, file_name):
+    def get_user_summary(self, dbs_file_ids=None, file_name=""):
         """
         Gets information for all files on user's cloud.
 
+        :param dbs_file_ids: list of dbs_file_ids to get
         :param file_name: string name of file to write
 
         :return user_summary: dictionary containing file information and flash history for each dbs file
         """
 
         user_summary = {}
-        user_dbs_file_ids = self.get_user_dbs_file_ids()
-        file_count = len(user_dbs_file_ids)
+        if not dbs_file_ids:
+            dbs_file_ids = self.get_user_dbs_file_ids()
+        file_count = len(dbs_file_ids)
         for i in range(file_count):
-            dbs_file_id = user_dbs_file_ids[i]
+            dbs_file_id = dbs_file_ids[i]
             _logger.info(
                 f"Getting user summary for {dbs_file_id} (#{i+1} of {file_count})"
             )
@@ -376,7 +376,7 @@ class OLIApi:
         dbs_file_id=None,
         input_params=None,
         poll_time=0.5,
-        max_request=5,
+        max_request=120,
     ):
         """
         Makes a call to the OLI Cloud API.

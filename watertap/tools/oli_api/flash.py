@@ -366,7 +366,9 @@ class Flash:
             elif flash_method == "isothermal":
                 for param in survey[i]:
                     if param in ["Temperature", "Pressure"]:
-                        modified_clone[param.lower()]["value"] = survey[i][param]
+                        modified_clone["params"][param.lower()]["value"] = survey[i][
+                            param
+                        ]
                     elif param in modified_clone["params"]["inflows"]["values"]:
                         if self.relative_inflows:
                             modified_clone["params"]["inflows"]["values"][
