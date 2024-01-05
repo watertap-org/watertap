@@ -10,6 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from enum import Enum, auto
+
 # Import Pyomo libraries
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 from pyomo.environ import (
@@ -41,6 +43,19 @@ from watertap.core import ControlVolume0DBlock, InitializationMixin
 from watertap.costing.unit_models.pressure_exchanger import cost_pressure_exchanger
 
 _log = idaeslog.getLogger(__name__)
+
+# ---------------------------------------------------------------------
+class PressureExchangeType(Enum):
+    efficiency = auto()
+    high_pressure_difference = auto()
+
+
+def pressure_exchange_type_not_found(pressure_exchange_calculation):
+    raise NotImplementedError(
+        "pressure_exchange_calculation was {}, but can only "
+        "be efficiency or high_pressure_difference"
+        "".format(pressure_exchange_calculation.value)
+    )
 
 
 @declare_process_block_class("PressureExchanger")
@@ -163,13 +178,37 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
     )
 
     CONFIG.declare(
-        "has_mass_transfer",
+        "has_leakage",
         ConfigValue(
             default=False,
             domain=In([True, False]),
-            description="Defines if there is mass transport between high- and low-pressure sides",
-            doc="""Indicates whether pressure exchanger solution mass transfer terms should be constructed or not.
-    **default** - False.""",
+            description="Defines if there is leakage",
+            doc="""Indicates whether pressure exchanger has leakage.
+        **default** - False.""",
+        ),
+    )
+
+    CONFIG.declare(
+        "has_mixing",
+        ConfigValue(
+            default=False,
+            domain=In([True, False]),
+            description="Defines if there is mixing between high- and low-pressure side",
+            doc="""Indicates whether pressure exchanger has mixing.
+        **default** - False.""",
+        ),
+    )
+    CONFIG.declare(
+        "pressure_exchange_calculation",
+        ConfigValue(
+            default=PressureExchangeType.efficiency,
+            domain=In(PressureExchangeType),
+            description="Pressure exchanger calculation method",
+            doc="""Indicates what type of pressure exchange calculation method should be used.
+        **default** - PressureExchangeType.efficiency.
+        **Valid values:** {
+        **PressureExchangeType.efficiency** - calculates momentum transfer by pressure exchanger efficiency,
+        **PressureExchangeType.high_pressure_difference** - calculates momentum transfer by high pressure difference}""",
         ),
     )
 
@@ -201,24 +240,48 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
-        self.efficiency_pressure_exchanger = Var(
-            self.flowsheet().config.time,
-            initialize=0.95,
-            bounds=(1e-6, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="Pressure exchanger efficiency",
-        )
-
-        if self.config.has_mass_transfer:
-            self.mass_transfer_fraction_comp = Var(
+        if self.config.pressure_exchange_calculation is PressureExchangeType.efficiency:
+            self.efficiency_pressure_exchanger = Var(
                 self.flowsheet().config.time,
-                self.config.property_package.component_list,
-                initialize=0.05,
+                initialize=0.95,
                 bounds=(1e-6, 1),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="The fraction of solution transfering from high to low pressure side",
+                doc="Pressure exchanger efficiency",
+            )
+        elif (
+            self.config.pressure_exchange_calculation
+            is PressureExchangeType.high_pressure_difference
+        ):
+            self.high_pressure_difference = Var(
+                self.flowsheet().config.time,
+                initialize=0.8e5,
+                bounds=(1e-6, None),
+                domain=NonNegativeReals,
+                units=pyunits.Pa,
+                doc="High pressure difference",
+            )
+        else:
+            pressure_exchange_type_not_found()
+
+        if self.config.has_leakage:
+            self.leakage_vol = Var(
+                self.flowsheet().config.time,
+                initialize=0.01,
+                bounds=(1e-6, 1),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="The volumetric fraction from leakage",
+            )
+
+        if self.config.has_mixing:
+            self.mixing_vol = Var(
+                self.flowsheet().config.time,
+                initialize=0.035,
+                bounds=(1e-6, 1),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="The volumetric fraction from mixing effects",
             )
 
         # Build control volume for high pressure side
@@ -231,10 +294,16 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
 
         self.high_pressure_side.add_state_blocks(has_phase_equilibrium=False)
 
-        self.high_pressure_side.add_material_balances(
-            balance_type=self.config.material_balance_type,
-            has_mass_transfer=self.config.has_mass_transfer,
-        )
+        if self.config.has_leakage or self.config.has_mixing:
+            self.high_pressure_side.add_material_balances(
+                balance_type=self.config.material_balance_type,
+                has_mass_transfer=True,
+            )
+        else:
+            self.high_pressure_side.add_material_balances(
+                balance_type=self.config.material_balance_type,
+                has_mass_transfer=False,
+            )
 
         self.high_pressure_side.add_energy_balances(
             balance_type=self.config.energy_balance_type,
@@ -265,10 +334,16 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
 
         self.low_pressure_side.add_state_blocks(has_phase_equilibrium=False)
 
-        self.low_pressure_side.add_material_balances(
-            balance_type=self.config.material_balance_type,
-            has_mass_transfer=self.config.has_mass_transfer,
-        )
+        if self.config.has_leakage or self.config.has_mixing:
+            self.low_pressure_side.add_material_balances(
+                balance_type=self.config.material_balance_type,
+                has_mass_transfer=True,
+            )
+        else:
+            self.low_pressure_side.add_material_balances(
+                balance_type=self.config.material_balance_type,
+                has_mass_transfer=False,
+            )
 
         self.low_pressure_side.add_energy_balances(
             balance_type=self.config.energy_balance_type,
@@ -296,21 +371,6 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
         self.add_outlet_port(name="low_pressure_outlet", block=self.low_pressure_side)
 
         # Performance equations
-        @self.Constraint(self.flowsheet().config.time, doc="Pressure transfer")
-        def eq_pressure_transfer(b, t):
-            return (
-                b.low_pressure_side.deltaP[t]
-                == b.efficiency_pressure_exchanger[t] * -b.high_pressure_side.deltaP[t]
-            )
-
-        @self.Constraint(self.flowsheet().config.time, doc="Equal volumetric flow rate")
-        def eq_equal_flow_vol(b, t):
-
-            return (
-                b.high_pressure_side.properties_out[t].flow_vol
-                == b.low_pressure_side.properties_in[t].flow_vol
-            )
-
         @self.Constraint(
             self.flowsheet().config.time, doc="Equal low pressure on both sides"
         )
@@ -320,25 +380,40 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
                 == b.low_pressure_side.properties_in[t].pressure
             )
 
-        if self.config.has_mass_transfer:
+        if self.config.pressure_exchange_calculation is PressureExchangeType.efficiency:
 
-            @self.Constraint(
-                self.flowsheet().config.time,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
-                doc="Mass transfer from high pressure side",
-            )
-            def eq_mass_transfer_from_high_pressure_side(b, t, p, j):
-                comp = self.config.property_package.get_component(j)
-                return b.high_pressure_side.mass_transfer_term[
-                    t, p, j
-                ] == -b.mass_transfer_fraction_comp[
-                    t, j
-                ] * b.high_pressure_side.properties_in[
-                    t
-                ].get_material_flow_terms(
-                    p, j
+            @self.Constraint(self.flowsheet().config.time, doc="Pressure transfer")
+            def eq_pressure_transfer(b, t):
+                return (
+                    b.low_pressure_side.deltaP[t]
+                    == b.efficiency_pressure_exchanger[t]
+                    * -b.high_pressure_side.deltaP[t]
                 )
+
+        elif (
+            self.config.pressure_exchange_calculation
+            is PressureExchangeType.high_pressure_difference
+        ):
+
+            @self.Constraint(self.flowsheet().config.time, doc="Pressure transfer")
+            def eq_pressure_transfer(b, t):
+                return b.high_pressure_side.properties_in[
+                    t
+                ].pressure == b.low_pressure_side.properties_out[
+                    t
+                ].pressure + pyunits.convert(
+                    b.high_pressure_difference[t], to_units=pyunits.Pa
+                )
+
+        @self.Constraint(self.flowsheet().config.time, doc="Equal volumetric flow rate")
+        def eq_equal_flow_vol(b, t):
+
+            return (
+                b.high_pressure_side.properties_in[t].flow_vol
+                == b.low_pressure_side.properties_in[t].flow_vol
+            )
+
+        if self.config.has_leakage or self.config.has_mixing:
 
             @self.Constraint(
                 self.flowsheet().config.time,
@@ -351,6 +426,93 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
                     b.high_pressure_side.mass_transfer_term[t, p, j]
                     == -b.low_pressure_side.mass_transfer_term[t, p, j]
                 )
+
+            if self.config.has_leakage and not self.config.has_mixing:
+
+                @self.Constraint(
+                    self.flowsheet().config.time, doc="High pressure side mass transfer"
+                )
+                def eq_leakage(b, t):
+                    return (
+                        b.high_pressure_side.properties_out[t].flow_vol
+                        == (1 - b.leakage_vol[t])
+                        * b.high_pressure_side.properties_in[t].flow_vol
+                    )
+
+                @self.Constraint(
+                    self.flowsheet().config.time,
+                    self.config.property_package.phase_list,
+                    self.config.property_package.solute_set,
+                    doc="Mixing effect of the unit",
+                )
+                def eq_mixing(b, t, p, j):
+                    return (
+                        b.low_pressure_side.properties_out[t].conc_mass_phase_comp[p, j]
+                        == b.low_pressure_side.properties_in[t].conc_mass_phase_comp[
+                            p, j
+                        ]
+                    )
+
+            elif self.config.has_mixing and not self.config.has_leakage:
+
+                @self.Constraint(
+                    self.flowsheet().config.time, doc="High pressure side mass transfer"
+                )
+                def eq_leakage(b, t):
+                    return (
+                        b.high_pressure_side.properties_out[t].flow_vol
+                        == b.high_pressure_side.properties_in[t].flow_vol
+                    )
+
+                @self.Constraint(
+                    self.flowsheet().config.time,
+                    self.config.property_package.phase_list,
+                    self.config.property_package.solute_set,
+                    doc="Mixing effect of the unit",
+                )
+                def eq_mixing(b, t, p, j):
+                    return (
+                        b.low_pressure_side.properties_out[t].conc_mass_phase_comp[p, j]
+                        == b.low_pressure_side.properties_in[t].conc_mass_phase_comp[
+                            p, j
+                        ]
+                        * (1 - b.mixing_vol[t])
+                        + b.high_pressure_side.properties_in[t].conc_mass_phase_comp[
+                            p, j
+                        ]
+                        * b.mixing_vol[t]
+                    )
+
+            elif self.config.has_leakage and self.config.has_mixing:
+
+                @self.Constraint(
+                    self.flowsheet().config.time, doc="High pressure side mass transfer"
+                )
+                def eq_leakage(b, t):
+                    return (
+                        b.high_pressure_side.properties_out[t].flow_vol
+                        == (1 - b.leakage_vol[t])
+                        * b.high_pressure_side.properties_in[t].flow_vol
+                    )
+
+                @self.Constraint(
+                    self.flowsheet().config.time,
+                    self.config.property_package.phase_list,
+                    self.config.property_package.solute_set,
+                    doc="Mixing effect of the unit",
+                )
+                def eq_mixing(b, t, p, j):
+                    return (
+                        b.low_pressure_side.properties_out[t].conc_mass_phase_comp[p, j]
+                        == b.low_pressure_side.properties_in[t].conc_mass_phase_comp[
+                            p, j
+                        ]
+                        * (1 - b.mixing_vol[t])
+                        + b.high_pressure_side.properties_in[t].conc_mass_phase_comp[
+                            p, j
+                        ]
+                        * b.mixing_vol[t]
+                    )
 
     def initialize_build(
         self,
@@ -420,7 +582,9 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             )
             / value(self.high_pressure_side.properties_in[0].flow_vol)
             > 1e-4
-            and not self.config.has_mass_transfer
+            # and not self.config.has_mass_transfer
+            and not self.config.has_leakage
+            and not self.config.has_mixing
         ):  # flow_vol values are not within 0.1%
             raise ConfigurationError(
                 "Initializing pressure exchanger failed because "
@@ -448,16 +612,26 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             self.low_pressure_side.properties_in[0],
             self.low_pressure_side.properties_out[0],
         )
-        self.low_pressure_side.properties_out[
-            0
-        ].pressure = self.low_pressure_side.properties_in[
-            0
-        ].pressure.value + self.efficiency_pressure_exchanger[
-            0
-        ].value * (
-            self.high_pressure_side.properties_in[0].pressure.value
-            - self.low_pressure_side.properties_in[0].pressure.value
-        )
+        if self.config.pressure_exchange_calculation is PressureExchangeType.efficiency:
+            self.low_pressure_side.properties_out[
+                0
+            ].pressure = self.low_pressure_side.properties_in[
+                0
+            ].pressure.value + self.efficiency_pressure_exchanger[
+                0
+            ].value * (
+                self.high_pressure_side.properties_in[0].pressure.value
+                - self.low_pressure_side.properties_in[0].pressure.value
+            )
+        elif (
+            self.config.pressure_exchange_calculation
+            is PressureExchangeType.high_pressure_difference
+        ):
+            self.low_pressure_side.properties_out[0].pressure = (
+                self.high_pressure_side.properties_in[0].pressure.value
+                - self.high_pressure_difference[0].value
+            )
+
         # high pressure side
         propogate_state(
             self.high_pressure_side.properties_in[0],
@@ -487,12 +661,20 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
         super().calculate_scaling_factors()
 
         # scale variables
-        if iscale.get_scaling_factor(self.efficiency_pressure_exchanger) is None:
-            # efficiency should always be between 0.1-1
-            iscale.set_scaling_factor(self.efficiency_pressure_exchanger, 1)
-        if hasattr(self, "mass_transfer_fraction_comp"):
-            if iscale.get_scaling_factor(self.mass_transfer_fraction_comp) is None:
-                iscale.set_scaling_factor(self.mass_transfer_fraction_comp, 1)
+        if hasattr(self, "efficiency_pressure_exchanger"):
+            if iscale.get_scaling_factor(self.efficiency_pressure_exchanger) is None:
+                # efficiency should always be between 0.1-1
+                iscale.set_scaling_factor(self.efficiency_pressure_exchanger, 1)
+        if hasattr(self, "high_pressure_difference"):
+            if iscale.get_scaling_factor(self.high_pressure_difference) is None:
+                # efficiency should always be between 0.1-1
+                iscale.set_scaling_factor(self.high_pressure_difference, 1e-5)
+        if hasattr(self, "leakage_vol"):
+            if iscale.get_scaling_factor(self.leakage_vol) is None:
+                iscale.set_scaling_factor(self.leakage_vol, 1)
+        if hasattr(self, "mixing_vol"):
+            if iscale.get_scaling_factor(self.mixing_vol) is None:
+                iscale.set_scaling_factor(self.mixing_vol, 1)
 
         # scale expressions
         if iscale.get_scaling_factor(self.low_pressure_side.work) is None:
@@ -526,12 +708,17 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             )
             iscale.constraint_scaling_transform(c, sf)
 
-        if hasattr(self, "eq_mass_transfer_from_high_pressure_side"):
-            for (t, p, j), c in self.eq_mass_transfer_from_high_pressure_side.items():
+        if hasattr(self, "eq_leakage"):
+            for t, c in self.eq_leakage.items():
                 sf = iscale.get_scaling_factor(
-                    self.high_pressure_side.properties_in[t].get_material_flow_terms(
-                        p, j
-                    )
+                    self.high_pressure_side.properties_in[t].flow_vol
+                )
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, "eq_mixing"):
+            for (t, p, j), c in self.eq_mixing.items():
+                sf = iscale.get_scaling_factor(
+                    self.low_pressure_side.properties_in[t].conc_mass_phase_comp[p, j]
                 )
                 iscale.constraint_scaling_transform(c, sf)
 
@@ -561,7 +748,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
         t = time_point
         return {
             "vars": {
-                "Efficiency": self.efficiency_pressure_exchanger[t],
+                # "Efficiency": self.efficiency_pressure_exchanger[t],
                 "HP Side Pressure Change": self.high_pressure_side.deltaP[t],
                 "LP Side Pressure Change": self.low_pressure_side.deltaP[t],
             },
