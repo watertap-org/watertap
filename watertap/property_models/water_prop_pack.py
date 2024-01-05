@@ -1016,7 +1016,7 @@ class WaterStateBlockData(StateBlockData):
 
     def _visc_d_phase(self):
         self.visc_d_phase = Var(
-            self.params.phase_list,
+            ["Liq"],
             initialize=1e-3,
             bounds=(0.0, 1),
             units=pyunits.Pa * pyunits.s,
@@ -1037,17 +1037,12 @@ class WaterStateBlockData(StateBlockData):
                     ** -1
                 )
                 return b.visc_d_phase[p] == mu_w
-            else:  # vapor phase
-                # TODO: add viscosity for vapor
-                return b.visc_d_phase[p] == 1
 
-        self.eq_visc_d_phase = Constraint(
-            self.params.phase_list, rule=rule_visc_d_phase
-        )
+        self.eq_visc_d_phase = Constraint(["Liq"], rule=rule_visc_d_phase)
 
     def _therm_cond_phase(self):
         self.therm_cond_phase = Var(
-            self.params.phase_list,
+            ["Liq"],
             initialize=0.6,
             bounds=(0.0, 1),
             units=pyunits.W / pyunits.m / pyunits.K,
@@ -1055,7 +1050,7 @@ class WaterStateBlockData(StateBlockData):
         )
         # thermal conductivity, eq. 13 in Sharqawy  et al. (2010)
         def rule_therm_cond_phase(b, p):
-            if phase == "Liq":
+            if p == "Liq":
                 # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
                 t = (b.temperature - 0.00025 * 273.15 * pyunits.K) / (1 - 0.00025)
                 # Sharqawy et al. demonstrates valid ranges for pure water.
@@ -1087,13 +1082,8 @@ class WaterStateBlockData(StateBlockData):
                     b.therm_cond_phase[p]
                     == 10**log10_ksw * 1e-3 * pyunits.W / pyunits.m / pyunits.K
                 )
-            else:  # vapor phase
-                # TODO: add therm_cond for vapor
-                return b.therm_cond_phase[p] == 1
 
-        self.eq_therm_cond_phase = Constraint(
-            self.params.phase_list, rule=rule_therm_cond_phase
-        )
+        self.eq_therm_cond_phase = Constraint(["Liq"], rule=rule_therm_cond_phase)
 
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
