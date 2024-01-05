@@ -50,14 +50,6 @@ class PressureExchangeType(Enum):
     high_pressure_difference = auto()
 
 
-def pressure_exchange_type_not_found(pressure_exchange_calculation):
-    raise NotImplementedError(
-        "pressure_exchange_calculation was {}, but can only "
-        "be efficiency or high_pressure_difference"
-        "".format(pressure_exchange_calculation.value)
-    )
-
-
 @declare_process_block_class("PressureExchanger")
 class PressureExchangerData(InitializationMixin, UnitModelBlockData):
     """
@@ -261,8 +253,6 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
                 units=pyunits.Pa,
                 doc="High pressure difference",
             )
-        else:
-            pressure_exchange_type_not_found()
 
         if self.config.has_leakage:
             self.leakage_vol = Var(

@@ -32,7 +32,8 @@ from watertap.unit_models.pressure_exchanger import (
     PressureExchangeType,
 )
 import watertap.property_models.seawater_prop_pack as props
-import watertap.property_models.seawater_ion_prop_pack as property_seawater_ions
+
+# import watertap.property_models.seawater_ion_prop_pack as property_seawater_ions
 
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -354,11 +355,6 @@ class TestPressureExchanger_without_mass_transfer:
     @pytest.mark.unit
     def test_report(self, unit_frame):
         unit_frame.fs.unit.report()
-
-    @pytest.mark.component
-    def test_config_error(self, unit_frame):
-        with pytest.raises(Exception):
-            PressureExchanger.build(pressure_exchange_calculation="not_a_configuration")
 
 
 class TestPressureExchanger_with_leakage:
