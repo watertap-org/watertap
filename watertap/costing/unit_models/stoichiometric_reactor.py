@@ -20,7 +20,8 @@ from pyomo.environ import (
 from ..util import register_costing_parameter_block, make_capital_cost_var
 
 
-def build_chemical_precipitator_cost_param_block(blk):
+def build_stoichiometric_reactor_cost_param_block(blk):
+    # Cost for soda ash /lime reactor
     blk.capital_cost_param = Param(
         initialize=2000,
         units=pyunits.USD_2021 / (pyunits.kg / pyunits.day),
@@ -29,17 +30,18 @@ def build_chemical_precipitator_cost_param_block(blk):
 
 
 @register_costing_parameter_block(
-    build_rule=build_chemical_precipitator_cost_param_block,
-    parameter_block_name="chemical_precipitator",
+    build_rule=build_stoichiometric_reactor_cost_param_block,
+    parameter_block_name="stoichiometric_reactor",
 )
-def cost_chemical_precipitator(blk):
+def cost_stoichiometric_reactor(blk):
     t0 = blk.flowsheet().time.first()
     make_capital_cost_var(blk)
-
+    blk.costing_package.add_cost_factor(blk, "TIC")
     blk.capital_cost_constraint = Constraint(
         expr=blk.capital_cost
-        == pyunits.convert(
-            blk.costing_package.chemical_precipitator.capital_cost_param,
+        == blk.cost_factor
+        * pyunits.convert(
+            blk.costing_package.stoichiometric_reactor.capital_cost_param,
             to_units=blk.costing_package.base_currency / (pyunits.kg / pyunits.day),
         )
         * sum(
