@@ -603,7 +603,7 @@ class TestStoichiometricReactor:
         )
 
     @pytest.mark.unit
-    def test_molar(self, precipitation_reactor):
+    def test_precipitation(self, precipitation_reactor):
         m = precipitation_reactor
         calculate_scaling_factors(m)
 

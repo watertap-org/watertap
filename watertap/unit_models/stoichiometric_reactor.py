@@ -13,7 +13,6 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
     Set,
     Var,
     Param,
@@ -47,7 +46,6 @@ from idaes.models.unit_models.separator import (
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from watertap.costing.unit_models.stoichiometric_reactor import (
@@ -393,7 +391,7 @@ class StoichiometricReactorData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 doc="isothermal energy balance for reactor",
             )
-            def eq_isothermal(b, t):
+            def eq_isothermal_dissolution(b, t):
                 return b.properties_in[t].temperature == b.properties_out[t].temperature
 
             self.dissolution_reactor.add_momentum_balances(
@@ -424,7 +422,7 @@ class StoichiometricReactorData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 doc="isothermal energy balance for reactor",
             )
-            def eq_isothermal(b, t):
+            def eq_isothermal_precipitation(b, t):
                 return b.properties_in[t].temperature == b.properties_out[t].temperature
 
             self.precipitation_reactor.add_momentum_balances(
@@ -617,7 +615,7 @@ class StoichiometricReactorData(UnitModelBlockData):
                 ) == sum(b.flow_mass_precipitate[p] for p in b.precipitate_list)
 
     def initialize_build(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -634,63 +632,63 @@ class StoichiometricReactorData(UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize dissolution reactor if constructed
-        if blk.has_dissolution_reaction:
-            disolve_flags = blk.dissolution_reactor.initialize(
+        if self.has_dissolution_reaction:
+            disolve_flags = self.dissolution_reactor.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
                 state_args=state_args,
             )
             init_log.info_high("Dissolution reactor Step 1 Complete.")
-        if blk.has_precipitation_reaction:
+        if self.has_precipitation_reaction:
             # if we have dossolution reactor propgate state to precip reactor
-            if blk.has_dissolution_reaction:
-                propagate_state(blk.dissolution_to_precipitation_reactor)
+            if self.has_dissolution_reaction:
+                propagate_state(self.dissolution_to_precipitation_reactor)
 
-            precip_flags = blk.precipitation_reactor.initialize(
+            precip_flags = self.precipitation_reactor.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
                 state_args=state_args,
             )
-            if blk.has_dissolution_reaction:
-                blk.precipitation_reactor.release_state(precip_flags, outlvl)
+            if self.has_dissolution_reaction:
+                self.precipitation_reactor.release_state(precip_flags, outlvl)
             init_log.info_high("Precipitation reactor Step 1 Complete.")
-            propagate_state(blk.precipitation_reactor_separator_arc)
+            propagate_state(self.precipitation_reactor_separator_arc)
 
-            blk.separator.split_fraction[0, "waste", "Liq"].fix(
+            self.separator.split_fraction[0, "waste", "Liq"].fix(
                 0.01
             )  # guess split fraction as 1%
 
-            blk.separator.initialize(
+            self.separator.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
             )
 
-            blk.separator.split_fraction[0, "waste", "Liq"].unfix()
+            self.separator.split_fraction[0, "waste", "Liq"].unfix()
             init_log.info_high("Initialization Step 2 Complete.")
 
         # ---------------------------------------------------------------------
         # Solve unit
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        if blk.has_dissolution_reaction:
-            blk.dissolution_reactor.release_state(disolve_flags, outlvl)
+        if self.has_dissolution_reaction:
+            self.dissolution_reactor.release_state(disolve_flags, outlvl)
         else:
-            blk.precipitation_reactor.release_state(precip_flags, outlvl)
+            self.precipitation_reactor.release_state(precip_flags, outlvl)
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
