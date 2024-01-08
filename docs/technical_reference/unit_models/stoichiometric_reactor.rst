@@ -148,7 +148,7 @@ Costing method
 --------------
 
 Currently, the costing method is only implement for lime soda ash, and only includes
-the capital cost of building the whole processes. The capital cost is a function of 
+the capital cost of building the whole process. The capital cost is a function of 
 total reagent mass being added to the softening processes. 
 
    .. math:: 
