@@ -33,7 +33,7 @@ from watertap.unit_models.pressure_exchanger import (
 )
 import watertap.property_models.seawater_prop_pack as props
 
-# import watertap.property_models.seawater_ion_prop_pack as property_seawater_ions
+import watertap.property_models.seawater_ion_prop_pack as property_seawater_ions
 
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -197,12 +197,9 @@ def test_build(
     assert number_unused_variables(m.fs.unit) == 0
 
 
-# @pytest.mark.unit
-# def test_build_without_mass_transfer():
-#     # 2 variables for mass transfer fractions (solute,solvent)
-#     # 4 extra vars for mass_transfer_term on LP and HP side, and solute, solvent
-#     # 4 extra constraints for mass transsfer from HP side (soute, solvent)
-#     test_build(has_mass_transfer=False)
+@pytest.mark.unit
+def test_build_without_mass_transfer():
+    test_build(has_leakage=False, has_mixing=False)
 
 
 class TestPressureExchanger_without_mass_transfer:
@@ -1010,7 +1007,7 @@ class TestPressureExchanger_with_mass_transfer:
 #         m.fs = FlowsheetBlock(dynamic=False)
 #         m.fs.properties = property_seawater_ions.PropParameterBlock()
 #         m.fs.unit = PressureExchanger(
-#             property_package=m.fs.properties, has_leakage=True, has_mixing=True, pressure_exchange_calculation=PressureExchangeType.high_pressure_difference,
+#             property_package=m.fs.properties, has_leakage=True, has_mixing=True,
 #         )
 #
 #         # Specify inlet conditions
@@ -1040,13 +1037,19 @@ class TestPressureExchanger_with_mass_transfer:
 #             "Cl": 2 * 20300e-6,
 #         }
 #
+#         leakage_vol = 0.01
+#         mixing_vol = 0.035
+#
 #         # Specify unit
 #         efficiency = 0.95
 #         m.fs.unit.efficiency_pressure_exchanger.fix(efficiency)
 #
-#         m.fs.unit.mass_transfer_fraction_comp[0, "H2O"].fix(solvent_transfer)
-#         for s in solute_transfer:
-#             m.fs.unit.mass_transfer_fraction_comp[0, s].fix(solute_transfer[s])
+#         m.fs.unit.leakage_vol[0].fix(leakage_vol)
+#         m.fs.unit.mixing_vol[0].fix(mixing_vol)
+#
+#         # m.fs.unit.mass_transfer_fraction_comp[0, "H2O"].fix(solvent_transfer)
+#         # for s in solute_transfer:
+#         #     m.fs.unit.mass_transfer_fraction_comp[0, s].fix(solute_transfer[s])
 #
 #         m.fs.unit.low_pressure_side.properties_in[0].flow_mass_phase_comp[
 #             "Liq", "H2O"

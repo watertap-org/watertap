@@ -572,7 +572,6 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             )
             / value(self.high_pressure_side.properties_in[0].flow_vol)
             > 1e-4
-            # and not self.config.has_mass_transfer
             and not self.config.has_leakage
             and not self.config.has_mixing
         ):  # flow_vol values are not within 0.1%
