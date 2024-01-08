@@ -27,6 +27,7 @@ from pyomo.environ import (
     Suffix,
     value,
     log,
+    log10,
     exp,
     check_optimal_termination,
 )
@@ -1051,17 +1052,14 @@ class WaterStateBlockData(StateBlockData):
         # thermal conductivity, eq. 13 in Sharqawy  et al. (2010)
         def rule_therm_cond_phase(b, p):
             if p == "Liq":
+                # thermal conductivity, eq. 13 in Sharqawy  et al. (2010)
                 # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
                 t = (b.temperature - 0.00025 * 273.15 * pyunits.K) / (1 - 0.00025)
-                # Sharqawy et al. demonstrates valid ranges for pure water.
-                # However, the equation doesn't have a "pure water" portion.
-                # Salinity will be set to 0 as a solution.
-                s = 0 * 1000 * pyunits.g / pyunits.kg
+                s = 0 * 1000 * pyunits.g / pyunits.kg  # pure water
                 log10_ksw = log10(
                     b.params.therm_cond_phase_param_1
                     + b.params.therm_cond_phase_param_2 * s
-                )
-                +b.params.therm_cond_phase_param_3 * (
+                ) + b.params.therm_cond_phase_param_3 * (
                     b.params.therm_cond_phase_param_4
                     - (
                         b.params.therm_cond_phase_param_5
@@ -1078,10 +1076,10 @@ class WaterStateBlockData(StateBlockData):
                 ) ** (
                     1 / 3
                 )
-                return (
-                    b.therm_cond_phase[p]
-                    == 10**log10_ksw * 1e-3 * pyunits.W / pyunits.m / pyunits.K
-                )
+            return (
+                b.therm_cond_phase[p]
+                == 10**log10_ksw * 1e-3 * pyunits.W / pyunits.m / pyunits.K
+            )
 
         self.eq_therm_cond_phase = Constraint(["Liq"], rule=rule_therm_cond_phase)
 
