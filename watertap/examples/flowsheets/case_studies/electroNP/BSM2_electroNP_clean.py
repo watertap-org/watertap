@@ -102,7 +102,26 @@ def main():
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     print(f"DOF before feed: {degrees_of_freedom(m)}")
 
-    results = solve(m)
+    # results = solve(m)
+
+    # Use of Degeneracy Hunter for troubleshooting model.
+    m.obj = pyo.Objective(expr=0)
+    solver = get_solver()
+    solver.options["max_iter"] = 10000
+    results = solver.solve(m, tee=True)
+    dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    # badly_scaled_var_list = iscale.badly_scaled_var_generator(
+    #     m, large=1e1, small=1e-1
+    # )
+    # for x in badly_scaled_var_list:
+    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    dh.check_residuals(tol=1e-8)
+    # dh.check_variable_bounds(tol=1e-8)
+    # dh.check_rank_equality_constraints(dense=True)
+    # ds = dh.find_candidate_equations(verbose=True, tee=True)
+    # ids = dh.find_irreducible_degenerate_sets(verbose=True)
+    # print_close_to_bounds(m)
+    # print_infeasible_constraints(m)
 
     return m, results
 
@@ -573,6 +592,58 @@ def initialize_system(m):
             (0, "X_PHA"): 0.028704,
             (0, "X_PP"): 0.078346,
             (0, "X_S"): 0.059784,
+        },
+        "temperature": {0: 308.15},
+        "pressure": {0: 101325},
+    }
+
+    tear_guesses2 = {
+        "flow_vol": {0: 0.0028259},
+        "conc_mass_comp": {
+            (0, "S_A"): 0.093280,
+            (0, "S_F"): 0.17467,
+            (0, "S_I"): 0.057450,
+            (0, "S_N2"): 0.045618,
+            (0, "S_NH4"): 0.056961,
+            (0, "S_NO3"): 0.010494,
+            (0, "S_O2"): 0.0012577,
+            (0, "S_PO4"): 0.015722,
+            (0, "S_K"): 0.37793,
+            (0, "S_Mg"): 0.024953,
+            (0, "S_IC"): 0.074506,
+            (0, "X_AUT"): 0.68103,
+            (0, "X_H"): 25.879,
+            (0, "X_I"): 12.527,
+            (0, "X_PAO"): 5.5389,
+            (0, "X_PHA"): 0.012691,
+            (0, "X_PP"): 0.20382,
+            (0, "X_S"): 4.5169,
+        },
+        "temperature": {0: 308.15},
+        "pressure": {0: 101325},
+    }
+
+    tear_guesses = {
+        "flow_vol": {0: 1.2368},
+        "conc_mass_comp": {
+            (0, "S_A"): 0.0010934,
+            (0, "S_F"): 0.0018656,
+            (0, "S_I"): 0.057450,
+            (0, "S_N2"): 0.086006,
+            (0, "S_NH4"): 0.022419,
+            (0, "S_NO3"): 0.028067,
+            (0, "S_O2"): 0.00192,
+            (0, "S_PO4"): 1e-9,
+            (0, "S_K"): 0.37466,
+            (0, "S_Mg"): 0.020240,
+            (0, "S_IC"): 0.13512,
+            (0, "X_AUT"): 0.35292,
+            (0, "X_H"): 4.3920,
+            (0, "X_I"): 3.4921,
+            (0, "X_PAO"): 1.0857,
+            (0, "X_PHA"): 0.027007,
+            (0, "X_PP"): 0.071120,
+            (0, "X_S"): 0.060579,
         },
         "temperature": {0: 308.15},
         "pressure": {0: 101325},
