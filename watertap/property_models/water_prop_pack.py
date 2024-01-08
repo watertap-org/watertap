@@ -102,7 +102,6 @@ class WaterParameterData(PhysicalParameterBlock):
         # molecular weight
         self.mw_comp = Param(
             self.component_list,
-            mutable=False,
             initialize=18.01528e-3,
             units=pyunits.kg / pyunits.mol,
             doc="Molecular weight",

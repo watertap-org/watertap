@@ -23,7 +23,7 @@ from pyomo.environ import (
     units as pyunits,
     value,
 )
-from idaes.core import UnitModelBlockData, FlowDirection
+from idaes.core import UnitModelBlockData
 from idaes.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -35,6 +35,7 @@ import idaes.logger as idaeslog
 from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
     ConcentrationPolarizationType,
+    TransportModel,
 )
 
 from watertap.core import InitializationMixin
@@ -68,12 +69,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
     """
 
-    def build(self):
-        """
-        Common variables and constraints for an OARO unit model
-
-        """
-        super().build()
+    def _process_config(self):
 
         if len(self.config.property_package.solvent_set) > 1:
             raise ConfigurationError(
@@ -93,14 +89,22 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
                 )
             )
 
+    def build(self):
+        """
+        Common variables and constraints for an OARO unit model
+
+        """
+        super().build()
+
+        # Check configuration errors
+        self._process_config()
+
         # Raise exception if any of configuration arguments are provided incorrectly
         validate_membrane_config_args(self)
 
         # --------------------------------------------------------------
-        # Add feed side MembraneChannel Control Volume and setup
-        self._add_membrane_channel_and_geometry(
-            side="feed_side", flow_direction=FlowDirection.forward
-        )
+        # Add feed side and permeate side MembraneChannel Control Volume and setup
+        self._add_membrane_channels_and_geometry()
 
         self.feed_side.add_state_blocks(has_phase_equilibrium=False)
 
@@ -139,10 +143,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
         # --------------------------------------------------------------
         # Add permeate side MembraneChannel Control Volume and setup
-        self._add_membrane_channel_and_geometry(
-            side="permeate_side", flow_direction=FlowDirection.backward
-        )
-
         self.permeate_side.add_state_blocks(has_phase_equilibrium=False)
 
         self.permeate_side.add_material_balances(
@@ -298,15 +298,17 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             )
 
         self._add_flux_balance()
-
+        if self.config.has_pressure_change:
+            self._add_deltaP(side="feed_side")
+            self._add_deltaP(side="permeate_side")
         self._add_mass_transfer()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
-    def _add_deltaP(self):
+    def _add_mass_transfer(self):
         raise NotImplementedError()
 
-    def _add_mass_transfer(self):
+    def _add_membrane_channels_and_geometry(self):
         raise NotImplementedError()
 
     def _add_length_and_width(self):
@@ -385,6 +387,21 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             doc="Pure water density",
         )
 
+        if self.config.transport_model == TransportModel.SKK:
+            self.reflect_coeff = Var(
+                initialize=0.9,
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Reflection coefficient of the membrane",
+            )
+
+            self.alpha = Var(
+                initialize=1e8,
+                domain=NonNegativeReals,
+                units=units_meta("time") * units_meta("length") ** -1,
+                doc="Alpha coefficient of the membrane",
+            )
+
         self.flux_mass_phase_comp = Var(
             self.flowsheet().config.time,
             self.difference_elements,
@@ -398,34 +415,84 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             doc="Mass flux across membrane at inlet and outlet",
         )
 
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="Solvent and solute mass flux",
-        )
-        def eq_flux_mass(b, t, x, p, j):
-            prop_feed = b.feed_side.properties[t, x]
-            prop_perm = b.permeate_side.properties[t, x]
-            interface_feed = b.feed_side.properties_interface[t, x]
-            interface_perm = b.permeate_side.properties_interface[t, x]
-            comp = self.config.property_package.get_component(j)
-            if comp.is_solvent():
-                return b.flux_mass_phase_comp[t, x, p, j] == b.A_comp[
-                    t, j
-                ] * b.dens_solvent * (
-                    (prop_feed.pressure - prop_perm.pressure)
-                    - (
-                        interface_feed.pressure_osm_phase[p]
-                        - interface_perm.pressure_osm_phase[p]
+        if self.config.transport_model == TransportModel.SD:
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.difference_elements,
+                self.config.property_package.phase_list,
+                self.config.property_package.component_list,
+                doc="Solvent and solute mass flux",
+            )
+            def eq_flux_mass(b, t, x, p, j):
+                prop_feed = b.feed_side.properties[t, x]
+                prop_perm = b.permeate_side.properties[t, x]
+                interface_feed = b.feed_side.properties_interface[t, x]
+                interface_perm = b.permeate_side.properties_interface[t, x]
+                comp = self.config.property_package.get_component(j)
+                if comp.is_solvent():
+                    return b.flux_mass_phase_comp[t, x, p, j] == b.A_comp[
+                        t, j
+                    ] * b.dens_solvent * (
+                        (prop_feed.pressure - prop_perm.pressure)
+                        - (
+                            interface_feed.pressure_osm_phase[p]
+                            - interface_perm.pressure_osm_phase[p]
+                        )
                     )
-                )
-            elif comp.is_solute():
-                return b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j] * (
-                    interface_feed.conc_mass_phase_comp[p, j]
-                    - interface_perm.conc_mass_phase_comp[p, j]
-                )
+                elif comp.is_solute():
+                    return b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j] * (
+                        interface_feed.conc_mass_phase_comp[p, j]
+                        - interface_perm.conc_mass_phase_comp[p, j]
+                    )
+
+        elif self.config.transport_model == TransportModel.SKK:
+
+            @self.Constraint(
+                self.flowsheet().config.time, solute_set, doc="SKK alpha coeff."
+            )
+            def eq_alpha(b, t, j):
+                return b.alpha == (1 - b.reflect_coeff) / b.B_comp[t, j]
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.difference_elements,
+                self.config.property_package.phase_list,
+                self.config.property_package.component_list,
+                doc="Solvent and solute mass flux using SKK model",
+            )
+            def eq_flux_mass(b, t, x, p, j):
+                prop_feed = b.feed_side.properties[t, x]
+                prop_perm = b.permeate_side.properties[t, x]
+                interface_feed = b.feed_side.properties_interface[t, x]
+                interface_perm = b.permeate_side.properties_interface[t, x]
+                comp = self.config.property_package.get_component(j)
+                if comp.is_solvent():
+                    return b.flux_mass_phase_comp[t, x, p, j] == b.A_comp[
+                        t, j
+                    ] * b.dens_solvent * (
+                        (prop_feed.pressure - prop_perm.pressure)
+                        - b.reflect_coeff
+                        * (
+                            interface_feed.pressure_osm_phase[p]
+                            - interface_perm.pressure_osm_phase[p]
+                        )
+                    )
+                elif comp.is_solute():
+                    return b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j] * (
+                        interface_feed.conc_mass_phase_comp[p, j]
+                        - interface_perm.conc_mass_phase_comp[p, j]
+                    ) + (1 - b.reflect_coeff) * (
+                        (
+                            (b.flux_mass_phase_comp[t, x, p, "H2O"] / b.dens_solvent)
+                            * interface_feed.conc_mass_phase_comp[p, j]
+                        )
+                    )
+
+        else:
+            raise ConfigurationError(
+                "Unsupported transport model: {}".format(self.config.transport_model)
+            )
 
         @self.Expression(
             self.flowsheet().config.time,
@@ -810,6 +877,13 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
             iscale.set_scaling_factor(self.recovery_vol_phase, 1)
 
+        if self.config.transport_model == TransportModel.SKK:
+            if iscale.get_scaling_factor(self.alpha) is None:
+                iscale.set_scaling_factor(self.alpha, 1e-8)
+
+            if iscale.get_scaling_factor(self.reflect_coeff) is None:
+                iscale.set_scaling_factor(self.reflect_coeff, 1)
+
         for (t, p, j), v in self.recovery_mass_phase_comp.items():
             if j in self.config.property_package.solvent_set:
                 sf = 1
@@ -821,6 +895,14 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         for v in self.rejection_phase_comp.values():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "length"):
+            if iscale.get_scaling_factor(self.length) is None:
+                iscale.set_scaling_factor(self.length, 1)
+
+        if hasattr(self, "width"):
+            if iscale.get_scaling_factor(self.width) is None:
+                iscale.set_scaling_factor(self.width, 1)
 
         if hasattr(self, "structural_parameter"):
             if iscale.get_scaling_factor(self.structural_parameter) is None:

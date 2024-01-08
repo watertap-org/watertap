@@ -70,14 +70,12 @@ class ADM1_vaporParameterData(PhysicalParameterBlock):
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(
-            mutable=False,
             initialize=1.996,
             doc="Specific heat capacity of water",
             units=pyo.units.J / pyo.units.kg / pyo.units.K,
         )
         # Density of water
         self.dens_mass = pyo.Param(
-            mutable=False,
             # initialize=0.927613356,
             initialize=0.01,
             doc="Density of water",

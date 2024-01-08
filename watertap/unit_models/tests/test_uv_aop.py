@@ -252,7 +252,9 @@ class TestUV:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(1041639, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(2.0 * 1041639, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
         assert pytest.approx(53286.2, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
@@ -468,7 +470,9 @@ class TestUV_standard:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(820692, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(2.0 * 820692, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
         assert pytest.approx(23525, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
@@ -488,6 +492,7 @@ class TestUV_with_multiple_comps:
         m.fs.properties = MCASParameterBlock(
             solute_list=["NDMA", "DCE"],
             mw_data={"H2O": 0.018, "NDMA": 0.0740819, "DCE": 0.09896},
+            ignore_neutral_charge=True,
         )
 
         m.fs.unit = Ultraviolet0D(
@@ -708,7 +713,9 @@ class TestUV_with_multiple_comps:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(1767152, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(2.0 * 1767152, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
         assert pytest.approx(90400.7, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
@@ -935,7 +942,9 @@ class TestUV_detailed:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(865726, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(2.0 * 865726, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
         assert pytest.approx(38511.4, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
@@ -1157,7 +1166,9 @@ class TestUVAOP:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(1076448, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(2.0 * 1076448, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
         assert pytest.approx(64870.2, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )

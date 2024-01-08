@@ -415,7 +415,11 @@ class TestPumpIsothermal_with_energybalancetype_none:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = props2.MCASParameterBlock(solute_list=["TDS"])
+        m.fs.properties = props2.MCASParameterBlock(
+            solute_list=["TDS"],
+            mw_data={"TDS": 58e-3},
+            ignore_neutral_charge=True,
+        )
 
         m.fs.unit = Pump(property_package=m.fs.properties)
 

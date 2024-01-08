@@ -29,7 +29,7 @@ def export_to_ui():
     )
 
 
-def export_variables(flowsheet=None, exports=None):
+def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
     fs = flowsheet
     # --- Input data ---
     # Feed conditions
@@ -221,7 +221,7 @@ def export_variables(flowsheet=None, exports=None):
         obj=fs.costing.factor_maintenance_labor_chemical,
         name="Maintenance-labor-chemical factor",
         ui_units=pyunits.year**-1,
-        display_units="fraction of investment cost/year",
+        display_units="fraction of equipment cost/year",
         rounding=4,
         description="NF OPEX",
         is_input=True,
@@ -382,7 +382,7 @@ def export_variables(flowsheet=None, exports=None):
         )
 
 
-def build_flowsheet():
+def build_flowsheet(build_options=None, **kwargs):
     # build and solve initial flowsheet
     solver = get_solver()
     m = nf_with_bypass.build()
