@@ -352,6 +352,9 @@ class FlowsheetExport(BaseModel):
             IOError: if input file doesn't exist
             ValueError: Invalid data in input file (error message will have details)
         """
+
+        flowsheet = flowsheet.fs
+
         _log.debug(f"exports.add: from csv filename={file}")
 
         # compute path
