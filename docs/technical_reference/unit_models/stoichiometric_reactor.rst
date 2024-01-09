@@ -14,18 +14,14 @@ The main assumptions of the implemented model are as follows:
 
 Introduction
 ------------
-The stoichiometric reactor is a basic unit operation designed to aid in modeling 
-addition of reagent to a feed stream and removal of ions from a stream through precipitation.
-A basic example for using this model is the lime/soda ash softening process. 
-The reactor can be configured to include only dissolution of a 
-reagent or precipitation of specific species, and both as shown in figure below.
+The stoichiometric reactor is a basic unit operation designed to aid in modeling addition of reagent to a feed stream and removal of ions from a stream through precipitation. A basic example for using this model is the lime/soda ash softening process. 
+The reactor can be configured to include only dissolution of a reagent or precipitation of specific species, and both as shown in figure below.
 
 .. figure:: ../../_static/unit_models/stoichiometric_reactor.png
     :width: 600
     :align: center
     
     Figure 1. Schematic representation of a processes considered in stoichiometric reactor
-
 
 Degrees of Freedom
 ------------------
@@ -45,12 +41,8 @@ If precipitants are supplied
 
 Model Structure and usage
 -------------------------
-The stoichiometric reactor uses control volumes to perform the dissolution reaction
-and precipitation reaction, while a an IDAES separator is used to
-separate precipitated solids from the feed stream. The model should be used with MCAS property package.
-
-The user needs to specify how supplied reagent, and precipitant dissolve or precipitate out 
-of the feed stream, using ions present in the feed. 
+The stoichiometric reactor uses control volumes to perform the dissolution reaction and precipitation reaction, while a an IDAES separator is used to separate precipitated solids from the feed stream. The model should be used with MCAS property package.
+The user needs to specify how supplied reagent, and precipitant dissolve or precipitate out of the feed stream, using ions present in the feed. 
 
 Example dictionary for dissolving Soda ash and Lime into their ions  
 
@@ -82,8 +74,7 @@ Example dictionary for defined precipitant that would form during reaction (Calc
       },
    }
 
-The user can then provide the model with specified dictionary to produce a stoichiometric reactor that only 
-perform dissolution, precipitation, or both. 
+The user can then provide the model with specified dictionary to produce a stoichiometric reactor that only perform dissolution, precipitation, or both. 
 
 .. code-block:: 
 
@@ -121,7 +112,6 @@ perform dissolution, precipitation, or both.
    # The user must also specify solids fraction in waste stream
    m.fs.lime_soda_softening.waste_mass_frac_precipitate.fix(0.2)
 
-   
 Sets
 ----
 .. csv-table::
