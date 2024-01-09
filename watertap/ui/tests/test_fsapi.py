@@ -85,7 +85,7 @@ class OutputCategory:
 
 
 def export_to_ui(flowsheet=None, exports=None, build_options=None, **kwargs):
-    fs = flowsheet
+    fs = flowsheet.fs
     exports.add(
         obj=fs.feed.flow_vol[0],
         name="Flowrate",
@@ -173,7 +173,7 @@ def test_actions(add_variant: str):
 
     def fake_solve(flowsheet=None):
         # flowsheet passed in here should be what fake_build() returns
-        assert flowsheet == m.fs
+        assert flowsheet == m
         return SOLVE_RESULT_OK
 
     def fake_export(flowsheet=None, exports=None, build_options=None, **kwargs):
