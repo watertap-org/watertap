@@ -16,7 +16,7 @@ Introduction
 ------------
 The stoichiometric reactor is a basic unit operation designed to aid in modeling 
 addition of reagent to a feed stream and removal of ions from a stream through precipitation.
-The most basic usage is for modeling Lime/Soda ash softening process. 
+A basic example for using this model is the lime/soda ash softening process. 
 The reactor can be configured to include only dissolution of a 
 reagent or precipitation of specific species, and both as shown in figure below.
 
@@ -148,8 +148,8 @@ Costing method
 --------------
 
 Currently, the costing method is only implement for lime soda ash, and only includes
-the capital cost of building the whole processes. The capital cost is a function of 
-total reagent mass being added to the softening processes. 
+the capital cost of building the whole process. The capital cost is a function of 
+total reagent mass being added to the softening process. 
 
 .. math:: 
 
