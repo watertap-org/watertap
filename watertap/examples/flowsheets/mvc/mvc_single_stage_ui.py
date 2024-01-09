@@ -34,7 +34,7 @@ def export_to_ui():
 
 
 def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
-    fs = flowsheet
+    fs = flowsheet.fs
     # --- Input data ---
     exports.add(
         obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],

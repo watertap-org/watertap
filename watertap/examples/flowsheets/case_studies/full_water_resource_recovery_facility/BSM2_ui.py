@@ -44,7 +44,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     """
     Exports the variables to the GUI.
     """
-    fs = flowsheet
+    fs = flowsheet.fs
     # --- Input data ---
     # Feed conditions
     exports.add(
