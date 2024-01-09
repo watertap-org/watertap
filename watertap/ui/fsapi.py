@@ -821,6 +821,7 @@ class FlowsheetInterface:
                     f"'{Actions.build}') before flowsheet is built"
                 )
             else:
+                kwargs["model"] = self.fs_exp.m
                 result = action_func(flowsheet=self.fs_exp.obj, **kwargs)
                 # Issue 755: Report optimization errors
                 if action_name == Actions.solve:
