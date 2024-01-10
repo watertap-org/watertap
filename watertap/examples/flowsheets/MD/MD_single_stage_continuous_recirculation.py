@@ -308,8 +308,8 @@ def add_costs(m):
 
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(m.fs.permeate.properties[0].flow_vol)
-    m.fs.costing.add_LCOW(m.fs.permeate.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.permeate.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.permeate.properties[0].flow_vol)
 
 
 def set_operating_conditions(m):
@@ -378,7 +378,7 @@ def set_operating_conditions(m):
     )
 
     # heater
-    heater_top_temperature = 275.15 + 90
+    heater_top_temperature = 273.15 + 90
     mixed_brine_mass_frac_TDS = 0.07
     mixed_brine_mass_frac_H2O = 1 - mixed_brine_mass_frac_TDS
     mixed_brine_flow_mass = feed_flow_mass + recycle_flow_mass
@@ -396,7 +396,7 @@ def set_operating_conditions(m):
     ].value = (mixed_brine_flow_mass * mixed_brine_mass_frac_TDS)
 
     # chiller
-    chiller_outlet_temperature = 275.15 + 10
+    chiller_outlet_temperature = 273.15 + 10
     # The flow rate in MD cold and hot channels is assumed to be equal.
     cold_loop_stream_flow_mass = recycle_flow_mass + feed_flow_mass
     m.fs.chiller.control_volume.properties_out[0].temperature.fix(

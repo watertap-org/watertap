@@ -32,6 +32,7 @@ from watertap.examples.flowsheets.MD.MD_single_stage_continuous_recirculation im
     main,
     build,
     set_operating_conditions,
+    optimize_set_up,
     initialize_system,
     solve,
 )
@@ -57,23 +58,22 @@ class TestMDContinuousRecirculation:
         assert isinstance(m.fs.properties_vapor, props_w.WaterParameterBlock)
 
         # unit models
-        fs = m.fs
-        assert isinstance(fs.feed, Feed)
-        assert isinstance(fs.pump_feed, Pump)
-        assert isinstance(fs.pump_permeate, Pump)
-        assert isinstance(fs.pump_brine, Pump)
-        assert isinstance(fs.mixer, Mixer)
-        assert isinstance(fs.heater, Heater)
-        assert isinstance(fs.chiller, Heater)
-        assert isinstance(fs.hx, HeatExchanger)
-        assert isinstance(fs.MD, MembraneDistillation0D)
-        assert isinstance(fs.separator_concentrate, Separator)
-        assert isinstance(fs.separator_permeate, Separator)
-        assert isinstance(fs.permeate, Product)
+        assert isinstance(m.fs.feed, Feed)
+        assert isinstance(m.fs.pump_feed, Pump)
+        assert isinstance(m.fs.pump_permeate, Pump)
+        assert isinstance(m.fs.pump_brine, Pump)
+        assert isinstance(m.fs.mixer, Mixer)
+        assert isinstance(m.fs.heater, Heater)
+        assert isinstance(m.fs.chiller, Heater)
+        assert isinstance(m.fs.hx, HeatExchanger)
+        assert isinstance(m.fs.MD, MembraneDistillation0D)
+        assert isinstance(m.fs.separator_concentrate, Separator)
+        assert isinstance(m.fs.separator_permeate, Separator)
+        assert isinstance(m.fs.permeate, Product)
 
         # additional variables
-        assert isinstance(fs.overall_recovery, Var)
-        assert isinstance(fs.recycle_ratio, Var)
+        assert isinstance(m.fs.overall_recovery, Var)
+        assert isinstance(m.fs.recycle_ratio, Var)
 
         # arcs
         arc_dict = {
@@ -112,21 +112,23 @@ class TestMDContinuousRecirculation:
         assert degrees_of_freedom(m) == 0
 
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_initialize_system(self, system_frame):
         m = system_frame
         initialize_system(m, solver=solver)
         assert degrees_of_freedom(m) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, system_frame):
         m = system_frame
+        optimize_set_up(m)
         solve(m, solver=solver)
-        fs = m.fs
         assert pytest.approx(0, rel=1e-5) == value(
-            fs.permeate.flow_mass_phase_comp[0, "Liq", "TDS"]
+            m.fs.permeate.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
-        assert pytest.approx(0.5, rel=1e-5) == value(fs.overall_recovery)
-        assert pytest.approx(6.9, rel=1e-1) == value(fs.recycle_ratio[0])
+        assert pytest.approx(0.5, rel=1e-5) == value(m.fs.overall_recovery)
+        assert pytest.approx(6.169, rel=1e-3) == value(m.fs.recycle_ratio[0])
 
     @pytest.mark.component
     def test_main(self):
