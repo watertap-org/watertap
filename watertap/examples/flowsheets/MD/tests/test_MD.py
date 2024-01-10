@@ -130,6 +130,7 @@ class TestMDContinuousRecirculation:
         assert pytest.approx(0.5, rel=1e-5) == value(m.fs.overall_recovery)
         assert pytest.approx(6.169, rel=1e-3) == value(m.fs.recycle_ratio[0])
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_main(self):
         main()
