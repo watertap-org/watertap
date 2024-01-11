@@ -34,7 +34,7 @@ def export_to_ui():
     Exports the variables, flowsheet build, and solver results to the GUI.
     """
     return FlowsheetInterface(
-        name="GAC",
+        name="Granular Activated Carbon (GAC)",
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
