@@ -3,7 +3,5 @@ pre-commit
 # TODO pin exact version for pylint and astroid
 pylint<3
 astroid
-# FIXME - testing #1267, delete before merging
-idaes-pse @ git+https://github.com/IDAES/idaes-pse@main
 # Defer to setup.py contents
 -e .[dev,notebooks,oli_api]
