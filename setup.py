@@ -21,14 +21,14 @@ cwd = Path(__file__).parent
 long_description = (cwd / "README.md").read_text()
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=2.3.0,<2.4.0",  # from PyPI
+    "idaes-pse>=2.3.0,<2.4.0rc0",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse>=2.3.0,<2.4.0",
+    "idaes-pse>=2.3.0,<2.4.0rc0",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
