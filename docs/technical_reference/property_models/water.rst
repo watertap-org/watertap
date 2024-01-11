@@ -42,7 +42,9 @@ Properties
    "Latent heat of vaporization", ":math:`h_{vap}`", "dh_vap_mass", "None", ":math:`\text{J/kg}`"
    "Component mole flowrate", ":math:`N_j`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mole/s}`"
    "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
-
+   "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa}\cdotp\text{s}`" 
+   "Thermal conductivity", ":math:`\kappa`", "therm_cond_phase", "[p]", ":math:`\text{W/m/K}`"
+   
 Relationships
 -------------
 .. csv-table::
@@ -62,6 +64,8 @@ Relationships
    "Specific heat capacity of liquid", "Equation 9 in Sharqawy et al. (2010)"
    "Specific heat capacity of vapor", "Shomate equation from NIST WebBook"
    "Latent heat of vaporization", "Equations 37 and 55 in Sharqawy et al. (2010)"
+   "Dynamic viscosity", "Equations 22 and 23 in Sharqawy et al. (2010)"
+   "Thermal conductivity", "Equation 13 in Sharqawy et al. (2010)"
 
 \* Derived from the ideal gas law
 
@@ -106,7 +110,9 @@ The default scaling factors are as follows:
    * 1e-3 for the liquid specific heat capacity
    * 1e-3 for the vapor specific heat capacity
    * 1e-6 for latent heat of vaporization
-
+   * 1e3 for the dynamic viscosity
+   * 1 for the thermal conductivity
+  
 Scaling factors for other variables can be calculated based on their relationships with the user-supplied or default scaling factors.
    
 References
