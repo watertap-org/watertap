@@ -415,7 +415,7 @@ def build_flowsheet(build_options=None, **kwargs):
             m = nf_with_bypass.build()
             concentrationType = build_options["ConcentrationPolarization"].value
             # print(f'setting concentration polarization type to {concentrationType}')
-            m.model.fs.NF.nfUnit.config.concentration_polarization_type = (
+            m.fs.NF.nfUnit.config.concentration_polarization_type = (
                 ConcentrationPolarizationType[concentrationType]
             )
             nf_with_bypass.initialize(m, solver)
@@ -426,7 +426,7 @@ def build_flowsheet(build_options=None, **kwargs):
             m = nf.build()
             concentrationType = build_options["ConcentrationPolarization"].value
             # print(f'setting concentration polarization type to {concentrationType}')
-            m.model.fs.NF.nfUnit.config.concentration_polarization_type = (
+            m.fs.NF.nfUnit.config.concentration_polarization_type = (
                 ConcentrationPolarizationType[concentrationType]
             )
             nf.initialize(m, solver)
