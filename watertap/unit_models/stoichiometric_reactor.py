@@ -188,6 +188,7 @@ class StoichiometricReactorData(UnitModelBlockData):
             including their molecular weights, and dissolution stoichiometric coefficients for
             the components defined in the property package in the following format: 
             .. code-block:: python
+            
                 {
                 "reagent_name_1":
                     {
@@ -225,6 +226,7 @@ class StoichiometricReactorData(UnitModelBlockData):
             including their molecular weights, and precipitation stoichiometric coefficients for
             the components defined in the property package in the following format:
             .. code-block:: python
+
                 {
                 "precipitate_name_1":
                     {
@@ -245,7 +247,7 @@ class StoichiometricReactorData(UnitModelBlockData):
                         }
                     },
                 }
-                
+
             """,
         ),
     )
