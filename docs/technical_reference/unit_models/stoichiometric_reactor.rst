@@ -131,15 +131,17 @@ Variables
 Costing method
 --------------
 
-Currently, the costing method is only implement for lime soda ash, and only includes
-the capital cost of building the whole process. The capital cost is a function of 
-total reagent mass being added to the softening process. 
+Currently, the costing method is implemented for lime soda ash and acid addition which only include
+the capital cost of building the whole process. The capital cost of lime soda ash is a function of 
+total reagent mass being added to the softening process and is only valid when both precipitant and reagents are provided.
+While acid additon capital cost is only consutructed if only reagents are provided. Acid addition costing is 
+base on folume flow of acid per day. 
 
 .. math::
 
       C_{capital}=C_{base capital value}*\sum{M_{reagent}}
 
-Where default value C_{base capital value} is 2000 $/kg/day. 
+Where default value C_{base capital value} is 374.9 $/lb of reagent/day, while for acid adition the cost is 127.8$/gallon of reagent/day
 
 To cost reagent dosing, user must manually register the mass flow of each reagent and supply
 a cost as follows
