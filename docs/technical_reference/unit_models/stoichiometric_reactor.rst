@@ -79,23 +79,16 @@ Example dictionary for defined precipitant that would form during reaction (Calc
 
 The user can then provide the model with specified dictionary to produce a stoichiometric reactor that only perform dissolution, precipitation, or both. 
 
-
 .. code-block::
 
-   # unit for only adding a reagent 
-   m.fs.chemical_addition = StoichiometricReactor(
-         property_package=m.fs.properties,
-         reagent=reagents,
-      )
+   # unit for only adding a reagent
+   m.fs.chemical_addition = StoichiometricReactor(property_package=m.fs.properties,  reagent=reagents)
    # The user must the specify how much reagent to add
    m.fs.chemical_addition.reagent_dose["Na2CO3"].fix(1e-3)
    m.fs.chemical_addition.reagent_dose["CaO"].fix(1e-3)
    
    # unit for only precipitating specified species out of the feed
-   m.fs.precipitation_reactor = StoichiometricReactor(
-         property_package=m.fs.properties,
-         precipitants=precipitants,
-      )
+   m.fs.precipitation_reactor = StoichiometricReactor(property_package=m.fs.properties, precipitants=precipitants)
    # The user must then specify how much precipitant to form 
    m.fs.precipitation_reactor.flow_mass_precipitate["Calcite"].fix(1e-3)
    m.fs.precipitation_reactor.flow_mass_precipitate["Brucite"].fix(1e-4)
@@ -103,11 +96,7 @@ The user can then provide the model with specified dictionary to produce a stoic
    m.fs.unit.waste_mass_frac_precipitate.fix(0.2)
    
    # unit for addition and precipitation (e.g. traditional Lime/Soda ash softening process)
-   m.fs.lime_soda_softening = StoichiometricReactor(
-         property_package=m.fs.properties,
-         reagent=reagents,
-         precipitants=precipitants,
-      )
+   m.fs.lime_soda_softening = StoichiometricReactor(property_package=m.fs.properties, reagent=reagents, precipitants=precipitants)
    # The user must the specify how much reagent to add and precipitant to form
    m.fs.lime_soda_softening.reagent_dose["Na2CO3"].fix(1e-3)
    m.fs.lime_soda_softening.reagent_dose["CaO"].fix(1e-3)
@@ -118,7 +107,6 @@ The user can then provide the model with specified dictionary to produce a stoic
 
 Sets
 ----
-
 .. csv-table::
    :header: "Description", "Symbol", "Indices"
 
