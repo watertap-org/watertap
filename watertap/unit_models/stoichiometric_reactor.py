@@ -213,7 +213,6 @@ class StoichiometricReactorData(UnitModelBlockData):
                 }
             },
         }
-
     """,
         ),
     )
@@ -227,13 +226,13 @@ class StoichiometricReactorData(UnitModelBlockData):
             doc="""A dict of precipitates formed in the StoichiometricReactor process
     including their molecular weights, and precipitation stoichiometric coefficients for
     the components defined in the property package in the following format:
-    
+
     .. code-block::
-    
+
         {
         "precipitate_name_1":
             {
-            "mw": value  # in kg/mol
+            "mw": value,  # in kg/mol
             "precipitation_stoichiometric":
                 {
                 "component_name_1": stoichiometric_coeff,
@@ -242,7 +241,7 @@ class StoichiometricReactorData(UnitModelBlockData):
             },
         "precipitate_name_2":
             {
-            "mw": value  # in kg/mol
+            "mw": value,  # in kg/mol
             "precipitation_stoichiometric":
                 {
                 "component_name_1": stoichiometric_coeff,
@@ -250,7 +249,6 @@ class StoichiometricReactorData(UnitModelBlockData):
                 }
             },
         }
-
     """,
         ),
     )
