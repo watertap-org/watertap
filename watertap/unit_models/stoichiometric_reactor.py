@@ -178,7 +178,6 @@ class StoichiometricReactorData(UnitModelBlockData):
     see property package for documentation.}""",
         ),
     )
-
     CONFIG.declare(
         "reagent",
         ConfigValue(
@@ -187,35 +186,31 @@ class StoichiometricReactorData(UnitModelBlockData):
             description="Specification of reagents used in StoichiometricReactor process",
             doc="""A dict of reagents used in the StoichiometricReactor process
     including their molecular weights, and dissolution stoichiometric coefficients for
-    the components defined in the property package in the following format::
-            
+    the components defined in the property package in the following format:: 
+    {
+    "reagent_name_1":
         {
-        "reagent_name_1":
+        "mw": (value, units),
+        "density_reagent": (value, units),
+        "dissolution_stoichiometric":
             {
-            "mw": (value, units),
-            "density_reagent": (value, units),
-            "dissolution_stoichiometric":
-                {
-                    "component_name_1": stoichiometric_coeff,
-                    "component_name_2": stoichiometric_coeff
-                }
-            },
-        "reagent_name_2":
+                "component_name_1": stoichiometric_coeff,
+                "component_name_2": stoichiometric_coeff
+            }
+        },
+    "reagent_name_2":
+        {
+        "mw": (value, units),
+        "density_reagent": (value, units),
+        "dissolution_stoichiometric":
             {
-            "mw": (value, units),
-            "density_reagent": (value, units),
-            "dissolution_stoichiometric":
-                {
-                    "component_name_1": stoichiometric_coeff,
-                    "component_name_2": stoichiometric_coeff
-                }
-            },
-        }
-
-        """,
+                "component_name_1": stoichiometric_coeff,
+                "component_name_2": stoichiometric_coeff
+            }
+        },
+    }""",
         ),
     )
-
     CONFIG.declare(
         "precipitate",
         ConfigValue(
@@ -225,29 +220,26 @@ class StoichiometricReactorData(UnitModelBlockData):
             doc="""A dict of precipitates formed in the StoichiometricReactor process
     including their molecular weights, and precipitation stoichiometric coefficients for
     the components defined in the property package in the following format::
-
+    {
+    "precipitate_name_1":
         {
-        "precipitate_name_1":
+        "mw": value,  # in kg/mol
+        "precipitation_stoichiometric":
             {
-            "mw": value,  # in kg/mol
-            "precipitation_stoichiometric":
-                {
-                    "component_name_1": stoichiometric_coeff,
-                    "component_name_2": stoichiometric_coeff
-                }
-            },
-        "precipitate_name_2":
+                "component_name_1": stoichiometric_coeff,
+                "component_name_2": stoichiometric_coeff
+            }
+        },
+    "precipitate_name_2":
+        {
+        "mw": value,  # in kg/mol
+        "precipitation_stoichiometric":
             {
-            "mw": value,  # in kg/mol
-            "precipitation_stoichiometric":
-                {
-                    "component_name_1": stoichiometric_coeff,
-                    "component_name_2": stoichiometric_coeff
-                }
-            },
-        }
-
-    """,
+                "component_name_1": stoichiometric_coeff,
+                "component_name_2": stoichiometric_coeff
+            }
+        },
+    }""",
         ),
     )
 
