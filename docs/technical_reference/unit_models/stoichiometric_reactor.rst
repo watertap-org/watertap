@@ -46,6 +46,65 @@ Model Structure and usage
 The stoichiometric reactor uses control volumes to perform the dissolution reaction and precipitation reaction, while a an IDAES separator is used to separate precipitated solids from the feed stream. The model should be used with MCAS property package.
 The user needs to specify how supplied reagent, and precipitant dissolve or precipitate out of the feed stream, using ions present in the feed. 
 
+Example dictionary for dissolving Soda ash and Lime into their ions  
+
+.. code-block::
+
+   reagents = {
+         "Na2CO3": {
+               "mw": 105.99 * pyunits.g / pyunits.mol,
+               "dissolution_stoichiometric": {"Na_+": 2, "HCO3_-": 1},
+         },
+         "CaO": {
+               "mw": 56.0774 * pyunits.g / pyunits.mol,
+               "dissolution_stoichiometric": {"Ca_2+": 1, "H2O": 1},
+         },
+      }
+
+Example dictionary for defined precipitant that would form during reaction (Calcite - CaCO3, and Brucite - MgOH)
+
+
+.. code-block::
+
+   precipitants = {
+      "Calcite": {
+            "mw": 100.09 * pyunits.g / pyunits.mol,
+            "precipitation_stoichiometric": {"Ca_2+": 1, "HCO3_-": 1},
+      },
+      "Brucite": {
+            "mw": 58.3197 * pyunits.g / pyunits.mol,
+            "precipitation_stoichiometric": {"Mg_2+": 1, "H2O": 1},
+      },
+   }
+
+The user can then provide the model with specified dictionary to produce a stoichiometric reactor that only perform dissolution, precipitation, or both. 
+
+.. code-block::
+
+   # unit for only adding a reagent
+   m.fs.chemical_addition = StoichiometricReactor(property_package=m.fs.properties,  reagent=reagents)
+   # The user must the specify how much reagent to add
+   m.fs.chemical_addition.reagent_dose["Na2CO3"].fix(1e-3)
+   m.fs.chemical_addition.reagent_dose["CaO"].fix(1e-3)
+   
+   # unit for only precipitating specified species out of the feed
+   m.fs.precipitation_reactor = StoichiometricReactor(property_package=m.fs.properties, precipitants=precipitants)
+   # The user must then specify how much precipitant to form 
+   m.fs.precipitation_reactor.flow_mass_precipitate["Calcite"].fix(1e-3)
+   m.fs.precipitation_reactor.flow_mass_precipitate["Brucite"].fix(1e-4)
+   # The user must also specify solids fraction in waste stream
+   m.fs.unit.waste_mass_frac_precipitate.fix(0.2)
+   
+   # unit for addition and precipitation (e.g. traditional Lime/Soda ash softening process)
+   m.fs.lime_soda_softening = StoichiometricReactor(property_package=m.fs.properties, reagent=reagents, precipitants=precipitants)
+   # The user must the specify how much reagent to add and precipitant to form
+   m.fs.lime_soda_softening.reagent_dose["Na2CO3"].fix(1e-3)
+   m.fs.lime_soda_softening.reagent_dose["CaO"].fix(1e-3)
+   m.fs.lime_soda_softening.flow_mass_precipitate["Calcite"].fix(1e-3)
+   m.fs.lime_soda_softening.flow_mass_precipitate["Brucite"].fix(1e-4)
+   # The user must also specify solids fraction in waste stream
+   m.fs.lime_soda_softening.waste_mass_frac_precipitate.fix(0.2)
+
 Sets
 ----
 .. csv-table::
@@ -69,3 +128,55 @@ Variables
    "Mass concentration of precipitant",'conc_mass_precipitate',[precipitant],'kg/:math:`\text{m}^3`'
    "Fraction of solids in waste stream",  "waste_mass_frac_precipitate", None, fraction
    
+Costing method
+--------------
+
+Currently, the costing method is only implement for lime soda ash, and only includes
+the capital cost of building the whole process. The capital cost is a function of 
+total reagent mass being added to the softening process. 
+
+.. math::
+
+      C_{capital}=C_{base capital value}*\sum{M_{reagent}}
+
+Where default value C_{base capital value} is 2000 $/kg/day. 
+
+To cost reagent dosing, user must manually register the mass flow of each reagent and supply
+a cost as follows
+
+.. code-block::
+
+   # build the unit model 
+   m.fs.chemical_addition = StoichiometricReactor(
+         property_package=m.fs.properties,
+         reagent=reagents,
+      )
+   # The user must the specify how much reagent to add
+   m.fs.chemical_addition.reagent_dose["Na2CO3"].fix(1e-3)
+   m.fs.chemical_addition.reagent_dose["CaO"].fix(1e-3)
+
+   # specify the costs for lime (CaO)
+   blk.lime_cost = Param(
+      initialize=0.13,
+      units=m.fs.costing.base_currency / pyunits.kg,
+      mutable=True,
+   )
+   # specify the costs for soda ash (Na2CO3)
+   blk.soda_ash_cost = Param(
+      initialize=0.13,
+      units=m.fs.costing.base_currency / pyunits.kg,
+      mutable=True,
+   )
+   # Register the flow for each chemical being added
+   m.fs.costing.register_flow_type("lime_cost", blk.lime_cost )
+   m.fs.costing.register_flow_type("soda_ash_cost", blk.soda_ash_cost )
+   
+   # Register the flow for each chemical being added
+   m.fs.costing.cost_flow(
+      blk.lime_cost,
+      "lime_cost",
+   )
+   m.fs.costing.cost_flow(
+      blk.soda_ash_cost,
+      "soda_ash_cost",
+   )
