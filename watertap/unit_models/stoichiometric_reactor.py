@@ -213,6 +213,7 @@ class StoichiometricReactorData(UnitModelBlockData):
                 }
             },
         }
+        
     """,
         ),
     )
@@ -249,6 +250,7 @@ class StoichiometricReactorData(UnitModelBlockData):
                 }
             },
         }
+
     """,
         ),
     )
