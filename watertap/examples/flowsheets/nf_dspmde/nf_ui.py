@@ -43,12 +43,11 @@ def export_to_ui():
     )
 
 
-def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
-    fs = flowsheet.fs
+def export_variables(model=None, exports=None, build_options=None, **kwargs):
     # --- Input data ---
     # Feed conditions
     exports.add(
-        obj=fs.feed.properties[0].flow_vol_phase["Liq"],
+        obj=model.fs.feed.properties[0].flow_vol_phase["Liq"],
         name="Volumetric flow rate",
         ui_units=pyunits.L / pyunits.hr,
         display_units="L/h",
@@ -59,7 +58,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
         output_category="Feed",
     )
-    for (phase, ion), obj in fs.feed.properties[0].conc_mass_phase_comp.items():
+    for (phase, ion), obj in model.fs.feed.properties[0].conc_mass_phase_comp.items():
         if ion != "H2O":
             exports.add(
                 obj=obj,
@@ -74,7 +73,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                 output_category="Feed",
             )
     exports.add(
-        obj=fs.NF.pump.outlet.pressure[0],
+        obj=model.fs.NF.pump.outlet.pressure[0],
         name="NF pump pressure",
         ui_units=pyunits.bar,
         display_units="bar",
@@ -86,7 +85,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF design",
     )
     exports.add(
-        obj=fs.NF.nfUnit.area,
+        obj=model.fs.NF.nfUnit.area,
         name="NF area",
         ui_units=pyunits.m**2,
         display_units="m^2",
@@ -98,7 +97,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF design",
     )
     exports.add(
-        obj=fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"],
+        obj=model.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"],
         name="NF water recovery".format(ion),
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -110,7 +109,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF design",
     )
     exports.add(
-        obj=fs.NF.product.properties[0].flow_vol_phase["Liq"],
+        obj=model.fs.NF.product.properties[0].flow_vol_phase["Liq"],
         name="NF product volume flow",
         ui_units=pyunits.L / pyunits.hr,
         display_units="L/h",
@@ -122,7 +121,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF design",
     )
     exports.add(
-        obj=fs.NF.nf_flux,
+        obj=model.fs.NF.nf_flux,
         name="NF water flux",
         ui_units=pyunits.dimensionless,
         display_units="LMH",
@@ -134,7 +133,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF design",
     )
     exports.add(
-        obj=fs.NF.nfUnit.radius_pore,
+        obj=model.fs.NF.nfUnit.radius_pore,
         name="Pore size",
         ui_units=pyunits.nm,
         display_units="nm",
@@ -146,7 +145,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF membrane props.",
     )
     exports.add(
-        obj=fs.NF.nfUnit.membrane_thickness_effective,
+        obj=model.fs.NF.nfUnit.membrane_thickness_effective,
         name="Effective membrane thickness",
         ui_units=pyunits.nm,
         display_units="nm",
@@ -158,7 +157,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF membrane props.",
     )
     exports.add(
-        obj=fs.NF.nfUnit.membrane_charge_density[0],
+        obj=model.fs.NF.nfUnit.membrane_charge_density[0],
         name="Charge",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol/m^3",
@@ -170,7 +169,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF membrane props.",
     )
     exports.add(
-        obj=fs.NF.nfUnit.dielectric_constant_pore[0],
+        obj=model.fs.NF.nfUnit.dielectric_constant_pore[0],
         name="Dielectric constant for pore",
         ui_units=pyunits.dimensionless,
         display_units="",
@@ -183,9 +182,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     exports.add(
-        obj=fs.costing.nanofiltration.membrane_cost,
+        obj=model.fs.costing.nanofiltration.membrane_cost,
         name="Membrane cost",
-        ui_units=fs.costing.base_currency / pyunits.m**2,
+        ui_units=model.fs.costing.base_currency / pyunits.m**2,
         display_units="$/m^2",
         rounding=2,
         description="NF CAPEX",
@@ -195,7 +194,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF CAPEX",
     )
     exports.add(
-        obj=fs.costing.nanofiltration.factor_membrane_replacement,
+        obj=model.fs.costing.nanofiltration.factor_membrane_replacement,
         name="Membrane replacment rate",
         ui_units=pyunits.year**-1,
         display_units="fraction/year",
@@ -207,9 +206,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF CAPEX",
     )
     exports.add(
-        obj=fs.costing.electricity_cost,
+        obj=model.fs.costing.electricity_cost,
         name="Electricity cost",
-        ui_units=fs.costing.base_currency / pyunits.kWh,
+        ui_units=model.fs.costing.base_currency / pyunits.kWh,
         display_units="$/kWh",
         rounding=2,
         description="NF OPEX",
@@ -220,7 +219,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_readonly=False,
     )
     exports.add(
-        obj=fs.costing.utilization_factor,
+        obj=model.fs.costing.utilization_factor,
         name="Plant capacity utilization",
         ui_units=pyunits.dimensionless,
         display_units="fraction of uptime",
@@ -232,7 +231,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF OPEX",
     )
     exports.add(
-        obj=fs.costing.factor_maintenance_labor_chemical,
+        obj=model.fs.costing.factor_maintenance_labor_chemical,
         name="Maintenance-labor-chemical factor",
         ui_units=pyunits.year**-1,
         display_units="fraction of equipment cost/year",
@@ -244,7 +243,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF OPEX",
     )
     exports.add(
-        obj=fs.costing.disposal_cost,
+        obj=model.fs.costing.disposal_cost,
         name="Disposal cost",
         ui_units=pyunits.USD_2020 / pyunits.m**3,
         display_units="$/m^3",
@@ -257,7 +256,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     exports.add(
-        obj=fs.product.max_hardness,
+        obj=model.fs.product.max_hardness,
         name="Product hardness as CaCO3",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -270,7 +269,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     exports.add(
-        obj=fs.product.properties[0].total_hardness,
+        obj=model.fs.product.properties[0].total_hardness,
         name="Product hardness",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -282,7 +281,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="System streams",
     )
     exports.add(
-        obj=fs.product.properties[0].flow_vol_phase["Liq"],
+        obj=model.fs.product.properties[0].flow_vol_phase["Liq"],
         name="Product volume flow",
         ui_units=pyunits.L / pyunits.hr,
         display_units="L/h",
@@ -294,7 +293,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="System streams",
     )
     exports.add(
-        obj=fs.feed.properties[0].total_hardness,
+        obj=model.fs.feed.properties[0].total_hardness,
         name="Feed hardness",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -307,7 +306,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     exports.add(
-        obj=fs.disposal.properties[0].total_hardness,
+        obj=model.fs.disposal.properties[0].total_hardness,
         name="Disposal hardness",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -319,7 +318,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="System streams",
     )
     exports.add(
-        obj=fs.disposal.properties[0].flow_vol_phase["Liq"],
+        obj=model.fs.disposal.properties[0].flow_vol_phase["Liq"],
         name="Disposal volume flow",
         ui_units=pyunits.L / pyunits.hr,
         display_units="L/h",
@@ -332,9 +331,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     exports.add(
-        obj=fs.costing.LCOW,
+        obj=model.fs.costing.LCOW,
         name="System cost",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.costing.base_currency / pyunits.m**3,
         display_units="$/m^3",
         rounding=2,
         description="Process cost and operating metrics",
@@ -344,7 +343,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Process cost and operating metrics",
     )
     exports.add(
-        obj=fs.costing.specific_energy_consumption,
+        obj=model.fs.costing.specific_energy_consumption,
         name="System-level specific energy consumption",
         ui_units=pyunits.hr * pyunits.kW / pyunits.m**3,
         display_units="kWh/m^3",
@@ -358,7 +357,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     try:
         if build_options["Bypass"].value == "true":
             exports.add(
-                obj=fs.by_pass_splitter.split_fraction[0, "bypass"],
+                obj=model.fs.by_pass_splitter.split_fraction[0, "bypass"],
                 name="NF bypass",
                 ui_units=pyunits.dimensionless,
                 display_units="fraction",
@@ -372,7 +371,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     except Exception as e:
         print(f"error adding bypass: {e}")
 
-    for (t, phase, ion), obj in fs.NF.nfUnit.rejection_intrinsic_phase_comp.items():
+    for (
+        t,
+        phase,
+        ion,
+    ), obj in model.fs.NF.nfUnit.rejection_intrinsic_phase_comp.items():
         exports.add(
             obj=obj,
             name="{} intrinsic rejection".format(ion),
@@ -385,7 +388,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             is_output=True,
             output_category="NF intrinsic rejection",
         )
-    for (t, phase, ion), obj in fs.NF.nfUnit.rejection_observed_phase_comp.items():
+    for (
+        t,
+        phase,
+        ion,
+    ), obj in model.fs.NF.nfUnit.rejection_observed_phase_comp.items():
         exports.add(
             obj=obj,
             name="{} obs. rejection".format(ion),
@@ -408,7 +415,7 @@ def build_flowsheet(build_options=None, **kwargs):
             m = nf_with_bypass.build()
             concentrationType = build_options["ConcentrationPolarization"].value
             # print(f'setting concentration polarization type to {concentrationType}')
-            m.fs.NF.nfUnit.config.concentration_polarization_type = (
+            m.model.fs.NF.nfUnit.config.concentration_polarization_type = (
                 ConcentrationPolarizationType[concentrationType]
             )
             nf_with_bypass.initialize(m, solver)
@@ -419,7 +426,7 @@ def build_flowsheet(build_options=None, **kwargs):
             m = nf.build()
             concentrationType = build_options["ConcentrationPolarization"].value
             # print(f'setting concentration polarization type to {concentrationType}')
-            m.fs.NF.nfUnit.config.concentration_polarization_type = (
+            m.model.fs.NF.nfUnit.config.concentration_polarization_type = (
                 ConcentrationPolarizationType[concentrationType]
             )
             nf.initialize(m, solver)
@@ -442,8 +449,7 @@ def get_diagram(build_options):
         return "nf_ui.png"
 
 
-def solve_flowsheet(flowsheet=None):
-    fs = flowsheet
+def solve_flowsheet(model=None):
     solver = get_solver()
-    results = nf.optimize(fs, solver)
+    results = nf.optimize(model, solver)
     return results

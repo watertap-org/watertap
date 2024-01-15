@@ -31,12 +31,11 @@ def export_to_ui():
     )
 
 
-def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
-    fs = flowsheet.fs
+def export_variables(model=None, exports=None, build_options=None, **kwargs):
     # --- Input data ---
     # Feed conditions
     exports.add(
-        obj=fs.feed.flow_vol[0],
+        obj=model.fs.feed.flow_vol[0],
         name="Volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
@@ -48,7 +47,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "nitrogen"],
+        obj=model.fs.feed.conc_mass_comp[0, "nitrogen"],
         name="Nitrogen concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
@@ -60,7 +59,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "phosphates"],
+        obj=model.fs.feed.conc_mass_comp[0, "phosphates"],
         name="Phosphates concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
@@ -72,7 +71,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "bioconcentrated_phosphorous"],
+        obj=model.fs.feed.conc_mass_comp[0, "bioconcentrated_phosphorous"],
         name="Bioconcentrated phosphorous concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
@@ -84,7 +83,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "nitrous_oxide"],
+        obj=model.fs.feed.conc_mass_comp[0, "nitrous_oxide"],
         name="Nitrous oxide concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
@@ -98,7 +97,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Unit model data, pump
     exports.add(
-        obj=fs.pump.lift_height,
+        obj=model.fs.pump.lift_height,
         name="Lift height",
         ui_units=pyunits.m,
         display_units="m",
@@ -109,7 +108,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.pump.eta_pump,
+        obj=model.fs.pump.eta_pump,
         name="Pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -120,7 +119,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.pump.eta_motor,
+        obj=model.fs.pump.eta_motor,
         name="Motor efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -133,9 +132,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Unit cost data, pump
     exports.add(
-        obj=fs.costing.pump_electricity.pump_cost[None],
+        obj=model.fs.costing.pump_electricity.pump_cost[None],
         name="Pump cost",
-        ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.hr),
+        ui_units=model.fs.costing.base_currency / (pyunits.m**3 / pyunits.hr),
         display_units="$/(m^3/hr)",
         rounding=0,
         description="Pump capital cost parameter",
@@ -146,7 +145,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Unit model data, photothermal membrane
     exports.add(
-        obj=fs.photothermal.recovery_frac_mass_H2O[0],
+        obj=model.fs.photothermal.recovery_frac_mass_H2O[0],
         name="Water recovery",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
@@ -157,7 +156,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.photothermal.removal_frac_mass_comp[0, "phosphates"],
+        obj=model.fs.photothermal.removal_frac_mass_comp[0, "phosphates"],
         name="Phosphates removal",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
@@ -168,7 +167,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.photothermal.removal_frac_mass_comp[0, "nitrogen"],
+        obj=model.fs.photothermal.removal_frac_mass_comp[0, "nitrogen"],
         name="Nitrogen removal",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
@@ -179,7 +178,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.photothermal.water_flux,
+        obj=model.fs.photothermal.water_flux,
         name="Water flux",
         ui_units=pyunits.kg / pyunits.m**2 / pyunits.hr,
         display_units="kg/(m2/h)",
@@ -191,9 +190,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Unit cost data, photothermal membrane
     exports.add(
-        obj=fs.costing.photothermal_membrane.membrane_cost[None],
+        obj=model.fs.costing.photothermal_membrane.membrane_cost[None],
         name="Membrane",
-        ui_units=fs.costing.base_currency / pyunits.m**2,
+        ui_units=model.fs.costing.base_currency / pyunits.m**2,
         display_units="$/m2 of photothermal membrane",
         rounding=0,
         description="Membrane cost",
@@ -204,7 +203,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Unit model data, CANDO+P reactor
     exports.add(
-        obj=fs.candop.recovery_frac_mass_H2O[0],
+        obj=model.fs.candop.recovery_frac_mass_H2O[0],
         name="Water recovery",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
@@ -215,7 +214,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.candop.reaction_conversion[0, "n_reaction"],
+        obj=model.fs.candop.reaction_conversion[0, "n_reaction"],
         name="Nitrogen conversion",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
@@ -226,7 +225,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.candop.reaction_conversion[0, "p_reaction"],
+        obj=model.fs.candop.reaction_conversion[0, "p_reaction"],
         name="Phosphorus conversion",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
@@ -237,7 +236,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.candop.electricity_intensity_N,
+        obj=model.fs.candop.electricity_intensity_N,
         name="Specific energy",
         ui_units=pyunits.kWh / pyunits.kg,
         display_units="kWh/kg",
@@ -248,7 +247,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.candop.oxygen_nitrogen_ratio,
+        obj=model.fs.candop.oxygen_nitrogen_ratio,
         name="O2:N2 ratio",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -260,7 +259,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Unit cost data, CANDO+P reactor
     exports.add(
-        obj=fs.costing.CANDO_P.sizing_parameter[None],
+        obj=model.fs.costing.CANDO_P.sizing_parameter[None],
         name="HRT",
         ui_units=pyunits.hr,
         display_units="h",
@@ -271,9 +270,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.CANDO_P.sizing_cost[None],
+        obj=model.fs.costing.CANDO_P.sizing_cost[None],
         name="CANDO+P reactor cost",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of reactor",
         rounding=0,
         description="CANDO+P reactor capital cost parameter",
@@ -283,7 +282,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # System costing
     exports.add(
-        obj=fs.costing.utilization_factor,
+        obj=model.fs.costing.utilization_factor,
         name="Utilization factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -294,7 +293,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.TIC,
+        obj=model.fs.costing.TIC,
         name="Practical investment factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -306,7 +305,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.plant_lifetime,
+        obj=model.fs.costing.plant_lifetime,
         name="Plant lifetime",
         ui_units=pyunits.year,
         display_units="years",
@@ -317,7 +316,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.wacc,
+        obj=model.fs.costing.wacc,
         name="Discount rate",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -328,7 +327,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.maintenance_costs_percent_FCI,
+        obj=model.fs.costing.maintenance_costs_percent_FCI,
         name="Fixed operating cost factor",
         ui_units=1 / pyunits.year,
         display_units="fraction/year",
@@ -340,9 +339,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.electricity_cost,
+        obj=model.fs.costing.electricity_cost,
         name="Electricity cost",
-        ui_units=fs.costing.base_currency / pyunits.kWh,
+        ui_units=model.fs.costing.base_currency / pyunits.kWh,
         display_units="$/kWh",
         rounding=3,
         description="Electricity cost",
@@ -351,9 +350,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.bcp_cost,
+        obj=model.fs.costing.bcp_cost,
         name="Bioconcentrated phosphorous cost",
-        ui_units=fs.costing.base_currency / pyunits.kg,
+        ui_units=model.fs.costing.base_currency / pyunits.kg,
         display_units="$/kg",
         rounding=3,
         description="Bioconcentrated phosphorous cost",
@@ -362,9 +361,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.water_cost,
+        obj=model.fs.costing.water_cost,
         name="Water cost",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3",
         rounding=13,
         description="Water cost",
@@ -373,9 +372,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.nitrous_oxide_cost,
+        obj=model.fs.costing.nitrous_oxide_cost,
         name="Nitrous oxide cost",
-        ui_units=fs.costing.base_currency / pyunits.kg,
+        ui_units=model.fs.costing.base_currency / pyunits.kg,
         display_units="$/kg",
         rounding=3,
         description="Nitrous oxide cost",
@@ -386,7 +385,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Outlets
     exports.add(
-        obj=fs.photothermal_water.properties[0].flow_vol,
+        obj=model.fs.photothermal_water.properties[0].flow_vol,
         name="Photothermal membrane product water flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
@@ -397,7 +396,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.candop_byproduct.properties[0].flow_mass_comp["nitrous_oxide"],
+        obj=model.fs.candop_byproduct.properties[0].flow_mass_comp["nitrous_oxide"],
         name="CANDO_P N2O byproduct flow rate",
         ui_units=pyunits.kg / pyunits.hr,
         display_units="kg-N2O/h",
@@ -408,7 +407,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.candop_treated.properties[0].flow_vol,
+        obj=model.fs.candop_treated.properties[0].flow_vol,
         name="CANDO+P product flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
@@ -419,7 +418,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.candop_treated.properties[0].conc_mass_comp["H2O"],
+        obj=model.fs.candop_treated.properties[0].conc_mass_comp["H2O"],
         name="CANDO+P product H2O concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
@@ -430,7 +429,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.candop_treated.properties[0].conc_mass_comp["nitrogen"],
+        obj=model.fs.candop_treated.properties[0].conc_mass_comp["nitrogen"],
         name="CANDO+P product N2 concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
@@ -441,7 +440,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.candop_treated.properties[0].conc_mass_comp["phosphates"],
+        obj=model.fs.candop_treated.properties[0].conc_mass_comp["phosphates"],
         name="CANDO+P product phosphates concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
@@ -452,7 +451,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.candop_treated.properties[0].conc_mass_comp[
+        obj=model.fs.candop_treated.properties[0].conc_mass_comp[
             "bioconcentrated_phosphorous"
         ],
         name="CANDO+P product BCP concentration",
@@ -467,9 +466,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # System metrics
     exports.add(
-        obj=fs.costing.LCOT,
+        obj=model.fs.costing.LCOT,
         name="LCOT",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=3,
         description="Levelized cost of treatment including operating and capital costs",
@@ -478,9 +477,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Levelized cost metrics",
     )
     exports.add(
-        obj=fs.costing.LCOT_with_revenue,
+        obj=model.fs.costing.LCOT_with_revenue,
         name="LCOT with revenue",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=3,
         description="Levelized cost of treatment including revenue of bcp recovery, N2O byproduct and treated water ",
@@ -489,9 +488,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Levelized cost metrics",
     )
     exports.add(
-        obj=fs.costing.LCOW,
+        obj=model.fs.costing.LCOW,
         name="LCOW",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of photothermal membrane water",
         rounding=3,
         description="Levelized cost of water including operating and capital costs",
@@ -500,9 +499,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Levelized cost metrics",
     )
     exports.add(
-        obj=fs.costing.LCOW_with_revenue,
+        obj=model.fs.costing.LCOW_with_revenue,
         name="LCOW with revenue",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of photothermal membrane water",
         rounding=3,
         description="Levelized cost of water including revenue of revenue of BCP recovery and N2O byproduct",
@@ -511,9 +510,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Levelized cost metrics",
     )
     exports.add(
-        obj=fs.costing.LC_BCP,
+        obj=model.fs.costing.LC_BCP,
         name="Levelized cost of BCP",
-        ui_units=fs.costing.base_currency / pyunits.kg,
+        ui_units=model.fs.costing.base_currency / pyunits.kg,
         display_units="$/kg-BCP",
         rounding=3,
         description="Levelized cost of bioconcentrated phosphorous including operating and capital costs",
@@ -522,9 +521,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Levelized cost metrics",
     )
     exports.add(
-        obj=fs.costing.LC_N2O,
+        obj=model.fs.costing.LC_N2O,
         name="Levelized cost of nitrous oxide",
-        ui_units=fs.costing.base_currency / pyunits.kg,
+        ui_units=model.fs.costing.base_currency / pyunits.kg,
         display_units="$/kg-nitrous oxide",
         rounding=3,
         description="Levelized cost of nitrous oxide including operating and capital costs",
@@ -533,11 +532,13 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Levelized cost metrics",
     )
     # Normalized metrics
-    total_capital_norm = fs.costing.total_capital_cost / fs.feed.properties[0].flow_vol
+    total_capital_norm = (
+        model.fs.costing.total_capital_cost / model.fs.feed.properties[0].flow_vol
+    )
     exports.add(
         obj=total_capital_norm,
         name="Total capital",
-        ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
+        ui_units=model.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         display_units="$/(m3/day)",
         rounding=1,
         description="Normalized total capital costs accounting for indirect "
@@ -547,14 +548,14 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Normalized cost metrics",
     )
     direct_capital_norm = (
-        fs.pump.costing.direct_capital_cost
-        + fs.photothermal.costing.direct_capital_cost
-        + fs.candop.costing.direct_capital_cost
-    ) / fs.feed.properties[0].flow_vol
+        model.fs.pump.costing.direct_capital_cost
+        + model.fs.photothermal.costing.direct_capital_cost
+        + model.fs.candop.costing.direct_capital_cost
+    ) / model.fs.feed.properties[0].flow_vol
     exports.add(
         obj=direct_capital_norm,
         name="Direct capital",
-        ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
+        ui_units=model.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         display_units="$/(m3/day)",
         rounding=1,
         description="Normalized direct capital costs - [total direct capital "
@@ -564,12 +565,13 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Normalized cost metrics",
     )
     elec_operating_norm = (
-        fs.costing.aggregate_flow_costs["electricity"] / fs.costing.annual_water_inlet
+        model.fs.costing.aggregate_flow_costs["electricity"]
+        / model.fs.costing.annual_water_inlet
     )
     exports.add(
         obj=elec_operating_norm,
         name="Electricity",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=2,
         description="Normalized electricity cost - [annual electricity costs/annual "
@@ -581,7 +583,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # performance metrics
     recovery_vol = (
-        fs.candop_treated.properties[0].flow_vol / fs.feed.properties[0].flow_vol
+        model.fs.candop_treated.properties[0].flow_vol
+        / model.fs.feed.properties[0].flow_vol
     )
     exports.add(
         obj=recovery_vol,
@@ -596,8 +599,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     removal_H2O = (
         1
-        - fs.candop_treated.properties[0].flow_mass_comp["H2O"]
-        / fs.feed.properties[0].flow_mass_comp["H2O"]
+        - model.fs.candop_treated.properties[0].flow_mass_comp["H2O"]
+        / model.fs.feed.properties[0].flow_mass_comp["H2O"]
     )
     exports.add(
         obj=removal_H2O,
@@ -612,8 +615,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     removal_N2 = (
         1
-        - fs.candop_treated.properties[0].flow_mass_comp["nitrogen"]
-        / fs.feed.properties[0].flow_mass_comp["nitrogen"]
+        - model.fs.candop_treated.properties[0].flow_mass_comp["nitrogen"]
+        / model.fs.feed.properties[0].flow_mass_comp["nitrogen"]
     )
     exports.add(
         obj=removal_N2,
@@ -628,8 +631,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     removal_P = (
         1
-        - fs.candop_treated.properties[0].flow_mass_comp["phosphates"]
-        / fs.feed.properties[0].flow_mass_comp["phosphates"]
+        - model.fs.candop_treated.properties[0].flow_mass_comp["phosphates"]
+        / model.fs.feed.properties[0].flow_mass_comp["phosphates"]
     )
     exports.add(
         obj=removal_P,
@@ -642,7 +645,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="Normalized performance metrics",
     )
-    removal_BCP = fs.candop.removal_frac_mass_comp[0, "bioconcentrated_phosphorous"]
+    removal_BCP = model.fs.candop.removal_frac_mass_comp[
+        0, "bioconcentrated_phosphorous"
+    ]
     exports.add(
         obj=removal_BCP,
         name="BCP removal",
@@ -655,8 +660,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Normalized performance metrics",
     )
     N2O_production = (
-        fs.candop_byproduct.properties[0].flow_mass_comp["nitrous_oxide"]
-        / fs.feed.properties[0].flow_vol
+        model.fs.candop_byproduct.properties[0].flow_mass_comp["nitrous_oxide"]
+        / model.fs.feed.properties[0].flow_vol
     )
     exports.add(
         obj=N2O_production,
@@ -672,9 +677,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Capital costs
     exports.add(
-        obj=fs.costing.total_capital_cost,
+        obj=model.fs.costing.total_capital_cost,
         name="Total",
-        ui_units=fs.costing.base_currency,
+        ui_units=model.fs.costing.base_currency,
         display_units="$",
         rounding=0,
         description="Total capital costs - including investment factor to account "
@@ -684,9 +689,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.pump.costing.capital_cost,
+        obj=model.fs.pump.costing.capital_cost,
         name="Pump",
-        ui_units=fs.costing.base_currency,
+        ui_units=model.fs.costing.base_currency,
         display_units="$",
         rounding=0,
         description="Pump",
@@ -695,9 +700,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.photothermal.costing.capital_cost,
+        obj=model.fs.photothermal.costing.capital_cost,
         name="Photothermal membrane",
-        ui_units=fs.costing.base_currency,
+        ui_units=model.fs.costing.base_currency,
         display_units="$",
         rounding=0,
         description="Photothermal membrane",
@@ -706,9 +711,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.candop.costing.capital_cost,
+        obj=model.fs.candop.costing.capital_cost,
         name="CANDO_P",
-        ui_units=fs.costing.base_currency,
+        ui_units=model.fs.costing.base_currency,
         display_units="$",
         rounding=0,
         description="CANDO_P",
@@ -719,9 +724,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Operating costs
     exports.add(
-        obj=fs.costing.total_operating_cost,
+        obj=model.fs.costing.total_operating_cost,
         name="Total",
-        ui_units=fs.costing.base_currency / pyunits.year,
+        ui_units=model.fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=0,
         description="Total annual operating costs - including electricity, heating, "
@@ -731,9 +736,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Operating costs",
     )
     exports.add(
-        obj=fs.costing.aggregate_flow_costs["electricity"],
+        obj=model.fs.costing.aggregate_flow_costs["electricity"],
         name="Electricity",
-        ui_units=fs.costing.base_currency / pyunits.year,
+        ui_units=model.fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=0,
         description="Annual electricity costs ",
@@ -742,9 +747,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Operating costs",
     )
     exports.add(
-        obj=fs.costing.total_fixed_operating_cost,
+        obj=model.fs.costing.total_fixed_operating_cost,
         name="Fixed",
-        ui_units=fs.costing.base_currency / pyunits.year,
+        ui_units=model.fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=0,
         description="Annual fixed operating costs - these costs include material "
@@ -756,14 +761,14 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Revenue
     total_revenue = (
-        fs.costing.value_bcp_recovery
-        + fs.costing.value_N2O_byproduct
-        + fs.costing.value_water_byproduct
+        model.fs.costing.value_bcp_recovery
+        + model.fs.costing.value_N2O_byproduct
+        + model.fs.costing.value_water_byproduct
     )
     exports.add(
         obj=total_revenue,
         name="Total",
-        ui_units=fs.costing.base_currency / pyunits.year,
+        ui_units=model.fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=0,
         description="Total revenue - including the sale of BCP, N2O, and water",
@@ -773,9 +778,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     exports.add(
-        obj=fs.costing.value_bcp_recovery,
+        obj=model.fs.costing.value_bcp_recovery,
         name="BCP",
-        ui_units=fs.costing.base_currency / pyunits.year,
+        ui_units=model.fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=0,
         description="Revenue from selling bioconcentrated phosphorous",
@@ -784,9 +789,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Revenue",
     )
     exports.add(
-        obj=fs.costing.value_N2O_byproduct,
+        obj=model.fs.costing.value_N2O_byproduct,
         name="Nitrous oxide",
-        ui_units=fs.costing.base_currency / pyunits.year,
+        ui_units=model.fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=0,
         description="Revenue from selling nitrous oxide",
@@ -795,9 +800,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Revenue",
     )
     exports.add(
-        obj=fs.costing.value_water_byproduct,
+        obj=model.fs.costing.value_water_byproduct,
         name="Water",
-        ui_units=fs.costing.base_currency / pyunits.year,
+        ui_units=model.fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=0,
         description="Revenue from selling treated water",
@@ -822,14 +827,13 @@ def build_flowsheet(build_options=None, **kwargs):
 
     add_costing(m)
     assert_degrees_of_freedom(m, 0)
-    m.fs.costing.initialize()
+    m.model.fs.costing.initialize()
 
     results = solve(m)
     assert_optimal_termination(results)
     return m
 
 
-def solve_flowsheet(flowsheet=None):
-    fs = flowsheet
-    results = solve(fs)
+def solve_flowsheet(model=None):
+    results = solve(model)
     return results

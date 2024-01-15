@@ -30,12 +30,11 @@ def export_to_ui():
     )
 
 
-def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
-    fs = flowsheet.fs
+def export_variables(model=None, exports=None, build_options=None, **kwargs):
     # --- Input data ---
     # Feed conditions
     exports.add(
-        obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],
+        obj=model.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],
         name="Water mass flowrate",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
@@ -46,7 +45,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"],
+        obj=model.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"],
         name="NaCl mass flowrate",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
@@ -59,7 +58,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Unit model data, feed pump
     exports.add(
-        obj=fs.P1.efficiency_pump[0],
+        obj=model.fs.P1.efficiency_pump[0],
         name="Pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -70,7 +69,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.P1.control_volume.properties_out[0].pressure,
+        obj=model.fs.P1.control_volume.properties_out[0].pressure,
         name="Operating pressure",
         ui_units=pyunits.bar,
         display_units="bar",
@@ -83,7 +82,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Unit model data, RO
     exports.add(
-        obj=fs.RO.A_comp[0, "H2O"],
+        obj=model.fs.RO.A_comp[0, "H2O"],
         name="Water permeability coefficient",
         ui_units=pyunits.L / pyunits.hr / pyunits.m**2 / pyunits.bar,
         display_units="LMH/bar",
@@ -95,7 +94,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     exports.add(
-        obj=fs.RO.B_comp[0, "NaCl"],
+        obj=model.fs.RO.B_comp[0, "NaCl"],
         name="Salt permeability coefficient",
         ui_units=pyunits.L / pyunits.hr / pyunits.m**2,
         display_units="LMH",
@@ -106,7 +105,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.RO.feed_side.channel_height,
+        obj=model.fs.RO.feed_side.channel_height,
         name="Feed-side channel height",
         ui_units=pyunits.mm,
         display_units="mm",
@@ -117,7 +116,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.RO.feed_side.spacer_porosity,
+        obj=model.fs.RO.feed_side.spacer_porosity,
         name="Feed-side spacer porosity",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -128,7 +127,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.RO.permeate.pressure[0],
+        obj=model.fs.RO.permeate.pressure[0],
         name="Permeate-side pressure",
         ui_units=pyunits.bar,
         display_units="bar",
@@ -139,7 +138,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.RO.width,
+        obj=model.fs.RO.width,
         name="Width",
         ui_units=pyunits.m,
         display_units="m",
@@ -150,7 +149,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
+        obj=model.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
         name="Water mass recovery",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -164,7 +163,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Unit model data, ERD
     exports.add(
-        obj=fs.ERD.efficiency_pump[0],
+        obj=model.fs.ERD.efficiency_pump[0],
         name="Pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -175,7 +174,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.ERD.control_volume.properties_out[0].pressure,
+        obj=model.fs.ERD.control_volume.properties_out[0].pressure,
         name="Operating pressure",
         ui_units=pyunits.bar,
         display_units="bar",
@@ -188,7 +187,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # System costing
     exports.add(
-        obj=fs.costing.utilization_factor,
+        obj=model.fs.costing.utilization_factor,
         name="Utilization factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -199,7 +198,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.TIC,
+        obj=model.fs.costing.TIC,
         name="Total Installed Cost",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -210,7 +209,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.TPEC,
+        obj=model.fs.costing.TPEC,
         name="Total Purchased Equipment Cost",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -221,7 +220,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.factor_total_investment,
+        obj=model.fs.costing.factor_total_investment,
         name="Total investment factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -232,7 +231,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.factor_maintenance_labor_chemical,
+        obj=model.fs.costing.factor_maintenance_labor_chemical,
         name="Maintenance-labor-chemical factor",
         ui_units=1 / pyunits.year,
         display_units="fraction/year",
@@ -243,7 +242,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.factor_capital_annualization,
+        obj=model.fs.costing.factor_capital_annualization,
         name="Capital annualization factor",
         ui_units=1 / pyunits.year,
         display_units="fraction/year",
@@ -254,9 +253,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.electricity_cost,
+        obj=model.fs.costing.electricity_cost,
         name="Electricity cost",
-        ui_units=fs.costing.base_currency / pyunits.kWh,
+        ui_units=model.fs.costing.base_currency / pyunits.kWh,
         display_units="$/kWh",
         rounding=3,
         description="Electricity cost",
@@ -267,7 +266,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Feed
     exports.add(
-        obj=fs.feed.properties[0].flow_vol_phase["Liq"],
+        obj=model.fs.feed.properties[0].flow_vol_phase["Liq"],
         name="Volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hour,
         display_units="m3/hr",
@@ -278,7 +277,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
+        obj=model.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
         name="NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
@@ -291,7 +290,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Product
     exports.add(
-        obj=fs.product.properties[0].flow_vol,
+        obj=model.fs.product.properties[0].flow_vol,
         name="Volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
@@ -302,7 +301,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Product",
     )
     exports.add(
-        obj=fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
+        obj=model.fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
         name="NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
@@ -315,7 +314,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Disposal
     exports.add(
-        obj=fs.disposal.properties[0].flow_vol,
+        obj=model.fs.disposal.properties[0].flow_vol,
         name="Volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
@@ -326,7 +325,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Disposal",
     )
     exports.add(
-        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
+        obj=model.fs.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
         name="NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
@@ -339,7 +338,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # System metrics
     exports.add(
-        obj=fs.RO.area,
+        obj=model.fs.RO.area,
         name="Area",
         ui_units=pyunits.m**2,
         display_units="m^2",
@@ -350,7 +349,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="System metrics",
     )
     exports.add(
-        obj=fs.costing.specific_energy_consumption,
+        obj=model.fs.costing.specific_energy_consumption,
         name="Specific energy consumption",
         ui_units=pyunits.kWh / pyunits.m**3,
         display_units="kWh/m3 of product water",
@@ -361,9 +360,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="System metrics",
     )
     exports.add(
-        obj=fs.costing.LCOW,
+        obj=model.fs.costing.LCOW,
         name="Levelized cost of water",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of product water",
         rounding=3,
         description="Levelized cost of water (LCOW)",
@@ -392,7 +391,6 @@ def build_flowsheet(erd_type=ERDtype.pump_as_turbine, build_options=None, **kwar
     return m
 
 
-def solve_flowsheet(flowsheet=None):
-    fs = flowsheet
-    results = solve(fs)
+def solve_flowsheet(model=None):
+    results = solve(model)
     return results

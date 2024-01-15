@@ -31,12 +31,11 @@ def export_to_ui():
     )
 
 
-def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
-    fs = flowsheet.fs
+def export_variables(model=None, exports=None, build_options=None, **kwargs):
     # --- Input data ---
     # Feed conditions
     exports.add(
-        obj=fs.feed.flow_vol[0],
+        obj=model.fs.feed.flow_vol[0],
         name="Volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
@@ -48,7 +47,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "dye"],
+        obj=model.fs.feed.conc_mass_comp[0, "dye"],
         name="Dye concentration",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg/m3",
@@ -60,7 +59,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "tds"],
+        obj=model.fs.feed.conc_mass_comp[0, "tds"],
         name="TDS concentration",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg/m3",
@@ -72,7 +71,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.tb_nf_ro.properties_out[0].temperature,
+        obj=model.fs.tb_nf_ro.properties_out[0].temperature,
         name="Solution temperature",
         ui_units=pyunits.K,
         display_units="K",
@@ -84,7 +83,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Unit model data, NF Pump
     exports.add(
-        obj=fs.dye_separation.P1.eta_motor,
+        obj=model.fs.dye_separation.P1.eta_motor,
         name="NF pump- motor efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
@@ -95,7 +94,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.dye_separation.P1.eta_pump,
+        obj=model.fs.dye_separation.P1.eta_pump,
         name="NF pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
@@ -107,7 +106,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Unit model data, rHGO Nanofiltration
     exports.add(
-        obj=fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0],
+        obj=model.fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0],
         name="Water recovery",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
@@ -118,7 +117,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
+        obj=model.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
         name="Mass removal fraction, dye",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
@@ -129,7 +128,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "tds"],
+        obj=model.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "tds"],
         name="Mass removal fraction, TDS",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
@@ -140,7 +139,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.dye_separation.nanofiltration.water_permeability_coefficient[0],
+        obj=model.fs.dye_separation.nanofiltration.water_permeability_coefficient[0],
         name="NF Water permeability Coefficient, A",
         ui_units=pyunits.L / pyunits.m**2 / pyunits.hour / pyunits.bar,
         display_units="LMH/bar",
@@ -150,7 +149,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="rHGO Nanofiltration",
         is_output=False,
     )
-    v = fs.dye_separation.nanofiltration.applied_pressure
+    v = model.fs.dye_separation.nanofiltration.applied_pressure
     exports.add(
         obj=v[0],
         name=v.doc,
@@ -166,7 +165,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Unit model, secondary WWTP
     if hasattr(fs, "pretreatment"):
         exports.add(
-            obj=fs.pretreatment.wwtp.energy_electric_flow_vol_inlet,
+            obj=model.fs.pretreatment.wwtp.energy_electric_flow_vol_inlet,
             name="Specific energy consumption per inlet flow rate",
             ui_units=pyunits.kWh / pyunits.m**3,
             display_units="kWh/m3",
@@ -180,7 +179,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         pass
 
     # Unit model, RO
-    v = fs.desalination.RO.A_comp
+    v = model.fs.desalination.RO.A_comp
     exports.add(
         obj=v[0, "H2O"],
         name="RO Water permeability coefficient, A",
@@ -192,7 +191,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="Reverse Osmosis",
         is_output=False,
     )
-    v = fs.desalination.RO.B_comp
+    v = model.fs.desalination.RO.B_comp
     exports.add(
         obj=v[0, "TDS"],
         name="RO Salt permeability coefficient, B",
@@ -205,7 +204,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.desalination.P2.efficiency_pump[0],
+        obj=model.fs.desalination.P2.efficiency_pump[0],
         name="RO high-pressure pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -216,7 +215,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.desalination.P3.efficiency_pump[0],
+        obj=model.fs.desalination.P3.efficiency_pump[0],
         name="RO booster pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -227,7 +226,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.desalination.PXR.efficiency_pressure_exchanger[0],
+        obj=model.fs.desalination.PXR.efficiency_pressure_exchanger[0],
         name="Isobaric pressure exchanger efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -239,9 +238,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Unit cost data, NF pump
     exports.add(
-        obj=fs.zo_costing.pump_electricity.pump_cost["default"],
+        obj=model.fs.zo_costing.pump_electricity.pump_cost["default"],
         name="Pump cost",
-        ui_units=fs.zo_costing.base_currency / (pyunits.m**3 / pyunits.hr),
+        ui_units=model.fs.zo_costing.base_currency / (pyunits.m**3 / pyunits.hr),
         display_units="$/(m^3/hr)",
         rounding=0,
         description="Pump capital cost parameter",
@@ -250,7 +249,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     # Unit cost data, NF
-    v = fs.zo_costing.nanofiltration.membrane_cost
+    v = model.fs.zo_costing.nanofiltration.membrane_cost
     exports.add(
         obj=v["rHGO_dye_rejection"],
         name="NF membrane cost",
@@ -261,7 +260,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="rHGO NF costing",
         is_output=False,
     )
-    v = fs.zo_costing.nanofiltration.membrane_replacement_rate
+    v = model.fs.zo_costing.nanofiltration.membrane_replacement_rate
     exports.add(
         obj=v["rHGO_dye_rejection"],
         name="NF membrane replacement rate",
@@ -273,7 +272,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     # Unit cost data, RO
-    v = fs.ro_costing.reverse_osmosis.membrane_cost
+    v = model.fs.ro_costing.reverse_osmosis.membrane_cost
     exports.add(
         obj=v,
         name="RO membrane cost",
@@ -284,7 +283,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="RO costing",
         is_output=False,
     )
-    v = fs.ro_costing.reverse_osmosis.factor_membrane_replacement
+    v = model.fs.ro_costing.reverse_osmosis.factor_membrane_replacement
     exports.add(
         obj=v,
         name="RO membrane replacement rate",
@@ -295,7 +294,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="RO costing",
         is_output=False,
     )
-    v = fs.ro_costing.high_pressure_pump.cost
+    v = model.fs.ro_costing.high_pressure_pump.cost
     exports.add(
         obj=v,
         name="RO unit pump cost",
@@ -307,7 +306,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="RO costing",
         is_output=False,
     )
-    v = fs.ro_costing.pressure_exchanger.cost
+    v = model.fs.ro_costing.pressure_exchanger.cost
     exports.add(
         obj=v,
         name=v.doc,
@@ -319,7 +318,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     # System costs
-    v = fs.ro_costing.electricity_cost
+    v = model.fs.ro_costing.electricity_cost
     exports.add(
         obj=v,
         name="Electricity cost",
@@ -330,7 +329,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="System Costs",
         is_output=False,
     )
-    v = fs.zo_costing.waste_disposal_cost
+    v = model.fs.zo_costing.waste_disposal_cost
     exports.add(
         obj=v,
         name="Waste disposal cost per volume",
@@ -341,7 +340,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="System Costs",
         is_output=False,
     )
-    v = fs.zo_costing.dye_disposal_cost
+    v = model.fs.zo_costing.dye_disposal_cost
     exports.add(
         obj=v,
         name="Dye disposal cost per volume",
@@ -352,7 +351,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="System Costs",
         is_output=False,
     )
-    v = fs.zo_costing.recovered_water_cost
+    v = model.fs.zo_costing.recovered_water_cost
     exports.add(
         obj=v,
         name="Value of recovered water",
@@ -365,7 +364,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # NF Results for rejection and membrane area
     exports.add(
-        obj=fs.dye_separation.nanofiltration.rejection_comp[0, "dye"],
+        obj=model.fs.dye_separation.nanofiltration.rejection_comp[0, "dye"],
         name="Solute Rejection- dye",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -376,7 +375,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
     )
     exports.add(
-        obj=fs.dye_separation.nanofiltration.rejection_comp[0, "tds"],
+        obj=model.fs.dye_separation.nanofiltration.rejection_comp[0, "tds"],
         name="Solute Rejection- tds",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -386,9 +385,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="rHGO Nanofiltration",
         is_output=True,
     )
-    v = fs.dye_separation.nanofiltration.area
+    v = model.fs.dye_separation.nanofiltration.area
     exports.add(
-        obj=fs.dye_separation.nanofiltration.area,
+        obj=model.fs.dye_separation.nanofiltration.area,
         name=v.doc,
         ui_units=getattr(pyunits, str(v._units)),
         display_units=str(v._units),
@@ -400,7 +399,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Outlets
     exports.add(
-        obj=fs.dye_retentate.properties[0].flow_vol,
+        obj=model.fs.dye_retentate.properties[0].flow_vol,
         name="Volumetric NF retentate flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
@@ -411,7 +410,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.dye_retentate.properties[0].conc_mass_comp["dye"],
+        obj=model.fs.dye_retentate.properties[0].conc_mass_comp["dye"],
         name="NF retentate concentration, dye",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg/m3",
@@ -422,7 +421,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.dye_retentate.properties[0].conc_mass_comp["tds"],
+        obj=model.fs.dye_retentate.properties[0].conc_mass_comp["tds"],
         name="NF retentate concentration, tds",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg/m3",
@@ -433,7 +432,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.permeate.properties[0].flow_vol,
+        obj=model.fs.permeate.properties[0].flow_vol,
         name="Volumetric RO permeate flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
@@ -444,7 +443,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.permeate.properties[0].conc_mass_phase_comp["Liq", "TDS"],
+        obj=model.fs.permeate.properties[0].conc_mass_phase_comp["Liq", "TDS"],
         name="RO permeate concentration, TDS",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg/m3",
@@ -455,7 +454,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.brine.properties[0].flow_vol,
+        obj=model.fs.brine.properties[0].flow_vol,
         name="Volumetric RO brine flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
@@ -466,7 +465,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.brine.properties[0].conc_mass_phase_comp["Liq", "TDS"],
+        obj=model.fs.brine.properties[0].conc_mass_phase_comp["Liq", "TDS"],
         name="RO brine concentration, TDS",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg/m3",
@@ -479,9 +478,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # System metrics
     exports.add(
-        obj=fs.LCOT_wo_revenue,
+        obj=model.fs.LCOT_wo_revenue,
         name="Levelized cost of treatment",
-        ui_units=fs.zo_costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.zo_costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=2,
         description="Levelized cost of treatment with respect to influent flow",
@@ -490,9 +489,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Levelized cost metrics",
     )
     exports.add(
-        obj=fs.LCOT,
+        obj=model.fs.LCOT,
         name="Levelized cost of treatment w/revenue and disposal costs",
-        ui_units=fs.zo_costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.zo_costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=2,
         description="Net levelized cost of treatment wrt to influent flow accounting for revenue and disposal costs",
@@ -501,9 +500,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Levelized cost metrics",
     )
     exports.add(
-        obj=fs.LCOW_wo_revenue,
+        obj=model.fs.LCOW_wo_revenue,
         name="Levelized cost of water",
-        ui_units=fs.zo_costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.zo_costing.base_currency / pyunits.m**3,
         display_units="$/m3 of product water",
         rounding=2,
         description="Levelized cost of water with respect to product water",
@@ -512,9 +511,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Levelized cost metrics",
     )
     exports.add(
-        obj=fs.LCOW,
+        obj=model.fs.LCOW,
         name="Net levelized cost of water  w/revenue and disposal costs",
-        ui_units=fs.zo_costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.zo_costing.base_currency / pyunits.m**3,
         display_units="$/m3 of product water",
         rounding=2,
         description="Net levelized cost of water wrt to product flow accounting for revenue and disposal costs`",
@@ -524,11 +523,13 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # Normalized metrics
-    total_capital_norm = fs.total_capital_cost / fs.feed.properties[0].flow_vol
+    total_capital_norm = (
+        model.fs.total_capital_cost / model.fs.feed.properties[0].flow_vol
+    )
     exports.add(
         obj=total_capital_norm,
         name="Total capital",
-        ui_units=fs.zo_costing.base_currency / (pyunits.m**3 / pyunits.day),
+        ui_units=model.fs.zo_costing.base_currency / (pyunits.m**3 / pyunits.day),
         display_units="$/(m3/day)",
         rounding=1,
         description="Normalized total capital costs accounting for indirect "
@@ -539,20 +540,20 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     annual_water_inlet = (
         pyunits.convert(
-            fs.feed.properties[0].flow_vol,
+            model.fs.feed.properties[0].flow_vol,
             to_units=pyunits.m**3 / pyunits.year,
         )
-        * fs.zo_costing.utilization_factor
+        * model.fs.zo_costing.utilization_factor
     )
 
     elec_operating_norm = (
-        fs.zo_costing.aggregate_flow_costs["electricity"]
-        + fs.ro_costing.aggregate_flow_costs["electricity"]
+        model.fs.zo_costing.aggregate_flow_costs["electricity"]
+        + model.fs.ro_costing.aggregate_flow_costs["electricity"]
     ) / annual_water_inlet
     exports.add(
         obj=elec_operating_norm,
         name="Electricity",
-        ui_units=fs.zo_costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.zo_costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=2,
         description="Normalized electricity cost - [annual electricity costs/annual "
@@ -563,7 +564,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # performance metrics
-    recovery_vol = fs.permeate.properties[0].flow_vol / fs.feed.properties[0].flow_vol
+    recovery_vol = (
+        model.fs.permeate.properties[0].flow_vol / model.fs.feed.properties[0].flow_vol
+    )
     exports.add(
         obj=recovery_vol,
         name="Volumetric recovery of product water",
@@ -575,7 +578,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Normalized performance metrics",
     )
     dye_recovery = (
-        fs.dye_retentate.flow_mass_comp[0, "dye"] / fs.feed.flow_mass_comp[0, "dye"]
+        model.fs.dye_retentate.flow_mass_comp[0, "dye"]
+        / model.fs.feed.flow_mass_comp[0, "dye"]
     )
     exports.add(
         obj=dye_recovery,
@@ -591,9 +595,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Capital costs
     exports.add(
-        obj=fs.total_capital_cost,
+        obj=model.fs.total_capital_cost,
         name="Total",
-        ui_units=fs.zo_costing.base_currency,
+        ui_units=model.fs.zo_costing.base_currency,
         display_units="$",
         rounding=2,
         description="Total capital costs - including investment factor to account "
@@ -603,11 +607,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Capital costs",
     )
     if hasattr(fs, "pretreatment"):
-        wwtp_capex = fs.pretreatment.wwtp.costing.capital_cost
+        wwtp_capex = model.fs.pretreatment.wwtp.costing.capital_cost
         exports.add(
             obj=wwtp_capex,
             name="Secondary WWTP Cost",
-            ui_units=fs.zo_costing.base_currency,
+            ui_units=model.fs.zo_costing.base_currency,
             display_units="$",
             rounding=2,
             description="Secondary WWTP representative of conventional activated sludge with secondary clarifier",
@@ -618,13 +622,13 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     else:
         pass
     nf_capex = (
-        fs.dye_separation.nanofiltration.costing.capital_cost
-        + fs.dye_separation.P1.costing.capital_cost
+        model.fs.dye_separation.nanofiltration.costing.capital_cost
+        + model.fs.dye_separation.P1.costing.capital_cost
     )
     exports.add(
         obj=nf_capex,
         name="rHGO Nanofiltration system costs",
-        ui_units=fs.zo_costing.base_currency,
+        ui_units=model.fs.zo_costing.base_currency,
         display_units="$",
         rounding=2,
         description="rHGO Nanofiltration system costs including pump",
@@ -633,9 +637,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.ro_costing.total_capital_cost,
+        obj=model.fs.ro_costing.total_capital_cost,
         name="RO system costs",
-        ui_units=fs.zo_costing.base_currency,
+        ui_units=model.fs.zo_costing.base_currency,
         display_units="$",
         rounding=2,
         description="RO total investment cost, including pumps and ERD",
@@ -646,9 +650,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Operating costs
     exports.add(
-        obj=fs.total_operating_cost,
+        obj=model.fs.total_operating_cost,
         name="Total",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
+        ui_units=model.fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
         description="Total annual operating costs - including electricity "
@@ -657,12 +661,12 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="Operating costs",
     )
-    total_elec_cost = fs.zo_costing.aggregate_flow_costs["electricity"]
-    +fs.ro_costing.aggregate_flow_costs["electricity"]
+    total_elec_cost = model.fs.zo_costing.aggregate_flow_costs["electricity"]
+    +model.fs.ro_costing.aggregate_flow_costs["electricity"]
     exports.add(
         obj=total_elec_cost,
         name="Electricity",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
+        ui_units=model.fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
         description="Annual electricity costs ",
@@ -671,9 +675,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Operating costs",
     )
     exports.add(
-        obj=fs.brine_disposal_cost,
+        obj=model.fs.brine_disposal_cost,
         name="RO brine disposal",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
+        ui_units=model.fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
         description="Annual brine disposal",
@@ -682,9 +686,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Operating costs",
     )
     exports.add(
-        obj=fs.dye_disposal_cost,
+        obj=model.fs.dye_disposal_cost,
         name="Dye disposal",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
+        ui_units=model.fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
         description="Annual dye disposal",
@@ -694,9 +698,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     if hasattr(fs, "pretreatment"):
         exports.add(
-            obj=fs.sludge_disposal_cost,
+            obj=model.fs.sludge_disposal_cost,
             name="WWTP sludge disposal",
-            ui_units=fs.zo_costing.base_currency / pyunits.year,
+            ui_units=model.fs.zo_costing.base_currency / pyunits.year,
             display_units="$/year",
             rounding=2,
             description="Annual sludge disposal",
@@ -708,9 +712,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         pass
     # Revenue
     exports.add(
-        obj=fs.water_recovery_revenue,
+        obj=model.fs.water_recovery_revenue,
         name="Water",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
+        ui_units=model.fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
         description="Revenue from selling water or value of freshwater savings",
@@ -741,7 +745,6 @@ def build_flowsheet(build_options=None, **kwargs):
     return m
 
 
-def solve_flowsheet(flowsheet=None):
-    fs = flowsheet
-    results = solve(fs)
+def solve_flowsheet(model=None):
+    results = solve(model)
     return results

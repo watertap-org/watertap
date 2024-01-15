@@ -57,8 +57,8 @@ def build_ro(build_options=None, **kwargs):
     return model
 
 
-def solve_ro(flowsheet=None):
-    assert flowsheet
+def solve_ro(model=None):
+    assert model
     return {"solved": True}
 
 
@@ -84,10 +84,9 @@ class OutputCategory:
     revenue = "Revenue"
 
 
-def export_to_ui(flowsheet=None, exports=None, build_options=None, **kwargs):
-    fs = flowsheet.fs
+def export_to_ui(model=None, exports=None, build_options=None, **kwargs):
     exports.add(
-        obj=fs.feed.flow_vol[0],
+        obj=model.fs.feed.flow_vol[0],
         name="Flowrate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_rounding=1e-2,  # round to nearest 0.01
@@ -171,12 +170,12 @@ def test_actions(add_variant: str):
         m = build_ro()
         return m
 
-    def fake_solve(flowsheet=None):
+    def fake_solve(model=None):
         # flowsheet passed in here should be what fake_build() returns
-        assert flowsheet == m
+        assert model == m
         return SOLVE_RESULT_OK
 
-    def fake_export(flowsheet=None, exports=None, build_options=None, **kwargs):
+    def fake_export(model=None, exports=None, build_options=None, **kwargs):
         with pytest.raises(Exception):
             exports.add(obj=garbage)
 
@@ -234,25 +233,25 @@ def test_csv_exports():
                     fsi.build()
 
 
-def csv_from_tempfile(exports=None, flowsheet=None, **kwargs):
+def csv_from_tempfile(exports=None, model=None, **kwargs):
     with tempfile.TemporaryDirectory() as tempdir:
         f = Path(tempdir) / "fake.csv"
         populate_csv_exports(f.open("w"))
-        exports.from_csv(file=f, flowsheet=flowsheet)
+        exports.from_csv(file=f, model=model)
 
 
-def csv_from_localfile(exports=None, flowsheet=None, **kwargs):
+def csv_from_localfile(exports=None, model=None, **kwargs):
     path = Path(__file__).parent / "test.csv"
     populate_csv_exports(path.open("w"))
     try:
-        exports.from_csv(file="test.csv", flowsheet=flowsheet)
+        exports.from_csv(file="test.csv", model=model)
     finally:
         path.unlink()
 
 
 def populate_csv_exports(f):
     units = "units.foobar" if CSVTestSettings.bad_units else "units.m**3/units.s"
-    obj = "dirt" if CSVTestSettings.bad_obj else "fs.feed.flow_vol[0]"
+    obj = "dirt" if CSVTestSettings.bad_obj else "m.fs.feed.flow_vol[0]"
     rows = [
         "name,obj,description,ui_units,display_units,rounding,is_input,input_category,is_output,output_category",
         f"feed,{obj},feed flow volume,{units},m^3/s,3,TRUE,something,FALSE,",

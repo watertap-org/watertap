@@ -33,11 +33,10 @@ def export_to_ui():
     )
 
 
-def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
-    fs = flowsheet.fs
+def export_variables(model, exports=None, build_options=None, **kwargs):
     # --- Input data ---
     exports.add(
-        obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],
+        obj=model.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],
         name="Feed mass flow",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
@@ -49,7 +48,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"],
+        obj=model.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"],
         name="TDS mass fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -61,7 +60,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.properties[0].temperature,
+        obj=model.fs.feed.properties[0].temperature,
         name="Feed temperature",
         ui_units=pyunits.K,
         display_units="K",
@@ -73,7 +72,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.properties[0].pressure,
+        obj=model.fs.feed.properties[0].pressure,
         name="Feed pressure",
         ui_units=pyunits.Pa,
         display_units="Pa",
@@ -85,7 +84,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Feed",
     )
     exports.add(
-        obj=fs.recovery[0],
+        obj=model.fs.recovery[0],
         name="Volumetric recovery",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -98,7 +97,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     )
 
     exports.add(
-        obj=fs.pump_feed.efficiency_pump[0],
+        obj=model.fs.pump_feed.efficiency_pump[0],
         name="Feed pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -109,7 +108,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.pump_feed.control_volume.deltaP[0],
+        obj=model.fs.pump_feed.control_volume.deltaP[0],
         name="Feed pump pressure change",
         ui_units=pyunits.Pa,
         display_units="Pa",
@@ -121,7 +120,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     )
 
     exports.add(
-        obj=fs.hx_distillate.overall_heat_transfer_coefficient[0],
+        obj=model.fs.hx_distillate.overall_heat_transfer_coefficient[0],
         name="Distillate HEX heat transfer coefficient",
         ui_units=pyunits.J * pyunits.s**-1 * pyunits.m**-2 * pyunits.K**-1,
         display_units="W/K-m2",
@@ -132,7 +131,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.hx_distillate.area,
+        obj=model.fs.hx_distillate.area,
         name="Distillate HEX area",
         ui_units=pyunits.m**2,
         display_units="m2",
@@ -143,7 +142,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.hx_distillate.cold.deltaP[0],
+        obj=model.fs.hx_distillate.cold.deltaP[0],
         name="Distillate HEX cold side pressure change",
         ui_units=pyunits.Pa,
         display_units="Pa",
@@ -154,7 +153,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.hx_distillate.hot.deltaP[0],
+        obj=model.fs.hx_distillate.hot.deltaP[0],
         name="Distillate HEX hot side pressure change",
         ui_units=pyunits.Pa,
         display_units="Pa",
@@ -166,7 +165,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     )
 
     exports.add(
-        obj=fs.hx_brine.overall_heat_transfer_coefficient[0],
+        obj=model.fs.hx_brine.overall_heat_transfer_coefficient[0],
         name="Brine HEX heat transfer coefficient",
         ui_units=pyunits.J * pyunits.s**-1 * pyunits.m**-2 * pyunits.K**-1,
         display_units="W/K-m2",
@@ -177,7 +176,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.hx_brine.area,
+        obj=model.fs.hx_brine.area,
         name="Brine HEX area",
         ui_units=pyunits.m**2,
         display_units="m2",
@@ -188,7 +187,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.hx_brine.cold.deltaP[0],
+        obj=model.fs.hx_brine.cold.deltaP[0],
         name="Brine HEX cold side pressure change",
         ui_units=pyunits.Pa,
         display_units="Pa",
@@ -199,7 +198,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.hx_brine.hot.deltaP[0],
+        obj=model.fs.hx_brine.hot.deltaP[0],
         name="Brine HEX hot side pressure change",
         ui_units=pyunits.Pa,
         display_units="Pa",
@@ -210,7 +209,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.evaporator.inlet_feed.temperature[0],
+        obj=model.fs.evaporator.inlet_feed.temperature[0],
         name="Evaporator inlet temperature",
         ui_units=pyunits.K,
         display_units="K",
@@ -221,7 +220,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.evaporator.outlet_brine.temperature[0],
+        obj=model.fs.evaporator.outlet_brine.temperature[0],
         name="Evaporator brine temperature",
         ui_units=pyunits.K,
         display_units="K",
@@ -232,7 +231,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.evaporator.U,
+        obj=model.fs.evaporator.U,
         name="Evaporator heat transfer coefficient",
         ui_units=pyunits.J * pyunits.s**-1 * pyunits.m**-2 * pyunits.K**-1,
         display_units="W/K-m2",
@@ -243,7 +242,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.compressor.pressure_ratio,
+        obj=model.fs.compressor.pressure_ratio,
         name="Compressor pressure ratio",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -254,7 +253,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.compressor.efficiency,
+        obj=model.fs.compressor.efficiency,
         name="Compressor efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -265,7 +264,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.pump_brine.efficiency_pump[0],
+        obj=model.fs.pump_brine.efficiency_pump[0],
         name="Brine pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -276,7 +275,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.pump_brine.control_volume.deltaP[0],
+        obj=model.fs.pump_brine.control_volume.deltaP[0],
         name="Brine pump pressure change",
         ui_units=pyunits.Pa,
         display_units="Pa",
@@ -287,7 +286,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.pump_distillate.efficiency_pump[0],
+        obj=model.fs.pump_distillate.efficiency_pump[0],
         name="Distillate pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -298,7 +297,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.pump_distillate.control_volume.deltaP[0],
+        obj=model.fs.pump_distillate.control_volume.deltaP[0],
         name="Distillate pump pressure change",
         ui_units=pyunits.Pa,
         display_units="Pa",
@@ -311,7 +310,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
 
     # System costing
     exports.add(
-        obj=fs.costing.utilization_factor,
+        obj=model.fs.costing.utilization_factor,
         name="Utilization factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -322,7 +321,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.TIC,
+        obj=model.fs.costing.TIC,
         name="Practical investment factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -334,9 +333,9 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.electricity_cost,
+        obj=model.fs.costing.electricity_cost,
         name="Electricity cost",
-        ui_units=fs.costing.base_currency / pyunits.kWh,
+        ui_units=model.fs.costing.base_currency / pyunits.kWh,
         display_units="$/kWh",
         rounding=3,
         description="Electricity cost",
@@ -345,7 +344,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.factor_total_investment,
+        obj=model.fs.costing.factor_total_investment,
         name="Total investment factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -356,7 +355,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.heat_exchanger.material_factor_cost,
+        obj=model.fs.costing.heat_exchanger.material_factor_cost,
         name="Heat exchanger material cost factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -367,7 +366,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.evaporator.material_factor_cost,
+        obj=model.fs.costing.evaporator.material_factor_cost,
         name="Evaporator material cost factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -378,7 +377,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.compressor.unit_cost,
+        obj=model.fs.costing.compressor.unit_cost,
         name="Compressor unit cost",
         ui_units=pyunits.USD_2001,
         display_units="$(2001)",
@@ -392,7 +391,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     # Outlets
 
     feed_salinity = pyunits.convert(
-        fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"],
+        model.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"],
         to_units=pyunits.g / pyunits.kg,
     )
     exports.add(
@@ -407,7 +406,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Outlets",
     )
     brine_salinity = pyunits.convert(
-        fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"],
+        model.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"],
         to_units=pyunits.g / pyunits.kg,
     )
     exports.add(
@@ -422,7 +421,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.separator_feed.split_fraction[0, "hx_distillate_cold"],
+        obj=model.fs.separator_feed.split_fraction[0, "hx_distillate_cold"],
         name="Separator split fraction for distillate HEX",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -433,7 +432,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Separator",
     )
     exports.add(
-        obj=fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"],
+        obj=model.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"],
         name="Product flow rate",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
@@ -444,7 +443,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.compressor.control_volume.properties_out[0].temperature,
+        obj=model.fs.compressor.control_volume.properties_out[0].temperature,
         name="Compressed vapor temperature",
         ui_units=pyunits.K,
         display_units="K",
@@ -455,7 +454,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.compressor.control_volume.properties_out[0].pressure,
+        obj=model.fs.compressor.control_volume.properties_out[0].pressure,
         name="Compressed vapor pressure",
         ui_units=pyunits.Pa,
         display_units="Pa",
@@ -466,7 +465,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.condenser.control_volume.properties_out[0].temperature,
+        obj=model.fs.condenser.control_volume.properties_out[0].temperature,
         name="Condensed vapor temperature",
         ui_units=pyunits.K,
         display_units="K",
@@ -477,7 +476,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.evaporator.lmtd,
+        obj=model.fs.evaporator.lmtd,
         name="Evaporator log-mean temperature difference",
         ui_units=pyunits.K,
         display_units="K",
@@ -490,9 +489,9 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
 
     # System metrics
     exports.add(
-        obj=fs.costing.LCOW,
+        obj=model.fs.costing.LCOW,
         name="LCOW",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
+        ui_units=model.fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of centrate",
         rounding=3,
         description="Levelized cost of water including operating and capital costs",
@@ -501,11 +500,13 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Levelized cost metrics",
     )
     # Normalized metrics
-    total_capital_norm = fs.costing.total_capital_cost / fs.feed.properties[0].flow_vol
+    total_capital_norm = (
+        model.fs.costing.total_capital_cost / model.fs.feed.properties[0].flow_vol
+    )
     exports.add(
         obj=total_capital_norm,
         name="Total capital",
-        ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
+        ui_units=model.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         display_units="$/(m3/day)",
         rounding=1,
         description="Normalized total capital costs accounting for indirect "
@@ -517,7 +518,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
 
     # performance metrics
     exports.add(
-        obj=fs.costing.specific_energy_consumption,
+        obj=model.fs.costing.specific_energy_consumption,
         name="Specific energy consumption",
         ui_units=pyunits.kWh / pyunits.m**3,
         display_units="kWh/m3",
@@ -530,9 +531,9 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
 
     # Capital costs
     exports.add(
-        obj=fs.costing.total_capital_cost,
+        obj=model.fs.costing.total_capital_cost,
         name="Total",
-        ui_units=fs.costing.base_currency,
+        ui_units=model.fs.costing.base_currency,
         display_units="$",
         rounding=0,
         description="Total capital costs - including investment factor to account "
@@ -542,9 +543,9 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.hx_distillate.costing.capital_cost,
+        obj=model.fs.hx_distillate.costing.capital_cost,
         name="Distillate heat exchanger",
-        ui_units=fs.costing.base_currency,
+        ui_units=model.fs.costing.base_currency,
         display_units="$",
         rounding=0,
         description="Distillate heat exchanger capital cost",
@@ -553,9 +554,9 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.hx_brine.costing.capital_cost,
+        obj=model.fs.hx_brine.costing.capital_cost,
         name="Brine heat exchanger",
-        ui_units=fs.costing.base_currency,
+        ui_units=model.fs.costing.base_currency,
         display_units="$",
         rounding=0,
         description="Brine heat exchanger capital cost",
@@ -564,9 +565,9 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.mixer_feed.costing.capital_cost,
+        obj=model.fs.mixer_feed.costing.capital_cost,
         name="Feed mixer",
-        ui_units=fs.costing.base_currency,
+        ui_units=model.fs.costing.base_currency,
         display_units="$",
         rounding=0,
         description="Feed mixer capital cost",
@@ -575,9 +576,9 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.evaporator.costing.capital_cost,
+        obj=model.fs.evaporator.costing.capital_cost,
         name="Evaporator",
-        ui_units=fs.costing.base_currency,
+        ui_units=model.fs.costing.base_currency,
         display_units="$",
         rounding=0,
         description="Evaporator capital cost",
@@ -586,9 +587,9 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.compressor.costing.capital_cost,
+        obj=model.fs.compressor.costing.capital_cost,
         name="Compressor",
-        ui_units=fs.costing.base_currency,
+        ui_units=model.fs.costing.base_currency,
         display_units="$",
         rounding=0,
         description="Compressor capital cost",
@@ -598,9 +599,9 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     )
     # Operating costs
     exports.add(
-        obj=fs.costing.total_operating_cost,
+        obj=model.fs.costing.total_operating_cost,
         name="Total",
-        ui_units=fs.costing.base_currency / pyunits.year,
+        ui_units=model.fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=0,
         description="Total annual operating costs - including electricity, heating, "
@@ -610,9 +611,9 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         output_category="Operating costs",
     )
     exports.add(
-        obj=fs.costing.aggregate_flow_costs["electricity"],
+        obj=model.fs.costing.aggregate_flow_costs["electricity"],
         name="Electricity",
-        ui_units=fs.costing.base_currency / pyunits.year,
+        ui_units=model.fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=0,
         description="Annual electricity costs ",
@@ -646,7 +647,6 @@ def build_flowsheet(build_options=None, **kwargs):
     return m
 
 
-def solve_flowsheet(flowsheet=None):
-    fs = flowsheet
-    results = solve(fs)
+def solve_flowsheet(model):
+    results = solve(model)
     return results

@@ -321,7 +321,7 @@ class FlowsheetExport(BaseModel):
         self.model_objects[key] = model_export
         return model_export
 
-    def from_csv(self, file: Union[str, Path], flowsheet):
+    def from_csv(self, file: Union[str, Path], model):
         """Load multiple exports from the given CSV file.
 
         CSV file format rules:
@@ -343,7 +343,7 @@ class FlowsheetExport(BaseModel):
         Args:
             file: Filename or path. If not an absolute path, start from the
                   directory of the caller's file.
-            flowsheet: Flowsheet used to evaluate the exported objects.
+            model: model used to evaluate the exported objects.
 
         Returns:
             int: Number of exports added
@@ -352,8 +352,6 @@ class FlowsheetExport(BaseModel):
             IOError: if input file doesn't exist
             ValueError: Invalid data in input file (error message will have details)
         """
-
-        flowsheet = flowsheet.fs
 
         _log.debug(f"exports.add: from csv filename={file}")
 
@@ -400,11 +398,11 @@ class FlowsheetExport(BaseModel):
                 continue
             # build raw dict from values and header
             data = {k: v for k, v in zip(header, row)}
-            # evaluate the object in the flowsheet
+            # evaluate the object in the model
             try:
-                data["obj"] = eval(data["obj"], {"fs": flowsheet})
+                data["obj"] = eval(data["obj"], {"m": model})
             except Exception as err:
-                raise ValueError(f"Cannot find object in flowsheet: {data['obj']}")
+                raise ValueError(f"Cannot find object in model: {data['obj']}")
             # evaluate the units
             norm_units = data["ui_units"].strip()
             if norm_units in ("", "none", "-"):
@@ -824,7 +822,7 @@ class FlowsheetInterface:
                     f"'{Actions.build}') before flowsheet is built"
                 )
             else:
-                result = action_func(flowsheet=self.fs_exp.m, **kwargs)
+                result = action_func(model=self.fs_exp.m, **kwargs)
                 # Issue 755: Report optimization errors
                 if action_name == Actions.solve:
                     _log.debug(f"Solve result: {result}")
