@@ -827,7 +827,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
     add_costing(m)
     assert_degrees_of_freedom(m, 0)
-    m.model.fs.costing.initialize()
+    m.fs.costing.initialize()
 
     results = solve(m)
     assert_optimal_termination(results)
