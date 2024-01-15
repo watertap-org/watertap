@@ -188,27 +188,27 @@ class StoichiometricReactorData(UnitModelBlockData):
             doc="""A dict of reagents used in the StoichiometricReactor process
     including their molecular weights, and dissolution stoichiometric coefficients for
     the components defined in the property package in the following format::
-            
+
         {
         "reagent_name_1":
             {
-            "mw": (value, units),
-            "density_reagent": (value, units),
-            "dissolution_stoichiometric":
-                {
-                    "component_name_1": stoichiometric_coeff,
-                    "component_name_2": stoichiometric_coeff,
-                }
+                "mw": (value, units),
+                "density_reagent": (value, units),
+                "dissolution_stoichiometric":
+                    {
+                        "component_name_1": stoichiometric_coeff,
+                        "component_name_2": stoichiometric_coeff,
+                    }
             },
         "reagent_name_2":
             {
-            "mw": (value, units),
-            "density_reagent": (value, units),
-            "dissolution_stoichiometric":
-                {
-                    "component_name_1": stoichiometric_coeff,
-                    "component_name_2": stoichiometric_coeff,
-                }
+                "mw": (value, units),
+                "density_reagent": (value, units),
+                "dissolution_stoichiometric":
+                    {
+                        "component_name_1": stoichiometric_coeff,
+                        "component_name_2": stoichiometric_coeff,
+                    }
             },
         }
         """,
@@ -228,21 +228,21 @@ class StoichiometricReactorData(UnitModelBlockData):
         {
         "precipitate_name_1":
             {
-            "mw": value,  # in kg/mol
-            "precipitation_stoichiometric":
-                {
-                    "component_name_1": stoichiometric_coeff,
-                    "component_name_2": stoichiometric_coeff,
-                }
+                "mw": value,  # in kg/mol
+                "precipitation_stoichiometric":
+                    {
+                        "component_name_1": stoichiometric_coeff,
+                        "component_name_2": stoichiometric_coeff,
+                    }
             },
         "precipitate_name_2":
             {
-            "mw": value,  # in kg/mol
-            "precipitation_stoichiometric":
-                {
-                    "component_name_1": stoichiometric_coeff,
-                    "component_name_2": stoichiometric_coeff,
-                }
+                "mw": value,  # in kg/mol
+                "precipitation_stoichiometric":
+                    {
+                        "component_name_1": stoichiometric_coeff,
+                        "component_name_2": stoichiometric_coeff,
+                    }
             },
         }
         """,
