@@ -306,10 +306,12 @@ class TestStoichiometricReactor:
             "Na2CO3": {
                 "mw": 105.99 * pyunits.g / pyunits.mol,
                 "dissolution_stoichiometric": {"Na_+": 2, "HCO3_-": 1},
+                "reagent_density": 1.2 * pyunits.kg / pyunits.L,
             },
             "CaO": {
                 "mw": 56.0774 * pyunits.g / pyunits.mol,
                 "dissolution_stoichiometric": {"Ca_2+": 1, "H2O": 1},
+                "reagent_density": 1.2 * pyunits.kg / pyunits.L,
             },
         }
         m.fs.unit = StoichiometricReactor(
@@ -677,7 +679,7 @@ class TestStoichiometricReactor:
             )
 
     @pytest.mark.unit
-    def test_costing(self, basic_unit_molar):
+    def test_costing_softening(self, basic_unit_molar):
         m = basic_unit_molar
         m.fs.costing = WaterTAPCosting()
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
@@ -689,10 +691,35 @@ class TestStoichiometricReactor:
         assert assert_units_consistent(m) is None
         assert degrees_of_freedom(m) == 0
 
-        assert value(m.fs.costing.stoichiometric_reactor.capital_cost_param) == 2000
         assert (
-            pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3) == 593.69504
+            value(m.fs.costing.stoichiometric_reactor.capital_cost_softening) == 374.9
         )
+        assert pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3) == 288.0
         assert (
-            pytest.approx(value(m.fs.costing.total_operating_cost), rel=1e-3) == 17.81
+            pytest.approx(value(m.fs.costing.total_operating_cost), rel=1e-3) == 8.64068
+        )
+
+    @pytest.mark.unit
+    def test_costing_acid_addition(self, dissolution_reactor):
+        # NOTE: testing costing for a dissultion reactor only - we are useing
+        # soda ash adn lime addition, but costing is for HCl addition
+        # just a test
+        m = dissolution_reactor
+        m.fs.costing = WaterTAPCosting()
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.costing.cost_process()
+        m.fs.costing.initialize()
+        calculate_scaling_factors(m)
+        result = solver.solve(m)
+        assert check_optimal_termination(result)
+        assert assert_units_consistent(m) is None
+        assert degrees_of_freedom(m) == 0
+
+        assert (
+            value(m.fs.costing.stoichiometric_reactor.capital_cost_acid_addition)
+            == 127.8
+        )
+        assert pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3) == 11.76
+        assert (
+            pytest.approx(value(m.fs.costing.total_operating_cost), rel=1e-3) == 0.3529
         )

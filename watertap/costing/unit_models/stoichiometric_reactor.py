@@ -21,11 +21,17 @@ from ..util import register_costing_parameter_block, make_capital_cost_var
 
 
 def build_stoichiometric_reactor_cost_param_block(blk):
-    # Cost for soda ash /lime reactor
-    blk.capital_cost_param = Param(
-        initialize=2000,
-        units=pyunits.USD_2021 / (pyunits.kg / pyunits.day),
+    blk.capital_cost_softening = Param(
+        initialize=374.9,
+        units=pyunits.USD_2018 / (pyunits.lb / pyunits.day),
         mutable=True,
+        doc="Cost for typical mid sized softening reactor",
+    )
+
+    blk.capital_cost_acid_addition = Param(
+        initialize=127.8,
+        units=pyunits.USD_2018 / (pyunits.gallon / pyunits.day),
+        doc="Cost for acid mixer",
     )
 
 
@@ -37,18 +43,39 @@ def cost_stoichiometric_reactor(blk):
     t0 = blk.flowsheet().time.first()
     make_capital_cost_var(blk)
     blk.costing_package.add_cost_factor(blk, "TIC")
-    blk.capital_cost_constraint = Constraint(
-        expr=blk.capital_cost
-        == blk.cost_factor
-        * pyunits.convert(
-            blk.costing_package.stoichiometric_reactor.capital_cost_param,
-            to_units=blk.costing_package.base_currency / (pyunits.kg / pyunits.day),
-        )
-        * sum(
-            pyunits.convert(
-                obj,
-                to_units=pyunits.kg / pyunits.day,
+    if (
+        blk.unit_model.has_precipitation_reaction
+        and blk.unit_model.has_dissolution_reaction
+    ):
+        blk.capital_cost_constraint = Constraint(
+            expr=blk.capital_cost
+            == blk.cost_factor
+            * pyunits.convert(
+                blk.costing_package.stoichiometric_reactor.capital_cost_softening,
+                to_units=blk.costing_package.base_currency / (pyunits.lb / pyunits.day),
             )
-            for reagent, obj in blk.unit_model.flow_mass_reagent.items()
+            * sum(
+                pyunits.convert(
+                    obj,
+                    to_units=pyunits.lb / pyunits.day,
+                )
+                for reagent, obj in blk.unit_model.flow_mass_reagent.items()
+            ),
         )
-    )
+    elif blk.unit_model.has_dissolution_reaction:
+        blk.capital_cost_constraint = Constraint(
+            expr=blk.capital_cost
+            == blk.cost_factor
+            * pyunits.convert(
+                blk.costing_package.stoichiometric_reactor.capital_cost_acid_addition,
+                to_units=blk.costing_package.base_currency
+                / (pyunits.gallon / pyunits.day),
+            )
+            * sum(
+                pyunits.convert(
+                    obj,
+                    to_units=pyunits.gallon / pyunits.day,
+                )
+                for reagent, obj in blk.unit_model.flow_vol_reagent.items()
+            )
+        )

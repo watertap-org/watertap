@@ -199,6 +199,7 @@ class StoichiometricReactorData(UnitModelBlockData):
                         ("component_name_2", stoichiometric_coeff)
                         }
                     },
+                    "density_reagent": (value, units),
                 "reagent_name_2":
                     {
                     "mw": (value, units),
@@ -208,6 +209,7 @@ class StoichiometricReactorData(UnitModelBlockData):
                         ("component_name_2", stoichiometric_coeff)
                         }
                     },
+                    "density_reagent": (value, units),
                 }
             """,
         ),
@@ -278,9 +280,38 @@ class StoichiometricReactorData(UnitModelBlockData):
                 units=pyunits.kg / pyunits.mol,
                 doc="Molecular weight of reagents",
             )
+            self.density_reagent = Var(
+                self.reagent_list,
+                initialize=1000,
+                units=units_meta("mass") / units_meta("volume"),
+                doc="Density of reagents",
+            )
             for r in self.reagent_list:
-                self.mw_reagent[r].fix(self.config.reagent[r]["mw"])
-
+                self.mw_reagent[r].fix(
+                    pyunits.convert(
+                        self.config.reagent[r]["mw"],
+                        to_units=pyunits.kg / pyunits.mol,
+                    )
+                )
+                if self.config.reagent[r].get("density_reagent") is not None:
+                    self.density_reagent[r].fix(
+                        pyunits.convert(
+                            self.config.reagent[r].get("density_reagent"),
+                            to_units=(units_meta("mass") / units_meta("volume")),
+                        )
+                    )
+                else:
+                    _log.warning(
+                        "User did not specify density for reagent {}, using 1kg/L".format(
+                            r
+                        )
+                    )
+                    self.density_reagent[r].fix(
+                        pyunits.convert(
+                            1 * pyunits.kg / pyunits.liter,
+                            to_units=(units_meta("mass") / units_meta("volume")),
+                        )
+                    )
             self.dissolution_stoich_comp = Param(
                 self.reagent_list,
                 self.config.property_package.component_list,
@@ -307,6 +338,13 @@ class StoichiometricReactorData(UnitModelBlockData):
                 domain=NonNegativeReals,
                 units=units_meta("mass") / units_meta("time"),
                 doc="Mass flowrate of reagent",
+            )
+            self.flow_vol_reagent = Var(
+                self.reagent_list,
+                initialize=1e-3,
+                domain=NonNegativeReals,
+                units=units_meta("volume") / units_meta("time"),
+                doc="Volume flowrate of reagent",
             )
             self.dissolution_reaction_generation_comp = Var(
                 self.flowsheet().config.time,
@@ -548,6 +586,17 @@ class StoichiometricReactorData(UnitModelBlockData):
                     * b.dissolution_reactor.properties_in[t].flow_vol_phase["Liq"]
                 )
 
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.reagent_list,
+                doc="Reagent mass flow",
+            )
+            def eq_flow_vol_reagent(b, t, r):
+                return (
+                    b.flow_mass_reagent[r]
+                    == b.flow_vol_reagent[r] * b.density_reagent[r]
+                )
+
         if self.has_precipitation_reaction:
 
             @self.Constraint(
@@ -742,6 +791,17 @@ class StoichiometricReactorData(UnitModelBlockData):
                             self.reagent_dose[r], default=1, warning=True
                         )
                         iscale.set_scaling_factor(self.reagent_dose[r], sf)
+                if iscale.get_scaling_factor(self.flow_mass_reagent[r]) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.dissolution_reactor.properties_in[0].flow_vol_phase["Liq"]
+                    )
+                    sf = iscale.get_scaling_factor(self.reagent_dose[r]) * sf
+                    iscale.set_scaling_factor(self.flow_mass_reagent[r], sf)
+                if iscale.get_scaling_factor(self.flow_vol_reagent[r]) is None:
+                    sf = iscale.get_scaling_factor(self.flow_mass_reagent[r])
+                    print(sf, self.density_reagent[r].value)
+                    sf = sf / self.density_reagent[r].value
+                    iscale.set_scaling_factor(self.flow_vol_reagent[r], sf)
             for (t, j), v in self.dissolution_reaction_generation_comp.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.get_scaling_factor(
@@ -766,6 +826,12 @@ class StoichiometricReactorData(UnitModelBlockData):
             for (t, r), con in self.eq_flow_mass_reagent.items():
                 sf = iscale.get_scaling_factor(
                     self.flow_mass_reagent[r], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(con, sf)
+
+            for (t, r), con in self.eq_flow_vol_reagent.items():
+                sf = iscale.get_scaling_factor(
+                    self.flow_vol_reagent[r], default=1, warning=True
                 )
                 iscale.constraint_scaling_transform(con, sf)
 
