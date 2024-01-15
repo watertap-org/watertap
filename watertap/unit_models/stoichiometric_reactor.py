@@ -186,7 +186,7 @@ class StoichiometricReactorData(UnitModelBlockData):
             description="Specification of reagents used in StoichiometricReactor process",
             doc="""A dict of reagents used in the StoichiometricReactor process
     including their molecular weights, and dissolution stoichiometric coefficients for
-    the components defined in the property package in the following format:: 
+    the components defined in the property package in the following format: 
     {
     "reagent_name_1":
         {
@@ -219,7 +219,7 @@ class StoichiometricReactorData(UnitModelBlockData):
             description="Specification of precipitates formed in StoichiometricReactor process",
             doc="""A dict of precipitates formed in the StoichiometricReactor process
     including their molecular weights, and precipitation stoichiometric coefficients for
-    the components defined in the property package in the following format::
+    the components defined in the property package in the following format:
     {
     "precipitate_name_1":
         {
