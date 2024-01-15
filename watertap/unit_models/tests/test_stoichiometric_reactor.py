@@ -719,5 +719,5 @@ class TestStoichiometricReactor:
         )
         assert pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3) == 10.02
         assert (
-            pytest.approx(value(m.fs.costing.total_operating_cost), rel=1e-3) ==  0.30065
+            pytest.approx(value(m.fs.costing.total_operating_cost), rel=1e-3) == 0.30065
         )
