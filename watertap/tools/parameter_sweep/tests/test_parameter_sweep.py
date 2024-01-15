@@ -172,6 +172,99 @@ class TestParameterSweep:
         assert global_combo_array[-1, 2] == pytest.approx(range_C[1])
 
     @pytest.mark.component
+    def test_mode_type_build_combinations(self):
+        ps = ParameterSweep()
+        model = build_model_for_tps()
+        model.A_param = pyo.Var(initialize=0.0, bounds=(None, None))
+        model.B_param = pyo.Param(initialize=1.0, mutable=True)
+        range_A = [0.0, 10.0]
+        range_A_fix = [0, 1]
+
+        nn_A = 4
+        nn_B = 5
+        nn_C = 6
+        sample_values = np.linspace(range_A[0], range_A[1], nn_A)
+        # test ub_mode
+        param_dict = dict()
+        param_dict["var_A"] = LinearSample(model.A_param, range_A[0], range_A[1], nn_A)
+        param_dict["var_A"].set_variable_update_mode(SetMode.SET_UB)
+
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
+        )
+        for k in range(len(sample_values)):
+            ps._update_model_values(model, param_dict, global_combo_array[k])
+            assert model.A_param.ub == pytest.approx(sample_values[k])
+        param_dict = dict()
+        param_dict["var_A"] = LinearSample(model.A_param, range_A[0], range_A[1], nn_A)
+        param_dict["var_A"].set_variable_update_mode(SetMode.SET_LB)
+
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
+        )
+        for k in range(len(sample_values)):
+            ps._update_model_values(model, param_dict, global_combo_array[k])
+            assert model.A_param.lb == pytest.approx(sample_values[k])
+
+        param_dict = dict()
+        param_dict["var_A"] = LinearSample(
+            model.A_param, range_A_fix[0], range_A_fix[1], 2
+        )
+        param_dict["var_A"].set_variable_update_mode(SetMode.SET_FIXED_STATE, 10)
+
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
+        )
+        for k in range(2):
+            ps._update_model_values(model, param_dict, global_combo_array[k])
+            if sample_values[k] < 0.5:
+                fixed_state = False
+            else:
+                fixed_state = True
+            assert model.A_param.fixed == fixed_state
+            assert model.A_param.value == pytest.approx(10)
+
+        # test ablity to fully speciy a var
+        param_dict = dict()
+        param_dict["var_A_ub"] = LinearSample(model.A_param, range_A[1], range_A[1], 1)
+        param_dict["var_A_ub"].set_variable_update_mode(SetMode.SET_UB)
+        param_dict["var_A_lb"] = LinearSample(model.A_param, range_A[0], range_A[0], 1)
+        param_dict["var_A_lb"].set_variable_update_mode(SetMode.SET_LB)
+        param_dict["var_A_fixed_state"] = LinearSample(model.A_param, 0, 0, 1)
+        param_dict["var_A_fixed_state"].set_variable_update_mode(
+            SetMode.SET_FIXED_STATE, 5
+        )
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
+        )
+
+        ps._update_model_values(model, param_dict, global_combo_array[0])
+        assert model.A_param.lb == pytest.approx(range_A[0])
+        assert model.A_param.ub == pytest.approx(range_A[1])
+        assert model.A_param.value == pytest.approx(5)
+        assert model.A_param.fixed == False
+
+        # test ablity to fully speciy a var
+        param_dict = dict()
+        param_dict["var_A_ub"] = LinearSample(model.A_param, range_A[1], range_A[1], 1)
+        param_dict["var_A_ub"].set_variable_update_mode(SetMode.SET_UB)
+        param_dict["var_A_lb"] = LinearSample(model.A_param, range_A[0], range_A[0], 1)
+        param_dict["var_A_lb"].set_variable_update_mode(SetMode.SET_LB)
+        param_dict["var_A_fixed_state"] = LinearSample(model.A_param, 1, 1, 1)
+        param_dict["var_A_fixed_state"].set_variable_update_mode(
+            SetMode.SET_FIXED_STATE, 5
+        )
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
+        )
+
+        ps._update_model_values(model, param_dict, global_combo_array[0])
+        assert model.A_param.lb == pytest.approx(range_A[0])
+        assert model.A_param.ub == pytest.approx(range_A[1])
+        assert model.A_param.value == pytest.approx(5)
+        assert model.A_param.fixed == True
+
+    @pytest.mark.component
     def test_geom_build_combinations(self):
         ps = ParameterSweep()
 

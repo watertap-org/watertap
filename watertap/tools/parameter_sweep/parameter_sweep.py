@@ -29,7 +29,11 @@ from pyomo.common.dependencies import attempt_import
 requests, requests_available = attempt_import("requests")
 
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
-from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
+from watertap.tools.parameter_sweep.sampling_types import (
+    SamplingType,
+    LinearSample,
+    SetMode,
+)
 
 from watertap.tools.parallel.parallel_manager_factory import create_parallel_manager
 
@@ -412,8 +416,20 @@ class _ParameterSweepBase(ABC):
             param = self._get_object(m, item.pyomo_object)
             if param.is_variable_type():
                 # Fix the single value to values[k]
-                param.fix(non_indexed_values[k])
-
+                if item.set_mode == SetMode.FIX_VALUE:
+                    param.fix(non_indexed_values[k])
+                elif item.set_mode == SetMode.SET_LB:
+                    param.setlb(non_indexed_values[k])
+                elif item.set_mode == SetMode.SET_UB:
+                    param.setub(non_indexed_values[k])
+                # In SET_FIXED_STATE  we are only fixing or unfixing values
+                elif item.set_mode == SetMode.SET_FIXED_STATE:
+                    if item.default_fixed_value is not None:
+                        param.fix(item.default_fixed_value)
+                    if non_indexed_values[k] > 0.5:
+                        param.fix()
+                    else:
+                        param.unfix()
             elif param.is_parameter_type():
                 # Fix the single value to values[k]
                 param.set_value(non_indexed_values[k])
