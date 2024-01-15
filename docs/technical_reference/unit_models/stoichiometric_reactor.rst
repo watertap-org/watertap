@@ -48,7 +48,7 @@ The user needs to specify how supplied reagent, and precipitant dissolve or prec
 
 Example dictionary for dissolving Soda ash and Lime into their ions  
 
-.. code-block:: 
+.. code-block::
 
    reagents = {
          "Na2CO3": {
@@ -63,7 +63,8 @@ Example dictionary for dissolving Soda ash and Lime into their ions
 
 Example dictionary for defined precipitant that would form during reaction (Calcite - CaCO3, and Brucite - MgOH)
 
-.. code-block:: 
+
+.. code-block::
 
    precipitants = {
       "Calcite": {
@@ -78,7 +79,8 @@ Example dictionary for defined precipitant that would form during reaction (Calc
 
 The user can then provide the model with specified dictionary to produce a stoichiometric reactor that only perform dissolution, precipitation, or both. 
 
-.. code-block:: 
+
+.. code-block::
 
    # unit for only adding a reagent 
    m.fs.chemical_addition = StoichiometricReactor(
@@ -116,6 +118,7 @@ The user can then provide the model with specified dictionary to produce a stoic
 
 Sets
 ----
+
 .. csv-table::
    :header: "Description", "Symbol", "Indices"
 
@@ -127,6 +130,7 @@ Sets
 
 Variables
 ----------
+
 .. csv-table::
    :header: "Description", "Variable Name", "Index", "Units"
    
@@ -143,7 +147,7 @@ Currently, the costing method is only implement for lime soda ash, and only incl
 the capital cost of building the whole process. The capital cost is a function of 
 total reagent mass being added to the softening process. 
 
-.. math:: 
+.. math::
 
       C_{capital}=C_{base capital value}*\sum{M_{reagent}}
 
@@ -152,7 +156,7 @@ Where default value C_{base capital value} is 2000 $/kg/day.
 To cost reagent dosing, user must manually register the mass flow of each reagent and supply
 a cost as follows
 
-.. code-block:: 
+.. code-block::
 
    # build the unit model 
    m.fs.chemical_addition = StoichiometricReactor(
