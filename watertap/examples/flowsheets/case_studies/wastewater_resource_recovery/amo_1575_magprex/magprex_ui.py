@@ -721,5 +721,5 @@ def build_flowsheet(build_options=None, **kwargs):
 
 
 def solve_flowsheet(model=None):
-    results = solve(fs)
+    results = solve(model)
     return results
