@@ -163,7 +163,7 @@ def export_variables(model=None, exports=None, build_options=None, **kwargs):
     )
 
     # Unit model, secondary WWTP
-    if hasattr(fs, "pretreatment"):
+    if hasattr(model.fs, "pretreatment"):
         exports.add(
             obj=model.fs.pretreatment.wwtp.energy_electric_flow_vol_inlet,
             name="Specific energy consumption per inlet flow rate",
@@ -606,7 +606,7 @@ def export_variables(model=None, exports=None, build_options=None, **kwargs):
         is_output=True,
         output_category="Capital costs",
     )
-    if hasattr(fs, "pretreatment"):
+    if hasattr(model.fs, "pretreatment"):
         wwtp_capex = model.fs.pretreatment.wwtp.costing.capital_cost
         exports.add(
             obj=wwtp_capex,
