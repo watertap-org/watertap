@@ -557,9 +557,9 @@ class TestMembraneDistillation:
         assert isinstance(m.fs.unit.cold_ch, MDChannel0DBlock)
 
         # test statistics
-        assert number_variables(m) == 378
+        assert number_variables(m) == 390
         assert number_total_constraints(m) == 128
-        assert number_unused_variables(m) == 138
+        assert number_unused_variables(m) == 150
 
     @pytest.mark.unit
     def test_dof(self, MD_frame):
