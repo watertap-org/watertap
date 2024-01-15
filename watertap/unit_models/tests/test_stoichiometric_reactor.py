@@ -694,10 +694,8 @@ class TestStoichiometricReactor:
         assert (
             value(m.fs.costing.stoichiometric_reactor.capital_cost_softening) == 374.9
         )
-        assert pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3) == 288.0
-        assert (
-            pytest.approx(value(m.fs.costing.total_operating_cost), rel=1e-3) == 8.64068
-        )
+        assert pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3) == 245.34
+        assert pytest.approx(value(m.fs.costing.total_operating_cost), rel=1e-3) == 7.36
 
     @pytest.mark.unit
     def test_costing_acid_addition(self, dissolution_reactor):
@@ -719,7 +717,7 @@ class TestStoichiometricReactor:
             value(m.fs.costing.stoichiometric_reactor.capital_cost_acid_addition)
             == 127.8
         )
-        assert pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3) == 11.76
+        assert pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3) == 10.02
         assert (
-            pytest.approx(value(m.fs.costing.total_operating_cost), rel=1e-3) == 0.3529
+            pytest.approx(value(m.fs.costing.total_operating_cost), rel=1e-3) ==  0.30065
         )
