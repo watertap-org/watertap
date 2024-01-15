@@ -696,7 +696,7 @@ def export_variables(model=None, exports=None, build_options=None, **kwargs):
         is_output=True,
         output_category="Operating costs",
     )
-    if hasattr(fs, "pretreatment"):
+    if hasattr(model.fs, "pretreatment"):
         exports.add(
             obj=model.fs.sludge_disposal_cost,
             name="WWTP sludge disposal",
