@@ -197,7 +197,7 @@ class StoichiometricReactorData(UnitModelBlockData):
             "dissolution_stoichiometric":
                 {
                     "component_name_1": stoichiometric_coeff,
-                    "component_name_2": stoichiometric_coeff
+                    "component_name_2": stoichiometric_coeff,
                 }
             },
         "reagent_name_2":
@@ -207,7 +207,7 @@ class StoichiometricReactorData(UnitModelBlockData):
             "dissolution_stoichiometric":
                 {
                     "component_name_1": stoichiometric_coeff,
-                    "component_name_2": stoichiometric_coeff
+                    "component_name_2": stoichiometric_coeff,
                 }
             },
         }
@@ -232,7 +232,7 @@ class StoichiometricReactorData(UnitModelBlockData):
             "precipitation_stoichiometric":
                 {
                     "component_name_1": stoichiometric_coeff,
-                    "component_name_2": stoichiometric_coeff
+                    "component_name_2": stoichiometric_coeff,
                 }
             },
         "precipitate_name_2":
@@ -241,11 +241,11 @@ class StoichiometricReactorData(UnitModelBlockData):
             "precipitation_stoichiometric":
                 {
                     "component_name_1": stoichiometric_coeff,
-                    "component_name_2": stoichiometric_coeff
+                    "component_name_2": stoichiometric_coeff,
                 }
             },
         }
-    """,
+        """,
         ),
     )
 
