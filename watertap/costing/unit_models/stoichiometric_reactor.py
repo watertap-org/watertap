@@ -23,14 +23,14 @@ from ..util import register_costing_parameter_block, make_capital_cost_var
 def build_stoichiometric_reactor_cost_param_block(blk):
     blk.capital_cost_softening = Param(
         initialize=374.9,
-        units=pyunits.USD_2018 / (pyunits.lb / pyunits.day),
+        units=pyunits.USD_2021 / (pyunits.lb / pyunits.day),
         mutable=True,
         doc="Cost for typical mid sized softening reactor",
     )
 
     blk.capital_cost_acid_addition = Param(
         initialize=127.8,
-        units=pyunits.USD_2018 / (pyunits.gallon / pyunits.day),
+        units=pyunits.USD_2021 / (pyunits.gallon / pyunits.day),
         doc="Cost for acid mixer",
     )
 
@@ -40,7 +40,6 @@ def build_stoichiometric_reactor_cost_param_block(blk):
     parameter_block_name="stoichiometric_reactor",
 )
 def cost_stoichiometric_reactor(blk):
-    t0 = blk.flowsheet().time.first()
     make_capital_cost_var(blk)
     blk.costing_package.add_cost_factor(blk, "TIC")
     if (
