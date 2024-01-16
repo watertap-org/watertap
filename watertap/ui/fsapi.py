@@ -231,15 +231,14 @@ class ModelOption(BaseModel):
                 return v
             else:
                 raise ValueError(f"'value' ({v}) not a valid float")
-            
         # check if values allowed is string
         elif allowed == "string":
             if isinstance(v, str):
                 return v
             else:
                 raise ValueError(f"'value' ({v}) not a valid string")
-            
-        else: # make sure v is in the list of values allowed
+        # values_allowed is a list. make sure v is in the list of values allowed
+        else:
             if v in allowed:
                 return v
             else:
