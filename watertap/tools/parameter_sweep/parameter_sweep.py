@@ -368,7 +368,7 @@ class _ParameterSweepBase(ABC):
                 )
             else:
                 global_combo_array = np.zeros((1, len(param_values)))
-            
+
             # populate array with sweep params
             for i, g_i in enumerate(single_idx):
                 global_combo_array[:, g_i] = single_samples[i]
