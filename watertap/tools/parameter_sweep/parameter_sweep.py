@@ -346,7 +346,7 @@ class _ParameterSweepBase(ABC):
             # Build a vector of discrete values for this parameter
             p = v.sample()
             param_values.append(p)
-            if p.shape[0] == 1:
+            if len(p) == 1:
                 single_samples.append(p[0])
                 single_idx.append(sample_i)
             else:
