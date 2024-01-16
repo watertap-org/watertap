@@ -261,7 +261,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
                 bounds=(1e-6, 1),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="The volumetric fraction from leakage",
+                doc="The volumetric leakage fraction of the high pressure side to the low pressure side",
             )
 
         if self.config.has_mixing:
@@ -271,7 +271,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
                 bounds=(1e-6, 1),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="The volumetric fraction from mixing effects",
+                doc="The volumetric mixing fraction of the high pressure side and low pressure side",
             )
 
         # Build control volume for high pressure side
