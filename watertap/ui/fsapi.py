@@ -197,8 +197,10 @@ class ModelOption(BaseModel):
     display_name: str = None
     description: str = None
     display_values: List[Any] = []
-    values_allowed: List[Any] = []
+    values_allowed: Union[str, List[Any]]
     value: Any = None
+    min_val: Union[None, int, float] = None
+    max_val: Union[None, int, float] = None
 
     @validator("display_name", always=True)
     @classmethod
@@ -218,11 +220,30 @@ class ModelOption(BaseModel):
     @classmethod
     def validate_value(cls, v, values):
         allowed = values.get("values_allowed", None)
-        # allowed = list(allowed.keys())
-        if v in allowed:
-            return v
-        else:
-            raise ValueError(f"'value' ({v}) not in allowed values: {allowed}")
+        # check if values allowed is int or float and ensure valid value
+        if allowed == "int":
+            if isinstance(v, int):
+                return v
+            else:
+                raise ValueError(f"'value' ({v}) not a valid integer")
+        elif allowed == "float":
+            if isinstance(v, int) or isinstance(v, float):
+                return v
+            else:
+                raise ValueError(f"'value' ({v}) not a valid float")
+            
+        # check if values allowed is string
+        elif allowed == "string":
+            if isinstance(v, str):
+                return v
+            else:
+                raise ValueError(f"'value' ({v}) not a valid string")
+            
+        else: # make sure v is in the list of values allowed
+            if v in allowed:
+                return v
+            else:
+                raise ValueError(f"'value' ({v}) not in allowed values: {allowed}")
 
 
 class FlowsheetExport(BaseModel):
@@ -611,6 +632,14 @@ class FlowsheetInterface:
             self.add_action("diagram", None)
 
         self._actions["custom_do_param_sweep_kwargs"] = custom_do_param_sweep_kwargs
+        self.fs_exp.add_option(
+            name="NumParallelWorkers",
+            display_name="Number of multi-processing workers",
+            values_allowed="int",
+            value=1,
+            max_val=16,
+            min_val=1,
+        )
 
     def build(self, **kwargs):
         """Build flowsheet
