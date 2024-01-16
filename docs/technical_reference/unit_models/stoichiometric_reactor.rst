@@ -14,10 +14,15 @@ The main assumptions of the implemented model are as follows:
 
 Introduction
 ------------
-This is a basic stoichiometric reactor designed to provide a simple mass balanced method for adding reactants and removing solids from a stream, for more comprehesive reactor models please use IDAES Stoichiometric reactor model (https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/stoichiometric_reactor.html). 
+This is a basic stoichiometric reactor designed to provide a simple mass balanced method for adding reactants and
+removing solids from a stream, for more comprehesive reactor models please use IDAES Stoichiometric
+reactor model (https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/stoichiometric_reactor.html). 
 
-The stoichiometric reactor is a basic unit operation designed to aid in modeling addition of reagent to a feed stream and removal of ions from a stream through precipitation. A basic example for using this model is the lime/soda ash softening process. 
-The reactor can be configured to include only dissolution of a reagent or precipitation of specific species, and both as shown in figure below.
+The stoichiometric reactor is a basic unit operation designed to aid in modeling 
+addition of reagent to a feed stream and removal of ions from a stream through precipitation.
+A basic example for using this model is the lime/soda ash softening process. 
+The reactor can be configured to include only dissolution of a 
+reagent or precipitation of specific species, and both as shown in figure below.
 
 .. figure:: ../../_static/unit_models/stoichiometric_reactor.png
     :width: 600
@@ -43,8 +48,11 @@ If precipitants are supplied
 
 Model Structure and usage
 -------------------------
-The stoichiometric reactor uses control volumes to perform the dissolution reaction and precipitation reaction, while a an IDAES separator is used to separate precipitated solids from the feed stream. The model should be used with MCAS property package.
-The user needs to specify how supplied reagent, and precipitant dissolve or precipitate out of the feed stream, using ions present in the feed. 
+The stoichiometric reactor uses control volumes to perform the dissolution reaction and 
+precipitation reaction, while a an IDAES separator is used to separate precipitated solids 
+from the feed stream. The model should be used with MCAS property package.
+The user needs to specify how supplied reagent, and precipitant dissolve or precipitate 
+out of the feed stream, using ions present in the feed. 
 
 Example dictionary for dissolving Soda ash and Lime into their ions  
 
@@ -122,26 +130,34 @@ Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Index", "Units"
    
-   "Reagent dose", 'reagent_dose','[reagent]','kg/:math:`\text{m}^3`'
-   "Reagent flow mass", 'flow_mass_reagent','[reagent]','kg/s'
-   "Flow mass of precipitant",'flow_mass_precipitate',[precipitant],'kg/s'
-   "Mass concentration of precipitant",'conc_mass_precipitate',[precipitant],'kg/:math:`\text{m}^3`'
-   "Fraction of solids in waste stream",  "waste_mass_frac_precipitate", None, fraction
+   "Reagent dose", reagent_dose,[reagent],kg/:math:`\text{m}^3`
+   "Reagent density", density_reagent,[reagent],kg/:math:`\text{m}^3`
+   "Reagent flow mass", flow_mass_reagent,[reagent],kg/s
+   "Reagent flow volume", flow_vol_reagent,[reagent],:math:`\text{m}^3`/s
+   "Stoichiometric coefficients for dissolution", dissolution_stoich_comp, "[reagent, :math:`j`]",dimensionless
+   "Flow mass of precipitant",flow_mass_precipitate,[precipitant],kg/s
+   "Mass concentration of precipitant",conc_mass_precipitate,[precipitant],kg/:math:`\text{m}^3`
+   "Stoichiometric coefficients for precipitation", precipitation_stoich_comp, "[precipitant, :math:`j`]",dimensionless
+   "Fraction of solids in waste stream",  waste_mass_frac_precipitate, None, fraction
+
    
 Costing method
 --------------
 
-Currently, the costing method is implemented for lime soda ash and acid addition which only include
-the capital cost of building the whole process. The capital cost of lime soda ash is a function of 
+Currently, the costing method is implemented for lime and soda ash softening and acidification which only include
+the capital cost of building the reactor. The capital cost of lime soda ash is a function of 
 total reagent mass being added to the softening process and is only valid when both precipitant and reagents are provided.
 While acid additon capital cost is only consutructed if only reagents are provided. Acid addition costing is 
 base on folume flow of acid per day. 
 
 .. math::
 
-      C_{capital}=C_{base capital value}*\sum{M_{reagent}}
+      C_{softening}=C_{base capital value}*\sum{M_{reagent}}
 
-Where default value C_{base capital value} is 374.9 $/lb of reagent/day, while for acid adition the cost is 127.8$/gallon of reagent/day
+      C_{acidification}=C_{base capital value}*\sum{Q_{reagent}}
+
+Where default value C_{basecapitalvalue} is 374.9 $/lb of reagent (soda ash + lime)/day, 
+while for acid adition the cost is 127.8$/gallon of reagent (HCl)/day
 
 To cost reagent dosing, user must manually register the mass flow of each reagent and supply
 a cost as follows
@@ -182,3 +198,8 @@ a cost as follows
       blk.soda_ash_cost,
       "soda_ash_cost",
    )
+
+Class Documentation
+-------------------
+
+* :mod:`watertap.unit_models.stoichiometric_reactor`

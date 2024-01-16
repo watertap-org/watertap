@@ -194,26 +194,26 @@ class StoichiometricReactorData(UnitModelBlockData):
         {
         "reagent_name_1":
         {
-            "mw": (value, units),
-            "density_reagent": (value, units),
-            "dissolution_stoichiometric":
-            {
-                "component_name_1": stoichiometric_coeff,
-                "component_name_2": stoichiometric_coeff,
-            }
+        "mw": (value, units),
+        "density_reagent": (value, units),
+        "dissolution_stoichiometric":
+        {
+        "component_name_1": stoichiometric_coeff,
+        "component_name_2": stoichiometric_coeff,
+        }
         },
         "reagent_name_2":
         {
-            "mw": (value, units),
-            "density_reagent": (value, units),
-            "dissolution_stoichiometric":
-            {
-                "component_name_1": stoichiometric_coeff,
-                "component_name_2": stoichiometric_coeff,
-            }
+        "mw": (value, units),
+        "density_reagent": (value, units),
+        "dissolution_stoichiometric":
+        {
+        "component_name_1": stoichiometric_coeff,
+        "component_name_2": stoichiometric_coeff,
+        }
         },
         }
-        
+
     """,
         ),
     )
@@ -233,21 +233,21 @@ class StoichiometricReactorData(UnitModelBlockData):
         {
         "precipitate_name_1":
         {
-            "mw": value,  # in kg/mol
-            "precipitation_stoichiometric":
-            {
-                "component_name_1": stoichiometric_coeff,
-                "component_name_2": stoichiometric_coeff,
-            }
+        "mw": (value, units), 
+        "precipitation_stoichiometric":
+        {
+        "component_name_1": stoichiometric_coeff,
+        "component_name_2": stoichiometric_coeff,
+        }
         },
         "precipitate_name_2":
         {
-            "mw": value,  # in kg/mol
-            "precipitation_stoichiometric":
-            {
-                "component_name_1": stoichiometric_coeff,
-                "component_name_2": stoichiometric_coeff,
-            }
+        "mw": (value, units),
+        "precipitation_stoichiometric":
+        {
+        "component_name_1": stoichiometric_coeff,
+        "component_name_2": stoichiometric_coeff,
+        }
         },
         }
 
@@ -374,7 +374,12 @@ class StoichiometricReactorData(UnitModelBlockData):
                 doc="Molecular weight of precipitate",
             )
             for p in self.precipitate_list:
-                self.mw_precipitate[p].fix(self.config.precipitate[p]["mw"])
+                self.mw_precipitate[p].fix(
+                    pyunits.convert(
+                        self.config.precipitate[p]["mw"],
+                        to_units=pyunits.kg / pyunits.mol,
+                    )
+                )
 
             self.precipitation_stoich_comp = Param(
                 self.precipitate_list,
