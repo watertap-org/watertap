@@ -186,35 +186,35 @@ class StoichiometricReactorData(UnitModelBlockData):
             domain=dict,
             description="Specification of reagents used in StoichiometricReactor process",
             doc="""A dict of reagents used in the StoichiometricReactor process
-    including their molecular weights, and dissolution stoichiometric coefficients for
-    the components defined in the property package in the following format:
+            including their molecular weights, and dissolution stoichiometric coefficients for
+            the components defined in the property package in the following format:
 
-    .. code-block:: python
+            .. code-block:: python
 
-        {
-        "reagent_name_1":
-        {
-        "mw": (value, units),
-        "density_reagent": (value, units),
-        "dissolution_stoichiometric":
-        {
-        "component_name_1": stoichiometric_coeff,
-        "component_name_2": stoichiometric_coeff,
-        }
-        },
-        "reagent_name_2":
-        {
-        "mw": (value, units),
-        "density_reagent": (value, units),
-        "dissolution_stoichiometric":
-        {
-        "component_name_1": stoichiometric_coeff,
-        "component_name_2": stoichiometric_coeff,
-        }
-        },
-        }
+                {
+                "reagent_name_1":
+                {
+                "mw": (value, units),
+                "density_reagent": (value, units),
+                "dissolution_stoichiometric":
+                {
+                "component_name_1": stoichiometric_coeff,
+                "component_name_2": stoichiometric_coeff,
+                }
+                },
+                "reagent_name_2":
+                {
+                "mw": (value, units),
+                "density_reagent": (value, units),
+                "dissolution_stoichiometric":
+                {
+                "component_name_1": stoichiometric_coeff,
+                "component_name_2": stoichiometric_coeff,
+                }
+                },
+                }
 
-    """,
+            """,
         ),
     )
 
@@ -224,34 +224,35 @@ class StoichiometricReactorData(UnitModelBlockData):
             default={},
             domain=dict,
             description="Specification of precipitates formed in StoichiometricReactor process",
-            doc="""A dict of precipitates formed in the StoichiometricReactor process
-    including their molecular weights, and precipitation stoichiometric coefficients for
-    the components defined in the property package in the following format:
+            doc="""
+            A dict of precipitates formed in the StoichiometricReactor process
+            including their molecular weights, and precipitation stoichiometric coefficients for
+            the components defined in the property package in the following format:
 
-    .. code-block:: python
+            .. code-block:: python
 
-        {
-        "precipitate_name_1":
-        {
-        "mw": (value, units), 
-        "precipitation_stoichiometric":
-        {
-        "component_name_1": stoichiometric_coeff,
-        "component_name_2": stoichiometric_coeff,
-        }
-        },
-        "precipitate_name_2":
-        {
-        "mw": (value, units),
-        "precipitation_stoichiometric":
-        {
-        "component_name_1": stoichiometric_coeff,
-        "component_name_2": stoichiometric_coeff,
-        }
-        },
-        }
+                {
+                "precipitate_name_1":
+                {
+                "mw": (value, units), 
+                "precipitation_stoichiometric":
+                {
+                "component_name_1": stoichiometric_coeff,
+                "component_name_2": stoichiometric_coeff,
+                }
+                },
+                "precipitate_name_2":
+                {
+                "mw": (value, units),
+                "precipitation_stoichiometric":
+                {
+                "component_name_1": stoichiometric_coeff,
+                "component_name_2": stoichiometric_coeff,
+                }
+                },
+                }
 
-    """,
+            """,
         ),
     )
 
