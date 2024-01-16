@@ -328,13 +328,19 @@ class _ParameterSweepBase(ABC):
     def _create_global_combo_array(self, d, sampling_type):
         num_var_params = len(d)
         param_values = []
-        # if users pusses in many samples, it will create a large
-        # multi dimentional array when sampling type is FIXED,
-        # so here we track single valued samples and multi valued samples
-        # meshgrid only those that have more then one vlaues, and then
-        # merge all samples into a 2D array for running PS sweep.
-        mix_mesh_idx, mix_mesh_samples = [], []
-        single_idx, single_samples = [], []
+        # if users provides many parameters to sweep over, it will create a large
+        # multi dimensional array when sampling type is FIXED,
+        # so here we track single value samples and multi value sample,
+        # we meshgrid only those that have more then one value, and then
+        # merge all samples into a single 2D array for running PS sweep.
+        mix_mesh_idx, mix_mesh_samples = (
+            [],
+            [],
+        )  # tracking params with multiple sweep values
+        single_idx, single_samples = (
+            [],
+            [],
+        )  # tracking params with only a single sweep values
         sample_i = 0  # keeps track of sample order
         for k, v in d.items():
             # Build a vector of discrete values for this parameter
@@ -348,7 +354,8 @@ class _ParameterSweepBase(ABC):
                 mix_mesh_idx.append(sample_i)
             sample_i += 1
         if sampling_type == SamplingType.FIXED:
-            # Form an array with every possible combination of parameter values
+            # Form an array with every possible combination of parameter values if
+            # we have any samples with more then one sweep value
             if len(mix_mesh_idx) > 0:
                 temp_global_combo_array = np.array(
                     np.meshgrid(*mix_mesh_samples, indexing="ij")
@@ -361,13 +368,14 @@ class _ParameterSweepBase(ABC):
                 )
             else:
                 global_combo_array = np.zeros((1, len(param_values)))
-
+            
+            # populate array with sweep params
             for i, g_i in enumerate(single_idx):
                 global_combo_array[:, g_i] = single_samples[i]
-          
+
             for i, g_i in enumerate(mix_mesh_idx):
                 global_combo_array[:, g_i] = temp_global_combo_array[:, i]
-           
+
         elif sampling_type == SamplingType.RANDOM:
             sorting = np.argsort(param_values[0])
             global_combo_array = np.vstack(param_values).T
