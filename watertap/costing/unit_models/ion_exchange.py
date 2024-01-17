@@ -313,15 +313,6 @@ def cost_ion_exchange(blk):
             to_units=pyo.units.ton / blk.costing_package.base_period,
         )
     else:
-        blk.backwash_tank_vol = pyo.Expression(
-            expr=pyo.units.convert(
-                (
-                    blk.unit_model.bw_flow * blk.unit_model.t_bw
-                    + blk.unit_model.rinse_flow * blk.unit_model.t_rinse
-                ),
-                to_units=pyo.units.gal,
-            )
-        )
 
         blk.regeneration_tank_vol = pyo.Expression(
             expr=pyo.units.convert(
@@ -329,15 +320,7 @@ def cost_ion_exchange(blk):
                 to_units=pyo.units.gal,
             )
         )
-        blk.capital_cost_backwash_tank_constraint = pyo.Constraint(
-            expr=blk.capital_cost_backwash_tank
-            == pyo.units.convert(
-                ion_exchange_params.backwash_tank_A_coeff
-                * (blk.backwash_tank_vol / pyo.units.gallon)
-                ** ion_exchange_params.backwash_tank_b_coeff,
-                to_units=blk.costing_package.base_currency,
-            )
-        )
+
         blk.capital_cost_regen_tank_constraint = pyo.Constraint(
             expr=blk.capital_cost_regen_tank
             == pyo.units.convert(
@@ -347,6 +330,26 @@ def cost_ion_exchange(blk):
                 to_units=blk.costing_package.base_currency,
             )
         )
+
+    blk.backwash_tank_vol = pyo.Expression(
+        expr=pyo.units.convert(
+            (
+                blk.unit_model.bw_flow * blk.unit_model.t_bw
+                + blk.unit_model.rinse_flow * blk.unit_model.t_rinse
+            ),
+            to_units=pyo.units.gal,
+        )
+    )
+
+    blk.capital_cost_backwash_tank_constraint = pyo.Constraint(
+        expr=blk.capital_cost_backwash_tank
+        == pyo.units.convert(
+            ion_exchange_params.backwash_tank_A_coeff
+            * (blk.backwash_tank_vol / pyo.units.gallon)
+            ** ion_exchange_params.backwash_tank_b_coeff,
+            to_units=blk.costing_package.base_currency,
+        )
+    )
 
     blk.costing_package.add_cost_factor(blk, "TIC")
     blk.capital_cost_constraint = pyo.Constraint(
@@ -449,15 +452,13 @@ def cost_ion_exchange(blk):
             blk.flow_mass_regen_soln, blk.unit_model.config.regenerant
         )
 
-    if blk.unit_model.config.regenerant == "single_use":
-        power_expr = blk.unit_model.main_pump_power
-    else:
-        power_expr = (
-            blk.unit_model.main_pump_power
-            + blk.unit_model.regen_pump_power
-            + blk.unit_model.bw_pump_power
-            + blk.unit_model.rinse_pump_power
-        )
+    power_expr = (
+        blk.unit_model.main_pump_power
+        + blk.unit_model.bw_pump_power
+        + blk.unit_model.rinse_pump_power
+    )
+    if blk.unit_model.config.regenerant != "single_use":
+        power_expr += blk.unit_model.regen_pump_power
 
     blk.total_pumping_power_constr = pyo.Constraint(
         expr=blk.total_pumping_power == power_expr
