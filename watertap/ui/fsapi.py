@@ -652,15 +652,6 @@ class FlowsheetInterface:
             self.add_action("diagram", None)
 
         self._actions["custom_do_param_sweep_kwargs"] = custom_do_param_sweep_kwargs
-        self.fs_exp.add_option(
-            name="NumParallelWorkers",
-            category="Sweep Options",
-            display_name="Number of multi-processing workers for sensitivity analysis",
-            values_allowed="int",
-            value=1,
-            max_val=16,
-            min_val=1,
-        )
 
     def build(self, **kwargs):
         """Build flowsheet
