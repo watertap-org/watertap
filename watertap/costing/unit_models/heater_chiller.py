@@ -141,10 +141,14 @@ def cost_chiller(blk, cost_electricity_flow=True):
     """
     t0 = blk.flowsheet().time.first()
     blk.effective_heat_duty = pyo.Var(
-        domain=pyo.NonNegativeReals, initialize=0, units=pyo.units.watt
+        blk.flowsheet().time,
+        domain=pyo.NonNegativeReals, 
+        initialize=0, 
+        units=pyo.units.watt,
+        doc="Effective chiller heat duty (positive value) "
     )
     blk.effective_heat_duty_constraint = pyo.Constraint(
-        expr=blk.effective_heat_duty == -blk.unit_model.heat_duty[t0]
+        expr=blk.effective_heat_duty[t0] == -blk.unit_model.heat_duty[t0]
     )
 
     make_capital_cost_var(blk)
@@ -155,7 +159,7 @@ def cost_chiller(blk, cost_electricity_flow=True):
         * pyo.units.convert(
             blk.costing_package.chiller.cost
             * pyo.units.convert(
-                blk.effective_heat_duty / blk.costing_package.chiller.COP,
+                blk.effective_heat_duty[t0] / blk.costing_package.chiller.COP,
                 to_units=pyo.units.W,
             ),
             to_units=blk.costing_package.base_currency,
@@ -164,7 +168,7 @@ def cost_chiller(blk, cost_electricity_flow=True):
     if cost_electricity_flow:
         blk.costing_package.cost_flow(
             pyo.units.convert(
-                blk.effective_heat_duty / blk.costing_package.chiller.COP,
+                blk.effective_heat_duty[t0] / blk.costing_package.chiller.COP,
                 to_units=pyo.units.kW,
             ),
             "electricity",
