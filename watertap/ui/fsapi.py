@@ -194,13 +194,14 @@ class ModelOption(BaseModel):
     """An option for building/running the model."""
 
     name: str
+    category: str = "Build Options"
     display_name: str = None
     description: str = None
     display_values: List[Any] = []
     values_allowed: Union[str, List[Any]]
-    value: Any = None
     min_val: Union[None, int, float] = None
     max_val: Union[None, int, float] = None
+    value: Any = None
 
     @validator("display_name", always=True)
     @classmethod
@@ -223,12 +224,26 @@ class ModelOption(BaseModel):
         # check if values allowed is int or float and ensure valid value
         if allowed == "int":
             if isinstance(v, int):
-                return v
+                min_val = values.get("min_val", float("-inf"))
+                max_val = values.get("max_val", float("-inf"))
+                if v >= min_val and v <= max_val:
+                    return v
+                else:
+                    raise ValueError(
+                        f"'value' ({v}) not within expected range of [{min_val}-{max_val}]"
+                    )
             else:
                 raise ValueError(f"'value' ({v}) not a valid integer")
         elif allowed == "float":
             if isinstance(v, int) or isinstance(v, float):
-                return v
+                min_val = values.get("min_val", float("-inf"))
+                max_val = values.get("max_val", float("-inf"))
+                if v >= min_val and v <= max_val:
+                    return v
+                else:
+                    raise ValueError(
+                        f"'value' ({v}) not within expected range of [{min_val}-{max_val}]"
+                    )
             else:
                 raise ValueError(f"'value' ({v}) not a valid float")
         # check if values allowed is string
@@ -238,11 +253,15 @@ class ModelOption(BaseModel):
             else:
                 raise ValueError(f"'value' ({v}) not a valid string")
         # values_allowed is a list. make sure v is in the list of values allowed
-        else:
+        elif isinstance(allowed, list):
             if v in allowed:
                 return v
             else:
                 raise ValueError(f"'value' ({v}) not in allowed values: {allowed}")
+        else:
+            raise ValueError(
+                f"{allowed} does not match the following criteria for values_allowed: must be either a list of possible values, or one of 'string', 'int', 'float'."
+            )
 
 
 class FlowsheetExport(BaseModel):
@@ -633,7 +652,8 @@ class FlowsheetInterface:
         self._actions["custom_do_param_sweep_kwargs"] = custom_do_param_sweep_kwargs
         self.fs_exp.add_option(
             name="NumParallelWorkers",
-            display_name="Number of multi-processing workers",
+            category="Sweep Options",
+            display_name="Number of multi-processing workers for sensitivity analysis",
             values_allowed="int",
             value=1,
             max_val=16,
