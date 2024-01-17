@@ -85,9 +85,7 @@ def test_config():
     assert (
         m.fs.unit.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
     )
-    assert (
-        m.fs.unit.config.membrane_module_type is ModuleType.flat_sheet
-    )
+    assert m.fs.unit.config.membrane_module_type is ModuleType.flat_sheet
     assert m.fs.unit.config.pressure_change_type == PressureChangeType.fixed_per_stage
 
 

@@ -85,9 +85,7 @@ def test_config():
     assert (
         m.fs.unit.config.mass_transfer_coefficient is MassTransferCoefficient.calculated
     )
-    assert (
-        m.fs.unit.config.membrane_module_type is ModuleType.flat_sheet
-    )
+    assert m.fs.unit.config.membrane_module_type is ModuleType.flat_sheet
     assert not m.fs.unit.config.has_full_reporting
 
 

@@ -293,17 +293,19 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                 @self.Constraint(doc="Total Membrane area")
                 def eq_area(b):
                     return b.area == b.length * b.width
+
             elif self.config.membrane_module_type == ModuleType.spiral_wound:
                 # Membrane area equation
                 @self.Constraint(doc="Total Membrane area")
                 def eq_area(b):
                     return b.area == b.length * 2 * b.width
+
             else:
                 raise ConfigurationError(
-                    "Unsupported membrane module type: {}".format(self.config.membrane_module_type)
+                    "Unsupported membrane module type: {}".format(
+                        self.config.membrane_module_type
+                    )
                 )
-
-
 
     def _add_flux_balance(self):
 

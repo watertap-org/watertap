@@ -70,10 +70,11 @@ class TransportModel(Enum):
     SD = auto()
     SKK = auto()
 
+
 class ModuleType(Enum):
     """
-    flat_sheet: 
-    spiral_wound: 
+    flat_sheet:
+    spiral_wound:
     """
 
     flat_sheet = auto()
