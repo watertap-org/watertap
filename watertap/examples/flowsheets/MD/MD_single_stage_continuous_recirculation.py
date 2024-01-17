@@ -59,6 +59,8 @@ from watertap.costing.unit_models.heater_chiller import (
 )
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
+__author__ = "Elmira Shamlou"
+
 
 def main():
     solver = get_solver()
