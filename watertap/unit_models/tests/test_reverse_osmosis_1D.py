@@ -33,7 +33,7 @@ from watertap.unit_models.reverse_osmosis_1D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
-from watertap.unit_models.reverse_osmosis_base import TransportModel
+from watertap.unit_models.reverse_osmosis_base import TransportModel, ModuleType
 import watertap.property_models.NaCl_prop_pack as props
 
 from idaes.core.solvers import get_solver
@@ -70,7 +70,7 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis1D(property_package=m.fs.properties)
 
-    assert len(m.fs.unit.config) == 19
+    assert len(m.fs.unit.config) == 20
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
@@ -84,6 +84,9 @@ def test_config():
     )
     assert (
         m.fs.unit.config.mass_transfer_coefficient is MassTransferCoefficient.calculated
+    )
+    assert (
+        m.fs.unit.config.membrane_module_type is ModuleType.flat_sheet
     )
     assert not m.fs.unit.config.has_full_reporting
 

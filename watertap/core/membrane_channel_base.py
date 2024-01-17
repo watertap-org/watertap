@@ -70,6 +70,15 @@ class TransportModel(Enum):
     SD = auto()
     SKK = auto()
 
+class ModuleType(Enum):
+    """
+    flat_sheet: 
+    spiral_wound: 
+    """
+
+    flat_sheet = auto()
+    spiral_wound = auto()
+
 
 class PressureChangeType(Enum):
     """
@@ -256,6 +265,24 @@ CONFIG_Template.declare(
 
         "``TransportModel.SD``", "Solution-diffusion model for describing water and salt transport for most membrane types"
         "``TransportModel.SKK``", "Speigler-Kedem-Katchalsky model for describing water and salt transport"
+
+        """,
+    ),
+)
+
+CONFIG_Template.declare(
+    "membrane_module_type",
+    ConfigValue(
+        default=ModuleType.flat_sheet,
+        domain=In(ModuleType),
+        description="Membrane geometry for flat-sheet or spiral-wound",
+        doc="""
+        Options to account for geometry differences between flat sheet and spiral wound membranes.
+
+        **default** - ``ModuleType.flat_sheet``
+
+        "``ModuleType.flat_sheet``", ""
+        "``ModuleType.spiral_wound``", ""
 
         """,
     ),

@@ -33,7 +33,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
     PressureChangeType,
 )
 
-from watertap.unit_models.reverse_osmosis_base import TransportModel
+from watertap.unit_models.reverse_osmosis_base import TransportModel, ModuleType
 
 import watertap.property_models.NaCl_prop_pack as props
 
@@ -69,7 +69,7 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
-    assert len(m.fs.unit.config) == 14
+    assert len(m.fs.unit.config) == 15
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -84,6 +84,9 @@ def test_config():
     )
     assert (
         m.fs.unit.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
+    )
+    assert (
+        m.fs.unit.config.membrane_module_type is ModuleType.flat_sheet
     )
     assert m.fs.unit.config.pressure_change_type == PressureChangeType.fixed_per_stage
 
