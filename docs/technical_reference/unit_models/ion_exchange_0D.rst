@@ -318,8 +318,8 @@ Equations and Relationships
    "Backwash pump power", ":math:`P_{bw} = \frac{g \rho_{in} 0.70325p_{drop}Q_{bw}}{\eta}`"
    "Pressure drop (T = 20C)", ":math:`p_{drop} = Z(p_{drop,A} + p_{drop,B}u_{bed} + p_{drop,C}u_{bed}^{2})`"
    "Rinse time", ":math:`t_{rinse} = EBCT N_{rinse}`"
-   "Cycle time", ":math:`t_{cycle} = t_{break} + t_{waste}`"
    "Waste time", ":math:`t_{waste} = t_{regen} + t_{bw} + t_{rinse}`"
+   "Cycle time", ":math:`t_{cycle} = t_{break} + t_{waste}`"
    "Reynolds number", ":math:`Re = \frac{u_{bed}d}{\mu}`"
    "Schmidt number", ":math:`Sc = \frac{\mu}{D}`"
    "Sherwood number", ":math:`Sh = 2.4 \epsilon^{0.66} Re^{0.34} Sc^{0.33}`"
@@ -455,10 +455,11 @@ disposal costs are calculated as a function of the annual mass of resin replaced
 Where :math:`M_{res}` is the resin mass for a single bed and :math:`\dot{v}_{regen}` is the volumetric flow of regenerant solution. If ``hazardous_waste`` is set to ``False``,
 :math:`C_{op,haz} = 0`
 
-The total energy consumed by the unit is the summation of the power required for each of the booster pump, backwashing pump, regeneration pump, and rinsing pump:
+The total energy consumed by the unit is the summation of the power required for each of the booster pump, backwashing pump, regeneration pump, and rinsing pump. Each is scaled 
+by the total time required for each step:
 
 .. math::
-    P_{tot} = P_{main} + P_{bw} + P_{regen} + P_{rinse}
+    P_{tot} = \cfrac{P_{main} t_{break} + P_{bw} t_{bw} + P_{regen} t_{regen} + P_{rinse} t_{rinse}}{t_{cycle}} 
 
 If the user chooses ``single_use`` for the ``regenerant`` configuration keyword, there is no cost for regeneration solution:
 
@@ -486,7 +487,7 @@ Otherwise, :math:`C_{op,haz} = 0` as before.
 Lastly, the total energy consumed by the unit for ``single_use`` configuration includes the booster pump, backwashing pump, and rinsing pump:
 
 .. math::
-    P_{tot} = P_{main} + P_{bw} + P_{rinse}
+    P_{tot} = \cfrac{P_{main} t_{break} + P_{bw} t_{bw} + P_{rinse} t_{rinse}}{t_{cycle}} 
 
 References
 ----------
