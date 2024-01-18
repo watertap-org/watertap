@@ -51,7 +51,6 @@ def build_sweep_params(m, num_samples=1, scenario="A_comp_vs_LCOW"):
 
 
 def run_parameter_sweep(num_samples=100, num_procs=1):
-
     ps1, kwargs_dict1 = create_parameter_sweep_object(
         num_samples, num_procs, parallel_backend="ConcurrentFutures"
     )
@@ -103,7 +102,6 @@ def create_parameter_sweep_object(
     num_procs,
     parallel_backend="ConcurrentFutures",
 ):
-
     solver = get_solver()
     kwargs_dict = {
         "debugging_data_dir": None,
@@ -149,7 +147,6 @@ def create_recursive_parameter_sweep_object(
     num_procs,
     parallel_backend="ConcurrentFutures",
 ):
-
     solver = get_solver()
     kwargs_dict = {
         "debugging_data_dir": None,
@@ -195,19 +192,20 @@ def create_differential_parameter_sweep_object(
     num_procs,
     parallel_backend="ConcurrentFutures",
 ):
-
     solver = get_solver()
     m = build_model(read_model_defauls_from_file=False)
 
-    differential_sweep_specs = {
-        "A_comp": {
-            "diff_mode": "sum",
-            "diff_sample_type": UniformSample,
-            "relative_lb": 0.01,
-            "relative_ub": 0.01,
-            "pyomo_object": m.fs.RO.A_comp,
+    def build_spec(model):
+        differential_sweep_specs = {
+            "A_comp": {
+                "diff_mode": "sum",
+                "diff_sample_type": UniformSample,
+                "relative_lb": 0.01,
+                "relative_ub": 0.01,
+                "pyomo_object": model.fs.RO.A_comp,
+            }
         }
-    }
+        return differential_sweep_specs
 
     kwargs_dict = {
         "debugging_data_dir": None,
@@ -228,8 +226,8 @@ def create_differential_parameter_sweep_object(
         "build_outputs_kwargs": {},
         "optimize_function": optimize,
         "optimize_kwargs": {"solver": solver, "check_termination": False},
-        "num_diff_samples": 2,
-        "differential_sweep_specs": differential_sweep_specs,
+        "num_diff_samples": 1,
+        "build_differential_sweep_specs": build_spec,
         "initialize_function": None,
         "update_sweep_params_before_init": False,
         "initialize_kwargs": {},
@@ -252,7 +250,6 @@ def create_differential_parameter_sweep_object(
 
 
 if __name__ == "__main__":
-
     import sys
     import time
     import numpy as np

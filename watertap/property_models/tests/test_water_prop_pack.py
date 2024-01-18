@@ -20,7 +20,7 @@ from watertap.property_models.tests.property_test_harness import (
 )
 
 # -----------------------------------------------------------------------------
-class TestSeawaterProperty_idaes(PropertyTestHarness_idaes):
+class TestWaterProperty_idaes(PropertyTestHarness_idaes):
     def configure(self):
         self.prop_pack = props.WaterParameterBlock
         self.param_args = {}
@@ -28,7 +28,7 @@ class TestSeawaterProperty_idaes(PropertyTestHarness_idaes):
         self.has_density_terms = False
 
 
-class TestSeawaterProperty(PropertyTestHarness):
+class TestWaterProperty(PropertyTestHarness):
     def configure(self):
         self.prop_pack = props.WaterParameterBlock
         self.param_args = {}
@@ -37,8 +37,8 @@ class TestSeawaterProperty(PropertyTestHarness):
             ("flow_mass_phase_comp", ("Vap", "H2O")): 1,
         }
         self.stateblock_statistics = {
-            "number_variables": 20,
-            "number_total_constraints": 16,
+            "number_variables": 22,
+            "number_total_constraints": 18,
             "number_unused_variables": 0,
             "default_degrees_of_freedom": 4,
         }  # 4 state vars
@@ -56,11 +56,13 @@ class TestSeawaterProperty(PropertyTestHarness):
             ("dh_vap_mass", None): 2.442e6,
             ("cp_mass_phase", "Liq"): 4.187e3,
             ("cp_mass_phase", "Vap"): 1.865e3,
+            ("visc_d_phase", "Liq"): 8.901e-4,
+            ("therm_cond_phase", "Liq"): 0.6105,
         }
 
 
 @pytest.mark.component
-class TestSeawaterPropertySolution_1(PropertyRegressionTest):
+class TestWaterPropertySolution_1(PropertyRegressionTest):
     def configure(self):
         self.prop_pack = props.WaterParameterBlock
         self.param_args = {}
@@ -92,11 +94,13 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
             ("dh_vap_mass", None): 2.382e6,
             ("cp_mass_phase", "Liq"): 4.181e3,
             ("cp_mass_phase", "Vap"): 1.871e3,
+            ("visc_d_phase", "Liq"): 5.466e-4,
+            ("therm_cond_phase", "Liq"): 0.6404,
         }
 
 
 @pytest.mark.component
-class TestSeawaterPropertySolution_2(PropertyRegressionTest):
+class TestWaterPropertySolution_2(PropertyRegressionTest):
     def configure(self):
         self.prop_pack = props.WaterParameterBlock
         self.param_args = {}
@@ -128,4 +132,6 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
             ("dh_vap_mass", None): 2.257e6,
             ("cp_mass_phase", "Liq"): 4.215e3,
             ("cp_mass_phase", "Vap"): 1.890e3,
+            ("visc_d_phase", "Liq"): 2.819e-4,
+            ("therm_cond_phase", "Liq"): 0.6756,
         }

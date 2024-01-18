@@ -411,6 +411,84 @@ sweep_tests:
     pressure_exchanger:
       sim_cases:
         case_a:
+          fixed_samples:
+            simulation_setup:
+              build_defaults:
+                erd_type: pressure_exchanger
+              diff_params: {}
+              diff_samples: 0
+              expected_num_samples: 3
+              force_rerun: true
+              h5dir: sweep_tests/erd_type/pressure_exchanger/sim_cases/case_a/fixed_samples
+              init_defaults:
+                erd_type: pump_as_turbine
+              min_num_samples: 3
+              num_samples: 3
+              optimize_defaults: {}
+              original_options_dict:
+                build_defaults:
+                  erd_type: pump_as_turbine
+                build_loop:
+                  erd_type:
+                  - pump_as_turbine
+                  - pressure_exchanger
+                  init_loop:
+                    sim_cases:
+                      case_a:
+                        erd_type: pump_as_turbine
+                      case_b:
+                        erd_type: pressure_exchanger
+                    sweep_param_loop:
+                      fixed_samples:
+                        array:
+                        - 20
+                        - 25
+                        - 30
+                        expected_num_samples: 3
+                        force_rerun: true
+                        min_num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: PredeterminedRandomSample
+                      membrane_cost:
+                        expected_num_samples: 20
+                        force_rerun: true
+                        lower_limit: 20
+                        min_num_samples: 10
+                        num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: LinearSample
+                        upper_limit: 30
+                      membrane_group:
+                        expected_num_samples: 20
+                        factor_membrane_replacement:
+                          lower_limit: 0.15
+                          num_samples: 2
+                          param: fs.costing.reverse_osmosis.factor_membrane_replacement
+                          type: UniformSample
+                          upper_limit: 0.2
+                        force_rerun: true
+                        membrane_cost:
+                          lower_limit: 25
+                          num_samples: 2
+                          param: fs.costing.reverse_osmosis.membrane_cost
+                          type: UniformSample
+                          upper_limit: 30
+                        min_num_samples: 10
+                initialize_before_sweep: true
+                number_of_subprocesses: 10
+                parallel_back_end: RayIo
+                update_sweep_params_before_init: true
+              sweep_params:
+                fs.costing.reverse_osmosis.membrane_cost:
+                  array:
+                  - 20
+                  - 25
+                  - 30
+                  expected_num_samples: 3
+                  force_rerun: true
+                  min_num_samples: 3
+                  param: fs.costing.reverse_osmosis.membrane_cost
+                  type: PredeterminedRandomSample
           membrane_cost:
             simulation_setup:
               build_defaults:
@@ -439,6 +517,16 @@ sweep_tests:
                       case_b:
                         erd_type: pressure_exchanger
                     sweep_param_loop:
+                      fixed_samples:
+                        array:
+                        - 20
+                        - 25
+                        - 30
+                        expected_num_samples: 3
+                        force_rerun: true
+                        min_num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: PredeterminedRandomSample
                       membrane_cost:
                         expected_num_samples: 20
                         force_rerun: true
@@ -506,6 +594,16 @@ sweep_tests:
                       case_b:
                         erd_type: pressure_exchanger
                     sweep_param_loop:
+                      fixed_samples:
+                        array:
+                        - 20
+                        - 25
+                        - 30
+                        expected_num_samples: 3
+                        force_rerun: true
+                        min_num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: PredeterminedRandomSample
                       membrane_cost:
                         expected_num_samples: 20
                         force_rerun: true
@@ -549,6 +647,84 @@ sweep_tests:
                   type: UniformSample
                   upper_limit: 30
         case_b:
+          fixed_samples:
+            simulation_setup:
+              build_defaults:
+                erd_type: pressure_exchanger
+              diff_params: {}
+              diff_samples: 0
+              expected_num_samples: 3
+              force_rerun: true
+              h5dir: sweep_tests/erd_type/pressure_exchanger/sim_cases/case_b/fixed_samples
+              init_defaults:
+                erd_type: pressure_exchanger
+              min_num_samples: 3
+              num_samples: 3
+              optimize_defaults: {}
+              original_options_dict:
+                build_defaults:
+                  erd_type: pump_as_turbine
+                build_loop:
+                  erd_type:
+                  - pump_as_turbine
+                  - pressure_exchanger
+                  init_loop:
+                    sim_cases:
+                      case_a:
+                        erd_type: pump_as_turbine
+                      case_b:
+                        erd_type: pressure_exchanger
+                    sweep_param_loop:
+                      fixed_samples:
+                        array:
+                        - 20
+                        - 25
+                        - 30
+                        expected_num_samples: 3
+                        force_rerun: true
+                        min_num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: PredeterminedRandomSample
+                      membrane_cost:
+                        expected_num_samples: 20
+                        force_rerun: true
+                        lower_limit: 20
+                        min_num_samples: 10
+                        num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: LinearSample
+                        upper_limit: 30
+                      membrane_group:
+                        expected_num_samples: 20
+                        factor_membrane_replacement:
+                          lower_limit: 0.15
+                          num_samples: 2
+                          param: fs.costing.reverse_osmosis.factor_membrane_replacement
+                          type: UniformSample
+                          upper_limit: 0.2
+                        force_rerun: true
+                        membrane_cost:
+                          lower_limit: 25
+                          num_samples: 2
+                          param: fs.costing.reverse_osmosis.membrane_cost
+                          type: UniformSample
+                          upper_limit: 30
+                        min_num_samples: 10
+                initialize_before_sweep: true
+                number_of_subprocesses: 10
+                parallel_back_end: RayIo
+                update_sweep_params_before_init: true
+              sweep_params:
+                fs.costing.reverse_osmosis.membrane_cost:
+                  array:
+                  - 20
+                  - 25
+                  - 30
+                  expected_num_samples: 3
+                  force_rerun: true
+                  min_num_samples: 3
+                  param: fs.costing.reverse_osmosis.membrane_cost
+                  type: PredeterminedRandomSample
           membrane_cost:
             simulation_setup:
               build_defaults:
@@ -577,6 +753,16 @@ sweep_tests:
                       case_b:
                         erd_type: pressure_exchanger
                     sweep_param_loop:
+                      fixed_samples:
+                        array:
+                        - 20
+                        - 25
+                        - 30
+                        expected_num_samples: 3
+                        force_rerun: true
+                        min_num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: PredeterminedRandomSample
                       membrane_cost:
                         expected_num_samples: 20
                         force_rerun: true
@@ -644,6 +830,16 @@ sweep_tests:
                       case_b:
                         erd_type: pressure_exchanger
                     sweep_param_loop:
+                      fixed_samples:
+                        array:
+                        - 20
+                        - 25
+                        - 30
+                        expected_num_samples: 3
+                        force_rerun: true
+                        min_num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: PredeterminedRandomSample
                       membrane_cost:
                         expected_num_samples: 20
                         force_rerun: true
@@ -689,6 +885,84 @@ sweep_tests:
     pump_as_turbine:
       sim_cases:
         case_a:
+          fixed_samples:
+            simulation_setup:
+              build_defaults:
+                erd_type: pump_as_turbine
+              diff_params: {}
+              diff_samples: 0
+              expected_num_samples: 3
+              force_rerun: true
+              h5dir: sweep_tests/erd_type/pump_as_turbine/sim_cases/case_a/fixed_samples
+              init_defaults:
+                erd_type: pump_as_turbine
+              min_num_samples: 3
+              num_samples: 3
+              optimize_defaults: {}
+              original_options_dict:
+                build_defaults:
+                  erd_type: pump_as_turbine
+                build_loop:
+                  erd_type:
+                  - pump_as_turbine
+                  - pressure_exchanger
+                  init_loop:
+                    sim_cases:
+                      case_a:
+                        erd_type: pump_as_turbine
+                      case_b:
+                        erd_type: pressure_exchanger
+                    sweep_param_loop:
+                      fixed_samples:
+                        array:
+                        - 20
+                        - 25
+                        - 30
+                        expected_num_samples: 3
+                        force_rerun: true
+                        min_num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: PredeterminedRandomSample
+                      membrane_cost:
+                        expected_num_samples: 20
+                        force_rerun: true
+                        lower_limit: 20
+                        min_num_samples: 10
+                        num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: LinearSample
+                        upper_limit: 30
+                      membrane_group:
+                        expected_num_samples: 20
+                        factor_membrane_replacement:
+                          lower_limit: 0.15
+                          num_samples: 2
+                          param: fs.costing.reverse_osmosis.factor_membrane_replacement
+                          type: UniformSample
+                          upper_limit: 0.2
+                        force_rerun: true
+                        membrane_cost:
+                          lower_limit: 25
+                          num_samples: 2
+                          param: fs.costing.reverse_osmosis.membrane_cost
+                          type: UniformSample
+                          upper_limit: 30
+                        min_num_samples: 10
+                initialize_before_sweep: true
+                number_of_subprocesses: 10
+                parallel_back_end: RayIo
+                update_sweep_params_before_init: true
+              sweep_params:
+                fs.costing.reverse_osmosis.membrane_cost:
+                  array:
+                  - 20
+                  - 25
+                  - 30
+                  expected_num_samples: 3
+                  force_rerun: true
+                  min_num_samples: 3
+                  param: fs.costing.reverse_osmosis.membrane_cost
+                  type: PredeterminedRandomSample
           membrane_cost:
             simulation_setup:
               build_defaults:
@@ -717,6 +991,16 @@ sweep_tests:
                       case_b:
                         erd_type: pressure_exchanger
                     sweep_param_loop:
+                      fixed_samples:
+                        array:
+                        - 20
+                        - 25
+                        - 30
+                        expected_num_samples: 3
+                        force_rerun: true
+                        min_num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: PredeterminedRandomSample
                       membrane_cost:
                         expected_num_samples: 20
                         force_rerun: true
@@ -784,6 +1068,16 @@ sweep_tests:
                       case_b:
                         erd_type: pressure_exchanger
                     sweep_param_loop:
+                      fixed_samples:
+                        array:
+                        - 20
+                        - 25
+                        - 30
+                        expected_num_samples: 3
+                        force_rerun: true
+                        min_num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: PredeterminedRandomSample
                       membrane_cost:
                         expected_num_samples: 20
                         force_rerun: true
@@ -827,6 +1121,84 @@ sweep_tests:
                   type: UniformSample
                   upper_limit: 30
         case_b:
+          fixed_samples:
+            simulation_setup:
+              build_defaults:
+                erd_type: pump_as_turbine
+              diff_params: {}
+              diff_samples: 0
+              expected_num_samples: 3
+              force_rerun: true
+              h5dir: sweep_tests/erd_type/pump_as_turbine/sim_cases/case_b/fixed_samples
+              init_defaults:
+                erd_type: pressure_exchanger
+              min_num_samples: 3
+              num_samples: 3
+              optimize_defaults: {}
+              original_options_dict:
+                build_defaults:
+                  erd_type: pump_as_turbine
+                build_loop:
+                  erd_type:
+                  - pump_as_turbine
+                  - pressure_exchanger
+                  init_loop:
+                    sim_cases:
+                      case_a:
+                        erd_type: pump_as_turbine
+                      case_b:
+                        erd_type: pressure_exchanger
+                    sweep_param_loop:
+                      fixed_samples:
+                        array:
+                        - 20
+                        - 25
+                        - 30
+                        expected_num_samples: 3
+                        force_rerun: true
+                        min_num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: PredeterminedRandomSample
+                      membrane_cost:
+                        expected_num_samples: 20
+                        force_rerun: true
+                        lower_limit: 20
+                        min_num_samples: 10
+                        num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: LinearSample
+                        upper_limit: 30
+                      membrane_group:
+                        expected_num_samples: 20
+                        factor_membrane_replacement:
+                          lower_limit: 0.15
+                          num_samples: 2
+                          param: fs.costing.reverse_osmosis.factor_membrane_replacement
+                          type: UniformSample
+                          upper_limit: 0.2
+                        force_rerun: true
+                        membrane_cost:
+                          lower_limit: 25
+                          num_samples: 2
+                          param: fs.costing.reverse_osmosis.membrane_cost
+                          type: UniformSample
+                          upper_limit: 30
+                        min_num_samples: 10
+                initialize_before_sweep: true
+                number_of_subprocesses: 10
+                parallel_back_end: RayIo
+                update_sweep_params_before_init: true
+              sweep_params:
+                fs.costing.reverse_osmosis.membrane_cost:
+                  array:
+                  - 20
+                  - 25
+                  - 30
+                  expected_num_samples: 3
+                  force_rerun: true
+                  min_num_samples: 3
+                  param: fs.costing.reverse_osmosis.membrane_cost
+                  type: PredeterminedRandomSample
           membrane_cost:
             simulation_setup:
               build_defaults:
@@ -855,6 +1227,16 @@ sweep_tests:
                       case_b:
                         erd_type: pressure_exchanger
                     sweep_param_loop:
+                      fixed_samples:
+                        array:
+                        - 20
+                        - 25
+                        - 30
+                        expected_num_samples: 3
+                        force_rerun: true
+                        min_num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: PredeterminedRandomSample
                       membrane_cost:
                         expected_num_samples: 20
                         force_rerun: true
@@ -922,6 +1304,16 @@ sweep_tests:
                       case_b:
                         erd_type: pressure_exchanger
                     sweep_param_loop:
+                      fixed_samples:
+                        array:
+                        - 20
+                        - 25
+                        - 30
+                        expected_num_samples: 3
+                        force_rerun: true
+                        min_num_samples: 3
+                        param: fs.costing.reverse_osmosis.membrane_cost
+                        type: PredeterminedRandomSample
                       membrane_cost:
                         expected_num_samples: 20
                         force_rerun: true
