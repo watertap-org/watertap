@@ -234,6 +234,7 @@ class TestIXDemo:
                 assert pytest.approx(r, rel=1e-3) == value(mv)
 
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_optimization(self, ix_0D):
         m = ix_0D
         ixf.optimize_system(m)
@@ -276,7 +277,7 @@ class TestIXDemo:
             "resin_surf_per_vol": 4285.714,
             "c_norm": {"Ca_2+": 0.99398},
             "bed_vol_tot": 11.999,
-            "bed_depth": 2.211254,
+            "bed_depth": 2.211,
             "bed_porosity": 0.5,
             "col_height": 4.237165,
             "col_diam": 1.17555,
