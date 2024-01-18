@@ -775,7 +775,7 @@ class _ParameterSweepBase(ABC):
         pass
 
 
-class ParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUtils):  #
+class ParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUtils):
     CONFIG = _ParameterSweepBase.CONFIG()
 
     def parameter_sweep(
