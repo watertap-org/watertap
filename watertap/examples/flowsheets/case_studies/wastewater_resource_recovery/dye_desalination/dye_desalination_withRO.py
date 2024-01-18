@@ -39,6 +39,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump
+from watertap.unit_models.dewatering import DewateringUnit
 from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
 import watertap.property_models.seawater_prop_pack as prop_SW
@@ -134,6 +135,7 @@ def build(include_pretreatment=False):
         database=m.db,
         process_subtype="rHGO_dye_rejection",
     )
+    dye_sep.dewatering = DewateringUnit(property_package=m.fs.prop_nf)
 
     # reverse osmosis components
 
@@ -192,7 +194,10 @@ def build(include_pretreatment=False):
         source=dye_sep.P1.outlet, destination=dye_sep.nanofiltration.inlet
     )
     dye_sep.s02 = Arc(
-        source=dye_sep.nanofiltration.byproduct, destination=m.fs.dye_retentate.inlet
+        source=dye_sep.nanofiltration.byproduct, destination=dye_sep.dewatering.inlet
+    )
+    dye_sep.s03 = Arc(
+        source=dye_sep.dewatering.underflow, destination=m.fs.dye_retentate.inlet
     )
     m.fs.s_nf = Arc(
         source=dye_sep.nanofiltration.treated, destination=m.fs.tb_nf_ro.inlet
