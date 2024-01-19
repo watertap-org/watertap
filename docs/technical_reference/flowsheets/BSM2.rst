@@ -42,3 +42,11 @@ Documentation for each of the unit models can be found here:
 Documentation for each of the property models can be found here:
     * `ASM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_
     * `ADM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ADM1.html>`_
+
+Future Refinements
+------------------
+
+The following modifications to BSM2 are planned for development:
+    * Accounting for temperature-dependence in the oxygen mass transfer coefficient (KLa) and oxygen concentration at saturation
+    * Adding thermal energy requirements to the anaerobic digester and refining energy consumption estimates for units collectively
+    * Replacing the ideal-separator formulation in the secondary clarifier with the widely used double-exponential settling model (i.e., the Takacs model)

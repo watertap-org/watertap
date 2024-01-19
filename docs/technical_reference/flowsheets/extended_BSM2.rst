@@ -55,4 +55,6 @@ The following modifications to extended BSM2 are planned for development:
     * Adding thermal energy requirements to the anaerobic digester and refining energy consumption estimates for units collectively
     * Accounting for mineral precipitation reactions
     * Accounting for ion speciation and activity
-    * Replacing an ideal-separator formulation for the secondary clarifier with the widely used double-exponential settling model (i.e., the Takacs model)
+    * Accounting for sulfur components
+    * Accounting for iron components
+    * Replacing the ideal-separator formulation in the secondary clarifier with the widely used double-exponential settling model (i.e., the Takacs model)
