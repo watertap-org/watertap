@@ -23,7 +23,7 @@ from pyomo.environ import (
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import FlowsheetBlock
+from idaes.core import FlowsheetBlock, MomentumBalanceType
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 
@@ -35,6 +35,11 @@ from idaes.models.unit_models import (
     Translator,
     MomentumMixingType,
 )
+from idaes.models.unit_models.separator import (
+    SplittingType,
+    EnergySplittingType,
+)
+
 from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.pressure_exchanger import PressureExchanger
@@ -135,7 +140,11 @@ def build(include_pretreatment=False):
         database=m.db,
         process_subtype="rHGO_dye_rejection",
     )
-    dye_sep.dewatering = DewateringUnit(property_package=m.fs.prop_nf)
+    dye_sep.dewatering = DewateringUnit(
+        property_package=m.fs.prop_ro,
+        # energy_split_basis=EnergySplittingType.none, # no temp in prop pack
+        # momentum_balance_type=MomentumBalanceType.none, # no pressure in prop pack
+    )
 
     # reverse osmosis components
 
@@ -164,9 +173,30 @@ def build(include_pretreatment=False):
     m.fs.tb_nf_ro = Translator(
         inlet_property_package=m.fs.prop_nf, outlet_property_package=m.fs.prop_ro
     )
+    m.fs.tb_nf_ro2 = Translator(
+        inlet_property_package=m.fs.prop_nf, outlet_property_package=m.fs.prop_ro
+    )
 
     # since the dye << tds: Assume RO_TDS = NF_tds + NF_dye
     @m.fs.tb_nf_ro.Constraint(["H2O", "dye"])
+    def eq_flow_mass_comp(blk, j):
+        if j == "dye":
+            return (
+                blk.properties_in[0].flow_mass_comp["dye"]
+                + blk.properties_in[0].flow_mass_comp["tds"]
+                == blk.properties_out[0].flow_mass_phase_comp["Liq", "TDS"]
+            )
+        else:
+            return (
+                blk.properties_in[0].flow_mass_comp["H2O"]
+                == blk.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
+            )
+
+    @m.fs.tb_nf_ro2.Constraint()
+    def eq_flow_vol_comp(blk):
+        return blk.properties_in[0].flow_vol == blk.properties_out[0].flow_vol
+
+    @m.fs.tb_nf_ro2.Constraint(["H2O", "dye"])
     def eq_flow_mass_comp(blk, j):
         if j == "dye":
             return (
@@ -194,9 +224,12 @@ def build(include_pretreatment=False):
         source=dye_sep.P1.outlet, destination=dye_sep.nanofiltration.inlet
     )
     dye_sep.s02 = Arc(
-        source=dye_sep.nanofiltration.byproduct, destination=dye_sep.dewatering.inlet
+        source=dye_sep.nanofiltration.byproduct, destination=m.fs.tb_nf_ro2.inlet
     )
     dye_sep.s03 = Arc(
+        source=m.fs.tb_nf_ro2.outlet, destination=dye_sep.dewatering.inlet
+    )
+    dye_sep.s04 = Arc(
         source=dye_sep.dewatering.underflow, destination=m.fs.dye_retentate.inlet
     )
     m.fs.s_nf = Arc(
@@ -279,6 +312,19 @@ def set_operating_conditions(m):
     )
     dye_sep.P1.eta_pump.fix(0.75)  # pump efficiency [-]
     dye_sep.P1.lift_height.unfix()
+
+    # TODO: Evaluate whether these values are realistic
+
+    # Dewatering Unit - fix either HRT or volume.
+    dye_sep.dewatering.hydraulic_retention_time.fix(1800 * pyunits.s)
+
+    # Set specific energy consumption averaged for centrifuge
+    dye_sep.dewatering.energy_electric_flow_vol_inlet[0] = (
+        0.069 * pyunits.kWh / pyunits.m**3
+    )
+
+    # Initialize dewatering unit
+    dye_sep.dewatering.inlet.flow_vol[0] = value(m.fs.feed.flow_vol[0])
 
     # desalination
     desal.P2.efficiency_pump.fix(0.80)
@@ -435,6 +481,10 @@ def add_costing(m):
     )
     dye_sep.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.zo_costing)
     m.fs.zo_costing.pump_electricity.pump_cost["default"].fix(76)
+    dye_sep.dewatering.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.ro_costing,
+        costing_method_arguments={"cost_electricity_flow": True},
+    )
 
     # RO Train
     # RO equipment is costed using more detailed costing package
