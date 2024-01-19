@@ -94,10 +94,10 @@ The default behavior of any sweep sampling method is to change the absolute valu
 but user can also sweep across Variable lower bound, upper bound, or fix/unfix a variable using
 the extended options for sweep parameters, and specify the type of set mode to use. A total of four set modes are available:
 
-    * SetMode.FIX_VALUE - *Default* - fixes Variable to specified value by selected sweep sampling method
-    * SetMode.SET_LB - sets the lower bound of variable to specified value by selected sweep sampling method
-    * SetMode.SET_UB - sets the upper bound of variable to specified value by selected sweep sampling method
-    * SetMode.SET_FIXED_STATE - Fixes the variable if True is provided, and unfixes if False is provided, only works with PredeterminedFixedSample or PredeterminedRandomSample
+    * SetMode.FIX_VALUE - *Default* - fixes Variable to specified value by selected sweep sampling method.
+    * SetMode.SET_LB - sets the lower bound of variable to specified value by selected sweep sampling method.
+    * SetMode.SET_UB - sets the upper bound of variable to specified value by selected sweep sampling method.
+    * SetMode.SET_FIXED_STATE - Fixes the variable if True is provided, and unfixes if False is provided, only works with PredeterminedFixedSample or PredeterminedRandomSample.
 
 The user can apply these options to a sweep parameter sample by invoking *set_variable_update_mode* method as follows:
 
