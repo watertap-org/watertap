@@ -1057,13 +1057,19 @@ def validate_membrane_config_args(unit):
         raise ConfigurationError(
             "\nChanging the 'friction_factor' will have no effect if the 'pressure_change_type' is not `PressureChangeType.calculated`"
         )
-        
-    if (unit.config.friction_factor == FrictionFactor.flat_sheet) and (unit.config.friction_factor == ModuleType.spiral_wound):
+
+    if (
+        unit.config.friction_factor is FrictionFactor.flat_sheet
+        and unit.config.friction_factor is ModuleType.spiral_wound
+    ):
         raise ConfigurationError(
             f"Incompatible configuration options were supplied for friction_factor {unit.config.friction_factor} and membrane_module_type{unit.config.membrane_module_type}."
         )
-    
-    if (unit.config.friction_factor == FrictionFactor.spiral_wound) and (unit.config.friction_factor == ModuleType.flat_sheet):
+
+    if (
+        unit.config.friction_factor is FrictionFactor.spiral_wound
+        and unit.config.friction_factor == ModuleType.flat_sheet
+    ):
         raise ConfigurationError(
             f"Incompatible configuration options were supplied for friction_factor {unit.config.friction_factor} and membrane_module_type{unit.config.membrane_module_type}."
         )

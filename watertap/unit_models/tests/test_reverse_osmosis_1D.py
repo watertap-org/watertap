@@ -216,6 +216,7 @@ def test_option_friction_factor_spiral_wound():
     assert isinstance(m.fs.unit.feed_side.velocity, Var)
     assert isinstance(m.fs.unit.feed_side.eq_friction_factor, Constraint)
 
+
 @pytest.mark.unit
 def test_wrong_module_type_friction_factor_combo():
     m = ConcreteModel()
@@ -230,8 +231,9 @@ def test_wrong_module_type_friction_factor_combo():
             mass_transfer_coefficient=MassTransferCoefficient.calculated,
             pressure_change_type=PressureChangeType.calculated,
             friction_factor=FrictionFactor.spiral_wound,
-            membrane_module_type = ModuleType.flat_sheet,
+            membrane_module_type=ModuleType.flat_sheet,
         )
+
 
 class TestReverseOsmosis:
     @pytest.fixture(scope="class")
