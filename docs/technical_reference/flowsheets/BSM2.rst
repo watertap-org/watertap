@@ -5,8 +5,8 @@ Introduction
 ------------
 
 The Benchmark Simulation Model No.2 (BSM2) is an industry benchmark for modeling a full biological wastewater
-treatment plant that includes a primary clarifier, the activated sludge process, and an anaerobic digester. These
-unit processes are driven by biological reaction models that relate soluble and particulate wastewater
+treatment plant that includes a primary clarifier, the activated sludge process, a thickener, an anaerobic digester,
+and a dewatering unit. These unit processes are driven by biological reaction models that relate soluble and particulate wastewater
 components to their respective process rate equations. While this BSM2 flowsheet can simply be used to
 simulate and run techno-economic analyses on the operation of a conventional wastewater treatment plant,
 an additional layer of utility can be derived from using BSM2 as a baseline for comparing alternative plant
