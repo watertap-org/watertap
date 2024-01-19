@@ -53,7 +53,6 @@ from idaes.core.util.scaling import (
 
 from watertap.core import (
     MembraneChannel1DBlock,
-    FrictionFactor,
 )
 import idaes.logger as idaeslog
 
@@ -70,7 +69,7 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis1D(property_package=m.fs.properties)
 
-    assert len(m.fs.unit.config) == 20
+    assert len(m.fs.unit.config) == 19
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
@@ -85,7 +84,7 @@ def test_config():
     assert (
         m.fs.unit.config.mass_transfer_coefficient is MassTransferCoefficient.calculated
     )
-    assert m.fs.unit.config.membrane_module_type is ModuleType.flat_sheet
+    assert m.fs.unit.config.module_type is ModuleType.flat_sheet
     assert not m.fs.unit.config.has_full_reporting
 
 
@@ -209,31 +208,12 @@ def test_option_friction_factor_spiral_wound():
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
         pressure_change_type=PressureChangeType.calculated,
-        friction_factor=FrictionFactor.spiral_wound,
-        membrane_module_type=ModuleType.spiral_wound,
+        module_type=ModuleType.spiral_wound,
     )
 
-    assert m.fs.unit.config.friction_factor == FrictionFactor.spiral_wound
+    assert m.fs.unit.config.module_type == ModuleType.spiral_wound
     assert isinstance(m.fs.unit.feed_side.velocity, Var)
     assert isinstance(m.fs.unit.feed_side.eq_friction_factor, Constraint)
-
-
-@pytest.mark.unit
-def test_wrong_module_type_friction_factor_combo():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.NaClParameterBlock()
-
-    with pytest.raises(ConfigurationError):
-        m.fs.unit = ReverseOsmosis1D(
-            property_package=m.fs.properties,
-            has_pressure_change=True,
-            concentration_polarization_type=ConcentrationPolarizationType.calculated,
-            mass_transfer_coefficient=MassTransferCoefficient.calculated,
-            pressure_change_type=PressureChangeType.calculated,
-            friction_factor=FrictionFactor.spiral_wound,
-            membrane_module_type=ModuleType.flat_sheet,
-        )
 
 
 class TestReverseOsmosis:
@@ -1127,8 +1107,7 @@ class TestReverseOsmosis:
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
             mass_transfer_coefficient=MassTransferCoefficient.calculated,
             pressure_change_type=PressureChangeType.calculated,
-            friction_factor=FrictionFactor.spiral_wound,
-            membrane_module_type=ModuleType.spiral_wound,
+            module_type=ModuleType.spiral_wound,
             transformation_scheme="BACKWARD",
             transformation_method="dae.finite_difference",
             finite_elements=3,
@@ -1212,8 +1191,8 @@ class TestReverseOsmosis:
         )
 
         assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
-        assert value(flow_mass_retentate) == pytest.approx(0.9515, rel=1e-3)
-        assert value(flow_mass_permeate) == pytest.approx(4.845e-2, rel=1e-3)
+        assert value(flow_mass_retentate) == pytest.approx(0.9488, rel=1e-3)
+        assert value(flow_mass_permeate) == pytest.approx(5.122e-2, rel=1e-3)
 
         assert (
             abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate))
@@ -1222,23 +1201,23 @@ class TestReverseOsmosis:
 
         # Test solution
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
-        assert pytest.approx(-6.508e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
-        assert pytest.approx(5.98e-3, rel=1e-3) == value(
+        assert pytest.approx(-5.096e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
+        assert pytest.approx(6.135e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
-        assert pytest.approx(1.420e-6, rel=1e-3) == value(
+        assert pytest.approx(1.425e-6, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         )
-        assert pytest.approx(4.234e-3, rel=1e-3) == value(
+        assert pytest.approx(4.659e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
         )
-        assert pytest.approx(1.415e-6, rel=1e-3) == value(
+        assert pytest.approx(1.432e-6, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
         )
-        assert pytest.approx(4.845e-2, rel=1e-3) == value(
+        assert pytest.approx(5.121e-2, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         )
-        assert pytest.approx(1.347e-5, rel=1e-3) == value(
+        assert pytest.approx(1.358e-5, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         )
 

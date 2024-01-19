@@ -53,7 +53,6 @@ from idaes.core.util.scaling import (
 
 from watertap.core import (
     MembraneChannel0DBlock,
-    FrictionFactor,
 )
 import idaes.logger as idaeslog
 
@@ -69,7 +68,7 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
-    assert len(m.fs.unit.config) == 15
+    assert len(m.fs.unit.config) == 14
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -85,7 +84,7 @@ def test_config():
     assert (
         m.fs.unit.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
     )
-    assert m.fs.unit.config.membrane_module_type is ModuleType.flat_sheet
+    assert m.fs.unit.config.module_type is ModuleType.flat_sheet
     assert m.fs.unit.config.pressure_change_type == PressureChangeType.fixed_per_stage
 
 
@@ -211,10 +210,10 @@ def test_option_friction_factor_spiral_wound():
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
         pressure_change_type=PressureChangeType.calculated,
-        friction_factor=FrictionFactor.spiral_wound,
+        module_type=ModuleType.spiral_wound,
     )
 
-    assert m.fs.unit.config.friction_factor == FrictionFactor.spiral_wound
+    assert m.fs.unit.config.module_type == ModuleType.spiral_wound
     assert isinstance(m.fs.unit.feed_side.velocity, Var)
     assert isinstance(m.fs.unit.feed_side.eq_friction_factor, Constraint)
 
@@ -1084,7 +1083,7 @@ class TestReverseOsmosis:
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
             mass_transfer_coefficient=MassTransferCoefficient.calculated,
             pressure_change_type=PressureChangeType.calculated,
-            friction_factor=FrictionFactor.spiral_wound,
+            module_type=ModuleType.spiral_wound,
         )
 
         # fully specify system
@@ -1156,39 +1155,39 @@ class TestReverseOsmosis:
         assert_optimal_termination(results)
 
         # test solution
-        assert pytest.approx(-1.801e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
-        assert pytest.approx(-1.126e4, rel=1e-3) == value(
+        assert pytest.approx(-4.681e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
+        assert pytest.approx(-2.925e4, rel=1e-3) == value(
             m.fs.unit.deltaP[0] / m.fs.unit.length
         )
-        assert pytest.approx(395.8, rel=1e-3) == value(m.fs.unit.feed_side.N_Re[0, 0.0])
-        assert pytest.approx(0.2361, rel=1e-3) == value(
+        assert pytest.approx(791.7, rel=1e-3) == value(m.fs.unit.feed_side.N_Re[0, 0.0])
+        assert pytest.approx(0.4722, rel=1e-3) == value(
             m.fs.unit.feed_side.velocity[0, 0.0]
         )
-        assert pytest.approx(191.3, rel=1e-3) == value(m.fs.unit.feed_side.N_Re[0, 1.0])
-        assert pytest.approx(0.1188, rel=1e-3) == value(
+        assert pytest.approx(374.5, rel=1e-3) == value(m.fs.unit.feed_side.N_Re[0, 1.0])
+        assert pytest.approx(0.2329, rel=1e-3) == value(
             m.fs.unit.feed_side.velocity[0, 1.0]
         )
-        assert pytest.approx(7.089e-3, rel=1e-3) == value(
+        assert pytest.approx(7.223e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
         )
-        assert pytest.approx(2.188e-6, rel=1e-3) == value(
+        assert pytest.approx(2.112e-6, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
         )
-        assert pytest.approx(0.1346, rel=1e-3) == value(
+        assert pytest.approx(0.1372, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         )
-        assert pytest.approx(4.157e-5, rel=1e-3) == value(
+        assert pytest.approx(4.0138e-5, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         )
-        assert pytest.approx(50.08, rel=1e-3) == value(
+        assert pytest.approx(47.43, rel=1e-3) == value(
             m.fs.unit.feed_side.properties_interface[0, 0.0].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]
         )
-        assert pytest.approx(70.80, rel=1e-3) == value(
+        assert pytest.approx(72.16, rel=1e-3) == value(
             m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"]
         )
-        assert pytest.approx(76.21, rel=1e-3) == value(
+        assert pytest.approx(75.14, rel=1e-3) == value(
             m.fs.unit.feed_side.properties_interface[0, 1.0].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]

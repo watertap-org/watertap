@@ -101,7 +101,6 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
             has_pressure_change=self.config.has_pressure_change,
-            friction_factor=self.config.friction_factor,
         )
 
         self.feed_side.add_control_volume_isothermal_conditions()
@@ -288,13 +287,13 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         )
 
         if include_constraint:
-            if self.config.membrane_module_type == ModuleType.flat_sheet:
+            if self.config.module_type == ModuleType.flat_sheet:
                 # Membrane area equation for flat plate membranes
                 @self.Constraint(doc="Total Membrane area")
                 def eq_area(b):
                     return b.area == b.length * b.width
 
-            elif self.config.membrane_module_type == ModuleType.spiral_wound:
+            elif self.config.module_type == ModuleType.spiral_wound:
                 # Membrane area equation
                 @self.Constraint(doc="Total Membrane area")
                 def eq_area(b):
@@ -303,7 +302,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             else:
                 raise ConfigurationError(
                     "Unsupported membrane module type: {}".format(
-                        self.config.membrane_module_type
+                        self.config.module_type
                     )
                 )
 
