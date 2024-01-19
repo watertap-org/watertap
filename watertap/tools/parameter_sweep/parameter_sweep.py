@@ -463,7 +463,7 @@ class _ParameterSweepBase(ABC):
                 elif item.set_mode == SetMode.SET_FIXED_STATE:
                     if item.default_fixed_value is not None:
                         param.fix(item.default_fixed_value)
-                    if non_indexed_values[k] > 0.5:
+                    if non_indexed_values[k]:
                         param.fix()
                     else:
                         param.unfix()

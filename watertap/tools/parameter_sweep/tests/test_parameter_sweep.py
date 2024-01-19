@@ -208,9 +208,7 @@ class TestParameterSweep:
             assert model.A_param.lb == pytest.approx(sample_values[k])
 
         param_dict = dict()
-        param_dict["var_A"] = LinearSample(
-            model.A_param, range_A_fix[0], range_A_fix[1], 2
-        )
+        param_dict["var_A"] = PredeterminedFixedSample(model.A_param, [False, True])
         param_dict["var_A"].set_variable_update_mode(SetMode.SET_FIXED_STATE, 10)
 
         global_combo_array = ps._build_combinations(
@@ -227,11 +225,13 @@ class TestParameterSweep:
 
         # test ablity to fully speciy a var an unfix it
         param_dict = dict()
-        param_dict["var_A_ub"] = LinearSample(model.A_param, range_A[1], range_A[1], 1)
+        param_dict["var_A_ub"] = PredeterminedFixedSample(model.A_param, [range_A[1]])
         param_dict["var_A_ub"].set_variable_update_mode(SetMode.SET_UB)
-        param_dict["var_A_lb"] = LinearSample(model.A_param, range_A[0], range_A[0], 1)
+        param_dict["var_A_lb"] = PredeterminedFixedSample(model.A_param, [range_A[0]])
         param_dict["var_A_lb"].set_variable_update_mode(SetMode.SET_LB)
-        param_dict["var_A_fixed_state"] = LinearSample(model.A_param, 0, 0, 1)
+        param_dict["var_A_fixed_state"] = PredeterminedFixedSample(
+            model.A_param, [False]
+        )
         param_dict["var_A_fixed_state"].set_variable_update_mode(
             SetMode.SET_FIXED_STATE, 5
         )
@@ -247,11 +247,13 @@ class TestParameterSweep:
 
         # test ablity to fully speciy a var and fix it
         param_dict = dict()
-        param_dict["var_A_ub"] = LinearSample(model.A_param, range_A[1], range_A[1], 1)
+        param_dict["var_A_ub"] = PredeterminedFixedSample(model.A_param, [range_A[1]])
         param_dict["var_A_ub"].set_variable_update_mode(SetMode.SET_UB)
-        param_dict["var_A_lb"] = LinearSample(model.A_param, range_A[0], range_A[0], 1)
+        param_dict["var_A_lb"] = PredeterminedFixedSample(model.A_param, [range_A[0]])
         param_dict["var_A_lb"].set_variable_update_mode(SetMode.SET_LB)
-        param_dict["var_A_fixed_state"] = LinearSample(model.A_param, 1, 1, 1)
+        param_dict["var_A_fixed_state"] = PredeterminedFixedSample(
+            model.A_param, [True]
+        )
         param_dict["var_A_fixed_state"].set_variable_update_mode(
             SetMode.SET_FIXED_STATE, 5
         )
@@ -269,11 +271,13 @@ class TestParameterSweep:
         param_dict = dict()
         param_dict["var_A"] = LinearSample(model.A_param, range_A[0], range_A[1], nn_A)
         param_dict["var_A"].set_variable_update_mode(SetMode.FIX_VALUE)
-        param_dict["var_A_lb"] = LinearSample(model.A_param, range_A[0], range_A[0], 1)
+        param_dict["var_A_lb"] = PredeterminedFixedSample(model.A_param, [range_A[0]])
         param_dict["var_A_lb"].set_variable_update_mode(SetMode.SET_LB)
 
         for k in range(50):
-            param_dict["var_b_{}".format(k)] = LinearSample(model.C_param[k], k, k, 1)
+            param_dict["var_b_{}".format(k)] = PredeterminedFixedSample(
+                model.C_param[k], [k]
+            )
         global_combo_array = ps._build_combinations(
             param_dict, SamplingType.FIXED, None
         )
@@ -297,11 +301,13 @@ class TestParameterSweep:
             model.D_param, range_A[0] * 2, range_A[1] * 2, nn_A
         )
         param_dict["var_D"].set_variable_update_mode(SetMode.FIX_VALUE)
-        param_dict["var_A_lb"] = LinearSample(model.A_param, range_A[0], range_A[0], 1)
+        param_dict["var_A_lb"] = PredeterminedFixedSample(model.A_param, [range_A[0]])
         param_dict["var_A_lb"].set_variable_update_mode(SetMode.SET_LB)
 
         for k in range(50):
-            param_dict["var_b_{}".format(k)] = LinearSample(model.C_param[k], k, k, 1)
+            param_dict["var_b_{}".format(k)] = PredeterminedFixedSample(
+                model.C_param[k], [k]
+            )
         global_combo_array = ps._build_combinations(
             param_dict, SamplingType.FIXED, None
         )
