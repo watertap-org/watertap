@@ -19,7 +19,6 @@ import pytest
 from pyomo.environ import assert_optimal_termination
 
 from ..fsapi import FlowsheetInterface
-from ..fsapi import ModelOption
 
 
 @pytest.fixture(scope="class")
@@ -92,23 +91,8 @@ class TestFlowsheetInterface:
 
 @pytest.mark.parametrize("n_times", [2, 3], ids="{} times".format)
 def test_roundtrip_with_garbage_collection(fs_interface, n_times):
-    build_options = {
-        "Bypass": ModelOption(
-            name="bypass option",
-            display_name="With Bypass",
-            values_allowed=["false", "true"],
-            value="false",
-        ),
-        "ConcentrationPolarization": ModelOption(
-            name="ConcentrationPolarization",
-            display_name="Concentration Polarization Type",
-            values_allowed=["calculated", "none"],
-            value="calculated",
-        ),
-    }
-
     for attempt in range(n_times):
-        fs_interface.build(build_options=build_options)
+        fs_interface.build(build_options=fs_interface.fs_exp.build_options)
         data = fs_interface.dict()
         fs_interface.load(data)
         gc.collect()
