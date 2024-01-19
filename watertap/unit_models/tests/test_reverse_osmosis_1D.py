@@ -43,7 +43,7 @@ from idaes.core.util.model_statistics import (
     number_total_constraints,
     degrees_of_freedom,
 )
-
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
@@ -216,6 +216,22 @@ def test_option_friction_factor_spiral_wound():
     assert isinstance(m.fs.unit.feed_side.velocity, Var)
     assert isinstance(m.fs.unit.feed_side.eq_friction_factor, Constraint)
 
+@pytest.mark.unit
+def test_wrong_module_type_friction_factor_combo():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = props.NaClParameterBlock()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.unit = ReverseOsmosis1D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            pressure_change_type=PressureChangeType.calculated,
+            friction_factor=FrictionFactor.spiral_wound,
+            membrane_module_type = ModuleType.flat_sheet,
+        )
 
 class TestReverseOsmosis:
     @pytest.fixture(scope="class")
