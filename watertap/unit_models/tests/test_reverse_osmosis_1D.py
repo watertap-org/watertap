@@ -210,6 +210,7 @@ def test_option_friction_factor_spiral_wound():
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
         pressure_change_type=PressureChangeType.calculated,
         friction_factor=FrictionFactor.spiral_wound,
+        membrane_module_type=ModuleType.spiral_wound,
     )
 
     assert m.fs.unit.config.friction_factor == FrictionFactor.spiral_wound
@@ -1127,6 +1128,7 @@ class TestReverseOsmosis:
             mass_transfer_coefficient=MassTransferCoefficient.calculated,
             pressure_change_type=PressureChangeType.calculated,
             friction_factor=FrictionFactor.spiral_wound,
+            membrane_module_type=ModuleType.spiral_wound,
             transformation_scheme="BACKWARD",
             transformation_method="dae.finite_difference",
             finite_elements=3,
@@ -1210,8 +1212,8 @@ class TestReverseOsmosis:
         )
 
         assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
-        assert value(flow_mass_retentate) == pytest.approx(0.8981, rel=1e-3)
-        assert value(flow_mass_permeate) == pytest.approx(0.1011, rel=1e-3)
+        assert value(flow_mass_retentate) == pytest.approx(0.9515, rel=1e-3)
+        assert value(flow_mass_permeate) == pytest.approx(4.845e-2, rel=1e-3)
 
         assert (
             abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate))
@@ -1220,23 +1222,23 @@ class TestReverseOsmosis:
 
         # Test solution
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
-        assert pytest.approx(-1.879e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
-        assert pytest.approx(5.908e-3, rel=1e-3) == value(
+        assert pytest.approx(-6.508e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
+        assert pytest.approx(5.98e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
-        assert pytest.approx(1.495e-6, rel=1e-3) == value(
+        assert pytest.approx(1.420e-6, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         )
-        assert pytest.approx(4.745e-3, rel=1e-3) == value(
+        assert pytest.approx(4.234e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
         )
-        assert pytest.approx(1.559e-6, rel=1e-3) == value(
+        assert pytest.approx(1.415e-6, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
         )
-        assert pytest.approx(0.1011, rel=1e-3) == value(
+        assert pytest.approx(4.845e-2, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         )
-        assert pytest.approx(2.902e-5, rel=1e-3) == value(
+        assert pytest.approx(1.347e-5, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         )
 

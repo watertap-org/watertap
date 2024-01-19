@@ -1060,7 +1060,7 @@ def validate_membrane_config_args(unit):
 
     if (
         unit.config.friction_factor is FrictionFactor.flat_sheet
-        and unit.config.friction_factor is ModuleType.spiral_wound
+        and unit.config.membrane_module_type is ModuleType.spiral_wound
     ):
         raise ConfigurationError(
             f"Incompatible configuration options were supplied for friction_factor {unit.config.friction_factor} and membrane_module_type{unit.config.membrane_module_type}."
@@ -1068,7 +1068,7 @@ def validate_membrane_config_args(unit):
 
     if (
         unit.config.friction_factor is FrictionFactor.spiral_wound
-        and unit.config.friction_factor == ModuleType.flat_sheet
+        and unit.config.membrane_module_type == ModuleType.flat_sheet
     ):
         raise ConfigurationError(
             f"Incompatible configuration options were supplied for friction_factor {unit.config.friction_factor} and membrane_module_type{unit.config.membrane_module_type}."
