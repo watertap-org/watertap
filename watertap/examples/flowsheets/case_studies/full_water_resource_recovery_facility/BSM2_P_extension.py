@@ -25,7 +25,6 @@ from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import (
     FlowsheetBlock,
-    UnitModelCostingBlock,
 )
 from idaes.models.unit_models import (
     CSTR,

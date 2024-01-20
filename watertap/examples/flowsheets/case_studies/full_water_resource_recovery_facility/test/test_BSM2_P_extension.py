@@ -34,20 +34,21 @@ from watertap.examples.flowsheets.case_studies.full_water_resource_recovery_faci
 
 
 class TestFullFlowsheet:
+    @pytest.mark.requires_idaes_solver
     @pytest.fixture(scope="class")
     def system_frame(self):
         m, res = main()
-
         m.results = res
-
         return m
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.integration
     def test_structure(self, system_frame):
         assert_units_consistent(system_frame)
         assert degrees_of_freedom(system_frame) == 0
         assert_optimal_termination(system_frame.results)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, system_frame):
         m = system_frame
