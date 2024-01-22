@@ -6,7 +6,7 @@ This pressure exchanger unit model:
     * supports a single liquid phase only
     * supports steady-state only
     * supports mixing or leakage between the low and high pressure side
-    * assumes equal flowrates on both side
+    * enforces a constraint that the inlet flowrates to each side must be equal
 
 .. index::
    pair: watertap.unit_models.pressure_exchanger;pressure_exchanger
@@ -32,12 +32,13 @@ Where the system is also subject to following constraints:
     
     Figure 1. Schematic representation of an energy recovery system using a pressure exchanger.
 
-When setting the ``has_leakage`` configuration option to ``True``, there is 1 additional variables ``leakage_vol`` that must be fixed.
+When setting the ``has_mixing`` configuration option to ``True``, there is 1 additional variable ``mixing_vol`` that must be fixed.
 
-When setting the ``has_mixing`` configuration option to ``True``, there is 1 additional variables ``mixing_vol`` that must be fixed.
+When setting the ``has_leakage`` configuration option to ``True``, there is 1 additional variable ``leakage_vol`` that must be fixed.
+Note that ``has_leakage=True`` requires users to set ``has_mixing=True``.
 
 When setting the ``pressure_exchange_calculation`` configuration option to ``PressureExchangeType.high_pressure_difference``,
-then there is no ``efficiency_pressure_exchanger`` variable, users need to fix ``high_pressure_difference`` instead.
+there is 1 additional variable ``high_pressure_difference`` that must be fixed. Instead, ``efficiency_pressure_exchanger`` is unfixed.
 
 Model Structure
 ------------------
@@ -125,7 +126,7 @@ and there are 3 additional constraints:
 
 \* C only represents solute concentration, not solvent
 
-if ``pressure_change_calculation`` is set to ``PressureExchangeType.high_pressure_difference``, then the pressure transfer equation is replaced by:
+if ``pressure_change_calculation`` is set to ``PressureExchangeType.high_pressure_difference``, then there is 1 additional constraint:
 
 .. csv-table::
    :header: "Description", "Equation"

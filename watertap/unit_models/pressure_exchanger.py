@@ -416,7 +416,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
 
             if self.config.has_leakage and not self.config.has_mixing:
                 raise ConfigurationError(
-                    f"{self.config.has_leakage} must be set as 'True' {self.config.has_leakage} is 'True'"
+                    "Setting 'has_leakage=True' requires 'has_mixing=True'."
                 )
 
             elif self.config.has_mixing and not self.config.has_leakage:
