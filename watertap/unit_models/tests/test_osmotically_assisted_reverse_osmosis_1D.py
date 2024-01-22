@@ -53,7 +53,6 @@ from watertap.core import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
-    FrictionFactor,
 )
 
 # -----------------------------------------------------------------------------
@@ -68,7 +67,7 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(property_package=m.fs.properties)
 
-    assert len(m.fs.unit.config) == 20
+    assert len(m.fs.unit.config) == 19
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -84,11 +83,10 @@ def test_config():
     assert (
         m.fs.unit.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
     )
-    assert m.fs.unit.config.membrane_module_type is ModuleType.flat_sheet
     assert m.fs.unit.config.pressure_change_type == PressureChangeType.fixed_per_stage
     assert m.fs.unit.feed_side._flow_direction == FlowDirection.forward
     assert m.fs.unit.permeate_side._flow_direction == FlowDirection.backward
-    assert m.fs.unit.config.friction_factor == FrictionFactor.flat_sheet
+    assert m.fs.unit.config.module_type == ModuleType.flat_sheet
     assert not m.fs.unit.config.has_full_reporting
 
 
