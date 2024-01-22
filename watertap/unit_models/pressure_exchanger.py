@@ -382,8 +382,11 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             is PressureExchangeType.high_pressure_difference
         ):
 
-            @self.Constraint(self.flowsheet().config.time, doc="Pressure transfer")
-            def eq_pressure_transfer(b, t):
+            @self.Constraint(
+                self.flowsheet().config.time,
+                doc="Pressure transfer by high pressure difference",
+            )
+            def eq_pressure_difference(b, t):
                 return b.high_pressure_side.properties_in[
                     t
                 ].pressure == b.low_pressure_side.properties_out[
@@ -626,10 +629,9 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
         super().calculate_scaling_factors()
 
         # scale variables
-        if hasattr(self, "efficiency_pressure_exchanger"):
-            if iscale.get_scaling_factor(self.efficiency_pressure_exchanger) is None:
-                # efficiency should always be between 0.1-1
-                iscale.set_scaling_factor(self.efficiency_pressure_exchanger, 1)
+        if iscale.get_scaling_factor(self.efficiency_pressure_exchanger) is None:
+            # efficiency should always be between 0.1-1
+            iscale.set_scaling_factor(self.efficiency_pressure_exchanger, 1)
         if hasattr(self, "high_pressure_difference"):
             if iscale.get_scaling_factor(self.high_pressure_difference) is None:
                 iscale.set_scaling_factor(self.high_pressure_difference, 1e-5)
@@ -694,6 +696,13 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
                 iscale.constraint_scaling_transform(c, sf)
                 sf = iscale.get_scaling_factor(
                     self.low_pressure_side.mass_transfer_term[t, p, j]
+                )
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, "eq_pressure_difference"):
+            for t, c in self.eq_pressure_difference.items():
+                sf = iscale.get_scaling_factor(
+                    self.high_pressure_side.properties_in[t].pressure
                 )
                 iscale.constraint_scaling_transform(c, sf)
 
