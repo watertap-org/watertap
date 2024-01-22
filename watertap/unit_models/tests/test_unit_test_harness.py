@@ -40,27 +40,40 @@ class TestReverseOsmosis0D_default(UnitTestHarness):
         m.fs.unit = ReverseOsmosis0D(
             property_package=m.fs.properties,
             has_pressure_change=True,
-            pressure_change_type=PressureChangeType.calculated,
-            mass_transfer_coefficient=MassTransferCoefficient.calculated,
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
         )
 
-        # specify unit
-        m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"].fix(
-            0.035
+        # fully specify system
+        feed_flow_mass = 1
+        feed_mass_frac_NaCl = 0.035
+        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+        feed_pressure = 50e5
+        feed_temperature = 273.15 + 25
+        membrane_pressure_drop = 3e5
+        length = 20
+        membrane_area = 50
+        A = 4.2e-12
+        B = 3.5e-8
+        pressure_atmospheric = 101325
+
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+            feed_flow_mass * feed_mass_frac_NaCl
         )
-        m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix(
-            0.965
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            feed_flow_mass * feed_mass_frac_H2O
         )
-        m.fs.unit.feed_side.properties_in[0].pressure.fix(50e5)
-        m.fs.unit.feed_side.properties_in[0].temperature.fix(298.15)
-        m.fs.unit.area.fix(50)
-        m.fs.unit.A_comp.fix(4.2e-12)
-        m.fs.unit.B_comp.fix(3.5e-8)
-        m.fs.unit.permeate.pressure[0].fix(101325)
-        m.fs.unit.channel_height.fix(0.002)
-        m.fs.unit.spacer_porosity.fix(0.85)
-        m.fs.unit.length.fix(20)
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.deltaP.fix(-membrane_pressure_drop)
+        m.fs.unit.area.fix(membrane_area)
+        m.fs.unit.A_comp.fix(A)
+        m.fs.unit.B_comp.fix(B)
+        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+
+        m.fs.unit.feed_side.channel_height.fix(0.002)
+        m.fs.unit.feed_side.spacer_porosity.fix(0.75)
+        m.fs.unit.length.fix(length)
 
         # scale unit
         m.fs.properties.set_default_scaling(
@@ -73,8 +86,8 @@ class TestReverseOsmosis0D_default(UnitTestHarness):
 
         self.unit_model_block = m.fs.unit
         self.unit_statistics = {
-            "number_variables": 128,
-            "number_total_constraints": 117,
+            "number_variables": 121,
+            "number_total_constraints": 109,
             "number_unused_variables": 0,
         }
 

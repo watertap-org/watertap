@@ -22,11 +22,6 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
-from idaes.core.initialization.initializer_base import (
-    InitializerBase,
-    InitializationStatus,
-)
-from watertap.core.util.initialization import check_constraint_status
 
 
 # -----------------------------------------------------------------------------
@@ -70,7 +65,7 @@ class UnitTestHarness:
         blk._test_objs.solver = self.solver
         blk._test_objs.optarg = self.optarg
         blk._test_objs.stateblock_statistics = self.unit_statistics
-        blk._test_objs.unit_report = self.unit_report
+        # blk._test_objs.unit_report = self.unit_report
 
     def configure(self):
         """
@@ -143,15 +138,9 @@ class UnitTestHarness:
         blk = frame_unit
 
         # initialize
-        initializer = blk.initialize(
-            solver=blk._test_objs.solver, optarg=blk._test_objs.optarg
-        )
-
-        # check convergence
-        # # TODO: update this when IDAES API is updated to return solver status for initialize()
-        # check_constraint_status(blk)
-
-        if initializer.summary[blk]["status"] != InitializationStatus.Ok:
+        try:
+            blk.initialize(solver=blk._test_objs.solver, optarg=blk._test_objs.optarg)
+        except InitializationError:
             raise InitializationError(
                 "The unit has failed to initialize successfully. Please check the output logs for more information."
             )
