@@ -232,16 +232,16 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
-        if self.config.pressure_exchange_calculation is PressureExchangeType.efficiency:
-            self.efficiency_pressure_exchanger = Var(
-                self.flowsheet().config.time,
-                initialize=0.95,
-                bounds=(1e-6, 1),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Pressure exchanger efficiency",
-            )
-        elif (
+        self.efficiency_pressure_exchanger = Var(
+            self.flowsheet().config.time,
+            initialize=0.95,
+            bounds=(1e-6, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Pressure exchanger efficiency",
+        )
+
+        if (
             self.config.pressure_exchange_calculation
             is PressureExchangeType.high_pressure_difference
         ):
@@ -370,17 +370,14 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
                 == b.low_pressure_side.properties_in[t].pressure
             )
 
-        if self.config.pressure_exchange_calculation is PressureExchangeType.efficiency:
+        @self.Constraint(self.flowsheet().config.time, doc="Pressure transfer")
+        def eq_pressure_transfer(b, t):
+            return (
+                b.low_pressure_side.deltaP[t]
+                == b.efficiency_pressure_exchanger[t] * -b.high_pressure_side.deltaP[t]
+            )
 
-            @self.Constraint(self.flowsheet().config.time, doc="Pressure transfer")
-            def eq_pressure_transfer(b, t):
-                return (
-                    b.low_pressure_side.deltaP[t]
-                    == b.efficiency_pressure_exchanger[t]
-                    * -b.high_pressure_side.deltaP[t]
-                )
-
-        elif (
+        if (
             self.config.pressure_exchange_calculation
             is PressureExchangeType.high_pressure_difference
         ):
@@ -656,7 +653,6 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
                 iscale.set_scaling_factor(self.efficiency_pressure_exchanger, 1)
         if hasattr(self, "high_pressure_difference"):
             if iscale.get_scaling_factor(self.high_pressure_difference) is None:
-                # efficiency should always be between 0.1-1
                 iscale.set_scaling_factor(self.high_pressure_difference, 1e-5)
         if hasattr(self, "leakage_vol"):
             if iscale.get_scaling_factor(self.leakage_vol) is None:
@@ -737,7 +733,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
         t = time_point
         return {
             "vars": {
-                # "Efficiency": self.efficiency_pressure_exchanger[t],
+                "Efficiency": self.efficiency_pressure_exchanger[t],
                 "HP Side Pressure Change": self.high_pressure_side.deltaP[t],
                 "LP Side Pressure Change": self.low_pressure_side.deltaP[t],
             },
