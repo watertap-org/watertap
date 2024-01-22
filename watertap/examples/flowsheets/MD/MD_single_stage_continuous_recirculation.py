@@ -345,7 +345,7 @@ def set_operating_conditions(m):
     m.fs.MD.membrane_thickness.fix(1e-4)
     m.fs.MD.membrane_tc.fix(0.2)
     length = 3
-    m.fs.MD.length.fix(lenght)
+    m.fs.MD.length.fix(length)
 
     m.fs.MD.hot_ch.channel_height.fix(0.0019)
     m.fs.MD.hot_ch.spacer_porosity.fix(0.77)
