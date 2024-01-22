@@ -16,16 +16,14 @@ This osmotically assisted reverse osmosis (OARO) unit model
 
 Degrees of Freedom
 ------------------
-Aside from the inlet feed state variables (i.e. temperature, pressure, component flowrates), the OARO model has
-at least 5 degrees of freedom that should be fixed for the unit to be fully specified. Unlike RO, which only
+Aside from the feed-side and permeate-side inlet state variables (i.e. temperature, pressure, component flowrates), the OARO model has
+at least 4 degrees of freedom that should be fixed for the unit to be fully specified. Unlike RO, which only
 accounts for concentration polarization on the feed side, the OARO model includes a structural parameter
 variable, which is used to calculate the membrane-interface concentration on the permeate side.
-
 
 Typically, the following variables are fixed for the OARO model, in addition to state variables at the inlet:
     * membrane water permeability, A
     * membrane salt permeability, B
-    * permeate pressure
     * membrane area
     * structural parameter
 
@@ -33,12 +31,11 @@ On the other hand, configuring the OARO unit to calculate concentration polariza
 coefficient, and pressure drop would result in 6 additional degrees of freedom. In this case, in addition to the
 previously fixed variables, we typically fix the following variables to fully specify the unit:
 
-    * feed-spacer porosity
-    * feed-channel height
-    * feed-velocity
-    * permeate-space porosity
-    * permeate-channel height
-    * membrane length *or* membrane width *or* inlet Reynolds number
+    * feed-side spacer porosity
+    * feed-side channel height
+    * permeate-side space porosity
+    * permeate-side channel height
+    * feed-side Reynolds number *or* water mass recovery
 
 Model Structure
 ------------------
