@@ -415,30 +415,9 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
                 )
 
             if self.config.has_leakage and not self.config.has_mixing:
-
-                @self.Constraint(
-                    self.flowsheet().config.time, doc="High pressure side mass transfer"
+                raise ConfigurationError(
+                    f"{self.config.has_leakage} must be set as 'True' {self.config.has_leakage} is 'True'"
                 )
-                def eq_leakage(b, t):
-                    return (
-                        b.high_pressure_side.properties_out[t].flow_vol
-                        == (1 - b.leakage_vol[t])
-                        * b.high_pressure_side.properties_in[t].flow_vol
-                    )
-
-                @self.Constraint(
-                    self.flowsheet().config.time,
-                    self.config.property_package.phase_list,
-                    self.config.property_package.solute_set,
-                    doc="Mixing effect of the unit",
-                )
-                def eq_mixing(b, t, p, j):
-                    return (
-                        b.low_pressure_side.properties_out[t].conc_mass_phase_comp[p, j]
-                        == b.low_pressure_side.properties_in[t].conc_mass_phase_comp[
-                            p, j
-                        ]
-                    )
 
             elif self.config.has_mixing and not self.config.has_leakage:
 
