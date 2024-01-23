@@ -433,7 +433,7 @@ def set_operating_conditions(m):
     m.fs.R6.volume.fix(3000 * pyo.units.m**3)
     m.fs.R7.volume.fix(3000 * pyo.units.m**3)
 
-    # Injection rates to Reactions 3, 4 and 5
+    # Injection rates to Reactions 5, 6 and 7
     for j in m.fs.props_ASM2D.component_list:
         if j != "S_O2":
             # All components except S_O have no injection
