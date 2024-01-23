@@ -93,11 +93,11 @@ def main():
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
-    print(f"DOF before initialization: {degrees_of_freedom(m)}")
+    print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
     results = solve(m)
 
-    # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
+    # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
     m.fs.R5.KLa.fix(240)
     m.fs.R6.KLa.fix(240)
     m.fs.R7.KLa.fix(84)
