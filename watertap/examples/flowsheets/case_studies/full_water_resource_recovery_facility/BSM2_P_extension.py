@@ -97,7 +97,7 @@ def main():
 
     results = solve(m)
 
-    # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
+    # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
     m.fs.R5.KLa.fix(240)
     m.fs.R6.KLa.fix(240)
     m.fs.R7.KLa.fix(84)
