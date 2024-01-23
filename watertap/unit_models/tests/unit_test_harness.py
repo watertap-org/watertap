@@ -67,8 +67,6 @@ class UnitTestHarness:
         blk._test_objs.solver = self.solver
         blk._test_objs.optarg = self.optarg
         blk._test_objs.stateblock_statistics = self.unit_statistics
-        blk._test_objs.unit_ports = self.unit_ports
-        blk._test_objs.unit_stateblocks = self.unit_stateblocks
         blk._test_objs.unit_solution = self.unit_solution
 
     def configure(self):
@@ -153,19 +151,7 @@ class UnitTestHarness:
     def test_unit_solution(self, frame_unit):
         # self.configure_class()
         blk = frame_unit
-        ports = blk._test_objs.unit_ports
-        stateblocks = blk._test_objs.unit_stateblocks
         solution = blk._test_objs.unit_solution
-
-        # create model
-        # m = ConcreteModel()
-        # m.fs = FlowsheetBlock(dynamic=False)
-        # m.fs.properties = self.prop_pack()
-        # m.fs.stream = m.fs.properties.build_state_block([0], **self.param_args)
-        #
-        # metadata = m.fs.properties.get_metadata().properties
-        # for p in metadata.list_supported_properties():
-        #     getattr(m.fs.stream[0], p.name)
 
         # solve unit
         if blk._test_objs.solver is None:
@@ -180,52 +166,85 @@ class UnitTestHarness:
         assert len(list(iscale.badly_scaled_var_generator(blk, zero=1e-8))) == 0
         assert_optimal_termination(results)
 
-        assert hasattr(blk, "feed_side")
-        cv_blk = getattr(blk, "feed_side")  # m.fs.unit.feed_side
-
-        assert hasattr(cv_blk, "properties_in")
-        stream = getattr(cv_blk, "properties_in")
-
-        assert hasattr(stream[0], "flow_mass_phase_comp")
-        stream_var = getattr(stream[0], "flow_mass_phase_comp")
-
-        # for x in stateblocks:
-        #     assert hasattr(cv_blk, x)
-        #     stream = getattr(cv_blk, x)  # m.fs.unit.feed_side.properties_in
-
         # check results
-        for (
-            v_name,
-            ind,
-        ), val in (
-            solution.items()
-        ):  # m.fs.unit.feed_side.properties_in.flow_mass_phase_comp
-            for x in ports:
-                cv_blk = getattr(blk, x)  # m.fs.unit.feed_side
-                for y in stateblocks:
-                    stream = getattr(cv_blk, y)  # m.fs.unit.feed_side.properties_in
-                    var = getattr(stream[0], v_name)[ind]
-                    # relative tolerance doesn't mean anything for 0-valued things
-                    if val == 0:
-                        if not pytest.approx(val, abs=1.0e-08) == value(var):
-                            raise UnitValueError(
-                                "Variable {v_name} is expected to have a value of {val} +/- 1.0e-08, but it "
-                                "has a value of {val_t}. \nUpdate unit_solution in the configure function "
-                                "that sets up the UnitRegressionTest".format(
-                                    v_name=v_name, ind=ind, val=val, val_t=value(var)
-                                )
-                            )
-                    elif not pytest.approx(val, rel=1e-3) == value(var):
+        for key, val in solution.items():
+            if len(key) == 4:
+                cv_blk = getattr(blk, key[0])  # m.fs.feed_side
+                stream = getattr(cv_blk, key[1])  # m.fs.feed_side.properties_in
+                var = getattr(stream[0], key[2])[
+                    key[3]
+                ]  # m.fs.feed_side.properties_in.flow_mass_phase_comp[Liq, NaCl]
+                # relative tolerance doesn't mean anything for 0-valued things
+                if val == 0:
+                    if not pytest.approx(val, abs=1.0e-08) == value(var):
                         raise UnitValueError(
-                            "Variable {v_name} is expected to have a value of {val} +/- 0.1%, but it "
+                            "Variable {v_name} is expected to have a value of {val} +/- 1.0e-08, but it "
                             "has a value of {val_t}. \nUpdate unit_solution in the configure function "
                             "that sets up the UnitRegressionTest".format(
-                                v_name=v_name, ind=ind, val=val, val_t=value(var)
+                                v_name=key[2], ind=key[3], val=val, val_t=value(var)
                             )
                         )
+                elif not pytest.approx(val, rel=1e-3) == value(var):
+                    raise UnitValueError(
+                        "Variable {v_name} is expected to have a value of {val} +/- 0.1%, but it "
+                        "has a value of {val_t}. \nUpdate unit_solution in the configure function "
+                        "that sets up the UnitRegressionTest".format(
+                            v_name=key[2], ind=key[3], val=val, val_t=value(var)
+                        )
+                    )
+            if len(key) == 3:
+                # for (port, v_name, ind), val in solution.items():
+                stream = getattr(blk, key[0])  # m.fs.feed_side
+                var = getattr(stream[0], key[1])[
+                    key[2]
+                ]  # m.fs.feed_side.properties_in.flow_mass_phase_comp[Liq, NaCl]
+                # relative tolerance doesn't mean anything for 0-valued things
+                if val == 0:
+                    if not pytest.approx(val, abs=1.0e-08) == value(var):
+                        raise UnitValueError(
+                            "Variable {v_name} is expected to have a value of {val} +/- 1.0e-08, but it "
+                            "has a value of {val_t}. \nUpdate unit_solution in the configure function "
+                            "that sets up the UnitRegressionTest".format(
+                                v_name=key[1], ind=key[2], val=val, val_t=value(var)
+                            )
+                        )
+                elif not pytest.approx(val, rel=1e-3) == value(var):
+                    raise UnitValueError(
+                        "Variable {v_name} is expected to have a value of {val} +/- 0.1%, but it "
+                        "has a value of {val_t}. \nUpdate unit_solution in the configure function "
+                        "that sets up the UnitRegressionTest".format(
+                            v_name=key[1], ind=key[2], val=val, val_t=value(var)
+                        )
+                    )
 
-        # for (v_name, ind), val in solution.items():
-        #     var = getattr(m.fs.stream[0], v_name)[ind]
+            elif len(key) == 2:
+                # for (v_name, ind), val in solution.keys():
+                var = getattr(blk, key[0])[
+                    key[1]
+                ]  # m.fs.feed_side.properties_in.flow_mass_phase_comp[Liq, NaCl]
+                # relative tolerance doesn't mean anything for 0-valued things
+                if val == 0:
+                    if not pytest.approx(val, abs=1.0e-08) == value(var):
+                        raise UnitValueError(
+                            "Variable {v_name} is expected to have a value of {val} +/- 1.0e-08, but it "
+                            "has a value of {val_t}. \nUpdate unit_solution in the configure function "
+                            "that sets up the UnitRegressionTest".format(
+                                v_name=key[0], ind=key[1], val=val, val_t=value(var)
+                            )
+                        )
+                elif not pytest.approx(val, rel=1e-3) == value(var):
+                    raise UnitValueError(
+                        "Variable {v_name} is expected to have a value of {val} +/- 0.1%, but it "
+                        "has a value of {val_t}. \nUpdate unit_solution in the configure function "
+                        "that sets up the UnitRegressionTest".format(
+                            v_name=key[0], ind=key[1], val=val, val_t=value(var)
+                        )
+                    )
+
+        # for (port, stateblock, v_name, ind), val in solution.items():
+        #     cv_blk = getattr(blk, port)  # m.fs.feed_side
+        #     stream = getattr(cv_blk, stateblock)  # m.fs.feed_side.properties_in
+        #     var = getattr(stream[0], v_name)[ind]  # m.fs.feed_side.properties_in.flow_mass_phase_comp[Liq, NaCl]
         #     # relative tolerance doesn't mean anything for 0-valued things
         #     if val == 0:
         #         if not pytest.approx(val, abs=1.0e-08) == value(var):
@@ -244,180 +263,3 @@ class UnitTestHarness:
         #                 v_name=v_name, ind=ind, val=val, val_t=value(var)
         #             )
         #         )
-
-
-# @pytest.mark.component
-# class UnitRegressionTest:
-#     def configure_class(self):
-#         self.solver = None  # string for solver, if None use IDAES default
-#         self.optarg = None  # dictionary for solver options, if None use IDAES default
-#         self.configure()
-#
-#         blk = self.unit_model_block
-#
-#         assert not hasattr(blk, '_test_objs')
-#         blk._test_objs = Block()
-#         blk._test_objs.solver = self.solver
-#         blk._test_objs.optarg = self.optarg
-#         blk._test_objs.stateblock_statistics = self.unit_statistics
-#         blk._test_objs.unit_solution = self.unit_solution
-#
-#     def configure(self):
-#         """
-#         Placeholder method to allow user to setup the unit regression test.
-#
-#         The configure function must set the attributes:
-#
-#         unit_model: pyomo unit model block (e.g. m.fs.unit), the block should
-#             have zero degrees of freedom, i.e. fully specified
-#
-#         prop_pack: property package parameter block
-#
-#         param_args: dictionary for property parameter arguments
-#
-#         solver: string name for solver, if not provided or None will use IDAES default
-#
-#         optarg: dictionary of solver options, if not provided or None will use IDAES default
-#
-#         scaling_args: dictionary of scaling arguments
-#             keys = (string name of variable, tuple index), values = scaling factor
-#
-#         state_args: dictionary of specified state variables
-#             keys = (string name of variable, tuple index), values = value
-#
-#         unit_solution: dictionary of property values for the specified state variables
-#             keys = (string name of variable, tuple index), values = value
-#         """
-#
-#     @pytest.fixture(scope='class')
-#     def frame_unit(self):
-#         self.configure_class()
-#         return self.unit_model_block
-#
-#     @pytest.mark.component
-#     def test_unit_regression(self, frame_unit):
-#         self.configure_class()
-#         blk = frame_unit
-#
-#         # create model
-#         m = ConcreteModel()
-#         m.fs = FlowsheetBlock(dynamic=False)
-#         m.fs.properties = self.prop_pack()
-#         m.fs.stream = m.fs.properties.build_state_block([0], **self.param_args)
-#         # m.fs.unit = self.unit_model_block
-#
-#         # set default scaling
-#         for (v_str, ind), sf in self.scaling_args.items():
-#             m.fs.properties.set_default_scaling(v_str, sf, index=ind)
-#
-#         # set state variables
-#         for (v_str, ind), val in self.state_args.items():
-#             var = getattr(m.fs.stream[0], v_str)
-#             var[ind].fix(val)
-#
-#         # touch all properties
-#         metadata = m.fs.properties.get_metadata().properties
-#         for p in metadata.list_supported_properties():
-#             getattr(m.fs.stream[0], p.name)
-#
-#         # scale model
-#         iscale.calculate_scaling_factors(m)
-#
-#         # solve unit
-#         if blk._test_objs.solver is None:
-#             opt = get_solver()
-#         else:
-#             opt = get_solver(solver=blk._test_objs.solver, options=blk._test_objs.optarg)
-#         results = opt.solve(blk)
-#
-#         # check solve
-#         assert len(list(iscale.badly_scaled_var_generator(blk, zero=1e-8))) == 0
-#         assert_optimal_termination(results)
-#
-#         # check results
-#         for v_name, val in self.unit_solution.items():
-#             var = getattr(blk, v_name)
-#             # relative tolerance doesn't mean anything for 0-valued things
-#             if val == 0:
-#                 if not pytest.approx(val, abs=1.0e-08) == value(var):
-#                     raise UnitValueError(
-#                         "Variable {v_name} is expected to have a value of {val} +/- 1.0e-08, but it "
-#                         "has a value of {val_t}. \nUpdate unit_solution in the configure function "
-#                         "that sets up the UnitRegressionTest".format(
-#                             v_name=v_name, val=val, val_t=value(var)
-#                         )
-#                     )
-#             elif not pytest.approx(val, rel=1e-3) == value(var):
-#                 raise UnitValueError(
-#                     "Variable {v_name} is expected to have a value of {val} +/- 0.1%, but it "
-#                     "has a value of {val_t}. \nUpdate unit_solution in the configure function "
-#                     "that sets up the UnitRegressionTest".format(
-#                         v_name=v_name, val=val, val_t=value(var)
-#                     )
-#                 )
-
-# @pytest.mark.component
-# def test_property_regression(self):
-#     self.configure_class()
-#
-#     # create model
-#     m = ConcreteModel()
-#     m.fs = FlowsheetBlock(dynamic=False)
-#     m.fs.properties = self.prop_pack()
-#     m.fs.stream = m.fs.properties.build_state_block([0], **self.param_args)
-#
-#     # set default scaling
-#     for (v_str, ind), sf in self.scaling_args.items():
-#         m.fs.properties.set_default_scaling(v_str, sf, index=ind)
-#
-#     # set state variables
-#     for (v_str, ind), val in self.state_args.items():
-#         var = getattr(m.fs.stream[0], v_str)
-#         var[ind].fix(val)
-#
-#     # touch all properties
-#     metadata = m.fs.properties.get_metadata().properties
-#     for p in metadata.list_supported_properties():
-#         getattr(m.fs.stream[0], p.name)
-#
-#     # scale model
-#     calculate_scaling_factors(m)
-#
-#     # solve model
-#     opt = get_solver(self.solver, self.optarg)
-#     results = opt.solve(m)
-#     assert_optimal_termination(results)
-#
-#     # check results
-#     for (v_name, ind), val in self.regression_solution.items():
-#         var = getattr(m.fs.stream[0], v_name)[ind]
-#         # relative tolerance doesn't mean anything for 0-valued things
-#         if val == 0:
-#             if not pytest.approx(val, abs=1.0e-08) == value(var):
-#                 raise PropertyValueError(
-#                     "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, but it "
-#                     "has a value of {val_t}. \nUpdate regression_solution in the configure function "
-#                     "that sets up the PropertyRegressionTest".format(
-#                         v_name=v_name, ind=ind, val=val, val_t=value(var)
-#                     )
-#                 )
-#         elif not pytest.approx(val, rel=1e-3) == value(var):
-#             raise PropertyValueError(
-#                 "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, but it "
-#                 "has a value of {val_t}. \nUpdate regression_solution in the configure function "
-#                 "that sets up the PropertyRegressionTest".format(
-#                     v_name=v_name, ind=ind, val=val, val_t=value(var)
-#                 )
-#             )
-#
-#     # check if any variables are badly scaled
-#     lst = []
-#     for (var, val) in badly_scaled_var_generator(
-#         m, large=1e2, small=1e-2, zero=1e-8
-#     ):
-#         lst.append((var.name, val))
-#         print(var.name, var.value)
-#     if lst:
-#         raise PropertyValueError(
-#             "The following variable(s) are poorly scaled: {lst}".format(lst=lst)
-#         )
