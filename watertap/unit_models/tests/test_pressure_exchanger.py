@@ -282,6 +282,7 @@ class TestPressureExchanger_without_mass_transfer:
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, unit_frame):
         m = unit_frame
@@ -293,6 +294,7 @@ class TestPressureExchanger_without_mass_transfer:
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, unit_frame):
         m = unit_frame
@@ -302,6 +304,7 @@ class TestPressureExchanger_without_mass_transfer:
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, unit_frame):
         m = unit_frame
@@ -599,6 +602,7 @@ class TestPressureExchanger_with_mass_transfer:
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, unit_frame):
         m = unit_frame
@@ -611,6 +615,7 @@ class TestPressureExchanger_with_mass_transfer:
         [print(i[0]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, unit_frame):
         m = unit_frame
@@ -620,6 +625,7 @@ class TestPressureExchanger_with_mass_transfer:
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, unit_frame):
         m = unit_frame
@@ -795,11 +801,13 @@ class TestPressureExchanger_with_ion_prop_pack:
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, unit_frame):
         m = unit_frame
         initialization_tester(unit_frame)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, unit_frame):
         m = unit_frame
@@ -809,6 +817,7 @@ class TestPressureExchanger_with_ion_prop_pack:
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, unit_frame):
         m = unit_frame
