@@ -33,6 +33,8 @@ solver = get_solver(options={"bound_push": 1e-8})
 # -----------------------------------------------------------------------------
 class TestReverseOsmosis0D_default(UnitTestHarness):
     def configure(self):
+        self.prop_pack = props.NaClParameterBlock
+        self.param_args = {}
         # build unit
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
@@ -90,7 +92,75 @@ class TestReverseOsmosis0D_default(UnitTestHarness):
             "number_total_constraints": 109,
             "number_unused_variables": 0,
         }
+        self.unit_solution = {
+            # "feed_side.properties_out[0].conc_mass_phase_comp[Liq, NaCl]": 1.5,
+            ("flow_mass_phase_comp", ("Liq", "NaCl")): 0.035,
+            # "flux_mass_phase_comp_avg[0, Liq, H2O]": 4.722e-3,
+            # "flux_mass_phase_comp_avg[0, Liq, NaCl]": 1.576e-6,
+            # "mixed_permeate[0].flow_mass_phase_comp[Liq, H2O]": 0.2361,
+            # "mixed_permeate[0].flow_mass_phase_comp[Liq, NaCl]": 7.879e-5,
+            # "feed_side.mixed_permeate[0].flow_mass_phase_comp[Liq, H2O]": 0.95,
+            # "feed_side.mixed_permeate[0].flow_mass_phase_comp[Liq, NaCl]": 0.05,
+            # ("mass_frac_phase_comp", ("Liq", "NaCl")): 0.05,
+            # ("dens_mass_phase", "Liq"): 1032.8,
+            # ("flow_vol_phase", "Liq"): 9.682e-4,
+            # ("conc_mass_phase_comp", ("Liq", "H2O")): 981.1,
+            # ("conc_mass_phase_comp", ("Liq", "NaCl")): 51.64,
+            # ("flow_mol_phase_comp", ("Liq", "H2O")): 52.73,
+            # ("flow_mol_phase_comp", ("Liq", "NaCl")): 0.8556,
+            # ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9840,
+            # ("mole_frac_phase_comp", ("Liq", "NaCl")): 1.597e-2,
+            # ("molality_phase_comp", ("Liq", "NaCl")): 0.9006,
+            # ("diffus_phase_comp", ("Liq", "NaCl")): 1.471e-9,
+            # ("visc_d_phase", "Liq"): 1.0875e-3,
+            # ("osm_coeff", None): 0.9347,
+            # ("pressure_osm_phase", "Liq"): 4.174e6,
+            # ("enth_mass_phase", "Liq"): 1.093e5,
+        }
 
+
+# @pytest.mark.component
+# class TestUnitSolution(UnitRegressionTest):
+#     def configure(self):
+#         self.prop_pack = props.NaClParameterBlock
+#         self.param_args = {}
+#
+#         self.solver = "ipopt"
+#         self.optarg = {"nlp_scaling_method": "user-scaling"}
+#
+#         self.scaling_args = {
+#             ("flow_mass_phase_comp", ("Liq", "H2O")): 1,
+#             ("flow_mass_phase_comp", ("Liq", "NaCl")): 1e2,
+#         }
+#         self.state_args = {
+#             ("flow_mass_phase_comp", ("Liq", "H2O")): 0.95,
+#             ("flow_mass_phase_comp", ("Liq", "NaCl")): 0.05,
+#             ("temperature", None): 273.15 + 25,
+#             ("pressure", None): 50e5,
+#         }
+#         self.unit_solution = {
+#             "flux_mass_phase_comp_avg[0, Liq, H2O]": 4.722e-3,
+#             "flux_mass_phase_comp_avg[0, Liq, NaCl]": 1.576e-6,
+#             "mixed_permeate[0].flow_mass_phase_comp[Liq, H2O]": 0.2361,
+#             "mixed_permeate[0].flow_mass_phase_comp[Liq, NaCl]": 7.879e-5,
+#             "feed_side.mixed_permeate[0].flow_mass_phase_comp[Liq, H2O]": 0.95,
+#             "feed_side.mixed_permeate[0].flow_mass_phase_comp[Liq, NaCl]": 0.05,
+# ("mass_frac_phase_comp", ("Liq", "NaCl")): 0.05,
+# ("dens_mass_phase", "Liq"): 1032.8,
+# ("flow_vol_phase", "Liq"): 9.682e-4,
+# ("conc_mass_phase_comp", ("Liq", "H2O")): 981.1,
+# ("conc_mass_phase_comp", ("Liq", "NaCl")): 51.64,
+# ("flow_mol_phase_comp", ("Liq", "H2O")): 52.73,
+# ("flow_mol_phase_comp", ("Liq", "NaCl")): 0.8556,
+# ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9840,
+# ("mole_frac_phase_comp", ("Liq", "NaCl")): 1.597e-2,
+# ("molality_phase_comp", ("Liq", "NaCl")): 0.9006,
+# ("diffus_phase_comp", ("Liq", "NaCl")): 1.471e-9,
+# ("visc_d_phase", "Liq"): 1.0875e-3,
+# ("osm_coeff", None): 0.9347,
+# ("pressure_osm_phase", "Liq"): 4.174e6,
+# ("enth_mass_phase", "Liq"): 1.093e5,
+# }
 
 #         self.unit_report = \
 # """
