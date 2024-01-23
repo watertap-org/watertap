@@ -67,6 +67,8 @@ class UnitTestHarness:
         blk._test_objs.solver = self.solver
         blk._test_objs.optarg = self.optarg
         blk._test_objs.stateblock_statistics = self.unit_statistics
+        blk._test_objs.unit_ports = self.unit_ports
+        blk._test_objs.unit_stateblocks = self.unit_stateblocks
         blk._test_objs.unit_solution = self.unit_solution
 
     def configure(self):
@@ -149,43 +151,21 @@ class UnitTestHarness:
 
     @pytest.mark.component
     def test_unit_solution(self, frame_unit):
-        self.configure_class()
+        # self.configure_class()
         blk = frame_unit
+        ports = blk._test_objs.unit_ports
+        stateblocks = blk._test_objs.unit_stateblocks
         solution = blk._test_objs.unit_solution
 
         # create model
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = self.prop_pack()
-        m.fs.stream = m.fs.properties.build_state_block([0], **self.param_args)
-
-        metadata = m.fs.properties.get_metadata().properties
-        for p in metadata.list_supported_properties():
-            getattr(m.fs.stream[0], p.name)
-
-        # # create model
         # m = ConcreteModel()
         # m.fs = FlowsheetBlock(dynamic=False)
         # m.fs.properties = self.prop_pack()
         # m.fs.stream = m.fs.properties.build_state_block([0], **self.param_args)
-        # # m.fs.unit = self.unit_model_block
         #
-        # # set default scaling
-        # for (v_str, ind), sf in self.scaling_args.items():
-        #     m.fs.properties.set_default_scaling(v_str, sf, index=ind)
-        #
-        # # set state variables
-        # for (v_str, ind), val in self.state_args.items():
-        #     var = getattr(m.fs.stream[0], v_str)
-        #     var[ind].fix(val)
-        #
-        # # touch all properties
         # metadata = m.fs.properties.get_metadata().properties
         # for p in metadata.list_supported_properties():
         #     getattr(m.fs.stream[0], p.name)
-        #
-        # # scale model
-        # iscale.calculate_scaling_factors(m)
 
         # solve unit
         if blk._test_objs.solver is None:
@@ -200,9 +180,52 @@ class UnitTestHarness:
         assert len(list(iscale.badly_scaled_var_generator(blk, zero=1e-8))) == 0
         assert_optimal_termination(results)
 
+        assert hasattr(blk, "feed_side")
+        cv_blk = getattr(blk, "feed_side")  # m.fs.unit.feed_side
+
+        assert hasattr(cv_blk, "properties_in")
+        stream = getattr(cv_blk, "properties_in")
+
+        assert hasattr(stream[0], "flow_mass_phase_comp")
+        stream_var = getattr(stream[0], "flow_mass_phase_comp")
+
+        # for x in stateblocks:
+        #     assert hasattr(cv_blk, x)
+        #     stream = getattr(cv_blk, x)  # m.fs.unit.feed_side.properties_in
+
         # check results
-        # for v_name, val in solution.items():
-        #     var = getattr(blk, v_name)
+        for (
+            v_name,
+            ind,
+        ), val in (
+            solution.items()
+        ):  # m.fs.unit.feed_side.properties_in.flow_mass_phase_comp
+            for x in ports:
+                cv_blk = getattr(blk, x)  # m.fs.unit.feed_side
+                for y in stateblocks:
+                    stream = getattr(cv_blk, y)  # m.fs.unit.feed_side.properties_in
+                    var = getattr(stream[0], v_name)[ind]
+                    # relative tolerance doesn't mean anything for 0-valued things
+                    if val == 0:
+                        if not pytest.approx(val, abs=1.0e-08) == value(var):
+                            raise UnitValueError(
+                                "Variable {v_name} is expected to have a value of {val} +/- 1.0e-08, but it "
+                                "has a value of {val_t}. \nUpdate unit_solution in the configure function "
+                                "that sets up the UnitRegressionTest".format(
+                                    v_name=v_name, ind=ind, val=val, val_t=value(var)
+                                )
+                            )
+                    elif not pytest.approx(val, rel=1e-3) == value(var):
+                        raise UnitValueError(
+                            "Variable {v_name} is expected to have a value of {val} +/- 0.1%, but it "
+                            "has a value of {val_t}. \nUpdate unit_solution in the configure function "
+                            "that sets up the UnitRegressionTest".format(
+                                v_name=v_name, ind=ind, val=val, val_t=value(var)
+                            )
+                        )
+
+        # for (v_name, ind), val in solution.items():
+        #     var = getattr(m.fs.stream[0], v_name)[ind]
         #     # relative tolerance doesn't mean anything for 0-valued things
         #     if val == 0:
         #         if not pytest.approx(val, abs=1.0e-08) == value(var):
@@ -210,7 +233,7 @@ class UnitTestHarness:
         #                 "Variable {v_name} is expected to have a value of {val} +/- 1.0e-08, but it "
         #                 "has a value of {val_t}. \nUpdate unit_solution in the configure function "
         #                 "that sets up the UnitRegressionTest".format(
-        #                     v_name=v_name, val=val, val_t=value(var)
+        #                     v_name=v_name, ind=ind, val=val, val_t=value(var)
         #                 )
         #             )
         #     elif not pytest.approx(val, rel=1e-3) == value(var):
@@ -218,30 +241,9 @@ class UnitTestHarness:
         #             "Variable {v_name} is expected to have a value of {val} +/- 0.1%, but it "
         #             "has a value of {val_t}. \nUpdate unit_solution in the configure function "
         #             "that sets up the UnitRegressionTest".format(
-        #                 v_name=v_name, val=val, val_t=value(var)
+        #                 v_name=v_name, ind=ind, val=val, val_t=value(var)
         #             )
         #         )
-
-        for (v_name, ind), val in solution.items():
-            var = getattr(m.fs.stream[0], v_name)[ind]
-            # relative tolerance doesn't mean anything for 0-valued things
-            if val == 0:
-                if not pytest.approx(val, abs=1.0e-08) == value(var):
-                    raise UnitValueError(
-                        "Variable {v_name} is expected to have a value of {val} +/- 1.0e-08, but it "
-                        "has a value of {val_t}. \nUpdate unit_solution in the configure function "
-                        "that sets up the UnitRegressionTest".format(
-                            v_name=v_name, ind=ind, val=val, val_t=value(var)
-                        )
-                    )
-            elif not pytest.approx(val, rel=1e-3) == value(var):
-                raise UnitValueError(
-                    "Variable {v_name} is expected to have a value of {val} +/- 0.1%, but it "
-                    "has a value of {val_t}. \nUpdate unit_solution in the configure function "
-                    "that sets up the UnitRegressionTest".format(
-                        v_name=v_name, ind=ind, val=val, val_t=value(var)
-                    )
-                )
 
 
 # @pytest.mark.component

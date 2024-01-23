@@ -33,8 +33,8 @@ solver = get_solver(options={"bound_push": 1e-8})
 # -----------------------------------------------------------------------------
 class TestReverseOsmosis0D_default(UnitTestHarness):
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
-        self.param_args = {}
+        # self.prop_pack = props.NaClParameterBlock
+        # self.param_args = {}
         # build unit
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
@@ -92,8 +92,10 @@ class TestReverseOsmosis0D_default(UnitTestHarness):
             "number_total_constraints": 109,
             "number_unused_variables": 0,
         }
+        self.unit_ports = {"feed_side"}
+        self.unit_stateblocks = {"properties_in"}
         self.unit_solution = {
-            # "feed_side.properties_out[0].conc_mass_phase_comp[Liq, NaCl]": 1.5,
+            # "flow_mass_phase_comp[Liq, NaCl]": 1.5,
             ("flow_mass_phase_comp", ("Liq", "NaCl")): 0.035,
             # "flux_mass_phase_comp_avg[0, Liq, H2O]": 4.722e-3,
             # "flux_mass_phase_comp_avg[0, Liq, NaCl]": 1.576e-6,
