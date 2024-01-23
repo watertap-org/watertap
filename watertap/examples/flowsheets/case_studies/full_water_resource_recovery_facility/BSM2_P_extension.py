@@ -93,7 +93,7 @@ def main():
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
-    print(f"DOF before initialization: {degrees_of_freedom(m)}")
+    print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
     results = solve(m)
 
