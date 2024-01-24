@@ -105,7 +105,8 @@ def cost_centrifuge(
     cost_blk = blk.costing_package.centrifuge
     t0 = blk.flowsheet().time.first()
     x = flow_in = pyo.units.convert(
-        blk.unit_model.inlet.flow_vol[t0], to_units=pyo.units.gallon / pyo.units.hr
+        blk.unit_model.mixed_state[t0].flow_vol,
+        to_units=pyo.units.gallon / pyo.units.hr,
     )
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost

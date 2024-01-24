@@ -54,6 +54,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
+from watertap.costing.unit_models.dewatering import cost_centrifuge
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
@@ -62,7 +63,6 @@ from watertap.unit_models.zero_order import (
     PumpElectricityZO,
     NanofiltrationZO,
     SecondaryTreatmentWWTPZO,
-    CentrifugeZO,
 )
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
@@ -120,6 +120,7 @@ def build(include_pretreatment=False):
     # define flowsheet inlets and outlets
     m.fs.feed = FeedZO(property_package=m.fs.prop_nf)
     m.fs.dye_retentate = Product(property_package=m.fs.prop_nf)
+    # TODO: Consider adding a config option to recycle the centrate product back to the inlet
     m.fs.centrate = Product(property_package=m.fs.prop_nf)
     m.fs.permeate = Product(property_package=m.fs.prop_ro)
     m.fs.brine = Product(property_package=m.fs.prop_ro)
@@ -142,12 +143,13 @@ def build(include_pretreatment=False):
         database=m.db,
         process_subtype="rHGO_dye_rejection",
     )
-    dye_sep.centrifuge = CentrifugeZO(property_package=m.fs.prop_nf, database=m.db)
-    # dye_sep.dewatering = DewateringUnit(
-    #     property_package=m.fs.prop_ro,
-    # energy_split_basis=EnergySplittingType.none, # no temp in prop pack
-    # momentum_balance_type=MomentumBalanceType.none, # no pressure in prop pack
-    # )
+    dye_sep.dewaterer = Separator(
+        property_package=m.fs.prop_nf,
+        outlet_list=["centrate", "dye_retentate"],
+        split_basis=SplittingType.componentFlow,
+        energy_split_basis=EnergySplittingType.none,
+        momentum_balance_type=MomentumBalanceType.none,
+    )
 
     # reverse osmosis components
 
@@ -206,13 +208,13 @@ def build(include_pretreatment=False):
         source=dye_sep.P1.outlet, destination=dye_sep.nanofiltration.inlet
     )
     dye_sep.s02 = Arc(
-        source=dye_sep.nanofiltration.byproduct, destination=dye_sep.centrifuge.inlet
+        source=dye_sep.nanofiltration.byproduct, destination=dye_sep.dewaterer.inlet
     )
     dye_sep.s03 = Arc(
-        source=dye_sep.centrifuge.treated, destination=m.fs.centrate.inlet
+        source=dye_sep.dewaterer.centrate, destination=m.fs.centrate.inlet
     )
     dye_sep.s04 = Arc(
-        source=dye_sep.centrifuge.byproduct, destination=m.fs.dye_retentate.inlet
+        source=dye_sep.dewaterer.dye_retentate, destination=m.fs.dye_retentate.inlet
     )
     m.fs.s_nf = Arc(
         source=dye_sep.nanofiltration.treated, destination=m.fs.tb_nf_ro.inlet
@@ -287,11 +289,9 @@ def set_operating_conditions(m):
     # nanofiltration
     dye_sep.nanofiltration.load_parameters_from_database(use_default_removal=True)
 
-    # centrifuge
-    dye_sep.centrifuge.load_parameters_from_database(use_default_removal=True)
-    dye_sep.centrifuge.polymer_dose[0].fix(0)
-    dye_sep.centrifuge.removal_frac_mass_comp["tds"].fix(0.95)
-    dye_sep.centrifuge.removal_frac_mass_comp["dye"].fix(0.99)
+    dye_sep.dewaterer.split_fraction[0, "dye_retentate", "H2O"].fix(0.01)
+    dye_sep.dewaterer.split_fraction[0, "dye_retentate", "tds"].fix(0.95)
+    dye_sep.dewaterer.split_fraction[0, "dye_retentate", "dye"].fix(0.99)
 
     # nf pump
     dye_sep.P1.load_parameters_from_database(use_default_removal=True)
@@ -300,19 +300,6 @@ def set_operating_conditions(m):
     )
     dye_sep.P1.eta_pump.fix(0.75)  # pump efficiency [-]
     dye_sep.P1.lift_height.unfix()
-
-    # TODO: Evaluate whether these values are realistic
-
-    # Dewatering Unit - fix either HRT or volume.
-    # dye_sep.dewatering.hydraulic_retention_time.fix(1800 * pyunits.s)
-    #
-    # # Set specific energy consumption averaged for centrifuge
-    # dye_sep.dewatering.energy_electric_flow_vol_inlet[0] = (
-    #     0.069 * pyunits.kWh / pyunits.m**3
-    # )
-    #
-    # # Initialize dewatering unit
-    # dye_sep.dewatering.inlet.flow_vol[0] = value(m.fs.feed.flow_vol[0])
 
     # desalination
     desal.P2.efficiency_pump.fix(0.80)
@@ -467,15 +454,13 @@ def add_costing(m):
     dye_sep.nanofiltration.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.zo_costing
     )
-    dye_sep.centrifuge.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
+    dye_sep.dewaterer.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.ro_costing,
+        costing_method=cost_centrifuge,
+        costing_method_arguments={"cost_electricity_flow": False},
     )
     dye_sep.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.zo_costing)
     m.fs.zo_costing.pump_electricity.pump_cost["default"].fix(76)
-    # dye_sep.dewatering.costing = UnitModelCostingBlock(
-    #     flowsheet_costing_block=m.fs.ro_costing,
-    #     costing_method_arguments={"cost_electricity_flow": True},
-    # )
 
     # RO Train
     # RO equipment is costed using more detailed costing package
