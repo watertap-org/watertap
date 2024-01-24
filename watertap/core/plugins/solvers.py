@@ -13,9 +13,17 @@
 import logging
 
 import pyomo.environ as pyo
+from pyomo.common.collections import Bunch
+from pyomo.common.collections import ComponentMap, ComponentSet
+from pyomo.common.modeling import unique_component_name
 from pyomo.core.base.block import _BlockData
 from pyomo.core.kernel.block import IBlock
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
+
+from pyomo.core.plugins.transform.add_slack_vars import AddSlackVariables
+from pyomo.core.plugins.transform.hierarchy import IsomorphicTransformation
+
+from pyomo.opt import WriterFactory
 
 import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import (
@@ -26,6 +34,7 @@ from idaes.core.util.scaling import (
 from idaes.logger import getLogger
 
 _log = getLogger("watertap.core")
+_default_nl_writer = WriterFactory.get_class("nl")
 
 _pyomo_nl_writer_log = logging.getLogger("pyomo.repn.plugins.nl_writer")
 
@@ -37,10 +46,6 @@ def _pyomo_nl_writer_logger_filter(record):
     return True
 
 
-@pyo.SolverFactory.register(
-    "ipopt-watertap",
-    doc="The Ipopt NLP solver, with user-based variable and automatic Jacobian constraint scaling",
-)
 class IpoptWaterTAP(IPOPT):
     def __init__(self, **kwds):
         kwds["name"] = "ipopt-watertap"
@@ -200,6 +205,241 @@ class IpoptWaterTAP(IPOPT):
                 )
             return False
         return True
+
+
+class _VariableBoundsAsConstraints(IsomorphicTransformation):
+    """Replace all variables bounds and domain information with constraints.
+
+       Leaves fixed Vars untouched (for now)
+    """
+
+    def _apply_to(self, instance, **kwds):
+
+        boundconstrblockname = unique_component_name(instance, "_variable_bounds")
+        instance.add_component(boundconstrblockname, pyo.Block())
+        boundconstrblock = instance.component(boundconstrblockname)
+
+        for v in instance.component_data_objects(pyo.Var, descend_into=True):
+            if v.fixed:
+                continue
+            lb, ub = v.bounds
+            if lb is None and ub is None:
+                continue
+            var_name = v.getname(fully_qualified=True)
+            if lb is not None:
+                con_name = "lb_for_"+var_name
+                con = pyo.Constraint(expr=(lb, v, None))
+                boundconstrblock.add_component(con_name, con)
+            if ub is not None:
+                con_name = "ub_for_"+var_name
+                con = pyo.Constraint(expr=(None, v, ub))
+                boundconstrblock.add_component(con_name, con)
+
+            # now we deactivate the variable bounds / domain
+            v.domain = pyo.Reals
+            v.setlb(None)
+            v.setub(None)
+
+
+@pyo.SolverFactory.register(
+    "ipopt-watertap",
+    doc="The Ipopt NLP solver, with user-based variable and automatic Jacobian constraint scaling",
+)
+class WaterTAPSolver:
+
+    def __init__(self, **kwds):
+
+        self.options = Bunch()
+        if kwds.get("options") is not None:
+            for key in kwds["options"]:
+                setattr(self.options, key, kwds["options"][key])
+
+    def solve(self, model, *args, **kwds):
+
+        base_solver = IpoptWaterTAP()
+
+        if "constr_viol_tol" not in self.options:
+            self.options["constr_viol_tol"] = 1e-08
+
+        for k,v in self.options.items():
+            base_solver.options[k] = v
+
+        # first, cache the values we get
+        _value_cache = ComponentMap()
+        for v in model.component_data_objects(pyo.Var, descend_into=True):
+            _value_cache[v] = v.value
+
+        try:
+            results = base_solver.solve(model, *args, **kwds)
+            if pyo.check_optimal_termination(results):
+                return results
+        except:
+            pass
+
+
+        # Something went wrong. We'll try to find a feasible point
+        # *or* prove that the model is infeasible
+        if model.parent_block() is None:
+            common_name = ""
+        else:
+            common_name = model.name
+
+        modified_model = model.clone()
+
+        _modified_model_var_to_original_model_var = ComponentMap()
+        _modified_model_value_cache = ComponentMap()
+
+        for v in model.component_data_objects(pyo.Var, descend_into=True):
+            modified_model_var = modified_model.find_component(v.name[len(common_name)+1:])
+
+            _modified_model_var_to_original_model_var[modified_model_var] = v
+            _modified_model_value_cache[modified_model_var] = _value_cache[v]
+            modified_model_var.set_value(_value_cache[v], skip_validation=True)
+
+        # TODO: For WT / IDAES models, we should probably be more
+        #       selective in *what* we elasticize. E.g., it probably
+        #       does not make sense to elasticize property calculations
+        #       and maybe certain other equality constraints calculating
+        #       values. Maybe we shouldn't elasticize *any* equality 
+        #       constraints.
+        #       For example, elasticizing the calculation of mass fraction
+        #       makes absolutely no sense and will just be noise for the
+        #       modeler to sift through. We could try to sort the constraints
+        #       such that we look for those with linear coefficients `1` on
+        #       some term and leave those be.
+        # move the variable bounds to the constraints
+        _VariableBoundsAsConstraints().apply_to(modified_model)
+        # now add slacks to every constraint (including variable bounds)
+        AddSlackVariables().apply_to(modified_model)
+        slack_block = modified_model._core_add_slack_variables
+
+        # collect the initial set of infeasibilities
+        results = base_solver.solve(modified_model, *args, **kwds)
+
+        # this first solve should be feasible, by definition
+        pyo.assert_optimal_termination(results)
+
+        # TODO: For an interior point method, we should not
+        #       need this loop -- anything potentially
+        #       contributing to the infeasibility will
+        #       be caught above
+        # Phase 1 -- build the initial set of constraints, or prove feasibility
+        elastic_filter = ComponentSet()
+        proved_feasibility = False
+        while pyo.check_optimal_termination(results):
+            fixed_var = False
+            for v in slack_block.component_data_objects(pyo.Var):
+                if v.value > self.options["constr_viol_tol"]:
+                    v.fix(0)
+                    fixed_var = True
+                    if "_slack_plus_" in v.name:
+                        constr = modified_model.find_component(v.local_name[len("_slack_plus_"):])
+                        if constr is None:
+                            raise RuntimeError("Bad constraint name {v.local_name[len('_slack_plus_'):]}")
+                        elastic_filter.add(constr)
+                        print(f"Adding constraint {constr.name} to the filter")
+                    elif "_slack_minus_" in v.name:
+                        constr = modified_model.find_component(v.local_name[len("_slack_minus_"):])
+                        if constr is None:
+                            raise RuntimeError("Bad constraint name {v.local_name[len('_slack_minus_'):]}")
+                        elastic_filter.add(constr)
+                        print(f"Adding constraint {constr.name} to the filter")
+                    else:
+                        raise RuntimeError("Bad var name {v.name}")
+            if not fixed_var:
+                proved_feasibility = True
+                break
+            for var, val in _modified_model_value_cache.items():
+                var.set_value(val, skip_validation=True)
+            try:
+                results = base_solver.solve(modified_model, *args, **kwds)
+            except:
+                break
+
+        if proved_feasibility:
+            # load the feasible solution into the original model
+            for modified_model_var, v in _modified_model_var_to_original_model_var.items():
+                v.set_value(modified_model_var.value, skip_validation=True)
+            base_solver.options["bound_push"] = 0.0
+            results = base_solver.solve(model, *args, **kwds)
+            return results
+
+        # Phase 2 -- deletion filter
+        print(f"PHASE 2, {len(elastic_filter)} Constraints to consider.")
+        # temporarily switch to nl_v1 writer
+        WriterFactory.register("nl")(WriterFactory.get_class("nl_v1"))
+
+        # remove slacks by fixing them to 0
+        for v in slack_block.component_data_objects(pyo.Var):
+            v.fix(0)
+        for o in modified_model.component_data_objects(pyo.Objective, descend_into=True):
+            o.deactivate()
+
+        # mark all constraints not in the filter as inactive
+        for c in modified_model.component_data_objects(pyo.Constraint):
+            if c in elastic_filter:
+                continue
+            else:
+                c.deactivate()
+
+        # TODO: From here on, change Ipopt's options
+        #       so it will terminate on a feasible solution
+        #       (e.g., do not consider dual or complimentary
+        #              or overall `tol`)
+        base_solver.options["tol"] = 1e-08
+        base_solver.options["dual_inf_tol"] = 1e20
+        base_solver.options["compl_inf_tol"] = 1e20
+        try:
+            results = base_solver.solve(modified_model, *args, **kwds)
+        except:
+            results = None
+        assert results is None or not pyo.check_optimal_termination(results)
+
+        deletion_filter = []
+        guards = []
+        for constr in elastic_filter:
+            constr.deactivate()
+            for var, val in _modified_model_value_cache.items():
+                var.set_value(val, skip_validation=True)
+
+            try:
+                results = base_solver.solve(modified_model, *args, **kwds)
+            except:
+                math_failure = True
+            else:
+                math_failure = False
+
+            if math_failure:
+                constr.activate()
+                guards.append(constr)
+            elif pyo.check_optimal_termination(results):
+                constr.activate()
+                deletion_filter.append(constr)
+            else: # still infeasible without this constraint
+                pass
+
+        print("Constraints / bounds in set:")
+        _print_results(deletion_filter)
+        print("Constraints / bounds in guards:")
+        _print_results(guards)
+        WriterFactory.register("nl")(_default_nl_writer)
+
+        raise Exception("Found model to be infeasible, see conflicting constraints above")
+
+
+def _print_results(constr_list):
+    for c in constr_list:
+        c_name = c.name
+        if "_variable_bounds" in c_name:
+            name = c.local_name
+            if "lb" in name:
+                print(f"\tlb of var {name[7:]}")
+            elif "ub" in name:
+                print(f"\tub of var {name[7:]}")
+            else:
+                raise RuntimeError("unrecongized var name")
+        else:
+            print(f"\tconstraint: {c_name}")
 
 
 ## reconfigure IDAES to use the ipopt-watertap solver
