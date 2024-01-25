@@ -50,6 +50,7 @@ import idaes.logger as idaeslog
 from enum import Enum
 
 from watertap.core import ControlVolume1DBlock, InitializationMixin
+from watertap.costing.unit_models.electrodialysis import cost_electrodialysis
 
 __author__ = "Xiangyu Bi, Austin Ladshaw"
 
@@ -657,9 +658,9 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().time,
             self.diluate.length_domain,
             initialize=0.9,
-            bounds=(0, 1),
+            bounds=(0, 1 + 1e-10),
             units=pyunits.dimensionless,
-            doc="The overall current efficiency for deionizaiton",
+            doc="The overall current efficiency for deionization",
         )
         self.recovery_mass_H2O = Var(
             self.flowsheet().time,
@@ -1765,7 +1766,12 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.meter**2 * pyunits.second**-1,
             doc="The mass diffusivity of the solute as molecules (not individual ions)",
         )
-        self.hydraulic_diameter = Var(initialize=1e-3, units=pyunits.meter)
+        self.hydraulic_diameter = Var(
+            initialize=1e-3,
+            bounds=(0, None),
+            units=pyunits.meter,
+            doc="The hydraulic diameter of the channel",
+        )
         self.N_Re = Var(
             initialize=50,
             bounds=(0, None),
@@ -1807,7 +1813,10 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     )
                 else:
                     self.spacer_specific_area = Var(
-                        initialize=1e4, units=pyunits.meter**-1
+                        initialize=1e4,
+                        bounds=(0, None),
+                        units=pyunits.meter**-1,
+                        doc="The specific area of the channel",
                     )
                     return (
                         self.hydraulic_diameter
@@ -2881,3 +2890,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         return self.diluate.power_electrical_x[
             time_point, self.diluate.length_domain.last()
         ]
+
+    @property
+    def default_costing_method(self):
+        return cost_electrodialysis

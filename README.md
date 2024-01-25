@@ -19,12 +19,16 @@ To quickly install and start using WaterTAP, head over to the [Getting Started](
 
 If you wish to use the **WaterTAP UI**, you can [download and install](https://watertap-org.github.io) it from this page: https://watertap-org.github.io.
 
+To run the WaterTAP tutorials online (no installation required), refer to [this guide](https://watertap.readthedocs.io/en/stable/how_to_guides/notebooks.html#online-using-binder-org).
+
 ## Documentation
 
 The WaterTAP documentation is available online at <https://watertap.readthedocs.io>.
-## Developer notes
 
-Refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en/stable/getting_started.html#for-watertap-developers) section of the documentation.
+## Developer Installation
+
+If you want to clone the repository and work directly with the code, please
+refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en/stable/getting_started.html#for-watertap-developers) section of the documentation.
 
 ## Cite this work
 

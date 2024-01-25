@@ -34,7 +34,7 @@ from idaes.core import UnitModelCostingBlock
 from watertap.unit_models.zero_order import MicrobialBatteryZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
-from watertap.core.zero_order_costing import ZeroOrderCosting
+from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -276,5 +276,4 @@ def test_costing():
     assert "filtration_media_disposal" in m.fs.costing._registered_flows
 
     assert isinstance(m.fs.costing.total_capital_cost, Var)
-    assert isinstance(m.fs.costing.total_fixed_operating_cost, Var)
     assert isinstance(m.fs.costing.aggregate_flow_costs, Var)

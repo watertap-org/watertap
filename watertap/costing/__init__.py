@@ -11,6 +11,8 @@
 #################################################################################
 
 from .watertap_costing_package import WaterTAPCosting
+from .zero_order_costing import ZeroOrderCosting
+from .multiple_choice_costing_block import MultiUnitModelCostingBlock
 
 from .util import (
     register_costing_parameter_block,
@@ -21,8 +23,8 @@ from .util import (
     cost_rectifier,
 )
 
-from .units.crystallizer import CrystallizerCostType
-from .units.energy_recovery_device import EnergyRecoveryDeviceType
-from .units.mixer import MixerType
-from .units.pump import PumpType
-from .units.reverse_osmosis import ROType
+from .unit_models.crystallizer import CrystallizerCostType
+from .unit_models.energy_recovery_device import EnergyRecoveryDeviceType
+from .unit_models.mixer import MixerType
+from .unit_models.pump import PumpType
+from .unit_models.reverse_osmosis import ROType

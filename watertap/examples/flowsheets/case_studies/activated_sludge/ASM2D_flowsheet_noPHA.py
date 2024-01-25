@@ -347,7 +347,7 @@ def build_flowsheet():
 
     seq.run(m, function)
 
-    solver = get_solver(options={"bound_push": 1e-4})
+    solver = get_solver()
     results = solver.solve(m, tee=False)
     check_solve(results, logger=_log, fail_flag=True)
 

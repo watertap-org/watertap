@@ -10,6 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import logging
+
 import pyomo.environ as pyo
 from pyomo.core.base.block import _BlockData
 from pyomo.core.kernel.block import IBlock
@@ -24,6 +26,15 @@ from idaes.core.util.scaling import (
 from idaes.logger import getLogger
 
 _log = getLogger("watertap.core")
+
+_pyomo_nl_writer_log = logging.getLogger("pyomo.repn.plugins.nl_writer")
+
+
+def _pyomo_nl_writer_logger_filter(record):
+    msg = record.getMessage()
+    if "scaling_factor" in msg and "model contains export suffix" in msg:
+        return False
+    return True
 
 
 @pyo.SolverFactory.register(
@@ -46,6 +57,9 @@ class IpoptWaterTAP(IPOPT):
                 "IpoptWaterTAP.solve takes 1 positional argument: a Pyomo ConcreteModel or Block"
             )
 
+        # until proven otherwise
+        self._cleanup_needed = False
+
         self._tee = kwds.get("tee", False)
 
         # Set the default watertap options
@@ -53,30 +67,19 @@ class IpoptWaterTAP(IPOPT):
             self.options["tol"] = 1e-08
         if "constr_viol_tol" not in self.options:
             self.options["constr_viol_tol"] = 1e-08
+        if "bound_relax_factor" not in self.options:
+            self.options["bound_relax_factor"] = 0.0
+        if "honor_original_bounds" not in self.options:
+            self.options["honor_original_bounds"] = "no"
 
         if not self._is_user_scaling():
-            self._cleanup_needed = False
-            return super()._presolve(*args, **kwds)
+            super()._presolve(*args, **kwds)
+            self._cleanup()
+            return
 
         if self._tee:
             print(
                 "ipopt-watertap: Ipopt with user variable scaling and IDAES jacobian constraint scaling"
-            )
-
-        bound_relax_factor = self._get_option("bound_relax_factor", 1e-10)
-        if bound_relax_factor < 0.0:
-            raise ValueError(
-                f"Option bound_relax_factor must be non-negative; bound_relax_factor={bound_relax_factor}"
-            )
-
-        # we are doing this ourselves, don't want Ipopt to also do it
-        # also effectively turns "honor_original_bounds" off
-        self.options["bound_relax_factor"] = 0.0
-
-        # raise an error if "honor_original_bounds" is set to "yes" (for now)
-        if self.options.get("honor_original_bounds", "no") == "yes":
-            raise ValueError(
-                f"""Option honor_original_bounds must be set to "no" -- ipopt-watertap does not presently implement this option"""
             )
 
         # These options are typically available with gradient-scaling, and they
@@ -94,8 +97,8 @@ class IpoptWaterTAP(IPOPT):
 
         self._model = args[0]
         self._cache_scaling_factors()
-        self._cache_and_set_relaxed_bounds(bound_relax_factor)
         self._cleanup_needed = True
+        _pyomo_nl_writer_log.addFilter(_pyomo_nl_writer_logger_filter)
 
         # NOTE: This function sets the scaling factors on the
         #       constraints. Hence we cache the constraint scaling
@@ -149,9 +152,9 @@ class IpoptWaterTAP(IPOPT):
     def _cleanup(self):
         if self._cleanup_needed:
             self._reset_scaling_factors()
-            self._reset_bounds()
             # remove our reference to the model
             del self._model
+            _pyomo_nl_writer_log.removeFilter(_pyomo_nl_writer_logger_filter)
 
     def _postsolve(self):
         self._cleanup()
@@ -172,35 +175,6 @@ class IpoptWaterTAP(IPOPT):
             else:
                 set_scaling_factor(c, s)
         del self._scaling_cache
-
-    def _cache_and_set_relaxed_bounds(self, bound_relax_factor):
-        self._bound_cache = pyo.ComponentMap()
-        val = pyo.value
-        for v in self._model.component_data_objects(
-            pyo.Var, active=True, descend_into=True
-        ):
-            # we could hit a variable more
-            # than once because of References
-            if v in self._bound_cache:
-                continue
-            if v.lb is None and v.ub is None:
-                continue
-            self._bound_cache[v] = (v.lb, v.ub)
-            sf = get_scaling_factor(v, default=1)
-            if v.lb is not None:
-                v.lb = val(
-                    (v.lb * sf - bound_relax_factor * max(1, abs(val(v.lb * sf)))) / sf
-                )
-            if v.ub is not None:
-                v.ub = val(
-                    (v.ub * sf + bound_relax_factor * max(1, abs(val(v.ub * sf)))) / sf
-                )
-
-    def _reset_bounds(self):
-        for v, (lb, ub) in self._bound_cache.items():
-            v.lb = lb
-            v.ub = ub
-        del self._bound_cache
 
     def _get_option(self, option_name, default_value):
         # NOTE: options get reset to their original value at the end of the

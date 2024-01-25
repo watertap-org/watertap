@@ -35,7 +35,7 @@ from idaes.core import UnitModelCostingBlock
 from watertap.unit_models.zero_order import AnaerobicDigestionReactiveZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
-from watertap.core.zero_order_costing import ZeroOrderCosting
+from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -250,7 +250,6 @@ def test_costing():
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
     assert isinstance(m.fs.costing.total_capital_cost, Var)
-    assert isinstance(m.fs.costing.total_fixed_operating_cost, Var)
     assert isinstance(m.fs.costing.aggregate_flow_costs, Var)
 
 

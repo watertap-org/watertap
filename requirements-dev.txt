@@ -1,7 +1,7 @@
 black==22.3.0
 pre-commit
 # TODO pin exact version for pylint and astroid
-pylint
+pylint<3
 astroid
 # Defer to setup.py contents
--e .[dev]
+-e .[dev,notebooks,oli_api]

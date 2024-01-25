@@ -41,6 +41,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
+from watertap.costing.unit_models.nanofiltration import cost_nanofiltration
 
 
 _log = idaeslog.getLogger(__name__)
@@ -229,7 +230,7 @@ class NanoFiltrationData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             self.solute_list,
             initialize=1e-8,
-            bounds=(1e-11, 1e-5),
+            bounds=(1e-11, 1e-4),
             domain=NonNegativeReals,
             units=units_meta("length") * units_meta("time") ** -1,
             doc="Solute permeability coeff.",
@@ -762,3 +763,7 @@ class NanoFiltrationData(InitializationMixin, UnitModelBlockData):
         for t, c in self.eq_permeate_isothermal.items():
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].temperature)
             iscale.constraint_scaling_transform(c, sf)
+
+    @property
+    def default_costing_method(self):
+        return cost_nanofiltration

@@ -67,6 +67,8 @@ from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
 
+from watertap.costing.unit_models.anaerobic_digestor import cost_anaerobic_digestor
+
 __author__ = "Alejandro Garciadiego, Andrew Lee, Xinhong Liu"
 
 
@@ -417,6 +419,14 @@ see reaction package for documentation.}""",
         # Add object references
         self.volume_liquid = Reference(self.liquid_phase.volume[:])
 
+        self.hydraulic_retention_time = Var(
+            self.flowsheet().time,
+            initialize=1641600,
+            domain=NonNegativeReals,
+            units=pyunits.s,
+            doc="Hydraulic retention time",
+        )
+
         self.volume_AD = Var(
             self.flowsheet().time,
             initialize=3700,
@@ -475,7 +485,7 @@ see reaction package for documentation.}""",
         )
         # The value is taken from Maravelias' data
         self.energy_electric_flow_vol_inlet = Param(
-            initialize=0.029,
+            initialize=3.35,
             units=pyunits.kWh / pyunits.m**3,
             mutable=True,
             doc="Electricity intensity with respect to inlet flow",
@@ -678,6 +688,19 @@ see reaction package for documentation.}""",
             rule=ad_total_volume_rule,
             doc="Total anaerobic digestor volume",
         )
+
+        def AD_retention_time_rule(self, t):
+            return (
+                self.hydraulic_retention_time[t]
+                == self.volume_AD[t] / self.liquid_phase.properties_in[t].flow_vol
+            )
+
+        self.AD_retention_time = Constraint(
+            self.flowsheet().time,
+            rule=AD_retention_time_rule,
+            doc="Total anaerobic digestor volume",
+        )
+
         # Add AD performance equation
         def ad_performance_eqn_rule(self, t, r):
             return self.liquid_phase.rate_reaction_extent[t, r] == (
@@ -690,6 +713,7 @@ see reaction package for documentation.}""",
             rule=ad_performance_eqn_rule,
             doc="AD performance equation",
         )
+
         # Temperature equality constraint
         def rule_temperature_balance(self, t):
             return self.liquid_phase.properties_out[t].temperature == pyunits.convert(
@@ -768,6 +792,7 @@ see reaction package for documentation.}""",
         iscale.set_scaling_factor(self.KH_co2, 1e2)
         iscale.set_scaling_factor(self.KH_ch4, 1e2)
         iscale.set_scaling_factor(self.KH_h2, 1e2)
+        iscale.set_scaling_factor(self.hydraulic_retention_time, 1e-6)
         iscale.set_scaling_factor(self.volume_AD, 1e-2)
         iscale.set_scaling_factor(self.volume_vapor, 1e-2)
         iscale.set_scaling_factor(self.liquid_phase.rate_reaction_generation, 1e4)
@@ -1028,3 +1053,7 @@ see reaction package for documentation.}""",
             )
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
+
+    @property
+    def default_costing_method(self):
+        return cost_anaerobic_digestor

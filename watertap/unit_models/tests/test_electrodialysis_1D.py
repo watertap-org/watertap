@@ -42,6 +42,7 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
 
 __author__ = "Xiangyu Bi"
 
@@ -73,7 +74,7 @@ class TestElectrodialysisVoltageConst:
     @pytest.mark.unit
     def test_build_model(self, electrodialysis_1d_cell1):
         m = electrodialysis_1d_cell1
-        # test configrations
+        # test configurations
         assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -291,7 +292,7 @@ class TestElectrodialysisVoltageConst:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(584.6, rel=1e-3) == value(
+        assert pytest.approx(2.0 * 584.6, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
         assert pytest.approx(153.6471, rel=1e-3) == value(
@@ -322,7 +323,7 @@ class TestElectrodialysisVoltageConst:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(2979.6988, rel=1e-3) == value(
+        assert pytest.approx(2.0 * 2979.6988, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
         assert pytest.approx(297.5365, rel=1e-3) == value(
@@ -557,7 +558,7 @@ class TestElectrodialysis_withNeutralSPecies:
             "solute_list": ["Na_+", "Cl_-", "N"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3, "N": 61.8e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
-            "charge": {"Na_+": 1, "Cl_-": -1},
+            "charge": {"Na_+": 1, "Cl_-": -1, "N": 0},
         }
         m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
@@ -710,9 +711,10 @@ class TestElectrodialysis_withNeutralSPecies:
         iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
 
         iscale.calculate_scaling_factors(m.fs)
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
         badly_scaled_var_values = {
-            var.name: val for (var, val) in iscale.badly_scaled_var_generator(m)
+            var.name: val
+            for (var, val) in iscale.badly_scaled_var_generator(m, zero=1e-9)
         }
         assert not badly_scaled_var_values
         # check to make sure DOF does not change
@@ -919,6 +921,7 @@ class Test_ED_MembNonohm_On_ConstV:
 
         assert degrees_of_freedom(m) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialization_scaling(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
@@ -949,6 +952,7 @@ class Test_ED_MembNonohm_On_ConstV:
         # check to make sure DOF does not change
         assert degrees_of_freedom(m) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
@@ -960,6 +964,7 @@ class Test_ED_MembNonohm_On_ConstV:
         }
         assert not badly_scaled_var_values
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
@@ -983,6 +988,7 @@ class Test_ED_MembNonohm_On_ConstV:
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
         ) == pytest.approx(9.335e-4, rel=1e-3)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
@@ -1630,7 +1636,7 @@ class Test_ED_pressure_drop_components:
         return m
 
     @pytest.fixture(scope="class")
-    def ed_m2(self):
+    def ed_m1(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
@@ -1654,7 +1660,7 @@ class Test_ED_pressure_drop_components:
         return m
 
     @pytest.fixture(scope="class")
-    def ed_m3(self):
+    def ed_m2(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
@@ -1672,6 +1678,30 @@ class Test_ED_pressure_drop_components:
             has_Nernst_diffusion_layer=False,
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.Gurreri,
+            hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
+            has_pressure_change=True,
+        )
+        return m
+
+    @pytest.fixture(scope="class")
+    def ed_m3(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        ion_dict = {
+            "solute_list": ["Na_+", "Cl_-"],
+            "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
+            "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
+            "charge": {"Na_+": 1, "Cl_-": -1},
+        }
+        m.fs.properties = MCASParameterBlock(**ion_dict)
+        m.fs.unit = Electrodialysis1D(
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Voltage,
+            finite_elements=10,
+            has_nonohmic_potential_membrane=False,
+            has_Nernst_diffusion_layer=False,
+            pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
+            friction_factor_method=FrictionFactorMethod.Kuroda,
             hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
             has_pressure_change=True,
         )
@@ -1696,7 +1726,7 @@ class Test_ED_pressure_drop_components:
             has_Nernst_diffusion_layer=False,
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.Kuroda,
-            hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
+            hydraulic_diameter_method=HydraulicDiameterMethod.fixed,
             has_pressure_change=True,
         )
         return m
@@ -1720,38 +1750,15 @@ class Test_ED_pressure_drop_components:
             has_Nernst_diffusion_layer=False,
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.Kuroda,
-            hydraulic_diameter_method=HydraulicDiameterMethod.fixed,
-            has_pressure_change=True,
-        )
-        return m
-
-    @pytest.fixture(scope="class")
-    def ed_m6(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-        ion_dict = {
-            "solute_list": ["Na_+", "Cl_-"],
-            "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
-            "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
-            "charge": {"Na_+": 1, "Cl_-": -1},
-        }
-        m.fs.properties = MCASParameterBlock(**ion_dict)
-        m.fs.unit = Electrodialysis1D(
-            property_package=m.fs.properties,
-            operation_mode=ElectricalOperationMode.Constant_Voltage,
-            finite_elements=10,
-            has_nonohmic_potential_membrane=False,
-            has_Nernst_diffusion_layer=False,
-            pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
-            friction_factor_method=FrictionFactorMethod.Kuroda,
             hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
             has_pressure_change=True,
         )
         return m
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.unit
-    def test_deltaP_various_methods(self, ed_m0, ed_m2, ed_m3, ed_m4, ed_m5, ed_m6):
-        ed_m = (ed_m0, ed_m2, ed_m3, ed_m4, ed_m5, ed_m6)
+    def test_deltaP_various_methods(self, ed_m0, ed_m1, ed_m2, ed_m3, ed_m4, ed_m5):
+        ed_m = (ed_m0, ed_m1, ed_m2, ed_m3, ed_m4, ed_m5)
         for m in ed_m:
             m.fs.unit.inlet_diluate.pressure.fix(201325)
             m.fs.unit.inlet_diluate.temperature.fix(298.15)
@@ -1809,7 +1816,7 @@ class Test_ED_pressure_drop_components:
         ed_m[0].fs.unit.pressure_drop.fix(40000)
         iscale.calculate_scaling_factors(ed_m[0])
         assert degrees_of_freedom(ed_m[0]) == 0
-        initialization_tester(ed_m[0])
+        initialization_tester(ed_m[0], outlvl=idaeslog.DEBUG)
         badly_scaled_var_values = {
             var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[0])
         }
@@ -1825,11 +1832,10 @@ class Test_ED_pressure_drop_components:
         ed_m[1].fs.unit.friction_factor.fix(20)
         iscale.calculate_scaling_factors(ed_m[1])
         assert degrees_of_freedom(ed_m[1]) == 0
-        initialization_tester(ed_m[1])
+        initialization_tester(ed_m[1], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[1])
         assert_optimal_termination(results)
         assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
-
         assert value(ed_m[1].fs.unit.pressure_drop[0]) == pytest.approx(
             21280.815, rel=1e-3
         )
@@ -1842,11 +1848,10 @@ class Test_ED_pressure_drop_components:
         ed_m[2].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(ed_m[2])
         assert degrees_of_freedom(ed_m[2]) == 0
-        initialization_tester(ed_m[2])
+        initialization_tester(ed_m[2], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[2])
         assert_optimal_termination(results)
         assert value(ed_m[2].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
-
         assert value(ed_m[2].fs.unit.pressure_drop[0]) == pytest.approx(
             13670.276, rel=1e-3
         )
@@ -1859,11 +1864,10 @@ class Test_ED_pressure_drop_components:
         ed_m[3].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(ed_m[3])
         assert degrees_of_freedom(ed_m[3]) == 0
-        initialization_tester(ed_m[3])
+        initialization_tester(ed_m[3], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[3])
         assert_optimal_termination(results)
         assert value(ed_m[3].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
-
         assert value(ed_m[3].fs.unit.pressure_drop[0]) == pytest.approx(
             6424.825, rel=1e-3
         )
@@ -1877,7 +1881,7 @@ class Test_ED_pressure_drop_components:
         ed_m[4].fs.unit.hydraulic_diameter.fix(1.5e-3)
         iscale.calculate_scaling_factors(ed_m[4])
         assert degrees_of_freedom(ed_m[4]) == 0
-        initialization_tester(ed_m[4])
+        initialization_tester(ed_m[4], outlvl=idaeslog.DEBUG)
         results = solver.solve(ed_m[4])
         assert_optimal_termination(results)
         assert value(ed_m[4].fs.unit.N_Re) == pytest.approx(74.987, rel=1e-3)
@@ -1895,7 +1899,7 @@ class Test_ED_pressure_drop_components:
         ed_m[5].fs.unit.spacer_specific_area.fix(10700)
         iscale.calculate_scaling_factors(ed_m[5])
         assert degrees_of_freedom(ed_m[5]) == 0
-        initialization_tester(ed_m[5])
+        initialization_tester(ed_m[5], outlvl=idaeslog.DEBUG)
         iscale.calculate_scaling_factors(ed_m[5])
         results = solver.solve(ed_m[5])
         assert_optimal_termination(results)
@@ -1903,11 +1907,9 @@ class Test_ED_pressure_drop_components:
         assert value(ed_m[5].fs.unit.outlet_diluate.pressure[0]) == pytest.approx(
             178659.214, rel=1e-3
         )
-
         assert value(ed_m[5].fs.unit.pressure_drop[0]) == pytest.approx(
             13491.540, rel=1e-3
         )
-
         assert value(ed_m[5].fs.unit.pressure_drop_total[0]) == pytest.approx(
             22665.786, rel=1e-3
         )

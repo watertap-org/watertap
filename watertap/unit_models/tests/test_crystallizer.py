@@ -454,7 +454,7 @@ class TestCrystallization:
         # Residence time
         assert pytest.approx(1.0228, rel=1e-3) == value(b.t_res)
         # Mass-basis costing
-        assert pytest.approx(300000, rel=1e-3) == value(
+        assert pytest.approx(2.0 * 300000, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
 
@@ -485,7 +485,7 @@ class TestCrystallization:
         # Minimum active volume
         assert pytest.approx(0.959, rel=1e-3) == value(b.volume_suspension)
         # Mass-basis costing
-        assert pytest.approx(300000, rel=1e-3) == value(
+        assert pytest.approx(2.0 * 300000, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
 
@@ -543,7 +543,7 @@ class TestCrystallization:
         # Minimum active volume
         assert pytest.approx(0.959, rel=1e-3) == value(b.volume_suspension)
         # Volume-basis costing
-        assert pytest.approx(199000, rel=1e-3) == value(
+        assert pytest.approx(2.0 * 199000, rel=1e-3) == value(
             m.fs.costing.aggregate_capital_cost
         )
 

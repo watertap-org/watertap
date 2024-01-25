@@ -27,6 +27,7 @@ from pyomo.environ import (
     Suffix,
     value,
     log,
+    log10,
     exp,
     check_optimal_termination,
 )
@@ -101,7 +102,6 @@ class WaterParameterData(PhysicalParameterBlock):
         # molecular weight
         self.mw_comp = Param(
             self.component_list,
-            mutable=False,
             initialize=18.01528e-3,
             units=pyunits.kg / pyunits.mol,
             doc="Molecular weight",
@@ -344,6 +344,84 @@ class WaterParameterData(PhysicalParameterBlock):
             doc="Latent heat of pure water parameter 4",
         )
 
+        visc_d_units = pyunits.Pa * pyunits.s
+        # dynamic viscosity parameters, eq. 22 and 23 in Sharqawy
+        self.visc_d_param_muw_A = Var(
+            within=Reals,
+            initialize=4.2844e-5,
+            units=visc_d_units,
+            doc="Dynamic viscosity parameter A for pure water",
+        )
+        self.visc_d_param_muw_B = Var(
+            within=Reals,
+            initialize=0.157,
+            units=t_inv_units**2 * visc_d_units**-1,
+            doc="Dynamic viscosity parameter B for pure water",
+        )
+        self.visc_d_param_muw_C = Var(
+            within=Reals,
+            initialize=64.993,
+            units=pyunits.K,
+            doc="Dynamic viscosity parameter C for pure water",
+        )
+        self.visc_d_param_muw_D = Var(
+            within=Reals,
+            initialize=91.296,
+            units=visc_d_units**-1,
+            doc="Dynamic viscosity parameter D for pure water",
+        )
+
+        # thermal conductivity parameters from eq. 13 in Sharqawy et al. (2010)
+
+        self.therm_cond_phase_param_1 = Var(
+            within=Reals,
+            initialize=240,
+            units=pyunits.dimensionless,
+            doc="Thermal conductivity of seawater parameter 1",
+        )
+        self.therm_cond_phase_param_2 = Var(
+            within=Reals,
+            initialize=0.0002,
+            units=s_inv_units,
+            doc="Thermal conductivity of seawater parameter 2",
+        )
+        self.therm_cond_phase_param_3 = Var(
+            within=Reals,
+            initialize=0.434,
+            units=pyunits.dimensionless,
+            doc="Thermal conductivity of seawater parameter 3",
+        )
+        self.therm_cond_phase_param_4 = Var(
+            within=Reals,
+            initialize=2.3,
+            units=pyunits.dimensionless,
+            doc="Thermal conductivity of seawater parameter 4",
+        )
+        self.therm_cond_phase_param_5 = Var(
+            within=Reals,
+            initialize=343.5,
+            units=t_inv_units**-1,
+            doc="Thermal conductivity of seawater parameter 5",
+        )
+        self.therm_cond_phase_param_6 = Var(
+            within=Reals,
+            initialize=0.037,
+            units=s_inv_units * t_inv_units**-1,
+            doc="Thermal conductivity of seawater parameter 6",
+        )
+        self.therm_cond_phase_param_7 = Var(
+            within=Reals,
+            initialize=647,
+            units=t_inv_units**-1,
+            doc="Thermal conductivity of seawater parameter 7",
+        )
+        self.therm_cond_phase_param_8 = Var(
+            within=Reals,
+            initialize=0.03,
+            units=t_inv_units**-1 * s_inv_units,
+            doc="Thermal conductivity of seawater parameter 8",
+        )
+
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
@@ -359,6 +437,8 @@ class WaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Vap")
         self.set_default_scaling("dh_vap_mass", 1e-6)
+        self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
+        self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
 
     @classmethod
     def define_metadata(cls, obj):
@@ -377,6 +457,8 @@ class WaterParameterData(PhysicalParameterBlock):
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
                 "enth_flow_phase": {"method": "_enth_flow_phase"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
+                "visc_d_phase": {"method": "_visc_d_phase"},
+                "therm_cond_phase": {"method": "_therm_cond_phase"},
             }
         )
 
@@ -933,6 +1015,74 @@ class WaterStateBlockData(StateBlockData):
             )
 
         self.eq_dh_vap_mass = Constraint(rule=rule_dh_vap_mass)
+
+    def _visc_d_phase(self):
+        self.visc_d_phase = Var(
+            ["Liq"],
+            initialize=1e-3,
+            bounds=(0.0, 1),
+            units=pyunits.Pa * pyunits.s,
+            doc="Viscosity",
+        )
+        # dynamic viscosity, eq. 22 and 23 in Sharqawy
+        def rule_visc_d_phase(b, p):
+            if p == "Liq":
+                t = b.temperature - 273.15 * pyunits.K
+                # temp. in degC, but pyunits are K
+                mu_w = (
+                    b.params.visc_d_param_muw_A
+                    + (
+                        b.params.visc_d_param_muw_B
+                        * (t + b.params.visc_d_param_muw_C) ** 2
+                        - b.params.visc_d_param_muw_D
+                    )
+                    ** -1
+                )
+                return b.visc_d_phase[p] == mu_w
+
+        self.eq_visc_d_phase = Constraint(["Liq"], rule=rule_visc_d_phase)
+
+    def _therm_cond_phase(self):
+        self.therm_cond_phase = Var(
+            ["Liq"],
+            initialize=0.6,
+            bounds=(0.0, 1),
+            units=pyunits.W / pyunits.m / pyunits.K,
+            doc="Thermal conductivity",
+        )
+        # thermal conductivity, eq. 13 in Sharqawy  et al. (2010)
+        def rule_therm_cond_phase(b, p):
+            if p == "Liq":
+                # thermal conductivity, eq. 13 in Sharqawy  et al. (2010)
+                # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
+                t = (b.temperature - 0.00025 * 273.15 * pyunits.K) / (1 - 0.00025)
+                s = 0 * 1000 * pyunits.g / pyunits.kg  # pure water
+                log10_ksw = log10(
+                    b.params.therm_cond_phase_param_1
+                    + b.params.therm_cond_phase_param_2 * s
+                ) + b.params.therm_cond_phase_param_3 * (
+                    b.params.therm_cond_phase_param_4
+                    - (
+                        b.params.therm_cond_phase_param_5
+                        + b.params.therm_cond_phase_param_6 * s
+                    )
+                    / t
+                ) * (
+                    1
+                    - t
+                    / (
+                        b.params.therm_cond_phase_param_7
+                        + b.params.therm_cond_phase_param_8 * s
+                    )
+                ) ** (
+                    1 / 3
+                )
+            return (
+                b.therm_cond_phase[p]
+                == 10**log10_ksw * 1e-3 * pyunits.W / pyunits.m / pyunits.K
+            )
+
+        self.eq_therm_cond_phase = Constraint(["Liq"], rule=rule_therm_cond_phase)
 
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must

@@ -14,21 +14,20 @@ from pyomo.environ import value
 from watertap.examples.flowsheets.nf_dspmde.nf_with_bypass import main
 
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_main():
     m = main()
     test_dict = {
-        "lcow": [m.fs.costing.LCOW, 0.1376],
-        "pressure": [m.fs.NF.pump.outlet.pressure[0] / 1e5, 6.702781588429595],
-        "area": [m.fs.NF.nfUnit.area, 419.7559215919783],
+        "lcow": [m.fs.costing.LCOW, 0.13728],
+        "pressure": [m.fs.NF.pump.outlet.pressure[0] * 1e-5, 4.5383],
+        "area": [m.fs.NF.nfUnit.area, 414.0858],
         "recovery": [
             m.fs.NF.nfUnit.recovery_vol_phase[0.0, "Liq"] * 100,
-            94.9999989788293,
+            89.999,
         ],
         "bypass": [
             m.fs.by_pass_splitter.split_fraction[0, "bypass"] * 100,
-            10.592027658361907,
+            10.9463,
         ],
     }
     for model_result, testval in test_dict.values():

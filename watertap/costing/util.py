@@ -16,6 +16,47 @@ import pyomo.environ as pyo
 
 
 def register_costing_parameter_block(build_rule, parameter_block_name):
+    """
+    Decorator to create a global-level parameter block on the costing package.
+
+    This decorator is meant to be utilized on a costing method or function in order
+    to register parameters (including flows specific to a unit model) which should
+    have global-scope within a costing package. In this way, all instances of a unit
+    model can share the same global parameters, such as baseline capital costs.
+
+    The decorator takes a `build_rule`, which is a rule for constructing a Pyomo
+    `Block`, and a `parameter_block_name`, which determines the name of the constructed
+    block. The decorator then puts the new Block onto the costing package. For a unit
+    model costing block named `blk`, this is symmatically equivalent to:
+
+    .. testcode::
+        :skipif: True
+
+        blk.costing_package.parameter_block_name = Block(rule=build_rule)
+
+    However, this decorator contains a few additional safeguards.
+
+        1. If the wrapped unit model costing function is called more than once,
+           the associated parameter block will only be added one time.
+
+        2. Similarly, if a component named `parameter_block_name` already exists
+           on the `costing_package`, this decorator will raise an error if the
+           parameter block was built with a different `build_rule`. This prevents
+           inadvertent name clashes between different parameter blocks.
+
+        3. The decorator fixes any Pyomo Vars it finds on the constructed parameter
+           block.
+
+    Use of this decorator allows for defining unit-level costing parameters in the same
+    module as the unit-level costing method. It also ensures that unit-level costing
+    parameters are only added to the costing package if and only if that particular
+    unit model is costed.
+
+    Args:
+        build_rule (callable): A function defining a "build rule" for a Pyomo `Block`.
+        parameter_block_name (str): The name for the built Block on the costing package.
+    """
+
     def register_costing_parameter_block_decorator(func):
         @functools.wraps(func)
         def add_costing_parameter_block(blk, *args, **kwargs):
@@ -50,6 +91,13 @@ def register_costing_parameter_block(build_rule, parameter_block_name):
 
 
 def make_capital_cost_var(blk):
+    """
+    Generic function for adding a Var named `capital_cost`
+    to the unit model costing block.
+
+    Creates a pyomo Var named `capital_cost` with units
+    `blk.costing_package.base_currency`.
+    """
     blk.capital_cost = pyo.Var(
         initialize=1e5,
         domain=pyo.NonNegativeReals,
@@ -59,6 +107,13 @@ def make_capital_cost_var(blk):
 
 
 def make_fixed_operating_cost_var(blk):
+    """
+    Generic function for adding a Var named `fixed_operating_cost`
+    to the unit model costing block.
+
+    Creates a pyomo Var named `fixed_operating_cost` with units
+    `blk.costing_package.base_currency / blk.costing_package.base_period`.
+    """
     blk.fixed_operating_cost = pyo.Var(
         initialize=1e5,
         domain=pyo.NonNegativeReals,
@@ -73,9 +128,9 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
     has an `area` variable or parameter.
 
     Args:
-        membrane_cost - The cost of the membrane in currency per area
-        factor_membrane_replacement - Membrane replacement factor
-                                      [fraction of membrane replaced/year]
+        membrane_cost: The cost of the membrane in currency per area
+        factor_membrane_replacement: Membrane replacement factor
+            (fraction of membrane replaced/year)
     """
 
     make_capital_cost_var(blk)
@@ -83,9 +138,11 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
     blk.membrane_cost = pyo.Expression(expr=membrane_cost)
     blk.factor_membrane_replacement = pyo.Expression(expr=factor_membrane_replacement)
 
+    blk.costing_package.add_cost_factor(blk, "TIC")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.cost_factor
+        * pyo.units.convert(
             blk.membrane_cost * blk.unit_model.area,
             to_units=blk.costing_package.base_currency,
         )
@@ -108,7 +165,7 @@ def cost_rectifier(blk, power=100 * pyo.units.kW, ac_dc_conversion_efficiency=0.
     Assumes the unit_model has a `power` variable or parameter.
 
     Args:
-        ac_dc_conversion_efficiency - Efficiency of the conversion from AC to DC current
+        ac_dc_conversion_efficiency: Efficiency of the conversion from AC to DC current
     """
 
     # create variables on cost block
@@ -169,14 +226,16 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     Generic function for costing by flow volume.
 
     Args:
-        flow_cost - The cost of the device in [currency]/([volume]/[time])
-        flow_to_cost - The flow costed in [volume]/[time]
+        flow_cost: The cost of the device in [currency]/([volume]/[time])
+        flow_to_cost: The flow costed in [volume]/[time]
     """
     make_capital_cost_var(blk)
     blk.flow_cost = pyo.Expression(expr=flow_cost)
+    blk.costing_package.add_cost_factor(blk, "TIC")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == pyo.units.convert(
+        == blk.cost_factor
+        * pyo.units.convert(
             blk.flow_cost * flow_to_cost, to_units=blk.costing_package.base_currency
         )
     )
