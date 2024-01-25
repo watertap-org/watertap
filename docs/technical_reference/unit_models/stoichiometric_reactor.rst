@@ -16,7 +16,7 @@ Introduction
 ------------
 This is a basic stoichiometric reactor designed to provide a simple mass balanced method for adding reactants and
 removing solids from a stream, for more comprehesive reactor models please use IDAES Stoichiometric
-reactor model (https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/stoichiometric_reactor.html). 
+`IDAES Stoichiometric reactor model <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/stoichiometric_reactor.html>`_
 
 The stoichiometric reactor is a basic unit operation designed to aid in modeling 
 addition of reagent to a feed stream and removal of ions from a stream through precipitation.
