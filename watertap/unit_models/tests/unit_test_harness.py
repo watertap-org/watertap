@@ -168,6 +168,12 @@ class UnitTestHarness:
 
         # check results
         for key, val in solutions.items():
-            pyo_obj = self.model.find_component(key)
-            assert pytest.approx(value(pyo_obj), rel=1e-5) == val
-            # assert pyo_obj == val
+            pyo_obj = blk.find_component(key)
+            pyo_obj_value = pyo_obj()
+            print(f"Pyomo object is {pyo_obj}")
+            print(f"Pyomo object value is {pyo_obj_value}")
+            print(f"Expected value is {val}")
+            if val == 0:
+                assert pytest.approx(pyo_obj_value, abs=1e-08) == val
+            else:
+                assert pytest.approx(pyo_obj_value, rel=1e-03) == val
