@@ -49,7 +49,7 @@ If precipitants are supplied
 Model Structure and usage
 -------------------------
 The stoichiometric reactor uses control volumes to perform the dissolution reaction and 
-precipitation reaction, while a an IDAES separator is used to separate precipitated solids 
+precipitation reaction, while an IDAES separator is used to separate precipitated solids 
 from the feed stream. The model should be used with MCAS property package.
 The user needs to specify how supplied reagent, and precipitant dissolve or precipitate 
 out of the feed stream, using ions present in the feed. 
