@@ -53,7 +53,7 @@ class ERDtype(StrEnum):
 def erd_type_not_found(erd_type):
     raise NotImplementedError(
         "erd_type was {}, but can only "
-        "be pressure_exchanger or pump_as_turbine"
+        "be pressure_exchanger, pump_as_turbine, or no_ERD"
         "".format(erd_type.value)
     )
 
@@ -327,7 +327,7 @@ def calculate_operating_pressure(
     solver=None,
 ):
     """
-    estimate operating pressure for RO unit model given the following arguments:
+    Estimate operating pressure for RO unit model given the following arguments:
 
     Arguments:
         feed_state_block:   the state block of the RO feed that has the non-pressure state
