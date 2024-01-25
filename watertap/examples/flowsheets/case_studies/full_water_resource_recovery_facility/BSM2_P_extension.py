@@ -10,15 +10,15 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Based on flowsheet from:
+Flowsheet example full Water Resource Recovery Facility
+(WRRF; a.k.a., wastewater treatment plant) with ASM2d and ADM1 with P extension.
 
-Flores-Alsina X., Gernaey K.V. and Jeppsson, U. "Benchmarking biological
-nutrient removal in wastewater treatment plants: influence of mathematical model
-assumptions", 2012, Wat. Sci. Tech., Vol. 65 No. 8, pp. 1496-1505
+The flowsheet follows the same formulation as benchmark simulation model no.2 (BSM2)
+but comprises different specifications for default values than BSM2.
 """
 
 # Some more information about this module
-__author__ = "Chenyu Wang"
+__author__ = "Chenyu Wang, Adam Atia, Alejandro Garciadiego, Marcus Holly"
 
 import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
