@@ -23,34 +23,13 @@ Department of Industrial Electrical Engineering and Automation, Lund University,
 import pytest
 from pyomo.environ import (
     ConcreteModel,
-    value,
-    assert_optimal_termination,
 )
 
 from idaes.core import (
     FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-)
-
-from pyomo.environ import (
-    units,
 )
 
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    number_variables,
-    number_total_constraints,
-    number_unused_variables,
-)
-
-from idaes.core.util.scaling import (
-    unscaled_variables_generator,
-)
-
-from idaes.core.util.testing import initialization_tester
 
 from watertap.unit_models.anaerobic_digestor import AD
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
@@ -63,9 +42,6 @@ from watertap.property_models.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
 
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
-from idaes.core import UnitModelCostingBlock
-from watertap.costing import WaterTAPCosting
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
 

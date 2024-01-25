@@ -80,7 +80,6 @@ class UnitTestHarness:
         unit_solutions: dictionary of property values for the specified state variables
             keys = (string name of variable, tuple index), values = value
         """
-        pass
 
     @pytest.fixture(scope="class")
     def frame_unit(self):
