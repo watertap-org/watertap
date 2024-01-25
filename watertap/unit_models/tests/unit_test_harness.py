@@ -169,6 +169,7 @@ class UnitTestHarness:
         assert_optimal_termination(results)
 
         # check results
+
         for key, val in solutions.items():
             pyo_obj = blk.find_component(key)
             pyo_obj_value = pyo_obj()
@@ -176,3 +177,13 @@ class UnitTestHarness:
                 raise AssertionError(
                     f"{pyo_obj}: Expected {val}, got {pyo_obj_value} instead"
                 )
+
+        # for i in range(0, len(solutions), 2):
+        #     var = solutions[i]
+        #     val = solutions[i+1]
+        #     pyo_obj = blk.find_component(var)
+        #     pyo_obj_value = pyo_obj()
+        #     if not pytest.approx(pyo_obj_value, abs=1e-08, rel=1e-03) == val:
+        #         raise AssertionError(
+        #             f"{pyo_obj}: Expected {val}, got {pyo_obj_value} instead"
+        #         )

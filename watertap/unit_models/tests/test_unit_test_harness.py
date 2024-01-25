@@ -10,7 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from pyomo.environ import ConcreteModel
+from dataclasses import dataclass
+from pyomo.environ import ConcreteModel, PyomoObject
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
@@ -24,6 +25,14 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.scaling import calculate_scaling_factors
 
 # -----------------------------------------------------------------------------
+@dataclass
+class TestValue:
+    pyo_obj: PyomoObject
+    val: float
+    abs: float = 0.0
+    rel: float = 1e-5
+
+
 # Get default solver for testing
 solver = get_solver(options={"bound_push": 1e-8})
 
@@ -92,3 +101,7 @@ class TestReverseOsmosis0D_default(UnitTestHarness):
             "feed_side.properties_in[0].flow_mass_phase_comp[Liq, H2O]": 0.965,
             "feed_side.properties_in[0].flow_mass_phase_comp[Liq, NaCl]": 0.035,
         }
+        # self.unit_solutions = [
+        #     m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 0.965,
+        #     m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"], 0.035,
+        # ]
