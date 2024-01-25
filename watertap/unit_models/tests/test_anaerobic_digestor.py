@@ -115,7 +115,6 @@ class TestUnitDefault(UnitTestHarness):
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
-        # m.fs.costing.add_LCOW(m.fs.unit.liquid_phase.properties_out[0].flow_vol)
 
         # Set scaling factors for badly scaled variables
         iscale.set_scaling_factor(
