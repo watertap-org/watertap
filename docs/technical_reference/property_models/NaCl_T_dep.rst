@@ -1,7 +1,7 @@
 NaCl Property Package with Temperature Dependence
 =================================================
 
-This package implements property relationships for an NaCl solution.
+This package implements property relationships for a NaCl solution.
 
 This NaCl property package:
    * supports only H2O (solvent) and NaCl (solute) components
@@ -106,10 +106,6 @@ References
 .. _Pitzer:
 
     Pitzer, Kenneth S., J. Christopher Peiper, and R. H. Busey. (1984). Thermodynamic Properties of Aqueous Sodium Chloride Solutions, Journal of Physical and Chemical Reference Data 13, no. 1 , 1–102. `DOI: 10.1063/1.555709 <https://doi.org/10.1063/1.555709>`_
-
-.. _Sharqawy:
-
-   Mostafa H. Sharqawy, John H. Lienhard V & Syed M. Zubair. (2010). Thermophysical properties of seawater: a review of existing correlations and data, Desalination and Water Treatment, 16:1-3, 354-380, `DOI: 10.5004/dwt.2010.1079 <https://doi.org/10.5004/dwt.2010.1079>`_
 
 .. _Sparrow:
 
