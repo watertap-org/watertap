@@ -78,16 +78,6 @@ class CoagulationParameterData(PhysicalParameterBlock):
 
         self._state_block_class = CoagulationStateBlock
 
-        """References
-        This package was developed from the following references:
-        - Engineering Toolbox. Water - Density, Specific Weight, and
-        Thermal Expansion Coefficients. (2003) https://www.engineeringtoolbox.com/
-        water-density-specific-weight-d_595.html [Accessed 02-01-2022]
-        - D.S. Viswananth, G. Natarajan. Data Book on the Viscosity of
-        Liquids. Hemisphere Publishing Corp. (1989)
-
-        """
-
         # phases
         self.Liq = LiquidPhase()
 
@@ -118,10 +108,12 @@ class CoagulationParameterData(PhysicalParameterBlock):
             doc="Relative increase in liquid density with mass fraction of salts",
         )
 
-        #   Density calculation as a function of temperature and pressure
-        #   Engineering Toolbox (2003), Validity Ranges
-
         #   adjustment parameters for density change with temperature
+        #   Density calculation as a function of temperature and pressure
+        #   --------------------------------------------------------------
+        #   Engineering Toolbox. Water - Density, Specific Weight, and
+        #   Thermal Expansion Coefficients. (2003) https://www.engineeringtoolbox.com/
+        #   water-density-specific-weight-d_595.html [Accessed 02-01-2022]
         self.dens_param_A = Param(
             domain=Reals,
             initialize=-2.9335e-6,
@@ -164,7 +156,9 @@ class CoagulationParameterData(PhysicalParameterBlock):
         )
 
         #   Adjustment for dynamic viscosity as a function of temperature
-        #   Viswananth & Natarajan (1989), Validity Ranges
+        #   -------------------------------------------------------------
+        #   D.S. Viswananth, G. Natarajan. Data Book on the Viscosity of
+        #     Liquids. Hemisphere Publishing Corp. (1989)
         self.mu_A = Param(
             domain=Reals,
             initialize=2.939e-5,
@@ -553,7 +547,10 @@ class CoagulationStateBlockData(StateBlockData):
         )
 
         #   Density calculation as a function of temperature and pressure
-        #   Engineering Toolbox (2003), Validity Ranges
+        #   --------------------------------------------------------------
+        #   Engineering Toolbox. Water - Density, Specific Weight, and
+        #   Thermal Expansion Coefficients. (2003) https://www.engineeringtoolbox.com/
+        #   water-density-specific-weight-d_595.html [Accessed 02-01-2022]
         def rule_dens_mass_phase(b, p):
             return b.dens_mass_phase[p] == (
                 b.params.ref_dens_liq
@@ -627,7 +624,9 @@ class CoagulationStateBlockData(StateBlockData):
         )
 
         #   Adjustment for dynamic viscosity as a function of temperature
-        #   Viswananth & Natarajan (1989), Validity Ranges
+        #   -------------------------------------------------------------
+        #   D.S. Viswananth, G. Natarajan. Data Book on the Viscosity of
+        #     Liquids. Hemisphere Publishing Corp. (1989)
         def rule_visc_d_phase(b, p):
             return b.visc_d_phase[p] == (
                 b.params.mu_A * exp(b.params.mu_B / (b.temperature - b.params.mu_C))
