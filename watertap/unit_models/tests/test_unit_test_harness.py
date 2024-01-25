@@ -83,7 +83,6 @@ class TestReverseOsmosis0D_default(UnitTestHarness):
         calculate_scaling_factors(m)
 
         self.unit_model_block = m.fs.unit
-        self.default_tol = 1e-5
         self.unit_statistics = {
             "number_variables": 121,
             "number_total_constraints": 109,

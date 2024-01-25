@@ -31,23 +31,17 @@ class UnitAttributeError(AttributeError):
     WaterTAP exception for generic attribute errors arising from unit model testing.
     """
 
-    pass
-
 
 class UnitValueError(ValueError):
     """
     WaterTAP exception for generic value errors arising from unit model testing.
     """
 
-    pass
-
 
 class UnitRuntimeError(RuntimeError):
     """
     WaterTAP exception for generic runtime errors arising from unit model testing.
     """
-
-    pass
 
 
 class UnitTestHarness:
@@ -162,17 +156,29 @@ class UnitTestHarness:
         results = opt.solve(blk)
 
         # check solve
-        assert len(list(iscale.badly_scaled_var_generator(blk, zero=1e-8))) == 0
+        try:
+            assert len(list(iscale.badly_scaled_var_generator(blk, zero=1e-8))) == 0
+        except AssertionError:
+            badly_scaled_var_list = iscale.badly_scaled_var_generator(blk, zero=1e-8)
+            for x in badly_scaled_var_list:
+                print(
+                    f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}"
+                )
+            raise AssertionError(
+                "Check the output logs for variables that need to be re-scaled"
+            )
         assert_optimal_termination(results)
 
         # check results
         for key, val in solutions.items():
             pyo_obj = blk.find_component(key)
             pyo_obj_value = pyo_obj()
-            print(f"Pyomo object is {pyo_obj}")
-            print(f"Pyomo object value is {pyo_obj_value}")
-            print(f"Expected value is {val}")
-            if val == 0:
-                assert pytest.approx(pyo_obj_value, abs=1e-08) == val
-            else:
-                assert pytest.approx(pyo_obj_value, rel=1e-03) == val
+            try:
+                if val == 0:
+                    assert pytest.approx(pyo_obj_value, abs=1e-08) == val
+                else:
+                    assert pytest.approx(pyo_obj_value, rel=1e-03) == val
+            except:
+                raise AssertionError(
+                    f"{pyo_obj}: Expected {val}, but got {pyo_obj_value}"
+                )
