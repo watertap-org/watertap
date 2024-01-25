@@ -10,14 +10,12 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-import pytest
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
     MassTransferCoefficient,
-    PressureChangeType,
 )
 import watertap.property_models.NaCl_prop_pack as props
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness

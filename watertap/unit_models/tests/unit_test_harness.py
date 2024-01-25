@@ -12,9 +12,8 @@
 
 import pytest
 
-from pyomo.environ import Block, assert_optimal_termination, ConcreteModel, value
+from pyomo.environ import Block, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core import FlowsheetBlock, ControlVolume0DBlock
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
