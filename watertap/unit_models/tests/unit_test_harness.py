@@ -172,12 +172,7 @@ class UnitTestHarness:
         for key, val in solutions.items():
             pyo_obj = blk.find_component(key)
             pyo_obj_value = pyo_obj()
-            try:
-                if val == 0:
-                    assert pytest.approx(pyo_obj_value, abs=1e-08) == val
-                else:
-                    assert pytest.approx(pyo_obj_value, rel=1e-03) == val
-            except:
+            if not pytest.approx(pyo_obj_value, abs=1e-08, rel=1e-03) == val:
                 raise AssertionError(
-                    f"{pyo_obj}: Expected {val}, but got {pyo_obj_value}"
+                    f"{pyo_obj}: Expected {val}, got {pyo_obj_value} instead"
                 )
