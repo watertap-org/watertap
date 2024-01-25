@@ -45,6 +45,9 @@ from watertap.property_models.anaerobic_digestion.adm1_reactions import (
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
 
+from idaes.core import UnitModelCostingBlock
+from watertap.costing import WaterTAPCosting
+
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
@@ -69,6 +72,7 @@ class TestUnitDefault(UnitTestHarness):
             has_pressure_change=False,
         )
 
+        # Set the operating conditions
         m.fs.unit.inlet.flow_vol.fix(170 / 24 / 3600)
         m.fs.unit.inlet.temperature.fix(308.15)
         m.fs.unit.inlet.pressure.fix(101325)
@@ -106,14 +110,23 @@ class TestUnitDefault(UnitTestHarness):
         m.fs.unit.volume_vapor.fix(300)
         m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
+        # Add unit model costing
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.costing.cost_process()
+        # m.fs.costing.add_LCOW(m.fs.unit.liquid_phase.properties_out[0].flow_vol)
+
+        # Set scaling factors for badly scaled variables
         iscale.set_scaling_factor(
             m.fs.unit.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7
         )
+        iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-6)
 
         self.unit_model_block = m.fs.unit
         self.unit_statistics = {
-            "number_variables": 202,
-            "number_total_constraints": 170,
+            "number_variables": 203,
+            "number_total_constraints": 171,
             "number_unused_variables": 0,
         }
         self.unit_solutions = {
@@ -155,4 +168,5 @@ class TestUnitDefault(UnitTestHarness):
             "KH_h2[0]": 7.38e-4,
             "electricity_consumption[0]": 23.7291,
             "hydraulic_retention_time[0]": 1880470.588,
+            "costing.capital_cost": 2166581.415,
         }
