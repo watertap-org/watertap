@@ -10,11 +10,12 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import logging
+
 import pyomo.environ as pyo
 from pyomo.core.base.block import _BlockData
 from pyomo.core.kernel.block import IBlock
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
-import pyomo.repn.plugins.nl_writer as _nl_writer
 
 import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import (
@@ -25,17 +26,15 @@ from idaes.core.util.scaling import (
 from idaes.logger import getLogger
 
 _log = getLogger("watertap.core")
-_SuffixData = _nl_writer._SuffixData
+
+_pyomo_nl_writer_log = logging.getLogger("pyomo.repn.plugins.nl_writer")
 
 
-class _WTSuffixData(_SuffixData):
-    def update(self, suffix):
-        self.datatype.add(suffix.datatype)
-        for obj, val in suffix.items():
-            self._store(obj, val)
-
-    def store(self, obj, val):
-        self._store(obj, val)
+def _pyomo_nl_writer_logger_filter(record):
+    msg = record.getMessage()
+    if "scaling_factor" in msg and "model contains export suffix" in msg:
+        return False
+    return True
 
 
 @pyo.SolverFactory.register(
@@ -57,10 +56,6 @@ class IpoptWaterTAP(IPOPT):
             raise TypeError(
                 "IpoptWaterTAP.solve takes 1 positional argument: a Pyomo ConcreteModel or Block"
             )
-
-        # hot patch _SuffixData to prevent an overload
-        # on error reporting about `scaling_factor`
-        _nl_writer._SuffixData = _WTSuffixData
 
         # until proven otherwise
         self._cleanup_needed = False
@@ -103,6 +98,7 @@ class IpoptWaterTAP(IPOPT):
         self._model = args[0]
         self._cache_scaling_factors()
         self._cleanup_needed = True
+        _pyomo_nl_writer_log.addFilter(_pyomo_nl_writer_logger_filter)
 
         # NOTE: This function sets the scaling factors on the
         #       constraints. Hence we cache the constraint scaling
@@ -154,11 +150,11 @@ class IpoptWaterTAP(IPOPT):
             raise
 
     def _cleanup(self):
-        _nl_writer._SuffixData = _SuffixData
         if self._cleanup_needed:
             self._reset_scaling_factors()
             # remove our reference to the model
             del self._model
+            _pyomo_nl_writer_log.removeFilter(_pyomo_nl_writer_logger_filter)
 
     def _postsolve(self):
         self._cleanup()

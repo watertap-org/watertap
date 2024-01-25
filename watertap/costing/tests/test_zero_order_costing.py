@@ -411,12 +411,10 @@ class TestWorkflow:
         assert isinstance(model.fs.costing.aggregate_flow_electricity, Var)
         assert isinstance(model.fs.costing.aggregate_flow_costs, Var)
 
-        assert isinstance(model.fs.costing.land_cost, Var)
-        assert isinstance(model.fs.costing.working_capital, Var)
+        assert isinstance(model.fs.costing.land_cost, Expression)
+        assert isinstance(model.fs.costing.working_capital, Expression)
         assert isinstance(model.fs.costing.total_capital_cost, Var)
 
-        assert isinstance(model.fs.costing.land_cost_constraint, Constraint)
-        assert isinstance(model.fs.costing.working_capital_constraint, Constraint)
         assert isinstance(model.fs.costing.total_capital_cost_constraint, Constraint)
 
         assert_units_consistent(model.fs)
@@ -426,8 +424,7 @@ class TestWorkflow:
     def test_add_LCOW(self, model):
         model.fs.costing.add_LCOW(model.fs.unit1.properties_in[0].flow_vol)
 
-        assert isinstance(model.fs.costing.LCOW, Var)
-        assert isinstance(model.fs.costing.LCOW_constraint, Constraint)
+        assert isinstance(model.fs.costing.LCOW, Expression)
 
         assert_units_consistent(model.fs)
         assert degrees_of_freedom(model.fs) == 0
@@ -453,33 +450,11 @@ class TestWorkflow:
         model.fs.costing.initialize()
 
         assert pytest.approx(0, abs=1e-5) == value(
-            model.fs.costing.land_cost_constraint
-        )
-        assert pytest.approx(0, abs=1e-5) == value(
-            model.fs.costing.working_capital_constraint
-        )
-        assert pytest.approx(0, abs=1e-5) == value(
             model.fs.costing.total_capital_cost_constraint
         )
 
         assert pytest.approx(0, abs=1e-5) == value(
-            model.fs.costing.salary_cost_constraint
-        )
-        assert pytest.approx(0, abs=1e-5) == value(
-            model.fs.costing.benefits_cost_constraint
-        )
-        assert pytest.approx(0, abs=1e-5) == value(
-            model.fs.costing.maintenance_cost_constraint
-        )
-        assert pytest.approx(0, abs=1e-5) == value(
-            model.fs.costing.laboratory_cost_constraint
-        )
-        assert pytest.approx(0, abs=1e-5) == value(
-            model.fs.costing.insurance_and_taxes_cost_constraint
-        )
-
-        assert pytest.approx(0, abs=1e-5) == value(
-            model.fs.costing.total_fixed_operating_cost_constraint
+            model.fs.costing.total_operating_cost_constraint
         )
 
     @pytest.mark.solver

@@ -80,7 +80,7 @@ This enables user to have multiple setup files that can be used to run simulatio
    * *build_defaults* – default arguments that are passed for every sweep. For example in ro_erd flowsheet, shown here, this could be erd_type, but in other flowsheets, this could define any default options, from file locations to the number of stages, etc. The defaults will be passed along with loop values unless the loop value overrides them. 
    * *init_defaults* - defaults for initialization_function, same behavior as build-defaults but used for initialization_function
    * *optimize_defaults* - defaults for optimize_function, same behavior as build or init defaults, but for optimize function. 
-   * *build_output_kwargs * - a list of keys to only save in .h5 file. loopTool provides a default build_outputs function that takes in a dict containing model key name and model key (e.g., to output only m.fs.costing.LCOW user would include following dict *LCOW : fs.costing.LCOW*). The default function uses model.find_component to construct an output dict. Alternatively user can provide  kwargs to a user-provided build_outputs function that would be linked to loopTool (shown below). 
+   * *build_output_kwargs* - a list of keys to only save in .h5 file. loopTool provides a default build_outputs function that takes in a dict containing model key name and model key (e.g., to output only m.fs.costing.LCOW user would include following dict *LCOW : fs.costing.LCOW*). The default function uses model.find_component to construct an output dict. Alternatively user can provide  kwargs to a user-provided build_outputs function that would be linked to loopTool (shown below). 
 
 **loop options:**
 
@@ -214,7 +214,7 @@ The general structure starts with the analysis name, which will be used in the f
                         sweep_param_configs
                      sweep_param_name_b:
                         sweep_param_configs
-                     sweep_parm_etc:
+                     sweep_param_etc:
                         etc
 
 **Examples for RO with ERD**
@@ -232,26 +232,26 @@ Here we setup a simple run on RO erd flowsheet, requesting loopTool to run PS to
             - pressure_exchanger
             - pump_as_turbine
          sweep_param_loop
-            membrane_cost:  # Runs over differnt membrnae costs
+            membrane_cost:  # Runs over different membrane costs, generating 3 steps
                type: LinearSample
                param: fs.costing.reverse_osmosis.membrane_cost
                lower_limit: 10
                upper_limit: 30
                num_samples: 3
-            factor_membrane_replacement:  # Runs over membrane_replacment costs, generating 10 steps
+            factor_membrane_replacement:  # Runs over membrane_replacement costs, generating 3 steps
                type: LinearSample
                param: fs.costing.reverse_osmosis.factor_membrane_replacement
                lower_limit: 0.1
                upper_limit: 0.2
                num_samples: 3 
-            map_sweep: # Will run meshgrid sweep over feed_mass_nacl and ro_recovery, generating 100 samples
-               feed_mass_nacl:  # Runs over salt mass flow rate only, generating 10 steps
+            map_sweep: # Will run meshgrid sweep over feed_mass_nacl and ro_recovery, generating 9 samples
+               feed_mass_nacl:  # Runs over salt mass flow rate only, generating 3 steps
                   type: LinearSample
                   param: fs.feed.properties[0].flow_mass_phase_comp[Liq,NaCl]
                   lower_limit: 0.03
                   upper_limit: 0.04
                   num_samples: 3 
-               ro_recovery:  # Runs over ro recovery, generating 10 steps
+               ro_recovery:  # Runs over ro recovery, generating 3 steps
                   type: LinearSample
                   param: fs.RO.recovery_mass_phase_comp[0,Liq,H2O]
                   lower_limit: 0.3
@@ -298,7 +298,7 @@ Example when we don't do any build loops, init loops etc., this will simply run 
 
 Example of setting up differential sweep. 
 
-*Briefly, this type of analysis can provide insight into how reducing membrane cost and increasing membrane lifespan( reducing replacement rate), can reduce RO costs, even when the exact membrane cost is not known. This sweep will produce reference cost-optimal RO designs with different membrane cost, and for each design, we will simulate a differential design where only the membrane cost, or membrane replacement rate is reduced. The difference between the reference designs and differential design in LCOW provides a quantitative measure in how reducing membrane cost or reducing replacement cost would typically impact cost of RO. In practice, we would vary many design and decision variables for RO as they are uncertain, and this could include replacement factors, membrane performance metrics, pump costs, etc. All of these could be added to sweep_reference_params.*
+*Briefly, this type of analysis can provide insight into how reducing membrane cost and increasing membrane lifespan (reducing replacement rate), can reduce RO costs, even when the exact membrane cost is not known. This sweep will produce reference cost-optimal RO designs with different membrane cost, and for each design, we will simulate a differential design where only the membrane cost, or membrane replacement rate is reduced. The difference between the reference designs and differential design in LCOW provides a quantitative measure in how reducing membrane cost or reducing replacement cost would typically impact cost of RO. In practice, we would vary many design and decision variables for RO as they are uncertain, and this could include replacement factors, membrane performance metrics, pump costs, etc. All of these could be added to sweep_reference_params.*
 
 *Additionally, diff spec params in diff_param_loop can be provided in param_groups like with the standard parameter sweep shown above, allowing changing multiple parameters at the same time.* 
 
@@ -335,7 +335,7 @@ Example of setting up differential sweep.
                   param: fs.costing.reverse_osmosis.membrane_cost
                   lower_limit: 10
                   upper_limit: 30                  
-               num_samples: 10
+                  num_samples: 10
 
 Setting up the loopTool
 -------------------------------------
@@ -354,7 +354,7 @@ To loopTool can be executed by passing in the flowsheet functions, .yaml configu
    * number_of_subprocesses (optional): user defined number of subprocesses to use for parallel run should be 1 or greater 
    * parallel_back_end (optional): backend to use for a parallel run if MPI is not used and number_of_subprocesses > 1
    * custom_do_param_sweep (optional): custom param function (refer to parameter sweep tool)
-   * custom_do_param_sweep_kwargs (optional): custom parm kwargs (refer to parameter sweep tool)
+   * custom_do_param_sweep_kwargs (optional): custom param kwargs (refer to parameter sweep tool)
    * execute_simulations (optional): sets if looptool should execute simulations upon setup, otherwise user can call build_run_dict, and run_simulations call manually
    * h5_backup (optional): Set location for backup file, if set to False, no backup will be created, otherwise the backup will be auto-created
 
@@ -430,7 +430,7 @@ The loopTool will store data in h5 file, with a structure similar to that of the
 
 We can readily access the data for processing by using h5py. 
 To visually explore the h5 file, use HDFviewer ( https://www.hdfgroup.org/downloads/hdfview/ )
-All the parameters will use their parm names or object keys as reference (e.g. if you set up yaml file to sweep over 'RO_recovery' for which param is 'fs.ro.ro_recovery', the file will store data for RO_recovery under key 'fs.ro.ro_recovery'. Alternatively, if you provided build_outputs_kwargs, and specified a name for a key (e.g., *RO recovery: fs.ro.ro_recovery* than this result will be saved under *RO recovery*.
+All the parameters will use their param names or object keys as reference (e.g. if you set up yaml file to sweep over 'RO_recovery' for which param is 'fs.ro.ro_recovery', the file will store data for RO_recovery under key 'fs.ro.ro_recovery'. Alternatively, if you provided build_outputs_kwargs, and specified a name for a key (e.g., *RO recovery: fs.ro.ro_recovery* than this result will be saved under *RO recovery*.
 
 .. code-block::
 
@@ -476,22 +476,22 @@ Example of use as follows:
                min_num_samples: int (if set, loopTool will only re-run if there is fewer samples in the backup file than the set value)
                expected_num_samples: int (if set, loopTool will only re-run if the expected_num_samples differs from the number of samples saved in the backup file)
                force_rerun: False or True (if set to True, will force to always rerun given parameter sweep, if False, will not re-run the parameter sweep) 
-            map_sweep: # Will run meshgrid sweep over feed_mass_nacl and ro_recovery, generating 100 samples
-               feed_mass_nacl:  # Runs over salt mass flow rate only, generating 10 steps
+            map_sweep: # Will run meshgrid sweep over feed_mass_nacl and ro_recovery, generating 9 samples
+               feed_mass_nacl:  # Runs over salt mass flow rate only, generating 3 steps
                   type: LinearSample
                   param: fs.feed.properties[0].flow_mass_phase_comp[Liq,NaCl]
                   lower_limit: 0.03
                   upper_limit: 0.04
                   num_samples: 3 
-               ro_recovery:  # Runs over ro recovery, generating 10 steps
+               ro_recovery:  # Runs over ro recovery, generating 3 steps
                   type: LinearSample
                   param: fs.RO.recovery_mass_phase_comp[0,Liq,H2O]
                   lower_limit: 0.3
                   upper_limit: 0.5
-                  num_samples: 3 
-               min_num_samples: int (if set, loopTool will only re-run if there is less samples in the backup file than the set value)
-               expected_num_samples: int (if set, loopTool will only re-run if the expected_num_samples differs from the number of samples saved in the backup file)
-               force_rerun: False or True (if set to True, will force to always rerun given parameter sweep, if False, will not re-run the parameter sweep) 
+                  num_samples: 3
+                  min_num_samples: int (if set, loopTool will only re-run if there is less samples in the backup file than the set value)
+                  expected_num_samples: int (if set, loopTool will only re-run if the expected_num_samples differs from the number of samples saved in the backup file)
+                  force_rerun: False or True (if set to True, will force to always rerun given parameter sweep, if False, will not re-run the parameter sweep)
 
 This feature is designed to help with getting complete simulation sets, without needing to re-run all the looped options. For example, you might run a certain build loop, where only in one build option, some solutions failed. After fixing the reason, you can rerun the loopTool, and it will only rerun those build options that failed to solve. 
 
