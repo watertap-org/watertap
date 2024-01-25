@@ -229,10 +229,7 @@ def set_operating_conditions(
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
 
-    # unused scaling factors needed by IDAES base costing module
-    # calculate and propagate scaling factors
-    iscale.calculate_scaling_factors(m)
-
+    # set scaling factors
     iscale.set_scaling_factor(
         m.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"], 1
     )
@@ -241,6 +238,9 @@ def set_operating_conditions(
     iscale.set_scaling_factor(
         m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e4
     )
+
+    # calculate and propagate scaling factors
+    iscale.calculate_scaling_factors(m)
 
     # properties (cannot be fixed for initialization routines, must calculate the state variables)
     m.fs.feed.properties.calculate_state(
@@ -382,7 +382,7 @@ def initialize_system(m, solver=None):
     optarg = solver.options
 
     # ---initialize RO---
-    m.fs.RO.initialize(optarg=optarg, outlvl=idaeslog.DEBUG)
+    m.fs.RO.initialize(optarg=optarg)
 
     # ---initialize feed block---
     m.fs.feed.initialize(optarg=optarg)
@@ -636,6 +636,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    # m = main(erd_type=ERDtype.pressure_exchanger)
     m = main(erd_type=ERDtype.pump_as_turbine)
-    # m = main(erd_type=ERDtype.no_ERD)

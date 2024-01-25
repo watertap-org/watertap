@@ -100,7 +100,6 @@ def run_analysis(case_num=1, nx=5, interpolate_nan_outputs=True, output_filename
         outputs,
         csv_results_file_name=output_filename,
         optimize_function=RO.solve,
-        # optimize_kwargs=optimize_kwargs,
         interpolate_nan_outputs=interpolate_nan_outputs,
     )
 
