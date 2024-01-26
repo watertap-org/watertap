@@ -77,6 +77,7 @@ class TestMDContinuousRecirculation:
 
         # arcs
         arc_dict = {
+            # brine (MD hot side) loop
             m.fs.s01: (m.fs.feed.outlet, m.fs.pump_feed.inlet),
             m.fs.s02: (m.fs.pump_feed.outlet, m.fs.mixer.feed),
             m.fs.s03: (m.fs.mixer.outlet, m.fs.hx.cold_inlet),
