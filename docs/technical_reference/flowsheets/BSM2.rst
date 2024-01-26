@@ -18,10 +18,13 @@ Implementation
 
 Figure 1 shows the process flow diagram for BSM2 where influent wastewater is fed
 to a primary clarifier (primary treatment); the effluent is then passed to a series of activated sludge
-reactors and a secondary clarifier (secondary treatment), and finally the sludge is passed through a thickener and
-sent to the anaerobic digester. The anaerobic digester processes the sludge to produce
-a biogas stream and residual sludge stream that passes through a dewatering unit which recycles liquid to
-the headworks of the plant while sludge is released for disposal. The flowsheet relies on the following key assumptions:
+reactors and a secondary clarifier (secondary treatment). CSTRs are used to model the anoxic reactors in the activated
+sludge process and CSTRs with injection (which accounts for aeration tanks) are used to model the aerobic reactors.
+Finally, the sludge is passed through a thickener and sent to the anaerobic digester. The anaerobic digester processes
+the sludge to produce a biogas stream and residual sludge stream that passes through a dewatering unit which recycles
+liquid to the headworks of the plant while sludge is released for disposal. Costing relationships for each of the unit
+models is described in the `WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_
+The flowsheet relies on the following key assumptions:
 
    * supports steady-state only
    * property and reaction package are provided for the activated sludge model (ASM)
@@ -38,6 +41,10 @@ Documentation for each of the unit models can be found here:
     * `Thickener <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/thickener.html>`_
     * `Anaerobic digester <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/anaerobic_digester.html>`_
     * `Dewatering unit <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/dewatering_unit.html>`_
+    * `CSTR <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/cstr.html>`_
+    * CSTR with injection
+    * Primary clarifier
+    * Secondary clarifier
 
 Documentation for each of the property models can be found here:
     * `ASM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_
@@ -47,6 +54,7 @@ Future Refinements
 ------------------
 
 The following modifications to BSM2 are planned for development:
+    * Improving costing relationships in terms of detail, completeness, and reasonable validity
     * Accounting for temperature-dependence in the oxygen mass transfer coefficient (KLa) and oxygen concentration at saturation
     * Adding thermal energy requirements to the anaerobic digester and refining energy consumption estimates for units collectively
     * Replacing the ideal-separator formulation in the secondary clarifier with the widely used double-exponential settling model (i.e., the Takacs model)
