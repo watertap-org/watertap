@@ -422,11 +422,7 @@ class MCASParameterData(PhysicalParameterBlock):
                 else:
                     pass
 
-        # Check for molecular weight data
-        # if not len(self.config.mw_data):
-        #     raise ConfigurationError(
-        #         "The mw_data argument was not provided while instantiating the MCAS property model. Provide a dictionary with solute names and associated molecular weights as keys and values, respectively."
-        #     )
+
         mw_comp = self.config.mw_data
         if len(mw_comp) < len(self.config.solute_list):
             track_mw = {}
@@ -444,6 +440,15 @@ class MCASParameterData(PhysicalParameterBlock):
                 raise ConfigurationError(
                     f"Molecular weight data could not be obtained for the following solutes and no data were provided\n: {track_mw}."
                 )
+        track_bad_mw_input={}
+        for i in self.config.solute_list:
+            if mw_comp[i] is not None or not mw_comp[i].isnumeric:
+                track_bad_mw_input.update({i: mw_comp[i]})
+            else:
+                pass
+        if len(track_bad_mw_input):
+            raise ConfigurationError(f"'mw_data' values must either by numeric or None when molecular weight is not applicable. The following inputs should be revised:\n {track_bad_mw_input}")
+
 
         # TODO: consider turning parameters into variables for future param estimation
         mw_temp = {"H2O": 18e-3}
@@ -617,6 +622,7 @@ class MCASParameterData(PhysicalParameterBlock):
                 "temperature": {"method": None},
                 "pressure": {"method": None},
                 "flow_mass_phase_comp": {"method": "_flow_mass_phase_comp"},
+                "flow_mass_comp": {"method": "_flow_mass_comp"},
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
                 "flow_vol": {"method": "_flow_vol"},
@@ -1097,7 +1103,7 @@ class MCASStateBlockData(StateBlockData):
                 self.params.component_list,
                 rule=rule_flow_mol_phase_comp,
             )
-
+        
     def _flow_mass_phase_comp(self):
         self.flow_mass_phase_comp = Var(
             self.params.phase_list,
@@ -1121,6 +1127,10 @@ class MCASStateBlockData(StateBlockData):
                 rule=rule_flow_mass_phase_comp,
             )
 
+    def _flow_mass_comp(self):
+        add_object_reference(
+            self, "flow_mass_comp", {j: self.flow_mass_phase_comp[p, j] for j in self.params.component_list for p in self.params.phase_list})
+    
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.params.phase_list,

@@ -34,6 +34,7 @@ from idaes.core import UnitModelCostingBlock
 from watertap.unit_models.zero_order import CartridgeFiltrationZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock, MaterialFlowBasis
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -325,3 +326,25 @@ def test_costing():
     assert degrees_of_freedom(m.fs.unit1) == 0
 
     assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+
+@pytest.mark.unit()
+def test_no_database():
+    '''Verify that ZO models still instantiate successfully without database.'''
+    m = ConcreteModel()
+
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(solute_list=["nonvolatile_toc", "tss"])
+
+    m.fs.unit = CartridgeFiltrationZO(property_package=m.fs.params)
+
+@pytest.mark.unit()
+def test_with_MCAS():
+    '''Check compatibility of ZO model with MCAS.'''
+    m = ConcreteModel()
+
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = MCASParameterBlock(solute_list=["nonvolatile_toc", "tss"], 
+                                     ignore_neutral_charge=True,
+                                     material_flow_basis=MaterialFlowBasis.mass,
+                                     mw_data={"nonvolatile_toc": None, "tss": None})
+    m.fs.unit = CartridgeFiltrationZO(property_package=m.fs.params)
