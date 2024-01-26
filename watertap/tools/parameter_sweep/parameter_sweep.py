@@ -29,7 +29,11 @@ from pyomo.common.dependencies import attempt_import
 requests, requests_available = attempt_import("requests")
 
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
-from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
+from watertap.tools.parameter_sweep.sampling_types import (
+    SamplingType,
+    LinearSample,
+    SetMode,
+)
 
 from watertap.tools.parallel.parallel_manager_factory import create_parallel_manager
 
@@ -324,16 +328,53 @@ class _ParameterSweepBase(ABC):
     def _create_global_combo_array(self, d, sampling_type):
         num_var_params = len(d)
         param_values = []
-
+        # if users provides many parameters to sweep over, it will create a large
+        # multi dimensional array when sampling type is FIXED,
+        # so here we track single value samples and multi value sample,
+        # we meshgrid only those that have more then one value, and then
+        # merge all samples into a single 2D array for running PS sweep.
+        mix_mesh_idx, mix_mesh_samples = (
+            [],
+            [],
+        )  # tracking params with multiple sweep values
+        single_idx, single_samples = (
+            [],
+            [],
+        )  # tracking params with only a single sweep values
+        sample_i = 0  # keeps track of sample order
         for k, v in d.items():
             # Build a vector of discrete values for this parameter
             p = v.sample()
             param_values.append(p)
-
+            if len(p) == 1:
+                single_samples.append(p[0])
+                single_idx.append(sample_i)
+            else:
+                mix_mesh_samples.append(p)
+                mix_mesh_idx.append(sample_i)
+            sample_i += 1
         if sampling_type == SamplingType.FIXED:
-            # Form an array with every possible combination of parameter values
-            global_combo_array = np.array(np.meshgrid(*param_values, indexing="ij"))
-            global_combo_array = global_combo_array.reshape(num_var_params, -1).T
+            # Form an array with every possible combination of parameter values if
+            # we have any samples with more then one sweep value
+            if len(mix_mesh_idx) > 0:
+                temp_global_combo_array = np.array(
+                    np.meshgrid(*mix_mesh_samples, indexing="ij")
+                )
+                temp_global_combo_array = temp_global_combo_array.reshape(
+                    len(mix_mesh_samples), -1
+                ).T
+                global_combo_array = np.zeros(
+                    (temp_global_combo_array.shape[0], len(param_values))
+                )
+            else:
+                global_combo_array = np.zeros((1, len(param_values)))
+
+            # populate array with sweep params
+            for i, g_i in enumerate(single_idx):
+                global_combo_array[:, g_i] = single_samples[i]
+
+            for i, g_i in enumerate(mix_mesh_idx):
+                global_combo_array[:, g_i] = temp_global_combo_array[:, i]
 
         elif sampling_type == SamplingType.RANDOM:
             sorting = np.argsort(param_values[0])
@@ -412,8 +453,20 @@ class _ParameterSweepBase(ABC):
             param = self._get_object(m, item.pyomo_object)
             if param.is_variable_type():
                 # Fix the single value to values[k]
-                param.fix(non_indexed_values[k])
-
+                if item.set_mode == SetMode.FIX_VALUE:
+                    param.fix(non_indexed_values[k])
+                elif item.set_mode == SetMode.SET_LB:
+                    param.setlb(non_indexed_values[k])
+                elif item.set_mode == SetMode.SET_UB:
+                    param.setub(non_indexed_values[k])
+                # In SET_FIXED_STATE  we are only fixing or unfixing values
+                elif item.set_mode == SetMode.SET_FIXED_STATE:
+                    if item.default_fixed_value is not None:
+                        param.fix(item.default_fixed_value)
+                    if non_indexed_values[k]:
+                        param.fix()
+                    else:
+                        param.unfix()
             elif param.is_parameter_type():
                 # Fix the single value to values[k]
                 param.set_value(non_indexed_values[k])

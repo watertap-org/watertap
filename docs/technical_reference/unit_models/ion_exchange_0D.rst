@@ -138,7 +138,7 @@ The ion exchange model includes many variables, parameters, and expressions that
    "Resin bead diameter", ":math:`d`", "``resin_diam``", "None", ":math:`\text{m}`"
    "Resin bulk density", ":math:`\rho_{b}`", "``resin_bulk_dens``", "None", ":math:`\text{kg/L}`"
    "Resin surface area per volume", ":math:`a_{s}`", "``resin_surf_per_vol``", "None", ":math:`\text{m}^{-1}`"
-   "Bed porosity", ":math:`\epsilon`", "``bed_porosity``", "None", ":math:`\text{dimensionless}`"
+   "Bed porosity", ":math:`\varepsilon`", "``bed_porosity``", "None", ":math:`\text{dimensionless}`"
    "Number of cycles before regenerant disposal", ":math:`N_{regen}`", "``regen_recycle``", "None", ":math:`\text{dimensionless}`"
    "Relative breakthrough concentration at breakthrough time ", ":math:`X`", "``c_norm``", "``target_ion_set``", ":math:`\text{dimensionless}`"
    "Breakthrough time", ":math:`t_{break}`", "``t_breakthru``", "None", ":math:`\text{s}`"
@@ -303,8 +303,8 @@ Equations and Relationships
    "Total column volume required", ":math:`V_{col, tot} = n_{op}V_{col}`"
    "Column height to diameter ratio", ":math:`R_{HD} = \frac{H_{col}}{D_{col}}`"
    "Column height", ":math:`H_{col} = Z + H_{distributor} + H_{underdrain} + H_{expan}`"
-   "Interstitial velocity", ":math:`u_{inter} = \frac{u_{bed}}{\epsilon}`"
-   "Contact time", ":math:`t_{contact} = EBCT \epsilon`"
+   "Interstitial velocity", ":math:`u_{inter} = \frac{u_{bed}}{\varepsilon}`"
+   "Contact time", ":math:`t_{contact} = EBCT \varepsilon`"
    "Empty bed contact time", ":math:`EBCT = \frac{Z}{u_{bed}}`"
    "Regeneration tank volume", ":math:`V_{regen} = t_{regen} (Q_{p, in} / R)`"
    "Bed expansion fraction from backwashing (T = 20C)", ":math:`X_{expan} = H_{expan,A} + H_{expan,B}u_{bw} + H_{expan,C}u_{bw}^{2}`"
@@ -312,20 +312,20 @@ Equations and Relationships
    "Regen volumetric flow rate", ":math:`Q_{regen} = \frac{Q_{p, in}N_{regen}}{R}`"
    "Backwashing flow rate", ":math:`Q_{bw} = u_{bw} \frac{V_{bed}}{Z}n_{op}`"
    "Rinse flow rate", ":math:`Q_{rinse} = u_{bed} \frac{V_{bed}}{Z}n_{op}`"
-   "Main pump power", ":math:`P_{main} = \frac{g \rho_{in} 0.70325p_{drop}Q_{p, in}}{\eta}`"
-   "Regen pump power", ":math:`P_{regen} = \frac{g \rho_{in} 0.70325p_{drop}Q_{regen}}{\eta}`"
-   "Rinse pump power", ":math:`P_{rinse} = \frac{g \rho_{in} 0.70325p_{drop}Q_{rinse}}{\eta}`"
-   "Backwash pump power", ":math:`P_{bw} = \frac{g \rho_{in} 0.70325p_{drop}Q_{bw}}{\eta}`"
+   "Main pump power", ":math:`P_{main} = \frac{g \rho_{in} p_{drop}Q_{p, in}}{\eta} \Big( \frac{t_{break}}{t_{cycle}} \Big)`"
+   "Regen pump power", ":math:`P_{regen} = \frac{g \rho_{in} p_{drop}Q_{regen}}{\eta} \Big( \frac{t_{regen}}{t_{cycle}} \Big)`"
+   "Rinse pump power", ":math:`P_{rinse} = \frac{g \rho_{in} p_{drop}Q_{rinse}}{\eta} \Big( \frac{t_{rinse}}{t_{cycle}} \Big)`"
+   "Backwash pump power", ":math:`P_{bw} = \frac{g \rho_{in} p_{drop}Q_{bw}}{\eta} \Big( \frac{t_{bw}}{t_{cycle}} \Big)`"
    "Pressure drop (T = 20C)", ":math:`p_{drop} = Z(p_{drop,A} + p_{drop,B}u_{bed} + p_{drop,C}u_{bed}^{2})`"
    "Rinse time", ":math:`t_{rinse} = EBCT N_{rinse}`"
-   "Cycle time", ":math:`t_{cycle} = t_{break} + t_{waste}`"
    "Waste time", ":math:`t_{waste} = t_{regen} + t_{bw} + t_{rinse}`"
+   "Cycle time", ":math:`t_{cycle} = t_{break} + t_{waste}`"
    "Reynolds number", ":math:`Re = \frac{u_{bed}d}{\mu}`"
    "Schmidt number", ":math:`Sc = \frac{\mu}{D}`"
-   "Sherwood number", ":math:`Sh = 2.4 \epsilon^{0.66} Re^{0.34} Sc^{0.33}`"
+   "Sherwood number", ":math:`Sh = 2.4 \varepsilon^{0.66} Re^{0.34} Sc^{0.33}`"
    "Bed Peclet number", ":math:`Pe_{bed} = Pe_{p} \frac{Z}{d}`"
    "Particle Peclet number", ":math:`Pe_{p} = 0.05 Re^{0.48}`"
-   "Resin surface area per vol", ":math:`a_{s} = 6 \frac{1-\epsilon}{d}`"
+   "Resin surface area per vol", ":math:`a_{s} = 6 \frac{1-\varepsilon}{d}`"
 
     **Langmuir**
    "Langmuir isotherm", ":math:`\frac{C_{b}}{C_{0}} (1-\frac{q_{eq}}{q_{max}}) = La (1-\frac{C_{b}}{C_{0}})\frac{q_{eq}}{q_{max}}`"
@@ -334,9 +334,9 @@ Equations and Relationships
    "Partition ratio", ":math:`\Lambda = \frac{q_{eq} \rho_{b}}{C_{0}}`"
    "Fluid mass transfer coeff", ":math:`k_{f} = \frac{D Sh}{d}`"
    "Number of mass-transfer units", ":math:`N = \frac{k_{f}a_{s}Z}{u_{bed}}`"
-   "Dimensionless time", ":math:`\tau = (\frac{u_{inter}t_{break} \epsilon}{Z} - \epsilon) / \Lambda`"
+   "Dimensionless time", ":math:`\tau = (\frac{u_{inter}t_{break} \varepsilon}{Z} - \varepsilon) / \Lambda`"
    "Height of transfer unit", ":math:`HTU = \frac{u_{bed}}{\rho_{b}k}`"
-   "Rate coefficient", ":math:`k = 6 \frac{(1-\epsilon)k_{f}}{\rho_{b}d}`"
+   "Rate coefficient", ":math:`k = 6 \frac{(1-\varepsilon)k_{f}}{\rho_{b}d}`"
    "Mass removed", ":math:`M_{rem,j} = V_{res,tot}q_{eq} \rho_{b}`"
    "Mass transfer term", ":math:`\dot{m}_j = -M_{rem,j} / t_{break}`"
 
@@ -455,10 +455,11 @@ disposal costs are calculated as a function of the annual mass of resin replaced
 Where :math:`M_{res}` is the resin mass for a single bed and :math:`\dot{v}_{regen}` is the volumetric flow of regenerant solution. If ``hazardous_waste`` is set to ``False``,
 :math:`C_{op,haz} = 0`
 
-The total energy consumed by the unit is the summation of the power required for each of the booster pump, backwashing pump, regeneration pump, and rinsing pump:
+The total energy consumed by the unit is the summation of the power required for each of the booster pump, backwashing pump, regeneration pump, and rinsing pump. Each is scaled 
+by the total time required for each step:
 
 .. math::
-    P_{tot} = P_{main} + P_{bw} + P_{regen} + P_{rinse}
+    P_{tot} = \cfrac{P_{main} t_{break} + P_{bw} t_{bw} + P_{regen} t_{regen} + P_{rinse} t_{rinse}}{t_{cycle}} 
 
 If the user chooses ``single_use`` for the ``regenerant`` configuration keyword, there is no cost for regeneration solution:
 
@@ -486,7 +487,7 @@ Otherwise, :math:`C_{op,haz} = 0` as before.
 Lastly, the total energy consumed by the unit for ``single_use`` configuration includes the booster pump, backwashing pump, and rinsing pump:
 
 .. math::
-    P_{tot} = P_{main} + P_{bw} + P_{rinse}
+    P_{tot} = \cfrac{P_{main} t_{break} + P_{bw} t_{bw} + P_{rinse} t_{rinse}}{t_{cycle}} 
 
 References
 ----------
