@@ -240,6 +240,7 @@ def test_property_ions(model):
     m.fs.stream[0].act_coeff_phase_comp
     m.fs.stream[0].trans_num_phase_comp
     m.fs.stream[0].total_hardness
+    m.fs.stream[0].total_dissolved_solids
 
     calculate_scaling_factors(m.fs)
 
@@ -284,6 +285,10 @@ def test_property_ions(model):
         value(m.fs.stream[0].conc_mol_phase_comp["Liq", "C"] * 100.0869), rel=1e-3
     )
     assert_units_equivalent(m.fs.stream[0].total_hardness, pyunits.mg / pyunits.L)
+    assert value(m.fs.stream[0].total_dissolved_solids) == pytest.approx(
+        71109.93, rel=1e-3
+    )
+    assert_units_equivalent(m.fs.stream[0].total_dissolved_solids, pyunits.mg / pyunits.L)
 
 
 @pytest.fixture(scope="module")
@@ -435,6 +440,7 @@ def test_build(model3):
         "pressure_osm_phase",
         "act_coeff_phase_comp",
         "total_hardness",
+        "total_dissolved_solids",
     ]
 
     # test on demand constraints
@@ -444,8 +450,8 @@ def test_build(model3):
         c = getattr(m.fs.stream[0], "eq_" + v)
         assert isinstance(c, Constraint)
 
-    assert number_variables(m) == 93
-    assert number_total_constraints(m) == 70
+    assert number_variables(m) == 94
+    assert number_total_constraints(m) == 71
     assert number_unused_variables(m) == 6
 
 
