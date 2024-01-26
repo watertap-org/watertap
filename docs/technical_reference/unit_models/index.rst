@@ -29,3 +29,4 @@ Unit Models
    electroNP_ZO
    translators/index
    zero_order_unit_models/index
+   stoichiometric_reactor
