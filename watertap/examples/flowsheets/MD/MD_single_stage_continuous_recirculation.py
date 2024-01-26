@@ -71,7 +71,7 @@ def main():
     optimize_set_up(m)
     solve(m, solver=solver)
 
-    print("\n***---Simulation results---***")
+    print("\n***---optimization results---***")
     display_system(m)
     display_design(m)
     display_state(m)
@@ -343,7 +343,7 @@ def set_operating_conditions(m):
     m.fs.MD.area.fix(membrane_area)
     m.fs.MD.permeability_coef.fix(1e-10)
     m.fs.MD.membrane_thickness.fix(1e-4)
-    m.fs.MD.membrane_tc.fix(0.2)
+    m.fs.MD.membrane_thermal_conductivity.fix(0.2)
     length = 3
     m.fs.MD.length.fix(length)
 
