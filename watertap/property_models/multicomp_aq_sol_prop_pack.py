@@ -443,14 +443,14 @@ class MCASParameterData(PhysicalParameterBlock):
         track_bad_mw_input={}
         for i in self.config.solute_list:
             if mw_comp[i] is None:
-                # Allow None as a value for when MW is not applicable.
-                pass
-            elif mw_comp[i] is not None or not mw_comp[i].isnumeric:
+                # TODO: setting to 1 should effectively ignore mw in the model for now, but conversions between mass and mole won't be valid. Need a long-term solution.
+                mw_comp[i] = 1
+            if not isinstance(value(mw_comp[i]), (int,float)):
                 track_bad_mw_input.update({i: mw_comp[i]})
             else:
                 pass
 
-        if len(track_bad_mw_input):
+        if len(track_bad_mw_input)>0:
             raise ConfigurationError(f"'mw_data' values must either by numeric or None when molecular weight is not applicable. The following inputs should be revised:\n {track_bad_mw_input}")
 
 
