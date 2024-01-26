@@ -348,3 +348,6 @@ def test_with_MCAS():
                                      material_flow_basis=MaterialFlowBasis.mass,
                                      mw_data={"nonvolatile_toc": None, "tss": None})
     m.fs.unit = CartridgeFiltrationZO(property_package=m.fs.params)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq',"H2O"].fix(10)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq',"nonvolatile_toc"].fix(1)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq',"tss"].fix(1)

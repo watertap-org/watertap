@@ -442,10 +442,14 @@ class MCASParameterData(PhysicalParameterBlock):
                 )
         track_bad_mw_input={}
         for i in self.config.solute_list:
-            if mw_comp[i] is not None or not mw_comp[i].isnumeric:
+            if mw_comp[i] is None:
+                # Allow None as a value for when MW is not applicable.
+                pass
+            elif mw_comp[i] is not None or not mw_comp[i].isnumeric:
                 track_bad_mw_input.update({i: mw_comp[i]})
             else:
                 pass
+
         if len(track_bad_mw_input):
             raise ConfigurationError(f"'mw_data' values must either by numeric or None when molecular weight is not applicable. The following inputs should be revised:\n {track_bad_mw_input}")
 
