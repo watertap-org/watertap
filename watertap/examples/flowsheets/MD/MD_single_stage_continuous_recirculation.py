@@ -330,8 +330,8 @@ def set_operating_conditions(m):
         feed_flow_mass * feed_mass_frac_H2O
     )
 
-    m.fs.feed.properties[0].pressure.fix(feed_pressure)
-    m.fs.feed.properties[0].temperature.fix(feed_temperature)
+    m.fs.feed.properties[0].pressure.fix(feed_pressure)  # Pa
+    m.fs.feed.properties[0].temperature.fix(feed_temperature)  # K
 
     # concentrate separator
     # either the overall recovery or the split fraction will be fixed, but not both
@@ -340,29 +340,29 @@ def set_operating_conditions(m):
     # MD
     membrane_pressure_drop = -5e5
     membrane_area = 10 * recycle_flow_mass
-    m.fs.MD.area.fix(membrane_area)
-    m.fs.MD.permeability_coef.fix(1e-10)
-    m.fs.MD.membrane_thickness.fix(1e-4)
-    m.fs.MD.membrane_thermal_conductivity.fix(0.2)
+    m.fs.MD.area.fix(membrane_area)  # m^2
+    m.fs.MD.permeability_coef.fix(1e-10)  # kg/m-s-Pa
+    m.fs.MD.membrane_thickness.fix(1e-4)  # m
+    m.fs.MD.membrane_thermal_conductivity.fix(0.2)  # W/K-m
     length = 3
-    m.fs.MD.length.fix(length)
+    m.fs.MD.length.fix(length)  # m
 
-    m.fs.MD.hot_ch.channel_height.fix(0.0019)
+    m.fs.MD.hot_ch.channel_height.fix(0.0019)  # m
     m.fs.MD.hot_ch.spacer_porosity.fix(0.77)
-    m.fs.MD.cold_ch.channel_height.fix(0.0019)
+    m.fs.MD.cold_ch.channel_height.fix(0.0019)  # m
     m.fs.MD.cold_ch.spacer_porosity.fix(0.77)
 
     # heat exchanger
     heat_exchanger_area = 4 * membrane_area
     heat_exchanger_pressure_drop = -1e5
-    m.fs.hx.overall_heat_transfer_coefficient.fix(2e3)
-    m.fs.hx.area.fix(heat_exchanger_area)
-    m.fs.hx.cold.deltaP[0].fix(heat_exchanger_pressure_drop)
-    m.fs.hx.hot.deltaP[0].fix(heat_exchanger_pressure_drop)
+    m.fs.hx.overall_heat_transfer_coefficient.fix(2e3)  # W/K-m^2
+    m.fs.hx.area.fix(heat_exchanger_area)  # m^2
+    m.fs.hx.cold.deltaP[0].fix(heat_exchanger_pressure_drop)  # Pa
+    m.fs.hx.hot.deltaP[0].fix(heat_exchanger_pressure_drop)  # Pa
 
     # feed pump
     m.fs.pump_feed.efficiency_pump.fix(0.8)
-    m.fs.pump_feed.control_volume.deltaP[0].fix(7e5)
+    m.fs.pump_feed.control_volume.deltaP[0].fix(7e5)  # Pa
 
     # brine pump
     LEP = 7e5
@@ -384,7 +384,9 @@ def set_operating_conditions(m):
     mixed_brine_mass_frac_TDS = 0.07
     mixed_brine_mass_frac_H2O = 1 - mixed_brine_mass_frac_TDS
     mixed_brine_flow_mass = feed_flow_mass + recycle_flow_mass
-    m.fs.heater.control_volume.properties_out[0].temperature.fix(heater_top_temperature)
+    m.fs.heater.control_volume.properties_out[0].temperature.fix(
+        heater_top_temperature
+    )  # K
     m.fs.heater.control_volume.deltaP[0].fix(heater_pressure_drop)
     m.fs.heater.control_volume.properties_out[0].pressure.value = (
         m.fs.pump_brine.control_volume.properties_out[0].pressure.value
@@ -403,7 +405,7 @@ def set_operating_conditions(m):
     cold_loop_stream_flow_mass = recycle_flow_mass + feed_flow_mass
     m.fs.chiller.control_volume.properties_out[0].temperature.fix(
         chiller_outlet_temperature
-    )
+    )  # K
     m.fs.chiller.control_volume.deltaP[0].fix(chiller_pressure_drop)
     m.fs.chiller.control_volume.properties_out[0].pressure.value = (
         m.fs.pump_permeate.control_volume.properties_out[0].pressure.value
