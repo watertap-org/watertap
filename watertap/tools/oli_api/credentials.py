@@ -337,6 +337,8 @@ class CredentialManager:
         """
         Log in to OLI Cloud using access key or credentials.
 
+        :param refresh: bool to get refresh token
+
         :return status: bool indicating success or failure
         """
 
