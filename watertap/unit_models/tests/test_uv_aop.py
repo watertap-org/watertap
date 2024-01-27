@@ -541,7 +541,6 @@ class TestUV_with_multiple_comps:
         m.fs.unit.exposure_time.fix(exporure_time)
         m.fs.unit.inactivation_rate["Liq", "NDMA"].fix(inactivation_rate_NDMA)
         m.fs.unit.inactivation_rate["Liq", "DCE"].fix(inactivation_rate_DCE)
-        # m.fs.unit.outlet.pressure[0].fix(feed_pressure)
         m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"].fix(EEO)
         m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "DCE"].fix(EEO_DCE)
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
