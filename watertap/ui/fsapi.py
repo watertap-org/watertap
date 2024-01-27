@@ -177,7 +177,9 @@ class ModelExport(BaseModel):
         if v is None:
             v = True
             obj = cls._get_supported_obj(values, allow_none=False)
-            if obj.is_variable_type() or (obj.is_parameter_type() and obj.mutable):
+            if obj.is_variable_type() or (
+                obj.is_parameter_type() and obj.parent_component().mutable
+            ):
                 v = False
         return v
 
@@ -194,10 +196,13 @@ class ModelOption(BaseModel):
     """An option for building/running the model."""
 
     name: str
+    category: str = "Build Options"
     display_name: str = None
     description: str = None
     display_values: List[Any] = []
-    values_allowed: List[Any] = []
+    values_allowed: Union[str, List[Any]]
+    min_val: Union[None, int, float] = None
+    max_val: Union[None, int, float] = None
     value: Any = None
 
     @validator("display_name", always=True)
@@ -218,11 +223,47 @@ class ModelOption(BaseModel):
     @classmethod
     def validate_value(cls, v, values):
         allowed = values.get("values_allowed", None)
-        # allowed = list(allowed.keys())
-        if v in allowed:
-            return v
+        # check if values allowed is int or float and ensure valid value
+        if allowed == "int":
+            if isinstance(v, int):
+                min_val = values.get("min_val", float("-inf"))
+                max_val = values.get("max_val", float("-inf"))
+                if v >= min_val and v <= max_val:
+                    return v
+                else:
+                    raise ValueError(
+                        f"'value' ({v}) not within expected range of [{min_val}-{max_val}]"
+                    )
+            else:
+                raise ValueError(f"'value' ({v}) not a valid integer")
+        elif allowed == "float":
+            if isinstance(v, int) or isinstance(v, float):
+                min_val = values.get("min_val", float("-inf"))
+                max_val = values.get("max_val", float("-inf"))
+                if v >= min_val and v <= max_val:
+                    return v
+                else:
+                    raise ValueError(
+                        f"'value' ({v}) not within expected range of [{min_val}-{max_val}]"
+                    )
+            else:
+                raise ValueError(f"'value' ({v}) not a valid float")
+        # check if values allowed is string
+        elif allowed == "string":
+            if isinstance(v, str):
+                return v
+            else:
+                raise ValueError(f"'value' ({v}) not a valid string")
+        # values_allowed is a list. make sure v is in the list of values allowed
+        elif isinstance(allowed, list):
+            if v in allowed:
+                return v
+            else:
+                raise ValueError(f"'value' ({v}) not in allowed values: {allowed}")
         else:
-            raise ValueError(f"'value' ({v}) not in allowed values: {allowed}")
+            raise ValueError(
+                f"{allowed} does not match the following criteria for values_allowed: must be either a list of possible values, or one of 'string', 'int', 'float'."
+            )
 
 
 class FlowsheetExport(BaseModel):
@@ -705,48 +746,49 @@ class FlowsheetInterface:
                     # Don't convert units when setting the exported value
                     dst.value = src.value
 
-                if dst.obj.fixed != src.fixed:
-                    # print(f'changing fixed for {key} from {dst.obj.fixed} to {src.fixed}')
-                    if src.fixed:
-                        dst.obj.fix()
-                    else:
-                        dst.obj.unfix()
-                    dst.fixed = src.fixed
+                # update other variable properties if changed, not applicable for parameters
+                if dst.obj.is_variable_type():
+                    if dst.obj.fixed != src.fixed:
+                        # print(f'changing fixed for {key} from {dst.obj.fixed} to {src.fixed}')
+                        if src.fixed:
+                            dst.obj.fix()
+                        else:
+                            dst.obj.unfix()
+                        dst.fixed = src.fixed
+                    # update bounds
+                    if dst.lb != src.lb:
+                        # print(f'changing lb for {key} from {dst.lb} to {src.lb}')
+                        if src.lb is None or src.lb == "":
+                            dst.obj.setlb(None)
+                            dst.lb = None
+                        else:
+                            tmp = pyo.Var(initialize=src.lb, units=ui_units)
+                            tmp.construct()
+                            new_lb = pyo.value(
+                                u.convert(tmp, to_units=u.get_units(dst.obj))
+                            )
+                            dst.obj.setlb(new_lb)
+                            dst.lb = src.lb
+                    if dst.ub != src.ub:
+                        # print(f'changing ub for {key} from {dst.ub} to {src.ub}')
+                        if src.ub is None or src.ub == "":
+                            dst.obj.setub(None)
+                            dst.ub = None
+                        else:
+                            tmp = pyo.Var(initialize=src.ub, units=ui_units)
+                            tmp.construct()
+                            new_ub = pyo.value(
+                                u.convert(tmp, to_units=u.get_units(dst.obj))
+                            )
+                            # print(f'changing ub for {key} from {dst.obj.ub} to {new_ub}')
+                            dst.obj.setub(new_ub)
+                            dst.ub = src.ub
 
                 if dst.is_sweep != src.is_sweep:
                     dst.is_sweep = src.is_sweep
 
                 if dst.num_samples != src.num_samples:
                     dst.num_samples = src.num_samples
-
-                # update bounds
-                if dst.lb != src.lb:
-                    # print(f'changing lb for {key} from {dst.lb} to {src.lb}')
-                    if src.lb is None or src.lb == "":
-                        dst.obj.setlb(None)
-                        dst.lb = None
-                    else:
-                        tmp = pyo.Var(initialize=src.lb, units=ui_units)
-                        tmp.construct()
-                        new_lb = pyo.value(
-                            u.convert(tmp, to_units=u.get_units(dst.obj))
-                        )
-                        dst.obj.setlb(new_lb)
-                        dst.lb = src.lb
-                if dst.ub != src.ub:
-                    # print(f'changing ub for {key} from {dst.ub} to {src.ub}')
-                    if src.ub is None or src.ub == "":
-                        dst.obj.setub(None)
-                        dst.ub = None
-                    else:
-                        tmp = pyo.Var(initialize=src.ub, units=ui_units)
-                        tmp.construct()
-                        new_ub = pyo.value(
-                            u.convert(tmp, to_units=u.get_units(dst.obj))
-                        )
-                        # print(f'changing ub for {key} from {dst.obj.ub} to {new_ub}')
-                        dst.obj.setub(new_ub)
-                        dst.ub = src.ub
 
         # update degrees of freedom (dof)
         self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
