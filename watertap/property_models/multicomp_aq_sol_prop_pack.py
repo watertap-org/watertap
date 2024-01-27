@@ -1898,7 +1898,7 @@ class MCASStateBlockData(StateBlockData):
         except InconsistentUnitsError:
             self.total_dissolved_solids.fix(0)
             _log.warning(
-                "Since no ions were specified in solute_list, total_dissolved_solids need not be created. total_dissolved_solids has been fixed to 0."
+                "Since no ions were specified in solute_list, total_dissolved_solids has been fixed to 0. The  total_dissolved_solids calculation does not currently account for apparent species (e.g., NaCl)."
             )
             return
     # -----------------------------------------------------------------------------

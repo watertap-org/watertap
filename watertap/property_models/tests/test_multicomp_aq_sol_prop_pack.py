@@ -795,6 +795,8 @@ def test_seawater_data():
             * 100.0869
         )
     )
+    assert value(stream[0].total_dissolved_solids) == pytest.approx(35974.42)
+    
 
 
 @pytest.mark.component
@@ -1996,10 +1998,11 @@ def test_seawater_data_with_flow_mass_basis():
         ),
         rel=1e-3,
     )
+    assert value(stream[0].total_dissolved_solids) == pytest.approx(35974.42, rel=1e-3)
 
 
 @pytest.mark.component
-def test_total_hardness():
+def test_total_hardness_and_TDS():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
@@ -2051,6 +2054,7 @@ def test_total_hardness():
     )
 
     stream[0].total_hardness
+    stream[0].total_dissolved_solids
     stream[0].conc_mol_phase_comp
     assert_units_consistent(m)
 
@@ -2087,6 +2091,7 @@ def test_total_hardness():
         rel=1e-3,
     )
 
+    assert value(stream[0].total_dissolved_solids) == pytest.approx(35205.61, rel=1e-3)
 
 @pytest.mark.component
 def test_no_total_hardness(caplog):
@@ -2155,6 +2160,59 @@ def test_no_total_hardness(caplog):
         in caplog.text
     )
 
+
+@pytest.mark.component
+def test_no_total_hardness_not_TDS_with_apparent_species_only(caplog):
+    caplog.set_level(
+        idaeslog.INFO, logger="watertap.property_models.multicomp_aq_sol_prop_pack."
+    )
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["NaCl"],
+        ignore_neutral_charge=True,
+        material_flow_basis=MaterialFlowBasis.mass,
+    )
+
+    m.fs.stream = stream = m.fs.properties.build_state_block([0], defined_state=True)
+
+    mass_flow_in = 1 * pyunits.kg / pyunits.s
+    feed_mass_frac = {
+        "NaCl": 11122e-6 + 20300e-6,
+    }
+    for ion, x in feed_mass_frac.items():
+        mass_comp_flow = x * pyunits.kg / pyunits.kg * mass_flow_in
+
+        stream[0].flow_mass_phase_comp["Liq", ion].fix(mass_comp_flow)
+
+    H2O_mass_frac = 1 - sum(x for x in feed_mass_frac.values())
+
+    stream[0].flow_mass_phase_comp["Liq", "H2O"].fix(H2O_mass_frac)
+    stream[0].temperature.fix(298.15)
+    stream[0].pressure.fix(101325)
+
+    stream[0].total_hardness
+
+    stream[0].total_dissolved_solids
+    # stream[0].total_hardness
+
+    assert_units_consistent(m)
+
+    check_dof(m, fail_flag=True)
+
+    assert value(stream[0].total_dissolved_solids) == 0
+    assert value(stream[0].total_hardness) == 0
+
+
+    assert (
+        "Since no ions were specified in solute_list, total_dissolved_solids has been fixed to 0. The  total_dissolved_solids calculation does not currently account for apparent species (e.g., NaCl)."
+        in caplog.text
+    )
+    assert (
+        "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
+        in caplog.text
+    )
 
 @pytest.mark.component
 def test_flow_mass_basis_with_RO_unit():
