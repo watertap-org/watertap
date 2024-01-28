@@ -11,7 +11,7 @@
 #################################################################################
 
 from dataclasses import dataclass
-from pyomo.environ import ConcreteModel, PyomoObject
+from pyomo.environ import ConcreteModel, PyomoObject, ComponentMap
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
@@ -97,11 +97,10 @@ class TestReverseOsmosis0D_default(UnitTestHarness):
             "number_total_constraints": 109,
             "number_unused_variables": 0,
         }
-        self.unit_solutions = {
-            "feed_side.properties_in[0].flow_mass_phase_comp[Liq, H2O]": 0.965,
-            "feed_side.properties_in[0].flow_mass_phase_comp[Liq, NaCl]": 0.035,
-        }
-        # self.unit_solutions = [
-        #     m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 0.965,
-        #     m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"], 0.035,
-        # ]
+        self.unit_solutions = ComponentMap()
+        self.unit_solutions[
+            m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
+        ] = 0.965
+        self.unit_solutions[
+            m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"]
+        ] = 0.035
