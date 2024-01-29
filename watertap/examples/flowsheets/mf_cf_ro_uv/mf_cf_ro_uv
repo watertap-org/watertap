@@ -1,0 +1,181 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
+from pyomo.environ import (
+    ConcreteModel,
+    value,
+    TransformationFactory,
+    units as pyunits,
+    Block,
+)
+from pyomo.network import Arc
+from pyomo.util.check_units import assert_units_consistent
+
+from idaes.core import FlowsheetBlock
+from idaes.core.solvers import get_solver
+from idaes.core.util.initialization import (
+    propagate_state,
+    fix_state_vars,
+    revert_state_vars,
+)
+from idaes.core.util.exceptions import ConfigurationError
+from idaes.models.unit_models.translator import Translator
+from idaes.models.unit_models import Mixer, Separator, Product, Feed
+from idaes.models.unit_models.mixer import MomentumMixingType
+import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
+from idaes.core import UnitModelCostingBlock
+
+from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
+from watertap.property_models.NaCl_T_dep_prop_pack import NaClParameterBlock
+
+from watertap.unit_models.reverse_osmosis_0D import (
+    ReverseOsmosis0D,
+    ConcentrationPolarizationType,
+    MassTransferCoefficient,
+    PressureChangeType,
+)
+
+from watertap.unit_models.pressure_exchanger import PressureExchanger
+from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
+from watertap.unit_models.uv_aop import Ultraviolet0DData
+from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
+from watertap.core.wt_database import Database
+import watertap.core.zero_order_properties as prop_ZO
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock, MaterialFlowBasis)
+from watertap.unit_models.zero_order import (
+    MicroFiltrationZO,    
+    CartridgeFiltrationZO,
+    UVAOPZO,
+    ChemicalAdditionZO,
+    StaticMixerZO,
+    StorageTankZO,
+    MediaFiltrationZO,
+    BackwashSolidsHandlingZO,
+)
+from watertap.costing.zero_order_costing import ZeroOrderCosting
+from watertap.costing import WaterTAPCosting
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
+
+
+def main():
+    m = build()
+
+    set_operating_conditions(m)
+    # assert_degrees_of_freedom(m, 0)
+    assert_units_consistent(m)
+
+    initialize_system(m)
+
+    results = solve(m, checkpoint="solve flowsheet after initializing system")
+    display_results(m)
+
+    # add_costing(m)
+    # assert_degrees_of_freedom(m, 0)
+    # m.fs.costing.initialize()
+
+    # results = solve(m, checkpoint="solve flowsheet after costing")
+
+    display_metrics_results(m)
+    display_additional_results(m)
+
+    return m, results
+
+def build(ro_props="seawater"):
+    '''
+    ro_prop_model: choose between "NaCl" and "Seawater" prop models for RO
+    '''
+    # flowsheet set up
+    m= ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    # Property Models: MCAS and either NaCl/Seawater
+    # Use MCAS for whole flowsheet, except RO
+    m.fs.mcas_props = MCASParameterBlock(solute_list=["tds", "tss"], mw_data={"tds": None, "tss": None}, material_flow_basis=MaterialFlowBasis.mass)
+    # Choose between NaCl and Seawater prop models for RO
+    m.fs.ro_props = get_ro_props(ro_props)
+
+    #Add Database for initially parameterization of ZO models
+    m.db = Database()
+
+    #Feed block
+    m.fs.feed = Feed(property_package=m.fs.mcas_props)
+    
+    # Microfiltration Pump
+    m.fs.mf_pump = Pump(property_package=m.fs.mcas_props)
+    
+    # Microfiltration
+    m.fs.mf = MicroFiltrationZO(property_package=m.fs.mcas_props)
+    
+    # Cartridge Filtration Pump
+    m.fs.cf_pump = Pump(property_package=m.fs.mcas_props)
+
+    # CF
+    m.fs.cf = CartridgeFiltrationZO(property_package=m.fs.mcas_props)
+
+    # Translate MCAS to RO property model
+    m.fs.mcas_to_ro_translator = Translator(inlet_property_package=m.fs.mcas_props,
+                                            outlet_property_package=m.fs.ro_props)
+    # Pump + ERD?
+
+    # RO
+
+    # Translate RO to MCAS property model
+    m.fs.ro_to_mcas_translator = Translator(inlet_property_package=m.fs.ro_props,
+                                            outlet_property_package=m.fs.mcas_props)
+    
+    # UV
+
+    # Product blocks for permeate and disposal
+    m.fs.product_water = Product(property_package=m.fs.mcas_props)
+    m.fs.waste_brine = Product(property_package=m.fs.mcas_props)
+
+    return m
+
+
+def set_operating_conditions(m):
+    pass
+
+def initialize_system(m):
+    pass
+
+def solve(m, checkpoint):
+    pass
+
+def add_uv(m):
+    pass
+
+def get_ro_props(ro_props):
+    if ro_props.lower() == "nacl":
+        return NaClParameterBlock()
+    elif ro_props.lower() == "seawater":
+        return SeawaterParameterBlock()
+    else:
+        raise ConfigurationError(f"Either 'nacl' or 'seawater' should be provided for ro_props. Instead, {ro_props} was provided.")
+
+def display_results(m):
+    pass
+
+def add_costing(m):
+    pass
+
+def display_metrics_results(m):
+    pass
+
+def display_additional_results(m):
+    pass
+
+
+if __name__ =="__main__":
+    m, _ = main()
