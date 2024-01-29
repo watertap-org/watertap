@@ -105,14 +105,16 @@ def cost_centrifuge(
     cost_blk = blk.costing_package.centrifuge
     t0 = blk.flowsheet().time.first()
     # Assume inlet state block is `mixed_state` (IDAES Separator or WaterTAP Dewatering unit)
-    if hasattr(blk.unit_model.config, 'mixed_state_block'):
+    if hasattr(blk.unit_model.config, "mixed_state_block"):
         if blk.unit_model.config.mixed_state_block is None:
             sb = blk.unit_model.mixed_state[t0]
         else:
             sb = blk.unit_model.config.mixed_state_block[t0]
     else:
-        raise BurntToast("Costing of the dewatering unit is only compatible with an IDAES Separator or WaterTAP Dewatering Unit.")
-    
+        raise TypeError(
+            "Costing of the dewatering unit is only compatible with an IDAES Separator or WaterTAP Dewatering Unit."
+        )
+
     if hasattr(sb, "flow_vol"):
         sb_flow_vol = getattr(sb, "flow_vol")
     elif hasattr(sb, "flow_vol_phase"):
@@ -158,14 +160,16 @@ def cost_filter_belt_press(
     cost_blk = blk.costing_package.filter_belt_press
     t0 = blk.flowsheet().time.first()
     # Assume inlet state block is `mixed_state` (IDAES Separator or WaterTAP Dewatering unit)
-    if hasattr(blk.unit_model.config, 'mixed_state_block'):
+    if hasattr(blk.unit_model.config, "mixed_state_block"):
         if blk.unit_model.config.mixed_state_block is None:
             sb = blk.unit_model.mixed_state[t0]
         else:
             sb = blk.unit_model.config.mixed_state_block[t0]
     else:
-        raise BurntToast("Costing of the dewatering unit is only compatible with an IDAES Separator or WaterTAP Dewatering Unit.")
-    
+        raise BurntToast(
+            "Costing of the dewatering unit is only compatible with an IDAES Separator or WaterTAP Dewatering Unit."
+        )
+
     if hasattr(sb, "flow_vol"):
         sb_flow_vol = getattr(sb, "flow_vol")
     elif hasattr(sb, "flow_vol_phase"):
@@ -214,14 +218,16 @@ def cost_filter_plate_press(
     t0 = blk.flowsheet().time.first()
     x_units = pyo.units.gallon / pyo.units.hr
     # Assume inlet state block is `mixed_state` (IDAES Separator or WaterTAP Dewatering unit)
-    if hasattr(blk.unit_model.config, 'mixed_state_block'):
+    if hasattr(blk.unit_model.config, "mixed_state_block"):
         if blk.unit_model.config.mixed_state_block is None:
             sb = blk.unit_model.mixed_state[t0]
         else:
             sb = blk.unit_model.config.mixed_state_block[t0]
     else:
-        raise BurntToast("Costing of the dewatering unit is only compatible with an IDAES Separator or WaterTAP Dewatering Unit.")
-    
+        raise BurntToast(
+            "Costing of the dewatering unit is only compatible with an IDAES Separator or WaterTAP Dewatering Unit."
+        )
+
     if hasattr(sb, "flow_vol"):
         sb_flow_vol = getattr(sb, "flow_vol")
     elif hasattr(sb, "flow_vol_phase"):
@@ -233,7 +239,7 @@ def cost_filter_plate_press(
     x = flow_in = pyo.units.convert(
         sb_flow_vol,
         to_units=x_units,
-    )   
+    )
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == blk.cost_factor
