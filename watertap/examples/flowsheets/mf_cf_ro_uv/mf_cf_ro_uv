@@ -43,13 +43,13 @@ from watertap.unit_models.reverse_osmosis_0D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
-
+from watertap.unit_models.reverse_osmosis_1D import ReverseOsmosis1D
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
+from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import ERDtype, erd_type_not_found
 from watertap.unit_models.uv_aop import Ultraviolet0DData
 from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 from watertap.core.wt_database import Database
-import watertap.core.zero_order_properties as prop_ZO
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock, MaterialFlowBasis)
 from watertap.unit_models.zero_order import (
@@ -92,7 +92,7 @@ def main():
 
     return m, results
 
-def build(ro_props="seawater"):
+def build(ro_props="seawater", ro_dimension="0d", erd_config=ERDtype.pressure_exchanger):
     '''
     ro_prop_model: choose between "NaCl" and "Seawater" prop models for RO
     '''
@@ -127,9 +127,98 @@ def build(ro_props="seawater"):
     # Translate MCAS to RO property model
     m.fs.mcas_to_ro_translator = Translator(inlet_property_package=m.fs.mcas_props,
                                             outlet_property_package=m.fs.ro_props)
-    # Pump + ERD?
+    
+    # RO Train =====================================================================
+    # High-pressure RO pump 
+    m.fs.hp_pump = Pump(property_package=m.fs.ro_props)
 
-    # RO
+    # --- Reverse Osmosis Block ---
+    m.fs.RO = get_ro_model(dimension=ro_dimension, ro_props=m.fs.ro_props)
+
+    # --- ERD blocks ---
+    if erd_config == ERDtype.pressure_exchanger:
+        m.fs.feed_to_hp_and_erd_splitter = Separator(property_package=m.fs.ro_props, outlet_list=["hp_pump", "erd"])
+
+        m.fs.erd = PressureExchanger(property_package=m.fs.ro_props)
+        m.fs.booster_pump = Pump(property_package=m.fs.ro_props)
+        m.fs.hp_and_booster_mixer = Mixer(
+            property_package=m.fs.ro_props,
+            momentum_mixing_type=MomentumMixingType.equality,
+            inlet_list=["hp_pump", "booster_pump"],
+        )
+
+    elif erd_config == ERDtype.pump_as_turbine:
+        # add energy recovery turbine block
+        m.fs.erd = EnergyRecoveryDevice(property_package=m.fs.ro_props)
+
+    elif erd_config == ERDtype.no_ERD:
+        pass
+    else:
+        erd_type_not_found(erd_config)
+
+    # process costing and add system level metrics
+    # m.fs.costing.cost_process()
+    # m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
+    # m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
+    # m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
+    # m.fs.costing.add_specific_electrical_carbon_intensity(
+    #     m.fs.product.properties[0].flow_vol
+    # )
+
+    # connections
+    m.fs.feed_to_mf_pump = Arc(source=m.fs.feed.outlet, destination=m.fs.mf_pump.inlet)
+    m.fs.mf_pump_to_mf = Arc(source=m.fs.mf_pump.outlet, destination=m.fs.mf.inlet)
+    m.fs.mf_to_cf_pump = Arc(source=m.fs.mf.treated, destination=m.fs.cf_pump.inlet)
+    m.fs.cf_pump_to_cf = Arc(source=m.fs.cf_pump.outlet, destination=m.fs.cf.inlet)
+    m.fs.cf_to_translator = Arc(source=m.fs.cf.treated, destination=m.fs.mcas_to_ro_translator.inlet)
+
+    if erd_config == ERDtype.pressure_exchanger:
+        m.fs.translator_to_hp_erd_splitter = Arc(source=m.fs.mcas_to_ro_translator.outlet, destination=m.fs.feed_to_hp_and_erd_splitter.inlet)
+        m.fs.splitter_to_hp_pump =Arc(source=m.fs.feed_to_hp_and_erd_splitter.hp_pump, destination=m.fs.hp_pump.inlet)
+        m.fs.splitter_to_erd = Arc(source=m.fs.feed_to_hp_and_erd_splitter.erd, destination=m.fs.erd.low_pressure_inlet)
+        m.fs.erd_to_booster_pump = Arc(source=m.fs.erd.low_pressure_outlet, destination=m.fs.booster_pump.inlet)
+        m.fs.booster_pump_to_mixer = Arc(source=m.fs.booster_pump.outlet, destination=m.fs.hp_and_booster_mixer.booster_pump)
+        m.fs.hp_pump_to_mixer = Arc(source=m.fs.hp_pump.outlet, destination=m.fs.hp_and_booster_mixer.hp_pump)
+        m.fs.mixer_to_RO = Arc(source=m.fs.hp_and_booster_mixer.outlet, destination=m.fs.RO.inlet)
+
+        # TODO: CHECKPOINT
+
+
+    elif erd_config == ERDtype.pump_as_turbine:
+
+        m.fs.translator_to_hp_pump = Arc(source=m.fs.mcas_to_ro_translator.outlet, destination=m.fs.hp_pump.inlet)
+
+    
+        m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.S1.inlet)
+        m.fs.s02 = Arc(source=m.fs.S1.P1, destination=m.fs.P1.inlet)
+        m.fs.s03 = Arc(source=m.fs.P1.outlet, destination=m.fs.M1.P1)
+        m.fs.s04 = Arc(source=m.fs.M1.outlet, destination=m.fs.RO.inlet)
+        m.fs.s05 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
+        m.fs.s06 = Arc(
+            source=m.fs.RO.retentate, destination=m.fs.PXR.high_pressure_inlet
+        )
+        m.fs.s07 = Arc(
+            source=m.fs.PXR.high_pressure_outlet, destination=m.fs.disposal.inlet
+        )
+        m.fs.s08 = Arc(source=m.fs.S1.PXR, destination=m.fs.PXR.low_pressure_inlet)
+        m.fs.s09 = Arc(source=m.fs.PXR.low_pressure_outlet, destination=m.fs.P2.inlet)
+        m.fs.s10 = Arc(source=m.fs.P2.outlet, destination=m.fs.M1.P2)
+    elif erd_config == ERDtype.pump_as_turbine:
+        m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
+        m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.RO.inlet)
+        m.fs.s03 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
+        m.fs.s04 = Arc(source=m.fs.RO.retentate, destination=m.fs.ERD.inlet)
+        m.fs.s05 = Arc(source=m.fs.ERD.outlet, destination=m.fs.disposal.inlet)
+    elif erd_config == ERDtype.no_ERD:
+        m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
+        m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.RO.inlet)
+        m.fs.s03 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
+        m.fs.s04 = Arc(source=m.fs.RO.retentate, destination=m.fs.disposal.inlet)
+    else:
+        # this case should be caught in the previous conditional
+        erd_type_not_found(erd_config)
+
+    #===============================================================================
 
     # Translate RO to MCAS property model
     m.fs.ro_to_mcas_translator = Translator(inlet_property_package=m.fs.ro_props,
@@ -163,6 +252,26 @@ def get_ro_props(ro_props):
         return SeawaterParameterBlock()
     else:
         raise ConfigurationError(f"Either 'nacl' or 'seawater' should be provided for ro_props. Instead, {ro_props} was provided.")
+
+def get_ro_model(dimension, ro_props):
+    if dimension=="0d":
+        return ReverseOsmosis0D(
+            property_package=ro_props,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        )
+    elif dimension=="1d":
+        return ReverseOsmosis1D(
+            property_package=ro_props,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        )
+    else:
+        raise ConfigurationError(f"Either '0d' or '1d' should be provided for dimension instead of {dimension}")
 
 def display_results(m):
     pass
