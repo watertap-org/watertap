@@ -12,7 +12,7 @@
 
 import pytest
 
-from pyomo.environ import Block, assert_optimal_termination
+from pyomo.environ import Block, assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -171,5 +171,5 @@ class UnitTestHarness:
         # check results
 
         for var, val in solutions.items():
-            if not pytest.approx(var.value, abs=1e-08, rel=1e-03) == val:
-                raise AssertionError(f"{var}: Expected {val}, got {var.value} instead")
+            if not pytest.approx(value(var), abs=1e-08, rel=1e-03) == val:
+                raise AssertionError(f"{var}: Expected {val}, got {value(var)} instead")
