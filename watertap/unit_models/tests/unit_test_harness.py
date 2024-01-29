@@ -12,7 +12,7 @@
 
 import pytest
 
-from pyomo.environ import Block, assert_optimal_termination, value
+from pyomo.environ import Block, assert_optimal_termination, ComponentMap, value
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -50,6 +50,10 @@ class UnitTestHarness:
         self.optarg = (
             None  # dictionary for solver options, if None use WaterTAP default
         )
+        self.unit_solutions = ComponentMap()
+
+        self.default_absolute_tolerance = 1e-12
+        self.default_relative_tolerance = 1e-06
 
         self.configure()
         blk = self.unit_model_block
@@ -60,7 +64,6 @@ class UnitTestHarness:
         blk._test_objs.solver = self.solver
         blk._test_objs.optarg = self.optarg
         blk._test_objs.stateblock_statistics = self.unit_statistics
-        blk._test_objs.unit_solutions = self.unit_solutions
 
     def configure(self):
         """
@@ -143,7 +146,6 @@ class UnitTestHarness:
     def test_unit_solutions(self, frame_unit):
         self.configure_class()
         blk = frame_unit
-        solutions = blk._test_objs.unit_solutions
 
         # solve unit
         if blk._test_objs.solver is None:
@@ -170,6 +172,19 @@ class UnitTestHarness:
 
         # check results
 
-        for var, val in solutions.items():
-            if not pytest.approx(value(var), abs=1e-08, rel=1e-03) == val:
+        for var, val in self.unit_solutions.items():
+            comp_obj = None
+            try:
+                val = float(val)
+            except:
+                # expect the same API as pytest.approx
+                comp_obj = val
+                val = comp_obj.expected
+            if comp_obj is None:
+                comp_obj = pytest.approx(
+                    val,
+                    abs=self.default_absolute_tolerance,
+                    rel=self.default_relative_tolerance,
+                )
+            if not comp_obj == value(var):
                 raise AssertionError(f"{var}: Expected {val}, got {value(var)} instead")
