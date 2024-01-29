@@ -171,11 +171,16 @@ class UnitTestHarness:
         # check results
 
         for key, val in solutions.items():
-            var_name = str(key)
-            truncated_var_name = var_name[8:]
-            pyo_obj = blk.find_component(truncated_var_name)
-            pyo_obj_value = pyo_obj()
-            if not pytest.approx(pyo_obj_value, abs=1e-08, rel=1e-03) == val:
-                raise AssertionError(
-                    f"{key}: Expected {val}, got {pyo_obj_value} instead"
+            try:
+                var_name = str(key)
+                truncated_var_name = var_name[8:]
+                pyo_obj = blk.find_component(truncated_var_name)
+                pyo_obj_value = pyo_obj()
+                if not pytest.approx(pyo_obj_value, abs=1e-08, rel=1e-03) == val:
+                    raise AssertionError(
+                        f"{key}: Expected {val}, got {pyo_obj_value} instead"
+                    )
+            except TypeError:
+                raise TypeError(
+                    "Ensure the variable name starts with m.fs.unit and is defined in the unit model"
                 )
