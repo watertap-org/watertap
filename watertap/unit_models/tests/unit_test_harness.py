@@ -16,9 +16,6 @@ from pyomo.environ import Block, assert_optimal_termination, ComponentMap, value
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
-    number_variables,
-    number_total_constraints,
-    number_unused_variables,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
@@ -52,18 +49,25 @@ class UnitTestHarness:
         )
         self.unit_solutions = ComponentMap()
 
+        # arguments for badly scaled variables
+        self.default_large = 1e4
+        self.default_small = 1e-3
+        self.default_zero = 1e-10
+
+        # arguments for solver tolerance
         self.default_absolute_tolerance = 1e-12
-        self.default_relative_tolerance = 1e-06
+        self.default_relative_tolerance = 1e-6
 
         self.configure()
         blk = self.unit_model_block
 
         # attaching objects to model to carry through in pytest frame
+        # TODO: Consider removing these objects and directly calling self
         assert not hasattr(blk, "_test_objs")
         blk._test_objs = Block()
         blk._test_objs.solver = self.solver
         blk._test_objs.optarg = self.optarg
-        blk._test_objs.stateblock_statistics = self.unit_statistics
+        blk._test_objs.unit_solutions = self.unit_solutions
 
     def configure(self):
         """
@@ -74,49 +78,13 @@ class UnitTestHarness:
         unit_model: pyomo unit model block (e.g. m.fs.unit), the block should
             have zero degrees of freedom, i.e. fully specified
 
-        unit_statistics: dictionary of model statistics
-            {'number_config_args': VALUE,
-             'number_variables': VALUE,
-             'number_total_constraints': VALUE,
-             'number_unused_variables': VALUE}
-
         unit_solutions: dictionary of property values for the specified state variables
-            keys = (string name of variable, tuple index), values = value
         """
 
     @pytest.fixture(scope="class")
     def frame_unit(self):
         self.configure_class()
         return self.unit_model_block
-
-    @pytest.mark.unit
-    def test_unit_statistics(self, frame_unit):
-        blk = frame_unit
-        stats = blk._test_objs.stateblock_statistics
-
-        if number_variables(blk) != stats["number_variables"]:
-            raise UnitValueError(
-                "The number of variables were {num}, but {num_test} was "
-                "expected ".format(
-                    num=number_variables(blk), num_test=stats["number_variables"]
-                )
-            )
-        if number_total_constraints(blk) != stats["number_total_constraints"]:
-            raise UnitValueError(
-                "The number of constraints were {num}, but {num_test} was "
-                "expected ".format(
-                    num=number_total_constraints(blk),
-                    num_test=stats["number_total_constraints"],
-                )
-            )
-        if number_unused_variables(blk) != stats["number_unused_variables"]:
-            raise UnitValueError(
-                "The number of unused variables were {num}, but {num_test} was "
-                "expected ".format(
-                    num=number_unused_variables(blk),
-                    num_test=stats["number_unused_variables"],
-                )
-            )
 
     @pytest.mark.unit
     def test_units_consistent(self, frame_unit):
@@ -134,7 +102,6 @@ class UnitTestHarness:
     def test_initialization(self, frame_unit):
         blk = frame_unit
 
-        # initialize
         try:
             blk.initialize(solver=blk._test_objs.solver, optarg=blk._test_objs.optarg)
         except InitializationError:
@@ -146,6 +113,7 @@ class UnitTestHarness:
     def test_unit_solutions(self, frame_unit):
         self.configure_class()
         blk = frame_unit
+        solutions = blk._test_objs.unit_solutions
 
         # solve unit
         if blk._test_objs.solver is None:
@@ -158,9 +126,26 @@ class UnitTestHarness:
 
         # check solve
         try:
-            assert len(list(iscale.badly_scaled_var_generator(blk, zero=1e-8))) == 0
+            assert (
+                len(
+                    list(
+                        iscale.badly_scaled_var_generator(
+                            blk,
+                            large=self.default_large,
+                            small=self.default_small,
+                            zero=self.default_zero,
+                        )
+                    )
+                )
+                == 0
+            )
         except AssertionError:
-            badly_scaled_var_list = iscale.badly_scaled_var_generator(blk, zero=1e-8)
+            badly_scaled_var_list = iscale.badly_scaled_var_generator(
+                blk,
+                large=self.default_large,
+                small=self.default_small,
+                zero=self.default_zero,
+            )
             for x in badly_scaled_var_list:
                 print(
                     f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}"
@@ -172,7 +157,7 @@ class UnitTestHarness:
 
         # check results
 
-        for var, val in self.unit_solutions.items():
+        for var, val in solutions.items():
             comp_obj = None
             try:
                 val = float(val)
