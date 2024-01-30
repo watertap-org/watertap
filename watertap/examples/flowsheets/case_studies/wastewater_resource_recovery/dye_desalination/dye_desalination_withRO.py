@@ -593,18 +593,30 @@ def add_costing(m):
         )
     else:
         pass
-
-    m.fs.dye_disposal_cost = Expression(
-        expr=(
-            m.fs.zo_costing.utilization_factor
-            * m.fs.zo_costing.dye_disposal_cost
-            * pyunits.convert(
-                m.fs.dye_retentate.properties[0].flow_vol,
-                to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
-            )
-        ),
-        doc="Cost of disposing of dye waste",
-    )
+    if hasattr(m.fs, "dewater"):
+        m.fs.dye_disposal_cost = Expression(
+            expr=(
+                m.fs.zo_costing.utilization_factor
+                * m.fs.zo_costing.dewatered_dye_disposal_cost
+                * pyunits.convert(
+                    m.fs.dye_retentate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                )
+            ),
+            doc="Cost of disposing of dye waste",
+        )
+    else:
+        m.fs.dye_disposal_cost = Expression(
+            expr=(
+                m.fs.zo_costing.utilization_factor
+                * m.fs.zo_costing.dye_disposal_cost
+                * pyunits.convert(
+                    m.fs.dye_retentate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                )
+            ),
+            doc="Cost of disposing of dye waste",
+        )
 
     if hasattr(m.fs, "dewater"):
         # TODO: Remove centrate stream from this calculation after implementing recycle
