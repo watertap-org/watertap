@@ -422,7 +422,6 @@ class MCASParameterData(PhysicalParameterBlock):
                 else:
                     pass
 
-
         mw_comp = self.config.mw_data
         if len(mw_comp) < len(self.config.solute_list):
             track_mw = {}
@@ -440,19 +439,20 @@ class MCASParameterData(PhysicalParameterBlock):
                 raise ConfigurationError(
                     f"Molecular weight data could not be obtained for the following solutes and no data were provided\n: {track_mw}."
                 )
-        track_bad_mw_input={}
+        track_bad_mw_input = {}
         for i in self.config.solute_list:
             if mw_comp[i] is None:
                 # TODO: setting to 1 should effectively ignore mw in the model for now, but conversions between mass and mole won't be valid. Need a long-term solution.
                 mw_comp[i] = 1
-            if not isinstance(value(mw_comp[i]), (int,float)):
+            if not isinstance(value(mw_comp[i]), (int, float)):
                 track_bad_mw_input.update({i: mw_comp[i]})
             else:
                 pass
 
-        if len(track_bad_mw_input)>0:
-            raise ConfigurationError(f"'mw_data' values must either by numeric or None when molecular weight is not applicable. The following inputs should be revised:\n {track_bad_mw_input}")
-
+        if len(track_bad_mw_input) > 0:
+            raise ConfigurationError(
+                f"'mw_data' values must either by numeric or None when molecular weight is not applicable. The following inputs should be revised:\n {track_bad_mw_input}"
+            )
 
         # TODO: consider turning parameters into variables for future param estimation
         mw_temp = {"H2O": 18e-3}
@@ -888,7 +888,8 @@ class _MCASStateBlock(StateBlock):
             if self[k].is_property_constructed("total_dissolved_solids"):
                 if hasattr(self[k], "eq_total_dissolved_solids"):
                     calculate_variable_from_constraint(
-                        self[k].total_dissolved_solids, self[k].eq_total_dissolved_solids
+                        self[k].total_dissolved_solids,
+                        self[k].eq_total_dissolved_solids,
                     )
                 else:
                     self[k].total_dissolved_solids = 0
@@ -1115,7 +1116,7 @@ class MCASStateBlockData(StateBlockData):
                 self.params.component_list,
                 rule=rule_flow_mol_phase_comp,
             )
-        
+
     def _flow_mass_phase_comp(self):
         self.flow_mass_phase_comp = Var(
             self.params.phase_list,
@@ -1141,8 +1142,15 @@ class MCASStateBlockData(StateBlockData):
 
     def _flow_mass_comp(self):
         add_object_reference(
-            self, "flow_mass_comp", {j: self.flow_mass_phase_comp[p, j] for j in self.params.component_list for p in self.params.phase_list})
-    
+            self,
+            "flow_mass_comp",
+            {
+                j: self.flow_mass_phase_comp[p, j]
+                for j in self.params.component_list
+                for p in self.params.phase_list
+            },
+        )
+
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.params.phase_list,
@@ -1883,17 +1891,16 @@ class MCASStateBlockData(StateBlockData):
         # which would return 0 and result in Inconsitentunits error due to conversion of dimensionless to mg/L
         try:
             total_dissolved_solids_temp = pyunits.convert(
-                sum(
-                    self.conc_mass_phase_comp["Liq", j]
-                    for j in self.params.ion_set
-                ),
+                sum(self.conc_mass_phase_comp["Liq", j] for j in self.params.ion_set),
                 to_units=pyunits.mg / pyunits.L,
             )
 
             def rule_total_dissolved_solids(b):
                 return b.total_dissolved_solids == total_dissolved_solids_temp
 
-            self.eq_total_dissolved_solids = Constraint(rule=rule_total_dissolved_solids)
+            self.eq_total_dissolved_solids = Constraint(
+                rule=rule_total_dissolved_solids
+            )
 
         except InconsistentUnitsError:
             self.total_dissolved_solids.fix(0)
@@ -1901,6 +1908,7 @@ class MCASStateBlockData(StateBlockData):
                 "Since no ions were specified in solute_list, total_dissolved_solids has been fixed to 0. The  total_dissolved_solids calculation does not currently account for apparent species (e.g., NaCl)."
             )
             return
+
     # -----------------------------------------------------------------------------
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
@@ -2447,7 +2455,7 @@ class MCASStateBlockData(StateBlockData):
         ):
             sf = iscale.get_scaling_factor(self.total_hardness)
             iscale.constraint_scaling_transform(self.eq_total_hardness, sf)
-        
+
         if self.is_property_constructed("total_dissolved_solids") and hasattr(
             self, "eq_total_dissolved_solids"
         ):

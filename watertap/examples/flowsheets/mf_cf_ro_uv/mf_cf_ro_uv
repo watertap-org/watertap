@@ -156,6 +156,21 @@ def build(ro_props="seawater", ro_dimension="0d", erd_config=ERDtype.pressure_ex
     else:
         erd_type_not_found(erd_config)
 
+    
+
+    # Translate RO to MCAS property model
+    m.fs.ro_to_mcas_translator = Translator(inlet_property_package=m.fs.ro_props,
+                                            outlet_property_package=m.fs.mcas_props)
+    
+    # UV
+    # TODO: Add UV as an option: None, UV, UV-AOP, UVZO, UVAOPZO?
+    # m.fs.uv = get_uv(uv_config)
+
+    # Product blocks for permeate and disposal
+    m.fs.product_water = Product(property_package=m.fs.mcas_props)
+    m.fs.waste_brine = Product(property_package=m.fs.ro_props)
+
+
     # process costing and add system level metrics
     # m.fs.costing.cost_process()
     # m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
@@ -180,55 +195,26 @@ def build(ro_props="seawater", ro_dimension="0d", erd_config=ERDtype.pressure_ex
         m.fs.booster_pump_to_mixer = Arc(source=m.fs.booster_pump.outlet, destination=m.fs.hp_and_booster_mixer.booster_pump)
         m.fs.hp_pump_to_mixer = Arc(source=m.fs.hp_pump.outlet, destination=m.fs.hp_and_booster_mixer.hp_pump)
         m.fs.mixer_to_RO = Arc(source=m.fs.hp_and_booster_mixer.outlet, destination=m.fs.RO.inlet)
-
-        # TODO: CHECKPOINT
-
-
+        m.fs.RO_brine_to_erd = Arc(source=m.fs.RO.retentate, destination=m.fs.erd.high_pressure_inlet)
+        m.fs.erd_to_waste = Arc(source=m.fs.erd.high_pressure_outlet, destination=m.fs.waste_brine.inlet)
     elif erd_config == ERDtype.pump_as_turbine:
-
-        m.fs.translator_to_hp_pump = Arc(source=m.fs.mcas_to_ro_translator.outlet, destination=m.fs.hp_pump.inlet)
-
-    
-        m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.S1.inlet)
-        m.fs.s02 = Arc(source=m.fs.S1.P1, destination=m.fs.P1.inlet)
-        m.fs.s03 = Arc(source=m.fs.P1.outlet, destination=m.fs.M1.P1)
-        m.fs.s04 = Arc(source=m.fs.M1.outlet, destination=m.fs.RO.inlet)
-        m.fs.s05 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
-        m.fs.s06 = Arc(
-            source=m.fs.RO.retentate, destination=m.fs.PXR.high_pressure_inlet
-        )
-        m.fs.s07 = Arc(
-            source=m.fs.PXR.high_pressure_outlet, destination=m.fs.disposal.inlet
-        )
-        m.fs.s08 = Arc(source=m.fs.S1.PXR, destination=m.fs.PXR.low_pressure_inlet)
-        m.fs.s09 = Arc(source=m.fs.PXR.low_pressure_outlet, destination=m.fs.P2.inlet)
-        m.fs.s10 = Arc(source=m.fs.P2.outlet, destination=m.fs.M1.P2)
-    elif erd_config == ERDtype.pump_as_turbine:
-        m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
-        m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.RO.inlet)
-        m.fs.s03 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
-        m.fs.s04 = Arc(source=m.fs.RO.retentate, destination=m.fs.ERD.inlet)
-        m.fs.s05 = Arc(source=m.fs.ERD.outlet, destination=m.fs.disposal.inlet)
+        m.fs.translator_to_hp_pump= Arc(source=m.fs.mcas_to_ro_translator.outlet, destination=m.fs.hp_pump.inlet)
+        m.fs.hp_pump_to_RO = Arc(source=m.fs.hp_pump.outlet, destination=m.fs.RO.inlet)
+        m.fs.RO_brine_to_erd = Arc(source=m.fs.RO.retentate, destination=m.fs.erd.inlet)
+        m.fs.erd_to_waste = Arc(source=m.fs.erd.outlet, destination=m.fs.waste_brine.inlet)
     elif erd_config == ERDtype.no_ERD:
-        m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
-        m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.RO.inlet)
-        m.fs.s03 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
-        m.fs.s04 = Arc(source=m.fs.RO.retentate, destination=m.fs.disposal.inlet)
+        m.fs.translator_to_hp_pump= Arc(source=m.fs.mcas_to_ro_translator.outlet, destination=m.fs.hp_pump.inlet)
+        m.fs.hp_pump_to_RO = Arc(source=m.fs.hp_pump.outlet, destination=m.fs.RO.inlet)
+        m.fs.RO_brine_to_waste = Arc(source=m.fs.RO.retentate, destination=m.fs.waste_brine.inlet)
     else:
         # this case should be caught in the previous conditional
         erd_type_not_found(erd_config)
 
+    m.fs.ro_permeate_to_translator = Arc(source=m.fs.RO.permeate, destination=m.fs.ro_to_mcas_translator.inlet)
+    m.fs.translator_to_product = Arc(source=m.fs.ro_to_mcas_translator.outlet, destination=m.fs.product_water.inlet)
+    
     #===============================================================================
 
-    # Translate RO to MCAS property model
-    m.fs.ro_to_mcas_translator = Translator(inlet_property_package=m.fs.ro_props,
-                                            outlet_property_package=m.fs.mcas_props)
-    
-    # UV
-
-    # Product blocks for permeate and disposal
-    m.fs.product_water = Product(property_package=m.fs.mcas_props)
-    m.fs.waste_brine = Product(property_package=m.fs.mcas_props)
 
     return m
 

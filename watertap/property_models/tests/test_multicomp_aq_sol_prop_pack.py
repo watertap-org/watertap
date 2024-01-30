@@ -288,7 +288,9 @@ def test_property_ions(model):
     assert value(m.fs.stream[0].total_dissolved_solids) == pytest.approx(
         71109.93, rel=1e-3
     )
-    assert_units_equivalent(m.fs.stream[0].total_dissolved_solids, pyunits.mg / pyunits.L)
+    assert_units_equivalent(
+        m.fs.stream[0].total_dissolved_solids, pyunits.mg / pyunits.L
+    )
 
 
 @pytest.fixture(scope="module")
@@ -796,7 +798,6 @@ def test_seawater_data():
         )
     )
     assert value(stream[0].total_dissolved_solids) == pytest.approx(35974.42)
-    
 
 
 @pytest.mark.component
@@ -2093,6 +2094,7 @@ def test_total_hardness_and_TDS():
 
     assert value(stream[0].total_dissolved_solids) == pytest.approx(35205.61, rel=1e-3)
 
+
 @pytest.mark.component
 def test_no_total_hardness(caplog):
     caplog.set_level(
@@ -2204,7 +2206,6 @@ def test_no_total_hardness_not_TDS_with_apparent_species_only(caplog):
     assert value(stream[0].total_dissolved_solids) == 0
     assert value(stream[0].total_hardness) == 0
 
-
     assert (
         "Since no ions were specified in solute_list, total_dissolved_solids has been fixed to 0. The  total_dissolved_solids calculation does not currently account for apparent species (e.g., NaCl)."
         in caplog.text
@@ -2213,6 +2214,7 @@ def test_no_total_hardness_not_TDS_with_apparent_species_only(caplog):
         "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
         in caplog.text
     )
+
 
 @pytest.mark.component
 def test_flow_mass_basis_with_RO_unit():
