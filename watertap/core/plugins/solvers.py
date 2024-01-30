@@ -23,6 +23,8 @@ from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 from pyomo.core.plugins.transform.add_slack_vars import AddSlackVariables
 from pyomo.core.plugins.transform.hierarchy import IsomorphicTransformation
 
+from pyomo.contrib.incidence_analysis import get_incident_variables, IncidenceMethod
+
 from pyomo.opt import WriterFactory
 
 import idaes.core.util.scaling as iscale
@@ -309,9 +311,31 @@ class WaterTAPSolver:
         #       some term and leave those be.
         # move the variable bounds to the constraints
         _VariableBoundsAsConstraints().apply_to(modified_model)
-        # now add slacks to every constraint (including variable bounds)
+
+        _var_to_constraints_map = ComponentMap()
+        _constraint_to_vars_map = ComponentMap()
+        for c in modified_model.component_data_objects(pyo.Constraint, descend_into=True):
+            _constraint_to_vars_map[c] = []
+            for v in get_incident_variables(c.body, method=IncidenceMethod.standard_repn, linear_only=False, include_fixed=False):
+                _constraint_to_vars_map[c].append(v)
+                if v not in _var_to_constraints_map:
+                    _var_to_constraints_map[v] = []
+                _var_to_constraints_map[v].append(c)
+
         AddSlackVariables().apply_to(modified_model)
         slack_block = modified_model._core_add_slack_variables
+
+        for v in slack_block.component_data_objects(pyo.Var):
+            v.fix(0)
+        # start with variable bounds -- these are the easist to interpret
+        for c in modified_model._variable_bounds.component_data_objects(pyo.Constraint, descend_into=True):
+            plus = slack_block.component(f"_slack_plus_{c.name}")
+            minus = slack_block.component(f"_slack_minus_{c.name}")
+            assert not (plus is None and minus is None)
+            if plus is not None:
+                plus.unfix()
+            if minus is not None:
+                minus.unfix()
 
         # collect the initial set of infeasibilities
         results = base_solver.solve(modified_model, *args, **kwds)
@@ -323,6 +347,21 @@ class WaterTAPSolver:
         #       need this loop -- anything potentially
         #       contributing to the infeasibility will
         #       be caught above
+        # NOTE: The above is definitely not true in examples
+        #       tested so far.
+        # TODO: Elasticizing too much at once seems to cause Ipopt trouble.
+        #       After an initial sweep, we should just fix one elastic variable
+        #       and put everything else on a stack of "constraints to elasticize".
+        #       We elastisize one constraint at a time and fix one constraint at a time.
+        #       After fixing an elastic variable, we elasticize a single constraint it
+        #       appears in and put the remaining constraints on the stack. If the resulting problem
+        #       is feasible, we keep going "down the tree". If the resulting problem is
+        #       infeasible or cannot be solved, we elasticize a single constraint from
+        #       the top of the stack.
+        #       The algorithm stops when the stack is empty and the subproblem is infeasible.
+        #       Along the way, any time the current problem is infeasible we can check to
+        #       see if the current set of constraints in the filter is as a collection of
+        #       infeasible constraints -- to terminate early.
         # Phase 1 -- build the initial set of constraints, or prove feasibility
         elastic_filter = ComponentSet()
         proved_feasibility = False
@@ -346,11 +385,23 @@ class WaterTAPSolver:
                         print(f"Adding constraint {constr.name} to the filter")
                     else:
                         raise RuntimeError("Bad var name {v.name}")
+                    # break
             if not fixed_var:
                 proved_feasibility = True
                 break
             for var, val in _modified_model_value_cache.items():
                 var.set_value(val, skip_validation=True)
+            for c in elastic_filter:
+                for v in _constraint_to_vars_map[c]:
+                    for c_prime in _var_to_constraints_map[v]:
+                        if c_prime not in elastic_filter:
+                            plus = slack_block.component(f"_slack_plus_{c_prime.name}")
+                            minus = slack_block.component(f"_slack_minus_{c_prime.name}")
+                            assert not (plus is None and minus is None)
+                            if plus is not None:
+                                plus.unfix()
+                            if minus is not None:
+                                minus.unfix()
             try:
                 results = base_solver.solve(modified_model, *args, **kwds)
             except:
