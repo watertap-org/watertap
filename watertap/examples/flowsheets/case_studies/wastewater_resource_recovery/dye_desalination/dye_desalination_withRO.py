@@ -122,13 +122,13 @@ def build(include_pretreatment=False, include_dewatering=False):
 
     # define flowsheet inlets and outlets
     m.fs.feed = FeedZO(property_package=m.fs.prop_nf)
-    m.fs.dye_retentate = Product(property_package=m.fs.prop_nf)
 
     if include_dewatering == True:
         dewater = m.fs.dewater = Block()
         m.fs.centrate = Product(property_package=m.fs.prop_nf)
+        m.fs.precipitant = Product(property_package=m.fs.prop_nf)
     else:
-        pass
+        m.fs.dye_retentate = Product(property_package=m.fs.prop_nf)
 
     m.fs.permeate = Product(property_package=m.fs.prop_ro)
     m.fs.brine = Product(property_package=m.fs.prop_ro)
@@ -154,11 +154,13 @@ def build(include_pretreatment=False, include_dewatering=False):
     if hasattr(m.fs, "dewater"):
         dewater.dewaterer = Separator(
             property_package=m.fs.prop_nf,
-            outlet_list=["centrate", "dye_retentate"],
+            outlet_list=["centrate", "precipitant"],
             split_basis=SplittingType.componentFlow,
             energy_split_basis=EnergySplittingType.none,
             momentum_balance_type=MomentumBalanceType.none,
         )
+    else:
+        pass
 
     # reverse osmosis components
 
@@ -225,7 +227,7 @@ def build(include_pretreatment=False, include_dewatering=False):
             source=dewater.dewaterer.centrate, destination=m.fs.centrate.inlet
         )
         dewater.s03 = Arc(
-            source=dewater.dewaterer.dye_retentate, destination=m.fs.dye_retentate.inlet
+            source=dewater.dewaterer.precipitant, destination=m.fs.precipitant.inlet
         )
     else:
         dye_sep.s02 = Arc(
@@ -311,9 +313,9 @@ def set_operating_conditions(m):
     dye_sep.nanofiltration.load_parameters_from_database(use_default_removal=True)
 
     if hasattr(m.fs, "dewater"):
-        dewater.dewaterer.split_fraction[0, "dye_retentate", "H2O"].fix(0.01)
-        dewater.dewaterer.split_fraction[0, "dye_retentate", "tds"].fix(0.95)
-        dewater.dewaterer.split_fraction[0, "dye_retentate", "dye"].fix(0.99)
+        dewater.dewaterer.split_fraction[0, "precipitant", "H2O"].fix(0.01)
+        dewater.dewaterer.split_fraction[0, "precipitant", "tds"].fix(0.01)
+        dewater.dewaterer.split_fraction[0, "precipitant", "dye"].fix(0.99)
     else:
         pass
 
@@ -599,7 +601,7 @@ def add_costing(m):
                 m.fs.zo_costing.utilization_factor
                 * m.fs.zo_costing.dewatered_dye_disposal_cost
                 * pyunits.convert(
-                    m.fs.dye_retentate.properties[0].flow_vol,
+                    m.fs.precipitant.properties[0].flow_vol,
                     to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
                 )
             ),
@@ -800,27 +802,27 @@ def display_results(m):
 
     print("\nStreams:")
     if hasattr(m.fs, "pretreatment") and hasattr(m.fs, "dewater"):
-        flow_list = ["feed", "wwt_retentate", "dye_retentate", "centrate"]
+        flow_list = ["feed", "wwt_retentate", "precipitant", "centrate"]
     elif hasattr(m.fs, "pretreatment"):
         flow_list = ["feed", "wwt_retentate", "dye_retentate"]
     elif hasattr(m.fs, "dewater"):
-        flow_list = ["feed", "dye_retentate", "centrate"]
+        flow_list = ["feed", "precipitant", "centrate"]
     else:
         flow_list = ["feed", "dye_retentate"]
 
     for f in flow_list:
         m.fs.component(f).report()
 
-    dye_retentate_vol_flowrate = value(
-        pyunits.convert(
-            m.fs.dye_retentate.properties[0].flow_vol,
-            to_units=pyunits.m**3 / pyunits.hr,
-        )
-    )
-    dye_retentate_tds_concentration = m.fs.dye_retentate.flow_mass_comp[0, "tds"].value
-    dye_retentate_dye_concentration = m.fs.dye_retentate.flow_mass_comp[0, "dye"].value
-
     if hasattr(m.fs, "dewater"):
+        precipitant_vol_flowrate = value(
+            pyunits.convert(
+                m.fs.precipitant.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
+        )
+        precipitant_tds_concentration = m.fs.precipitant.flow_mass_comp[0, "tds"].value
+        precipitant_dye_concentration = m.fs.precipitant.flow_mass_comp[0, "dye"].value
+
         centrate_vol_flowrate = value(
             pyunits.convert(
                 m.fs.centrate.properties[0].flow_vol,
@@ -830,21 +832,42 @@ def display_results(m):
         centrate_tds_concentration = m.fs.centrate.flow_mass_comp[0, "tds"].value
         centrate_dye_concentration = m.fs.centrate.flow_mass_comp[0, "dye"].value
 
-        print(f"Centrate volumetric flowrate: {centrate_vol_flowrate : .3f} m3/hr")
+        print(
+            f"\nPrecipitant volumetric flowrate: {precipitant_vol_flowrate : .3f} m3/hr"
+        )
+        print(
+            f"Precipitant tds concentration: {precipitant_tds_concentration : .3f} g/l"
+        )
+        print(
+            f"Precipitant dye concentration: {precipitant_dye_concentration : .3f} g/l"
+        )
+
+        print(f"\nCentrate volumetric flowrate: {centrate_vol_flowrate : .3f} m3/hr")
         print(f"Centrate tds concentration: {centrate_tds_concentration : .3f} g/l")
         print(f"Centrate dye concentration: {centrate_dye_concentration : .3f} g/l")
     else:
-        pass
+        dye_retentate_vol_flowrate = value(
+            pyunits.convert(
+                m.fs.dye_retentate.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
+        )
+        dye_retentate_tds_concentration = m.fs.dye_retentate.flow_mass_comp[
+            0, "tds"
+        ].value
+        dye_retentate_dye_concentration = m.fs.dye_retentate.flow_mass_comp[
+            0, "dye"
+        ].value
 
-    print(
-        f"\nDye retentate volumetric flowrate: {dye_retentate_vol_flowrate : .3f} m3/hr"
-    )
-    print(
-        f"Dye retentate tds concentration: {dye_retentate_tds_concentration : .3f} g/l"
-    )
-    print(
-        f"Dye retentate dye concentration: {dye_retentate_dye_concentration : .3f} g/l"
-    )
+        print(
+            f"\nDye retentate volumetric flowrate: {dye_retentate_vol_flowrate : .3f} m3/hr"
+        )
+        print(
+            f"Dye retentate tds concentration: {dye_retentate_tds_concentration : .3f} g/l"
+        )
+        print(
+            f"Dye retentate dye concentration: {dye_retentate_dye_concentration : .3f} g/l"
+        )
 
     if hasattr(m.fs, "pretreatment"):
         wwt_retentate_vol_flowrate = value(
@@ -885,15 +908,17 @@ def display_results(m):
     else:
         pass
 
-    print(
-        f"\nRecovered dye volumetric flowrate: {dye_retentate_vol_flowrate : .3f} m3/hr"
-    )
-
     print("\nSystem Recovery:")
-    sys_dye_recovery = (
-        m.fs.dye_retentate.flow_mass_comp[0, "dye"]()
-        / m.fs.feed.flow_mass_comp[0, "dye"]()
-    )
+    if hasattr(m.fs, "dewater"):
+        sys_dye_recovery = (
+            m.fs.precipitant.flow_mass_comp[0, "dye"]()
+            / m.fs.feed.flow_mass_comp[0, "dye"]()
+        )
+    else:
+        sys_dye_recovery = (
+            m.fs.dye_retentate.flow_mass_comp[0, "dye"]()
+            / m.fs.feed.flow_mass_comp[0, "dye"]()
+        )
     sys_water_recovery = (
         m.fs.permeate.flow_mass_phase_comp[0, "Liq", "H2O"]()
         / m.fs.feed.flow_mass_comp[0, "H2O"]()
