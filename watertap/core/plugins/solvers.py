@@ -324,20 +324,23 @@ class WaterTAPSolver:
 
         AddSlackVariables().apply_to(modified_model)
         slack_block = modified_model._core_add_slack_variables
+        # don't care about dual feasibility so much
+        #slack_block._slack_objective.expr /= 1e3
 
-        for v in slack_block.component_data_objects(pyo.Var):
-            v.fix(0)
-        # start with variable bounds -- these are the easist to interpret
-        for c in modified_model._variable_bounds.component_data_objects(pyo.Constraint, descend_into=True):
-            plus = slack_block.component(f"_slack_plus_{c.name}")
-            minus = slack_block.component(f"_slack_minus_{c.name}")
-            assert not (plus is None and minus is None)
-            if plus is not None:
-                plus.unfix()
-            if minus is not None:
-                minus.unfix()
+        #for v in slack_block.component_data_objects(pyo.Var):
+        #    v.fix(0)
+        ## start with variable bounds -- these are the easist to interpret
+        #for c in modified_model._variable_bounds.component_data_objects(pyo.Constraint, descend_into=True):
+        #    plus = slack_block.component(f"_slack_plus_{c.name}")
+        #    minus = slack_block.component(f"_slack_minus_{c.name}")
+        #    assert not (plus is None and minus is None)
+        #    if plus is not None:
+        #        plus.unfix()
+        #    if minus is not None:
+        #        minus.unfix()
 
         # collect the initial set of infeasibilities
+        # we keep the constraint_viol_tol tight
         results = base_solver.solve(modified_model, *args, **kwds)
 
         # this first solve should be feasible, by definition
@@ -363,35 +366,53 @@ class WaterTAPSolver:
         #       see if the current set of constraints in the filter is as a collection of
         #       infeasible constraints -- to terminate early.
         # Phase 1 -- build the initial set of constraints, or prove feasibility
+        stack = []
         elastic_filter = ComponentSet()
         proved_feasibility = False
-        while pyo.check_optimal_termination(results):
-            fixed_var = False
-            for v in slack_block.component_data_objects(pyo.Var):
-                if v.value > self.options["constr_viol_tol"]:
-                    v.fix(0)
-                    fixed_var = True
-                    if "_slack_plus_" in v.name:
-                        constr = modified_model.find_component(v.local_name[len("_slack_plus_"):])
-                        if constr is None:
-                            raise RuntimeError("Bad constraint name {v.local_name[len('_slack_plus_'):]}")
-                        elastic_filter.add(constr)
-                        print(f"Adding constraint {constr.name} to the filter")
-                    elif "_slack_minus_" in v.name:
-                        constr = modified_model.find_component(v.local_name[len("_slack_minus_"):])
-                        if constr is None:
-                            raise RuntimeError("Bad constraint name {v.local_name[len('_slack_minus_'):]}")
-                        elastic_filter.add(constr)
-                        print(f"Adding constraint {constr.name} to the filter")
-                    else:
-                        raise RuntimeError("Bad var name {v.name}")
-                    # break
-            if not fixed_var:
+        while pyo.check_optimal_termination(results) or stack:
+            if pyo.check_optimal_termination(results):
+                max_viol = 0.0
+                max_pair = None
+                for v in slack_block.component_data_objects(pyo.Var):
+                    if v.value > self.options["constr_viol_tol"]:
+                        if "_slack_plus_" in v.name:
+                            constr = modified_model.find_component(v.local_name[len("_slack_plus_"):])
+                            if constr is None:
+                                raise RuntimeError("Bad constraint name {v.local_name[len('_slack_plus_'):]}")
+                            stack.append((v, constr))
+                        elif "_slack_minus_" in v.name:
+                            constr = modified_model.find_component(v.local_name[len("_slack_minus_"):])
+                            if constr is None:
+                                raise RuntimeError("Bad constraint name {v.local_name[len('_slack_minus_'):]}")
+                            stack.append((v, constr))
+                        else:
+                            raise RuntimeError("Bad var name {v.name}")
+                        if v.value > max_viol:
+                            max_viol = v.value
+                            max_pair = (v, constr)
+            else: # infeasible, pop
+                max_pair = stack.pop()
+            if max_pair is None:
                 proved_feasibility = True
                 break
-            for var, val in _modified_model_value_cache.items():
-                var.set_value(val, skip_validation=True)
-            for c in elastic_filter:
+            else:
+                max_pair[0].fix(0)
+                elastic_filter.add(max_pair[1])
+                print(f"Adding constraint {max_pair[1].name} to the filter")
+            # for var, val in _modified_model_value_cache.items():
+            #     var.set_value(val, skip_validation=True)
+            # fix everything but the max, then only unfix those
+            # in the graph related to the enforced constraint
+            for v in slack_block.component_data_objects(pyo.Var):
+                if v.value > self.options["constr_viol_tol"]:
+                    continue
+                else:
+                    for vs, _ in stack:
+                        if vs is v:
+                            break
+                    else: # no break
+                        v.fix(0)
+            for c in [max_pair[1]]:
                 for v in _constraint_to_vars_map[c]:
                     for c_prime in _var_to_constraints_map[v]:
                         if c_prime not in elastic_filter:
@@ -402,6 +423,7 @@ class WaterTAPSolver:
                                 plus.unfix()
                             if minus is not None:
                                 minus.unfix()
+                            print(f"relaxing constraint {c_prime.name}")
             try:
                 results = base_solver.solve(modified_model, *args, **kwds)
             except:
