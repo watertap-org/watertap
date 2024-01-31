@@ -166,6 +166,7 @@ setup(
             "GLSD anaerobic digestion = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.GLSD_anaerobic_digester.GLSD_anaerobic_digestion_ui",
             "mvc = watertap.examples.flowsheets.mvc.mvc_single_stage_ui",
             "RO = watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery_ui",
+            "OARO = watertap.examples.flowsheets.oaro.oaro_multi_ui",
             "GAC = watertap.examples.flowsheets.gac.gac_ui",
         ],
     },
