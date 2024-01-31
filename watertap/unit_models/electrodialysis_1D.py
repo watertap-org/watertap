@@ -658,7 +658,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().time,
             self.diluate.length_domain,
             initialize=0.9,
-            bounds=(0, 1 + 1e-10),
+            bounds=(0, None),
             units=pyunits.dimensionless,
             doc="The overall current efficiency for deionization",
         )
@@ -1312,7 +1312,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().time,
             self.diluate.length_domain,
             initialize=0.0005,
-            bounds=(0, 1e-2),
+            bounds=(0, None),
             units=pyunits.m,
             doc="Thickness of the diffusion layer",
         )

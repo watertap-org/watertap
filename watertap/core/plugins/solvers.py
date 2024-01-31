@@ -327,31 +327,44 @@ class WaterTAPSolver:
         # don't care about dual feasibility so much
         #slack_block._slack_objective.expr /= 1e3
 
-        #for v in slack_block.component_data_objects(pyo.Var):
-        #    v.fix(0)
-        ## start with variable bounds -- these are the easist to interpret
-        #for c in modified_model._variable_bounds.component_data_objects(pyo.Constraint, descend_into=True):
-        #    plus = slack_block.component(f"_slack_plus_{c.name}")
-        #    minus = slack_block.component(f"_slack_minus_{c.name}")
-        #    assert not (plus is None and minus is None)
-        #    if plus is not None:
-        #        plus.unfix()
-        #    if minus is not None:
-        #        minus.unfix()
+        for v in slack_block.component_data_objects(pyo.Var):
+            v.fix(0)
+        # start with variable bounds -- these are the easist to interpret
+        for c in modified_model._variable_bounds.component_data_objects(pyo.Constraint, descend_into=True):
+            plus = slack_block.component(f"_slack_plus_{c.name}")
+            minus = slack_block.component(f"_slack_minus_{c.name}")
+            assert not (plus is None and minus is None)
+            if plus is not None:
+                plus.unfix()
+            if minus is not None:
+                minus.unfix()
 
         # collect the initial set of infeasibilities
         # we keep the constraint_viol_tol tight
         results = base_solver.solve(modified_model, *args, **kwds)
 
+        if pyo.check_optimal_termination(results):
+            msg = f"Model {model.name} may be infeasible. A feasible solution was found with the following variable bounds relaxed:"
+            for v in slack_block.component_data_objects(pyo.Var):
+                if v.value > self.options["constr_viol_tol"]:
+                    c = _get_constraint(modified_model, v)
+                    assert "_variable_bounds" in c.name
+                    name = c.local_name
+                    if "lb" in name:
+                        msg += f"\n\tlb of var {name[7:]} by {v.value}"
+                    elif "ub" in name:
+                        msg += f"\n\tub of var {name[7:]} by {v.value}"
+                    else:
+                        raise RuntimeError("unrecongized var name")
+            raise Exception(msg)
+
+        for v in slack_block.component_data_objects(pyo.Var):
+            v.unfix()
+        results = base_solver.solve(modified_model, *args, **kwds)
+
         # this first solve should be feasible, by definition
         pyo.assert_optimal_termination(results)
 
-        # TODO: For an interior point method, we should not
-        #       need this loop -- anything potentially
-        #       contributing to the infeasibility will
-        #       be caught above
-        # NOTE: The above is definitely not true in examples
-        #       tested so far.
         # TODO: Elasticizing too much at once seems to cause Ipopt trouble.
         #       After an initial sweep, we should just fix one elastic variable
         #       and put everything else on a stack of "constraints to elasticize".
@@ -375,18 +388,8 @@ class WaterTAPSolver:
                 max_pair = None
                 for v in slack_block.component_data_objects(pyo.Var):
                     if v.value > self.options["constr_viol_tol"]:
-                        if "_slack_plus_" in v.name:
-                            constr = modified_model.find_component(v.local_name[len("_slack_plus_"):])
-                            if constr is None:
-                                raise RuntimeError("Bad constraint name {v.local_name[len('_slack_plus_'):]}")
-                            stack.append((v, constr))
-                        elif "_slack_minus_" in v.name:
-                            constr = modified_model.find_component(v.local_name[len("_slack_minus_"):])
-                            if constr is None:
-                                raise RuntimeError("Bad constraint name {v.local_name[len('_slack_minus_'):]}")
-                            stack.append((v, constr))
-                        else:
-                            raise RuntimeError("Bad var name {v.name}")
+                        constr = _get_constraint(modified_model, v)
+                        stack.append((v, constr))
                         if v.value > max_viol:
                             max_viol = v.value
                             max_pair = (v, constr)
@@ -513,6 +516,20 @@ def _print_results(constr_list):
                 raise RuntimeError("unrecongized var name")
         else:
             print(f"\tconstraint: {c_name}")
+
+def _get_constraint(modified_model, v):
+    if "_slack_plus_" in v.name:
+        constr = modified_model.find_component(v.local_name[len("_slack_plus_"):])
+        if constr is None:
+            raise RuntimeError("Bad constraint name {v.local_name[len('_slack_plus_'):]}")
+        return constr
+    elif "_slack_minus_" in v.name:
+        constr = modified_model.find_component(v.local_name[len("_slack_minus_"):])
+        if constr is None:
+            raise RuntimeError("Bad constraint name {v.local_name[len('_slack_minus_'):]}")
+        return constr
+    else:
+        raise RuntimeError("Bad var name {v.name}")
 
 
 ## reconfigure IDAES to use the ipopt-watertap solver
