@@ -48,7 +48,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
 
-def build_flowsheet(number_of_stages, system_recovery, build_options=None, **kwargs):
+def build_flowsheet(
+    number_of_stages=3, system_recovery=0.5, build_options=None, **kwargs
+):
     # get solver
     solver = get_solver()
 
