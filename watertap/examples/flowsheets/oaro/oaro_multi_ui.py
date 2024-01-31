@@ -28,12 +28,42 @@ def export_to_ui():
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
+        build_options={
+            "NumberOfStages": {
+                "name": "NumberOfStages",
+                "display_name": "Number of stages",
+                "values_allowed": "int",
+                "value": 3,  # default value
+                "max_val": 8,  # optional
+                "min_val": 0,  # optional
+            },
+            "SystemRecovery": {
+                "name": "SystemRecovery",
+                "display_name": "System Recovery",
+                "values_allowed": "float",
+                "value": 0.1,  # default value
+                "max_val": 1,  # optional
+                "min_val": 0,  # optional
+            },
+        },
     )
 
 
 def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
     fs = flowsheet
     # --- Input data ---
+    # System setting
+    exports.add(
+        obj=build_options["NumberOfStages"].value,
+        name="Number of Stages",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=3,
+        description="Number of Stages",
+        is_input=True,
+        input_category="System setting",
+        is_output=False,
+    )
     # Feed conditions
     exports.add(
         obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],
@@ -48,25 +78,25 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
 
-def build_flowsheet(
-    number_of_stages=3, system_recovery=0.5, build_options=None, **kwargs
-):
+def build_flowsheet(erd_type=ERDtype.pump_as_turbine, build_options=None, **kwargs):
     # get solver
     solver = get_solver()
 
     # build, set, and initialize
-    m = build(number_of_stages=number_of_stages, erd_type=ERDtype.pump_as_turbine)
+    m = build(number_of_stages=build_options["NumberOfStages"].value, erd_type=erd_type)
     set_operating_conditions(m)
     initialize_system(
         m,
-        number_of_stages,
+        number_of_stages=build_options["NumberOfStages"].value,
         solvent_multiplier=0.5,
         solute_multiplier=0.7,
         solver=solver,
     )
 
     optimize_set_up(
-        m, number_of_stages=number_of_stages, water_recovery=system_recovery
+        m,
+        number_of_stages=build_options["NumberOfStages"].value,
+        water_recovery=build_options["SystemRecovery"].value,
     )
 
     # display
