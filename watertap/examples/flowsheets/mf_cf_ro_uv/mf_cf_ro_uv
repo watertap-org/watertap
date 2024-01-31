@@ -155,6 +155,7 @@ def build(ro_props="seawater", ro_dimension="0d", erd_config=ERDtype.pressure_ex
         pass
     else:
         erd_type_not_found(erd_config)
+    #===============================================================================
 
     
 
@@ -213,20 +214,50 @@ def build(ro_props="seawater", ro_dimension="0d", erd_config=ERDtype.pressure_ex
     m.fs.ro_permeate_to_translator = Arc(source=m.fs.RO.permeate, destination=m.fs.ro_to_mcas_translator.inlet)
     m.fs.translator_to_product = Arc(source=m.fs.ro_to_mcas_translator.outlet, destination=m.fs.product_water.inlet)
     
-    #===============================================================================
+    # Apply connections
+    TransformationFactory("network.expand_arcs").apply_to(m)
 
 
     return m
 
 
 def set_operating_conditions(m):
-    pass
+    # ---specifications---
+    # feed
+    flow_vol = 0.3092 * pyunits.m**3 / pyunits.s
+    conc_mass_tds = 35 * pyunits.kg / pyunits.m**3
+    conc_mass_tss = 0.03 * pyunits.kg / pyunits.m**3
+    temperature = 298 * pyunits.K
+    pressure = 1e5 * pyunits.Pa
+
+    m.fs.feed.properties[0].flow_vol_phase['Liq'].fix(flow_vol)
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "tds"].fix(conc_mass_tds)
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq",  "tss"].fix(conc_mass_tss)
+    m.fs.feed.temperature[0].fix(temperature)
+    m.fs.feed.pressure[0].fix(pressure)
+
+    #TODO: add scaling at least for feed props before solve
+    solve(m.fs.feed, checkpoint="solve feed block")
+
+    # ---pretreatment---
+    # TODO: add option to eliminate underlying fixed energy calculations and shift to pump
+    # microfiltration
+    m.db.get_unit_operation_parameters("microfiltration")
+    m.fs.mf.load_parameters_from_database(use_default_removal=True)
+
+    # cartridge filtration
+    m.db.get_unit_operation_parameters("cartridge_filtration")
+    m.fs.cf.load_parameters_from_database(use_default_removal=True)
 
 def initialize_system(m):
     pass
 
-def solve(m, checkpoint):
-    pass
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
+    if solver is None:
+        solver = get_solver()
+    results = solver.solve(blk, tee=tee)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
+    return results
 
 def add_uv(m):
     pass
