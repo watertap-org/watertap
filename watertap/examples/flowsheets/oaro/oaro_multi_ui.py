@@ -41,7 +41,7 @@ def export_to_ui():
                 "name": "SystemRecovery",
                 "display_name": "System Recovery",
                 "values_allowed": "float",
-                "value": 0.1,  # default value
+                "value": 0.5,  # default value
                 "max_val": 1,  # optional
                 "min_val": 0,  # optional
             },
@@ -52,18 +52,18 @@ def export_to_ui():
 def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
     fs = flowsheet
     # --- Input data ---
-    # System setting
-    exports.add(
-        obj=build_options["NumberOfStages"].value,
-        name="Number of Stages",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=3,
-        description="Number of Stages",
-        is_input=True,
-        input_category="System setting",
-        is_output=False,
-    )
+    # # System setting
+    # exports.add(
+    #     obj=build_options["NumberOfStages"].value,
+    #     name="Number of Stages",
+    #     ui_units=pyunits.dimensionless,
+    #     display_units="fraction",
+    #     rounding=3,
+    #     description="Number of Stages",
+    #     is_input=True,
+    #     input_category="System setting",
+    #     is_output=False,
+    # )
     # Feed conditions
     exports.add(
         obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],
