@@ -16,7 +16,7 @@ from ..util import (
     make_capital_cost_var,
 )
 from idaes.core.util.misc import StrEnum
-from idaes.core.util.exceptions import ConfigurationError, BurntToast
+from idaes.core.util.exceptions import ConfigurationError
 
 """
 Ref: W. McGivney, S. Kawamura, Cost estimating manual for water treatment facilities, John Wiley & Sons, 2008. http://onlinelibrary.wiley.com/book/10.1002/9780470260036.
@@ -166,7 +166,7 @@ def cost_filter_belt_press(
         else:
             sb = blk.unit_model.config.mixed_state_block[t0]
     else:
-        raise BurntToast(
+        raise TypeError(
             "Costing of the dewatering unit is only compatible with an IDAES Separator or WaterTAP Dewatering Unit."
         )
 
@@ -224,7 +224,7 @@ def cost_filter_plate_press(
         else:
             sb = blk.unit_model.config.mixed_state_block[t0]
     else:
-        raise BurntToast(
+        raise TypeError(
             "Costing of the dewatering unit is only compatible with an IDAES Separator or WaterTAP Dewatering Unit."
         )
 
