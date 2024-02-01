@@ -688,7 +688,9 @@ def display_metrics(m):
         "Specific energy consumption:              %.2f kWh/m3"
         % value(m.fs.costing.specific_energy_consumption)
     )
-    print("Levelized cost of water:                  %.2f $/m3" % value(m.fs.costing.LCOW)
+    print(
+        "Levelized cost of water:                  %.2f $/m3" % value(m.fs.costing.LCOW)
+    )
     print(
         "External Q:                               %.2f W" % m.fs.Q_ext[0].value
     )  # should be 0 for optimization
