@@ -261,6 +261,8 @@ def create_debug_solver_wrapper(solver_name):
             debug = self
 
             # else there was a problem
+            # TODO: we may want to switch out the default IDAES solver so we
+            #       don't nest one of these environments inside itself...
             print(f"Solver debugging mode: the block {blk.name} failed to solve.")
             print(f"{blk.name} is called `blk` in this context.")
             print(f"The solver {solver.name} is available in the variable `solver`.")
