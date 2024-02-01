@@ -1126,7 +1126,7 @@ class MCASStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.5,
-            bounds=(0, 1.01),
+            bounds=(0, 1.001),
             units=pyunits.kg / pyunits.kg,
             doc="Mass fraction",
         )

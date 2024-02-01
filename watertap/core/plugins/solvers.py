@@ -17,7 +17,6 @@ from pyomo.core.base.block import _BlockData
 from pyomo.core.kernel.block import IBlock
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 
-
 import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import (
     get_scaling_factor,

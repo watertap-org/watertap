@@ -97,15 +97,13 @@ def compute_infeasibility_explanation(model, solver=None, tee=False, tolerance=1
     if model.parent_block() is None:
         common_name = ""
     else:
-        common_name = model.name
+        common_name = model.name + "."
 
     _modified_model_var_to_original_model_var = ComponentMap()
     _modified_model_value_cache = ComponentMap()
 
     for v in model.component_data_objects(pyo.Var, descend_into=True):
-        modified_model_var = modified_model.find_component(
-            v.name[len(common_name) + 1 :]
-        )
+        modified_model_var = modified_model.find_component(v.name[len(common_name) :])
 
         _modified_model_var_to_original_model_var[modified_model_var] = v
         _modified_model_value_cache[modified_model_var] = _value_cache[v]
@@ -214,20 +212,15 @@ def compute_infeasibility_explanation(model, solver=None, tee=False, tolerance=1
             v.unfix()
 
     results = solver.solve(modified_model, tee=tee)
-    # this solve should be feasible, by definition
-    if not pyo.check_optimal_termination(results):
-        msg += "Found model {model.name} to be numerically unstable."
-        raise Exception(msg)
-
-    msg = _constraint_loop(
-        "inequality constraints, equality constraints, and/or variable bounds", msg
-    )
+    if pyo.check_optimal_termination(results):
+        msg = _constraint_loop(
+            "inequality constraints, equality constraints, and/or variable bounds", msg
+        )
 
     if len(elastic_filter) == 0:
         # load the feasible solution into the original model
         for modified_model_var, v in _modified_model_var_to_original_model_var.items():
             v.set_value(modified_model_var.value, skip_validation=True)
-        solver.options["bound_push"] = 0.0
         results = solver.solve(model, tee=tee)
         if pyo.check_optimal_termination(results):
             print(f"A feasible solution was found!")
