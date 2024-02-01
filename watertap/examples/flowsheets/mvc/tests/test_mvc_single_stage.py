@@ -337,6 +337,7 @@ class TestMVC:
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(4.52, rel=1e-2)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.unit
     def test_main_fun(self):
         main()
