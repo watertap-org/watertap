@@ -324,8 +324,6 @@ class WaterTAPSolver:
 
         AddSlackVariables().apply_to(modified_model)
         slack_block = modified_model._core_add_slack_variables
-        # don't care about dual feasibility so much
-        #slack_block._slack_objective.expr /= 1e3
 
         for v in slack_block.component_data_objects(pyo.Var):
             v.fix(0)
@@ -341,29 +339,130 @@ class WaterTAPSolver:
 
         # collect the initial set of infeasibilities
         # we keep the constraint_viol_tol tight
-        results = base_solver.solve(modified_model, *args, **kwds)
 
+        # Phase 1 -- build the initial set of constraints, or prove feasibility
+        msg = "" 
+        fixed_slacks = ComponentSet()
+        elastic_filter = ComponentSet()
+
+        def _constraint_loop(relaxed_things, msg):
+            if msg == "":
+                msg += f"Model {model.name} may be infeasible. A feasible solution was found with only the following {relaxed_things} relaxed:\n"
+            else:
+                msg += f"Another feasible solution was found with only the following {relaxed_things} relaxed:\n"
+            while True:
+                def _constraint_generator():
+                    for v in slack_block.component_data_objects(pyo.Var):
+                        if v.value > self.options["constr_viol_tol"]:
+                            constr = _get_constraint(modified_model, v)
+                            yield constr, v.value
+                            v.fix(0)
+                            fixed_slacks.add(v)
+                            elastic_filter.add(constr)
+                msg = _get_results_with_value(_constraint_generator(), msg)
+                for var, val in _modified_model_value_cache.items():
+                    var.set_value(val, skip_validation=True)
+                results = base_solver.solve(modified_model, *args, **kwds)
+                if pyo.check_optimal_termination(results):
+                    msg += f"Another feasible solution was found with only the following {relaxed_things} relaxed:\n"
+                else:
+                    break
+            return msg
+
+
+        results = base_solver.solve(modified_model, *args, **kwds)
         if pyo.check_optimal_termination(results):
-            msg = f"Model {model.name} may be infeasible. A feasible solution was found with the following variable bounds relaxed:"
-            for v in slack_block.component_data_objects(pyo.Var):
-                if v.value > self.options["constr_viol_tol"]:
-                    c = _get_constraint(modified_model, v)
-                    assert "_variable_bounds" in c.name
-                    name = c.local_name
-                    if "lb" in name:
-                        msg += f"\n\tlb of var {name[7:]} by {v.value}"
-                    elif "ub" in name:
-                        msg += f"\n\tub of var {name[7:]} by {v.value}"
-                    else:
-                        raise RuntimeError("unrecongized var name")
-            raise Exception(msg)
+            msg = _constraint_loop("variable bounds", msg)
+
+        # next, try relaxing the inequality constraints
+        for v in slack_block.component_data_objects(pyo.Var):
+            c = _get_constraint(modified_model, v)
+            if c.equality:
+                # equality constraint
+                continue
+            if v not in fixed_slacks:
+                v.unfix()
+
+        results = base_solver.solve(modified_model, *args, **kwds)
+        if pyo.check_optimal_termination(results):
+            msg = _constraint_loop("inequality constraints and/or variable bounds", msg)
 
         for v in slack_block.component_data_objects(pyo.Var):
-            v.unfix()
-        results = base_solver.solve(modified_model, *args, **kwds)
+            if v not in fixed_slacks:
+                v.unfix()
 
-        # this first solve should be feasible, by definition
-        pyo.assert_optimal_termination(results)
+        results = base_solver.solve(modified_model, *args, **kwds)
+        # this solve should be feasible, by definition
+        if not pyo.check_optimal_termination(results):
+            msg += "Found model {model.name} to be numerically unstable."
+            raise Exception(msg)
+
+        msg = _constraint_loop("inequality constraints, equality constraints, and/or variable bounds", msg)
+
+        if len(elastic_filter) == 0:
+            # load the feasible solution into the original model
+            for modified_model_var, v in _modified_model_var_to_original_model_var.items():
+                v.set_value(modified_model_var.value, skip_validation=True)
+            base_solver.options["bound_push"] = 0.0
+            results = base_solver.solve(model, *args, **kwds)
+            return results
+
+        # Phase 2 -- deletion filter
+        # temporarily switch to nl_v1 writer
+        WriterFactory.register("nl")(WriterFactory.get_class("nl_v1"))
+
+        # remove slacks by fixing them to 0
+        for v in slack_block.component_data_objects(pyo.Var):
+            v.fix(0)
+        for o in modified_model.component_data_objects(pyo.Objective, descend_into=True):
+            o.deactivate()
+
+        # mark all constraints not in the filter as inactive
+        for c in modified_model.component_data_objects(pyo.Constraint):
+            if c in elastic_filter:
+                continue
+            else:
+                c.deactivate()
+
+        try:
+            results = base_solver.solve(modified_model, *args, **kwds)
+        except:
+            results = None
+        
+        if pyo.check_optimal_termination(results):
+            msg += "Could not determine Minimal Intractable System\n"
+        else:
+            deletion_filter = []
+            guards = []
+            for constr in elastic_filter:
+                constr.deactivate()
+                for var, val in _modified_model_value_cache.items():
+                    var.set_value(val, skip_validation=True)
+                try:
+                    results = base_solver.solve(modified_model, *args, **kwds)
+                except:
+                    math_failure = True
+                else:
+                    math_failure = False
+
+                if math_failure:
+                    constr.activate()
+                    guards.append(constr)
+                elif pyo.check_optimal_termination(results):
+                    constr.activate()
+                    deletion_filter.append(constr)
+                else: # still infeasible without this constraint
+                    pass
+
+            msg += "Computed Minimal Intractable System (MIS)!\n"
+            msg += "Constraints / bounds in MIS:\n"
+            msg = _get_results(deletion_filter, msg)
+            msg += "Constraints / bounds in guards for stability:"
+            msg = _get_results(guards, msg)
+
+        WriterFactory.register("nl")(_default_nl_writer)
+
+        raise Exception(msg)
 
         # TODO: Elasticizing too much at once seems to cause Ipopt trouble.
         #       After an initial sweep, we should just fix one elastic variable
@@ -378,7 +477,6 @@ class WaterTAPSolver:
         #       Along the way, any time the current problem is infeasible we can check to
         #       see if the current set of constraints in the filter is as a collection of
         #       infeasible constraints -- to terminate early.
-        # Phase 1 -- build the initial set of constraints, or prove feasibility
         stack = []
         elastic_filter = ComponentSet()
         proved_feasibility = False
@@ -495,27 +593,46 @@ class WaterTAPSolver:
                 pass
 
         print("Constraints / bounds in set:")
-        _print_results(deletion_filter)
+        print(_get_results(deletion_filter))
         print("Constraints / bounds in guards:")
-        _print_results(guards)
+        print(_get_results(guards))
         WriterFactory.register("nl")(_default_nl_writer)
 
         raise Exception("Found model to be infeasible, see conflicting constraints above")
 
-
-def _print_results(constr_list):
-    for c in constr_list:
+def _get_results_with_value(constr_value_generator, msg=None):
+    if msg is None:
+        msg = ""
+    for c, value in constr_value_generator:
         c_name = c.name
         if "_variable_bounds" in c_name:
             name = c.local_name
             if "lb" in name:
-                print(f"\tlb of var {name[7:]}")
+                msg += f"\tlb of var {name[7:]} by {value}\n"
             elif "ub" in name:
-                print(f"\tub of var {name[7:]}")
+                msg += f"\tub of var {name[7:]} by {value}\n"
             else:
                 raise RuntimeError("unrecongized var name")
         else:
-            print(f"\tconstraint: {c_name}")
+            msg += f"\tconstraint: {c_name} by {value}\n"
+    return msg
+
+def _get_results(constr_generator, msg=None):
+    if msg is None:
+        msg = ""
+    for c in constr_generator:
+        c_name = c.name
+        if "_variable_bounds" in c_name:
+            name = c.local_name
+            if "lb" in name:
+                msg += f"\tlb of var {name[7:]}\n"
+            elif "ub" in name:
+                msg += f"\tub of var {name[7:]}\n"
+            else:
+                raise RuntimeError("unrecongized var name")
+        else:
+            msg += f"\tconstraint: {c_name}\n"
+    return msg
 
 def _get_constraint(modified_model, v):
     if "_slack_plus_" in v.name:
