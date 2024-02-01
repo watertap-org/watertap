@@ -42,11 +42,11 @@ The parameter sweep tool currently offers 6 classes that can be broadly categori
     * ``LinearSample``: Draw samples that are evenly spaced within a specified interval.
     * ``GeomSample``: Draw samples that are evenly spaced within a specified interval on a negative log scale.
     * ``ReverseGeomSample``: Draw samples that are evenly spaced within a specified interval on a log scale
-    * ``PredeterminedFixedSample``: Samples are predetermined by an external tool. This class wrangles data into a format compatible with parameter sweep that uses fixed sampling.
+    * ``PredeterminedFixedSample``: Samples are predetermined by an external tool and supplied as arrays or list. This class wrangles data into a format compatible with parameter sweep that uses fixed sampling.
 #. ``RANDOM``: Final result is an array that combines individual variable vectors into a matrix. **The individual sweep variable vectors must be of the same length**.
     * ``UniformSample``: Draw samples uniformly from a given upper and lower range.
     * ``NormalSample``: Draw samples from a normal distribution given a mean and standard deviation.
-    * ``PredeterminedRandomSample``: Samples are predetermined by an external tool. This class wrangles data into a format compatible with parameter sweep that uses random sampling.
+    * ``PredeterminedRandomSample``: Samples are predetermined by an external tool and supplied as arrays or list.. This class wrangles data into a format compatible with parameter sweep that uses random sampling.
 #. ``RANDOM_LHS``: Final result is similar to the ``RANDOM`` category.
     * ``LatinHypercubeSample``: Draw samples using a Latin Hypercube algorithm which may yield a more complete exploration of high-dimensional parameter spaces. Note that currently this sample type may not be combined with other sampling types.
 

@@ -81,6 +81,7 @@ model is produced, in order to support native parallelism the preferred way to d
         sweep_params = dict()
         sweep_params['Feed Mass NaCl'] = LinearSample(model.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'], 0.005, 0.155, 4)
         sweep_params['Water Recovery'] = LinearSample(model.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'], 0.3, 0.7, 4)
+
         return sweep_params
 
 where the basic pattern is ``dict_name['Short/Pretty-print Name'] = LinearSample(m.path.to.model.variable, lower_limit, upper_limit, num_samples)``.
@@ -88,6 +89,33 @@ For example, "Feed Mass NaCl" (the feed mass flow rate of NaCl), which is access
 It is also possible to perform random sampling (uniform or normal) with the parameter sweep tool, or the user can specify their own sampling method.
 In this case, the 2 parameters will each be varied across 4 values for a total of 16 combinations.
 Note that there is no limit on the number of sweep variables specified or their resolution besides the practical limit of how long it will take to optimize using each combination of parameters (e.g., if 5 different variables are provided and each one is individually represented with 20 discrete values, the total number of combinations is 20^5 = 3.2 million!).
+
+The default behavior of any sweep sampling method is to change the absolute value of the Variable or Parameter, 
+but user can also sweep across Variable lower bound, upper bound, or fix/unfix a variable using
+the extended options for sweep parameters, and specify the type of set mode to use. A total of four set modes are available:
+
+    * SetMode.FIX_VALUE - *Default* - fixes Variable to specified value by selected sweep sampling method.
+    * SetMode.SET_LB - sets the lower bound of variable to specified value by selected sweep sampling method.
+    * SetMode.SET_UB - sets the upper bound of variable to specified value by selected sweep sampling method.
+    * SetMode.SET_FIXED_STATE - Fixes the variable if True is provided, and unfixes if False is provided, only works with PredeterminedFixedSample or PredeterminedRandomSample.
+
+The user can apply these options to a sweep parameter sample by invoking *set_variable_update_mode* method as follows:
+
+.. code::
+
+    def build_sweep_params(model, **kwargs):
+        sweep_params = dict()
+        # Set lower bound for feed salinity value
+        sweep_params['Feed Mass NaCl-LB'] = LinearSample(model.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'], 0.3, 0.7, 4)
+        sweep_params['Feed Mass NaCl-LB'].set_variable_update_mode(SetMode.SET_LB)
+        # Sweep across fixed and unfixed water recovery cases, when fixing the area, set it to 50
+        sweep_params['Membrane area-fixed-state'] = PredeterminedFixedSample(model.fs.RO.area, [True, False])
+        sweep_params['Membrane area-fixed-state'].set_variable_update_mode(SetMode.SET_FIXED_STATE, default_fixed_value=0.5)
+
+        return sweep_params
+
+The above example would create a sweep with 8 samples in total, where lower bound for water recovery is changed from 0.3 to 0.7
+and membrane area is optimized along with other variables, and where it is fixed. 
 
 After specifying the input parameters, the user should then specify output values on the flowsheet that will be reported in the summary CSV file, which has a similar format to the sweep parameters.
 For this RO flowsheet we'll report the levelized cost of water, the optimized RO area, and the output pressure of pump 1:
