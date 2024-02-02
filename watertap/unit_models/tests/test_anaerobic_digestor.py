@@ -20,7 +20,6 @@ Department of Industrial Electrical Engineering and Automation, Lund University,
 
 """
 
-import pytest
 from pyomo.environ import (
     ConcreteModel,
 )
