@@ -55,7 +55,6 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 class TestUnitDefault(UnitTestHarness):
-    @pytest.mark.unit
     def configure(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
