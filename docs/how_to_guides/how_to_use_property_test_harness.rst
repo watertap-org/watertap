@@ -31,8 +31,8 @@ The following example assumes a test file is being created for the NaCl property
 
     from watertap.property_models.tests.property_test_harness import (
         PropertyTestHarness,
-        PropertyRegressionTest
-        PropertyCalculateStateTest
+        PropertyRegressionTest,
+        PropertyCalculateStateTest,
     )
 
     # Import the property model to be tested
@@ -129,14 +129,3 @@ Finally, test the regression outputs of the property model by specifying the pro
                 ("enth_mass_phase", "Liq"): 1.093e5,
             }
 
-
-.. testoutput::
-
-    ...
-
-.. testcleanup::
-
-    import os
-    os.remove('outputs_results.csv')
-    os.remove('outputs_results.h5')
-    os.remove('outputs_results.h5.txt')

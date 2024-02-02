@@ -35,7 +35,7 @@ assumes a test file is being created for the anaerobic digestor.
     from idaes.core.solvers import get_solver
     import idaes.core.util.scaling as iscale
 
-    from watertap.unit_models.tests.unit_test_harness
+    from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
     from watertap.costing import WaterTAPCosting
 
     # The following imports are unit-model specific
@@ -124,11 +124,8 @@ set the scaling factors for any variables that are badly scaled.
             )
             iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-6)
 
-Now that the flowsheet is completely set up, specify the unit model that will be tested.
-
-.. testcode::
-
-    self.unit_model_block = m.fs.unit
+            # Specify the unit model being tested
+            self.unit_model_block = m.fs.unit
 
 Finally, iterate through any variables on the unit model that you'd like to confirm the value of.
 Failures may arise at this stage, at which point an error message will be displayed that prompts you
@@ -225,14 +222,3 @@ expected value for a variable (user-input) and its actual value.
         self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1880470.588
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 2166581.415
 
-
-.. testoutput::
-
-    ...
-
-.. testcleanup::
-
-    import os
-    os.remove('outputs_results.csv')
-    os.remove('outputs_results.h5')
-    os.remove('outputs_results.h5.txt')
