@@ -35,6 +35,9 @@ from .MD_channel_base import (
     TemperaturePolarizationType,
     MassTransferCoefficient,
 )
+from watertap.costing.unit_models.membrane_distillation import (
+    cost_membrane_distillation,
+)
 
 __author__ = "Elmira Shamlou"
 
@@ -474,7 +477,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             units=pyunits.m,
         )
 
-        self.membrane_tc = Var(
+        self.membrane_thermal_conductivity = Var(
             initialize=0.2,
             bounds=(0, 1),
             units=pyunits.J * pyunits.s**-1 * pyunits.K**-1 * pyunits.m**-1,
@@ -498,7 +501,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         def eq_flux_heat(b, t, x):
             return b.flux_conduction_heat[
                 t, x
-            ] == b.membrane_tc / b.membrane_thickness * (
+            ] == b.membrane_thermal_conductivity / b.membrane_thickness * (
                 b.hot_ch.properties_interface[t, x].temperature
                 - b.cold_ch.properties_interface[t, x].temperature
             )
@@ -688,8 +691,8 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.membrane_thickness) is None:
             iscale.set_scaling_factor(self.membrane_thickness, 1e4)
 
-        if iscale.get_scaling_factor(self.membrane_tc) is None:
-            iscale.set_scaling_factor(self.membrane_tc, 10)
+        if iscale.get_scaling_factor(self.membrane_thermal_conductivity) is None:
+            iscale.set_scaling_factor(self.membrane_thermal_conductivity, 10)
 
         for (t, x), v in self.flux_mass.items():
             if iscale.get_scaling_factor(v) is None:
@@ -724,7 +727,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         for (t, x), v in self.flux_conduction_heat.items():
             if iscale.get_scaling_factor(v) is None:
                 sf_flux_cond = (
-                    iscale.get_scaling_factor(self.membrane_tc)
+                    iscale.get_scaling_factor(self.membrane_thermal_conductivity)
                     / iscale.get_scaling_factor(self.membrane_thickness)
                     * iscale.get_scaling_factor(
                         self.hot_ch.properties_interface[t, x].temperature
@@ -739,3 +742,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         if hasattr(self, "width"):
             if iscale.get_scaling_factor(self.width) is None:
                 iscale.set_scaling_factor(self.width, 1)
+
+    @property
+    def default_costing_method(self):
+        return cost_membrane_distillation

@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for anaerobic digestor example.
+Tests for anaerobic digester example.
 
 Verified against results from:
 
@@ -31,7 +31,7 @@ from idaes.core import (
 
 from idaes.core.solvers import get_solver
 
-from watertap.unit_models.anaerobic_digestor import AD
+from watertap.unit_models.anaerobic_digester import AD
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )

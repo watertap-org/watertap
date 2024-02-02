@@ -17,7 +17,7 @@ from ..util import (
 )
 
 
-def build_anaerobic_digestor_cost_param_block(blk):
+def build_anaerobic_digester_cost_param_block(blk):
 
     # NOTE: costing data are from NREL Waste-to-Energy Model
     blk.capital_a_parameter = pyo.Var(
@@ -38,18 +38,18 @@ def build_anaerobic_digestor_cost_param_block(blk):
 
 
 @register_costing_parameter_block(
-    build_rule=build_anaerobic_digestor_cost_param_block,
-    parameter_block_name="anaerobic_digestor",
+    build_rule=build_anaerobic_digester_cost_param_block,
+    parameter_block_name="anaerobic_digester",
 )
-def cost_anaerobic_digestor(blk, cost_electricity_flow=True):
+def cost_anaerobic_digester(blk, cost_electricity_flow=True):
     """
-    Anaerobic digestor costing method
+    Anaerobic digester costing method
     """
-    cost_anaerobic_digestor_capital(
+    cost_anaerobic_digester_capital(
         blk,
-        blk.costing_package.anaerobic_digestor.capital_a_parameter,
-        blk.costing_package.anaerobic_digestor.capital_b_parameter,
-        blk.costing_package.anaerobic_digestor.reference_flow,
+        blk.costing_package.anaerobic_digester.capital_a_parameter,
+        blk.costing_package.anaerobic_digester.capital_b_parameter,
+        blk.costing_package.anaerobic_digester.reference_flow,
     )
 
     t0 = blk.flowsheet().time.first()
@@ -63,11 +63,11 @@ def cost_anaerobic_digestor(blk, cost_electricity_flow=True):
         )
 
 
-def cost_anaerobic_digestor_capital(
+def cost_anaerobic_digester_capital(
     blk, capital_a_parameter, capital_b_parameter, reference_flow
 ):
     """
-    Generic function for costing an anaerobic digestor system.
+    Generic function for costing an anaerobic digester system.
     """
     make_capital_cost_var(blk)
 
