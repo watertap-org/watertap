@@ -38,16 +38,13 @@ assumes a test file is being created for the anaerobic digestor.
     from watertap.unit_models.tests.unit_test_harness
     from watertap.costing import WaterTAPCosting
 
-     # The following imports are unit-model specific
-     from watertap.unit_models.anaerobic_digestor AD
-     from watertap.property_models.anaerobic_digestion.adm1_properties import ADM1ParameterBlock
-     from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import ADM1_vaporParameterBlock
-     from watertap.property_models.anaerobic_digestion.adm1_reactions import ADM1ReactionParameterBlock
+    # The following imports are unit-model specific
+    from watertap.unit_models.anaerobic_digestor AD
+    from watertap.property_models.anaerobic_digestion.adm1_properties import ADM1ParameterBlock
+    from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import ADM1_vaporParameterBlock
+    from watertap.property_models.anaerobic_digestion.adm1_reactions import ADM1ReactionParameterBlock
 
-Next, get the default solver for testing.
-
-.. testcode::
-
+    # Get the default solver for testing
     solver = get_solver()
 
 Then setup the configure function, which will create the flowsheet, specify the property and reaction packages,

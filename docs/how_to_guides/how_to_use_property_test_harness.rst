@@ -35,8 +35,8 @@ The following example assumes a test file is being created for the NaCl property
         PropertyCalculateStateTest
     )
 
-     # Import the property model to be tested
-     from watertap.property_models.NaCl_prop_pack as props
+    # Import the property model to be tested
+    from watertap.property_models.NaCl_prop_pack as props
 
 Next, test the configuration of property package against the IDAES property test harness.
 
