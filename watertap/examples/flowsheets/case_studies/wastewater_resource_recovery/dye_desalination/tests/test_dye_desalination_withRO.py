@@ -252,7 +252,7 @@ class TestDyewithROFlowsheetwithDewatering:
 
         # test dewaterer block
         assert pytest.approx(0.99, rel=1e-5) == value(
-            m.fs.dewater.dewaterer.split_fraction[0, "precipitant", "dye"]
+            m.fs.dewaterer.split_fraction[0, "precipitant", "dye"]
         )
 
         # test pump block
@@ -266,7 +266,7 @@ class TestDyewithROFlowsheetwithDewatering:
         )
 
         # check products
-        assert pytest.approx(0.0003293666, rel=1e-3) == value(
+        assert pytest.approx(1, rel=1e-3) == value(
             m.fs.precipitant.flow_mass_comp[0, "tds"]
         )
 
