@@ -42,29 +42,74 @@
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
 
-from pathlib import Path
-
 import pytest
 
+from pathlib import Path
+
+from watertap.tools.oli_api.flash import Flash
 from watertap.tools.oli_api.client import OLIApi
 
-
-@pytest.mark.unit
-def test_dbs_file_available_for_testing(local_dbs_file: Path):
-    assert local_dbs_file.is_file()
+from numpy import linspace
 
 
 @pytest.mark.unit
-def test_dbs_file_cleanup(oliapi_instance: OLIApi, local_dbs_file: Path):
-    ids = [oliapi_instance.get_dbs_file_id(str(local_dbs_file)) for i in range(3)]
-    oliapi_instance.dbs_file_cleanup(ids)
+def test_flash_calc_basic_workflow(
+    flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
+):
 
+    survey_arrays = {
+        "Temperature": linspace(273, 373, 3),
+        "SiO2": linspace(0, 1000, 3),
+    }
+    survey = flash_instance.build_survey(
+        survey_arrays,
+        get_oli_names=True,
+    )
 
-@pytest.mark.unit
-def test_get_user_summary(oliapi_instance: OLIApi):
-    original_dbs_file_ids = oliapi_instance.get_user_dbs_file_ids()
-    if len(original_dbs_file_ids) > 1:
-        dbs_file_ids = original_dbs_file_ids[:1]
-    else:
-        dbs_file_ids = original_dbs_file_ids
-    oliapi_instance.get_user_summary(dbs_file_ids)
+    dbs_file_id = oliapi_instance.session_dbs_files[0]
+
+    water_analysis_input = flash_instance.build_flash_calculation_input(
+        "wateranalysis",
+        source_water,
+    )
+    water_analysis_base_case = flash_instance.run_flash(
+        "wateranalysis",
+        oliapi_instance,
+        dbs_file_id,
+        water_analysis_input,
+        file_name=tmp_path / "test_wa_singlepoint",
+    )
+    water_analysis_apparent_composition = flash_instance.build_flash_calculation_input(
+        "isothermal",
+        source_water,
+        water_analysis_base_case[0],
+    )
+    isothermal_analysis_single_pt = flash_instance.run_flash(
+        "isothermal",
+        oliapi_instance,
+        dbs_file_id,
+        water_analysis_apparent_composition,
+    )
+    isothermal_survey_result = flash_instance.run_flash(
+        "isothermal",
+        oliapi_instance,
+        dbs_file_id,
+        water_analysis_apparent_composition,
+        survey,
+        tmp_path / "test_iso_compsurvey",
+    )
+
+    properties = [
+        "prescalingTendencies",
+        "entropy",
+        "gibbsFreeEnergy",
+        "selfDiffusivities",
+        "molecularConcentration",
+        "kValuesMBased",
+    ]
+    extracted_properties = flash_instance.extract_properties(
+        isothermal_analysis_single_pt,
+        properties,
+        filter_zero=True,
+        file_name=tmp_path / "test_ext_props",
+    )

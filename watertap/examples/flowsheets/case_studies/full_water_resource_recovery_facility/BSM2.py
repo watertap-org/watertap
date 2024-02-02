@@ -22,7 +22,7 @@ __author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia"
 import pyomo.environ as pyo
 
 from pyomo.network import Arc, SequentialDecomposition
-from watertap.unit_models.anaerobic_digestor import AD
+from watertap.unit_models.anaerobic_digester import AD
 from watertap.unit_models.thickener import Thickener
 from watertap.unit_models.dewatering import DewateringUnit
 from watertap.unit_models.cstr import CSTR

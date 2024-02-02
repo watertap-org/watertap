@@ -6,7 +6,7 @@ Introduction
 
 A link is required to translate between biological based and physical or chemical mediated processes
 to develop plant-wide modeling of wastewater treatment. This model mediates the interaction between
-the Modified Anaerobic Digestor Model 1 (ADM1) and the Modified Activated Sludge Model 2d (ASM2d).
+the Modified Anaerobic Digester Model 1 (ADM1) and the Modified Activated Sludge Model 2d (ASM2d).
 
 The model relies on the following key assumptions:
 
