@@ -30,7 +30,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.examples.flowsheets.case_studies.anaerobic_digestor.ADM1_flowsheet import (
+from watertap.examples.flowsheets.case_studies.anaerobic_digester.ADM1_flowsheet import (
     build_flowsheet,
 )
 
