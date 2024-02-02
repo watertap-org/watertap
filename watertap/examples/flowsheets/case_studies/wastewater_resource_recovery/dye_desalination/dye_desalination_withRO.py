@@ -55,8 +55,6 @@ from watertap.unit_models.reverse_osmosis_0D import (
 )
 from watertap.costing.unit_models.dewatering import (
     cost_centrifuge,
-    cost_filter_belt_press,
-    cost_filter_plate_press,
 )
 
 from watertap.core.wt_database import Database
@@ -68,7 +66,7 @@ from watertap.unit_models.zero_order import (
     SecondaryTreatmentWWTPZO,
 )
 from watertap.costing.zero_order_costing import ZeroOrderCosting
-from watertap.costing import WaterTAPCosting, MultiUnitModelCostingBlock
+from watertap.costing import WaterTAPCosting
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
