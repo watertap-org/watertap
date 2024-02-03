@@ -125,34 +125,23 @@ class UnitTestHarness:
         results = opt.solve(blk)
 
         # check solve
-        try:
-            assert (
-                len(
-                    list(
-                        iscale.badly_scaled_var_generator(
-                            blk,
-                            large=self.default_large,
-                            small=self.default_small,
-                            zero=self.default_zero,
-                        )
-                    )
-                )
-                == 0
-            )
-        except AssertionError:
-            badly_scaled_var_list = iscale.badly_scaled_var_generator(
+        badly_scaled_vars = list(
+            iscale.badly_scaled_var_generator(
                 blk,
                 large=self.default_large,
                 small=self.default_small,
                 zero=self.default_zero,
             )
-            for x in badly_scaled_var_list:
-                print(
-                    f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}"
-                )
-            raise AssertionError(
-                "Check the output logs for variables that need to be re-scaled"
-            )
+        )
+        if badly_scaled_vars:
+            lines = [
+                f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}"
+                for x in badly_scaled_vars
+            ]
+            msg = "One or more badly scaled variables found:\n"
+            msg += "\n".join(lines)
+            raise AssertionError(msg)
+
         assert_optimal_termination(results)
 
         # check results
