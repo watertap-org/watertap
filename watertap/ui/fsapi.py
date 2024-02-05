@@ -40,7 +40,7 @@ except ImportError:
 # third-party
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, validator, Field, PrivateAttr
 import pyomo.environ as pyo
 
 #: Forward-reference to a FlowsheetInterface type, used in
@@ -71,7 +71,7 @@ class ModelExport(BaseModel):
     _SupportedObjType = Union[
         pyo.Var,
         pyo.Expression,
-        pyo.Param,
+        pyo.Param
     ]
     "Used for type hints and as a shorthand in error messages (i.e. not for runtime checks)"
 
@@ -81,6 +81,7 @@ class ModelExport(BaseModel):
     # so we're using Optional[object] unless we find a way to tell pydantic to skip this check
     # inputs
     obj: Optional[object] = Field(default=None, exclude=True)
+    deferred_obj: Optional[str] = Field(default=None, exclude=True)
     name: str = ""
     value: float = 0.0
     ui_units: object = Field(default=None, exclude=True)
@@ -106,13 +107,14 @@ class ModelExport(BaseModel):
 
     @validator("obj", always=True, pre=True)
     @classmethod
-    def ensure_obj_is_supported(cls, v):
+    def validate_obj(cls, v):
         if v is not None:
             cls._ensure_supported_type(v)
         return v
 
     @classmethod
     def _ensure_supported_type(cls, obj: object):
+        _log.debug(f"ensure supported type obj={obj}")
         is_valid = (
             obj.is_variable_type()
             or obj.is_expression_type()
@@ -123,15 +125,9 @@ class ModelExport(BaseModel):
             return True
         raise UnsupportedObjType(obj, supported=cls._SupportedObjType)
 
-    @classmethod
-    def _get_supported_obj(
-        cls, values: dict, field_name: str = "obj", allow_none: bool = False
-    ):
-        obj = values.get(field_name, None)
-        if not allow_none and obj is None:
-            raise TypeError(f"'{field_name}' is None but allow_none is False")
-        cls._ensure_supported_type(obj)
-        return obj
+    @staticmethod
+    def _get_obj(values):
+        return values.get('obj', None)
 
     # NOTE: IMPORTANT: all validators used to set a dynamic default value
     # should have the `always=True` option, or the validator won't be called
@@ -145,10 +141,11 @@ class ModelExport(BaseModel):
     @validator("value", always=True)
     @classmethod
     def validate_value(cls, v, values):
-        if values.get("obj", None) is None:
+        o = values.get("obj", None)
+        if o is None:
             return v
-        obj = cls._get_supported_obj(values, allow_none=False)
-        return pyo.value(obj)
+        cls._ensure_supported_type(o)
+        return pyo.value(o)
 
     # Derive display_units from ui_units
     @validator("display_units", always=True)
@@ -164,11 +161,12 @@ class ModelExport(BaseModel):
     @classmethod
     def validate_name(cls, v, values):
         if not v:
-            obj = cls._get_supported_obj(values, allow_none=False)
-            try:
-                v = obj.name
-            except AttributeError:
-                pass
+            obj = cls._get_obj(values)
+            if obj is not None:
+                try:
+                    v = obj.name
+                except AttributeError:
+                    pass
         return v
 
     @validator("is_readonly", always=True, pre=True)
@@ -176,19 +174,23 @@ class ModelExport(BaseModel):
     def set_readonly_default(cls, v, values):
         if v is None:
             v = True
-            obj = cls._get_supported_obj(values, allow_none=False)
-            if obj.is_variable_type() or (
-                obj.is_parameter_type() and obj.parent_component().mutable
-            ):
-                v = False
+            obj = cls._get_obj(values)
+            if obj is not None:
+                if obj.is_variable_type() or (
+                    obj.is_parameter_type() and obj.parent_component().mutable
+                ):
+                    v = False
         return v
 
     @validator("obj_key", always=True, pre=True)
     @classmethod
     def set_obj_key_default(cls, v, values):
         if v is None:
-            obj = cls._get_supported_obj(values, allow_none=False)
-            v = str(obj)
+            obj = cls._get_obj(values)
+            if obj is None:
+                v = values.get('deferred_obj')  # must be one or the other
+            else:
+                v = str(obj)
         return v
 
 
@@ -279,6 +281,7 @@ class FlowsheetExport(BaseModel):
     dof: int = 0
     sweep_results: Union[None, dict] = {}
     build_options: Dict[str, ModelOption] = {}
+    _deferred: int = PrivateAttr(default=0)
 
     # set name dynamically from object
     @validator("name", always=True)
@@ -344,9 +347,11 @@ class FlowsheetExport(BaseModel):
             model_export = args[0]
         elif data is None:
             _log.debug(f"Create ModelExport from args: {kwargs}")
+            self._handle_deferred(kwargs)
             model_export = ModelExport.parse_obj(kwargs)
         else:
             if isinstance(data, dict):
+                self._handle_deferred(data)
                 model_export = ModelExport.parse_obj(data)
             else:
                 model_export = data
@@ -361,6 +366,16 @@ class FlowsheetExport(BaseModel):
             )
         self.model_objects[key] = model_export
         return model_export
+
+    def _handle_deferred(self, d: Dict):
+        """Handle potentially 'deferred' objects.
+        These are stored in a different attribute, and the actual object is populated later.
+        """
+        if d.get('deferred_obj', None) is not None:
+            self._deferred += 1
+
+    def _has_deferred(self):
+        return self._deferred > 0
 
     def from_csv(self, file: Union[str, Path], flowsheet):
         """Load multiple exports from the given CSV file.
@@ -438,40 +453,95 @@ class FlowsheetExport(BaseModel):
                 continue
             # build raw dict from values and header
             data = {k: v for k, v in zip(header, row)}
-            # evaluate the object in the flowsheet
-            try:
-                data["obj"] = eval(data["obj"], {"fs": flowsheet})
-            except Exception as err:
-                raise ValueError(f"Cannot find object in flowsheet: {data['obj']}")
-            # evaluate the units
-            norm_units = data["ui_units"].strip()
-            if norm_units in ("", "none", "-"):
-                data["ui_units"] = pyo.units.dimensionless
-            else:
-                try:
-                    data["ui_units"] = eval(norm_units, {"units": pyo.units})
-                except Exception as err:
-                    raise ValueError(f"Bad units '{norm_units}': {err}")
+            # parse into object
+            data["obj"] = self._parse_object_text(data["obj"], flowsheet)
+            data["ui_units"] = self._parse_units_text(data["ui_units"])
             # process boolean values (starting with 'is_')
             for k in data:
                 if k.startswith("is_"):
-                    v = data[k].lower()
-                    if v == "true":
-                        data[k] = True
-                    elif v == "false":
-                        data[k] = False
-                    else:
-                        raise ValueError(
-                            f"Bad value '{data[k]}' "
-                            f"for boolean argument '{k}': "
-                            f"must be 'true' or 'false' "
-                            f"(case-insensitive)"
-                        )
+                    data[k] = self._parse_boolean_text(data[k], flowsheet)
             # add parsed export
+            # TODO: Mark output variables as deferred
             self.add(data=data)
             num += 1
 
         return num
+
+    @staticmethod
+    def _parse_object_text(text: str, flowsheet: Any) -> Any:
+        """Evaluate the object represented by 'text' in the context of the flowsheet.
+
+        Args:
+            text: Object starts with prefix 'fs' and then is an arbitrary combination
+                  of attributes and indices to indicate a variable/etc. within the flowsheet.
+            flowsheet: Flowsheet object substituted for 'fs.'
+
+        Returns:
+            Pyomo block/var/etc. within the flowsheet for 'text'
+
+        Raises:
+            ValueError, if the object named by 'text' could not be found
+        """
+        try:
+            obj = eval(text, {"fs": flowsheet})
+        except Exception as err:
+            raise ValueError(f"Cannot find object in flowsheet: {text}")
+
+        return obj
+
+    @staticmethod
+    def _parse_units_text(text:str) -> Any:
+        """Parse Pyomo units provided as text.
+
+        Whitespace is stripped before processing.
+
+        Three special values are allowed to mean 'dimensionless':
+        "" (empty string), "none", and "-".
+
+        Args:
+            text: Units, which begin with a prefix 'units.'
+
+        Returns:
+            Pyomo units object.
+
+        Raises:
+            ValueError, if bad units are provided
+        """
+        # evaluate the units
+        norm_units = text.strip()
+        if norm_units in ("", "none", "-"):
+            parsed_units = pyo.units.dimensionless
+        else:
+            try:
+                parsed_units = eval(norm_units, {"units": pyo.units})
+            except Exception as err:
+                raise ValueError(f"Bad units '{norm_units}': {err}")
+
+        return parsed_units
+
+    @staticmethod
+    def _parse_boolean_text(value: str, name: str = "unknown") -> bool:
+        """Parse boolean value provided as text for a given key.
+
+        Args:
+            value: Value to parse
+            name: Name of value (for error message)
+
+        Returns:
+            The value
+
+        Raises:
+            ValueError, if value is not 'true' or 'false' (case-insensitive)
+        """
+        v = value.lower()
+        if v == "true":
+            return True
+        if v == "false":
+            return False
+        raise ValueError(
+                f"Bad boolean value '{value}' for '{name} ({v})': "
+                f"must be 'true' or 'false' (case-insensitive)"
+            )
 
     def to_csv(self, output: Union[TextIOBase, Path, str] = None) -> int:
         """Write wrapped objects as CSV.
@@ -550,6 +620,36 @@ class FlowsheetExport(BaseModel):
         option = ModelOption(name=name, **kwargs)
         self.build_options[name] = option
         return option
+
+    def undefer(self, flowsheet):
+        """Evaluate all deferred objects and move them into the 'obj' attribute.
+
+        At the end, all ModelExport instances in self.model_objects will have
+        a None value for the 'deferred_obj' attr, and any deferred objects will have been
+        evaluated in the context of the input flowsheet and placed in the 'obj' attribute.
+
+        Args:
+            flowsheet: Flowsheet context for evaluating deferred objects
+
+        Raises:
+            ValueError: if a deferred object cannot be evaluated
+        """
+        if not self._has_deferred():
+            return  # speeds up common case
+
+        for model_export in self.model_objects.values():
+            d_obj = model_export.deferred_obj
+            if d_obj is not None:
+                _log.debug(f"start: un-defer obj={d_obj}")
+                try:
+                    obj = FlowsheetExport._parse_object_text(d_obj, flowsheet)
+                except ValueError as e:
+                    raise ValueError(f"cannot evaluate deferred obj={d_obj}: {e}")
+                model_export.obj, model_export.deferred_obj = obj, None
+                self._deferred -= 1
+                _log.debug(f"end: un-defer obj={d_obj}")
+
+        assert not self._has_deferred()  # should all be taken care of now
 
 
 class Actions(str, Enum):
@@ -682,11 +782,13 @@ class FlowsheetInterface:
 
         Raises:
             RuntimeError: if the solver did not terminate in an optimal solution
+            ValueError: if resolving 'deferred' objects for this flowsheet failed (see `undefer()`)
         """
         try:
             result = self.run_action(Actions.solve, **kwargs)
         except Exception as err:
             raise RuntimeError(f"Solving flowsheet: {err}") from err
+        self.fs_exp.undefer(self.fs_exp.m.fs)
         return result
 
     def get_diagram(self, **kwargs):
@@ -908,10 +1010,11 @@ class FlowsheetInterface:
         Side-effects:
             Attribute ``fs_exp`` is modified.
         """
-        _log.info("Exporting values from flowsheet model to UI")
+        _log.info("exporting values from flowsheet model to UI")
         u = pyo.units
         self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         for key, mo in self.fs_exp.model_objects.items():
+            _log.debug(f"convert units for export: obj={mo.obj} to_units={mo.ui_units}")
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
             # print(f'{key} is being set to: {mo.value}')
             if hasattr(mo.obj, "bounds"):
