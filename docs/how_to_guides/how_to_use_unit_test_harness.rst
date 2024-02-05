@@ -39,7 +39,7 @@ assumes a test file is being created for the anaerobic digester.
     from watertap.costing import WaterTAPCosting
 
     # The following imports are unit-model specific
-    from watertap.unit_models.anaerobic_digester AD
+    from watertap.unit_models.anaerobic_digester import AD
     from watertap.property_models.anaerobic_digestion.adm1_properties import ADM1ParameterBlock
     from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import ADM1_vaporParameterBlock
     from watertap.property_models.anaerobic_digestion.adm1_reactions import ADM1ReactionParameterBlock
@@ -56,9 +56,9 @@ expected value for a variable (user-input) and its actual value.
 
 .. testcode::
 
+    from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
     class TestUnitDefault(UnitTestHarness):
         @pytest.mark.unit
-        from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
         def configure(self):
             # Create the ConcreteModel and FlowsheetBlock
             m = ConcreteModel()
