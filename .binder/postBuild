@@ -1,2 +1,3 @@
 set -e
-idaes get-extensions --verbose --distro ubuntu1804
+idaes get-extensions --verbose --distro ubuntu2204
+python -c "import idaes; from pyomo.environ import SolverFactory as S; print(S('ipopt').executable())"
