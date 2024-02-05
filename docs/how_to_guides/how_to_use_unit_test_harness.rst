@@ -35,7 +35,6 @@ assumes a test file is being created for the anaerobic digester.
     from idaes.core.solvers import get_solver
     import idaes.core.util.scaling as iscale
 
-    from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
     from watertap.costing import WaterTAPCosting
 
     # The following imports are unit-model specific
