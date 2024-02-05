@@ -15,7 +15,7 @@ How To
 
 Begin by importing the following functions - note that some of these imports are unit model-specific,
 so these will need to be adjusted according to the unit model being tested. The following example
-assumes a test file is being created for the anaerobic digestor.
+assumes a test file is being created for the anaerobic digester.
 
 .. testsetup::
 
@@ -39,7 +39,7 @@ assumes a test file is being created for the anaerobic digestor.
     from watertap.costing import WaterTAPCosting
 
     # The following imports are unit-model specific
-    from watertap.unit_models.anaerobic_digestor AD
+    from watertap.unit_models.anaerobic_digester AD
     from watertap.property_models.anaerobic_digestion.adm1_properties import ADM1ParameterBlock
     from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import ADM1_vaporParameterBlock
     from watertap.property_models.anaerobic_digestion.adm1_reactions import ADM1ReactionParameterBlock
@@ -49,12 +49,16 @@ assumes a test file is being created for the anaerobic digestor.
 
 Then setup the configure function, which will create the flowsheet, specify the property and reaction packages,
 specify the unit model configuration, set the operating conditions, add the unit model costing, and
-set the scaling factors for any variables that are badly scaled.
+set the scaling factors for any variables that are badly scaled. Finally, iterate through any variables on the unit model that you'd like to confirm the value of.
+Failures may arise at this stage, at which point an error message will be displayed that prompts you
+to adjust something in the configure function and/or that displays the discrepancy between the
+expected value for a variable (user-input) and its actual value.
 
 .. testcode::
 
     class TestUnitDefault(UnitTestHarness):
         @pytest.mark.unit
+        from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
         def configure(self):
             # Create the ConcreteModel and FlowsheetBlock
             m = ConcreteModel()
@@ -127,98 +131,92 @@ set the scaling factors for any variables that are badly scaled.
             # Specify the unit model being tested
             self.unit_model_block = m.fs.unit
 
-Finally, iterate through any variables on the unit model that you'd like to confirm the value of.
-Failures may arise at this stage, at which point an error message will be displayed that prompts you
-to adjust something in the configure function and/or that displays the discrepancy between the
-expected value for a variable (user-input) and its actual value.
-
-.. testcode::
-
-        self.unit_solutions[m.fs.unit.liquid_outlet.pressure[0]] = 101325
-        self.unit_solutions[m.fs.unit.liquid_outlet.temperature[0]] = 308.15
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_I"]
-        ] = 0.3287724
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_aa"]
-        ] = 0.00531408
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ac"]
-        ] = 0.1977833
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_bu"]
-        ] = 0.0132484
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ch4"]
-        ] = 0.0549707
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_fa"]
-        ] = 0.0986058
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_h2"]
-        ] = 2.35916e-07
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_pro"]
-        ] = 0.0157813
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_su"]
-        ] = 0.01195333
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_va"]
-        ] = 0.011622969
-        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_I"]] = 25.6217
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_aa"]
-        ] = 1.1793147
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ac"]
-        ] = 0.760653
-        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c"]] = 0.308718
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c4"]
-        ] = 0.431974
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ch"]
-        ] = 0.027947465
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_fa"]
-        ] = 0.2430681
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_h2"]
-        ] = 0.3170629
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_li"]
-        ] = 0.0294834
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_pr"]
-        ] = 0.102574392
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_pro"]
-        ] = 0.137323
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_su"]
-        ] = 0.420219
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IC"]
-        ] = 1.8320212
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IN"]
-        ] = 1.8235307
-        self.unit_solutions[m.fs.unit.liquid_outlet.anions[0]] = 0.0200033
-        self.unit_solutions[m.fs.unit.liquid_outlet.cations[0]] = 0.0400066
-        self.unit_solutions[m.fs.unit.vapor_outlet.pressure[0]] = 106659.5225
-        self.unit_solutions[m.fs.unit.vapor_outlet.temperature[0]] = 308.15
-        self.unit_solutions[m.fs.unit.vapor_outlet.flow_vol[0]] = 0.03249637
-        self.unit_solutions[
-            m.fs.unit.vapor_outlet.conc_mass_comp[0, "S_ch4"]
-        ] = 1.6216465
-        self.unit_solutions[
-            m.fs.unit.vapor_outlet.conc_mass_comp[0, "S_co2"]
-        ] = 0.169417
-        self.unit_solutions[m.fs.unit.KH_co2[0]] = 0.02714666
-        self.unit_solutions[m.fs.unit.KH_ch4[0]] = 0.001161902
-        self.unit_solutions[m.fs.unit.KH_h2[0]] = 0.0007384652
-        self.unit_solutions[m.fs.unit.electricity_consumption[0]] = 23.7291667
-        self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1880470.588
-        self.unit_solutions[m.fs.unit.costing.capital_cost] = 2166581.415
+            # Check the expected unit model outputs
+            self.unit_solutions[m.fs.unit.liquid_outlet.pressure[0]] = 101325
+            self.unit_solutions[m.fs.unit.liquid_outlet.temperature[0]] = 308.15
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_I"]
+            ] = 0.3287724
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_aa"]
+            ] = 0.00531408
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ac"]
+            ] = 0.1977833
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_bu"]
+            ] = 0.0132484
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ch4"]
+            ] = 0.0549707
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_fa"]
+            ] = 0.0986058
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_h2"]
+            ] = 2.35916e-07
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_pro"]
+            ] = 0.0157813
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_su"]
+            ] = 0.01195333
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_va"]
+            ] = 0.011622969
+            self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_I"]] = 25.6217
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_aa"]
+            ] = 1.1793147
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ac"]
+            ] = 0.760653
+            self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c"]] = 0.308718
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c4"]
+            ] = 0.431974
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ch"]
+            ] = 0.027947465
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_fa"]
+            ] = 0.2430681
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_h2"]
+            ] = 0.3170629
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_li"]
+            ] = 0.0294834
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_pr"]
+            ] = 0.102574392
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_pro"]
+            ] = 0.137323
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_su"]
+            ] = 0.420219
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IC"]
+            ] = 1.8320212
+            self.unit_solutions[
+                m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IN"]
+            ] = 1.8235307
+            self.unit_solutions[m.fs.unit.liquid_outlet.anions[0]] = 0.0200033
+            self.unit_solutions[m.fs.unit.liquid_outlet.cations[0]] = 0.0400066
+            self.unit_solutions[m.fs.unit.vapor_outlet.pressure[0]] = 106659.5225
+            self.unit_solutions[m.fs.unit.vapor_outlet.temperature[0]] = 308.15
+            self.unit_solutions[m.fs.unit.vapor_outlet.flow_vol[0]] = 0.03249637
+            self.unit_solutions[
+                m.fs.unit.vapor_outlet.conc_mass_comp[0, "S_ch4"]
+            ] = 1.6216465
+            self.unit_solutions[
+                m.fs.unit.vapor_outlet.conc_mass_comp[0, "S_co2"]
+            ] = 0.169417
+            self.unit_solutions[m.fs.unit.KH_co2[0]] = 0.02714666
+            self.unit_solutions[m.fs.unit.KH_ch4[0]] = 0.001161902
+            self.unit_solutions[m.fs.unit.KH_h2[0]] = 0.0007384652
+            self.unit_solutions[m.fs.unit.electricity_consumption[0]] = 23.7291667
+            self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1880470.588
+            self.unit_solutions[m.fs.unit.costing.capital_cost] = 2166581.415
 
