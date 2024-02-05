@@ -42,6 +42,7 @@ assumes a test file is being created for the anaerobic digester.
     from watertap.property_models.anaerobic_digestion.adm1_properties import ADM1ParameterBlock
     from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import ADM1_vaporParameterBlock
     from watertap.property_models.anaerobic_digestion.adm1_reactions import ADM1ReactionParameterBlock
+    from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
     # Get the default solver for testing
     solver = get_solver()
@@ -55,7 +56,6 @@ expected value for a variable (user-input) and its actual value.
 
 .. testcode::
 
-    from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
     class TestUnitDefault(UnitTestHarness):
         @pytest.mark.unit
         def configure(self):

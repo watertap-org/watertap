@@ -28,7 +28,7 @@ The following example assumes a test file is being created for the NaCl property
     import pytest
 
     # Import the property model to be tested
-    from watertap.property_models.NaCl_prop_pack as props
+    from watertap.property_models.NaCl_prop_pack import as props
 
 Next, test the configuration of property package against the IDAES property test harness.
 
