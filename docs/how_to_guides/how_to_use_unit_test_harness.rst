@@ -7,15 +7,13 @@ Overview
 --------
 
 This guide shows you how to use the unit test harness to generate tests for WaterTAP unit models. The purpose of this
-tool is to standardize testing so that developers don't need to write tests from the ground-up for each unit model
-and unit model configuration.
+tool is to standardize testing so that developers don't need to write tests from the ground-up for each unit model.
 
 How To
 ------
 
-Begin by importing the following functions - note that some of these imports are unit model-specific,
-so these will need to be adjusted according to the unit model being tested. The following example
-assumes a test file is being created for the anaerobic digester.
+Begin by importing the following essential functions. This example
+assumes a test file is being created for an anaerobic digester.
 
 .. testsetup::
 
@@ -47,11 +45,11 @@ assumes a test file is being created for the anaerobic digester.
     # Get the default solver for testing
     solver = get_solver()
 
-Then setup the configure function, which will create the flowsheet, specify the property and reaction packages,
+Next, setup the configure function which will create the flowsheet, specify the property and reaction packages,
 specify the unit model configuration, set the operating conditions, add the unit model costing, and
-set the scaling factors for any variables that are badly scaled. Finally, iterate through any variables on the unit model that you'd like to confirm the value of.
+set the scaling factors for any variables that are badly scaled. Then, iterate through any variables on the unit model that you'd like to confirm the value of.
 Failures may arise at this stage, at which point an error message will be displayed that prompts you
-to adjust something in the configure function and/or that displays the discrepancy between the
+to adjust something in the configure function and/or address the discrepancy between the
 expected value for a variable (user-input) and its actual value.
 
 .. testcode::

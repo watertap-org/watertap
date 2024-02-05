@@ -12,7 +12,7 @@ tool is to standardize testing so that developers don't need to write tests from
 How To
 ------
 
-Begin by importing the following functions - note that property model import will differ for each test file.
+Begin by importing the following functions - note that the property model import will differ for each test file.
 The following example assumes a test file is being created for the NaCl property package.
 
 .. testsetup::
@@ -27,13 +27,15 @@ The following example assumes a test file is being created for the NaCl property
 
     import pytest
 
-    # Import the property model to be tested
-    import watertap.property_models.NaCl_prop_pack as props
+    # Import the property test harness functions
     from watertap.property_models.tests.property_test_harness import PropertyTestHarness
     from watertap.property_models.tests.property_test_harness import PropertyRegressionTest
     from idaes.models.properties.tests.test_harness import PropertyTestHarness as PropertyTestHarness_idaes
 
-Next, test the configuration of property package against the IDAES property test harness.
+    # Import the property model to be tested
+    import watertap.property_models.NaCl_prop_pack as props
+
+Next, test the configuration of the property package against the IDAES property test harness.
 
 .. testcode::
 
@@ -83,7 +85,7 @@ stateblock statistics, and the expected solutions for the model's variables.
                 ("enth_mass_phase", "Liq"): 1.045e5,
             }
 
-Finally, test the regression outputs of the property model by specifying the property package, the solver, state arguments, and the expected solutions.
+Finally, test the regression outputs of the property model by specifying the property package, solver, state arguments, and the expected solutions.
 
 .. testcode::
 
