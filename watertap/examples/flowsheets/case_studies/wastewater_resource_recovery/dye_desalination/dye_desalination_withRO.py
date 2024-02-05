@@ -56,6 +56,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
 from watertap.costing.unit_models.dewatering import (
     cost_centrifuge,
 )
+from watertap.costing import MultiUnitModelCostingBlock
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
@@ -476,30 +477,24 @@ def add_costing(m):
         flowsheet_costing_block=m.fs.zo_costing
     )
 
-    # TODO: Use MultiUnitModelCostingBlock
     if hasattr(m.fs, "dewaterer"):
-        # m.fs.dewaterer.costing = MultiUnitModelCostingBlock(
-        #     flowsheet_costing_block=m.fs.ro_costing,
-        #     costing_blocks={
-        #         "centrifuge": {
-        #             "costing_method": cost_centrifuge,
-        #             "costing_method_arguments": {"cost_electricity_flow": False},
-        #         },
-        #         "filter_belt_press": {
-        #             "costing_method": cost_filter_belt_press,
-        #             "costing_method_arguments": {"cost_electricity_flow": False},
-        #         },
-        #         "filter_plate_press": {
-        #             "costing_method": cost_filter_plate_press,
-        #             "costing_method_arguments": {"cost_electricity_flow": False},
-        #         },
-        #     },
-        #     initial_costing_block="centrifuge",
-        # )
-        m.fs.dewaterer.costing = UnitModelCostingBlock(
+        m.fs.dewaterer.costing = MultiUnitModelCostingBlock(
             flowsheet_costing_block=m.fs.ro_costing,
-            costing_method=cost_centrifuge,
-            costing_method_arguments={"cost_electricity_flow": False},
+            costing_blocks={
+                "centrifuge": {
+                    "costing_method": cost_centrifuge,
+                    "costing_method_arguments": {"cost_electricity_flow": False},
+                },
+                "filter_belt_press": {
+                    "costing_method": cost_filter_belt_press,
+                    "costing_method_arguments": {"cost_electricity_flow": False},
+                },
+                "filter_plate_press": {
+                    "costing_method": cost_filter_plate_press,
+                    "costing_method_arguments": {"cost_electricity_flow": False},
+                },
+            },
+            initial_costing_block="centrifuge",
         )
     else:
         pass
