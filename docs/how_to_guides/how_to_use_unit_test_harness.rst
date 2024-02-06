@@ -7,7 +7,7 @@ Overview
 --------
 
 This guide shows you how to use the unit test harness to generate tests for WaterTAP unit models. The purpose of this
-tool is to standardize testing so that developers don't need to write tests from the ground-up for each unit model.
+tool is to standardize testing so developers don't need to write tests from the ground-up for each unit model.
 
 How To
 ------

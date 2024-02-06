@@ -7,7 +7,7 @@ Overview
 --------
 
 This guide shows you how to use the property test harness to generate tests for WaterTAP property models. The purpose of this
-tool is to standardize testing so that developers don't need to write tests from the ground-up for each property model.
+tool is to standardize testing so developers don't need to write tests from the ground-up for each property model.
 
 How To
 ------
@@ -47,7 +47,7 @@ Next, test the configuration of the property package against the IDAES property 
             self.prop_args = {}
             self.has_density_terms = False
 
-Then test the outputs of the property package against the WaterTAP property test harness by specifying the property package, scaling,
+Then, test the outputs of the property package against the WaterTAP property test harness by specifying the property package, scaling,
 stateblock statistics, and the expected solutions for the model's variables.
 
 .. testcode::
