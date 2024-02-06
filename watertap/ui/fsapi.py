@@ -789,7 +789,6 @@ class FlowsheetInterface:
             result = self.run_action(Actions.solve, **kwargs)
         except Exception as err:
             raise RuntimeError(f"Solving flowsheet: {err}") from err
-        self.fs_exp.undefer(self.fs_exp.m.fs)
         return result
 
     def get_diagram(self, **kwargs):
@@ -976,6 +975,7 @@ class FlowsheetInterface:
                         raise RuntimeError(f"Solve failed: {result}")
             # Sync model with exported values
             if action_name in (Actions.build, Actions.solve):
+                self.fs_exp.undefer(self.fs_exp.m.fs)  # ensure all vars exported
                 self.export_values()
             return result
 
