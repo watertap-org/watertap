@@ -66,7 +66,26 @@ class UnsupportedObjType(TypeError):
 
 
 class ModelExport(BaseModel):
-    """A variable, expression, or parameter."""
+    """A variable, expression, or parameter.
+
+    The object may be passed as a valid Pyomo model component with the 'obj' attribute
+    or, if it may not exist yet in the flowsheet until after solving the model, as a
+    string with the 'deferred_obj'. An example of using deferred_obj is shown below::
+
+        exports.add(
+            deferred_obj="fs.leach.solid_outlet.flow_mass[0]",
+            name="solid flow mass",
+            rounding=4,
+            ui_units=pyo.units.kg/pyo.units.hour,
+            display_units="kg/hr",
+            description="solid flow mass",
+            is_input=False,
+            is_output=True,
+            output_category="solids"
+        )
+
+    Note that it makes no sense to use both attributes at the same time.
+    """
 
     _SupportedObjType = Union[
         pyo.Var,
