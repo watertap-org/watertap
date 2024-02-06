@@ -12,7 +12,6 @@
 
 import pytest
 
-import os
 import re
 
 import pyomo.environ as pyo
@@ -26,10 +25,9 @@ from watertap.unit_models.reverse_osmosis_0D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
-from watertap.costing import WaterTAPCosting, ROType
+from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.reverse_osmosis import (
     cost_reverse_osmosis,
-    cost_high_pressure_reverse_osmosis,
 )
 
 
