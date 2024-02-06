@@ -13,7 +13,7 @@
 
 """
 This file contains methods to convert WaterTAP naming conventions to OLI
-and generate molecular weight and charge dictionaries from molecular formulae. 
+and generate molecular weight and charge dictionaries from molecular formulae.
 
 It calculates molecular weights using the periodic_table.csv from:
 https://gist.github.com/GoodmanSciences/c2dd862cd38f21b0ad36b8f96b4bf1ee.
@@ -72,16 +72,17 @@ def get_oli_name(watertap_name: str) -> str:
     exclude_items = ["temperature", "pressure", "volume"]
     if watertap_name.lower() in exclude_items:
         return watertap_name
-    else:
-        components = watertap_name.split("_")
-        if len(components) == 0:
-            raise IOError(f" Unable to parse solute '{watertap_name}'.")
-        if len(components) == 1:
-            molecule = components[0]
-        elif len(components) == 2:
-            molecule = components[0] + "ION"
-        oli_name = molecule.replace("[", "").replace("]", "").upper()
-        return oli_name
+    if hasattr(watertap_name, "oli_name"):
+        return watertap_name
+    components = watertap_name.split("_")
+    if len(components) == 0:
+        raise IOError(f" Unable to parse solute '{watertap_name}'.")
+    if len(components) == 1:
+        molecule = components[0]
+    elif len(components) == 2:
+        molecule = components[0] + "ION"
+    oli_name = molecule.replace("[", "").replace("]", "").upper()
+    return oli_name
 
 
 def get_charge(watertap_name: str) -> int:
