@@ -482,6 +482,7 @@ class FlowsheetExport(BaseModel):
         Raises:
             ValueError, if the object named by 'text' could not be found
         """
+        _log.debug(f"eval text={text}")
         try:
             obj = eval(text, {"fs": flowsheet})
         except Exception as err:
@@ -1014,11 +1015,15 @@ class FlowsheetInterface:
         u = pyo.units
         self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
         for key, mo in self.fs_exp.model_objects.items():
-            _log.debug(f"convert units for export: obj={mo.obj} to_units={mo.ui_units}")
+            _log.debug(f"export values obj key={key}")
+            if mo.obj is None:
+                _log.debug(f"export values skip (obj is None)")
+                continue
+            _log.debug(f"export.units obj={mo.obj} to_units={mo.ui_units}")
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
-            # print(f'{key} is being set to: {mo.value}')
             if hasattr(mo.obj, "bounds"):
-                # print(f'{key} is being set to: {mo.value} from {mo.obj.value}')
+                if _log.isEnabledFor(logging.DEBUG):
+                    _log.debug(f"export.bounds key={key} value={mo.value} obj.value={mo.obj.value}")
                 if mo.obj.ub is None:
                     mo.ub = mo.obj.ub
                 else:
