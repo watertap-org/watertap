@@ -173,6 +173,7 @@ def setup_flowsheet():
     )
 
     def my_own_reverse_osmosis_costing(blk):
+        flowsheet = blk.flowsheet()
         blk.variable_operating_cost = pyo.Var(
             initialize=42,
             units=blk.costing_package.base_currency / blk.costing_package.base_period,
