@@ -23,6 +23,8 @@ How To Guides
    how_to_use_loopTool_to_explore_flowsheets
    how_to_install_electrolyte_database
    how_to_use_EDB
+   how_to_use_property_test_harness
    how_to_use_ui_api
+   how_to_use_unit_test_harness
    how_to_contribute_development
    notebooks
