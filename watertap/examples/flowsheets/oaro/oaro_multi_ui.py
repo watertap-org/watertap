@@ -35,7 +35,7 @@ def export_to_ui():
                 "values_allowed": "int",
                 "value": 3,  # default value
                 "max_val": 8,  # optional
-                "min_val": 0,  # optional
+                "min_val": 1,  # optional
             },
             "SystemRecovery": {
                 "name": "SystemRecovery",
