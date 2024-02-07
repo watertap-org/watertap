@@ -93,7 +93,9 @@ class ModelExport(BaseModel):
     # TODO: if Optional[_SupportedObjType] is used for the `obj` type hint,
     # pydantic will run the runtime instance check which is not what we want
     # (as we want/need to use the pyomo is_xxx_type() methods instead)
-    # so we're using Optional[object] unless we find a way to tell pydantic to skip this check
+    # so we're using Optional[object] unless we find a way to tell pydantic to
+    # skip this check.
+
     # inputs
     obj: Optional[object] = Field(default=None, exclude=True)
     deferred_obj: Optional[str] = Field(default=None, exclude=True)
