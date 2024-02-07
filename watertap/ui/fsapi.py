@@ -87,11 +87,7 @@ class ModelExport(BaseModel):
     Note that it makes no sense to use both attributes at the same time.
     """
 
-    _SupportedObjType = Union[
-        pyo.Var,
-        pyo.Expression,
-        pyo.Param
-    ]
+    _SupportedObjType = Union[pyo.Var, pyo.Expression, pyo.Param]
     "Used for type hints and as a shorthand in error messages (i.e. not for runtime checks)"
 
     # TODO: if Optional[_SupportedObjType] is used for the `obj` type hint,
@@ -146,7 +142,7 @@ class ModelExport(BaseModel):
 
     @staticmethod
     def _get_obj(values):
-        return values.get('obj', None)
+        return values.get("obj", None)
 
     # NOTE: IMPORTANT: all validators used to set a dynamic default value
     # should have the `always=True` option, or the validator won't be called
@@ -207,7 +203,7 @@ class ModelExport(BaseModel):
         if v is None:
             obj = cls._get_obj(values)
             if obj is None:
-                v = values.get('deferred_obj')  # must be one or the other
+                v = values.get("deferred_obj")  # must be one or the other
             else:
                 v = str(obj)
         return v
@@ -390,7 +386,7 @@ class FlowsheetExport(BaseModel):
         """Handle potentially 'deferred' objects.
         These are stored in a different attribute, and the actual object is populated later.
         """
-        if d.get('deferred_obj', None) is not None:
+        if d.get("deferred_obj", None) is not None:
             self._deferred += 1
 
     def _has_deferred(self):
@@ -510,7 +506,7 @@ class FlowsheetExport(BaseModel):
         return obj
 
     @staticmethod
-    def _parse_units_text(text:str) -> Any:
+    def _parse_units_text(text: str) -> Any:
         """Parse Pyomo units provided as text.
 
         Whitespace is stripped before processing.
@@ -559,9 +555,9 @@ class FlowsheetExport(BaseModel):
         if v == "false":
             return False
         raise ValueError(
-                f"Bad boolean value '{value}' for '{name} ({v})': "
-                f"must be 'true' or 'false' (case-insensitive)"
-            )
+            f"Bad boolean value '{value}' for '{name} ({v})': "
+            f"must be 'true' or 'false' (case-insensitive)"
+        )
 
     def to_csv(self, output: Union[TextIOBase, Path, str] = None) -> int:
         """Write wrapped objects as CSV.
@@ -1042,7 +1038,9 @@ class FlowsheetInterface:
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
             if hasattr(mo.obj, "bounds"):
                 if _log.isEnabledFor(logging.DEBUG):
-                    _log.debug(f"export.bounds key={key} value={mo.value} obj.value={mo.obj.value}")
+                    _log.debug(
+                        f"export.bounds key={key} value={mo.value} obj.value={mo.obj.value}"
+                    )
                 if mo.obj.ub is None:
                     mo.ub = mo.obj.ub
                 else:
