@@ -2319,7 +2319,11 @@ def test_no_mw_data_provided():
         m.fs.properties = MCASParameterBlock(
             solute_list=["foo", "Na_+", "Cl_-"], ignore_neutral_charge=True
         )
-
+    # Choose capitalized solute names that won't be found in periodic table and omit mw_data
+    # Because of helper function logic, an example like following would result in an empty result
+    msg = "The symbol 'T' from the component name 'TDS' could not be found in the periodic table."
+    with pytest.raises(ConfigurationError, match=re.escape(msg)):
+        m.fs.mcas_props = MCASParameterBlock(solute_list=["TDS"])
 
 @pytest.mark.unit
 def test_no_h2o_mw_data():
@@ -2473,3 +2477,5 @@ def test_automatic_charge_mw_population():
     for comp, val in test_vals.items():
         assert value(m.fs.stream2[0].mw_comp[comp]) == val[0]
         assert value(m.fs.stream2[0].charge_comp[comp]) == val[1]
+
+
