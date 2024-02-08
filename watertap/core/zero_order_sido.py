@@ -27,8 +27,8 @@ from pyomo.environ import (
     units as pyunits,
 )
 
-# Some more inforation about this module
-__author__ = "Andrew Lee"
+# Some more information about this module
+__author__ = "Andrew Lee, Adam Atia"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -61,7 +61,7 @@ def build_sido(self):
     self._has_recovery_removal = True
     self._initialize = MethodType(initialize_sido, self)
     self._scaling = MethodType(calculate_scaling_factors_sido, self)
-
+    
     # Create state blocks for inlet and outlets
     tmp_dict = dict(**self.config.property_package_args)
     tmp_dict["has_phase_equilibrium"] = False
@@ -158,6 +158,30 @@ def build_sido(self):
 
     self._get_Q = MethodType(_get_Q_sido, self)
 
+    if ("temperature" in self.properties_in[0].define_state_vars()) and (self.config.isothermal):
+        _add_isothermal_constraints(self)
+    if ("pressure" in self.properties_in[0].define_state_vars()) and (self.config.isothermal):
+        _add_isobaric_constraints(self)
+
+def _add_isothermal_constraints(blk):
+    @blk.Constraint(
+    blk.flowsheet().time,
+    ['byproduct', 'treated'],
+    doc="Isothermal constraints",
+    )
+    def eq_isothermal(b, t, port):
+        obj = getattr(b, port)
+        return b.inlet.temperature[t] == obj.temperature[t]
+
+def _add_isobaric_constraints(blk):
+    @blk.Constraint(
+    blk.flowsheet().time,
+    ['byproduct', 'treated'],
+    doc="Isobaric constraints",
+    )
+    def eq_isobaric(b, t, port):
+        obj = getattr(b, port)
+        return b.inlet.pressure[t] == obj.pressure[t]
 
 def initialize_sido(
     blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
