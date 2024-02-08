@@ -41,14 +41,12 @@ def main():
     m = build(
         film_transfer_coefficient_type="calculated",
         surface_diffusion_coefficient_type="calculated",
-        diffusivity_calculation="HaydukLaudie",
+        diffusivity_calculation="none",
         cost_contactor_type="gravity",
     )
     initialize(m)
     res = optimize(m)
     print("solver termination condition:", res.solver.termination_condition)
-
-    m.fs.gac.operational_time.display()
 
     return m, res
 
@@ -166,9 +164,7 @@ def build(
         m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix(2433.81215)
         m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "solute"].fix(0.05476625)
     else:
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(
-            43.808618700000004
-        )
+        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(43.8086187)
         m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "solute"].fix(0.0043813)
 
     # gac specifications
