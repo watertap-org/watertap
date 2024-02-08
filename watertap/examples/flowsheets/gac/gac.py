@@ -159,7 +159,7 @@ def build(
 
     # feed specifications
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
-    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]scaling
+    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
     if material_flow_basis == "molar":
         m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix(2433.81215)
         m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "solute"].fix(0.05476625)
