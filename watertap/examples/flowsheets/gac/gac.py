@@ -41,7 +41,7 @@ def main():
     m = build(
         film_transfer_coefficient_type="calculated",
         surface_diffusion_coefficient_type="calculated",
-        diffusivity_calculation="HaydukLaudie",
+        diffusivity_calculation="none",
         cost_contactor_type="gravity",
     )
     initialize(m)
@@ -68,13 +68,14 @@ def build(
     solute_mw = 0.08
     solute_diffusivtiy = 1e-9
     solute_mv = 1e-4
+    material_flow_basis = "molar"
     if (
         film_transfer_coefficient_type == "calculated"
         or surface_diffusion_coefficient_type == "calculated"
     ):
         if diffusivity_calculation == "none":
             m.fs.properties = MCASParameterBlock(
-                material_flow_basis="molar",
+                material_flow_basis=material_flow_basis,
                 ignore_neutral_charge=True,
                 solute_list=["solute"],
                 mw_data={"H2O": 0.018, "solute": solute_mw},
@@ -83,7 +84,7 @@ def build(
             )
         else:
             m.fs.properties = MCASParameterBlock(
-                material_flow_basis="molar",
+                material_flow_basis=material_flow_basis,
                 ignore_neutral_charge=True,
                 solute_list=["solute"],
                 mw_data={"H2O": 0.018, "solute": solute_mw},
@@ -92,7 +93,7 @@ def build(
             )
     else:
         m.fs.properties = MCASParameterBlock(
-            material_flow_basis="molar",
+            material_flow_basis=material_flow_basis,
             ignore_neutral_charge=True,
             solute_list=["solute"],
             mw_data={"H2O": 0.018, "solute": solute_mw},
@@ -128,18 +129,28 @@ def build(
     m.fs.costing.add_specific_energy_consumption(treated_flow)
 
     # touch properties and default scaling
-    water_sf = 10 ** -math.ceil(
-        math.log10(abs(0.043813 * 1000 / m.fs.properties.mw_comp["H2O"].value))
-    )
-    solute_sf = 10 ** -math.ceil(
-        math.log10(abs(0.043813 * 0.1 / m.fs.properties.mw_comp["solute"].value))
-    )
-    m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", water_sf, index=("Liq", "H2O")
-    )
-    m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", solute_sf, index=("Liq", "solute")
-    )
+    if material_flow_basis == "molar":
+        water_sf = 10 ** -math.ceil(
+            math.log10(abs(0.043813 * 1000 / m.fs.properties.mw_comp["H2O"].value))
+        )
+        solute_sf = 10 ** -math.ceil(
+            math.log10(abs(0.043813 * 0.1 / m.fs.properties.mw_comp["solute"].value))
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", water_sf, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", solute_sf, index=("Liq", "solute")
+        )
+    else:
+        water_sf = 10 ** -math.ceil(math.log10(abs(0.043813 * 1000)))
+        solute_sf = 10 ** -math.ceil(math.log10(abs(0.043813 * 0.1)))
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", water_sf, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", solute_sf, index=("Liq", "solute")
+        )
     m.fs.feed.properties[0].conc_mass_phase_comp
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
 
@@ -149,8 +160,12 @@ def build(
     # feed specifications
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
     m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
-    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix(2433.81215)
-    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "solute"].fix(0.05476625)
+    if material_flow_basis == "molar":
+        m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix(2433.81215)
+        m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "solute"].fix(0.05476625)
+    else:
+        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(43.8086187)
+        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "solute"].fix(0.0043813)
 
     # gac specifications
     # performance parameters
