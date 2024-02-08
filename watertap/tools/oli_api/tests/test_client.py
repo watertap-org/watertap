@@ -61,10 +61,7 @@ def test_dbs_file_cleanup(oliapi_instance: OLIApi, local_dbs_file: Path):
 
 
 @pytest.mark.unit
-def test_get_user_summary(oliapi_instance: OLIApi):
-    original_dbs_file_ids = oliapi_instance.get_user_dbs_file_ids()
-    if len(original_dbs_file_ids) > 1:
-        dbs_file_ids = original_dbs_file_ids[:1]
-    else:
-        dbs_file_ids = original_dbs_file_ids
-    oliapi_instance.get_user_summary(dbs_file_ids)
+def test_get_dbs_file_summary(oliapi_instance: OLIApi, local_dbs_file: Path):
+    oliapi_instance.get_user_dbs_file_ids()
+    dbs_file_id = oliapi_instance.get_dbs_file_id(local_dbs_file)
+    oliapi_instance.get_dbs_file_summary(dbs_file_id)

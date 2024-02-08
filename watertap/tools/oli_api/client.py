@@ -66,6 +66,7 @@ _logger.setLevel(logging.DEBUG)
 
 # TODO: consider allowing local writes in JSON
 
+
 class OLIApi:
     """
     A class to wrap OLI Cloud API calls and access functions for interfacing with WaterTAP.
@@ -122,12 +123,12 @@ class OLIApi:
         :return dbs_file_id: string name for DBS file ID
         """
 
-        if isinstance(chemistry_source, str):
+        if isinstance(chemistry_source, (str, Path)):
             chemistry_source = Path(chemistry_source).resolve()
             if not chemistry_source.is_file():
                 raise OSError(
-                    "Could not find requested path to file. " +
-                    "Check that this path to file exists."
+                    "Could not find requested path to file. "
+                    + "Check that this path to file exists."
                 )
             e = "upload"
             dbs_file_id = self._upload_dbs_file(chemistry_source)
@@ -166,13 +167,13 @@ class OLIApi:
         return dbs_file_id
 
     def _create_dbs_dict(
-            self,
-            chemistry_source,
-            thermo_framework,
-            private_databanks,
-            phases,
-            model_name,
-        ):
+        self,
+        chemistry_source,
+        thermo_framework,
+        private_databanks,
+        phases,
+        model_name,
+    ):
         """
         Creates dict for chemistry-builder to later generate a DBS file ID.
 
@@ -190,8 +191,10 @@ class OLIApi:
                 solute_list = [
                     {"name": get_oli_name(solute)} for solute in chemistry_source
                 ]
-        if solute_list is None:
-            raise IOError("Chemistry input must contain OLI-compatible solute names.")
+            if not solute_list:
+                raise IOError(
+                    "Chemistry input must contain OLI-compatible solute names."
+                )
         if thermo_framework is None:
             thermo_framework = "MSE (H3O+ ion)"
         if phases is None:
@@ -331,7 +334,7 @@ class OLIApi:
         flash_method=None,
         dbs_file_id=None,
         input_params=None,
-        poll_time=.5,
+        poll_time=0.5,
         max_request=100,
     ):
         """
@@ -365,8 +368,10 @@ class OLIApi:
             )
         else:
             valid_flashes = [*valid_get_flashes, *valid_post_flashes]
-            raise IOError(f" Unexpected value for flash_method: {flash_method}. " +
-                          "Valid values: {', '.join(valid_flashes)}.")
+            raise IOError(
+                f" Unexpected value for flash_method: {flash_method}. "
+                + "Valid values: {', '.join(valid_flashes)}."
+            )
         poll_timer = 0
         start_time = time.time()
         last_poll_time = start_time
@@ -416,9 +421,7 @@ class OLIApi:
                 if "status" in req["data"]:
                     if "resultsLink" in req["data"]:
                         result_link = req["data"]["resultsLink"]
-                        _logger.debug(
-                            f"{req['data']['status']}: link at {result_link}"
-                        )
+                        _logger.debug(f"{req['data']['status']}: link at {result_link}")
         else:
             _logger.debug("No result link found")
         return result_link
@@ -435,6 +438,6 @@ class OLIApi:
         if bool(req):
             _logger.debug(req)
             if "status" in req:
-                response_status = req['status']
+                response_status = req["status"]
                 _logger.info(f"Polling result link: {response_status}")
                 return response_status

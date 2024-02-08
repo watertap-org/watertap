@@ -146,7 +146,7 @@ class Flash:
         sample_conditions = {}
         for point in sample_points:
             sample_conditions[point] = {}
-            for k,v in survey.items():
+            for k, v in survey.items():
                 sample_conditions[point][k] = v[point]
         _logger.debug(sample_conditions)
         return sample_conditions
@@ -189,7 +189,7 @@ class Flash:
                     "charge": charge,
                 }
             )
-        for k,v in properties_template.items():
+        for k, v in properties_template.items():
             if v["value"] is not None:
                 if isinstance(v["value"], list):
                     properties_template[k]["value"] = v["value"][0]
@@ -205,86 +205,41 @@ class Flash:
         :param use_scaling_rigorous: boolean indicating desired state of 'rigorous' and 'estimated' optional properties
         """
 
-        if bool(use_scaling_rigorous) == bool(
-            self.optional_properties["prescalingTendenciesRigorous"]
-        ):
+        props = self.optional_properties
+        if bool(use_scaling_rigorous) == bool(props["prescalingTendenciesRigorous"]):
             return
-        new_values = {
-            k: not v for k, v in self.optional_properties.items() if "prescaling" in k
-        }
-        self.optional_properties.update(new_values)
+        new_values = {k: not v for k, v in props.items() if "prescaling" in k}
+        props.update(new_values)
 
     def build_flash_calculation_input(
         self,
         flash_method,
         state_vars,
-        water_analysis_output=None,
-        inflows_phase="total",
         use_scaling_rigorous=True,
         file_name="",
     ):
         """
-        Builds a base dictionary required for OLI flash analysis.
+        Build a base dictionary required for OLI flash analysis.
 
-        :param flash_method: string name of OLI flash flash_method to use
-        :param state_vars: dictionary containing solutes, temperatures, pressure, and units
-        :param water_analysis_output: dictionary to extract inflows from (required if not wateranalysis flash)
-        :param inflows_phase: string indicating desired phase of inflows
+        :param flash_method: string name of OLI flash calculation
+        :param state_vars: dictionary of solutes, temperatures, and pressure
         :param use_scaling_rigorous: boolean switch to use estimated or rigorous solving for prescaling metrics
         :param file_name: string for file to write, if any
 
-
         :return inputs: dictionary containing inputs for specified OLI flash analysis
         """
+
+        inputs = {}
         if flash_method == "wateranalysis":
             inputs = self._build_water_analysis_input(state_vars)
-
         else:
-            if not water_analysis_output:
-                raise IOError(
-                    "Run wateranalysis flash to generate water_analysis_output data."
-                )
-
-            inputs["params"] = {
-                "temperature": {
-                    "unit": str(state_vars["units"]["temperature"]),
-                    "value": float(state_vars["temperature"]),
-                },
-                "pressure": {
-                    "unit": str(state_vars["units"]["pressure"]),
-                    "value": float(state_vars["pressure"]),
-                },
-                "inflows": self._extract_inflows(water_analysis_output, inflows_phase),
-            }
-
+            inputs["params"] = state_vars
         self._set_prescaling_calculation_mode(use_scaling_rigorous)
         inputs["params"].update({"optionalProperties": dict(self.optional_properties)})
         inputs["params"].update({"unitSetInfo": dict(self.output_unit_set)})
         if file_name:
             self.write_output(inputs, file_name)
         return inputs
-
-    def _extract_inflows(self, water_analysis_output, inflows_phase):
-        """
-        Extract molecular concentrations from OLI flash output.
-
-        :param water_analysis_output: stream output from OLI flash calculation
-        :param inflows_phase: string indicating desired phase of inflows
-
-        :return inflows: dictionary containing molecular concentrations
-        """
-
-        if inflows_phase in ["liquid1", "vapor"]:
-            inflows = water_analysis_output["result"]["phases"][inflows_phase][
-                "molecularConcentration"
-            ]
-        elif inflows_phase == "total":
-            inflows = water_analysis_output["result"][inflows_phase][
-                "molecularConcentration"
-            ]
-        else:
-            raise ValueError(f" Invalid phase {inflows_phase} specified.")
-        return inflows
 
     # TODO: consider modifications for async/parallel calculations
     def run_flash(
@@ -297,7 +252,7 @@ class Flash:
         file_name="",
     ):
         """
-        Conducts a composition survey with a given set of clones.
+        Conduct a composition survey with a given set of clones.
 
         :param flash_method: string name of OLI flash flash_method to use
         :param oliapi_instance: instance of OLI Cloud API to call
@@ -306,10 +261,11 @@ class Flash:
         :param survey: dictionary containing names and input values to modify
         :param file_name: string for file to write, if any
 
-        :return result: dictionary containing IDs and output streams for each flash calculation
+        :return output_dict: dictionary containing IDs and output streams for each flash calculation
         """
 
         float_nan = float("nan")
+
         def add_to_output(input_dict, output_dict, index, number_samples):
             """
             Add incoming flash results to output data.
@@ -327,25 +283,32 @@ class Flash:
                     val = None
                 if val is not None:
                     if k not in output_dict:
-                        output_dict[k] = [float_nan]*number_samples
+                        output_dict[k] = [float_nan] * number_samples
                     output_dict[k][index] = val
-                elif isinstance(v, (str, list)):
+                elif isinstance(v, str):
                     if k not in output_dict:
                         output_dict[k] = v
                     if input_dict[k] != output_dict[k]:
-                        raise Exception(f"input and output do not agree for key {k}")
+                        raise Exception(f"Input and output do not agree for key {k}")
+                elif isinstance(v, list):
+                    if k == "phaseSummary":
+                        if k not in output_dict:
+                            output_dict[k] = [float_nan] * number_samples
+                        output_dict[k][index] = v
+                    else:
+                        raise Exception(f"Unexpected key: {k}")
                 elif isinstance(v, dict):
                     if k not in output_dict:
                         output_dict[k] = {}
                     add_to_output(input_dict[k], output_dict[k], index, number_samples)
                 else:
-                    raise Exception(f"unexpected value: {v}")
+                    raise Exception(f"Unexpected value: {v}")
 
         output_dict = {}
         if survey is None:
             survey = {}
         num_samples = None
-        for k,v in survey.items():
+        for k, v in survey.items():
             if num_samples is None:
                 num_samples = len(v)
             elif num_samples != len(v):
@@ -364,7 +327,7 @@ class Flash:
 
     def get_clone(self, flash_method, inputs, survey, index):
         """
-        Iterates over a survey to create modified clones of an initial flash analysis output.
+        Iterate over a survey to create modified clones of an initial flash analysis output.
 
         :param flash_method: string for flash calculation name
         :param inputs: dictionary for flash calculation inputs to modify
@@ -375,7 +338,7 @@ class Flash:
         """
 
         clone = deepcopy(inputs)
-        for k,v in survey.items():
+        for k, v in survey.items():
             if flash_method == "wateranalysis":
                 for param in clone["params"]["waterAnalysisInputs"]:
                     if param["name"] == k:
@@ -384,7 +347,7 @@ class Flash:
                         else:
                             param["value"] = v[index]
             elif flash_method == "isothermal":
-                if k in ["Temperature", "Pressure"]:
+                if k in ["temperature", "pressure"]:
                     if self.relative_inflows:
                         clone["params"][k.lower()]["value"] += v[index]
                     else:
@@ -396,12 +359,10 @@ class Flash:
                         clone["params"]["inflows"]["values"][k] = v[index]
                 else:
                     raise ValueError(
-                        "Only composition and temperature/pressure surveys are currently supported."
+                        "Only surveys for existing species, temperature, and pressure are currently supported."
                     )
             else:
-                raise ValueError(
-                    " Only 'wateranalysis' and 'isothermal' currently supported."
-                )
+                raise ValueError("Specified flash method not currently supported.")
         return clone
 
     def write_output(self, content, file_name):
@@ -421,107 +382,169 @@ class Flash:
         _logger.info("Save complete")
         return json_file
 
+    def get_inflows(
+        self,
+        stream_output,
+        extracted_properties=None,
+        sample=0,
+        phase="total",
+        file_name="",
+    ):
+        """
+        Extract inflows data from OLI stream output.
+
+        :param stream_output: stream output from OLI flash calculation
+        :param extracted_properties: dict of extracted properties to import
+        :param sample: sample to extract data from
+        :param phase: string for inflows phase
+        :param file_name: string for file to write, if any
+
+        :return inflows: dictionary containing molecular concentrations for specified samples
+        """
+
+        if not extracted_properties:
+            extracted_properties = self.extract_properties(
+                stream_output,
+                properties=[
+                    "temperature",
+                    "pressure",
+                    "molecularConcentration",
+                ],
+            )
+        inflows_raw = extracted_properties["properties"]
+        s = extracted_properties["samples"].index(sample)
+        inflows = {
+            "temperature": {
+                "value": inflows_raw[f"temperature_{phase}"]["values"][s],
+                "unit": inflows_raw[f"temperature_{phase}"]["unit"],
+            },
+            "pressure": {
+                "value": inflows_raw[f"pressure_{phase}"]["values"][s],
+                "unit": inflows_raw[f"pressure_{phase}"]["unit"],
+            },
+        }
+        conc_data = inflows_raw[f"molecularConcentration_{phase}"]
+        conc_vals = {k: v[s] for k, v in conc_data["values"].items()}
+        inflows.update({"inflows": {"values": conc_vals, "unit": conc_data["unit"]}})
+        if file_name:
+            self.write_output(inflows, file_name)
+        return inflows
+
     def extract_properties(
         self, raw_result, properties, samples=None, filter_zero=True, file_name=""
     ):
         """
         Extract specified properties from OLI Cloud stream output JSON.
 
-        :param raw_result: string for JSON file to extract from
+        :param raw_result: dict OR string of JSON file to extract from
         :param properties: list of properties to extract
         :param samples: list of indices to extract
+        :param phase: string for phase key of property
         :param filter_zero: bool switch to exclude zero values properties
         :param file_name: string for file to write, if any
 
         :return extracted_properties: dictionary of specified properties and values
         """
 
-        def _get_deep_path(prop, group, phase=None):
-            path = ["result"]
-            if phase:
-                keys = ["phases", phase] if phase != "total" else ["total"]
-                keys.extend(["properties", prop] if group == "properties" else [prop])
-            else:
-                keys = [group, prop]
-            path.extend(keys)
-            return path
+        def _get_nested_paths(data, prop, path=[], nested_paths=[]):
+            """
+            Get nested paths for all occurences of properties in OLI result.
 
-        def _get_nested_data(data, keys):
-            try:
-                for key in keys:
-                    data = data[key]
-            except TypeError:
-                data = {}
-                _logger.debug(f"Output format unrecognized.")
-            finally:
-                return data
+            :param data: dictionary of nested data
+            :param prop: string for property name
+            :param path: empty list to initialize path search
+            :param nested_paths: list for tracking paths
 
-        def _sample_filter_result(data, samples, filter_zero):
-            sampled_data = data
-            _logger.info(data)
-            if samples:
-                if "value" in data:
-                    sampled_data = [data["value"][s] for s in samples]
-                elif "values" in data:
-                    sampled_data = {k:[v[s] for s in samples] for k,v in data["values"].items()}
-            filtered_data = sampled_data
+            :return nested_paths: list for tracking paths
+            """
+
+            for k, v in data.items():
+                path.append(k)
+                if hasattr(v, "items"):
+                    if "unit" not in v:
+                        _get_nested_paths(v, prop)
+                if k == prop:
+                    nested_paths.append(deepcopy(path))
+                del path[-1]
+            return nested_paths
+
+        def _get_filtered_result(data, keys, samples, filter_zero):
+            """
+            Get unit and values from nested dictionary data.
+
+            :param data: dictionary of nested data
+            :param keys: list of keys for property
+            :param samples: list of indices to extract
+            :param filter_zero: bool switch to exclude zero values properties
+
+            :return filtered_result: dictionary for unit and values
+            """
+
+            # get nested data
+            for key in keys:
+                data = data[key]
+            nested_data = data
+            unit = nested_data["unit"]
+            # sample nested data
+            if "value" in data:
+                sampled_data = [nested_data["value"][s] for s in samples]
+            elif "values" in nested_data:
+                sampled_data = {
+                    k: [v[s] for s in samples] for k, v in nested_data["values"].items()
+                }
+            # filter sampled data
+            filtered_values = deepcopy(sampled_data)
             if filter_zero:
-                if "values" in sampled_data:
-                    filtered_data = {k:v for k,v in sampled_data["values"].items() if any(val != 0 for val in v)}
-            _logger.debug(filtered_data)
-            return filtered_data
-
-        def _get_filtered_result(data, path, samples, filter_zero):
-            nested_data = _get_nested_data(data, path)
-            filtered_result = _sample_filter_result(nested_data, samples, filter_zero)
+                if isinstance(sampled_data, dict):
+                    for k, v in sampled_data.items():
+                        if not any(val for val in v):
+                            del filtered_values[k]
+            values = filtered_values
+            filtered_result = {"unit": unit, "values": values}
             return filtered_result
 
-        # load data from file
-        with open(raw_result, "rb") as json_input:
-            full_dataset = json.loads(json_input.read())
-
-        # find keys for each property
-        property_groups = {p: [] for p in properties}
-        for group, props in self.stream_output_options.items():
-            for p in props:
-                if p in properties:
-                    property_groups[p].append(group)
-        base_result = _get_nested_data(full_dataset, ["result"])
+        # load data
+        _logger.info("Extracting properties from OLI stream output")
+        if isinstance(raw_result, (str, Path)):
+            with open(raw_result, "rb") as json_input:
+                full_dataset = json.loads(json_input.read())
+        elif isinstance(raw_result, dict):
+            full_dataset = raw_result
+        else:
+            raise Exception(f"Unexpected object for raw_result: {type(raw_result)}.")
+        dataset_size = len(full_dataset["metaData"]["executionTime"]["value"])
+        samples = list(samples) if samples else list(range(dataset_size))
+        base_result = full_dataset["result"]
         if base_result:
-            phases = {p: [] for p in properties}
-            for phase in base_result["phases"]:
-                for prop in base_result["phases"][phase]:
-                    if prop in properties:
-                        phases[prop].append(phase)
-            for prop in phases:
-                if prop in base_result["total"]:
-                    phases[prop].append("total")
-            _logger.debug(phases)
-
-        # find key path(s) for each property
-        paths = {}
-        groups_with_phase = set(("result", "properties"))
-        groups_additional = set(("additionalProperties", "waterAnalysisOutput"))
-        for prop in properties:
-            prop_label = f"{prop}"
-            for group in property_groups[prop]:
-                if group in groups_with_phase:
-                    for phase in phases[prop]:
-                        label = deepcopy(prop_label) + (f"_{phase}")
-                        paths[label] = _get_deep_path(prop, group, phase)
-                if group in groups_additional:
-                    label = deepcopy(prop_label)
-                    paths[label] = _get_deep_path(prop, group, None)
-        _logger.debug(paths)
-
-        # extract properties
-        extracted_properties = {"samples": [], "properties": {}}
-        extracted_properties["samples"] = list(samples)
-        for k,v in paths.items():
-            _logger.info(f"Extracting {k} for selected samples")
-            extracted_properties["properties"][k] = _get_filtered_result(full_dataset, v, samples, filter_zero)
+            # find keys for each property
+            paths = {}
+            for prop in properties:
+                nested_paths = _get_nested_paths(base_result, prop)
+                paths[prop] = deepcopy(nested_paths)
+                nested_paths.clear()
+            extracted_properties = {"samples": samples, "properties": {}}
+            # create property labels
+            for prop in properties:
+                prop_label = deepcopy(prop)
+                for path in paths[prop]:
+                    phase = None
+                    label = deepcopy(prop)
+                    if "total" in path:
+                        phase = "total"
+                    elif "phases" in path:
+                        phase = path[path.index("phases") + 1]
+                    if phase:
+                        label = label + (f"_{phase}")
+                    # extract property from base_result
+                    extracted_properties["properties"][label] = _get_filtered_result(
+                        base_result,
+                        path,
+                        samples,
+                        filter_zero,
+                    )
+        else:
+            raise Exception("No result was generated from specified arguments.")
+        _logger.info("Completed extracting properties from OLI stream output")
         if file_name:
             self.write_output(extracted_properties, file_name)
-        _logger.debug(extracted_properties)
-        _logger.info("Completed extracting properties from flash output")
         return extracted_properties
