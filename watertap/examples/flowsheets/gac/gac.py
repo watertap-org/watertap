@@ -54,7 +54,7 @@ def main():
 def build(
     film_transfer_coefficient_type="fixed",
     surface_diffusion_coefficient_type="fixed",
-    diffusivity_calculation="none",
+    diffusivity_calculation="HaydukLaudie",
     cost_contactor_type="pressure",
 ):
     # TODO: mass or mole basis
