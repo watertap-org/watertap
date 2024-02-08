@@ -247,7 +247,10 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
             add_object_reference(self, "target_species", solute_set)
         elif self.config.target_species is not None:
             self.target_species = Set()
+            #TODO: consider logic that catches someone entering a single string for target
             for k in self.config.target_species:
+                if k not in solute_set:
+                    raise ConfigurationError(f"{k} cannot be a target_species because it is not listed in the solute_set.")
                 self.target_species.add(k)
             self.inert_species = component_set - self.target_species
         else:
