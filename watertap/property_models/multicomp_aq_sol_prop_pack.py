@@ -461,7 +461,7 @@ class MCASParameterData(PhysicalParameterBlock):
         self.mw_comp = Param(
             self.component_list,
             mutable=True,
-            default=18e-3,
+            default=None,
             initialize=mw_temp,
             units=pyunits.kg / pyunits.mol,
             doc="Molecular weight",
@@ -505,6 +505,7 @@ class MCASParameterData(PhysicalParameterBlock):
         )
 
         if self.config.diffus_calculation == DiffusivityCalculation.none:
+            #TODO: revisit this and revise case where diffusivity_data is empty
             self.diffus_phase_comp = Var(
                 self.phase_list,
                 self.solute_set,
