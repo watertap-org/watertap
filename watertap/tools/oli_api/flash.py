@@ -49,7 +49,6 @@ import logging
 
 import json
 from pathlib import Path
-import numpy as np
 
 from copy import deepcopy
 from itertools import product

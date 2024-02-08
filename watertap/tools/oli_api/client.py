@@ -46,8 +46,6 @@ __author__ = "Adam Atia, Adi Bannady, Paul Vecchiarelli"
 
 import logging
 
-import yaml
-
 from pathlib import Path
 import requests
 import json
