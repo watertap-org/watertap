@@ -11,8 +11,12 @@
 #################################################################################
 
 import pyomo.environ as pyo
+
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
+
 from idaes.core import declare_process_block_class
 from idaes.core.base.costing_base import FlowsheetCostingBlockData
+from idaes.core.util.misc import add_object_reference
 
 from idaes.models.unit_models import Mixer, HeatExchanger, Heater, CSTR
 from watertap.core.util.misc import is_constant_up_to_units
@@ -145,7 +149,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             ),
         )
 
-    def _build_common_process_costs(self):
+    def build_process_costs(self):
         """
         Build the common process costs to WaterTAP Costing Packages.
         The currency units should already be registered.
@@ -162,6 +166,47 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             initialize=0,
             doc="Total operating cost of process per operating period",
             units=self.base_currency / self.base_period,
+        )
+
+        self.total_capital_cost_constraint = pyo.Constraint(
+            expr=self.total_capital_cost
+            == self.factor_total_investment * self.aggregate_capital_cost
+        )
+
+        self.maintenance_labor_chemical_operating_cost = pyo.Expression(
+            expr=self.factor_maintenance_labor_chemical * self.aggregate_capital_cost,
+            doc="Maintenance-labor-chemical operating cost",
+        )
+
+        self.total_fixed_operating_cost = pyo.Expression(
+            expr=self.aggregate_fixed_operating_cost
+            + self.maintenance_labor_chemical_operating_cost,
+            doc="Total fixed operating costs",
+        )
+
+        self.total_variable_operating_cost = pyo.Expression(
+            expr=(
+                self.aggregate_variable_operating_cost
+                + sum(self.aggregate_flow_costs[f] for f in self.used_flows)
+                * self.utilization_factor
+            )
+            if self.used_flows
+            else self.aggregate_variable_operating_cost,
+            doc="Total variable operating cost of process per operating period",
+        )
+
+        self.total_operating_cost_constraint = pyo.Constraint(
+            expr=self.total_operating_cost
+            == (self.total_fixed_operating_cost + self.total_variable_operating_cost),
+            doc="Total operating cost of process per operating period",
+        )
+
+        self.total_annualized_cost = pyo.Expression(
+            expr=(
+                self.total_capital_cost * self.capital_recovery_factor
+                + self.total_operating_cost
+            ),
+            doc="Total annualized cost of operation",
         )
 
     def _build_common_global_params(self):
@@ -191,9 +236,37 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             units=pyo.units.kg / pyo.units.kWh,
         )
 
-        self.capital_recovery_factor = pyo.Expression(
-            expr=0,
+        self.plant_lifetime = pyo.Var(
+            initialize=30, units=self.base_period, doc="Plant lifetime"
+        )
+
+        self.wacc = pyo.Var(
+            # consistent with a 30 year plant_lifetime
+            # and a capital_recovery_factor of 0.1
+            initialize=0.09307339771758532,
+            units=pyo.units.dimensionless,
+            doc="Weighted Average Cost of Capital (WACC)",
+        )
+
+        self.factor_capital_annualization = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.year**-1,
             doc="Capital annualization factor [fraction of investment cost/year]",
+        )
+        add_object_reference(
+            self, "capital_recovery_factor", self.factor_capital_annualization
+        )
+
+        self.factor_capital_annualization_constraint = pyo.Constraint(
+            expr=self.factor_capital_annualization
+            == (
+                (
+                    self.wacc
+                    * (1 + self.wacc) ** (self.plant_lifetime / self.base_period)
+                )
+                / (((1 + self.wacc) ** (self.plant_lifetime / self.base_period)) - 1)
+                / self.base_period
+            )
         )
 
         self.TPEC = pyo.Var(
@@ -209,6 +282,36 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         )
 
         self.fix_all_vars()
+        self.factor_capital_annualization.unfix()
+
+    def initialize_build(self):
+        """
+        Basic initialization for flowsheet level quantities
+        """
+        calculate_variable_from_constraint(
+            self.total_capital_cost, self.total_capital_cost_constraint
+        )
+        calculate_variable_from_constraint(
+            self.total_operating_cost, self.total_operating_cost_constraint
+        )
+        # handle wacc / plant_lifetime / factor_capital_annualization
+        annualization_vars = (
+            self.plant_lifetime,
+            self.wacc,
+            self.factor_capital_annualization,
+        )
+        unfixed_vars = []
+        for v in annualization_vars:
+            if not v.fixed:
+                unfixed_vars.append(v)
+        if len(unfixed_vars) != 1:
+            msg = "Exactly one of the variables "
+            msg += ", ".join(v.name for v in annualization_vars)
+            msg += "should be not fixed."
+            raise RuntimeError(msg)
+        calculate_variable_from_constraint(
+            unfixed_vars[0], self.factor_capital_annualization_constraint
+        )
 
     @staticmethod
     def add_cost_factor(blk, factor):

@@ -39,7 +39,7 @@ def simple_main():
 
     hrcs.assert_degrees_of_freedom(m, 0)
     hrcs.assert_units_consistent(m)
-    results = hrcs.solve(m, checkpoint="solve flowsheet with costing")
+    results = hrcs.solve(m, checkpoint="solve flowsheet with costing", tee=True)
 
     return m, results
 

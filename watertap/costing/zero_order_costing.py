@@ -88,8 +88,6 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
                 self.defined_flows[f] = value * units
 
         # Costing factors
-        self.plant_lifetime = pyo.Var(units=self.base_period, doc="Plant lifetime")
-
         self.land_cost_percent_FCI = pyo.Var(
             units=pyo.units.dimensionless, doc="Land cost as % FCI"
         )
@@ -112,18 +110,18 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
             units=1 / self.base_period, doc="Insurance and taxes as % FCI"
         )
 
-        self.wacc = pyo.Var(
-            units=pyo.units.dimensionless, doc="Weighted Average Cost of Capital (WACC)"
-        )
-        self.capital_recovery_factor.expr = (
-            (self.wacc * (1 + self.wacc) ** (self.plant_lifetime / self.base_period))
-            / (((1 + self.wacc) ** (self.plant_lifetime / self.base_period)) - 1)
-            / self.base_period
-        )
-
         self.factor_total_investment = pyo.Expression(
             expr=1.0 + self.working_capital_percent_FCI + self.land_cost_percent_FCI,
             doc="Total investment factor [investment cost/equipment cost]",
+        )
+
+        self.factor_maintenance_labor_chemical = pyo.Expression(
+            expr=self.salaries_percent_FCI
+            + self.benefit_percent_of_salary * self.salaries_percent_FCI
+            + self.maintenance_costs_percent_FCI
+            + self.laboratory_fees_percent_FCI
+            + self.insurance_and_taxes_percent_FCI,
+            doc="Maintenance-labor-chemical factor [fraction of equipment cost/year]",
         )
 
         # Fix all Vars from database
@@ -137,14 +135,19 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
                     f"Invalid case study definition file - no entry found "
                     f"for {v}, or entry lacks value and units."
                 )
+        # this variable floats in this package, so initialize it appropriately here
+        calculate_variable_from_constraint(
+            self.capital_recovery_factor, self.factor_capital_annualization_constraint
+        )
 
     def build_process_costs(self):
         """
         Calculating process wide costs.
         """
-        # add total_captial_cost and total_operating_cost
-        self._build_common_process_costs()
+        # add the "basic" process costs
+        super().build_process_costs()
 
+        # now the detailed breakdowns
         # Other capital costs
         self.land_cost = pyo.Expression(
             expr=self.land_cost_percent_FCI * self.aggregate_capital_cost,
@@ -153,10 +156,6 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
         self.working_capital = pyo.Expression(
             expr=self.working_capital_percent_FCI * self.aggregate_capital_cost,
             doc="Working capital - based on aggregate capital costs",
-        )
-        self.total_capital_cost_constraint = pyo.Constraint(
-            expr=self.total_capital_cost
-            == self.factor_total_investment * self.aggregate_capital_cost
         )
 
         # Other fixed costs
@@ -181,62 +180,6 @@ class ZeroOrderCostingData(WaterTAPCostingBlockData):
         self.insurance_and_taxes_cost = pyo.Expression(
             expr=self.insurance_and_taxes_percent_FCI * self.aggregate_capital_cost,
             doc="Insurance and taxes costs - based on aggregate capital costs",
-        )
-        self.factor_maintenance_labor_chemical = pyo.Expression(
-            expr=self.salaries_percent_FCI
-            + self.benefit_percent_of_salary * self.salaries_percent_FCI
-            + self.maintenance_costs_percent_FCI
-            + self.laboratory_fees_percent_FCI
-            + self.insurance_and_taxes_percent_FCI,
-            doc="Maintenance-labor-chemical factor [fraction of equipment cost/year]",
-        )
-
-        self.maintenance_labor_chemical_operating_cost = pyo.Expression(
-            expr=self.factor_maintenance_labor_chemical * self.aggregate_capital_cost,
-            doc="Maintenance-labor-chemical operating cost",
-        )
-
-        self.total_fixed_operating_cost = pyo.Expression(
-            expr=self.aggregate_fixed_operating_cost
-            + self.maintenance_labor_chemical_operating_cost,
-            doc="Total fixed operating costs",
-        )
-
-        # Other variable costs
-        self.total_variable_operating_cost = pyo.Expression(
-            expr=(
-                self.aggregate_variable_operating_cost
-                + sum(self.aggregate_flow_costs[f] for f in self.used_flows)
-                * self.utilization_factor
-            )
-            if self.used_flows
-            else self.aggregate_variable_operating_cost,
-            doc="Total variable operating cost of process per operating period",
-        )
-
-        self.total_operating_cost_constraint = pyo.Constraint(
-            expr=self.total_operating_cost
-            == (self.total_fixed_operating_cost + self.total_variable_operating_cost),
-            doc="Total operating cost of process per operating period",
-        )
-
-        self.total_annualized_cost = pyo.Expression(
-            expr=(
-                self.total_capital_cost * self.capital_recovery_factor
-                + self.total_operating_cost
-            ),
-            doc="Total annualized cost of operation",
-        )
-
-    def initialize_build(self):
-        """
-        Basic initialization for flowsheet level quantities
-        """
-        calculate_variable_from_constraint(
-            self.total_capital_cost, self.total_capital_cost_constraint
-        )
-        calculate_variable_from_constraint(
-            self.total_operating_cost, self.total_operating_cost_constraint
         )
 
 
