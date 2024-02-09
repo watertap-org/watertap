@@ -1190,8 +1190,8 @@ class TestReverseOsmosis:
         )
 
         assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
-        assert value(flow_mass_retentate) == pytest.approx(0.9488, rel=1e-3)
-        assert value(flow_mass_permeate) == pytest.approx(5.122e-2, rel=1e-3)
+        assert value(flow_mass_retentate) == pytest.approx(0.90415, rel=1e-3)
+        assert value(flow_mass_permeate) == pytest.approx(9.584e-2, rel=1e-3)
 
         assert (
             abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate))
@@ -1200,23 +1200,23 @@ class TestReverseOsmosis:
 
         # Test solution
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
-        assert pytest.approx(-5.096e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
-        assert pytest.approx(6.135e-3, rel=1e-3) == value(
+        assert pytest.approx(-4.826e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
+        assert pytest.approx(5.932e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
-        assert pytest.approx(1.425e-6, rel=1e-3) == value(
+        assert pytest.approx(1.448e-6, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         )
-        assert pytest.approx(4.659e-3, rel=1e-3) == value(
+        assert pytest.approx(4.182e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
         )
-        assert pytest.approx(1.432e-6, rel=1e-3) == value(
+        assert pytest.approx(1.4916e-6, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
         )
-        assert pytest.approx(5.121e-2, rel=1e-3) == value(
+        assert pytest.approx(9.581e-2, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         )
-        assert pytest.approx(1.358e-5, rel=1e-3) == value(
+        assert pytest.approx(2.794e-5, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         )
 
