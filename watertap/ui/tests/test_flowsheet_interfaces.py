@@ -106,14 +106,14 @@ def test_roundtrip_with_garbage_collection(fs_interface, n_times):
         fs_interface.load(data)
         gc.collect()
 
+
 # -----------------------------------------------------------------
 #  Tests to cover various UI export features
 # -----------------------------------------------------------------
 
 
 def flash_flowsheet():
-    """Very simple flowsheet for testing.
-    """
+    """Very simple flowsheet for testing."""
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     # Flash properties
@@ -141,7 +141,7 @@ def flash_flowsheet_interface():
         do_build=_build_flash,
         do_solve=_solve_flash,
         get_diagram=_get_diagram,
-        requires_idaes_solver=True
+        requires_idaes_solver=True,
     )
     return fi
 
@@ -169,7 +169,7 @@ def _export_flash(flowsheet=None, exports=None, **kwargs):
         description="Flash inlet",
         is_output=False,
         is_input=True,
-        input_category="Flash"
+        input_category="Flash",
     )
     # export a 'deferred' output
     exports.add(
@@ -180,7 +180,7 @@ def _export_flash(flowsheet=None, exports=None, **kwargs):
         description="Flash vapor outlet temperature",
         is_output=True,
         is_input=False,
-        output_category="Flash"
+        output_category="Flash",
     )
 
 
@@ -197,4 +197,3 @@ def _solve_flash(flowsheet=None):
 
 def _get_diagram():
     return "NULL"
-
