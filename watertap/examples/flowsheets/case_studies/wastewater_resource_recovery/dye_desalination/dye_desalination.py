@@ -24,9 +24,16 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.models.unit_models import Product
+from idaes.models.unit_models import (
+    Mixer,
+    Separator,
+    Product,
+    Translator,
+    MomentumMixingType,
+)
 import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
+from idaes.core.util.initialization import propagate_state
 
 from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
@@ -37,7 +44,25 @@ from watertap.unit_models.zero_order import (
     PumpElectricityZO,
     NanofiltrationZO,
 )
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    DiffusivityCalculation,
+)
+from watertap.unit_models.gac import (
+    GAC,
+    FilmTransferCoefficientType,
+    SurfaceDiffusionCoefficientType,
+)
 from watertap.costing.zero_order_costing import ZeroOrderCosting
+from idaes.core.util import DiagnosticsToolbox
+
+from watertap.core.util.model_diagnostics.infeasible import *
+
+from idaes.core.util.scaling import (
+    unscaled_constraints_generator,
+    unscaled_variables_generator,
+    badly_scaled_var_generator,
+)
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -47,21 +72,44 @@ def main():
     m = build()
 
     set_operating_conditions(m)
+
+    dt = DiagnosticsToolbox(m)
+    print("---Structural Issues---")
+    dt.report_structural_issues()
+
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print("----------------   badly_scaled_var_list   ----------------")
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
+    print("---Numerical Issues Before Initialization---")
+    dt.report_numerical_issues()
+    print_infeasible_constraints(m)
+    dt.display_constraints_with_large_residuals()
+    dt.display_variables_at_or_outside_bounds()
     initialize_system(m)
+    print("---Numerical Issues After Initialization---")
+    dt.report_numerical_issues()
+    dt.display_variables_at_or_outside_bounds()
 
     results = solve(m, checkpoint="solve flowsheet after initializing system")
 
+    print("---Numerical Issues After Solve---")
+    dt.report_numerical_issues()
+    dt.display_constraints_with_large_residuals()
+    dt.display_variables_at_or_outside_bounds()
+
     display_results(m)
 
-    add_costing(m)
-    assert_degrees_of_freedom(m, 0)
-
-    results = solve(m, checkpoint="solve flowsheet after costing")
-
-    display_costing(m)
+    # add_costing(m)
+    # assert_degrees_of_freedom(m, 0)
+    #
+    # results = solve(m, checkpoint="solve flowsheet after costing")
+    #
+    # display_costing(m)
     return m, results
 
 
@@ -76,6 +124,50 @@ def build():
     # unit model
     m.fs.feed = FeedZO(property_package=m.fs.prop)
 
+    # GAC
+    m.fs.prop_gac = MCASParameterBlock(
+        material_flow_basis="mass",
+        ignore_neutral_charge=True,
+        solute_list=["tds", "dye"],
+        mw_data={
+            "H2O": 0.018,
+            "tds": 0.05844,
+            "dye": 0.696665,  # molecular weight of congo red dye
+        },
+        diffus_calculation=DiffusivityCalculation.none,
+        diffusivity_data={("Liq", "tds"): 1e-09, ("Liq", "dye"): 2e-10},
+    )
+    m.fs.gac = GAC(
+        property_package=m.fs.prop_gac,
+        film_transfer_coefficient_type="calculated",
+        surface_diffusion_coefficient_type="calculated",
+        target_species={"dye"},
+    )
+    m.fs.adsorbed_dye = Product(property_package=m.fs.prop_gac)
+    m.fs.treated = Product(property_package=m.fs.prop_gac)
+
+    m.fs.tb_nf_gac = Translator(
+        inlet_property_package=m.fs.prop, outlet_property_package=m.fs.prop_gac
+    )
+
+    @m.fs.tb_nf_gac.Constraint(["H2O", "dye", "tds"])
+    def eq_flow_mass_comp(blk, j):
+        if j == "dye":
+            return (
+                blk.properties_in[0].flow_mass_comp["dye"]
+                == blk.properties_out[0].flow_mass_phase_comp["Liq", "dye"]
+            )
+        elif j == "tds":
+            return (
+                blk.properties_in[0].flow_mass_comp["tds"]
+                == blk.properties_out[0].flow_mass_phase_comp["Liq", "tds"]
+            )
+        else:
+            return (
+                blk.properties_in[0].flow_mass_comp["H2O"]
+                == blk.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
+            )
+
     # define block to integrate with dye_desalination_withRO
     dye_sep = m.fs.dye_separation = Block()
 
@@ -88,7 +180,6 @@ def build():
     )
 
     m.fs.permeate = Product(property_package=m.fs.prop)
-    m.fs.dye_retentate = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=dye_sep.P1.inlet)
@@ -97,8 +188,12 @@ def build():
         source=dye_sep.nanofiltration.treated, destination=m.fs.permeate.inlet
     )
     m.fs.s04 = Arc(
-        source=dye_sep.nanofiltration.byproduct, destination=m.fs.dye_retentate.inlet
+        source=dye_sep.nanofiltration.byproduct, destination=m.fs.tb_nf_gac.inlet
     )
+    m.fs.s05 = Arc(source=m.fs.tb_nf_gac.outlet, destination=m.fs.gac.inlet)
+    # TODO: Recycle treated stream back to the feed via a mixer
+    m.fs.s06 = Arc(source=m.fs.gac.outlet, destination=m.fs.treated.inlet)
+    m.fs.s07 = Arc(source=m.fs.gac.adsorbed, destination=m.fs.adsorbed_dye.inlet)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -131,6 +226,76 @@ def set_operating_conditions(m):
     dye_sep.P1.eta_pump.fix(0.75)  # pump efficiency [-]
     dye_sep.P1.lift_height.unfix()
 
+    m.fs.tb_nf_gac.properties_out[0].temperature.fix(298.15)
+    m.fs.tb_nf_gac.properties_out[0].pressure.fix(101325)
+
+    m.fs.gac.freund_k.fix(10)
+    m.fs.gac.freund_ninv.fix(0.9)
+    m.fs.gac.shape_correction_factor.fix()
+    m.fs.gac.particle_porosity.fix()
+    m.fs.gac.tort.fix()
+    m.fs.gac.spdfr.fix()
+    # gac particle specifications
+    m.fs.gac.particle_dens_app.fix(750)
+    m.fs.gac.particle_dia.fix(0.001)
+    # adsorber bed specifications
+    m.fs.gac.ebct.fix(600)
+    m.fs.gac.bed_voidage.fix(0.4)
+    m.fs.gac.bed_length.fix(6)
+    # design spec
+    m.fs.gac.conc_ratio_replace.fix(0.50)
+    # parameters
+    m.fs.gac.a0.fix(3.68421)
+    m.fs.gac.a1.fix(13.1579)
+    m.fs.gac.b0.fix(0.784576)
+    m.fs.gac.b1.fix(0.239663)
+    m.fs.gac.b2.fix(0.484422)
+    m.fs.gac.b3.fix(0.003206)
+    m.fs.gac.b4.fix(0.134987)
+
+    m.fs.gac.gac_removed[0].flow_mass_phase_comp["Liq", "H2O"] = 1e-10
+    m.fs.gac.gac_removed[0].flow_mass_phase_comp["Liq", "tds"] = 1e-10
+
+    iscale.constraint_scaling_transform(m.fs.gac.eq_mass_adsorbed["dye"], 1e-2)
+
+    # Initialization fails when scaling the badly scaled vars below
+    # iscale.set_scaling_factor(m.fs.feed.properties[0].flow_mass_comp["H2O"], 1e-1)
+    # iscale.set_scaling_factor(m.fs.feed.properties[0].flow_mass_comp["dye"], 1e2)
+    # iscale.set_scaling_factor(m.fs.feed.properties[0].flow_mass_comp["tds"], 1e1)
+    #
+    # iscale.set_scaling_factor(m.fs.gac.equil_conc, 1e4)
+    # iscale.set_scaling_factor(m.fs.gac.mass_adsorbed, 1e-1)
+    #
+    # iscale.set_scaling_factor(m.fs.gac.process_flow.properties_in[0.0].flow_mol_phase_comp["Liq", "H2O"], 1e1)
+    # iscale.set_scaling_factor(m.fs.gac.process_flow.properties_in[0.0].flow_mol_phase_comp["Liq", "H2O"], 1e1)
+    #
+    # iscale.set_scaling_factor(m.fs.gac.gac_removed[0.0].flow_mol_phase_comp["Liq", "H2O"], 1e1)
+    # iscale.set_scaling_factor(m.fs.gac.gac_removed[0.0].flow_mol_phase_comp["Liq", "tds"], 1e1)
+    #
+    # iscale.set_scaling_factor(m.fs.tb_nf_gac.properties_in[0.0].flow_mass_comp["H2O"], 1)
+    # iscale.set_scaling_factor(m.fs.tb_nf_gac.properties_in[0.0].flow_mass_comp["dye"], 1)
+    # iscale.set_scaling_factor(m.fs.tb_nf_gac.properties_in[0.0].flow_mass_comp["tds"], 1)
+    #
+    # iscale.set_scaling_factor(m.fs.dye_separation.P1.properties[0.0].flow_mass_comp["H2O"], 1)
+    # iscale.set_scaling_factor(m.fs.dye_separation.P1.properties[0.0].flow_mass_comp["dye"], 1)
+    # iscale.set_scaling_factor(m.fs.dye_separation.P1.properties[0.0].flow_mass_comp["tds"], 1)
+    #
+    # iscale.set_scaling_factor(m.fs.dye_separation.nanofiltration.properties_in[0.0].flow_mass_comp["H2O"], 1)
+    # iscale.set_scaling_factor(m.fs.dye_separation.nanofiltration.properties_in[0.0].flow_mass_comp["dye"], 1)
+    # iscale.set_scaling_factor(m.fs.dye_separation.nanofiltration.properties_in[0.0].flow_mass_comp["tds"], 1)
+    #
+    # iscale.set_scaling_factor(m.fs.dye_separation.nanofiltration.properties_treated[0.0].flow_mass_comp["H2O"], 1)
+    # iscale.set_scaling_factor(m.fs.dye_separation.nanofiltration.properties_treated[0.0].flow_mass_comp["dye"], 1)
+    # iscale.set_scaling_factor(m.fs.dye_separation.nanofiltration.properties_treated[0.0].flow_mass_comp["tds"], 1)
+    #
+    # iscale.set_scaling_factor(m.fs.dye_separation.nanofiltration.properties_byproduct[0.0].flow_mass_comp["H2O"], 1)
+    # iscale.set_scaling_factor(m.fs.dye_separation.nanofiltration.properties_byproduct[0.0].flow_mass_comp["dye"], 1)
+    # iscale.set_scaling_factor(m.fs.dye_separation.nanofiltration.properties_byproduct[0.0].flow_mass_comp["tds"], 1)
+    #
+    # iscale.set_scaling_factor(m.fs.permeate.properties[0.0].flow_mass_comp["H2O"], 1)
+    # iscale.set_scaling_factor(m.fs.permeate.properties[0.0].flow_mass_comp["tds"], 1)
+    # iscale.set_scaling_factor(m.fs.permeate.properties[0.0].flow_mass_comp["dye"], 1)
+
     return
 
 
@@ -144,7 +309,7 @@ def initialize_system(m):
 def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
-    results = solver.solve(blk, tee=tee)
+    results = solver.solve(blk, tee=True)
     check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
@@ -191,7 +356,7 @@ def add_costing(m):
             m.fs.zo_costing.utilization_factor
             * m.fs.zo_costing.dye_disposal_cost
             * pyunits.convert(
-                m.fs.dye_retentate.properties[0].flow_vol,
+                m.fs.adsorbed_dye.properties[0].flow_vol,
                 to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
             )
         ),
