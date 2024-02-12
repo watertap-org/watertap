@@ -173,7 +173,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
         )
         def eq_connect_mass_transfer(b, t, x, p, j):
             return (
-                b.permeate_side[t, x].get_material_flow_terms(p, j) 
+                b.permeate_side[t, x].get_material_flow_terms(p, j)
                 == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / b.nfe
             )
 
