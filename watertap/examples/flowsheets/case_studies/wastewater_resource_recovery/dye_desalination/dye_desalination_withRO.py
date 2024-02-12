@@ -26,8 +26,6 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (
     FlowsheetBlock,
     MomentumBalanceType,
-    EnergyBalanceType,
-    MaterialBalanceType,
 )
 
 from idaes.core.solvers import get_solver
@@ -84,6 +82,7 @@ from watertap.unit_models.gac import (
 )
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
+from idaes.core.util import DiagnosticsToolbox
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -92,11 +91,19 @@ _log = idaeslog.getLogger(__name__)
 def main():
     m = build(include_pretreatment=False, include_dewatering=False, include_gac=True)
     set_operating_conditions(m)
+    dt = DiagnosticsToolbox(m)
+    print("---Structural Issues---")
+    dt.report_structural_issues()
+    dt.display_underconstrained_set()
 
-    assert_degrees_of_freedom(m, 0)
+    # assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
+    print("---Numerical Issues Before Initialization---")
+    dt.report_numerical_issues()
     initialize_system(m)
+    print("---Numerical Issues After Initialization---")
+    dt.report_numerical_issues()
     assert_degrees_of_freedom(m, 0)
 
     results = solve(m, checkpoint="solve flowsheet after initializing system")
@@ -108,6 +115,8 @@ def main():
     optimize_operation(m)  # unfixes specific variables for cost optimization
 
     solve(m, checkpoint="solve flowsheet after costing")
+    print("---Numerical Issues After Solve---")
+    dt.report_numerical_issues()
     display_results(m)
     display_costing(m)
 
@@ -159,16 +168,14 @@ def build(
             solute_list=["tds", "dye"],
             mw_data={
                 "H2O": 0.018,
-                "tds": 0.1314,
-                "dye": 0.1,
+                "tds": 0.05844,
+                "dye": 0.696665,  # moleculargit weight of congo red dye
             },
             diffus_calculation=DiffusivityCalculation.none,
-            diffusivity_data={("Liq", "tds"): 1e-09, ("Liq", "dye"): 1e-09},
+            diffusivity_data={("Liq", "tds"): 1e-09, ("Liq", "dye"): 2e-10},
         )
         m.fs.gac = GAC(
             property_package=m.fs.prop_gac,
-            # energy_balance_type=EnergyBalanceType.none,
-            # momentum_balance_type=MomentumBalanceType.none,
             film_transfer_coefficient_type="calculated",
             surface_diffusion_coefficient_type="calculated",
             target_species={"dye"},
@@ -180,7 +187,7 @@ def build(
             inlet_property_package=m.fs.prop_nf, outlet_property_package=m.fs.prop_gac
         )
 
-        @m.fs.tb_nf_gac.Constraint(["H2O", "dye"])
+        @m.fs.tb_nf_gac.Constraint(["H2O", "dye", "tds"])
         def eq_flow_mass_comp(blk, j):
             if j == "dye":
                 return (
@@ -381,8 +388,9 @@ def set_operating_conditions(m):
         m.fs.dewaterer.split_fraction[0, "precipitant", "tds"].fix(0.01)
         m.fs.dewaterer.split_fraction[0, "precipitant", "dye"].fix(0.99)
     elif hasattr(m.fs, "gac"):
-        m.fs.gac.process_flow.properties_in[0].temperature.fix(273.15)
-        m.fs.gac.process_flow.properties_in[0].pressure.fix(101325)
+
+        m.fs.tb_nf_gac.properties_out[0].temperature.fix(298.15)
+        m.fs.tb_nf_gac.properties_out[0].pressure.fix(101325)
 
         m.fs.gac.freund_k.fix(10)
         m.fs.gac.freund_ninv.fix(0.9)
@@ -473,8 +481,21 @@ def initialize_system(m):
         seq.run(m.fs.dewaterer, lambda u: u.initialize())
         propagate_state(m.fs.s01)
     elif hasattr(m.fs, "gac"):
-        seq.run(m.fs.gac, lambda u: u.initialize())
+        # TODO: May need to revise this initialization routine
+        m.fs.tb_nf_gac.properties_out[0].flow_mass_phase_comp["Liq", "H2O"] = value(
+            m.fs.tb_nf_gac.properties_in[0].flow_mass_comp["H2O"]
+        )
+        m.fs.tb_nf_gac.properties_out[0].flow_mass_phase_comp["Liq", "tds"] = value(
+            m.fs.tb_nf_gac.properties_in[0].flow_mass_comp["tds"]
+        )
+        m.fs.tb_nf_gac.properties_out[0].flow_mass_phase_comp["Liq", "dye"] = value(
+            m.fs.tb_nf_gac.properties_in[0].flow_mass_comp["dye"]
+        )
+
+        seq.run(m.fs.tb_nf_gac, lambda u: u.initialize())
         propagate_state(m.fs.s01)
+        propagate_state(m.fs.s02)
+        seq.run(m.fs.gac, lambda u: u.initialize())
     else:
         pass
 
@@ -548,7 +569,7 @@ def optimize_operation(m):
 def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
-    results = solver.solve(blk, tee=tee)
+    results = solver.solve(blk, tee=True)
     check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
@@ -602,13 +623,16 @@ def add_costing(m):
             },
             initial_costing_block="centrifuge",
         )
-    elif hasattr(m.fs, "gac"):
-        m.fs.gac.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-            costing_method_arguments={"contactor_type": "gravity"},
-        )
-    else:
-        pass
+    # elif hasattr(m.fs, "gac"):
+    #     m.fs.gac.costing = UnitModelCostingBlock(
+    #         flowsheet_costing_block=m.fs.ro_costing,
+    #         costing_method_arguments={"contactor_type": "gravity"},
+    #     )
+    #     m.fs.ro_costing.gac_gravity.regen_frac.fix(0.7)
+    #     m.fs.ro_costing.gac_gravity.num_contactors_op.fix(1)
+    #     m.fs.ro_costing.gac_gravity.num_contactors_redundant.fix(1)
+    # else:
+    #     pass
 
     dye_sep.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.zo_costing)
     m.fs.zo_costing.pump_electricity.pump_cost["default"].fix(76)
@@ -1104,12 +1128,12 @@ def display_costing(m):
                 m.fs.dewaterer.costing.capital_cost, to_units=pyunits.USD_2020
             )
         )
-    elif hasattr(m.fs, "gac"):
-        gac_capex = value(
-            pyunits.convert(m.fs.gac.costing.capital_cost, to_units=pyunits.USD_2020)
-        )
-    else:
-        pass
+    # elif hasattr(m.fs, "gac"):
+    #     gac_capex = value(
+    #         pyunits.convert(m.fs.gac.costing.capital_cost, to_units=pyunits.USD_2020)
+    #     )
+    # else:
+    #     pass
 
     nf_capex = value(
         pyunits.convert(
@@ -1235,10 +1259,10 @@ def display_costing(m):
         pass
     if hasattr(m.fs, "dewaterer"):
         print(f"Dewatering Unit Capital Cost: {dewater_capex:.4f} $")
-    elif hasattr(m.fs, "gac"):
-        print(f"GAC Unit Capital Cost: {gac_capex:.4f} $")
-    else:
-        pass
+    # elif hasattr(m.fs, "gac"):
+    #     print(f"GAC Unit Capital Cost: {gac_capex:.4f} $")
+    # else:
+    #     pass
     print(f"Nanofiltration (r-HGO) Capital Cost: {nf_capex:.4f} $")
     print(f"Reverse Osmosis Capital Cost: {ro_capex:.4f} $")
 
