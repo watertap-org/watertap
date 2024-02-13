@@ -1311,14 +1311,8 @@ def display_costing(m):
         print(f"Wastewater Treatment Capital Cost: {wwtp_capex:.4f} $")
     else:
         pass
-    if hasattr(m.fs, "dewaterer"):
-        print(f"Dewatering Unit Capital Cost: {dewater_capex:.4f} $")
-    # elif hasattr(m.fs, "gac"):
-    #     print(f"GAC Unit Capital Cost: {gac_capex:.4f} $")
-    # else:
-    #     pass
-    print(f"Nanofiltration (r-HGO) Capital Cost: {nf_capex:.4f} $")
-    print(f"Reverse Osmosis Capital Cost: {ro_capex:.4f} $")
+    print(f"Nanofiltration (r-HGO) Costing Capital Cost: {nf_capex:.4f} $")
+    print(f"Reverse Osmosis Costing Capital Cost: {ro_capex:.4f} $")
 
     print("\n----------Unit Capital Costs----------\n")
     for u in m.fs.zo_costing._registered_unit_costing:
