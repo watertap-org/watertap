@@ -108,6 +108,11 @@ def main():
 
     results = solve(m, checkpoint="solve flowsheet after initializing system")
 
+    print("---Numerical Issues After Solve---")
+    dt.report_numerical_issues()
+    dt.display_variables_at_or_outside_bounds()
+    dt.display_constraints_with_extreme_jacobians()
+
     add_costing(m)
     initialize_costing(m)
     assert_degrees_of_freedom(m, 0)  # ensures problem is square
@@ -169,7 +174,7 @@ def build(
             mw_data={
                 "H2O": 0.018,
                 "tds": 0.05844,
-                "dye": 0.696665,  # moleculargit weight of congo red dye
+                "dye": 0.696665,  # molecular weight of congo red dye
             },
             diffus_calculation=DiffusivityCalculation.none,
             diffusivity_data={("Liq", "tds"): 1e-09, ("Liq", "dye"): 2e-10},
@@ -177,7 +182,7 @@ def build(
         m.fs.gac = GAC(
             property_package=m.fs.prop_gac,
             film_transfer_coefficient_type="calculated",
-            surface_diffusion_coefficient_type="calculated",
+            surface_diffusion_coefficient_type="fixed",
             target_species={"dye"},
         )
         m.fs.adsorbed_dye = Product(property_package=m.fs.prop_gac)
@@ -395,9 +400,7 @@ def set_operating_conditions(m):
         m.fs.gac.freund_k.fix(10)
         m.fs.gac.freund_ninv.fix(0.9)
         m.fs.gac.shape_correction_factor.fix()
-        m.fs.gac.particle_porosity.fix()
-        m.fs.gac.tort.fix()
-        m.fs.gac.spdfr.fix()
+        m.fs.gac.ds.fix(5e-13)
         # gac particle specifications
         m.fs.gac.particle_dens_app.fix(750)
         m.fs.gac.particle_dia.fix(0.001)
@@ -415,6 +418,14 @@ def set_operating_conditions(m):
         m.fs.gac.b2.fix(0.484422)
         m.fs.gac.b3.fix(0.003206)
         m.fs.gac.b4.fix(0.134987)
+
+        m.fs.gac.gac_removed[0].flow_mass_phase_comp["Liq", "H2O"] = 1e-10
+        m.fs.gac.gac_removed[0].flow_mass_phase_comp["Liq", "tds"] = 1e-10
+
+        m.fs.gac.ele_conc_ratio_replace[0] = 1e-10
+        m.fs.gac.ele_operational_time[0] = 1e-10
+
+        iscale.constraint_scaling_transform(m.fs.gac.eq_mass_adsorbed["dye"], 1e-2)
     else:
         pass
 
@@ -494,8 +505,9 @@ def initialize_system(m):
 
         seq.run(m.fs.tb_nf_gac, lambda u: u.initialize())
         propagate_state(m.fs.s01)
-        propagate_state(m.fs.s02)
+
         seq.run(m.fs.gac, lambda u: u.initialize())
+        propagate_state(m.fs.s02)
     else:
         pass
 
