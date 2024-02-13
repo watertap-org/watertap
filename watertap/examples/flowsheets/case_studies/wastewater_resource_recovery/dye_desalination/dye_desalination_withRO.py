@@ -113,17 +113,17 @@ def main():
     dt.display_variables_at_or_outside_bounds()
     dt.display_constraints_with_extreme_jacobians()
 
-    add_costing(m)
-    initialize_costing(m)
-    assert_degrees_of_freedom(m, 0)  # ensures problem is square
-
-    optimize_operation(m)  # unfixes specific variables for cost optimization
-
-    solve(m, checkpoint="solve flowsheet after costing")
-    print("---Numerical Issues After Solve---")
-    dt.report_numerical_issues()
-    display_results(m)
-    display_costing(m)
+    # add_costing(m)
+    # initialize_costing(m)
+    # assert_degrees_of_freedom(m, 0)  # ensures problem is square
+    #
+    # optimize_operation(m)  # unfixes specific variables for cost optimization
+    #
+    # solve(m, checkpoint="solve flowsheet after costing")
+    # print("---Numerical Issues After Solve---")
+    # dt.report_numerical_issues()
+    # display_results(m)
+    # display_costing(m)
 
     return m, results
 
@@ -503,11 +503,8 @@ def initialize_system(m):
             m.fs.tb_nf_gac.properties_in[0].flow_mass_comp["dye"]
         )
 
-        seq.run(m.fs.tb_nf_gac, lambda u: u.initialize())
         propagate_state(m.fs.s01)
-
-        seq.run(m.fs.gac, lambda u: u.initialize())
-        propagate_state(m.fs.s02)
+        m.fs.gac.initialize()
     else:
         pass
 
