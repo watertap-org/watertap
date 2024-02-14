@@ -16,11 +16,11 @@ import pyomo.environ as pyo
 import idaes.core as idc
 
 from idaes.core.base.costing_base import register_idaes_currency_units
-from watertap.costing.costing_base import WaterTAPCostingBlockData
+from watertap.costing.watertap_costing_package import WaterTAPCostingBlockData
 
 
-@idc.declare_process_block_class("TestWaterTAPCostingBlock")
-class TestWaterTAPCostingPackageData(WaterTAPCostingBlockData):
+@idc.declare_process_block_class("WaterTAPCostingBlockTest")
+class WaterTAPCostingPackageTestData(WaterTAPCostingBlockData):
     def build_global_params(self):
         register_idaes_currency_units()
         self.base_currency = pyo.units.USD_2021
@@ -39,7 +39,7 @@ def test_watertap_costing_package():
     m = pyo.ConcreteModel()
     m.fs = idc.FlowsheetBlock(dynamic=False)
 
-    m.fs.costing = TestWaterTAPCostingBlock()
+    m.fs.costing = WaterTAPCostingBlockTest()
 
     m.fs.electricity = pyo.Var(units=pyo.units.kW)
 

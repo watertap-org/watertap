@@ -18,6 +18,7 @@ import pyomo.environ as pyo
 from idaes.core import UnitModelCostingBlock
 
 from watertap.costing import WaterTAPCosting, ZeroOrderCosting
+from watertap.costing.watertap_costing_package import WaterTAPCostingDetailed
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_hrcs.hrcs as hrcs
 
 hrcs_original_costing = hrcs.add_costing
@@ -45,7 +46,7 @@ def simple_main():
 
 
 def add_wt_costing(m):
-    m.fs.costing = WaterTAPCosting()
+    m.fs.costing = WaterTAPCostingDetailed()
 
     m.fs.costing.register_flow_type(
         "ferric_chloride", 0.6 * pyo.units.USD_2020 / pyo.units.kg
