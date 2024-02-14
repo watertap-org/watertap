@@ -288,9 +288,9 @@ class TestCrystallization:
             assert hasattr(blk[0], var_str)
 
         # test statistics
-        assert number_variables(m) == 238
-        assert number_total_constraints(m) == 124
-        assert number_unused_variables(m) == 4
+        assert number_variables(m) == 255
+        assert number_total_constraints(m) == 138
+        assert number_unused_variables(m) == 5
 
     @pytest.mark.unit
     def test_dof(self, Crystallizer_frame):
