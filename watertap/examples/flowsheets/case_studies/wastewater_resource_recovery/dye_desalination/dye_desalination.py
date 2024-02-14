@@ -81,7 +81,7 @@ def main():
     return m, results
 
 
-def build(include_gac=True):
+def build(include_gac=False):
     # flowsheet set up
     m = ConcreteModel()
     m.db = Database()

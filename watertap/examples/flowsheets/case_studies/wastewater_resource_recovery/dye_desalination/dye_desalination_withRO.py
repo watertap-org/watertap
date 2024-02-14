@@ -1037,10 +1037,10 @@ def display_results(m):
                 to_units=pyunits.m**3 / pyunits.hr,
             )
         )
-        adsorbed_dye_concentration = m.fs.adsorbed_dye.flow_mass_phase_comp[
+        adsorbed_dye_mass_flow = m.fs.adsorbed_dye.flow_mass_phase_comp[
             0, "Liq", "dye"
         ].value
-        adsorbed_tds_concentration = m.fs.adsorbed_dye.flow_mass_phase_comp[
+        adsorbed_tds_mass_flow = m.fs.adsorbed_dye.flow_mass_phase_comp[
             0, "Liq", "tds"
         ].value
 
@@ -1058,10 +1058,10 @@ def display_results(m):
         ].value
 
         print(
-            f"\nAdsorbed_dye volumetric flowrate: {adsorbed_dye_vol_flowrate : .3f} m3/hr"
+            f"\nAdsorbed dye volumetric flowrate: {adsorbed_dye_vol_flowrate : .3f} m3/hr"
         )
-        print(f"Adsorbed_dye tds concentration: {adsorbed_dye_concentration : .3f} g/l")
-        print(f"Adsorbed_dye dye concentration: {adsorbed_tds_concentration : .3f} g/l")
+        print(f"Adsorbed tds concentration: {adsorbed_tds_mass_flow : .3f} g/l")
+        print(f"Adsorbed dye concentration: {adsorbed_dye_mass_flow : .3f} g/l")
 
         print(f"\nTreated volumetric flowrate: {treated_vol_flowrate : .3f} m3/hr")
         print(f"Treated tds concentration: {treated_tds_concentration : .3f} g/l")
@@ -1175,19 +1175,6 @@ def display_costing(m):
         )
     else:
         pass
-
-    if hasattr(m.fs, "dewaterer"):
-        dewater_capex = value(
-            pyunits.convert(
-                m.fs.dewaterer.costing.capital_cost, to_units=pyunits.USD_2020
-            )
-        )
-    # elif hasattr(m.fs, "gac"):
-    #     gac_capex = value(
-    #         pyunits.convert(m.fs.gac.costing.capital_cost, to_units=pyunits.USD_2020)
-    #     )
-    # else:
-    #     pass
 
     nf_capex = value(
         pyunits.convert(
