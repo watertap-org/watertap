@@ -34,7 +34,7 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from watertap.unit_models.anaerobic_digestor import AD
+from watertap.unit_models.anaerobic_digester import AD
 from idaes.core import MaterialFlowBasis
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale

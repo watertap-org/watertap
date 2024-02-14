@@ -9,16 +9,6 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-"""
-Tests for anaerobic digestor example.
-
-Verified against results from:
-
-Rosen, C. and Jeppsson, U., 2006.
-Aspects on ADM1 Implementation within the BSM2 Framework.
-Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
-
-"""
 
 import pytest
 from pyomo.environ import (

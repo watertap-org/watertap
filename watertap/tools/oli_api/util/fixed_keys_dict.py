@@ -14,6 +14,7 @@
 __author__ = "Paul Vecchiarelli, Ben Knueven"
 
 from collections import UserDict
+from pyomo.environ import units as pyunits
 
 
 class FixedKeysDict(UserDict):
@@ -23,6 +24,7 @@ class FixedKeysDict(UserDict):
     def __setitem__(self, k, v):
         if k not in self.data:
             raise RuntimeError(f" Key {k} not in dictionary.")
+        # also check for valid value if a list of values is given in the default dictionary
         else:
             self.data[k] = v
 
@@ -44,46 +46,193 @@ class FixedKeysDict(UserDict):
             print(f" {key}\n - {value}\n")
 
 
-default_oli_input_dict = FixedKeysDict(
+input_unit_set = FixedKeysDict(
     {
-        "temperature_unit": "K",  # units
-        "pressure_unit": "Pa",
-        "concentration_unit": "mg/L",
-        "gas_fraction_unit": "mole %",
-        "alkalinity_unit": "mg HCO3/L",
-        "tic_unit": "mol C/L",
-        # essential input parameters for water analysis
-        "electroneutrality_value": "DominantIon",
-        "reconciliation_value": "EquilCalcOnly",
-        "AllowSolidsToForm": False,
-        "CalcAlkalnity": False,
-        # optional inputs
-        # required for certain specifications
-        "MakeupIonBaseTag": None,
-        "CO2GasFraction": None,
-        "pH": None,
-        "PhAcidTitrant": "HCL",
-        "PhBaseTitrant": "NAOH",
-        "Alkalinity": None,
-        "AlkalinityPhTitrant": None,
-        "AlkalinityTitrationEndPointPh": None,
-        "TIC": None,
+        "molecularConcentration": {
+            "oli_unit": "mg/L",
+            "pyomo_unit": pyunits.mg / pyunits.L,
+        },
+        "temperature": {"oli_unit": "K", "pyomo_unit": pyunits.K},
+        "pressure": {"oli_unit": "Pa", "pyomo_unit": pyunits.Pa},
+        "enthalpy": {"oli_unit": "J", "pyomo_unit": pyunits.J},
+        "vaporAmountMoles": {"oli_unit": "mol", "pyomo_unit": pyunits.mol},
+        "vaporMolFrac": {
+            "oli_unit": "mol/mol",
+            "pyomo_unit": pyunits.mol / pyunits.mol,
+        },
+        "totalVolume": {"oli_unit": "L", "pyomo_unit": pyunits.L},
+        "pipeDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+        "pipeFlowVelocity": {
+            "oli_unit": "m/s",
+            "pyomo_unit": pyunits.meter / pyunits.second,
+        },
+        "diskDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+        "diskRotatingSpeed": {"oli_unit": "cycle/s", "pyomo_unit": 1 / pyunits.second},
+        "rotorDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+        "rotorRotation": {"oli_unit": "cycle/s", "pyomo_unit": 1 / pyunits.second},
+        "shearStress": {"oli_unit": "Pa", "pyomo_unit": pyunits.Pa},
+        "pipeDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+        "pipeRoughness": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+        "liquidFlowInPipe": {
+            "oli_unit": "L/s",
+            "pyomo_unit": pyunits.L / pyunits.second,
+        },
+        "gasFlowInPipe": {"oli_unit": "L/s", "pyomo_unit": pyunits.L / pyunits.second},
+        "viscAbs2ndLiq": {
+            "oli_unit": "Pa-s",
+            "pyomo_unit": pyunits.Pa * pyunits.second,
+        },
+        "alkalinity": {"oli_unit": "mg HCO3/L", "pyomo_unit": pyunits.mg / pyunits.L},
+        "TIC": {"oli_unit": "mol C/L", "pyomo_unit": pyunits.mol / pyunits.L},
+        "CO2GasFraction": {
+            "oli_unit": "mol/mol",
+            "pyomo_unit": pyunits.mol / pyunits.mol,
+        },
+    }
+)
+water_analysis_properties = FixedKeysDict(
+    {
+        "Temperature": {
+            "group": "Properties",
+            "name": "Temperature",
+            "unit": input_unit_set["temperature"]["oli_unit"],
+            "value": None,
+        },
+        "Pressure": {
+            "group": "Properties",
+            "name": "Pressure",
+            "unit": input_unit_set["pressure"]["oli_unit"],
+            "value": None,
+        },
+        "ElectroNeutralityBalanceType": {
+            "group": "Electroneutrality Options",
+            "name": "ElectroNeutralityBalanceType",
+            "value": [
+                "DominantIon",
+                "ProrateCations",
+                "ProrateAnions",
+                "Prorate",
+                "AutoNACL",
+                "MakeupIon",
+            ],
+        },
+        "MakeupIonBaseTag": {
+            "group": "Electroneutrality Options",
+            "name": "MakeupIonBaseTag",
+            "value": None,
+        },
+        "CalcType": {
+            "group": "Calculation Options",
+            "name": "CalcType",
+            "value": [
+                "EquilCalcOnly",
+                "ReconcilePh",
+                "ReconcilePhAndAlkalinity",
+                "ReconcilePhAndAlkalinityAndTic",
+                "ReconcileCo2Gas",
+            ],
+        },
+        "pH": {
+            "group": "Properties",
+            "name": "pH",
+            "value": None,
+        },
+        "PhAcidTitrant": {
+            "group": "Calculation Options",
+            "name": "PhAcidTitrant",
+            "value": None,
+        },
+        "PhBaseTitrant": {
+            "group": "Calculation Options",
+            "name": "PhBaseTitrant",
+            "value": None,
+        },
+        "Alkalinity": {
+            "group": "Properties",
+            "name": "Alkalinity",
+            "unit": input_unit_set["alkalinity"]["oli_unit"],
+            "value": None,
+        },
+        "AlkalinityPhTitrant": {
+            "group": "Calculation Options",
+            "name": "AlkalinityPhTitrant",
+            "value": None,
+        },
+        "AlkalinityTitrationEndPointPh": {
+            "group": "Properties",
+            "name": "AlkalinityTitrationEndPointpH",
+            "value": None,
+        },
+        "TIC": {
+            "group": "Properties",
+            "name": "TIC",
+            "unit": input_unit_set["TIC"]["oli_unit"],
+            "value": None,
+        },
+        "CO2GasFraction": {
+            "group": "Properties",
+            "name": "CO2GasFraction",
+            "unit": input_unit_set["CO2GasFraction"]["oli_unit"],
+            "value": None,
+        },
+        "AllowSolidsToForm": {
+            "group": "Calculation Options",
+            "name": "AllowSolidsToForm",
+            "value": [True, False],
+        },
+        "CalcAlkalnity": {
+            "group": "Calculation Options",
+            "name": "CalcAlkalnity",
+            "value": [False, True],
+        },
     }
 )
 
-# Full list of available optional inputs available: https://devdocs.olisystems.com/optional-inputs
-default_oli_optional_properties = FixedKeysDict(
+optional_properties = FixedKeysDict(
     {
-        "scalingIndex": False,
-        "prescalingTendencies": False,
-        "prescalingTendenciesRigorous": False,
-        "scalingTendencies": False,
+        "electricalConductivity": True,
+        "viscosity": True,
+        "selfDiffusivityAndMobility": True,
+        "heatCapacity": True,
+        "thermalConductivity": True,
+        "surfaceTension": True,
+        "interfacialTension": True,
+        "volumeStdConditions": True,
+        "prescalingTendenciesEstimated": False,
+        "prescalingIndexEstimated": False,
+        "prescalingTendenciesRigorous": True,
+        "prescalingIndexRigorous": True,
+        "scalingTendencies": True,
+        "scalingIndex": True,
+        "hardness": True,
+        "ionicStrengthXBased": True,
+        "ionicStrengthMBased": True,
+        "totalDissolvedSolids": True,
+        "vaporToInflowMoleFraction": True,
+        "partialPressure": True,
+        "vaporDiffusivityMatrix": True,
+        "entropyStream": True,
+        "entropySpecies": True,
+        "entropyStreamStandardState": True,
+        "entropySpeciesStandardState": True,
+        "gibbsEnergyStream": True,
+        "gibbsEnergySpecies": True,
+        "gibbsEnergyStreamStandardState": True,
+        "gibbsEnergySpeciesStandardState": True,
+        "activityCoefficientsXBased": True,
+        "activityCoefficientsMBased": True,
+        "fugacityCoefficients": True,
+        "vaporFugacity": True,
+        "kValuesXBased": True,
+        "kValuesMBased": True,
         "MBGComposition": True,
         "materialBalanceGroup": True,
     }
 )
 
-default_oli_unit_set_info = FixedKeysDict(
+# TODO: consider adding these: https://devdocs.olisystems.com/user-defined-output-unit-set
+# and reducing hard-coding by using default_input_unit_set references
+output_unit_set = FixedKeysDict(
     {
         "enthalpy": "J",
         "mass": "kg",
@@ -95,5 +244,69 @@ default_oli_unit_set_info = FixedKeysDict(
         "liq2_phs_comp": "mg",
         "combined_phs_comp": "mg",
         "molecularConcentration": "mg/L",
+    }
+)
+# This dictionary describes the stream outputs for OLI flash calculations
+stream_output_options = FixedKeysDict(
+    {
+        "result": [
+            "MBGComposition",
+            "activityCoefficientsMBased",
+            "activityCoefficientsXBased",
+            "entropy",
+            "entropyStandardStateXBased",
+            "gibbsFreeEnergy",
+            "gibbsFreeEnergyStandardStateXBased",
+            "mobilities",
+            "molecularConcentration",
+            "selfDiffusivities",
+            "totalMBGMoles",
+            "totalMolecularMoles",
+            "totalTrueMoles",
+            "trueConcentration",
+        ],
+        "properties": [
+            "absoluteViscosity",
+            "density",
+            "enthalpy",
+            "entropy",
+            "entropyStandardState",
+            "gibbsFreeEnergy",
+            "gibbsFreeEnergyStandardState",
+            "hardness",
+            "heatCapacity",
+            "idealStandardLiquidVolume",
+            "interfacialTension",
+            "ionicStrength",
+            "ionicStrengthMBased",
+            "ionicStrengthXBased",
+            "mass",
+            "mixHeatCapacity",
+            "molarElectricalConductivity",
+            "orp",
+            "osmoticPressure",
+            "ph",
+            "pressure",
+            "relativeViscosity",
+            "specificElectricalConductivity",
+            "surfaceTension",
+            "temperature",
+            "thermalConductivity",
+            "totalDissolvedSolids",
+            "volume",
+            "volumeStdConditions",
+        ],
+        "waterAnalysisOutput": [
+            "addedIonsToBalance",
+        ],
+        "additionalProperties": [
+            "kValuesMBased",
+            "kValuesXBased",
+            "prescalingIndex",
+            "prescalingTendencies",
+            "scalingIndex",
+            "scalingTendencies",
+            "vaporToInflowMoleFraction",
+        ],
     }
 )
