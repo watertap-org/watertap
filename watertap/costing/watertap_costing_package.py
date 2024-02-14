@@ -27,8 +27,7 @@ from watertap.costing.unit_models.cstr import cost_cstr
 from watertap.costing.unit_models.heater_chiller import cost_heater_chiller
 
 
-@declare_process_block_class("WaterTAPCostingBlock")
-class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
+class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
     """
     Base class for creating WaterTAP costing packages. Allows
     unit models to "self-register" their default costing methods,
@@ -265,6 +264,13 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             doc="Capital annualization factor [fraction of investment cost/year]",
         )
 
+        # used in initialize_build to check for fixed variable consistency
+        self._annualization_vars = (
+            self.plant_lifetime,
+            self.wacc,
+            self.factor_capital_annualization,
+        )
+
         self.factor_capital_annualization_constraint = pyo.Constraint(
             expr=self.factor_capital_annualization
             == (
@@ -303,19 +309,14 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             self.total_operating_cost, self.total_operating_cost_constraint
         )
         # handle wacc / plant_lifetime / factor_capital_annualization
-        annualization_vars = (
-            self.plant_lifetime,
-            self.wacc,
-            self.factor_capital_annualization,
-        )
         unfixed_vars = []
-        for v in annualization_vars:
+        for v in self._annualization_vars:
             if not v.fixed:
                 unfixed_vars.append(v)
         if len(unfixed_vars) != 1:
-            msg = "Exactly one of the variables "
-            msg += ", ".join(v.name for v in annualization_vars)
-            msg += "should be not fixed."
+            msg = "Exactly two of the variables "
+            msg += ", ".join(v.name for v in self._annualization_vars)
+            msg += " should be fixed and the other unfixed."
             raise RuntimeError(msg)
         calculate_variable_from_constraint(
             unfixed_vars[0], self.factor_capital_annualization_constraint
@@ -413,7 +414,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
 
 @declare_process_block_class("WaterTAPCosting")
-class WaterTAPCostingData(WaterTAPCostingBlockData):
+class WaterTAPCostingData(_WaterTAPCostingBlockData):
     def build_global_params(self):
 
         # Build flowsheet level costing components
@@ -433,7 +434,7 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
 
 
 @declare_process_block_class("WaterTAPCostingDetailed")
-class WaterTAPCostingDetailedData(WaterTAPCostingBlockData):
+class WaterTAPCostingDetailedData(_WaterTAPCostingBlockData):
     def build_global_params(self):
         """
         To minimize overhead, only create global parameters for now.
