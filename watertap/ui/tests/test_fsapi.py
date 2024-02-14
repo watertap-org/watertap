@@ -251,8 +251,8 @@ def csv_from_localfile(exports=None, flowsheet=None, **kwargs):
 
 
 def populate_csv_exports(f):
-    units = "units.foobar" if CSVTestSettings.bad_units else "units.m**3/units.s"
-    obj = "dirt" if CSVTestSettings.bad_obj else "fs.feed.flow_vol[0]"
+    units = "foobar" if CSVTestSettings.bad_units else "m**3/s"
+    obj = "dirt" if CSVTestSettings.bad_obj else "feed.flow_vol[0]"
     rows = [
         "name,obj,description,ui_units,display_units,rounding,is_input,input_category,is_output,output_category",
         f"feed,{obj},feed flow volume,{units},m^3/s,3,TRUE,something,FALSE,",
@@ -325,7 +325,7 @@ def test_export_values():
     key = list(fsi.fs_exp.model_objects.keys())[0]
     orig_value = value(fsi.fs_exp.model_objects[key].obj)
     new_value = orig_value + 1
-    print(f"@@ orig_value = {orig_value}, new value = {new_value}")
+    print(f"export_values: orig_value = {orig_value}, new value = {new_value}")
     fsi.fs_exp.model_objects[key].obj.value = new_value
 
     # re-export

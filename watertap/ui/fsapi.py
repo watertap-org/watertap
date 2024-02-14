@@ -29,6 +29,7 @@ import inspect
 import logging
 from pathlib import Path
 import re
+from traceback import print_last
 from typing import Any, Callable, List, Optional, Dict, Union, TypeVar
 from types import ModuleType
 
@@ -485,7 +486,7 @@ class FlowsheetExport(BaseModel):
         return num
 
     @staticmethod
-    def _parse_object_text(text: str, flowsheet: Any) -> Any:
+    def _parse_object_text(text: str, flowsheet: pyo.Block) -> Any:
         """Evaluate the object represented by 'text' in the context of the flowsheet.
 
         Args:
@@ -499,12 +500,10 @@ class FlowsheetExport(BaseModel):
         Raises:
             ValueError, if the object named by 'text' could not be found
         """
-        _log.debug(f"eval text={text}")
-        try:
-            obj = eval(text, {"fs": flowsheet})
-        except Exception as err:
+        _log.debug(f"find component text={text}")
+        obj = flowsheet.find_component(text)
+        if obj is None:
             raise ValueError(f"Cannot find object in flowsheet: {text}")
-
         return obj
 
     @staticmethod
@@ -517,7 +516,7 @@ class FlowsheetExport(BaseModel):
         "" (empty string), "none", and "-".
 
         Args:
-            text: Units, which begin with a prefix 'units.'
+            text: Units as an expression
 
         Returns:
             Pyomo units object.
@@ -527,13 +526,24 @@ class FlowsheetExport(BaseModel):
         """
         # evaluate the units
         norm_units = text.strip()
+
         if norm_units in ("", "none", "-"):
+            return pyo.units.dimensionless
+
+        units_expr_text = re.sub(r"([a-zA-Z]+)", r"units.\1", text)
+        if units_expr_text == norm_units:
+            raise ValueError(f"No units found in input: {norm_units}")
+
+        _log.debug(f"start:parse units. input={norm_units}")
+        if units_expr_text in ("", "none", "-"):
             parsed_units = pyo.units.dimensionless
         else:
+            units_expr = eval(units_expr_text, {"units": pyo.units})
             try:
-                parsed_units = eval(norm_units, {"units": pyo.units})
+                parsed_units = pyo.units.get_units(units_expr)
             except Exception as err:
-                raise ValueError(f"Bad units '{norm_units}': {err}")
+                raise ValueError(f"Bad units '{units_expr_text}': {err}")
+        _log.debug(f"end:parse units. units={parsed_units} input={norm_units}")
 
         return parsed_units
 
@@ -639,18 +649,18 @@ class FlowsheetExport(BaseModel):
         self.build_options[name] = option
         return option
 
-    def undefer(self, flowsheet):
+    def _undefer(self, flowsheet):
         """Evaluate all deferred objects and move them into the 'obj' attribute.
 
         At the end, all ModelExport instances in self.model_objects will have
         a None value for the 'deferred_obj' attr, and any deferred objects will have been
-        evaluated in the context of the input flowsheet and placed in the 'obj' attribute.
+        found in the context of the input flowsheet and placed in the 'obj' attribute.
 
         Args:
-            flowsheet: Flowsheet context for evaluating deferred objects
+            flowsheet: Flowsheet context for fetching deferred objects
 
         Raises:
-            ValueError: if a deferred object cannot be evaluated
+            ValueError: if a deferred object cannot be found
         """
         if not self._has_deferred():
             return  # speeds up common case
@@ -662,7 +672,7 @@ class FlowsheetExport(BaseModel):
                 try:
                     obj = FlowsheetExport._parse_object_text(d_obj, flowsheet)
                 except ValueError as e:
-                    raise ValueError(f"cannot evaluate deferred obj={d_obj}: {e}")
+                    raise ValueError(f"cannot find deferred obj={d_obj}: {e}")
                 model_export.obj, model_export.deferred_obj = obj, None
                 self._deferred -= 1
                 _log.debug(f"end: un-defer obj={d_obj}")
@@ -800,7 +810,7 @@ class FlowsheetInterface:
 
         Raises:
             RuntimeError: if the solver did not terminate in an optimal solution
-            ValueError: if resolving 'deferred' objects for this flowsheet failed (see `undefer()`)
+            ValueError: if resolving 'deferred' objects for this flowsheet failed (see `_undefer()`)
         """
         try:
             result = self.run_action(Actions.solve, **kwargs)
@@ -992,7 +1002,7 @@ class FlowsheetInterface:
                         raise RuntimeError(f"Solve failed: {result}")
             # Sync model with exported values
             if action_name in (Actions.build, Actions.solve):
-                self.fs_exp.undefer(self.fs_exp.m.fs)  # ensure all vars exported
+                self.fs_exp._undefer(self.fs_exp.m.fs)  # ensure all vars exported
                 self.export_values()
             return result
 
