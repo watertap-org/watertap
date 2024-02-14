@@ -435,12 +435,6 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
 
         super().build_global_params()
 
-        # keep wacc floating by default
-        # so that factor_capital_annualization
-        # can be fixed
-        self.wacc.unfix()
-        self.factor_capital_annualization.fix()
-
 
 @declare_process_block_class("WaterTAPCostingDetailed")
 class WaterTAPCostingDetailedData(WaterTAPCostingBlockData):
@@ -503,11 +497,6 @@ class WaterTAPCostingDetailedData(WaterTAPCostingBlockData):
         )
 
         super().build_global_params()
-
-        # this variable floats in this package, so initialize it appropriately here
-        calculate_variable_from_constraint(
-            self.capital_recovery_factor, self.factor_capital_annualization_constraint
-        )
 
     def build_process_costs(self):
         """

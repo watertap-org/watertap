@@ -245,6 +245,8 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     m.fs.costing.utilization_factor.fix(0.9)
     m.fs.costing.TIC.fix(2)
     m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
+    # unfix wacc since we fix factor_capital_annualization
+    m.fs.costing.wacc.unfix()
     m.fs.costing.factor_capital_annualization.fix(0.1)
     m.fs.costing.electricity_cost.set_value(0.07)
     m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)

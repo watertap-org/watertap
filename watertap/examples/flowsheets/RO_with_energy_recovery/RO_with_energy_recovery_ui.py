@@ -377,6 +377,10 @@ def build_flowsheet(erd_type=ERDtype.pump_as_turbine, build_options=None, **kwar
     # build and solve initial flowsheet
     m = build()
 
+    # the UI sets `factor_capital_annualization`, so unfix `wacc`
+    m.fs.costing.wacc.unfix()
+    m.fs.costing.factor_capital_annualization.fix()
+
     solver = get_solver()
 
     # build, set, and initialize
