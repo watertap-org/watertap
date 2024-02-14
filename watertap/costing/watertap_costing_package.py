@@ -17,7 +17,6 @@ from idaes.core.base.costing_base import register_idaes_currency_units
 
 from idaes.core import declare_process_block_class
 from idaes.core.base.costing_base import FlowsheetCostingBlockData
-from idaes.core.util.misc import add_object_reference
 
 from idaes.models.unit_models import Mixer, HeatExchanger, Heater, CSTR
 from watertap.core.util.misc import is_constant_up_to_units
@@ -67,7 +66,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             name,
             pyo.Expression(
                 expr=(
-                    self.total_capital_cost * self.capital_recovery_factor
+                    self.total_capital_cost * self.factor_capital_annualization
                     + self.total_operating_cost
                 )
                 / (
@@ -214,7 +213,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         self.total_annualized_cost = pyo.Expression(
             expr=(
-                self.total_capital_cost * self.capital_recovery_factor
+                self.total_capital_cost * self.factor_capital_annualization
                 + self.total_operating_cost
             ),
             doc="Total annualized cost of operation",
@@ -254,7 +253,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         self.wacc = pyo.Var(
             # consistent with a 30 year plant_lifetime
-            # and a capital_recovery_factor of 0.1
+            # and a factor_capital_annualization of 0.1
             initialize=0.09307339771758532,
             units=pyo.units.dimensionless,
             doc="Weighted Average Cost of Capital (WACC)",
@@ -264,9 +263,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             initialize=0.1,
             units=pyo.units.year**-1,
             doc="Capital annualization factor [fraction of investment cost/year]",
-        )
-        add_object_reference(
-            self, "capital_recovery_factor", self.factor_capital_annualization
         )
 
         self.factor_capital_annualization_constraint = pyo.Constraint(

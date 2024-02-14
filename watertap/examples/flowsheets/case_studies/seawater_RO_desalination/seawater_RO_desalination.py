@@ -730,7 +730,7 @@ def add_costing(m):
     @m.Expression()
     def LCOW(b):
         return (
-            b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
+            b.total_capital_cost * b.fs.zo_costing.factor_capital_annualization
             + b.total_operating_cost
         ) / (
             pyunits.convert(

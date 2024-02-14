@@ -130,7 +130,6 @@ Plant capacity utilization factor                 :math:`f_{util}`    ``utilizat
 Total investment factor                           :math:`f_{toti}`    ``factor_total_investment``              2.0             Total investment factor (investment cost / equipment cost)
 Maintenance-labor-chemical factor                 :math:`f_{mlc}`     ``factor_maintenance_labor_chemical``    0.03            Maintenance, labor, and chemical factor (fraction of equipment cost / year)
 Captial annualization factor                      :math:`f_{caf}`     ``factor_capital_annualization``         0.1             Capital annualization factor (fraction of investment cost / year) 
-Capital recovery factor                           :math:`f_{crf}`     ``capital_recovery_factor``              0.1             Identical to `factor_capital_annualization`
 =============================================  ====================  =======================================  ===============  ==============================================================================
 
 Costing Calculations

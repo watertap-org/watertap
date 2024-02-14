@@ -155,7 +155,7 @@ def add_costing(m):
 
     m.fs.costing.total_annualized_cost = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
             + m.fs.costing.total_operating_cost
         )
     )
@@ -189,7 +189,7 @@ def add_costing(m):
 
     m.fs.costing.LCOP = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
             + m.fs.costing.total_operating_cost
         )
         / (
@@ -272,7 +272,9 @@ def display_costing(m):
 
     opex_fraction = total_operating_cost / (
         total_operating_cost
-        + value(m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor)
+        + value(
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
+        )
     )
     print(f"Operating cost fraction: {opex_fraction:.3f} $ opex / $ annual")
 

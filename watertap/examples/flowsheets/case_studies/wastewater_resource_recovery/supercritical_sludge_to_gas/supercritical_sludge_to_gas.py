@@ -182,7 +182,7 @@ def add_costing(m):
 
     m.fs.costing.LCOG = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
             + m.fs.costing.total_operating_cost
         )
         / (
@@ -197,7 +197,7 @@ def add_costing(m):
 
     m.fs.costing.LCOC = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
             + m.fs.costing.total_operating_cost
         )
         / (
@@ -212,7 +212,7 @@ def add_costing(m):
 
     m.fs.costing.LCOS = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
             + m.fs.costing.total_operating_cost
         )
         / (
@@ -282,7 +282,7 @@ def add_costing(m):
 
     m.fs.costing.total_annualized_cost = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
             + m.fs.costing.total_operating_cost
         )
     )

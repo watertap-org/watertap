@@ -104,7 +104,8 @@ class ZeroOrderCostingData(WaterTAPCostingDetailedData):
                 )
         # this variable floats in this package, so initialize it appropriately here
         calculate_variable_from_constraint(
-            self.capital_recovery_factor, self.factor_capital_annualization_constraint
+            self.factor_capital_annualization,
+            self.factor_capital_annualization_constraint,
         )
 
 

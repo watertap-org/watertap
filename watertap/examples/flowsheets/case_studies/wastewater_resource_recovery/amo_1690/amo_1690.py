@@ -303,7 +303,7 @@ def add_costing(m):
 
     m.fs.costing.LCOT = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
             + m.fs.costing.total_operating_cost
         )
         / (
@@ -318,7 +318,7 @@ def add_costing(m):
 
     m.fs.costing.LCOT_with_revenue = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
             + m.fs.costing.total_operating_cost
             - m.fs.costing.value_biogas_recovery
             - m.fs.costing.value_fertilizer_recovery
@@ -335,7 +335,7 @@ def add_costing(m):
 
     m.fs.costing.LC_biogas = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
             + m.fs.costing.total_operating_cost
         )
         / m.fs.costing.biogas_recovery_volume,
@@ -344,7 +344,7 @@ def add_costing(m):
 
     m.fs.costing.LC_biogas_with_revenue = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
             + m.fs.costing.total_operating_cost
             - m.fs.costing.value_fertilizer_recovery
         )
@@ -354,7 +354,7 @@ def add_costing(m):
 
     m.fs.costing.LC_fertilizer = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
             + m.fs.costing.total_operating_cost
         )
         / m.fs.costing.fertilizer_recovery_mass,
@@ -363,7 +363,7 @@ def add_costing(m):
 
     m.fs.costing.LC_fertilizer_with_revenue = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
             + m.fs.costing.total_operating_cost
             - m.fs.costing.value_biogas_recovery
         )

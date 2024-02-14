@@ -209,7 +209,7 @@ def add_costing(m):
     )
     m.fs.costing.total_annualized_cost = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
             + m.fs.costing.total_operating_cost
         )
     )
@@ -235,7 +235,7 @@ def add_costing(m):
         expr=(
             (
                 m.fs.metab_hydrogen.costing.capital_cost
-                * m.fs.costing.capital_recovery_factor
+                * m.fs.costing.factor_capital_annualization
                 + m.fs.metab_hydrogen.costing.capital_cost
                 * m.fs.costing.maintenance_costs_percent_FCI
                 + m.fs.metab_hydrogen.costing.fixed_operating_cost
@@ -261,7 +261,7 @@ def add_costing(m):
         expr=(
             (
                 m.fs.metab_methane.costing.capital_cost
-                * m.fs.costing.capital_recovery_factor
+                * m.fs.costing.factor_capital_annualization
                 + m.fs.metab_methane.costing.capital_cost
                 * m.fs.costing.maintenance_costs_percent_FCI
                 + m.fs.metab_methane.costing.fixed_operating_cost
@@ -303,7 +303,7 @@ def add_costing(m):
         m.fs.metab_hydrogen.costing.DCC_bead
         * m.fs.costing.TIC
         * (
-            m.fs.costing.capital_recovery_factor
+            m.fs.costing.factor_capital_annualization
             + m.fs.costing.maintenance_costs_percent_FCI
         )
         + m.fs.metab_hydrogen.costing.fixed_operating_cost
@@ -313,7 +313,7 @@ def add_costing(m):
         m.fs.metab_hydrogen.costing.DCC_reactor
         * m.fs.costing.TIC
         * (
-            m.fs.costing.capital_recovery_factor
+            m.fs.costing.factor_capital_annualization
             + m.fs.costing.maintenance_costs_percent_FCI
         )
     ) / m.fs.costing.annual_hydrogen_production
@@ -322,7 +322,7 @@ def add_costing(m):
         m.fs.metab_hydrogen.costing.DCC_mixer
         * m.fs.costing.TIC
         * (
-            m.fs.costing.capital_recovery_factor
+            m.fs.costing.factor_capital_annualization
             + m.fs.costing.maintenance_costs_percent_FCI
         )
     ) / m.fs.costing.annual_hydrogen_production
@@ -331,7 +331,7 @@ def add_costing(m):
         m.fs.metab_hydrogen.costing.DCC_vacuum
         * m.fs.costing.TIC
         * (
-            m.fs.costing.capital_recovery_factor
+            m.fs.costing.factor_capital_annualization
             + m.fs.costing.maintenance_costs_percent_FCI
         )
     ) / m.fs.costing.annual_hydrogen_production
@@ -340,7 +340,7 @@ def add_costing(m):
         m.fs.metab_hydrogen.costing.DCC_membrane
         * m.fs.costing.TIC
         * (
-            m.fs.costing.capital_recovery_factor
+            m.fs.costing.factor_capital_annualization
             + m.fs.costing.maintenance_costs_percent_FCI
         )
     ) / m.fs.costing.annual_hydrogen_production
@@ -379,7 +379,7 @@ def add_costing(m):
         m.fs.metab_methane.costing.DCC_bead
         * m.fs.costing.TIC
         * (
-            m.fs.costing.capital_recovery_factor
+            m.fs.costing.factor_capital_annualization
             + m.fs.costing.maintenance_costs_percent_FCI
         )
         + m.fs.metab_methane.costing.fixed_operating_cost
@@ -389,7 +389,7 @@ def add_costing(m):
         m.fs.metab_methane.costing.DCC_reactor
         * m.fs.costing.TIC
         * (
-            m.fs.costing.capital_recovery_factor
+            m.fs.costing.factor_capital_annualization
             + m.fs.costing.maintenance_costs_percent_FCI
         )
     ) / m.fs.costing.annual_methane_production
@@ -398,7 +398,7 @@ def add_costing(m):
         m.fs.metab_methane.costing.DCC_mixer
         * m.fs.costing.TIC
         * (
-            m.fs.costing.capital_recovery_factor
+            m.fs.costing.factor_capital_annualization
             + m.fs.costing.maintenance_costs_percent_FCI
         )
     ) / m.fs.costing.annual_methane_production
@@ -407,7 +407,7 @@ def add_costing(m):
         m.fs.metab_methane.costing.DCC_vacuum
         * m.fs.costing.TIC
         * (
-            m.fs.costing.capital_recovery_factor
+            m.fs.costing.factor_capital_annualization
             + m.fs.costing.maintenance_costs_percent_FCI
         )
     ) / m.fs.costing.annual_methane_production
@@ -416,7 +416,7 @@ def add_costing(m):
         m.fs.metab_methane.costing.DCC_membrane
         * m.fs.costing.TIC
         * (
-            m.fs.costing.capital_recovery_factor
+            m.fs.costing.factor_capital_annualization
             + m.fs.costing.maintenance_costs_percent_FCI
         )
     ) / m.fs.costing.annual_methane_production
