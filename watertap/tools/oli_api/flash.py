@@ -112,7 +112,9 @@ class Flash:
         else:
             _logger.setLevel(logging.DEBUG)
 
-    def build_survey(self, survey_arrays, get_oli_names=False, file_name=None):
+    def build_survey(
+        self, survey_arrays, get_oli_names=False, file_name=None, mesh_grid=True
+    ):
         """
         Build a dictionary for modifying flash calculation parameters.
 
@@ -126,7 +128,14 @@ class Flash:
         keys = [get_oli_name(k) if get_oli_names else k for k in survey_arrays]
         values = list(product(*(survey_arrays.values())))
         _name = lambda k: get_oli_name(k) if get_oli_names else k
-        survey = {_name(keys[i]): [val[i] for val in values] for i in range(len(keys))}
+        if mesh_grid:
+            survey = {
+                _name(keys[i]): [val[i] for val in values] for i in range(len(keys))
+            }
+        else:
+            survey = {}
+            for key, arr in survey_arrays.items():
+                survey[_name(key)] = arr
         _logger.info(f"Survey contains {len(values)} items.")
         if file_name:
             self.write_output(survey, file_name)
