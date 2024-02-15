@@ -29,7 +29,6 @@ import inspect
 import logging
 from pathlib import Path
 import re
-from traceback import print_last
 from typing import Any, Callable, List, Optional, Dict, Union, TypeVar
 from types import ModuleType
 
