@@ -19,15 +19,16 @@ It calculates molecular weights using the periodic_table.csv from:
 https://gist.github.com/GoodmanSciences/c2dd862cd38f21b0ad36b8f96b4bf1ee.
 """
 
-__author__ = "Paul Vecchiarelli, Ben Knueven"
+__author__ = "Paul Vecchiarelli, Ben Knueven, Adam Atia"
 
 from collections import namedtuple
 from re import findall
 from pathlib import Path
 from os.path import join
 from pandas import read_csv
+from pyomo.environ import units as pyunits
 
-# TODO: maybe replace some functionality with molmass: https://pypi.org/project/molmass
+# TODO: consider replacing some functionality with molmass: https://pypi.org/project/molmass
 
 OLIName = namedtuple(
     "OLIName", ["oli_name", "watertap_name", "charge", "charge_group", "molar_mass"]
@@ -58,7 +59,6 @@ def watertap_to_oli(watertap_name: str) -> OLIName:
     return OLIName(oli_name, watertap_name, charge, charge_group, molar_mass)
 
 
-# TODO: merge with other helper functions in this file
 def get_oli_name(watertap_name: str) -> str:
     """
     Converts an WaterTAP formatted name, i.e., "Na_+"
@@ -69,15 +69,19 @@ def get_oli_name(watertap_name: str) -> str:
     :return oli_name: string name of a solute in OLI format
     """
 
-    components = watertap_name.split("_")
-    if len(components) == 0:
-        raise IOError(f" Unable to parse solute '{watertap_name}'.")
-    if len(components) == 1:
-        molecule = components[0]
-    elif len(components) == 2:
-        molecule = components[0] + "ION"
-    oli_name = molecule.replace("[", "").replace("]", "").upper()
-    return oli_name
+    exclude_items = ["temperature", "pressure", "volume"]
+    if watertap_name.lower() in exclude_items:
+        return watertap_name
+    else:
+        components = watertap_name.split("_")
+        if len(components) == 0:
+            raise IOError(f" Unable to parse solute '{watertap_name}'.")
+        if len(components) == 1:
+            molecule = components[0]
+        elif len(components) == 2:
+            molecule = components[0] + "ION"
+        oli_name = molecule.replace("[", "").replace("]", "").upper()
+        return oli_name
 
 
 def get_charge(watertap_name: str) -> int:
@@ -98,9 +102,19 @@ def get_charge(watertap_name: str) -> int:
     elif len(components) == 2:
         molecule = components[0] + "ION"
         charge = components[1]
-        charge_sign = charge[-1]
+        try:
+            charge_sign = charge[-1]
+        except IndexError:
+            raise IOError(
+                f"Charge sign could not be determined from the string '{watertap_name}'"
+            )
         if len(charge) > 1:
-            charge_magnitude = int(charge[:-1])
+            try:
+                charge_magnitude = int(charge[:-1])
+            except ValueError:
+                raise IOError(
+                    f"Charge sign could not be determined from the string '{watertap_name}'"
+                )
         else:
             charge_magnitude = 1
         if charge_sign == "+":
@@ -108,7 +122,13 @@ def get_charge(watertap_name: str) -> int:
         elif charge_sign == "-":
             charge = -charge_magnitude
         else:
-            raise IOError(" Only + and - are valid charge indicators.")
+            raise IOError(
+                f"Only + and - are valid charge indicators and neither was provided in '{watertap_name}'."
+            )
+    else:
+        raise IOError(
+            f"Charge could not be determined from the string '{watertap_name}'"
+        )
     return charge
 
 
@@ -164,6 +184,7 @@ def get_molar_mass(watertap_name: str) -> float:
             raise IOError(f" Too many characters in {element}.")
 
         element_location = components[0].find(element)
+
         if "[" in components[0]:
             boundary = (components[0].find("["), components[0].find("]"))
             coefficient = int(components[0][boundary[1] + 1])
@@ -178,7 +199,28 @@ def get_molar_mass(watertap_name: str) -> float:
             ]
         )
         molar_mass += element_counts[element] * atomic_mass
+
+    if not molar_mass:
+        raise IOError(f"Molecular weight data could not be found for {watertap_name}.")
+
     return molar_mass
+
+
+def get_molar_mass_quantity(watertap_name: str, units=pyunits.kg / pyunits.mol):
+    """
+    Extracts atomic weight data from a periodic table file
+    to generate the molar mass of a chemical substance in pint units.
+    Since get_molar_mass returns only the value, which has inherent units of g/mol,
+    this function converts to kg/mol by default, the units used for molecular weight by convention in WaterTAP.
+
+    :param watertap_name: string name of a solute in WaterTAP format
+
+    :return desired_quantity: molar mass of solute in pint units. Conversion from g/mol to kg/mol by default.
+    """
+    molar_mass_value = get_molar_mass(watertap_name)
+    inherent_quantity = molar_mass_value * pyunits.g / pyunits.mol
+    desired_quantity = pyunits.convert(inherent_quantity, to_units=units)
+    return desired_quantity
 
 
 def get_oli_names(source: dict):

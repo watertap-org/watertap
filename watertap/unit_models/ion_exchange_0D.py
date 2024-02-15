@@ -20,7 +20,6 @@ from pyomo.environ import (
     Param,
     Suffix,
     log,
-    exp,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -102,7 +101,7 @@ class RegenerantChem(StrEnum):
     H2SO4 = "H2SO4"
     NaCl = "NaCl"
     MeOH = "MeOH"
-    none = "none"
+    single_use = "single_use"
 
 
 class IsothermType(StrEnum):
@@ -302,6 +301,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         prop_in = self.process_flow.properties_in[0]
 
+        self.add_inlet_port(name="inlet", block=self.process_flow)
+        self.add_outlet_port(name="outlet", block=self.process_flow)
+
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
@@ -315,9 +317,11 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         regen = self.regeneration_stream[0]
 
-        self.add_inlet_port(name="inlet", block=self.process_flow)
-        self.add_outlet_port(name="outlet", block=self.process_flow)
         self.add_outlet_port(name="regen", block=self.regeneration_stream)
+
+        for j in inerts:
+            self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
+            regen.get_material_flow_terms("Liq", j).fix(0)
 
         # ==========PARAMETERS==========
 
@@ -378,31 +382,11 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Sherwood equation exponent C",
         )
 
-        # Bed expansion is calculated as a fraction of the bed_depth
-        # These coefficients are used to calculate that fraction (bed_expansion_frac) as a function of backwash rate (bw_rate, m/hr)
-        # bed_expansion_frac = bed_expansion_A + bed_expansion_B * bw_rate + bed_expansion_C * bw_rate**2
-        # Default is for strong-base type I acrylic anion exchanger resin (A-850, Purolite), @20C
-        # Data extracted from MWH Chap 16, Figure 16-15 and fit with Excel
-
-        self.bed_expansion_frac_A = Param(
-            initialize=-1.23e-2,
+        self.number_columns_redund = Param(
+            initialize=1,
             mutable=True,
             units=pyunits.dimensionless,
-            doc="Bed expansion fraction eq intercept",
-        )
-
-        self.bed_expansion_frac_B = Param(
-            initialize=1.02e-1,
-            mutable=True,
-            units=pyunits.hr / pyunits.m,
-            doc="Bed expansion fraction equation B parameter",
-        )
-
-        self.bed_expansion_frac_C = Param(
-            initialize=-1.35e-3,
-            mutable=True,
-            units=pyunits.hr**2 / pyunits.m**2,
-            doc="Bed expansion fraction equation C parameter",
+            doc="Number of redundant columns for ion exchange process",
         )
 
         # Pressure drop (psi/m of resin bed depth) is a function of loading rate (vel_bed) in m/hr
@@ -438,14 +422,47 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Pump efficiency",
         )
 
-        # Rinse, Regen, Backwashing params
-
         self.t_regen = Param(
             initialize=1800,
             mutable=True,
             units=pyunits.s,
             doc="Regeneration time",
         )
+
+        self.service_to_regen_flow_ratio = Param(
+            initialize=3,
+            mutable=True,
+            units=pyunits.dimensionless,
+            doc="Ratio of service flow rate to regeneration flow rate",
+        )
+
+        # Bed expansion is calculated as a fraction of the bed_depth
+        # These coefficients are used to calculate that fraction (bed_expansion_frac) as a function of backwash rate (bw_rate, m/hr)
+        # bed_expansion_frac = bed_expansion_A + bed_expansion_B * bw_rate + bed_expansion_C * bw_rate**2
+        # Default is for strong-base type I acrylic anion exchanger resin (A-850, Purolite), @20C
+        # Data extracted from MWH Chap 16, Figure 16-15 and fit with Excel
+
+        self.bed_expansion_frac_A = Param(
+            initialize=-1.23e-2,
+            mutable=True,
+            units=pyunits.dimensionless,
+            doc="Bed expansion fraction eq intercept",
+        )
+
+        self.bed_expansion_frac_B = Param(
+            initialize=1.02e-1,
+            mutable=True,
+            units=pyunits.hr / pyunits.m,
+            doc="Bed expansion fraction equation B parameter",
+        )
+
+        self.bed_expansion_frac_C = Param(
+            initialize=-1.35e-3,
+            mutable=True,
+            units=pyunits.hr**2 / pyunits.m**2,
+            doc="Bed expansion fraction equation C parameter",
+        )
+        # Rinse, Regen, Backwashing params
 
         self.rinse_bv = Param(
             initialize=5,
@@ -467,19 +484,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Backwash time",
         )
 
-        self.service_to_regen_flow_ratio = Param(
-            initialize=3,
-            mutable=True,
-            units=pyunits.dimensionless,
-            doc="Ratio of service flow rate to regeneration flow rate",
-        )
-
-        self.number_columns_redund = Param(
-            initialize=1,
-            mutable=True,
-            units=pyunits.dimensionless,
-            doc="Number of redundant columns for ion exchange process",
-        )
         # ==========VARIABLES==========
         # COMMON TO LANGMUIR + FREUNDLICH
 
@@ -502,13 +506,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             bounds=(0, 1e5),
             units=pyunits.m**-1,
             doc="Resin surface area per volume",
-        )
-
-        self.regen_dose = Var(
-            initialize=300,
-            units=pyunits.kg / pyunits.m**3,
-            bounds=(0, None),
-            doc="Regenerant dose required for regeneration per volume of resin [kg regenerant/m3 resin]",
         )
 
         self.c_norm = Var(
@@ -571,13 +568,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Breakthrough time",
         )
 
-        self.t_contact = Var(
-            initialize=120,
-            bounds=(100, None),
-            units=pyunits.s,
-            doc="Resin contact time",
-        )
-
         self.ebct = Var(
             initialize=520,
             bounds=(90, None),
@@ -592,12 +582,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             bounds=(0, 0.01),  # MWH, Perry's
             units=pyunits.m / pyunits.s,
             doc="Superficial velocity through bed",
-        )
-
-        self.vel_inter = Var(
-            initialize=0.01,
-            units=pyunits.m / pyunits.s,
-            doc="Interstitial velocity through bed",
         )
 
         self.service_flow_rate = Var(
@@ -757,14 +741,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 doc="Sum of trapezoid areas",
             )
 
-            self.c_breakthru = Var(
-                self.target_ion_set,
-                initialize=0.5,
-                bounds=(0, None),
-                units=pyunits.kg / pyunits.m**3,
-                doc="Breakthrough concentration of target ion",
-            )
-
             self.freundlich_n = Var(
                 initialize=1.5,
                 bounds=(0, None),
@@ -793,49 +769,18 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 doc="Bed volumes of feed at 50 percent breakthrough",
             )
 
-            self.bed_capacity_param = Var(
-                initialize=1,
-                bounds=(0, None),
-                units=pyunits.dimensionless,
-                doc="Bed capacity fitting parameter for Clark model (A)",
-            )
-
-            self.kinetic_param = Var(
-                initialize=1e-5,
-                bounds=(0, None),
-                units=pyunits.s**-1,
-                doc="Kinetic fitting parameter for Clark model (r)",
-            )
-
         # ==========EXPRESSIONS==========
 
-        @self.Expression(doc="Bed expansion fraction from backwashing")
-        def bed_expansion_frac(b):
+        @self.Expression(doc="Pressure drop")
+        def pressure_drop(b):
+            vel_bed = pyunits.convert(b.vel_bed, to_units=pyunits.m / pyunits.hr)
             return (
-                b.bed_expansion_frac_A
-                + b.bed_expansion_frac_B * b.bw_rate
-                + b.bed_expansion_frac_C * b.bw_rate**2
-            )  # for 20C
-
-        @self.Expression(doc="Bed expansion from backwashing")
-        def bed_expansion_h(b):
-            return b.bed_expansion_frac * b.bed_depth
+                b.p_drop_A + b.p_drop_B * vel_bed + b.p_drop_C * vel_bed**2
+            ) * b.bed_depth  # for 20C;
 
         @self.Expression(doc="Total bed volume")
         def bed_vol(b):
             return b.bed_vol_tot / b.number_columns
-
-        @self.Expression(doc="Backwashing flow rate")
-        def bw_flow(b):
-            return (
-                pyunits.convert(b.bw_rate, to_units=pyunits.m / pyunits.s)
-                * (b.bed_vol / b.bed_depth)
-                * b.number_columns
-            )
-
-        @self.Expression(doc="Rinse flow rate")
-        def rinse_flow(b):
-            return b.vel_bed * (b.bed_vol / b.bed_depth) * b.number_columns
 
         @self.Expression(doc="Rinse time")
         def t_rinse(b):
@@ -849,6 +794,100 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def t_cycle(b):
             return b.t_breakthru + b.t_waste
 
+        if self.config.regenerant == RegenerantChem.single_use:
+            self.t_regen.set_value(0)
+            self.service_to_regen_flow_ratio.set_value(0)
+
+        if self.config.regenerant != RegenerantChem.single_use:
+
+            # If resin is not single use, add regeneration
+
+            @self.Expression(doc="Regen pump power")
+            def regen_pump_power(b):
+                return pyunits.convert(
+                    (
+                        b.pressure_drop
+                        * (
+                            prop_in.flow_vol_phase["Liq"]
+                            / b.service_to_regen_flow_ratio
+                        )
+                    )
+                    / b.pump_efficiency,
+                    to_units=pyunits.kilowatts,
+                ) * (b.t_regen / b.t_cycle)
+
+            @self.Expression(doc="Regen tank volume")
+            def regen_tank_vol(b):
+                return (
+                    prop_in.flow_vol_phase["Liq"] / b.service_to_regen_flow_ratio
+                ) * b.t_regen
+
+        @self.Expression(doc="Backwashing flow rate")
+        def bw_flow(b):
+            return (
+                pyunits.convert(b.bw_rate, to_units=pyunits.m / pyunits.s)
+                * (b.bed_vol / b.bed_depth)
+                * b.number_columns
+            )
+
+        @self.Expression(doc="Bed expansion fraction from backwashing")
+        def bed_expansion_frac(b):
+            return (
+                b.bed_expansion_frac_A
+                + b.bed_expansion_frac_B * b.bw_rate
+                + b.bed_expansion_frac_C * b.bw_rate**2
+            )  # for 20C
+
+        @self.Expression(doc="Rinse flow rate")
+        def rinse_flow(b):
+            return b.vel_bed * (b.bed_vol / b.bed_depth) * b.number_columns
+
+        @self.Expression(doc="Backwash pump power")
+        def bw_pump_power(b):
+            return pyunits.convert(
+                (b.pressure_drop * b.bw_flow) / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            ) * (b.t_bw / b.t_cycle)
+
+        @self.Expression(doc="Rinse pump power")
+        def rinse_pump_power(b):
+            return pyunits.convert(
+                (b.pressure_drop * b.rinse_flow) / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            ) * (b.t_rinse / b.t_cycle)
+
+        @self.Constraint(
+            self.target_ion_set, doc="Mass transfer for regeneration stream"
+        )
+        def eq_mass_transfer_regen(b, j):
+            return (
+                regen.get_material_flow_terms("Liq", j)
+                == -b.process_flow.mass_transfer_term[0, "Liq", j]
+            )
+
+        @self.Constraint(
+            doc="Isothermal assumption for regen stream",
+        )
+        def eq_isothermal_regen_stream(b):
+            return prop_in.temperature == regen.temperature
+
+        @self.Constraint(
+            doc="Isobaric assumption for regen stream",
+        )
+        def eq_isobaric_regen_stream(b):
+            return prop_in.pressure == regen.pressure
+
+        @self.Expression(doc="Bed expansion from backwashing")
+        def bed_expansion_h(b):
+            return b.bed_expansion_frac * b.bed_depth
+
+        @self.Expression(doc="Main pump power")
+        def main_pump_power(b):
+            return pyunits.convert(
+                (b.pressure_drop * prop_in.flow_vol_phase["Liq"]) / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            ) * (b.t_breakthru / b.t_cycle)
+
         @self.Expression(doc="Volume per column")
         def col_vol_per(b):
             return b.col_height * (b.bed_vol / b.bed_depth)
@@ -857,58 +896,21 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def col_vol_tot(b):
             return b.number_columns * b.col_vol_per
 
-        @self.Expression(
-            doc="Bed volumes at breakthrough",
-        )
-        def bv_calc(b):
-            return (b.vel_bed * b.t_breakthru) / b.bed_depth
+        @self.Expression(doc="Contact time")
+        def t_contact(b):
+            return b.ebct * b.bed_porosity
 
-        @self.Expression(doc="Regen tank volume")
-        def regen_tank_vol(b):
-            return (
-                prop_in.flow_vol_phase["Liq"] / b.service_to_regen_flow_ratio
-            ) * b.t_regen
-
-        @self.Expression(doc="Pressure drop")
-        def pressure_drop(b):
-            vel_bed = pyunits.convert(b.vel_bed, to_units=pyunits.m / pyunits.hr)
-            return (
-                b.p_drop_A + b.p_drop_B * vel_bed + b.p_drop_C * vel_bed**2
-            ) * b.bed_depth  # for 20C;
-
-        @self.Expression(doc="Backwash pump power")
-        def bw_pump_power(b):
-            return pyunits.convert(
-                (b.pressure_drop * b.bw_flow) / b.pump_efficiency,
-                to_units=pyunits.kilowatts,
-            )
-
-        @self.Expression(doc="Rinse pump power")
-        def rinse_pump_power(b):
-            return pyunits.convert(
-                (b.pressure_drop * b.rinse_flow) / b.pump_efficiency,
-                to_units=pyunits.kilowatts,
-            )
-
-        @self.Expression(doc="Rinse pump power")
-        def regen_pump_power(b):
-            return pyunits.convert(
-                (
-                    b.pressure_drop
-                    * (prop_in.flow_vol_phase["Liq"] / b.service_to_regen_flow_ratio)
-                )
-                / b.pump_efficiency,
-                to_units=pyunits.kilowatts,
-            )
-
-        @self.Expression(doc="Main pump power")
-        def main_pump_power(b):
-            return pyunits.convert(
-                (b.pressure_drop * prop_in.flow_vol_phase["Liq"]) / b.pump_efficiency,
-                to_units=pyunits.kilowatts,
-            )
+        @self.Expression(doc="Interstitial velocity")
+        def vel_inter(b):
+            return b.vel_bed / b.bed_porosity
 
         if self.config.isotherm == IsothermType.langmuir:
+
+            @self.Expression(
+                doc="Bed volumes at breakthrough",
+            )
+            def bv_calc(b):
+                return (b.vel_bed * b.t_breakthru) / b.bed_depth
 
             @self.Expression(doc="Left hand side of constant pattern sol'n")
             def lh(b):
@@ -939,54 +941,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     * b.rate_coeff[j]
                 )
 
-        if self.config.isotherm == IsothermType.freundlich:
-
-            @self.Expression(
-                self.target_ion_set, doc="Removed total mass of ion at resin exhaustion"
-            )  # Croll et al (2023), Eq.16
-            def mass_removed_total(b, j):
-                return (prop_in.flow_mass_phase_comp["Liq", j] / b.kinetic_param) * log(
-                    b.bed_capacity_param + 1
-                )
-
-            @self.Expression(
-                self.target_ion_set, doc="Freundlich base coeff estimation"
-            )
-            def freundlich_k(b, j):
-                mass_bed = pyunits.convert(
-                    b.bed_vol_tot * b.resin_bulk_dens, to_units=pyunits.kg
-                )
-                return b.mass_removed_total[j] / (
-                    mass_bed
-                    * prop_in.conc_mass_phase_comp["Liq", j] ** (1 / b.freundlich_n)
-                )
-
         # ==========CONSTRAINTS==========
-
-        @self.Constraint(
-            self.target_ion_set, doc="Mass transfer for regeneration stream"
-        )
-        def eq_mass_transfer_regen(b, j):
-            return (
-                regen.get_material_flow_terms("Liq", j)
-                == -b.process_flow.mass_transfer_term[0, "Liq", j]
-            )
-
-        @self.Constraint(
-            doc="Isothermal assumption for regen stream",
-        )
-        def eq_isothermal_regen_stream(b):
-            return prop_in.temperature == regen.temperature
-
-        @self.Constraint(
-            doc="Isobaric assumption for regen stream",
-        )
-        def eq_isobaric_regen_stream(b):
-            return prop_in.pressure == regen.pressure
-
-        for j in inerts:
-            self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
-            self.regeneration_stream[0].get_material_flow_terms("Liq", j).fix(0)
 
         # =========== DIMENSIONLESS ===========
 
@@ -1021,21 +976,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         # =========== RESIN & COLUMN ===========
 
-        @self.Constraint(doc="Interstitial velocity")
-        def eq_vel_inter(b):
-            return b.vel_inter == b.vel_bed / b.bed_porosity
-
         @self.Constraint(doc="Resin bead surface area per volume")
         def eq_resin_surf_per_vol(b):
             return b.resin_surf_per_vol == (6 * (1 - b.bed_porosity)) / b.resin_diam
 
         @self.Constraint(doc="Empty bed contact time")
         def eq_ebct(b):
-            return b.ebct == b.bed_depth / b.vel_bed
-
-        @self.Constraint(doc="Contact time")
-        def eq_t_contact(b):
-            return b.t_contact == b.ebct * b.bed_porosity
+            return b.ebct * b.vel_bed == b.bed_depth
 
         @self.Constraint(doc="Service flow rate")
         def eq_service_flow_rate(b):
@@ -1067,7 +1014,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def eq_col_height_to_diam_ratio(b):
             return b.col_height_to_diam_ratio * b.col_diam == b.col_height
 
-        # =========== MASS BALANCE ===========
+        # =========== ISOTHERM SPECIFIC ===========
 
         if self.config.isotherm == IsothermType.langmuir:
 
@@ -1157,20 +1104,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         if self.config.isotherm == IsothermType.freundlich:
 
-            @self.Constraint(self.target_ion_set, doc="Breakthrough concentration")
-            def eq_c_breakthru(b, j):
-                return (
-                    b.c_norm[j]
-                    == b.c_breakthru[j] / prop_in.conc_mass_phase_comp["Liq", j]
-                )
-
-            @self.Constraint(
-                doc="Mass transfer coefficient from Clark equation (kT)",
-            )  # Croll et al (2023), Eq.19
-            def eq_mass_transfer_coeff(b):
-                return b.mass_transfer_coeff * (b.freundlich_n - 1) == (
-                    b.kinetic_param * b.bv_50
-                )
+            @self.Expression(self.target_ion_set, doc="Breakthrough concentration")
+            def c_breakthru(b, j):
+                return b.c_norm[j] * prop_in.conc_mass_phase_comp["Liq", j]
 
             @self.Constraint(doc="Bed volumes at breakthrough")
             def eq_bv(b):
@@ -1179,34 +1115,17 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             @self.Constraint(
                 self.target_ion_set, doc="Clark equation with fundamental constants"
             )  # Croll et al (2023), Eq.9
-            def eq_clark_1(b, j):
-                c0 = prop_in.conc_mass_phase_comp["Liq", j]
-                cb = b.c_breakthru[j]
-                denom = (
-                    1
-                    + (2 ** (b.freundlich_n - 1) - 1)
-                    * exp(
-                        (
-                            (b.mass_transfer_coeff * b.bed_depth * (b.freundlich_n - 1))
-                            / (b.bv_50 * b.vel_bed)
-                        )
-                        * (b.bv_50 - b.bv)
-                    )
-                ) ** (1 / (b.freundlich_n - 1))
-                return c0 == denom * cb
+            def eq_clark(b, j):
+                left_side = (
+                    (b.mass_transfer_coeff * b.bed_depth * (b.freundlich_n - 1))
+                    / (b.bv_50 * b.vel_bed)
+                ) * (b.bv_50 - b.bv)
 
-            @self.Constraint(
-                self.target_ion_set, doc="Clark equation for fitting"
-            )  # Croll et al (2023), Eq.12
-            def eq_clark_2(b, j):
-                c0 = prop_in.conc_mass_phase_comp["Liq", j]
-                cb = b.c_breakthru[j]
-                denom = (
-                    1
-                    + b.bed_capacity_param
-                    * exp((-b.kinetic_param * b.bed_depth * b.bv) / b.vel_bed)
-                ) ** (1 / (b.freundlich_n - 1))
-                return c0 == denom * cb
+                right_side = log(
+                    ((1 / b.c_norm[j]) ** (b.freundlich_n - 1) - 1)
+                    / (2 ** (b.freundlich_n - 1) - 1)
+                )
+                return left_side - right_side == 0
 
             @self.Constraint(
                 self.target_ion_set,
@@ -1218,16 +1137,22 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     (b.c_norm[j] - b.c_trap_min) / (b.num_traps - 1)
                 )
 
-            # b.ebct == b.bed_depth / b.vel_bed
             @self.Constraint(
                 self.trap_index,
                 doc="Breakthru time calc for trapezoids",
             )
             def eq_tb_traps(b, k):
-                x = 1 / b.c_traps[k]
-                return b.tb_traps[k] == (1 / -b.kinetic_param) * log(
-                    (x ** (b.freundlich_n - 1) - 1) / b.bed_capacity_param
+                bv_traps = (b.tb_traps[k] * b.vel_bed) / b.bed_depth
+                left_side = (
+                    (b.mass_transfer_coeff * b.bed_depth * (b.freundlich_n - 1))
+                    / (b.bv_50 * b.vel_bed)
+                ) * (b.bv_50 - bv_traps)
+
+                right_side = log(
+                    ((1 / b.c_traps[k]) ** (b.freundlich_n - 1) - 1)
+                    / (2 ** (b.freundlich_n - 1) - 1)
                 )
+                return left_side - right_side == 0
 
             @self.Constraint(self.trap_index, doc="Area of trapezoids")
             def eq_traps(b, k):
@@ -1286,6 +1211,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             hold_state=True,
         )
         init_log.info("Initialization Step 1a Complete.")
+
         # ---------------------------------------------------------------------
         # Initialize other state blocks
         # Set state_args from inlet state
@@ -1306,7 +1232,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         state_args_out = deepcopy(state_args)
 
         for p, j in self.process_flow.properties_out.phase_component_set:
-            if j == self.config.target_ion:
+            if j in self.target_ion_set:
                 state_args_out["flow_mol_phase_comp"][(p, j)] = (
                     state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
                 )
@@ -1411,17 +1337,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.ebct) is None:
             iscale.set_scaling_factor(self.ebct, 1e-2)
 
-        if iscale.get_scaling_factor(self.t_contact) is None:
-            iscale.set_scaling_factor(self.t_contact, 1e-2)
-
         if iscale.get_scaling_factor(self.vel_bed) is None:
             iscale.set_scaling_factor(self.vel_bed, 1e3)
-
-        if iscale.get_scaling_factor(self.vel_inter) is None:
-            iscale.set_scaling_factor(self.vel_inter, 1e3)
-
-        if iscale.get_scaling_factor(self.regen_dose) is None:
-            iscale.set_scaling_factor(self.regen_dose, 1e-2)
 
         # unique scaling for isotherm type
         if isotherm == IsothermType.langmuir:
@@ -1454,20 +1371,14 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             if iscale.get_scaling_factor(self.freundlich_n) is None:
                 iscale.set_scaling_factor(self.freundlich_n, 0.1)
 
-            if iscale.get_scaling_factor(self.c_breakthru) is None:
-                iscale.set_scaling_factor(self.c_breakthru, 1e4)
-
-            if iscale.get_scaling_factor(self.kinetic_param) is None:
-                iscale.set_scaling_factor(self.kinetic_param, 1e7)
-
-            if iscale.get_scaling_factor(self.bed_capacity_param) is None:
-                iscale.set_scaling_factor(self.bed_capacity_param, 0.1)
-
             if iscale.get_scaling_factor(self.mass_transfer_coeff) is None:
-                iscale.set_scaling_factor(self.mass_transfer_coeff, 1e4)
+                iscale.set_scaling_factor(self.mass_transfer_coeff, 10)
 
             if iscale.get_scaling_factor(self.bv_50) is None:
                 iscale.set_scaling_factor(self.bv_50, 1e-5)
+
+            if iscale.get_scaling_factor(self.bv) is None:
+                iscale.set_scaling_factor(self.bv, 1e-5)
 
             if iscale.get_scaling_factor(self.tb_traps) is None:
                 sf = iscale.get_scaling_factor(self.t_breakthru)
@@ -1504,23 +1415,17 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     iscale.constraint_scaling_transform(c, sf)
 
         if isotherm == IsothermType.freundlich:
-            for ind, c in self.eq_clark_2.items():
-                if iscale.get_scaling_factor(c) is None:
-                    iscale.constraint_scaling_transform(c, 1e6)
 
-            for ind, c in self.eq_clark_1.items():
+            for ind, c in self.eq_clark.items():
                 if iscale.get_scaling_factor(c) is None:
-                    iscale.constraint_scaling_transform(c, 1e6)
+                    iscale.constraint_scaling_transform(c, 1e-2)
 
             for ind, c in self.eq_traps.items():
                 if iscale.get_scaling_factor(c) is None:
                     iscale.constraint_scaling_transform(c, 1e2)
 
-        for ind, c in self.eq_vel_inter.items():
-            sf = iscale.get_scaling_factor(self.vel_inter)
-            iscale.constraint_scaling_transform(c, sf)
-
     def _get_stream_table_contents(self, time_point=0):
+
         return create_stream_table_dataframe(
             {
                 "Feed Inlet": self.inlet,
@@ -1537,11 +1442,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         var_dict = {}
         var_dict["Breakthrough Time"] = self.t_breakthru
         var_dict["EBCT"] = self.ebct
-        var_dict["Contact Time"] = self.t_contact
         var_dict[f"Relative Breakthrough Conc. [{target_ion}]"] = self.c_norm[
             target_ion
         ]
-        var_dict["Regen Dose"] = self.regen_dose
         var_dict["Number Columns"] = self.number_columns
         var_dict["Bed Volume Total"] = self.bed_vol_tot
         var_dict["Bed Depth"] = self.bed_depth
@@ -1568,15 +1471,10 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 f"Fluid Mass Transfer Coeff. [{target_ion}]"
             ] = self.fluid_mass_transfer_coeff[target_ion]
         elif self.config.isotherm == IsothermType.freundlich:
-            var_dict[f"Breakthrough Conc. [{target_ion}]"] = self.c_breakthru[
-                target_ion
-            ]
             var_dict[f"BV at Breakthrough"] = self.bv
             var_dict[f"BV at 50% Breakthrough"] = self.bv_50
             var_dict[f"Freundlich n"] = self.freundlich_n
             var_dict[f"Clark Mass Transfer Coeff."] = self.mass_transfer_coeff
-            var_dict[f"Clark Bed Capacity Param."] = self.bed_capacity_param
-            var_dict[f"Clark Kinetic Param."] = self.kinetic_param
 
         return {"vars": var_dict}
 

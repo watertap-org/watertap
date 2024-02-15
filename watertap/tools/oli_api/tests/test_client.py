@@ -1,4 +1,4 @@
-#################################################################################
+###############################################################################
 # WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
@@ -9,104 +9,62 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #
-#################################################################################
-
-import pytest
-import requests
+# OLI Systems, Inc. Copyright © 2022, all rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation and/or
+# other materials provided with the distribution.
+#
+# 3. Neither the name of OLI Systems, Inc. nor the names of any contributors to
+# the software made available herein may be used to endorse or promote products derived
+# from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+# SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+# OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+# TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+# EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# You are under no obligation whatsoever to provide any bug fixes, patches, or upgrades to the
+# features, functionality or performance of the source code ("Enhancements") to anyone; however,
+# if you choose to make your Enhancements available either publicly, or directly to OLI Systems, Inc.,
+# without imposing a separate written license agreement for such Enhancements, then you hereby grant
+# the following license: a non-exclusive, royalty-free perpetual license to install, use, modify, prepare
+# derivative works, incorporate into other computer software, distribute, and sublicense such enhancements
+# or derivative works thereof, in binary and source code form.
+###############################################################################
 
 from pathlib import Path
-from os.path import join
 
-from pyomo.environ import units as pyunits
+import pytest
 
-from numpy import linspace
-
-from watertap.tools.oli_api.credentials import CredentialManager, cryptography_available
 from watertap.tools.oli_api.client import OLIApi
 
-from watertap.tools.oli_api.core.water_analysis import WaterAnalysis
 
-
-@pytest.fixture
-def credential_manager():
-    if not cryptography_available:
-        pytest.skip(reason="cryptography module not available")
-    credentials = {
-        "username": "dummy_username@email.com",
-        "password": "dummy_password",
-        "root_url": "https://dummyrooturl.com",
-        "auth_url": "https://dummyauthurl.com",
-    }
-    credential_manager = CredentialManager(**credentials, test=True)
-    with pytest.raises(requests.exceptions.ConnectionError):
-        credential_manager.login()
-    return credential_manager
-
-
-@pytest.fixture
-def chemistry_source():
-    return {
-        "temperature": 298.15,  # temperature in K
-        "pressure": 101325,  # pressure in Pa
-        "components": {  # concentrations in mg/L
-            "Cl_-": 870,
-            "Na_+": 739,
-            "SO4_2-": 1011,
-            "Mg_2+": 90,
-            "Ca_2+": 258,
-            "K_+": 9,
-            "HCO3_-": 385,
-        },
-        "units": {
-            "temperature": pyunits.K,
-            "pressure": pyunits.Pa,
-            "components": pyunits.mg / pyunits.L,
-        },
-    }
+@pytest.mark.unit
+def test_dbs_file_available_for_testing(local_dbs_file: Path):
+    assert local_dbs_file.is_file()
 
 
 @pytest.mark.unit
-def test_get_dbs_file_id(credential_manager, chemistry_source):
-    file_path = Path(__file__).parents[0]
-    local_dbs_file = join(file_path, "test.dbs")
-    phases = ["liquid1", "solid"]
-    model_name = "test"
-    with OLIApi(credential_manager) as oliapi:
-        with pytest.raises(OSError):
-            local_dbs_file_id = oliapi.get_dbs_file_id(local_dbs_file)
-        with pytest.raises(AttributeError):
-            generated_dbs_file_id = oliapi.get_dbs_file_id(
-                chemistry_source["components"], phases, model_name
-            )
+def test_dbs_file_cleanup(oliapi_instance: OLIApi, local_dbs_file: Path):
+    ids = [oliapi_instance.get_dbs_file_id(str(local_dbs_file)) for i in range(3)]
+    oliapi_instance.dbs_file_cleanup(ids)
 
 
 @pytest.mark.unit
-def test_call(credential_manager, chemistry_source):
-    file_path = Path(__file__).parents[0]
-    local_dbs_file = join(file_path, "test.dbs")
-    survey_conditions = {"SO4_2-": linspace(0, 1e3, 2), "Ca_2+": linspace(0, 1e3, 2)}
-    water_analysis = WaterAnalysis(
-        state_vars=chemistry_source, survey_conditions=survey_conditions
-    )
-    phases = ["liquid1", "solid"]
-    model_name = "test"
-    with OLIApi(credential_manager) as oliapi:
-        with pytest.raises(AttributeError):
-            generated_dbs_file_id = oliapi.get_dbs_file_id(
-                chemistry_source["components"], phases, model_name
-            )
-            results = water_analysis.run(oliapi, generated_dbs_file_id)
-
-
-@pytest.mark.unit
-def test_get_user_summary(credential_manager):
-    with OLIApi(credential_manager) as oliapi:
-        with pytest.raises(AttributeError):
-            oliapi.get_user_summary()
-
-
-@pytest.mark.unit
-def test_delete_dbs_files(credential_manager):
-    with OLIApi(credential_manager, test=True) as oliapi:
-        with pytest.raises(AttributeError):
-            oliapi.dbs_file_cleanup()
+def test_get_user_summary(oliapi_instance: OLIApi):
+    original_dbs_file_ids = oliapi_instance.get_user_dbs_file_ids()
+    if len(original_dbs_file_ids) > 1:
+        dbs_file_ids = original_dbs_file_ids[:1]
+    else:
+        dbs_file_ids = original_dbs_file_ids
+    oliapi_instance.get_user_summary(dbs_file_ids)

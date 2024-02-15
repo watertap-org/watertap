@@ -95,6 +95,37 @@ class TestInputParser:
                 "upper_limit": 10,
                 "num_samples": 3,
             },
+            "g_val": {
+                "type": "PredeterminedFixedSample",
+                "param": "fs.a",
+                "array": [1, 2, 3, 4, 5],
+            },
+            "h_val": {
+                "type": "PredeterminedRandomSample",
+                "param": "fs.a",
+                "array": [1, 2, 3, 4, 5],
+            },
+            "x_val_fix_state": {
+                "type": "ReverseGeomSample",
+                "param": "fs.x",
+                "lower_limit": 1,
+                "upper_limit": 10,
+                "num_samples": 3,
+                "set_mode": "set_fixed_state",
+                "default_value": 3,
+            },
+            "g_val_ub_state": {
+                "type": "PredeterminedFixedSample",
+                "param": "fs.x",
+                "array": [1, 2, 3, 4, 5],
+                "set_mode": "set_ub",
+            },
+            "h_val_lb_state": {
+                "type": "PredeterminedRandomSample",
+                "param": "fs.x",
+                "array": [1, 2, 3, 4, 5],
+                "set_mode": "set_lb",
+            },
         }
 
         with open(filename, "w") as fp:

@@ -20,7 +20,6 @@ from pyomo.environ import (
     Objective,
     assert_optimal_termination,
 )
-from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.models.unit_models import Feed, Product, Mixer, Separator
@@ -38,8 +37,6 @@ from watertap.examples.flowsheets.mvc.mvc_single_stage import (
     fix_outlet_pressures,
     solve,
     set_up_optimization,
-    display_metrics,
-    display_design,
     main,
 )
 
@@ -109,7 +106,6 @@ class TestMVC:
 
         var_str_list = [
             "total_capital_cost",
-            "maintenance_labor_chemical_operating_cost",
             "total_operating_cost",
         ]
         for var_str in var_str_list:
@@ -340,3 +336,8 @@ class TestMVC:
             22.36, rel=1e-2
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(4.52, rel=1e-2)
+
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.unit
+    def test_main_fun(self):
+        main()

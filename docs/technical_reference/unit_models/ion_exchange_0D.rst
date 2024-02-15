@@ -34,6 +34,9 @@ At this time, the mass transfer zone is approaching the end of the ion exchange 
 and the regeneration cycle can begin. Fundamental to this model is the assumption that the isotherm between the solute
 and the resin is favorable, and thus the mass transfer zone is shallow.
 
+.. note:: 
+    If using ``single-use`` configuration for ``regenerant``, the backwashing, regeneration, and rinsing steps are not modeled and all associated costs for these steps are zero.
+
 Isotherm Configurations
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -135,8 +138,7 @@ The ion exchange model includes many variables, parameters, and expressions that
    "Resin bead diameter", ":math:`d`", "``resin_diam``", "None", ":math:`\text{m}`"
    "Resin bulk density", ":math:`\rho_{b}`", "``resin_bulk_dens``", "None", ":math:`\text{kg/L}`"
    "Resin surface area per volume", ":math:`a_{s}`", "``resin_surf_per_vol``", "None", ":math:`\text{m}^{-1}`"
-   "Bed porosity", ":math:`\epsilon`", "``bed_porosity``", "None", ":math:`\text{dimensionless}`"
-   "Regenerant dose per volume of resin", ":math:`C_{regen}`", "``regen_dose``", "None", ":math:`\text{kg/}\text{m}^3`"
+   "Bed porosity", ":math:`\varepsilon`", "``bed_porosity``", "None", ":math:`\text{dimensionless}`"
    "Number of cycles before regenerant disposal", ":math:`N_{regen}`", "``regen_recycle``", "None", ":math:`\text{dimensionless}`"
    "Relative breakthrough concentration at breakthrough time ", ":math:`X`", "``c_norm``", "``target_ion_set``", ":math:`\text{dimensionless}`"
    "Breakthrough time", ":math:`t_{break}`", "``t_breakthru``", "None", ":math:`\text{s}`"
@@ -207,12 +209,9 @@ If ``isotherm`` is set to ``freundlich``, the model includes the following compo
 
    **Variables**
    "Freundlich isotherm exponent for resin/ion system", ":math:`n`", "``freundlich_n``", "None", ":math:`\text{dimensionless}`"
-   "Bed capacity parameter", ":math:`A`", "``bed_capacity_param``", None, ":math:`\text{dimensionless}`"
    "Bed volumes at breakthrough", ":math:`BV`", "``bv``", "None", ":math:`\text{dimensionless}`"
    "Bed volumes at 50% influent conc.", ":math:`BV_{50}`", "``bv_50``", "None", ":math:`\text{dimensionless}`"
-   "Kinetic fitting parameter", ":math:`r`", "``kinetic_param``", "None", ":math:`\text{dimensionless}`"
    "Mass transfer coefficient", ":math:`k_T`", "``mass_transfer_coeff``", "None", ":math:`\text{s}^{-1}`"
-   "Concentration at breakthrough", ":math:`C_{b}`", "``c_breakthru``", "``target_ion_set``", ":math:`\text{kg/}\text{m}^3`"
    "Average relative breakthrough concentration at breakthrough time", ":math:`X_{avg}`", "``c_norm_avg``", "None", ":math:`\text{dimensionless}`"
    "Relative breakthrough conc. for trapezoids", ":math:`X_{trap,k}`", "``c_traps``", "``k``", ":math:`\text{dimensionless}`"
    "Breakthrough times for trapezoids", ":math:`t_{trap,k}`", "``tb_traps``", "``k``", ":math:`\text{s}`"
@@ -235,7 +234,6 @@ For either model configuration, the user can fix the following variables:
 * ``service_flow_rate`` (alternatively, ``vel_bed``)
 * ``bed_depth``
 * ``number_columns``
-* ``regen_dose``
 
 
 Langmuir DOF 
@@ -256,7 +254,7 @@ If ``isotherm`` is set to ``freundlich``, the additional variables to fix are:
 * ``freundlich_n``
 * ``bv`` 
 * ``c_norm``
-* one of ``bv_50``, ``kinetic_param``, ``mass_transfer_coeff``, or ``bed_capacity_param`` as determined from Clark model equations
+* one of ``bv_50`` or ``mass_transfer_coeff`` as determined from Clark model equations
 
 
 
@@ -305,8 +303,8 @@ Equations and Relationships
    "Total column volume required", ":math:`V_{col, tot} = n_{op}V_{col}`"
    "Column height to diameter ratio", ":math:`R_{HD} = \frac{H_{col}}{D_{col}}`"
    "Column height", ":math:`H_{col} = Z + H_{distributor} + H_{underdrain} + H_{expan}`"
-   "Interstitial velocity", ":math:`u_{inter} = \frac{u_{bed}}{\epsilon}`"
-   "Contact time", ":math:`t_{contact} = EBCT \epsilon`"
+   "Interstitial velocity", ":math:`u_{inter} = \frac{u_{bed}}{\varepsilon}`"
+   "Contact time", ":math:`t_{contact} = EBCT \varepsilon`"
    "Empty bed contact time", ":math:`EBCT = \frac{Z}{u_{bed}}`"
    "Regeneration tank volume", ":math:`V_{regen} = t_{regen} (Q_{p, in} / R)`"
    "Bed expansion fraction from backwashing (T = 20C)", ":math:`X_{expan} = H_{expan,A} + H_{expan,B}u_{bw} + H_{expan,C}u_{bw}^{2}`"
@@ -314,20 +312,20 @@ Equations and Relationships
    "Regen volumetric flow rate", ":math:`Q_{regen} = \frac{Q_{p, in}N_{regen}}{R}`"
    "Backwashing flow rate", ":math:`Q_{bw} = u_{bw} \frac{V_{bed}}{Z}n_{op}`"
    "Rinse flow rate", ":math:`Q_{rinse} = u_{bed} \frac{V_{bed}}{Z}n_{op}`"
-   "Main pump power", ":math:`P_{main} = \frac{g \rho_{in} 0.70325p_{drop}Q_{p, in}}{\eta}`"
-   "Regen pump power", ":math:`P_{regen} = \frac{g \rho_{in} 0.70325p_{drop}Q_{regen}}{\eta}`"
-   "Rinse pump power", ":math:`P_{rinse} = \frac{g \rho_{in} 0.70325p_{drop}Q_{rinse}}{\eta}`"
-   "Backwash pump power", ":math:`P_{bw} = \frac{g \rho_{in} 0.70325p_{drop}Q_{bw}}{\eta}`"
+   "Main pump power", ":math:`P_{main} = \frac{g \rho_{in} p_{drop}Q_{p, in}}{\eta} \Big( \frac{t_{break}}{t_{cycle}} \Big)`"
+   "Regen pump power", ":math:`P_{regen} = \frac{g \rho_{in} p_{drop}Q_{regen}}{\eta} \Big( \frac{t_{regen}}{t_{cycle}} \Big)`"
+   "Rinse pump power", ":math:`P_{rinse} = \frac{g \rho_{in} p_{drop}Q_{rinse}}{\eta} \Big( \frac{t_{rinse}}{t_{cycle}} \Big)`"
+   "Backwash pump power", ":math:`P_{bw} = \frac{g \rho_{in} p_{drop}Q_{bw}}{\eta} \Big( \frac{t_{bw}}{t_{cycle}} \Big)`"
    "Pressure drop (T = 20C)", ":math:`p_{drop} = Z(p_{drop,A} + p_{drop,B}u_{bed} + p_{drop,C}u_{bed}^{2})`"
    "Rinse time", ":math:`t_{rinse} = EBCT N_{rinse}`"
-   "Cycle time", ":math:`t_{cycle} = t_{break} + t_{waste}`"
    "Waste time", ":math:`t_{waste} = t_{regen} + t_{bw} + t_{rinse}`"
+   "Cycle time", ":math:`t_{cycle} = t_{break} + t_{waste}`"
    "Reynolds number", ":math:`Re = \frac{u_{bed}d}{\mu}`"
    "Schmidt number", ":math:`Sc = \frac{\mu}{D}`"
-   "Sherwood number", ":math:`Sh = 2.4 \epsilon^{0.66} Re^{0.34} Sc^{0.33}`"
+   "Sherwood number", ":math:`Sh = 2.4 \varepsilon^{0.66} Re^{0.34} Sc^{0.33}`"
    "Bed Peclet number", ":math:`Pe_{bed} = Pe_{p} \frac{Z}{d}`"
    "Particle Peclet number", ":math:`Pe_{p} = 0.05 Re^{0.48}`"
-   "Resin surface area per vol", ":math:`a_{s} = 6 \frac{1-\epsilon}{d}`"
+   "Resin surface area per vol", ":math:`a_{s} = 6 \frac{1-\varepsilon}{d}`"
 
     **Langmuir**
    "Langmuir isotherm", ":math:`\frac{C_{b}}{C_{0}} (1-\frac{q_{eq}}{q_{max}}) = La (1-\frac{C_{b}}{C_{0}})\frac{q_{eq}}{q_{max}}`"
@@ -336,9 +334,9 @@ Equations and Relationships
    "Partition ratio", ":math:`\Lambda = \frac{q_{eq} \rho_{b}}{C_{0}}`"
    "Fluid mass transfer coeff", ":math:`k_{f} = \frac{D Sh}{d}`"
    "Number of mass-transfer units", ":math:`N = \frac{k_{f}a_{s}Z}{u_{bed}}`"
-   "Dimensionless time", ":math:`\tau = (\frac{u_{inter}t_{break} \epsilon}{Z} - \epsilon) / \Lambda`"
+   "Dimensionless time", ":math:`\tau = (\frac{u_{inter}t_{break} \varepsilon}{Z} - \varepsilon) / \Lambda`"
    "Height of transfer unit", ":math:`HTU = \frac{u_{bed}}{\rho_{b}k}`"
-   "Rate coefficient", ":math:`k = 6 \frac{(1-\epsilon)k_{f}}{\rho_{b}d}`"
+   "Rate coefficient", ":math:`k = 6 \frac{(1-\varepsilon)k_{f}}{\rho_{b}d}`"
    "Mass removed", ":math:`M_{rem,j} = V_{res,tot}q_{eq} \rho_{b}`"
    "Mass transfer term", ":math:`\dot{m}_j = -M_{rem,j} / t_{break}`"
 
@@ -346,8 +344,6 @@ Equations and Relationships
    "Breakthrough concentration", ":math:`X = \frac{C_b}{C_0}`"
    "Bed volumes at breakthrough concentration", ":math:`BV = \frac{t_{break} u_{bed}}{Z}`"
    "Clark equation with fundamental constants", ":math:`X = \frac{1}{\bigg(1 + (2^{n - 1} - 1)\text{exp}\bigg[\frac{k_T Z (n - 1)}{BV_{50} u_{bed}} (BV_{50} - BV)\bigg]\bigg)^{\frac{1}{n-1}}}`"
-   "Clark equation for fitting", ":math:`X = \frac{1}{A \text{exp}\big[\frac{-r Z}{u_{bed}} BV\big]^{\frac{1}{n-1}}}`"
-   "Mass transfer coefficient from Clark equation", ":math:`k_T = \frac{r BV_{50}}{n - 1}`"
    "Evenly spaced c_norm for trapezoids", ":math:`X_{trap,k} = X_{trap,min} + (k - 1) \frac{X - X_{trap,min}}{n_{trap} - 1}`"
    "Breakthru time calculation for trapezoids", ":math:`t_{trap,k} = - \log{\frac{X_{trap,k}^{n-1}-1}{A}} / k_T`"
    "Area of trapezoids", ":math:`A_{trap,k} = \frac{t_{trap,k} - t_{trap,k - 1}}{t_{trap,n_{trap}}} \frac{X_{trap,k} + X_{trap,k - 1}}{2}`"
@@ -364,43 +360,40 @@ The following is a list of variables and/or parameters that are created when app
    :header: "Description", "Symbol", "Variable Name", "Default Value", "Units", "Notes"
 
    "Anion exchange resin cost", ":math:`c_{res}`", "``anion_exchange_resin_cost``", "205", ":math:`\text{\$/}\text{ft}^{3}`", "Assumes strong base polystyrenic gel-type Type II. From EPA-WBS cost model."
-   "Cation exchange resin cost", ":math:`c_{res}`", "``cation_exchange_resin_cost``", "205", ":math:`\text{\$/}\text{ft}^{3}`", "Assumes strong acid polystyrenic gel-type. From EPA-WBS cost model."
-   "Ion exchange column cost equation intercept", ":math:`C_{col,int}`", "``vessel_intercept``", "10010.86", ":math:`\text{\$}`", "Carbon steel w/ plastic internals. From EPA-WBS cost model."
-   "Ion exchange column cost equation A coeff", ":math:`C_{col,A}`", "``vessel_A_coeff``", "6e-9", ":math:`\text{\$/}\text{gal}^{3}`", "Carbon steel w/ plastic internals. From EPA-WBS cost model."
-   "Ion exchange column cost equation B coeff", ":math:`C_{col,B}`", "``vessel_B_coeff``", "-2.284e-4", ":math:`\text{\$/}\text{gal}^{2}`", "Carbon steel w/ plastic internals. From EPA-WBS cost model."
-   "Ion exchange column cost equation C coeff", ":math:`C_{col,C}`", "``vessel_C_coeff``", "8.3472", ":math:`\text{\$/}\text{gal}`", "Carbon steel w/ plastic internals. From EPA-WBS cost model."
-   "Backwash/rinse tank cost equation intercept", ":math:`C_{bw,int}`", "``backwash_tank_intercept``", "4717.255", ":math:`\text{\$}`", "Fiberglass tank. From EPA-WBS cost model."
-   "Backwash/rinse tank cost equation A coeff", ":math:`C_{bw,A}`", "``backwash_tank_A_coeff``", "1e-9", ":math:`\text{\$/}\text{gal}^{3}`", "Fiberglass tank. From EPA-WBS cost model."
-   "Backwash/rinse tank cost equation B coeff", ":math:`C_{bw,B}`", "``backwash_tank_B_coeff``", "-5.8587e-05", ":math:`\text{\$/}\text{gal}^{2}`", "Fiberglass tank. From EPA-WBS cost model."
-   "Backwash/rinse tank cost equation C coeff", ":math:`C_{bw,C}`", "``backwash_tank_C_coeff``", "2.2911", ":math:`\text{\$/}\text{gal}`", "Fiberglass tank. From EPA-WBS cost model."
-   "Regeneration solution tank cost equation intercept", ":math:`C_{regen,int}`", "``regen_tank_intercept``", "4408.327", ":math:`\text{\$}`", "Stainless steel tank. From EPA-WBS cost model."
-   "Regeneration solution tank cost equation A coeff", ":math:`C_{regen,A}`", "``regen_tank_A_coeff``", "-3.258e-5", ":math:`\text{\$/}\text{gal}^{2}`", "Stainless steel tank. From EPA-WBS cost model."
-   "Regeneration solution tank cost equation B coeff", ":math:`C_{regen,B}`", "``regen_tank_B_coeff``", "3.846", ":math:`\text{\$/}\text{gal}`", "Stainless steel tank. From EPA-WBS cost model."
+   "Cation exchange resin cost", ":math:`c_{res}`", "``cation_exchange_resin_cost``", "153", ":math:`\text{\$/}\text{ft}^{3}`", "Assumes strong acid polystyrenic gel-type. From EPA-WBS cost model."
+   "Regenerant dose per volume of resin", ":math:`D_{regen}`", "``regen_dose``", "300", ":math:`\text{kg/}\text{m}^3`", "Mass of regenerant chemical per cubic meter of resin volume"
+   "Ion exchange column cost equation A coeff", ":math:`C_{col,A}`", "``vessel_A_coeff``", "1596.499", ":math:`\text{\$}`", "Carbon steel w/ stainless steel internals. From EPA-WBS cost model."
+   "Ion exchange column cost equation B coeff", ":math:`C_{col,b}`", "``vessel_b_coeff``", "0.459496", ":math:`\text{dimensionless}`", "Carbon steel w/ stainless steel internals. From EPA-WBS cost model."
+   "Backwash/rinse tank cost equation A coeff", ":math:`C_{bw,A}`", "``backwash_tank_A_coeff``", "308.9371", ":math:`\text{\$}`", "Steel tank. From EPA-WBS cost model."
+   "Backwash/rinse tank cost equation B coeff", ":math:`C_{bw,b}`", "``backwash_tank_b_coeff``", "0.501467", ":math:`\text{dimensionless}`", "Steel tank. From EPA-WBS cost model."
+   "Regeneration solution tank cost equation A coeff", ":math:`C_{regen,A}`", "``regen_tank_A_coeff``", "57.02158", ":math:`\text{\$}`", "Stainless steel tank. From EPA-WBS cost model."
+   "Regeneration solution tank cost equation B coeff", ":math:`C_{regen,b}`", "``regen_tank_b_coeff``", "0.729325", ":math:`\text{dimensionless}`", "Stainless steel tank. From EPA-WBS cost model."
    "Fraction of resin replaced per year", ":math:`f_{res}`", "``annual_resin_replacement_factor``", "0.05", ":math:`\text{yr}^{-1}`", "Estimated 4-5% per year. From EPA-WBS cost model."
    "Minimum hazardous waste disposal cost", ":math:`f_{haz,min}`", "``hazardous_min_cost``", "3240", ":math:`\text{\$/}\text{yr}`", "Minimum cost per hazardous waste shipment. From EPA-WBS cost model."
    "Unit cost for hazardous waste resin disposal", ":math:`f_{haz,res}`", "``hazardous_resin_disposal``", "347.10", ":math:`\text{\$/}\text{ton}`", "From EPA-WBS cost model."
    "Unit cost for hazardous waste regeneration solution disposal", ":math:`f_{haz,regen}`", "``hazardous_regen_disposal``", "3.64", ":math:`\text{\$/}\text{gal}`", "From EPA-WBS cost model."
    "Number of cycles the regenerant can be reused before disposal", ":math:`f_{recycle}`", "``regen_recycle``", "1", ":math:`\text{dimensionless}`", "Can optionally be set by the user to investigate more efficient regen regimes."
-   "Costing factor to account for total installed cost installation of equipment", ":math:`f_{TIC}`", "``total_installed_cost_factor``", "1.65", ":math:`\text{dimensionless}`", ""
+   "Costing factor to account for total installed cost installation of equipment", ":math:`f_{TIC}`", "``total_installed_cost_factor``", "1.65", ":math:`\text{dimensionless}`", "Costing factor to account for total installed cost of equipment"
    "Unit cost of NaCl", ":math:`c_{regen}`", "``costing.nacl``", "0.09", ":math:`\text{\$/}\text{kg}`", "Assumes solid NaCl. From CatCost v 1.0.4"
    "Unit cost of HCl", ":math:`c_{regen}`", "``costing.hcl``", "0.17", ":math:`\text{\$/}\text{kg}`", "Assumes 37% solution HCl. From CatCost v 1.0.4"
    "Unit cost of NaOH", ":math:`c_{regen}`", "``costing.naoh``", "0.59", ":math:`\text{\$/}\text{kg}`", "Assumes 30% solution NaOH. From iDST"
    "Unit cost of Methanol (MeOH)", ":math:`c_{regen}`", "``costing.meoh``", "3.395", ":math:`\text{\$/}\text{kg}`", "Assumes 100% pure MeOH. From ICIS"
-   
+
 Capital Cost Calculations
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Capital costs for ion exchange in the ``watertap_costing_package`` are the summation of the total cost of the resin, columns, backwashing tank, and regeneration solution tank:
+Capital costs for ion exchange in the ``watertap_costing_package`` are the summation of the 
+total cost of the resin, columns, backwashing tank, and regeneration solution tank:
 
 Resin is costed based on the total volume of resin required for the system, where :math:`c_{res}` is the cost per volume of resin (either cation or anion exchange resin):
 
 .. math::
     C_{resin} = V_{res,tot} c_{res}
 
-Vessel cost as a function of volume was fit to a polynomial regression of the following form to determine capital cost of each column:
+Vessel cost as a function of volume was fit to a power function to determine capital cost of each column:
 
 .. math::
-    C_{col} = C_{col,A} V_{col}^3 + C_{col,B} V_{col}^2 + C_{col,C} V_{col} + C_{col,int}
+    C_{col} = C_{col,A} V_{col}^{C_{col,b}}
    
 
 The backwashing tank is assumed to include backwash and rinsing volumes. The total volume of this tank is:
@@ -408,22 +401,25 @@ The backwashing tank is assumed to include backwash and rinsing volumes. The tot
 .. math::
     V_{bw} = Q_{bw} t_{bw} + Q_{rinse} t_{rinse}
 
-Backwashing tank cost as a function of volume was fit to a polynomial regression of the following form to determine capital cost of the backwashing tank:
+Backwashing tank cost as a function of volume was fit to a power function to determine capital cost of the backwashing tank:
 
 .. math::
-    C_{bw} = C_{bw,A} V_{bw}^3 + C_{bw,B} V_{bw}^2 + C_{bw,C} V_{bw} + C_{bw,int}
+    C_{bw} = C_{bw,A} V_{bw}^{C_{bw,b}}
    
-Regeneration tank cost as a function of volume was fit to a polynomial regression of the following form the determine capital cost of the regeneration tank:
+Regeneration tank cost as a function of volume was fit to a power function to determine capital cost of the regeneration tank:
 
 .. math::
-    C_{regen} = C_{regen,A} V_{regen}^2 + C_{regen,B} V_{regen} + C_{regen,int}
+    C_{regen} = C_{regen,A} V_{regen}^{C_{regen,b}}
 
 And the total capital cost for the ion exchange system is the summation of these:
 
 .. math::
     C_{tot} = ((C_{resin} + C_{col}) (n_{op} + n_{red}) + C_{bw} + C_{regen}) f_{TIC}
 
-A total installed cost (:math:`f_{TIC}`) factor of 1.65 is applied to account for installation costs.
+A total installed cost (:math:`f_{TIC}`) factor of 1.65 is applied to account for installation costs. 
+
+.. note::
+    If using ``single_use`` option for ``regenerant`` configuration keyword, the capital for the regeneration tank is zero.
 
 Operating Cost Calculations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -440,10 +436,10 @@ optional model configuration keyword ``regenerant``. Costing data is available f
 * MeOH
 
 If the user does not provide a value for this option, the model defaults to a NaCl regeneration solution. The dose of regenerant needed
-is set by the model variable ``regen_dose`` in kg regenerant per cubic meter of resin volume. The mass flow of regenerant solution [kg/yr] is:
+is set by the parameter ``regen_dose`` in kg regenerant per cubic meter of resin volume. The mass flow of regenerant solution [kg/yr] is:
 
 .. math::
-    \dot{m}_{regen} = \frac{C_{regen} V_{res} (n_{op} + n_{red})}{t_{cycle} f_{recycle}}
+    \dot{m}_{regen} = \frac{D_{regen} V_{res} (n_{op} + n_{red})}{t_{cycle} f_{recycle}}
 
 Annual resin replacement cost is:
 
@@ -454,15 +450,44 @@ If the spent resin and regenerant contains hazardous material, the user designat
 disposal costs are calculated as a function of the annual mass of resin replaced and regenerant consumed:
 
 .. math::
-    C_{op,haz} = f_{haz,min} + M_{res} (n_{op} + n_{red}) f_{haz,res} + \dot{v}_{regen} f_{haz,regen}
+    C_{op,haz} = f_{haz,min} + \bigg( M_{res} (n_{op} + n_{red}) f_{res} \bigg)  f_{haz,res} + \dot{v}_{regen} f_{haz,regen}
 
 Where :math:`M_{res}` is the resin mass for a single bed and :math:`\dot{v}_{regen}` is the volumetric flow of regenerant solution. If ``hazardous_waste`` is set to ``False``,
 :math:`C_{op,haz} = 0`
 
-The total energy consumed by the unit is the summation of the power required for each of the booster pump, backwashing pump, regeneration pump, and rinsing pump:
+The total energy consumed by the unit is the summation of the power required for each of the booster pump, backwashing pump, regeneration pump, and rinsing pump. Each is scaled 
+by the total time required for each step:
 
 .. math::
-    P_{tot} = P_{main} + P_{bw} + P_{regen} + P_{rinse}
+    P_{tot} = \cfrac{P_{main} t_{break} + P_{bw} t_{bw} + P_{regen} t_{regen} + P_{rinse} t_{rinse}}{t_{cycle}} 
+
+If the user chooses ``single_use`` for the ``regenerant`` configuration keyword, there is no cost for regeneration solution:
+
+.. math::
+    \dot{m}_{regen} = \dot{v}_{regen} = 0
+
+Instead, the model assumes the entire volume of resin for the operational columns is replaced at the end of each service cycle by calculating the 
+volumetric "flow" of resin:
+
+.. math::
+    \dot{v}_{resin} = \frac{V_{res, tot}}{t_{break}} 
+
+And then operational cost of replacing the entire bed is:
+
+.. math::
+    C_{op,res} = \dot{v}_{resin} c_{res}
+
+If ``hazardous_waste`` is set to ``True``, the hazardous waste disposal costs are: 
+
+.. math::
+    C_{op,haz} = f_{haz,min} + ( \dot{v}_{resin} \rho_{b} n_{op})  f_{haz,res}
+
+Otherwise, :math:`C_{op,haz} = 0` as before. 
+
+Lastly, the total energy consumed by the unit for ``single_use`` configuration includes the booster pump, backwashing pump, and rinsing pump:
+
+.. math::
+    P_{tot} = \cfrac{P_{main} t_{break} + P_{bw} t_{bw} + P_{rinse} t_{rinse}}{t_{cycle}} 
 
 References
 ----------

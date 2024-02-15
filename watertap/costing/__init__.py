@@ -28,3 +28,4 @@ from .unit_models.energy_recovery_device import EnergyRecoveryDeviceType
 from .unit_models.mixer import MixerType
 from .unit_models.pump import PumpType
 from .unit_models.reverse_osmosis import ROType
+from .unit_models.heater_chiller import HCType

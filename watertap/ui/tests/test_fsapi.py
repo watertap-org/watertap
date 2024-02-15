@@ -13,7 +13,9 @@
 Tests for fsapi module
 """
 import logging
+from pathlib import Path
 import pytest
+import tempfile
 
 from pyomo.environ import units as pyunits
 from pyomo.environ import Var, value
@@ -204,6 +206,62 @@ def test_actions(add_variant: str):
         fsi.run_action(fsapi.Actions.export)
 
 
+class CSVTestSettings:
+    """Settings for test_csv_exports used in other functions."""
+
+    bad_obj = False
+    bad_units = False
+
+
+@pytest.mark.unit
+def test_csv_exports():
+    for i in range(3):
+        if i == 1:
+            CSVTestSettings.bad_obj, CSVTestSettings.bad_units = True, False
+        elif i == 2:
+            CSVTestSettings.bad_obj, CSVTestSettings.bad_units = False, True
+        else:
+            CSVTestSettings.bad_obj, CSVTestSettings.bad_units = False, False
+        for export_func in (csv_from_tempfile, csv_from_localfile):
+            fsi = fsapi.FlowsheetInterface(
+                do_build=build_ro, do_solve=solve_ro, do_export=export_func
+            )
+            if i == 0:
+                fsi.build()  # expect success
+            else:
+                # expect failure (bad_units or bad_obj)
+                with pytest.raises(RuntimeError):
+                    fsi.build()
+
+
+def csv_from_tempfile(exports=None, flowsheet=None, **kwargs):
+    with tempfile.TemporaryDirectory() as tempdir:
+        f = Path(tempdir) / "fake.csv"
+        populate_csv_exports(f.open("w"))
+        exports.from_csv(file=f, flowsheet=flowsheet)
+
+
+def csv_from_localfile(exports=None, flowsheet=None, **kwargs):
+    path = Path(__file__).parent / "test.csv"
+    populate_csv_exports(path.open("w"))
+    try:
+        exports.from_csv(file="test.csv", flowsheet=flowsheet)
+    finally:
+        path.unlink()
+
+
+def populate_csv_exports(f):
+    units = "units.foobar" if CSVTestSettings.bad_units else "units.m**3/units.s"
+    obj = "dirt" if CSVTestSettings.bad_obj else "fs.feed.flow_vol[0]"
+    rows = [
+        "name,obj,description,ui_units,display_units,rounding,is_input,input_category,is_output,output_category",
+        f"feed,{obj},feed flow volume,{units},m^3/s,3,TRUE,something,FALSE,",
+    ]
+    for row in rows:
+        f.write(row)
+        f.write("\n")
+
+
 @pytest.mark.unit
 def test_load():
     fsi = flowsheet_interface()
@@ -323,8 +381,104 @@ def test_nonoptimal_termination():
     print(f"* RuntimeError: {excinfo.value}")
 
 
+@pytest.mark.unit
 def test_has_version():
     fsi = flowsheet_interface()
     d = fsi.dict()
     assert "version" in d
     assert d["version"] > 0
+
+
+@pytest.mark.unit
+def test_to_csv(tmpdir):
+    fsi = flowsheet_interface()
+    fsi.build()
+    outputs = [
+        tmpdir / "path.csv",
+        str(tmpdir / "filename.csv"),
+        open(tmpdir / "fileobj.csv", "w"),
+    ]
+    for o in outputs:
+        num = fsi.fs_exp.to_csv(o)
+        assert num > 0
+
+
+@pytest.mark.unit
+def test_add_option(tmpdir):
+    fsi = flowsheet_interface()
+    fsi.build()
+    fsi.fs_exp.add_option(
+        name="TestStrOptionValid",
+        category="String Options",
+        display_name="String Option",
+        values_allowed="string",
+        value="test option",
+    )
+
+    fsi.fs_exp.add_option(
+        name="TestIntOptionValid",
+        category="Int Options",
+        display_name="Int Option",
+        values_allowed="int",
+        max_val=16,
+        min_val=0,
+        value=10,
+    )
+
+    fsi.fs_exp.add_option(
+        name="TestFloatOptionValid",
+        category="Float Options",
+        display_name="Float Option",
+        values_allowed="float",
+        max_val=16,
+        min_val=0,
+        value=10.1,
+    )
+
+    fsi.fs_exp.add_option(
+        name="TestListOptionValid",
+        category="List Options",
+        display_name="List Option",
+        values_allowed=["valid option a", "valid option b"],
+        value="valid option a",
+    )
+
+    with pytest.raises(ValueError) as excinfo:
+        fsi.fs_exp.add_option(
+            name="TestStrOptionInvalid",
+            category="String Options",
+            display_name="String Option",
+            values_allowed="string",
+            value=1,
+        )
+
+    with pytest.raises(ValueError) as excinfo:
+        fsi.fs_exp.add_option(
+            name="TestIntOptionInvalid",
+            category="Int Options",
+            display_name="Int Option",
+            values_allowed="int",
+            max_val=16,
+            min_val=0,
+            value=20,
+        )
+
+    with pytest.raises(ValueError) as excinfo:
+        fsi.fs_exp.add_option(
+            name="TestFloatOptionInvalid",
+            category="Float Options",
+            display_name="Float Option",
+            values_allowed="float",
+            max_val=16,
+            min_val=0,
+            value=-1,
+        )
+
+    with pytest.raises(ValueError) as excinfo:
+        fsi.fs_exp.add_option(
+            name="TestListOptionInvalid",
+            category="List Options",
+            display_name="List Option",
+            values_allowed=["valid option a", "valid option b"],
+            value="invalid option",
+        )

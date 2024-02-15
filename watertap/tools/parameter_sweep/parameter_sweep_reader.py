@@ -17,6 +17,9 @@ from watertap.tools.parameter_sweep.sampling_types import (
     UniformSample,
     NormalSample,
     LatinHypercubeSample,
+    PredeterminedFixedSample,
+    PredeterminedRandomSample,
+    SetMode,
 )
 import yaml
 import idaes.logger as idaeslog
@@ -105,7 +108,6 @@ class ParameterSweepReader:
         for param, values in input_dict.items():
             # Find the specified component on the model
             component = m.find_component(values["param"])
-
             if component is None:
                 raise ValueError(f'Could not acccess attribute {values["param"]}')
 
@@ -171,10 +173,20 @@ class ParameterSweepReader:
         for param, values in input_dict.items():
             # Find the specified component on the model
             component = m.find_component(values["param"])
+            set_mode = values.get("set_mode")
+            default_value = values.get("default_value")
+            if set_mode is None or set_mode == "fix_value":
+                set_mode = SetMode.FIX_VALUE
+            elif set_mode == "set_lb":
+                set_mode = SetMode.SET_LB
+            elif set_mode == "set_ub":
+                set_mode = SetMode.SET_UB
+            elif set_mode == "set_fixed_state":
+                set_mode = SetMode.SET_FIXED_STATE
 
             if component is None:
                 raise ValueError(f'Could not acccess attribute {values["param"]}')
-
+            kwargs = {"set_mode_type": set_mode, "default_fixed_value": default_value}
             if values["type"] == "LinearSample":
                 sweep_params[param] = LinearSample(
                     component,
@@ -182,6 +194,7 @@ class ParameterSweepReader:
                     values["upper_limit"],
                     values["num_samples"],
                 )
+
             elif values["type"] == "GeomSample":
                 sweep_params[param] = GeomSample(
                     component,
@@ -220,6 +233,16 @@ class ParameterSweepReader:
                     values["num_samples"],
                 )
 
+            elif values["type"] == "PredeterminedFixedSample":
+                sweep_params[param] = PredeterminedFixedSample(
+                    component,
+                    values["array"],
+                )
+            elif values["type"] == "PredeterminedRandomSample":
+                sweep_params[param] = PredeterminedRandomSample(
+                    component, values["array"]
+                )
+            sweep_params[param].set_variable_update_mode(set_mode, default_value)
         return sweep_params
 
     @staticmethod

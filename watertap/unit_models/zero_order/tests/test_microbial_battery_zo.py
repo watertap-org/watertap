@@ -276,5 +276,4 @@ def test_costing():
     assert "filtration_media_disposal" in m.fs.costing._registered_flows
 
     assert isinstance(m.fs.costing.total_capital_cost, Var)
-    assert isinstance(m.fs.costing.total_fixed_operating_cost, Var)
     assert isinstance(m.fs.costing.aggregate_flow_costs, Var)

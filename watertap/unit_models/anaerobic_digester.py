@@ -67,7 +67,7 @@ from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
 
-from watertap.costing.unit_models.anaerobic_digestor import cost_anaerobic_digestor
+from watertap.costing.unit_models.anaerobic_digester import cost_anaerobic_digester
 
 __author__ = "Alejandro Garciadiego, Andrew Lee, Xinhong Liu"
 
@@ -295,12 +295,12 @@ see reaction package for documentation.}""",
         # Check phase lists match assumptions
         if self.config.vapor_property_package.phase_list != ["Vap"]:
             raise ConfigurationError(
-                f"{self.name} Anaerobic digestor model requires that the vapor "
+                f"{self.name} Anaerobic digester model requires that the vapor "
                 f"phase property package have a single phase named 'Vap'"
             )
         if self.config.liquid_property_package.phase_list != ["Liq"]:
             raise ConfigurationError(
-                f"{self.name} Anaerobic digestor model requires that the liquid "
+                f"{self.name} Anaerobic digester model requires that the liquid "
                 f"phase property package have a single phase named 'Liq'"
             )
 
@@ -310,7 +310,7 @@ see reaction package for documentation.}""",
             for j in self.config.liquid_property_package.component_list
         ):
             raise ConfigurationError(
-                f"{self.name} Anaerobic digestor model requires that the liquid "
+                f"{self.name} Anaerobic digester model requires that the liquid "
                 f"and vapor phase property packages have at least one "
                 f"common component."
             )
@@ -412,7 +412,7 @@ see reaction package for documentation.}""",
             fb = "flow_mass"
         else:
             raise ConfigurationError(
-                f"{self.name} AnaerobicDigestor only supports mass or molar "
+                f"{self.name} Anaerobicdigester only supports mass or molar "
                 f"basis for MaterialFlowBasis."
             )
 
@@ -432,7 +432,7 @@ see reaction package for documentation.}""",
             initialize=3700,
             domain=NonNegativeReals,
             units=lunits("volume"),
-            doc="Total volume of anaerobic digestor",
+            doc="Total volume of anaerobic digester",
         )
 
         self.volume_vapor = Var(
@@ -688,7 +688,7 @@ see reaction package for documentation.}""",
         self.ad_total_volume = Constraint(
             self.flowsheet().time,
             rule=ad_total_volume_rule,
-            doc="Total anaerobic digestor volume",
+            doc="Total anaerobic digester volume",
         )
 
         def AD_retention_time_rule(self, t):
@@ -700,7 +700,7 @@ see reaction package for documentation.}""",
         self.AD_retention_time = Constraint(
             self.flowsheet().time,
             rule=AD_retention_time_rule,
-            doc="Total anaerobic digestor volume",
+            doc="Total anaerobic digester volume",
         )
 
         # Add AD performance equation
@@ -933,7 +933,7 @@ see reaction package for documentation.}""",
         optarg=None,
     ):
         """
-        Initialization routine for anaerobic digestor unit model.
+        Initialization routine for anaerobic digester unit model.
 
         Keyword Arguments:
             liquid_state_args : a dict of arguments to be passed to the
@@ -1058,4 +1058,4 @@ see reaction package for documentation.}""",
 
     @property
     def default_costing_method(self):
-        return cost_anaerobic_digestor
+        return cost_anaerobic_digester
