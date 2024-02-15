@@ -69,17 +69,8 @@ from watertap.costing.unit_models.clarifier import (
 )
 from pyomo.util.check_units import assert_units_consistent
 
-# from watertap.tools.local_tools import autoscaling, ill_conditioning
-from idaes.core.util.scaling import (
-    get_jacobian,
-    extreme_jacobian_columns,
-    extreme_jacobian_rows,
-    extreme_jacobian_entries,
-    jacobian_cond,
-)
 
-
-def main():
+def main(reactor_volume_equalities=False):
     m = build()
     set_operating_conditions(m)
     for mx in m.mixers:
@@ -88,7 +79,7 @@ def main():
     assert_units_consistent(m)
 
     initialize_system(m)
-    # TODO: the mixer initializer will turn these constraints back on
+    # TODO: resolve the danger of redundant constraint related to pressure equality constraints created in mixer, specifically for isobaric conditions. the mixer initializer will turn these constraints back on
     for mx in m.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     assert_degrees_of_freedom(m, 0)
@@ -103,28 +94,16 @@ def main():
     pyo.assert_optimal_termination(results)
 
     print("\n\n=============SIMULATION RESULTS=============\n\n")
-    # display_results(m)
+    display_results(m)
     display_costing(m)
 
-    # autoscaling.autoscale_variables_by_magnitude(m, overwrite=True)
-    # scaling = pyo.TransformationFactory('core.scale_model')
-    # sm_inter = scaling.create_using(m, rename=False)
-    # print(f"Intermediate Condition No.: {jacobian_cond(sm_inter, scaled=False)}")
+   
+    setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
 
-    # autoscaling.autoscale_constraints_by_jacobian_norm(m, overwrite=True)
-
-    # sm_final = scaling.create_using(m, rename=False)
-    # print(f"Final Condition No.: {jacobian_cond(sm_final, scaled=False)}")
-    setup_optimization(m)
-    solver2 = get_solver()
-    # solver2.options['ma27_pivtol'] = 0.5
-    solver2.options["halt_on_ampl_error"] = "yes"
-    # solver2.options["bound_push"] = 1e-20
-    results = solver2.solve(m, tee=True, symbolic_solver_labels=True)
+    results = solve(m, tee=True)
     pyo.assert_optimal_termination(results)
     print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
-    # display_results(m)
-
+    display_results(m)
     display_costing(m)
 
     return m, results
@@ -225,44 +204,6 @@ def build():
     # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
     m.fs.R3.KLa = 7.6
     m.fs.R4.KLa = 5.7
-
-    # Add additional parameter and constraints
-    # m.fs.R3.KLa = pyo.Var(
-    #     initialize=7.6,
-    #     units=pyo.units.hour**-1,
-    #     doc="Lumped mass transfer coefficient for oxygen",
-    # )
-    # m.fs.R4.KLa = pyo.Var(
-    #     initialize=5.7,
-    #     units=pyo.units.hour**-1,
-    #     doc="Lumped mass transfer coefficient for oxygen",
-    # )
-    # m.fs.S_O_eq = pyo.Param(
-    #     default=8e-3,
-    #     units=pyo.units.kg / pyo.units.m**3,
-    #     mutable=True,
-    #     doc="Dissolved oxygen concentration at equilibrium",
-    # )
-
-    # @m.fs.R3.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
-    # def mass_transfer_R3(self, t):
-    #     return pyo.units.convert(
-    #         m.fs.R3.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
-    #     ) == (
-    #         m.fs.R3.KLa
-    #         * m.fs.R3.volume[t]
-    #         * (m.fs.S_O_eq - m.fs.R3.outlet.conc_mass_comp[t, "S_O"])
-    #     )
-
-    # @m.fs.R4.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
-    # def mass_transfer_R4(self, t):
-    #     return pyo.units.convert(
-    #         m.fs.R4.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
-    #     ) == (
-    #         m.fs.R4.KLa
-    #         * m.fs.R4.volume[t]
-    #         * (m.fs.S_O_eq - m.fs.R4.outlet.conc_mass_comp[t, "S_O"])
-    #     )
 
     # ======================================================================
     # Anaerobic digester section
@@ -454,7 +395,7 @@ def initialize_system(m):
     seq.options.tear_set = [m.fs.stream2, m.fs.stream10adm]
 
     G = seq.create_graph(m)
-    # Uncomment this code to see tear set and initialization order
+    # The code below shows tear set and initialization order
     order = seq.calculation_order(G)
     print("Initialization Order")
     for o in order:
@@ -537,12 +478,7 @@ def add_costing(m):
     m.fs.DU.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.TU.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
-    # Leaving out mixer costs for now
-    # m.fs.MX1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    # m.fs.MX6.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    # m.fs.MX2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    # m.fs.MX3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    # m.fs.MX4.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+     # TODO: Leaving out mixer costs; consider including later
 
     # process costing and add system level metrics
     m.fs.costing.cost_process()
@@ -555,14 +491,15 @@ def add_costing(m):
     iscale.calculate_scaling_factors(m.fs)
 
 
-def setup_optimization(m):
+def setup_optimization(m, reactor_volume_equalities=False):
 
     for i in ["R1", "R2", "R3", "R4", "R5"]:
         reactor = getattr(m.fs, i)
         reactor.volume.unfix()
         reactor.volume.setlb(500)
         reactor.volume.setub(2000)
-    #     reactor.hydraulic_retention_time.fix()
+    if reactor_volume_equalities:
+        add_reactor_volume_equalities(m)
 
     # Unfix fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP5.split_fraction[:, "underflow"].unfix()
@@ -602,11 +539,25 @@ def add_effluent_violations(m):
     def eq_BOD5_max(self, t):
         return m.fs.CL1.effluent_state[0].BOD5["effluent"] <= m.fs.BOD5_max
 
+def add_reactor_volume_equalities(m):
+    #TODO: These constraints were applied for initial optimization of AS reactor volumes; otherwise, volumes drive towards lower bound. Revisit
+    @m.fs.Constraint(m.fs.time)
+    def Vol_1(self, t):
+        return m.fs.R1.volume[0] == m.fs.R2.volume[0]
 
-def solve(blk, solver=None):
+    @m.fs.Constraint(m.fs.time)
+    def Vol_2(self, t):
+        return m.fs.R3.volume[0] == m.fs.R4.volume[0]
+
+    @m.fs.Constraint(m.fs.time)
+    def Vol_3(self, t):
+        return m.fs.R5.volume[0] >= m.fs.R4.volume[0] * 0.5
+
+
+def solve(blk, solver=None,tee=False):
     if solver is None:
         solver = get_solver()
-    results = solver.solve(blk, tee=True)
+    results = solver.solve(blk, tee=tee)
     pyo.assert_optimal_termination(results)
     return results
 
