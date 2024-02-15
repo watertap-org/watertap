@@ -113,30 +113,28 @@ class Flash:
             _logger.setLevel(logging.DEBUG)
 
     def build_survey(
-        self, survey_arrays, get_oli_names=False, file_name=None, mesh_grid=True
+        self, survey_arrays, get_oli_names=False, mesh_grid=True, file_name=None,
     ):
         """
         Build a dictionary for modifying flash calculation parameters.
 
         :param survey_arrays: dictionary for variables and values to survey
         :param get_oli_names: bool switch to convert name into OLI name
+        :param mesh_grid: bool switch for computing Cartesian product
         :param file_name: string for file to write, if any
 
         :return survey: dictionary for product of survey variables and values
         """
 
-        keys = [get_oli_name(k) if get_oli_names else k for k in survey_arrays]
-        values = list(product(*(survey_arrays.values())))
         _name = lambda k: get_oli_name(k) if get_oli_names else k
         if mesh_grid:
+            values = list(product(*(survey_arrays.values())))
             survey = {
-                _name(keys[i]): [val[i] for val in values] for i in range(len(keys))
+                _name(key): [val[idx] for val in values] for idx, key in enumerate(survey_arrays)
             }
         else:
-            survey = {}
-            for key, arr in survey_arrays.items():
-                survey[_name(key)] = arr
-        _logger.info(f"Survey contains {len(values)} items.")
+            survey = {_name(key): arr for key, arr in survey_arrays.items()}
+        _logger.info(f"Survey contains {len(list(survey.values())[0])} items.")
         if file_name:
             self.write_output(survey, file_name)
         return survey
@@ -265,7 +263,7 @@ class Flash:
         :param flash_method: string name of OLI flash flash_method to use
         :param oliapi_instance: instance of OLI Cloud API to call
         :param dbs_file_id: string ID of DBS file
-        :param initial_input: dictionary containing feed base case, to be modified by survey
+        :param initial_input: dictionary containing feed base case, which will be cloned and modified by survey
         :param survey: dictionary containing names and input values to modify
         :param file_name: string for file to write, if any
 
@@ -379,16 +377,12 @@ class Flash:
 
         :param content: dictionary of content to write
         :param file_name: string for name of file to write
-
-        :return json_file: string for full path of write file
         """
 
-        json_file = Path(f"./{file_name}.json").resolve()
-        _logger.info(f"Saving content to {json_file}")
-        with open(json_file, "w", encoding="utf-8") as f:
+        _logger.info(f"Saving content to {file_name}")
+        with open(file_name, "w", encoding="utf-8") as f:
             json.dump(content, f)
         _logger.info("Save complete")
-        return json_file
 
     def get_inflows(
         self,
@@ -500,12 +494,15 @@ class Flash:
                 sampled_data = {
                     k: [v[s] for s in samples] for k, v in nested_data["values"].items()
                 }
+            else:
+                raise RuntimeError("Unable to locate value(s) in data.")
+            print(unit, sampled_data)
             # filter sampled data
             filtered_values = deepcopy(sampled_data)
             if filter_zero:
                 if isinstance(sampled_data, dict):
                     for k, v in sampled_data.items():
-                        if not any(val for val in v):
+                        if all(val==0 for val in v):
                             del filtered_values[k]
             values = filtered_values
             filtered_result = {"unit": unit, "values": values}
@@ -535,15 +532,17 @@ class Flash:
             for prop in properties:
                 prop_label = deepcopy(prop)
                 for path in paths[prop]:
-                    phase = None
                     label = deepcopy(prop)
                     if "total" in path:
                         phase = "total"
                     elif "phases" in path:
                         phase = path[path.index("phases") + 1]
+                    else:
+                        phase = None
                     if phase:
                         label = label + (f"_{phase}")
                     # extract property from base_result
+                    print(prop)
                     extracted_properties["properties"][label] = _get_filtered_result(
                         base_result,
                         path,

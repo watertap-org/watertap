@@ -99,7 +99,7 @@ class OLIApi:
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):
         # delete all .dbs files created during session
         delete_dbs_files = [file for file in self.session_dbs_files if file not in self.keep_dbs_files]
-        self.dbs_file_cleanup(delete_files)
+        self.dbs_file_cleanup(delete_dbs_files)
         return False
 
     def get_dbs_file_id(
@@ -282,10 +282,13 @@ class OLIApi:
 
         if dbs_file_ids is None:
             dbs_file_ids = self.get_user_dbs_file_ids()
-        _logger.info(f"WaterTAP will delete {len(dbs_file_ids)} DBS files")
-        if self._delete_permission(dbs_file_ids):
-            for dbs_file_id in dbs_file_ids:
-                self._delete_dbs_file(dbs_file_id)
+        if len(dbs_file_ids) == 0:
+            return
+        else:
+            _logger.info(f"WaterTAP will delete {len(dbs_file_ids)} DBS files")
+            if self._delete_permission(dbs_file_ids):
+                for dbs_file_id in dbs_file_ids:
+                    self._delete_dbs_file(dbs_file_id)
 
     def _delete_permission(self, dbs_file_ids):
         """
