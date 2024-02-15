@@ -52,10 +52,12 @@ __author__ = "Andrew Lee, Adam Atia, Vibhav Dabadghao"
 
 from enum import Enum, auto
 
+
 class ElectricityConsumption(Enum):
-    '''fixed: assume electricity intensity
-       calculated: calculate based on aeration energy equation from BSM2 documentation
-    '''
+    """fixed: assume electricity intensity
+    calculated: calculate based on aeration energy equation from BSM2 documentation
+    """
+
     fixed = auto()
     calculated = auto()
 
@@ -393,19 +395,25 @@ see reaction package for documentation.}""",
                         to_units=pyunits.m**3 / pyunits.hr,
                     )
                 )
-            elif self.config.electricity_consumption == ElectricityConsumption.calculated:
+            elif (
+                self.config.electricity_consumption == ElectricityConsumption.calculated
+            ):
                 return self.electricity_consumption[t] == (
                     # TODO: revisit origin of 1.8 factor and more general aeration energy equation
                     # 1.8 may be the aeration efficiency which is oxygen mass transfer divided by power input
-                    self.S_O_eq / 1.8 / pyunits.kg * pyunits.kWh
+                    self.S_O_eq
+                    / 1.8
+                    / pyunits.kg
+                    * pyunits.kWh
                     * pyunits.convert(
-                        self.control_volume.volume[t]
-                        * self.KLa,
+                        self.control_volume.volume[t] * self.KLa,
                         to_units=pyunits.m**3 / pyunits.hr,
                     )
                 )
             else:
-                raise ConfigurationError(f"{self.config.electricity_consumption} is not a valid option for determining electricity consumption.")
+                raise ConfigurationError(
+                    f"{self.config.electricity_consumption} is not a valid option for determining electricity consumption."
+                )
 
         self.unit_electricity_consumption = Constraint(
             self.flowsheet().time,

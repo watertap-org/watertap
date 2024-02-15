@@ -27,9 +27,9 @@ def build_cstr_cost_param_block(blk):
     # Source: C.-C. TANG, Mathematical Models and Optimization Techniques for Use in Analysis and Design of Wastewater Treatment Systems, Ph.D., University of Illinois at Urbana-Champaign, n.d. https://www.proquest.com/docview/303308678/abstract/1DA7388DED324E60PQ/1 (accessed December 14, 2023).
 
     blk.capital_a_parameter = pyo.Var(
-    initialize=1246.1,
-    doc="A parameter for capital cost, converted from 1971 (from 461) to 1990",
-    units=pyo.units.USD_1990,
+        initialize=1246.1,
+        doc="A parameter for capital cost, converted from 1971 (from 461) to 1990",
+        units=pyo.units.USD_1990,
     )
     blk.capital_b_parameter = pyo.Var(
         initialize=0.71,

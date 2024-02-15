@@ -162,18 +162,21 @@ def build():
     )
     # Third reactor (aerobic) - CSTR with injection
     m.fs.R3 = CSTR_Injection(
-        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props,
-        electricity_consumption=ElectricityConsumption.calculated
+        property_package=m.fs.props_ASM1,
+        reaction_package=m.fs.ASM1_rxn_props,
+        electricity_consumption=ElectricityConsumption.calculated,
     )
     # Fourth reactor (aerobic) - CSTR with injection
     m.fs.R4 = CSTR_Injection(
-        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props,
-        electricity_consumption=ElectricityConsumption.calculated
+        property_package=m.fs.props_ASM1,
+        reaction_package=m.fs.ASM1_rxn_props,
+        electricity_consumption=ElectricityConsumption.calculated,
     )
     # Fifth reactor (aerobic) - CSTR with injection
     m.fs.R5 = CSTR_Injection(
-        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props,
-        electricity_consumption=ElectricityConsumption.calculated
+        property_package=m.fs.props_ASM1,
+        reaction_package=m.fs.ASM1_rxn_props,
+        electricity_consumption=ElectricityConsumption.calculated,
     )
     m.fs.SP5 = Separator(
         property_package=m.fs.props_ASM1, outlet_list=["underflow", "overflow"]
@@ -222,7 +225,7 @@ def build():
     # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
     m.fs.R3.KLa = 7.6
     m.fs.R4.KLa = 5.7
-    
+
     # Add additional parameter and constraints
     # m.fs.R3.KLa = pyo.Var(
     #     initialize=7.6,
@@ -566,11 +569,11 @@ def setup_optimization(m):
     # m.fs.SP5.split_fraction[:, "underflow"].setlb(0.45)
     m.fs.SP6.split_fraction[:, "recycle"].unfix()
 
-    
     add_effluent_violations(m)
 
+
 def add_effluent_violations(m):
-    #TODO: update "m" to blk; change ref to m.fs.Treated instead of CL1 effluent
+    # TODO: update "m" to blk; change ref to m.fs.Treated instead of CL1 effluent
     m.fs.TSS_max = pyo.Var(initialize=0.03, units=pyo.units.kg / pyo.units.m**3)
     m.fs.TSS_max.fix()
 
@@ -598,7 +601,8 @@ def add_effluent_violations(m):
     @m.fs.Constraint(m.fs.time)
     def eq_BOD5_max(self, t):
         return m.fs.CL1.effluent_state[0].BOD5["effluent"] <= m.fs.BOD5_max
-    
+
+
 def solve(blk, solver=None):
     if solver is None:
         solver = get_solver()
