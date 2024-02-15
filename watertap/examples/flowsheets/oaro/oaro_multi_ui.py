@@ -609,28 +609,55 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
 
 def build_flowsheet(erd_type=ERDtype.pump_as_turbine, build_options=None, **kwargs):
-    # get solver
-    solver = get_solver()
+    if build_options is not None:
+        # get solver
+        solver = get_solver()
 
-    # build, set, and initialize
-    m = build(number_of_stages=build_options["NumberOfStages"].value, erd_type=erd_type)
-    set_operating_conditions(m)
-    initialize_system(
-        m,
-        number_of_stages=build_options["NumberOfStages"].value,
-        solvent_multiplier=0.5,
-        solute_multiplier=0.7,
-        solver=solver,
-    )
+        # build, set, and initialize
+        m = build(
+            number_of_stages=build_options["NumberOfStages"].value, erd_type=erd_type
+        )
+        set_operating_conditions(m)
+        initialize_system(
+            m,
+            number_of_stages=build_options["NumberOfStages"].value,
+            solvent_multiplier=0.5,
+            solute_multiplier=0.7,
+            solver=solver,
+        )
 
-    optimize_set_up(
-        m,
-        number_of_stages=build_options["NumberOfStages"].value,
-        water_recovery=build_options["SystemRecovery"].value,
-    )
+        optimize_set_up(
+            m,
+            number_of_stages=build_options["NumberOfStages"].value,
+            water_recovery=build_options["SystemRecovery"].value,
+        )
 
-    # display
-    solve(m, solver=solver)
+        # display
+        solve(m, solver=solver)
+    else:
+        # get solver
+        solver = get_solver()
+
+        # build, set, and initialize
+        m = build(number_of_stages=3, erd_type=erd_type)
+        set_operating_conditions(m)
+        initialize_system(
+            m,
+            number_of_stages=3,
+            solvent_multiplier=0.5,
+            solute_multiplier=0.7,
+            solver=solver,
+        )
+
+        optimize_set_up(
+            m,
+            number_of_stages=3,
+            water_recovery=0.5,
+        )
+
+        # display
+        solve(m, solver=solver)
+
     return m
 
 
