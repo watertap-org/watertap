@@ -76,7 +76,7 @@ class OLIApi:
         interactive_mode=True,
     ):
         """
-        Constructs all necessary attributes for OLIApi class.
+        Construct all necessary attributes for OLIApi class.
 
         :param credential_manager_class: class used to manage credentials
         :param interactive_mode: bool switch for level of logging display
@@ -92,13 +92,14 @@ class OLIApi:
     # binds OLIApi instance to context manager
     def __enter__(self):
         self.session_dbs_files = []
+        self.keep_dbs_files = []
         return self
 
     # return False if no exceptions raised
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):
         # delete all .dbs files created during session
-        for file in self.session_dbs_files:
-            self._delete_dbs_file(file)
+        delete_dbs_files = [file for file in self.session_dbs_files if file not in self.keep_dbs_files]
+        self.dbs_file_cleanup(delete_files)
         return False
 
     def get_dbs_file_id(
@@ -112,7 +113,7 @@ class OLIApi:
         """
         Gets dbs_file_id for a given input.
 
-        :param chemistry_source: path (str), dict, or state block containing chemistry info
+        :param chemistry_source: path to local DBS file or iterable containing chemistry system information
         :param thermo_framework: string name of thermodynamic databank to use
         :param private_databanks: list of specific databanks to include in analysis
         :param phases: container (dict) for chemistry model parameters
@@ -128,10 +129,8 @@ class OLIApi:
                     "Could not find requested path to file. "
                     + "Check that this path to file exists."
                 )
-            e = "upload"
             dbs_file_id = self._upload_dbs_file(chemistry_source)
         else:
-            e = "generate"
             dbs_dict = self._create_dbs_dict(
                 chemistry_source,
                 thermo_framework,
@@ -173,26 +172,22 @@ class OLIApi:
         model_name,
     ):
         """
-        Creates dict for chemistry-builder to later generate a DBS file ID.
+        Create input dict for chemistry-builder DBS file generation.
 
-        :param chemistry_source: path (str), dict, or state block containing chemistry info
+        :param chemistry_source: iterable containing chemical species names
         :param thermo_framework: string name of thermodynamic databank to use
         :param private_databanks: list of specific databanks to include in analysis
-        :param phases: container (dict) for chemistry model parameters
+        :param phases: container dict for chemistry model parameters
         :param model_name: string name of model OLI will use
 
         :return dbs_dict: dict containing params for DBS file generation
         """
 
-        if isinstance(chemistry_source, (list, dict)):
-            if len(chemistry_source) != 0:
-                solute_list = [
-                    {"name": get_oli_name(solute)} for solute in chemistry_source
-                ]
-            if not solute_list:
-                raise IOError(
-                    "Chemistry input must contain OLI-compatible solute names."
-                )
+        solute_list = [
+            {"name": get_oli_name(solute)} for solute in chemistry_source
+        ]
+        if not solute_list:
+            raise RuntimeError("No solutes extracted from {chemistry_source}.")
         if thermo_framework is None:
             thermo_framework = "MSE (H3O+ ion)"
         if phases is None:
@@ -231,7 +226,7 @@ class OLIApi:
 
     def get_dbs_file_summary(self, dbs_file_id):
         """
-        Gets chemistry and flash history information for a DBS file.
+        Get chemistry and flash history information for a DBS file.
 
         :param dbs_file_id: string identifying DBS file
 
@@ -248,7 +243,7 @@ class OLIApi:
 
     def get_user_dbs_file_ids(self):
         """
-        Gets all DBS files on user's cloud.
+        Get all DBS files on user's cloud.
 
         :return user_dbs_file_ids: list of user DBS files saved on OLI Cloud
         """
@@ -280,7 +275,7 @@ class OLIApi:
 
     def dbs_file_cleanup(self, dbs_file_ids=None):
         """
-        Deletes all (or specified) DBS files on OLI Cloud.
+        Delete all (or specified) DBS files on OLI Cloud.
 
         :param dbs_file_ids: list of DBS files that should be deleted
         """
@@ -294,7 +289,7 @@ class OLIApi:
 
     def _delete_permission(self, dbs_file_ids):
         """
-        Ensures user permits deletion of specified files.
+        Ensure user permits deletion of specified files.
 
         :param dbs_file_ids: list of DBS files that should be deleted
 
@@ -310,7 +305,7 @@ class OLIApi:
 
     def _delete_dbs_file(self, dbs_file_id):
         """
-        Deletes a DBS file.
+        Delete a DBS file.
 
         :param dbs_file_id: string ID of DBS file
         """
@@ -336,7 +331,7 @@ class OLIApi:
         max_request=100,
     ):
         """
-        Makes a call to the OLI Cloud API.
+        Make a call to the OLI Cloud API.
 
         :param flash_method: string indicating flash method
         :param dbs_file_id: string indicating DBS file
@@ -366,7 +361,7 @@ class OLIApi:
             )
         else:
             valid_flashes = [*valid_get_flashes, *valid_post_flashes]
-            raise IOError(
+            raise RuntimeError(
                 f" Unexpected value for flash_method: {flash_method}. "
                 + "Valid values: {', '.join(valid_flashes)}."
             )
@@ -385,24 +380,20 @@ class OLIApi:
             raise RuntimeError(
                 "No item 'resultsLink' in request response. Process failed."
             )
-        request_iter = 0
-        while request_iter < max_request:
-            if poll_timer >= poll_time:
-                req_result = requests.get(
-                    result_link,
-                    headers=headers,
-                ).json()
-                last_poll_time = time.time()
-                request_iter += 1
-                poll_status = self.check_result(req_result)
-                if poll_status in ["PROCESSED", "FAILED"]:
-                    if req_result["data"]:
-                        return req_result["data"]
-                    else:
-                        raise IOError(" Poll returned empty data.")
-                elif poll_status == "ERROR":
-                    raise RuntimeError(f"Call failed with status {req_result['code']}")
-            poll_timer = time.time() - last_poll_time
+        for _ in range(max_request):
+            time.sleep(poll_time)
+            req_result = requests.get(
+                result_link,
+                headers=headers,
+            ).json()
+            poll_status = self.check_result(req_result)
+            if poll_status in ["PROCESSED", "FAILED"]:
+                if req_result["data"]:
+                    return req_result["data"]
+                else:
+                    raise IOError(" Poll returned empty data.")
+            elif poll_status == "ERROR":
+                raise RuntimeError(f"Call failed with status {req_result['code']}")
         raise RuntimeError("Poll limit exceeded.")
 
     def get_result_link(self, req):
