@@ -17,7 +17,7 @@ The flowsheet follows the same formulation as benchmark simulation model no.2 (B
 but comprises different specifications for default values than BSM2.
 
 """
-__author__ = "Alejandro Garciadiego, Adam Atia, Ben Knueven, Xinhong Liu,"
+__author__ = "Alejandro Garciadiego, Adam Atia, Marcus Holly, Chenyu Wang, Ben Knueven, Xinhong Liu,"
 
 import pyomo.environ as pyo
 
