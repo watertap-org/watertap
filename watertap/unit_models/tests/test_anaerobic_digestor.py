@@ -114,10 +114,12 @@ def build():
         m.fs.unit.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7
     )
 
+    iscale.calculate_scaling_factors(m.fs.unit)
+
     return m
 
 
-class TestUnitDefault(UnitTestHarness):
+class TestAnaerobicDigester(UnitTestHarness):
     def configure(self):
         m = build()
 
