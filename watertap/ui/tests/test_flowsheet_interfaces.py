@@ -23,7 +23,7 @@ from idaes.core import FlowsheetBlock
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
 )
-from idaes.models.unit_models import Flash, Mixer
+from idaes.models.unit_models import Flash
 
 from ..fsapi import FlowsheetInterface
 
