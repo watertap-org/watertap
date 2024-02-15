@@ -121,21 +121,30 @@ class Flash:
         :param survey_arrays: dictionary for variables and values to survey
         :param get_oli_names: bool switch to convert name into OLI name
         :param file_name: string for file to write, if any
+        :mesh_grid: if True (default) the input array will be combined to generate combination of all possible samples
+            if False, the direct values in survey_arrays will be used
 
         :return survey: dictionary for product of survey variables and values
         """
-
-        keys = [get_oli_name(k) if get_oli_names else k for k in survey_arrays]
-        values = list(product(*(survey_arrays.values())))
         _name = lambda k: get_oli_name(k) if get_oli_names else k
         if mesh_grid:
+            keys = [get_oli_name(k) if get_oli_names else k for k in survey_arrays]
+            values = list(product(*(survey_arrays.values())))
             survey = {
                 _name(keys[i]): [val[i] for val in values] for i in range(len(keys))
             }
         else:
             survey = {}
+            values = None
             for key, arr in survey_arrays.items():
                 survey[_name(key)] = arr
+                if values is not None and len(values) != len(arr):
+                    raise ValueError(
+                        "The number of samples in {} did not match other keys".format(
+                            key
+                        )
+                    )
+                values = arr
         _logger.info(f"Survey contains {len(values)} items.")
         if file_name:
             self.write_output(survey, file_name)
@@ -303,6 +312,11 @@ class Flash:
                         if k not in output_dict:
                             output_dict[k] = [float_nan] * number_samples
                         output_dict[k][index] = v
+                    elif k == "messages":
+                        raise Exception(
+                            "Error recieved from OLIAPI, message is: {}".format(v)
+                        )
+
                     else:
                         raise Exception(f"Unexpected key: {k}")
                 elif isinstance(v, dict):
