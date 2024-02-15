@@ -97,7 +97,6 @@ def main(reactor_volume_equalities=False):
     display_results(m)
     display_costing(m)
 
-   
     setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
 
     results = solve(m, tee=True)
@@ -478,7 +477,7 @@ def add_costing(m):
     m.fs.DU.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.TU.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
-     # TODO: Leaving out mixer costs; consider including later
+    # TODO: Leaving out mixer costs; consider including later
 
     # process costing and add system level metrics
     m.fs.costing.cost_process()
@@ -539,8 +538,9 @@ def add_effluent_violations(m):
     def eq_BOD5_max(self, t):
         return m.fs.CL1.effluent_state[0].BOD5["effluent"] <= m.fs.BOD5_max
 
+
 def add_reactor_volume_equalities(m):
-    #TODO: These constraints were applied for initial optimization of AS reactor volumes; otherwise, volumes drive towards lower bound. Revisit
+    # TODO: These constraints were applied for initial optimization of AS reactor volumes; otherwise, volumes drive towards lower bound. Revisit
     @m.fs.Constraint(m.fs.time)
     def Vol_1(self, t):
         return m.fs.R1.volume[0] == m.fs.R2.volume[0]
@@ -554,7 +554,7 @@ def add_reactor_volume_equalities(m):
         return m.fs.R5.volume[0] >= m.fs.R4.volume[0] * 0.5
 
 
-def solve(blk, solver=None,tee=False):
+def solve(blk, solver=None, tee=False):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
