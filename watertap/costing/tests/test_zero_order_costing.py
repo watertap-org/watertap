@@ -150,8 +150,8 @@ class TestGeneralMethods:
 
         assert isinstance(model.fs.frame.wacc, Var)
         assert value(model.fs.frame.wacc) == 0.05
-        assert isinstance(model.fs.frame.factor_capital_annualization, Var)
-        assert value(model.fs.frame.factor_capital_annualization) == pytest.approx(
+        assert isinstance(model.fs.frame.capital_recovery_factor, Var)
+        assert value(model.fs.frame.capital_recovery_factor) == pytest.approx(
             0.0650514, rel=1e-5
         )
 

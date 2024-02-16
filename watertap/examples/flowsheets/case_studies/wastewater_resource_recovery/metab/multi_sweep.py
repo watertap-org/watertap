@@ -72,7 +72,7 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
         )
         rep_factor_upper_lim = sum(
             1 / (1 + value(m.fs.costing.wacc)) ** x for x in replacement_intervals
-        ) * value(m.fs.costing.factor_capital_annualization)
+        ) * value(m.fs.costing.capital_recovery_factor)
 
         sweep_params["bead_cost"] = LinearSample(
             m.fs.costing.metab.bead_replacement_factor["hydrogen"],

@@ -65,7 +65,7 @@ class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             name,
             pyo.Expression(
                 expr=(
-                    self.total_capital_cost * self.factor_capital_annualization
+                    self.total_capital_cost * self.capital_recovery_factor
                     + self.total_operating_cost
                 )
                 / (
@@ -212,7 +212,7 @@ class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         self.total_annualized_cost = pyo.Expression(
             expr=(
-                self.total_capital_cost * self.factor_capital_annualization
+                self.total_capital_cost * self.capital_recovery_factor
                 + self.total_operating_cost
             ),
             doc="Total annualized cost of operation",
@@ -252,13 +252,13 @@ class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         self.wacc = pyo.Var(
             # consistent with a 30 year plant_lifetime
-            # and a factor_capital_annualization of 0.1
+            # and a capital_recovery_factor of 0.1
             initialize=0.09307339771758532,
             units=pyo.units.dimensionless,
             doc="Weighted Average Cost of Capital (WACC)",
         )
 
-        self.factor_capital_annualization = pyo.Var(
+        self.capital_recovery_factor = pyo.Var(
             initialize=0.1,
             units=pyo.units.year**-1,
             doc="Capital annualization factor [fraction of investment cost/year]",
@@ -268,11 +268,11 @@ class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self._annualization_vars = (
             self.plant_lifetime,
             self.wacc,
-            self.factor_capital_annualization,
+            self.capital_recovery_factor,
         )
 
-        self.factor_capital_annualization_constraint = pyo.Constraint(
-            expr=self.factor_capital_annualization
+        self.capital_recovery_factor_constraint = pyo.Constraint(
+            expr=self.capital_recovery_factor
             == (
                 (
                     self.wacc
@@ -296,7 +296,7 @@ class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         )
 
         self.fix_all_vars()
-        self.factor_capital_annualization.unfix()
+        self.capital_recovery_factor.unfix()
 
     def initialize_build(self):
         """
@@ -308,7 +308,7 @@ class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         calculate_variable_from_constraint(
             self.total_operating_cost, self.total_operating_cost_constraint
         )
-        # handle wacc / plant_lifetime / factor_capital_annualization
+        # handle wacc / plant_lifetime / capital_recovery_factor
         unfixed_vars = []
         for v in self._annualization_vars:
             if not v.fixed:
@@ -319,7 +319,7 @@ class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             msg += " should be fixed and the other unfixed."
             raise RuntimeError(msg)
         calculate_variable_from_constraint(
-            unfixed_vars[0], self.factor_capital_annualization_constraint
+            unfixed_vars[0], self.capital_recovery_factor_constraint
         )
 
     @staticmethod

@@ -293,9 +293,9 @@ def build(
     m.fs.costing.utilization_factor.fix(0.9)
     m.fs.costing.TIC.fix(2)
     m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
-    # unfix wacc since we fix factor_capital_annualization
+    # unfix wacc since we fix capital_recovery_factor
     m.fs.costing.wacc.unfix()
-    m.fs.costing.factor_capital_annualization.fix(0.1)
+    m.fs.costing.capital_recovery_factor.fix(0.1)
     m.fs.costing.electricity_cost.set_value(0.07)
     m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
     m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
@@ -370,7 +370,7 @@ def build(
         )
 
     m.fs.costing.primary_pump_capex_lcow = Expression(
-        expr=m.fs.costing.factor_capital_annualization
+        expr=m.fs.costing.capital_recovery_factor
         * sum(m.fs.PrimaryPumps[n].costing.direct_capital_cost for n in m.fs.Stages)
         / m.fs.costing.annual_water_production
     )
@@ -380,7 +380,7 @@ def build(
     )
 
     m.fs.costing.booster_pump_capex_lcow = Expression(
-        expr=m.fs.costing.factor_capital_annualization
+        expr=m.fs.costing.capital_recovery_factor
         * (
             sum(
                 m.fs.BoosterPumps[n].costing.direct_capital_cost
@@ -393,7 +393,7 @@ def build(
     )
 
     m.fs.costing.erd_capex_lcow = Expression(
-        expr=m.fs.costing.factor_capital_annualization
+        expr=m.fs.costing.capital_recovery_factor
         * sum(
             erd.costing.direct_capital_cost
             for erd in m.fs.EnergyRecoveryDevices.values()
@@ -423,19 +423,19 @@ def build(
             1
             + m.fs.costing.factor_maintenance_labor_chemical
             / m.fs.costing.factor_total_investment
-            / m.fs.costing.factor_capital_annualization
+            / m.fs.costing.capital_recovery_factor
         )
         + m.fs.costing.electricity_lcow
     )
 
     m.fs.costing.membrane_capex_lcow = Expression(
-        expr=m.fs.costing.factor_capital_annualization
+        expr=m.fs.costing.capital_recovery_factor
         * sum(m.fs.ROUnits[n].costing.direct_capital_cost for n in m.fs.Stages)
         / m.fs.costing.annual_water_production
     )
 
     m.fs.costing.indirect_capex_lcow = Expression(
-        expr=m.fs.costing.factor_capital_annualization
+        expr=m.fs.costing.capital_recovery_factor
         * (m.fs.costing.total_capital_cost - m.fs.costing.aggregate_direct_capital_cost)
         / m.fs.costing.annual_water_production
     )
@@ -458,7 +458,7 @@ def build(
             1
             + m.fs.costing.factor_maintenance_labor_chemical
             / m.fs.costing.factor_total_investment
-            / m.fs.costing.factor_capital_annualization
+            / m.fs.costing.capital_recovery_factor
         )
         + m.fs.costing.membrane_replacement_lcow
     )
@@ -1211,23 +1211,23 @@ def display_system(m):
     print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
     print(
         f"Primary Pump Capital Cost ($/m3):"
-        f"{value(m.fs.costing.factor_capital_annualization*sum(m.fs.PrimaryPumps[stage].costing.capital_cost for stage in m.fs.Stages)/ m.fs.costing.annual_water_production)}"
+        f"{value(m.fs.costing.capital_recovery_factor*sum(m.fs.PrimaryPumps[stage].costing.capital_cost for stage in m.fs.Stages)/ m.fs.costing.annual_water_production)}"
     )
     print(
         f"Booster Pump Capital Cost ($/m3): "
-        f"{value(m.fs.costing.factor_capital_annualization*sum(m.fs.BoosterPumps[stage].costing.capital_cost for stage in m.fs.LSRRO_Stages) / m.fs.costing.annual_water_production)}"
+        f"{value(m.fs.costing.capital_recovery_factor*sum(m.fs.BoosterPumps[stage].costing.capital_cost for stage in m.fs.LSRRO_Stages) / m.fs.costing.annual_water_production)}"
     )
     print(
         f"ERD Capital Cost ($/m3):"
-        f"{value(m.fs.costing.factor_capital_annualization*sum(erd.costing.capital_cost for erd in m.fs.EnergyRecoveryDevices.values()) / m.fs.costing.annual_water_production)}"
+        f"{value(m.fs.costing.capital_recovery_factor*sum(erd.costing.capital_cost for erd in m.fs.EnergyRecoveryDevices.values()) / m.fs.costing.annual_water_production)}"
     )
     print(
         f"Membrane Capital Cost ($/m3): "
-        f"{value(m.fs.costing.factor_capital_annualization*sum(m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.Stages) / m.fs.costing.annual_water_production)}"
+        f"{value(m.fs.costing.capital_recovery_factor*sum(m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.Stages) / m.fs.costing.annual_water_production)}"
     )
     print(
         f"Indirect Capital Cost ($/m3): "
-        f"{value(m.fs.costing.factor_capital_annualization*(m.fs.costing.total_capital_cost - m.fs.costing.aggregate_capital_cost) / m.fs.costing.annual_water_production)}"
+        f"{value(m.fs.costing.capital_recovery_factor*(m.fs.costing.total_capital_cost - m.fs.costing.aggregate_capital_cost) / m.fs.costing.annual_water_production)}"
     )
     electricity_cost = value(
         m.fs.costing.aggregate_flow_costs["electricity"]

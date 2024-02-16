@@ -260,7 +260,7 @@ def add_costing(m):
 
     m.fs.costing.LCOW = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
         )
         / (
@@ -275,7 +275,7 @@ def add_costing(m):
 
     m.fs.costing.LCOW_with_revenue = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
             - m.fs.costing.value_bcp_recovery
             - m.fs.costing.value_N2O_byproduct
@@ -292,7 +292,7 @@ def add_costing(m):
 
     m.fs.costing.LCOT = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
         )
         / (
@@ -307,7 +307,7 @@ def add_costing(m):
 
     m.fs.costing.LCOT_with_revenue = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
             - m.fs.costing.value_bcp_recovery
             - m.fs.costing.value_N2O_byproduct
@@ -325,7 +325,7 @@ def add_costing(m):
 
     m.fs.costing.LC_BCP = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
         )
         / (
@@ -342,7 +342,7 @@ def add_costing(m):
 
     m.fs.costing.LC_N2O = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.factor_capital_annualization
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
         )
         / (

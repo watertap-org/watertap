@@ -506,7 +506,7 @@ def add_costing(m):
 
     m.fs.costing.total_annualized_cost = Expression(
         expr=(
-            m.total_capital_cost * m.fs.costing.factor_capital_annualization
+            m.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.total_operating_cost
         )
     )

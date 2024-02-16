@@ -96,41 +96,41 @@ def test_watertap_costing_package():
     # no error, wacc, plant_lifetime fixed
     m.fs.costing.initialize()
 
-    m.fs.costing.factor_capital_annualization.fix()
+    m.fs.costing.capital_recovery_factor.fix()
     with pytest.raises(
         RuntimeError,
         match="Exactly two of the variables fs.costing.plant_lifetime, "
-        "fs.costing.wacc, fs.costing.factor_capital_annualization should be "
+        "fs.costing.wacc, fs.costing.capital_recovery_factor should be "
         "fixed and the other unfixed.",
     ):
-        # error, factor_capital_annualization,  wacc, plant_lifetime all fixed
+        # error, capital_recovery_factor,  wacc, plant_lifetime all fixed
         m.fs.costing.initialize()
     m.fs.costing.wacc.unfix()
 
     # no error
     m.fs.costing.initialize()
 
-    m.fs.costing.factor_capital_annualization.unfix()
+    m.fs.costing.capital_recovery_factor.unfix()
     with pytest.raises(
         RuntimeError,
         match="Exactly two of the variables fs.costing.plant_lifetime, "
-        "fs.costing.wacc, fs.costing.factor_capital_annualization should be "
+        "fs.costing.wacc, fs.costing.capital_recovery_factor should be "
         "fixed and the other unfixed.",
     ):
-        # error, factor_capital_annualization, wacc, unfixed
+        # error, capital_recovery_factor, wacc, unfixed
         m.fs.costing.initialize()
 
     m.fs.costing.plant_lifetime.unfix()
     with pytest.raises(
         RuntimeError,
         match="Exactly two of the variables fs.costing.plant_lifetime, "
-        "fs.costing.wacc, fs.costing.factor_capital_annualization should be "
+        "fs.costing.wacc, fs.costing.capital_recovery_factor should be "
         "fixed and the other unfixed.",
     ):
-        # error, factor_capital_annualization, wacc, and plant_lifetime unfixed
+        # error, capital_recovery_factor, wacc, and plant_lifetime unfixed
         m.fs.costing.initialize()
 
     m.fs.costing.wacc.fix()
-    m.fs.costing.factor_capital_annualization.fix()
-    # no error, wacc, factor_capital_annualization fixed
+    m.fs.costing.capital_recovery_factor.fix()
+    # no error, wacc, capital_recovery_factor fixed
     m.fs.costing.initialize()

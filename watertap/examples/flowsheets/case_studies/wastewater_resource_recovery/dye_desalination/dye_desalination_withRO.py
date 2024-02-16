@@ -670,7 +670,7 @@ def add_costing(m):
     )
     def LCOT(b):
         return (
-            b.total_capital_cost * b.zo_costing.factor_capital_annualization
+            b.total_capital_cost * b.zo_costing.capital_recovery_factor
             + b.total_operating_cost
             - b.total_externalities
         ) / (
@@ -686,7 +686,7 @@ def add_costing(m):
     )
     def LCOT_wo_revenue(b):
         return (
-            b.total_capital_cost * b.zo_costing.factor_capital_annualization
+            b.total_capital_cost * b.zo_costing.capital_recovery_factor
             + b.total_operating_cost
         ) / (
             pyunits.convert(
@@ -702,7 +702,7 @@ def add_costing(m):
     def LCOW(b):
         if hasattr(m.fs, "pretreatment"):
             return (
-                b.total_capital_cost * b.zo_costing.factor_capital_annualization
+                b.total_capital_cost * b.zo_costing.capital_recovery_factor
                 + b.total_operating_cost
                 - pyunits.convert(
                     -m.fs.dye_disposal_cost
@@ -719,7 +719,7 @@ def add_costing(m):
             )
         else:
             return (
-                b.total_capital_cost * b.zo_costing.factor_capital_annualization
+                b.total_capital_cost * b.zo_costing.capital_recovery_factor
                 + b.total_operating_cost
                 - pyunits.convert(
                     -m.fs.dye_disposal_cost - m.fs.brine_disposal_cost,
@@ -738,7 +738,7 @@ def add_costing(m):
     )
     def LCOW_wo_revenue(b):
         return (
-            b.total_capital_cost * b.zo_costing.factor_capital_annualization
+            b.total_capital_cost * b.zo_costing.capital_recovery_factor
             + b.total_operating_cost
         ) / (
             pyunits.convert(
@@ -1018,7 +1018,7 @@ def display_costing(m):
 
     annual_investment = value(
         pyunits.convert(
-            m.fs.total_capital_cost * m.fs.zo_costing.factor_capital_annualization
+            m.fs.total_capital_cost * m.fs.zo_costing.capital_recovery_factor
             + m.fs.total_operating_cost,
             to_units=pyunits.USD_2020 / pyunits.year,
         )

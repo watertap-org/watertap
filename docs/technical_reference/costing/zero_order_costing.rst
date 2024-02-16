@@ -86,7 +86,7 @@ Lab cost factor                                   :math:`f_{lab}`     ``laborato
 Insurance/taxes cost factor                       :math:`f_{ins}`     ``insurance_and_taxes_percent_FCI``    0.2%               Unit process insurance & taxes cost as percentage of capital cost
 Benefits cost factor                              :math:`f_{ben}`     ``benefit_percent_of_salary``          90%                Unit process benefits cost as percentage of salary costs
 Weighted average cost of capital factor           :math:`f_{wacc}`    ``wacc``                               5%                 Weighted average cost of capital over plant lifetime
-Capital recovery factor                           :math:`f_{crf}`     ``factor_capital_annualization``       6.51%              Calculated from default :math:`f_{WACC}` and :math:`L` values
+Capital recovery factor                           :math:`f_{crf}`     ``capital_recovery_factor``       6.51%              Calculated from default :math:`f_{WACC}` and :math:`L` values
 =============================================  ====================  =====================================  ===============  ==============================================================================
 
 

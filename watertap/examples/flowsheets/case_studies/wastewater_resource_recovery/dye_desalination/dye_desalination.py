@@ -227,7 +227,7 @@ def add_costing(m):
     )
     def LCOT(b):
         return (
-            b.total_capital_cost * b.zo_costing.factor_capital_annualization
+            b.total_capital_cost * b.zo_costing.capital_recovery_factor
             + b.total_operating_cost
             - b.total_externalities
         ) / (

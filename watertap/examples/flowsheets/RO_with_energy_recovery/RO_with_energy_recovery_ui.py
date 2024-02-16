@@ -243,7 +243,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.factor_capital_annualization,
+        obj=fs.costing.capital_recovery_factor,
         name="Capital annualization factor",
         ui_units=1 / pyunits.year,
         display_units="fraction/year",
@@ -377,9 +377,9 @@ def build_flowsheet(erd_type=ERDtype.pump_as_turbine, build_options=None, **kwar
     # build and solve initial flowsheet
     m = build()
 
-    # the UI sets `factor_capital_annualization`, so unfix `wacc`
+    # the UI sets `capital_recovery_factor`, so unfix `wacc`
     m.fs.costing.wacc.unfix()
-    m.fs.costing.factor_capital_annualization.fix()
+    m.fs.costing.capital_recovery_factor.fix()
 
     solver = get_solver()
 
