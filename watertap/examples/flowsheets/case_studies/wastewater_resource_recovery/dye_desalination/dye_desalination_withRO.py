@@ -175,7 +175,7 @@ def build(
         )
 
         @m.fs.tb_nf_gac.Constraint(["H2O", "dye", "tds"])
-        def eq_flow_mass_comp(blk, j):
+        def eq_flow_mass_comp_gac(blk, j):
             if j == "dye":
                 return (
                     blk.properties_in[0].flow_mass_comp["dye"]
