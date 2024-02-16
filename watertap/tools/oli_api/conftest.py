@@ -84,13 +84,15 @@ def oliapi_instance(
 
     if not cryptography_available:
         pytest.skip(reason="cryptography module not available.")
-    cred_file_path = tmp_path / "pytest-credentials.txt"
+    cred_file_path = tmp_path / "pytest-credentials.json"
+    key_file_path = tmp_path / "pytest-credential_key.key"
 
     credentials = {
         **auth_credentials,
         "config_file": cred_file_path,
+        "key_file": key_file_path,
     }
-    credential_manager = CredentialManager(**credentials, test=True)
+    credential_manager = CredentialManager(**credentials, interactive_mode=False)
     with OLIApi(credential_manager, interactive_mode=False) as oliapi:
         oliapi.get_dbs_file_id(str(local_dbs_file))
         yield oliapi

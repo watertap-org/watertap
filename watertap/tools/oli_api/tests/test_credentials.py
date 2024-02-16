@@ -52,12 +52,12 @@ from watertap.tools.oli_api.credentials import CredentialManager
 
 @pytest.mark.unit
 def test_encryption(oliapi_instance: OLIApi, tmp_path: Path):
-    key = oliapi_instance.credential_manager.encryption_key
-    cred_file_path = tmp_path / "pytest-credentials.txt"
-    credential_manager_with_key = CredentialManager(
-        config_file=cred_file_path, encryption_key=key, test=True
+    credentials = oliapi_instance.credential_manager.credentials
+    cred_file_path = tmp_path / "pytest-credentials.json"
+    key_file_path = tmp_path / "pytest-credential_key.key"
+    comp_credentials = CredentialManager(
+        config_file=cred_file_path,
+        key_file=key_file_path,
+        interactive_mode=False,
     )
-    assert (
-        credential_manager_with_key.credentials
-        == oliapi_instance.credential_manager.credentials
-    )
+    assert credentials == comp_credentials.credentials

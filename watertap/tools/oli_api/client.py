@@ -411,7 +411,7 @@ class OLIApi:
                     ),
                     data=json.dumps(input_params),
                 )
-                post_result = json.loads(req_result.text)
+                post_result = req_result.json()
             else:
                 raise IOError("Specify flash calculation input to use this function.")
 
