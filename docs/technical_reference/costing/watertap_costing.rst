@@ -5,13 +5,13 @@ WaterTAP Costing Package
 
 .. currentmodule:: watertap.costing.watertap_costing
 
-The WaterTAP costing module contains the costing package with simplified technoeconomic data. It inherits all the functionality and parameters of the :ref:`WaterTAPCostingBlockData` base class :ref:`technical_reference/costing/costing_base:Common Global Costing Parameters`.
+The WaterTAP costing package contains the costing package with simplified technoeconomic data. It inherits all the functionality and parameters of the :ref:`WaterTAPCostingBlockData` base class :ref:`technical_reference/costing/costing_base:Common Global Costing Parameters`.
 
 
 Costing Index and Technoeconomic Factors
 ----------------------------------------
 
-The following technoeconomic factors are specific to the WaterTAP Costing Package
+The following technoeconomic factors are specific to the WaterTAP Costing Package:
 
 =============================================  ====================  =======================================  ===============  ==============================================================================
                  Cost factor                     Variable                 Name                                 Default Value    Description

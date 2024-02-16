@@ -4,9 +4,9 @@ WaterTAP Costing Framework
 ==========================
 
 .. index::
-   pair: watertap.costing.costing_base;WaterTAPCostingBlockData
+   pair: watertap.costing.watertap_costing;WaterTAPCostingBlockData
 
-.. currentmodule:: watertap.costing.costing_base
+.. currentmodule:: watertap.costing.watertap_costing
 
 The WaterTAP Costing Base class and utility functions contain extensions, methods, and variables and constraints common to all WaterTAP Costing Packages, and which would be useful for creating custom costing packages for WaterTAP.
 
