@@ -115,6 +115,30 @@ class TestCrystallizer(UnitTestHarness):
 
         m.fs.costing.cost_process()
 
+        m.fs.costing.initialize()
+
         self.unit_model_block = m.fs.unit
 
-        self.unit_solutions[m.fs.unit.costing.capital_cost] = 600166.828
+        self.unit_solutions[
+            m.fs.unit.solids.flow_mass_phase_comp[0, "Sol", "NaCl"]
+        ] = 0.08504096
+        self.unit_solutions[
+            m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+        ] = 0.12756
+        self.unit_solutions[
+            m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ] = 0.34570767
+        self.unit_solutions[
+            m.fs.unit.properties_out[0].mass_frac_phase_comp["Liq", "NaCl"]
+        ] = 0.26953035
+        self.unit_solutions[m.fs.unit.pressure_operating] = 11991.82426
+        self.unit_solutions[m.fs.unit.work_mechanical[0]] = 1127.222711
+        self.unit_solutions[m.fs.unit.diameter_crystallizer] = 1.204904
+        self.unit_solutions[m.fs.unit.volume_suspension] = 1.6194469
+        self.unit_solutions[m.fs.unit.t_res] = 1.022821
+        self.unit_solutions[m.fs.unit.costing.capital_cost] = 600166.82793
+        self.unit_solutions[
+            m.fs.costing.aggregate_flow_costs["electricity"]
+        ] = 8596.50939
+        self.unit_solutions[m.fs.costing.aggregate_flow_costs["steam"]] = 2720557.6394
+        self.unit_solutions[m.fs.costing.aggregate_flow_costs["NaCl"]] = 0
