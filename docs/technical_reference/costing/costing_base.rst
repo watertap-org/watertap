@@ -116,7 +116,7 @@ Note that the default values can be overwritten in the derived class.
 Plant capacity utilization factor                 :math:`f_{util}`    ``utilization_factor``                 90%                Percentage of year plant is operating
 Electricity price                                 :math:`P`           ``electricity_cost``                   $0.07/kWh          Electricity price in 2018 USD
 Electricity carbon intensity                      :math:`f_{eci}`     ``electrical_carbon_intensity``        0.475 kg/kWh       Carbon intensity of electricity
-Capital recovery factor                           :math:`f_{crf}`     ``capital_recovery_factor``       None               Calculated by derived class
+Capital recovery factor                           :math:`f_{crf}`     ``capital_recovery_factor``            None               Calculated by derived class
 =============================================  ====================  =====================================  ===============  ==============================================================================
 
 
