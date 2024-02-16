@@ -50,6 +50,11 @@ from pathlib import Path
 import requests
 import json
 import time
+from pyomo.common.dependencies import attempt_import
+
+asyncio, asyncio_available = attempt_import("asyncio", defer_check=False)
+aiohttp, aiohttp_available = attempt_import("aiohttp", defer_check=False)
+
 
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import get_oli_name
 
@@ -61,7 +66,10 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 _logger.addHandler(handler)
 _logger.setLevel(logging.DEBUG)
-
+if aiohttp_available:
+    _logger.info("User has aiohttp setup, enabling parallel requests")
+else:
+    _logger.info("User does not have aiohttp setup, running in serial request mode")
 # TODO: consider allowing local writes in JSON
 
 
@@ -322,31 +330,7 @@ class OLIApi:
             f"Delete DBS file {dbs_file_id} status: {delete_request['status']}"
         )
 
-    # TODO: consider enabling non-flash methods to be called through this function
-    def call(
-        self,
-        flash_method=None,
-        dbs_file_id=None,
-        input_params=None,
-        poll_time=0.5,
-        max_request=100,
-    ):
-        """
-        Make a call to the OLI Cloud API.
-
-        :param flash_method: string indicating flash method
-        :param dbs_file_id: string indicating DBS file
-        :param input_params: dictionary for flash calculation inputs
-        :param poll_time: seconds between each poll
-        :param max_request: maximum number of times to try request before failure
-
-        :return result: dictionary for JSON output result
-        """
-
-        if not bool(flash_method):
-            raise IOError("Specify a flash method to run.")
-        if not bool(dbs_file_id):
-            raise IOError("Specify a DBS file ID to flash.")
+    def get_flash_mode(self, dbs_file_id, flash_method):
         headers = self.credential_manager.headers
         base_url = self.credential_manager.engine_url
         valid_get_flashes = ["corrosion-contact-surface", "chemistry-info"]
@@ -366,36 +350,262 @@ class OLIApi:
                 f" Unexpected value for flash_method: {flash_method}. "
                 + "Valid values: {', '.join(valid_flashes)}."
             )
-        poll_timer = 0
-        start_time = time.time()
-        last_poll_time = start_time
-        req = requests.request(
-            mode,
-            url,
-            headers=headers,
-            data=json.dumps(input_params),
-        )
-        _logger.debug(f"Call status: {req.status_code}")
-        result_link = self.get_result_link(req.json())
-        if result_link == "":
-            raise RuntimeError(
-                "No item 'resultsLink' in request response. Process failed."
+        return mode, url, headers
+
+    # if user has aiohttp lets build async capable functions, otherwise build serial functions
+    if aiohttp_available:
+
+        def process_request_list(self, list_of_requests):
+            """
+            Takes in a list of requests to run through OLI and executes the, returning a list
+                of OLI responces, works only with flash
+            :param list_of_requests: a list of requests where each item contains
+              [{flash_method:flash_method, dps_file_id:dps_file_id, input_params:request_dict}]
+            """
+            _logger.info("Collecting requested samples in parallel mode")
+
+            result_list = []
+            submit_time = time.time()
+            print(list_of_requests)
+
+            async def submit_requests():
+                async with aiohttp.ClientSession() as client:
+                    return await asyncio.gather(
+                        *[
+                            asyncio.ensure_future(
+                                self.call(
+                                    flash_method=request["flash_method"],
+                                    dbs_file_id=request["dbs_file_id"],
+                                    mode="POST",
+                                    input_params=request["input_params"],
+                                    sample_index=index,
+                                    session=client,
+                                )
+                            )
+                            for index, request in enumerate(list_of_requests)
+                        ]
+                    )
+
+            loop = asyncio.get_event_loop()
+            async_results = loop.run_until_complete(submit_requests())
+
+            result = {}
+            processed_result = {}
+            for returned_result in async_results:
+                result.update(returned_result)
+            result_links = {k: self.get_result_link(item) for k, item in result.items()}
+            result_progress = {k: self.check_result(item) for k, item in result.items()}
+            _logger.info(
+                "Submitted all {} jobs to OLIAPI, took {} seconds".format(
+                    len(list_of_requests), time.time() - submit_time
+                )
             )
-        for _ in range(max_request):
-            time.sleep(poll_time)
-            req_result = requests.get(
-                result_link,
-                headers=headers,
-            ).json()
-            poll_status = self.check_result(req_result)
-            if poll_status in ["PROCESSED", "FAILED"]:
-                if req_result["data"]:
-                    return req_result["data"]
+
+            get_time = time.time()
+            while True:
+                time.sleep(1)
+
+                async def run_survey_async():
+                    async with aiohttp.ClientSession() as client:
+                        run_list = []
+                        for k, item in result_progress.items():
+                            if item != True and item != False:
+                                run_list.append(
+                                    asyncio.ensure_future(
+                                        self.call(
+                                            flash_method=list_of_requests[k][
+                                                "flash_method"
+                                            ],
+                                            dbs_file_id=list_of_requests[k][
+                                                "dbs_file_id"
+                                            ],
+                                            mode="GET",
+                                            input_params=result_links[k],
+                                            sample_index=k,
+                                            session=client,
+                                        )
+                                    )
+                                )
+                        return await asyncio.gather(*run_list)
+
+                loop = asyncio.get_event_loop()
+                async_results = loop.run_until_complete(run_survey_async())
+                for item in async_results:
+                    result.update(item)
+
+                result_status = {
+                    k: self.check_result(item) for k, item in result.items()
+                }
+                processed_result = {
+                    k: self.get_result(item) for k, item in result.items()
+                }
+                waiting_to_complete = sum(
+                    [result_status[k] == "IN PROGRESS" for k in result.keys()]
+                )
+                _logger.info("Still waiting for {} samples".format(waiting_to_complete))
+
+                if waiting_to_complete == False:
+                    break
+            for idx in range(len(list_of_requests)):
+                result_list.append(processed_result[idx])
+            acquire_time = time.time() - get_time
+            _logger.info(
+                "Received all {} jobs from OLIAPI, took {} seconds, rate is {} sample/second".format(
+                    len(result), acquire_time, len(result) / acquire_time
+                )
+            )
+            return result_list
+
+        async def call(
+            self,
+            flash_method=None,
+            dbs_file_id=None,
+            input_params=None,
+            poll_time=0.5,
+            max_request=100,
+            mode="POST",
+            sample_index=None,
+            session=None,
+        ):
+            """ """
+            _logger.debug("running {} sample #{}".format(mode, sample_index))
+            if not bool(flash_method):
+                raise IOError(
+                    " Specify a flash method to use from {self.valid_flashes.keys()}."
+                    + " Run self.get_valid_flash_methods to see a list and required inputs."
+                )
+
+            if not bool(dbs_file_id):
+                raise IOError("Specify a DBS file id to flash.")
+
+            if self.credential_manager.access_key:
+                headers = {
+                    "authorization": "API-KEY " + self.credential_manager.access_key
+                }
+            else:
+                headers = {
+                    "authorization": "Bearer " + self.credential_manager.jwt_token
+                }
+
+            headers["content-type"] = "application/json"
+            if mode == "POST":
+                endpoint = f"{self.credential_manager.engine_url}flash/{dbs_file_id}/{flash_method}"
+                if bool(input_params):
+                    data = json.dumps(input_params)
                 else:
-                    raise IOError(" Poll returned empty data.")
-            elif poll_status == "ERROR":
-                raise RuntimeError(f"Call failed with status {req_result['code']}")
-        raise RuntimeError("Poll limit exceeded.")
+                    raise IOError(
+                        "Specify flash calculation input to use this function."
+                    )
+
+                async with session.post(
+                    endpoint, headers=headers, data=data
+                ) as response:
+                    if response.status == 200:
+                        result = {sample_index: await response.json()}
+                        return result
+                    else:
+                        _logger.debug(
+                            "Failed to receive response for {} sample #{}".format(
+                                mode, sample_index
+                            )
+                        )
+                        return {sample_index: False}
+
+            if mode == "GET":
+                data = ""
+                endpoint = input_params
+                async with session.get(
+                    endpoint, headers=headers, data=data
+                ) as response:
+                    if response.status == 200:
+                        result = {sample_index: await response.json()}
+                        _logger.debug(
+                            "Received response for {} sample #{}".format(
+                                mode, sample_index
+                            )
+                        )
+                        return result
+                    else:
+                        _logger.info(
+                            "Failed to receive response for {} sample #{}".format(
+                                mode, sample_index
+                            )
+                        )
+                        return {sample_index: False}
+
+    else:
+
+        def process_list(self, oliapi_instance, list_of_requests):
+            """
+            Takes in a list of requests to run through OLI and executes the, returning a list
+                of OLI responces, works only with flash
+            :param list_of_requests: a list of requests where each item contains
+              [{flash_method:flash_method, dps_file_id:dps_file_id, input_params:request_dict}]
+            """
+
+            _logger.info("Collecting requested samples in serial mode")
+            result_list = []
+            for indx, request in enumerate(list_of_requests):
+                _logger.info(
+                    f"Getting flash samples #{indx} out of {len(list_of_requests)}"
+                )
+                result = self.call(**request)
+                result_list.append(result)
+            return result_list
+
+        # TODO: consider enabling non-flash methods to be called through this function
+        def call(
+            self,
+            flash_method=None,
+            dbs_file_id=None,
+            input_params=None,
+            poll_time=0.5,
+            max_request=100,
+            **kwargs,
+        ):
+            """
+            Make a call to the OLI Cloud API.
+
+            :param flash_method: string indicating flash method
+            :param dbs_file_id: string indicating DBS file
+            :param input_params: dictionary for flash calculation inputs
+            :param poll_time: seconds between each poll
+            :param max_request: maximum number of times to try request before failure
+
+            :return result: dictionary for JSON output result
+            """
+
+            if not bool(flash_method):
+                raise IOError("Specify a flash method to run.")
+            if not bool(dbs_file_id):
+                raise IOError("Specify a DBS file ID to flash.")
+            mode, url, headers = self._get_flash_mode(dbs_file_id, flash_method)
+            poll_timer = 0
+            start_time = time.time()
+            last_poll_time = start_time
+            req = requests.request(
+                mode,
+                url,
+                headers=headers,
+                data=json.dumps(input_params),
+            )
+            _logger.debug(f"Call status: {req.status_code}")
+            result_link = self.get_result_link(req.json())
+            if result_link == "":
+                raise RuntimeError(
+                    "No item 'resultsLink' in request response. Process failed."
+                )
+            for _ in range(max_request):
+                time.sleep(poll_time)
+                req_result = requests.get(
+                    result_link,
+                    headers=headers,
+                ).json()
+                poll_status = self.check_result(req_result)
+                result = self.get_result(req_result)
+                if result is not None:
+                    return result
+            raise RuntimeError("Poll limit exceeded.")
 
     def get_result_link(self, req):
         """
@@ -431,3 +641,56 @@ class OLIApi:
                 response_status = req["status"]
                 _logger.info(f"Polling result link: {response_status}")
                 return response_status
+
+    def get_result(self, req):
+        if req["status"] in ["PROCESSED", "FAILED"]:
+            if req["data"]:
+                return req["data"]
+            else:
+                raise IOError(" Poll returned empty data.")
+        elif req["status"] == "ERROR":
+            raise RuntimeError(f"Call failed with status {req['code']}")
+        else:
+            return None
+
+    # def get_result_link(self, result):
+    #     _logger.debug(result)
+    #     if bool(result):
+    #         if result["status"] == "SUCCESS":
+    #             if "data" in result:
+    #                 if "status" in result["data"]:
+    #                     if (
+    #                         result["data"]["status"] == "IN QUEUE"
+    #                         or result["data"]["status"] == "IN PROGRESS"
+    #                     ):
+    #                         if "resultsLink" in result["data"]:
+    #                             results_link = result["data"]["resultsLink"]
+    #                             return results_link
+
+    #     return False
+
+    # def check_progress(self, result):
+    #     if "status" in result:
+    #         status = result["status"]
+
+    #         if status == "PROCESSED" or status == "FAILED":
+    #             if "data" in result:
+    #                 return result["data"]
+    #             else:
+    #                 _logger.debug(
+    #                     "Status: {}, result link: {}".format(
+    #                         result["status"], result["resultsLink"]
+    #                     )
+    #                 )
+    #                 return False
+    #         elif status == "IN QUEUE" or status == "IN PROGRESS":
+    #             _logger.debug(
+    #                 "Status: {}, result link: {}".format(
+    #                     result["status"], result["resultsLink"]
+    #                 )
+    #             )
+    #             return True
+    #         else:
+    #             _logger.debug("No status reported, result is : {}".format(result))
+    #     else:
+    #         _logger.debug("No status reported, result is : {}".format(result))

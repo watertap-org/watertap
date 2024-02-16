@@ -423,10 +423,19 @@ class Flash:
         if num_samples is None:
             num_samples = 1
         output_list = []
+        requests = []
+        _logger.info(f"Flash samples {num_samples}")
         for index in range(num_samples):
-            _logger.info(f"Flash sample #{index+1} of {num_samples}")
             clone = self.get_clone(flash_method, initial_input, survey, index)
-            clone_output = oliapi_instance.call(flash_method, dbs_file_id, clone)
+            requests.append(
+                {
+                    "flash_method": flash_method,
+                    "dbs_file_id": dbs_file_id,
+                    "input_params": clone,
+                }
+            )
+        clone_output_list = oliapi_instance.process_request_list(requests)
+        for clone_output in clone_output_list:
             data_dict = create_output(clone_output)
             if data_dict != None:
                 output_list.append(data_dict)
