@@ -292,7 +292,7 @@ def build(
     # explicitly set the costing parameters used
     m.fs.costing.utilization_factor.fix(0.9)
     m.fs.costing.TIC.fix(2)
-    m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
+    m.fs.costing.maintenance_labor_chemical_factor.fix(0.03)
     # unfix wacc since we fix capital_recovery_factor
     m.fs.costing.wacc.unfix()
     m.fs.costing.capital_recovery_factor.fix(0.1)
@@ -421,7 +421,7 @@ def build(
         )
         * (
             1
-            + m.fs.costing.factor_maintenance_labor_chemical
+            + m.fs.costing.maintenance_labor_chemical_factor
             / m.fs.costing.total_investment_factor
             / m.fs.costing.capital_recovery_factor
         )
@@ -456,7 +456,7 @@ def build(
         * m.fs.costing.membrane_capex_lcow
         * (
             1
-            + m.fs.costing.factor_maintenance_labor_chemical
+            + m.fs.costing.maintenance_labor_chemical_factor
             / m.fs.costing.total_investment_factor
             / m.fs.costing.capital_recovery_factor
         )

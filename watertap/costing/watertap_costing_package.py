@@ -183,7 +183,7 @@ class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         )
 
         self.maintenance_labor_chemical_operating_cost = pyo.Expression(
-            expr=self.factor_maintenance_labor_chemical * self.aggregate_capital_cost,
+            expr=self.maintenance_labor_chemical_factor * self.aggregate_capital_cost,
             doc="Maintenance-labor-chemical operating cost",
         )
 
@@ -424,7 +424,7 @@ class WaterTAPCostingData(_WaterTAPCostingBlockData):
             doc="Total investment factor [investment cost/equipment cost]",
             units=pyo.units.dimensionless,
         )
-        self.factor_maintenance_labor_chemical = pyo.Var(
+        self.maintenance_labor_chemical_factor = pyo.Var(
             initialize=0.03,
             doc="Maintenance-labor-chemical factor [fraction of equipment cost/year]",
             units=pyo.units.year**-1,
@@ -484,7 +484,7 @@ class WaterTAPCostingDetailedData(_WaterTAPCostingBlockData):
             doc="Total investment factor [investment cost/equipment cost]",
         )
 
-        self.factor_maintenance_labor_chemical = pyo.Expression(
+        self.maintenance_labor_chemical_factor = pyo.Expression(
             expr=self.salaries_percent_FCI
             + self.benefit_percent_of_salary * self.salaries_percent_FCI
             + self.maintenance_costs_percent_FCI
