@@ -119,7 +119,7 @@ class CredentialManager:
             if self.encryption_key:
                 self._cipher = Fernet(self.encryption_key)
 
-        self._set_credentials(**self.provided_credentials)
+        self._set_credentials()
         self.setup()
 
     def _get_encryption_key(self):
@@ -144,7 +144,9 @@ class CredentialManager:
                 else:
                     encryption_key = ""
             else:
-                raise RuntimeError("Cannot initialize CredentialManager without credentials.")
+                raise RuntimeError(
+                    "Cannot initialize CredentialManager without credentials."
+                )
         self.encryption_key = encryption_key.decode() if encryption_key else ""
 
     def _set_credentials(self):
@@ -211,7 +213,7 @@ class CredentialManager:
 
     def set_active_access_key(self):
         """
-        Selects access key from list if more than one exists.
+        Select access key from list if more than one exists.
 
         :return access_key: string for login access key
         """
@@ -340,7 +342,7 @@ class CredentialManager:
 
     def update_headers(self, new_header):
         """
-        Updates existing headers with new header.
+        Update existing headers with new header.
 
         :param new_header: dict containing new header key and value
 
@@ -406,7 +408,7 @@ class CredentialManager:
 
     def auth_status(self, body, req_call=None):
         """
-        Posts authorization request to OLI Cloud.
+        Post authorization request to OLI Cloud.
 
         :param body: dict for body of request call
         :param req_call: json from request call
