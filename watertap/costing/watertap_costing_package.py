@@ -27,7 +27,7 @@ from watertap.costing.unit_models.cstr import cost_cstr
 from watertap.costing.unit_models.heater_chiller import cost_heater_chiller
 
 
-class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
+class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
     """
     Base class for creating WaterTAP costing packages. Allows
     unit models to "self-register" their default costing methods,
@@ -274,12 +274,8 @@ class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self.capital_recovery_factor_constraint = pyo.Constraint(
             expr=self.capital_recovery_factor
             == (
-                (
-                    self.wacc
-                    * (1 + self.wacc) ** (self.plant_lifetime / self.base_period)
-                )
-                / (((1 + self.wacc) ** (self.plant_lifetime / self.base_period)) - 1)
-                / self.base_period
+                (self.wacc / pyo.units.year)
+                / (1 - 1 / ((1 + self.wacc) ** (self.plant_lifetime / pyo.units.year)))
             )
         )
 
@@ -324,6 +320,18 @@ class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
     @staticmethod
     def add_cost_factor(blk, factor):
+        """
+        For a unit model costing block `blk`, adds `blk.cost_factor`,
+        an expression pointing to the appropriate indirect capital
+        cost multiplier, and `blk.direct_capital_cost`, which is a expression
+        defined to be `blk.capital_cost / blk.cost_factor`. Valid strings for
+        `factor` are "TIC" and "TPEC"; all others will result in an indirect
+        capital cost factor of 1.
+
+        Args:
+            blk: an ideas.core.UnitModelCosting block
+            factor: a string representing the cost factor to use
+        """
         if factor == "TPEC":
             blk.cost_factor = pyo.Expression(expr=blk.costing_package.TPEC)
         elif factor == "TIC":
@@ -414,7 +422,7 @@ class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
 
 @declare_process_block_class("WaterTAPCosting")
-class WaterTAPCostingData(_WaterTAPCostingBlockData):
+class WaterTAPCostingData(WaterTAPCostingBlockData):
     def build_global_params(self):
 
         # Build flowsheet level costing components
@@ -434,7 +442,7 @@ class WaterTAPCostingData(_WaterTAPCostingBlockData):
 
 
 @declare_process_block_class("WaterTAPCostingDetailed")
-class WaterTAPCostingDetailedData(_WaterTAPCostingBlockData):
+class WaterTAPCostingDetailedData(WaterTAPCostingBlockData):
     def build_global_params(self):
         """
         To minimize overhead, only create global parameters for now.
