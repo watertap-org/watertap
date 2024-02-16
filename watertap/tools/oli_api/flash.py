@@ -329,10 +329,6 @@ class Flash:
         :param data_list: a list of dicts extracted from OLI using recursive extraction function
 
         """
-        float_nan = float("nan")
-        global_data_output = copy.deepcopy(data_list[0])
-        for d in data_list:
-            global_data_output.update(d)
 
         def _recursive_merge(data_dict, output_dict, overwrite=False):
             """
@@ -361,8 +357,16 @@ class Flash:
                     else:
                         _recursive_merge(data_dict[key], output_dict[key], overwrite)
 
+        float_nan = float("nan")
+        # merge all keys in all dicts to ensure we got em all.
+        global_data_output = copy.deepcopy(data_list[0])
+        for d in data_list:
+            global_data_output.update(d)
+
         for i, d in enumerate(data_list):
             if i == 0:
+                # ensure we update first value in global dict with data in first list.
+                # these might not be same as we ran update during global_dict_creation
                 overwrite = True
             else:
                 overwrite = False
@@ -568,10 +572,11 @@ class Flash:
             for k, v in data.items():
                 path.append(k)
                 if hasattr(v, "items"):
-                    if "unit" not in v:
+                    # our global output uses "values to indicate we have data"
+                    if "values" not in v:
                         _get_nested_paths(v, prop)
                 if k == prop:
-                    nested_paths.append(deepcopy(path))
+                    nested_paths.append(copy.deepcopy(path))
                 del path[-1]
             return nested_paths
 
@@ -587,27 +592,40 @@ class Flash:
             :return filtered_result: dictionary for unit and values
             """
 
+            def _filter_values(sampled_data, filter_zero):
+                filtered_values = copy.deepcopy(sampled_data)
+                if filter_zero:
+                    if isinstance(sampled_data, dict):
+                        for k, v in sampled_data.items():
+                            if not any(val for val in v):
+                                del filtered_values[k]
+                return filtered_values
+
             # get nested data
             for key in keys:
                 data = data[key]
-            nested_data = data
-            unit = nested_data["units"]
-            # sample nested data
-            if "value" in data:
-                sampled_data = [nested_data["value"][s] for s in samples]
-            elif "values" in nested_data:
-                sampled_data = {
-                    k: [v[s] for s in samples] for k, v in nested_data["values"].items()
-                }
-            # filter sampled data
-            filtered_values = deepcopy(sampled_data)
-            if filter_zero:
-                if isinstance(sampled_data, dict):
-                    for k, v in sampled_data.items():
-                        if not any(val for val in v):
-                            del filtered_values[k]
-            values = filtered_values
-            filtered_result = {"unit": unit, "values": values}
+            filtered_result = {}
+            # make sure we have a dict in form of {'pro_key':{"values":[],"units":[]}}
+            if "values" not in data:
+                for key, nested_data in data.items():
+                    unit = nested_data["units"]
+                    # sample nested data
+                    sampled_data = [
+                        nested_data["values"][s] for s in samples
+                    ]  # nested_data["values"]
+
+                    values = _filter_values(sampled_data, filter_zero)
+                    filtered_result[key] = {"units": unit, "values": values}
+            else:
+                # prop does not have nested data
+                unit = data["units"]
+                # sample nested data
+                sampled_data = [
+                    data["values"][s] for s in samples
+                ]  # nested_data["values"]
+
+                values = _filter_values(sampled_data, filter_zero)
+                filtered_result = {"units": unit, "values": values}
             return filtered_result
 
         # load data
@@ -619,7 +637,6 @@ class Flash:
             full_dataset = raw_result
         else:
             raise Exception(f"Unexpected object for raw_result: {type(raw_result)}.")
-        print(full_dataset)
         dataset_size = len(full_dataset["metaData"]["executionTime"]["values"])
         samples = list(samples) if samples else list(range(dataset_size))
         base_result = full_dataset["result"]
@@ -628,22 +645,13 @@ class Flash:
             paths = {}
             for prop in properties:
                 nested_paths = _get_nested_paths(base_result, prop)
-                paths[prop] = deepcopy(nested_paths)
+                paths[prop] = copy.deepcopy(nested_paths)
                 nested_paths.clear()
             extracted_properties = {"samples": samples, "properties": {}}
             # create property labels
             for prop in properties:
-                prop_label = deepcopy(prop)
                 for path in paths[prop]:
-                    phase = None
-                    label = deepcopy(prop)
-                    if "total" in path:
-                        phase = "total"
-                    elif "phases" in path:
-                        phase = path[path.index("phases") + 1]
-                    if phase:
-                        label = label + (f"_{phase}")
-                    # extract property from base_result
+                    label = copy.deepcopy(prop)
                     extracted_properties["properties"][label] = _get_filtered_result(
                         base_result,
                         path,
