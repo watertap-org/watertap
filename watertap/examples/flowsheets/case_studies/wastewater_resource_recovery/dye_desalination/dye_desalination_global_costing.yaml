@@ -19,6 +19,9 @@ defined_flows:
   recovered_water:
     value: 1.25
     units: USD_2020/m**3
+  activated_carbon:
+    value: 2.04   # https://businessanalytiq.com/procurementanalytics/index/activated-carbon-prices/
+    units: USD_2020/kg
 global_parameters:
   plant_lifetime:
     value: 30
