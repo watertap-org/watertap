@@ -127,7 +127,6 @@ class TestCircularCosting(UnitTestHarness):
         iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-6)
 
         m.fs.costing.cost_process()
-        m.fs.costing.initialize()
 
         self.unit_model_block = m.fs.unit
 
