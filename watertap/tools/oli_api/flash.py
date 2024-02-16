@@ -293,9 +293,9 @@ class Flash:
                         }
                     # Oli indicates a dict of values with "values" key
                     elif "values" in input_dict:
-                        temp_dict = {}
+                        temp_dict[last_key] = {}
                         for key, val in input_dict["values"].items():
-                            temp_dict[key] = {
+                            temp_dict[last_key][key] = {
                                 "values": [val],
                                 "units": input_dict["unit"],
                             }
@@ -590,7 +590,7 @@ class Flash:
             for key in keys:
                 data = data[key]
             nested_data = data
-            unit = nested_data["unit"]
+            unit = nested_data["units"]
             # sample nested data
             if "value" in data:
                 sampled_data = [nested_data["value"][s] for s in samples]
