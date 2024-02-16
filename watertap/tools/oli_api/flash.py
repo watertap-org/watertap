@@ -122,7 +122,7 @@ class Flash:
         :param survey_arrays: dictionary for variables and values to survey
         :param get_oli_names: bool switch to convert name into OLI name
         :param file_name: string for file to write, if any
-        :mesh_grid: if True (default) the input array will be combined to generate combination of all possible samples
+        :param mesh_grid: if True (default) the input array will be combined to generate combination of all possible samples
             if False, the direct values in survey_arrays will be used
 
         :return survey: dictionary for product of survey variables and values
