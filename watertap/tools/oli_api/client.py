@@ -55,7 +55,7 @@ from pyomo.common.dependencies import attempt_import
 asyncio, asyncio_available = attempt_import("asyncio", defer_check=False)
 aiohttp, aiohttp_available = attempt_import("aiohttp", defer_check=False)
 
-
+aiohttp_available = False
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import get_oli_name
 
 _logger = logging.getLogger(__name__)
@@ -330,7 +330,7 @@ class OLIApi:
             f"Delete DBS file {dbs_file_id} status: {delete_request['status']}"
         )
 
-    def get_flash_mode(self, dbs_file_id, flash_method):
+    def _get_flash_mode(self, dbs_file_id, flash_method):
         headers = self.credential_manager.headers
         base_url = self.credential_manager.engine_url
         valid_get_flashes = ["corrosion-contact-surface", "chemistry-info"]
@@ -366,7 +366,8 @@ class OLIApi:
 
             result_list = []
             submit_time = time.time()
-            print(list_of_requests)
+
+            acquire_timer = time.time()
 
             async def submit_requests():
                 async with aiohttp.ClientSession() as client:
@@ -397,11 +398,10 @@ class OLIApi:
             result_progress = {k: self.check_result(item) for k, item in result.items()}
             _logger.info(
                 "Submitted all {} jobs to OLIAPI, took {} seconds".format(
-                    len(list_of_requests), time.time() - submit_time
+                    len(list_of_requests), time.time() - acquire_timer
                 )
             )
 
-            get_time = time.time()
             while True:
                 time.sleep(1)
 
@@ -432,7 +432,6 @@ class OLIApi:
                 async_results = loop.run_until_complete(run_survey_async())
                 for item in async_results:
                     result.update(item)
-
                 result_status = {
                     k: self.check_result(item) for k, item in result.items()
                 }
@@ -448,10 +447,10 @@ class OLIApi:
                     break
             for idx in range(len(list_of_requests)):
                 result_list.append(processed_result[idx])
-            acquire_time = time.time() - get_time
+            acquire_time = time.time() - acquire_timer
             _logger.info(
-                "Received all {} jobs from OLIAPI, took {} seconds, rate is {} sample/second".format(
-                    len(result), acquire_time, len(result) / acquire_time
+                "Received all {} jobs from OLIAPI, took {} seconds, rate is {} second/sample".format(
+                    len(result), acquire_time, acquire_time / len(result)
                 )
             )
             return result_list
@@ -477,19 +476,11 @@ class OLIApi:
 
             if not bool(dbs_file_id):
                 raise IOError("Specify a DBS file id to flash.")
-
-            if self.credential_manager.access_key:
-                headers = {
-                    "authorization": "API-KEY " + self.credential_manager.access_key
-                }
-            else:
-                headers = {
-                    "authorization": "Bearer " + self.credential_manager.jwt_token
-                }
-
-            headers["content-type"] = "application/json"
+            test_mode, post_url, headers = self._get_flash_mode(
+                dbs_file_id, flash_method
+            )
             if mode == "POST":
-                endpoint = f"{self.credential_manager.engine_url}flash/{dbs_file_id}/{flash_method}"
+
                 if bool(input_params):
                     data = json.dumps(input_params)
                 else:
@@ -498,7 +489,7 @@ class OLIApi:
                     )
 
                 async with session.post(
-                    endpoint, headers=headers, data=data
+                    post_url, headers=headers, data=data
                 ) as response:
                     if response.status == 200:
                         result = {sample_index: await response.json()}
@@ -513,10 +504,8 @@ class OLIApi:
 
             if mode == "GET":
                 data = ""
-                endpoint = input_params
-                async with session.get(
-                    endpoint, headers=headers, data=data
-                ) as response:
+                get_url = input_params
+                async with session.get(get_url, headers=headers, data=data) as response:
                     if response.status == 200:
                         result = {sample_index: await response.json()}
                         _logger.debug(
@@ -535,7 +524,7 @@ class OLIApi:
 
     else:
 
-        def process_list(self, oliapi_instance, list_of_requests):
+        def process_request_list(self, list_of_requests):
             """
             Takes in a list of requests to run through OLI and executes the, returning a list
                 of OLI responces, works only with flash
@@ -545,12 +534,19 @@ class OLIApi:
 
             _logger.info("Collecting requested samples in serial mode")
             result_list = []
+            acquire_timer = time.time()
             for indx, request in enumerate(list_of_requests):
                 _logger.info(
                     f"Getting flash samples #{indx} out of {len(list_of_requests)}"
                 )
                 result = self.call(**request)
                 result_list.append(result)
+            acquire_time = time.time() - acquire_timer
+            _logger.info(
+                "Received all {} jobs from OLIAPI, took {} seconds, rate is {} second/sample".format(
+                    len(result), acquire_time, acquire_time / len(result)
+                )
+            )
             return result_list
 
         # TODO: consider enabling non-flash methods to be called through this function
@@ -652,45 +648,3 @@ class OLIApi:
             raise RuntimeError(f"Call failed with status {req['code']}")
         else:
             return None
-
-    # def get_result_link(self, result):
-    #     _logger.debug(result)
-    #     if bool(result):
-    #         if result["status"] == "SUCCESS":
-    #             if "data" in result:
-    #                 if "status" in result["data"]:
-    #                     if (
-    #                         result["data"]["status"] == "IN QUEUE"
-    #                         or result["data"]["status"] == "IN PROGRESS"
-    #                     ):
-    #                         if "resultsLink" in result["data"]:
-    #                             results_link = result["data"]["resultsLink"]
-    #                             return results_link
-
-    #     return False
-
-    # def check_progress(self, result):
-    #     if "status" in result:
-    #         status = result["status"]
-
-    #         if status == "PROCESSED" or status == "FAILED":
-    #             if "data" in result:
-    #                 return result["data"]
-    #             else:
-    #                 _logger.debug(
-    #                     "Status: {}, result link: {}".format(
-    #                         result["status"], result["resultsLink"]
-    #                     )
-    #                 )
-    #                 return False
-    #         elif status == "IN QUEUE" or status == "IN PROGRESS":
-    #             _logger.debug(
-    #                 "Status: {}, result link: {}".format(
-    #                     result["status"], result["resultsLink"]
-    #                 )
-    #             )
-    #             return True
-    #         else:
-    #             _logger.debug("No status reported, result is : {}".format(result))
-    #     else:
-    #         _logger.debug("No status reported, result is : {}".format(result))
