@@ -53,6 +53,7 @@ from pathlib import Path
 from copy import deepcopy
 from itertools import product
 from pyomo.environ import units as pyunits
+import copy
 
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
     get_oli_name,
@@ -258,6 +259,115 @@ class Flash:
             self.write_output(inputs, file_name)
         return inputs
 
+    def extract_oli_data(self, result_dict):
+        """
+        function for pulling out OLI json data into a normal dictionary structure
+        This will build a following out put structure.
+        The depth will depend on returned OLI, will import list of dicts and dicts
+
+        Assumes that unit, value, and values are used as terminating keys for identifing where data is stored!
+
+        :param result_dict: data from OLI in dict form
+
+        {data: {sub_data:{values:[],units: unit from OLI}}"""
+        output_dict = {}
+
+        def _update_dir(key, current_directory):
+            if key not in current_directory:
+                current_directory.append(key)
+            return current_directory
+
+        def _recurse_search(last_key, input_dict):
+            temp_dict = {}
+            if isinstance(input_dict, dict):
+                # check if we found dict with actual data, otherwise dive deeper
+                if any(test in input_dict for test in ["unit", "values", "value"]):
+                    # Oli indicates a single value with "value" key
+                    if "value" in input_dict:
+                        unit = input_dict.get("unit")
+                        if unit == None or unit == "":
+                            unit = "dimensionless"
+                        temp_dict[last_key] = {
+                            "values": [input_dict["value"]],
+                            "units": unit,
+                        }
+                    # Oli indicates a dict of values with "values" key
+                    elif "values" in input_dict:
+                        temp_dict = {}
+                        for key, val in input_dict["values"].items():
+                            temp_dict[key] = {
+                                "values": [val],
+                                "units": input_dict["unit"],
+                            }
+                    else:
+                        _logger.warning(
+                            "Could not processes input_dict: {}".format(input_dict)
+                        )
+                else:
+                    for key, idict in input_dict.items():
+                        return_dict = _recurse_search(key, idict)
+                        for sub_key, items in return_dict.items():
+                            temp_dict[sub_key] = items
+
+            if isinstance(input_dict, list):
+                for sub_dict in input_dict:
+                    if "name" in sub_dict:
+                        key = sub_dict["name"]
+                        result_dict = _recurse_search(key, sub_dict)
+                        for key, item in result_dict.items():
+                            temp_dict[key] = item
+            return temp_dict
+
+        for key, items in result_dict.items():
+            output_dict[key] = _recurse_search(key, items)
+        return copy.deepcopy(output_dict)
+
+    def merge_data_list(self, data_list):
+        """
+        merges all data collected during survey
+        :param data_list: a list of dicts extracted from OLI using recursive extraction function
+
+        """
+        float_nan = float("nan")
+        global_data_output = copy.deepcopy(data_list[0])
+        for d in data_list:
+            global_data_output.update(d)
+
+        def _recursive_merge(data_dict, output_dict, overwrite=False):
+            """
+            Merge data structure generated from OLI dicts
+            data_dict: single dictionary that contains data for import
+            output_dict: global dictionary to store all the data in
+            overwrite: enable to overwrite data in the global dict, should be used on import of first data set only!
+            """
+            for key, value in output_dict.items():
+                if "values" in value:
+                    if key in data_dict:
+                        if overwrite:
+                            output_dict[key]["values"] = data_dict[key]["values"]
+                        else:
+                            output_dict[key]["values"].append(
+                                data_dict[key]["values"][0]
+                            )
+                    else:
+                        if overwrite:
+                            output_dict[key]["values"] = [float_nan]
+                        else:
+                            output_dict[key]["values"].append(float_nan)
+                else:
+                    if key not in data_dict:
+                        _recursive_merge({}, output_dict[key], overwrite)
+                    else:
+                        _recursive_merge(data_dict[key], output_dict[key], overwrite)
+
+        for i, d in enumerate(data_list):
+            if i == 0:
+                overwrite = True
+            else:
+                overwrite = False
+            _recursive_merge(d, global_data_output, overwrite)
+        return copy.deepcopy(global_data_output)
+
     # TODO: consider modifications for async/parallel calculations
     def run_flash(
         self,
@@ -281,50 +391,20 @@ class Flash:
         :return output_dict: dictionary containing IDs and output streams for each flash calculation
         """
 
-        float_nan = float("nan")
-
-        def add_to_output(input_dict, output_dict, index, number_samples):
+        def create_output(input_dict):
             """
-            Add incoming flash results to output data.
+            generate output_dict from incoming OLI flash result.
 
             :param input_dict: dictionary for incoming data
-            :param output_dict: dictionary for output data
-            :param index: integer for index of incoming data
-            :param number_samples: integer for total number of incoming data samples
             """
-
-            for k, v in input_dict.items():
-                try:
-                    val = float(v)
-                except:
-                    val = None
-                if val is not None:
-                    if k not in output_dict:
-                        output_dict[k] = [float_nan] * number_samples
-                    output_dict[k][index] = val
-                elif isinstance(v, str):
-                    if k not in output_dict:
-                        output_dict[k] = v
-                    if input_dict[k] != output_dict[k]:
-                        raise Exception(f"Input and output do not agree for key {k}")
-                elif isinstance(v, list):
-                    if k == "phaseSummary":
-                        if k not in output_dict:
-                            output_dict[k] = [float_nan] * number_samples
-                        output_dict[k][index] = v
-                    elif k == "messages":
-                        raise Exception(
-                            "Error recieved from OLIAPI, message is: {}".format(v)
-                        )
-
-                    else:
-                        raise Exception(f"Unexpected key: {k}")
-                elif isinstance(v, dict):
-                    if k not in output_dict:
-                        output_dict[k] = {}
-                    add_to_output(input_dict[k], output_dict[k], index, number_samples)
-                else:
-                    raise Exception(f"Unexpected value: {v}")
+            data = None
+            if "result" not in input_dict:
+                raise Exception(
+                    "Error recieved from OLIAPI, message is: {}".format(input_dict)
+                )
+            else:
+                data = self.extract_oli_data(input_dict)
+            return data
 
         output_dict = {}
         if survey is None:
@@ -337,11 +417,15 @@ class Flash:
                 raise RuntimeError(f"Length of list for key {k} differs from prior key")
         if num_samples is None:
             num_samples = 1
+        output_list = []
         for index in range(num_samples):
             _logger.info(f"Flash sample #{index+1} of {num_samples}")
             clone = self.get_clone(flash_method, initial_input, survey, index)
             clone_output = oliapi_instance.call(flash_method, dbs_file_id, clone)
-            add_to_output(clone_output, output_dict, index, num_samples)
+            data_dict = create_output(clone_output)
+            if data_dict != None:
+                output_list.append(data_dict)
+        output_dict = self.merge_data_list(output_list)
         _logger.info("Completed running flash calculations")
         if file_name:
             self.write_output(output_dict, file_name)
@@ -534,7 +618,8 @@ class Flash:
             full_dataset = raw_result
         else:
             raise Exception(f"Unexpected object for raw_result: {type(raw_result)}.")
-        dataset_size = len(full_dataset["metaData"]["executionTime"]["value"])
+        print(full_dataset)
+        dataset_size = len(full_dataset["metaData"]["executionTime"]["values"])
         samples = list(samples) if samples else list(range(dataset_size))
         base_result = full_dataset["result"]
         if base_result:

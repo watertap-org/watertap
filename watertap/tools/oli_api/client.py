@@ -70,21 +70,22 @@ class OLIApi:
     A class to wrap OLI Cloud API calls and access functions for interfacing with WaterTAP.
     """
 
-    def __init__(
-        self,
-        credential_manager,
-        interactive_mode=True,
-    ):
+    def __init__(self, credential_manager, interactive_mode=True, debug_level="INFO"):
         """
         Construct all necessary attributes for OLIApi class.
 
         :param credential_manager_class: class used to manage credentials
-        :param interactive_mode: bool switch for level of logging display
+        :param interactive_mode: enables direct interaction with user through prompts
+        :param debug_level: defines level of logging activity
         """
 
         self.credential_manager = credential_manager
         self.interactive_mode = interactive_mode
         if self.interactive_mode:
+            _logger.info(
+                "OLI runing in interactive mode - to disable set interactive_mode to: False"
+            )
+        if debug_level == "INFO":
             _logger.setLevel(logging.INFO)
         else:
             _logger.setLevel(logging.DEBUG)
@@ -98,8 +99,10 @@ class OLIApi:
     # return False if no exceptions raised
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):
         # delete all .dbs files created during session
-        delete_dbs_files = [file for file in self.session_dbs_files if file not in self.keep_dbs_files]
-        self.dbs_file_cleanup(delete_files)
+        delete_dbs_files = [
+            file for file in self.session_dbs_files if file not in self.keep_dbs_files
+        ]
+        self.dbs_file_cleanup(delete_dbs_files)
         return False
 
     def get_dbs_file_id(
@@ -183,9 +186,7 @@ class OLIApi:
         :return dbs_dict: dict containing params for DBS file generation
         """
 
-        solute_list = [
-            {"name": get_oli_name(solute)} for solute in chemistry_source
-        ]
+        solute_list = [{"name": get_oli_name(solute)} for solute in chemistry_source]
         if not solute_list:
             raise RuntimeError("No solutes extracted from {chemistry_source}.")
         if thermo_framework is None:
