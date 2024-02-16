@@ -127,7 +127,7 @@ Technoeconomic factors used to calculate various system metrics, capital, and op
                  Cost factor                     Variable                 Name                                 Default Value    Description
 =============================================  ====================  =======================================  ===============  ==============================================================================
 Plant capacity utilization factor                 :math:`f_{util}`    ``utilization_factor``                   90%             Percentage of year plant is operating
-Total investment factor                           :math:`f_{toti}`    ``factor_total_investment``              2.0             Total investment factor (investment cost / equipment cost)
+Total investment factor                           :math:`f_{toti}`    ``total_investment_factor``              2.0             Total investment factor (investment cost / equipment cost)
 Maintenance-labor-chemical factor                 :math:`f_{mlc}`     ``factor_maintenance_labor_chemical``    0.03            Maintenance, labor, and chemical factor (fraction of equipment cost / year)
 Captial annualization factor                      :math:`f_{caf}`     ``capital_recovery_factor``         0.1             Capital annualization factor (fraction of investment cost / year) 
 =============================================  ====================  =======================================  ===============  ==============================================================================

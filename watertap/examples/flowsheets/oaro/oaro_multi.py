@@ -330,7 +330,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     )
 
     m.fs.costing.pumping_energy_aggregate_lcow = Expression(
-        expr=m.fs.costing.factor_total_investment
+        expr=m.fs.costing.total_investment_factor
         * (
             m.fs.costing.primary_pump_capex_lcow
             + (
@@ -343,7 +343,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         * (
             1
             + m.fs.costing.factor_maintenance_labor_chemical
-            / m.fs.costing.factor_total_investment
+            / m.fs.costing.total_investment_factor
             / m.fs.costing.capital_recovery_factor
         )
         + m.fs.costing.electricity_lcow
@@ -381,12 +381,12 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     )
 
     m.fs.costing.membrane_aggregate_lcow = Expression(
-        expr=m.fs.costing.factor_total_investment
+        expr=m.fs.costing.total_investment_factor
         * m.fs.costing.membrane_capex_lcow
         * (
             1
             + m.fs.costing.factor_maintenance_labor_chemical
-            / m.fs.costing.factor_total_investment
+            / m.fs.costing.total_investment_factor
             / m.fs.costing.capital_recovery_factor
         )
         + m.fs.costing.membrane_replacement_lcow

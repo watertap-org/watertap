@@ -179,7 +179,7 @@ class _WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         self.total_capital_cost_constraint = pyo.Constraint(
             expr=self.total_capital_cost
-            == self.factor_total_investment * self.aggregate_capital_cost
+            == self.total_investment_factor * self.aggregate_capital_cost
         )
 
         self.maintenance_labor_chemical_operating_cost = pyo.Expression(
@@ -419,7 +419,7 @@ class WaterTAPCostingData(_WaterTAPCostingBlockData):
 
         # Build flowsheet level costing components
         # These are the global parameters
-        self.factor_total_investment = pyo.Var(
+        self.total_investment_factor = pyo.Var(
             initialize=1.0,
             doc="Total investment factor [investment cost/equipment cost]",
             units=pyo.units.dimensionless,
@@ -479,7 +479,7 @@ class WaterTAPCostingDetailedData(_WaterTAPCostingBlockData):
             initialize=0.002 * (0.03 / 0.0149),
         )
 
-        self.factor_total_investment = pyo.Expression(
+        self.total_investment_factor = pyo.Expression(
             expr=1.0 + self.working_capital_percent_FCI + self.land_cost_percent_FCI,
             doc="Total investment factor [investment cost/equipment cost]",
         )
