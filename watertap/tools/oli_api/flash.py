@@ -496,7 +496,6 @@ class Flash:
                 }
             else:
                 raise RuntimeError("Unable to locate value(s) in data.")
-            print(unit, sampled_data)
             # filter sampled data
             filtered_values = deepcopy(sampled_data)
             if filter_zero:
@@ -542,7 +541,6 @@ class Flash:
                     if phase:
                         label = label + (f"_{phase}")
                     # extract property from base_result
-                    print(prop)
                     extracted_properties["properties"][label] = _get_filtered_result(
                         base_result,
                         path,
