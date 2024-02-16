@@ -329,7 +329,7 @@ class CredentialManager:
         self.upload_dbs_url = f"{root}/channel/upload/dbs"
         self.access_key_url = f"{root}/user/api-key"
         self.engine_url = f"{root}/engine"
-        self._delete_dbs_url = f"{root}/channel/file/"
+        self._delete_dbs_url = f"{root}/channel/file"
 
         self.access_key = self.set_active_access_key()
         if self.access_key:
