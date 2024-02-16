@@ -104,6 +104,14 @@ class CredentialManager:
         else:
             _logger.setLevel(logging.DEBUG)
 
+        self.provided_credentials = {
+            "username": username,
+            "password": password,
+            "root_url": root_url,
+            "auth_url": auth_url,
+            "access_keys": access_keys,
+        }
+
         if cryptography_available:
             self.config_file = Path(config_file).resolve()
             self.key_file = Path(key_file).resolve()
@@ -111,7 +119,7 @@ class CredentialManager:
             if self.encryption_key:
                 self._cipher = Fernet(self.encryption_key)
 
-        self._set_credentials(username, password, root_url, auth_url, access_keys)
+        self._set_credentials(**self.provided_credentials)
         self.setup()
 
     def _get_encryption_key(self):
@@ -126,37 +134,28 @@ class CredentialManager:
                 encryption_key = f.read()
             _logger.info("Using encryption key")
         else:
-            _logger.info(f"WaterTAP will save a key to {self.key_file}")
-            r = input("[y]/n: ") if self.interactive_mode else ""
-            if (r.lower() == "y") or (r == ""):
-                encryption_key = Fernet.generate_key()
-                with open(self.key_file, "wb") as f:
-                    f.write(encryption_key)
+            if any(v for v in self.provided_credentials.values()):
+                _logger.info(f"WaterTAP will save a key to {self.key_file}")
+                r = input("[y]/n: ") if self.interactive_mode else ""
+                if (r.lower() == "y") or (r == ""):
+                    encryption_key = Fernet.generate_key()
+                    with open(self.key_file, "wb") as f:
+                        f.write(encryption_key)
+                else:
+                    encryption_key = ""
             else:
-                encryption_key = ""
+                raise RuntimeError("Cannot initialize CredentialManager without credentials.")
         self.encryption_key = encryption_key.decode() if encryption_key else ""
 
-    def _set_credentials(self, username, password, root_url, auth_url, access_keys):
+    def _set_credentials(self):
         """
         Sets user credentials when CredentialManager is created.
-
-        :param username: string for username
-        :param password: string for password
-        :param root_url: string for API root URL
-        :param auth_url: string for API authorization URL
-        :param access_keys: list for user access keys
         """
 
         if self.config_file.is_file():
             self.credentials = self._get_credentials_from_file()
         else:
-            self.credentials = {
-                "username": username,
-                "password": password,
-                "root_url": root_url,
-                "auth_url": auth_url,
-                "access_keys": access_keys,
-            }
+            self.credentials = self.provided_credentials
             if cryptography_available:
                 _logger.info(f"WaterTAP will encrypt credentials in {self.config_file}")
                 r = input("[y]/n: ") if self.interactive_mode else ""
