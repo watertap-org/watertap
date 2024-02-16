@@ -310,12 +310,13 @@ class Flash:
                             temp_dict[sub_key] = items
 
             if isinstance(input_dict, list):
+                temp_dict[last_key] = {}
                 for sub_dict in input_dict:
                     if "name" in sub_dict:
                         key = sub_dict["name"]
                         result_dict = _recurse_search(key, sub_dict)
                         for key, item in result_dict.items():
-                            temp_dict[key] = item
+                            temp_dict[last_key][key] = item
             return temp_dict
 
         for key, items in result_dict.items():
