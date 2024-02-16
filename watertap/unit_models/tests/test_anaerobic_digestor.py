@@ -128,7 +128,6 @@ class TestAnaerobicDigester(UnitTestHarness):
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
-        m.fs.costing.initialize()
 
         iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-6)
 

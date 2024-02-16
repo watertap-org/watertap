@@ -12,7 +12,6 @@
 
 from pyomo.environ import (
     ConcreteModel,
-    units,
 )
 
 from idaes.core import (
@@ -114,8 +113,6 @@ class TestCrystallizer(UnitTestHarness):
         iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-5)
 
         m.fs.costing.cost_process()
-
-        m.fs.costing.initialize()
 
         self.unit_model_block = m.fs.unit
 
