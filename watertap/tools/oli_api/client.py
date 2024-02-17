@@ -55,7 +55,6 @@ from pyomo.common.dependencies import attempt_import
 asyncio, asyncio_available = attempt_import("asyncio", defer_check=False)
 aiohttp, aiohttp_available = attempt_import("aiohttp", defer_check=False)
 
-aiohttp_available = False
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import get_oli_name
 
 _logger = logging.getLogger(__name__)
