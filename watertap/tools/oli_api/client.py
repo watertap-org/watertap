@@ -374,7 +374,7 @@ class OLIApi:
                     return await asyncio.gather(
                         *[
                             asyncio.ensure_future(
-                                self.call(
+                                self.async_call(
                                     flash_method=request["flash_method"],
                                     dbs_file_id=request["dbs_file_id"],
                                     mode="POST",
@@ -412,7 +412,7 @@ class OLIApi:
                             if item != True and item != False:
                                 run_list.append(
                                     asyncio.ensure_future(
-                                        self.call(
+                                        self.async_call(
                                             flash_method=list_of_requests[k][
                                                 "flash_method"
                                             ],
@@ -455,7 +455,7 @@ class OLIApi:
             )
             return result_list
 
-        async def call(
+        async def async_call(
             self,
             flash_method=None,
             dbs_file_id=None,
@@ -549,59 +549,60 @@ class OLIApi:
             )
             return result_list
 
-        # TODO: consider enabling non-flash methods to be called through this function
-        def call(
-            self,
-            flash_method=None,
-            dbs_file_id=None,
-            input_params=None,
-            poll_time=0.5,
-            max_request=100,
-            **kwargs,
-        ):
-            """
-            Make a call to the OLI Cloud API.
+    # TODO: consider enabling non-flash methods to be called through this function
+    # building this incase user need to do a call, but does not wish to use process request list
+    def call(
+        self,
+        flash_method=None,
+        dbs_file_id=None,
+        input_params=None,
+        poll_time=0.5,
+        max_request=100,
+        **kwargs,
+    ):
+        """
+        Make a call to the OLI Cloud API.
 
-            :param flash_method: string indicating flash method
-            :param dbs_file_id: string indicating DBS file
-            :param input_params: dictionary for flash calculation inputs
-            :param poll_time: seconds between each poll
-            :param max_request: maximum number of times to try request before failure
+        :param flash_method: string indicating flash method
+        :param dbs_file_id: string indicating DBS file
+        :param input_params: dictionary for flash calculation inputs
+        :param poll_time: seconds between each poll
+        :param max_request: maximum number of times to try request before failure
 
-            :return result: dictionary for JSON output result
-            """
+        :return result: dictionary for JSON output result
+        """
 
-            if not bool(flash_method):
-                raise IOError("Specify a flash method to run.")
-            if not bool(dbs_file_id):
-                raise IOError("Specify a DBS file ID to flash.")
-            mode, url, headers = self._get_flash_mode(dbs_file_id, flash_method)
-            poll_timer = 0
-            start_time = time.time()
-            last_poll_time = start_time
-            req = requests.request(
-                mode,
-                url,
-                headers=headers,
-                data=json.dumps(input_params),
+        if not bool(flash_method):
+            raise IOError("Specify a flash method to run.")
+        if not bool(dbs_file_id):
+            raise IOError("Specify a DBS file ID to flash.")
+        mode, url, headers = self._get_flash_mode(dbs_file_id, flash_method)
+        poll_timer = 0
+        start_time = time.time()
+        last_poll_time = start_time
+        req = requests.request(
+            mode,
+            url,
+            headers=headers,
+            data=json.dumps(input_params),
+        )
+        _logger.debug(f"Call status: {req.status_code}")
+        result_link = self.get_result_link(req.json())
+        if result_link == "":
+            raise RuntimeError(
+                "No item 'resultsLink' in request response. Process failed."
             )
-            _logger.debug(f"Call status: {req.status_code}")
-            result_link = self.get_result_link(req.json())
-            if result_link == "":
-                raise RuntimeError(
-                    "No item 'resultsLink' in request response. Process failed."
-                )
-            for _ in range(max_request):
-                time.sleep(poll_time)
-                req_result = requests.get(
-                    result_link,
-                    headers=headers,
-                ).json()
-                poll_status = self.check_result(req_result)
-                result = self.get_result(req_result)
-                if result is not None:
-                    return result
-            raise RuntimeError("Poll limit exceeded.")
+        for _ in range(max_request):
+            time.sleep(poll_time)
+            req_result = requests.get(
+                result_link,
+                headers=headers,
+            ).json()
+            poll_status = self.check_result(req_result)
+            result = self.get_result(req_result)
+            if result is not None:
+                return result
+        raise RuntimeError("Poll limit exceeded.")
 
     def get_result_link(self, req):
         """
