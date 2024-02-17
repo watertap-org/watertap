@@ -108,6 +108,7 @@ class Flash:
         self.stream_output_options = stream_output_options
         self.relative_inflows = relative_inflows
         self.water_analysis_input_list = []
+
         if interactive_mode:
             _logger.setLevel(logging.INFO)
         else:
@@ -281,7 +282,10 @@ class Flash:
             temp_dict = {}
             if isinstance(input_dict, dict):
                 # check if we found dict with actual data, otherwise dive deeper
-                if any(test in input_dict for test in ["unit", "values", "value"]):
+                if any(
+                    test in input_dict
+                    for test in ["unit", "values", "value", "message"]
+                ):
                     # Oli indicates a single value with "value" key
                     if "value" in input_dict:
                         unit = input_dict.get("unit")
@@ -299,6 +303,16 @@ class Flash:
                                 "values": [val],
                                 "units": input_dict["unit"],
                             }
+                    elif "code" in input_dict:
+                        temp_dict = {}
+                        for key, message in input_dict.items():
+                            # print(key, message)
+                            temp_dict[key] = {
+                                "values": [str(message)],
+                                "units": "None",
+                            }
+                        # print("temp_dict", temp_dict)
+
                     else:
                         _logger.warning(
                             "Could not processes input_dict: {}".format(input_dict)
@@ -315,6 +329,10 @@ class Flash:
                     if "name" in sub_dict:
                         key = sub_dict["name"]
                         result_dict = _recurse_search(key, sub_dict)
+                        for key, item in result_dict.items():
+                            temp_dict[last_key][key] = item
+                    if "functionName" in sub_dict:
+                        result_dict = _recurse_search(last_key, sub_dict)
                         for key, item in result_dict.items():
                             temp_dict[last_key][key] = item
             return temp_dict
@@ -351,6 +369,7 @@ class Flash:
                             output_dict[key]["values"] = [float_nan]
                         else:
                             output_dict[key]["values"].append(float_nan)
+
                 else:
                     if key not in data_dict:
                         _recursive_merge({}, output_dict[key], overwrite)
@@ -395,6 +414,10 @@ class Flash:
 
         :return output_dict: dictionary containing IDs and output streams for each flash calculation
         """
+        if self.relative_inflows:
+            _logger.info(
+                "Relative flows are enabled, you survey values will be added to initial state"
+            )
 
         def create_output(input_dict):
             """
@@ -404,11 +427,10 @@ class Flash:
             """
             data = None
             if "result" not in input_dict:
-                raise Exception(
+                _logger.warning(
                     "Error recieved from OLIAPI, message is: {}".format(input_dict)
                 )
-            else:
-                data = self.extract_oli_data(input_dict)
+            data = self.extract_oli_data(input_dict)
             return data
 
         output_dict = {}
@@ -462,10 +484,14 @@ class Flash:
             if flash_method == "wateranalysis":
                 for param in clone["params"]["waterAnalysisInputs"]:
                     if param["name"] == k:
-                        if self.relative_inflows:
-                            param["value"] += v[index]
-                        else:
+                        if param["name"].upper() == "pH":
                             param["value"] = v[index]
+                        else:
+                            if self.relative_inflows:
+                                param["value"] += v[index]
+                            else:
+                                param["value"] = v[index]
+
             elif flash_method == "isothermal":
                 if k in ["temperature", "pressure"]:
                     if self.relative_inflows:

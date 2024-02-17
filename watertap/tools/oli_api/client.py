@@ -66,6 +66,8 @@ handler.setFormatter(formatter)
 _logger.addHandler(handler)
 _logger.setLevel(logging.DEBUG)
 if aiohttp_available:
+    import threading
+
     _logger.info("User has aiohttp setup, enabling parallel requests")
 else:
     _logger.info("User does not have aiohttp setup, running in serial request mode")
@@ -363,8 +365,37 @@ class OLIApi:
             """
             _logger.info("Collecting requested samples in parallel mode")
 
+            def _start_async_loop(loop):
+                '''function that creates a thread for async, ensures we don't run into existing async loops'''
+                asyncio.set_event_loop(loop)
+                _logger.info("Async thread successfully started")
+                loop.run_forever()
+                _logger.info("Async thread terminated")
+
+            async_loop = asyncio.new_event_loop()
+            async_thread = threading.Thread(
+                target=_start_async_loop,
+                # name="OLI_API_ASYNC_thread", # not sure we want to name this
+                args=(async_loop,),
+                daemon=True,
+            )
+            async_thread.start()
+            # def _get_async_loop():
+            #     self.async_loop = asyncio.get_running_loop()
+            #     self.async_thread = threading.Thread(
+            #         name="async_thread", target=self.hello
+            #     )
+            #     self.async_thread.start()
+            #     try:
+            #         loop = asyncio.get_running_loop()
+            #         _logger.info("Found system level async loop running!")
+            #     except RuntimeError:
+            #         loop = asyncio.get_event_loop()
+            #         _logger.info("Found script level async loop running!")
+
+            #     return loop
+
             result_list = []
-            submit_time = time.time()
 
             acquire_timer = time.time()
 
@@ -386,8 +417,11 @@ class OLIApi:
                         ]
                     )
 
-            loop = asyncio.get_event_loop()
-            async_results = loop.run_until_complete(submit_requests())
+            # loop = _get_async_loop()
+            async_results = asyncio.run_coroutine_threadsafe(
+                submit_requests(), async_loop
+            ).result()
+            # async_results = async_loop.run_until_complete(submit_requests())
 
             result = {}
             processed_result = {}
@@ -401,8 +435,8 @@ class OLIApi:
                 )
             )
 
+            # loop = _get_async_loop()
             while True:
-                time.sleep(1)
 
                 async def run_survey_async():
                     async with aiohttp.ClientSession() as client:
@@ -427,8 +461,10 @@ class OLIApi:
                                 )
                         return await asyncio.gather(*run_list)
 
-                loop = asyncio.get_event_loop()
-                async_results = loop.run_until_complete(run_survey_async())
+                # async_results = async_loop.run_until_complete(run_survey_async())
+                async_results = asyncio.run_coroutine_threadsafe(
+                    run_survey_async(), async_loop
+                ).result()
                 for item in async_results:
                     result.update(item)
                 result_status = {
@@ -445,8 +481,12 @@ class OLIApi:
                 if waiting_to_complete == False:
                     break
             for idx in range(len(list_of_requests)):
-                result_list.append(processed_result[idx])
+                oli_result = processed_result[idx]
+                oli_result["submitted_request"] = list_of_requests[idx]
+                result_list.append(oli_result)
             acquire_time = time.time() - acquire_timer
+
+            # clean up async thread
             _logger.info(
                 "Received all {} jobs from OLIAPI, took {} seconds, rate is {} second/sample".format(
                     len(result), acquire_time, acquire_time / len(result)
@@ -635,7 +675,7 @@ class OLIApi:
             _logger.debug(req)
             if "status" in req:
                 response_status = req["status"]
-                _logger.info(f"Polling result link: {response_status}")
+                _logger.debug(f"Polling result link: {response_status}")
                 return response_status
 
     def get_result(self, req):
@@ -643,8 +683,14 @@ class OLIApi:
             if req["data"]:
                 return req["data"]
             else:
-                raise IOError(" Poll returned empty data.")
+                _logger.warning(" Poll returned empty data.")
+                print(req)
+                return None
+                # raise IOError(" Poll returned empty data.")
         elif req["status"] == "ERROR":
-            raise RuntimeError(f"Call failed with status {req['code']}")
+            _logger.warning(f"Call failed with status {req['code']}")
+            print(req)
+            return None
+            # raise RuntimeError(f"Call failed with status {req['code']}")
         else:
             return None
