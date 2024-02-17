@@ -34,7 +34,7 @@ from watertap.unit_models.translators.translator_adm1_asm1 import Translator_ADM
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
-
+from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
@@ -56,7 +56,7 @@ from idaes.models.unit_models import (
     Product,
 )
 
-from watertap.unit_models.cstr_injection import CSTR_Injection, ElectricityConsumption
+from watertap.unit_models.aeration_tank import AerationTank, ElectricityConsumption
 from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
 from watertap.property_models.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
@@ -77,7 +77,8 @@ def main(reactor_volume_equalities=False):
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
-
+    dt = DiagnosticsToolbox(m)
+    dt.report_structural_issues()
     initialize_system(m)
     # TODO: resolve the danger of redundant constraint related to pressure equality constraints created in mixer, specifically for isobaric conditions. the mixer initializer will turn these constraints back on
     for mx in m.mixers:
@@ -94,18 +95,18 @@ def main(reactor_volume_equalities=False):
     pyo.assert_optimal_termination(results)
 
     print("\n\n=============SIMULATION RESULTS=============\n\n")
-    display_results(m)
+    # display_results(m)
     display_costing(m)
 
     setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
-
     results = solve(m, tee=True)
     pyo.assert_optimal_termination(results)
     print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
-    display_results(m)
+    # display_results(m)
     display_costing(m)
+    dt.report_structural_issues()
 
-    return m, results
+    return m, results, dt
 
 
 def build():
@@ -139,19 +140,19 @@ def build():
         property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
     )
     # Third reactor (aerobic) - CSTR with injection
-    m.fs.R3 = CSTR_Injection(
+    m.fs.R3 = AerationTank(
         property_package=m.fs.props_ASM1,
         reaction_package=m.fs.ASM1_rxn_props,
         electricity_consumption=ElectricityConsumption.calculated,
     )
     # Fourth reactor (aerobic) - CSTR with injection
-    m.fs.R4 = CSTR_Injection(
+    m.fs.R4 = AerationTank(
         property_package=m.fs.props_ASM1,
         reaction_package=m.fs.ASM1_rxn_props,
         electricity_consumption=ElectricityConsumption.calculated,
     )
     # Fifth reactor (aerobic) - CSTR with injection
-    m.fs.R5 = CSTR_Injection(
+    m.fs.R5 = AerationTank(
         property_package=m.fs.props_ASM1,
         reaction_package=m.fs.ASM1_rxn_props,
         electricity_consumption=ElectricityConsumption.calculated,
@@ -495,10 +496,18 @@ def setup_optimization(m, reactor_volume_equalities=False):
     for i in ["R1", "R2", "R3", "R4", "R5"]:
         reactor = getattr(m.fs, i)
         reactor.volume.unfix()
-        reactor.volume.setlb(500)
-        reactor.volume.setub(2000)
+        reactor.volume.setlb(1)
+        # reactor.volume.setub(2000)
     if reactor_volume_equalities:
         add_reactor_volume_equalities(m)
+    m.fs.R3.outlet.conc_mass_comp[:, "S_O"].unfix()
+    m.fs.R3.outlet.conc_mass_comp[:, "S_O"].setub(8e-3)
+
+    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].unfix()
+    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].setub(8e-3)
+
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].unfix()
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].setub(8e-3)
 
     # Unfix fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP5.split_fraction[:, "underflow"].unfix()
@@ -506,7 +515,6 @@ def setup_optimization(m, reactor_volume_equalities=False):
     m.fs.SP6.split_fraction[:, "recycle"].unfix()
 
     add_effluent_violations(m)
-
 
 def add_effluent_violations(m):
     # TODO: update "m" to blk; change ref to m.fs.Treated instead of CL1 effluent
@@ -719,4 +727,4 @@ def display_costing(m):
 
 
 if __name__ == "__main__":
-    m, results = main()
+    m, results, dt = main()

@@ -58,7 +58,7 @@ def cost_cstr_injection(blk, cost_electricity_flow=True):
 
 def cost_cstr_injection_capital(blk, capital_a_parameter, capital_b_parameter):
     """
-    Generic function for costing an CSTR injection system.
+    Generic function for costing a CSTR injection system.
     """
     make_capital_cost_var(blk)
     blk.costing_package.add_cost_factor(blk, "TIC")

@@ -54,10 +54,13 @@ from enum import Enum, auto
 
 
 class ElectricityConsumption(Enum):
-    """fixed: assume electricity intensity
+    """
+    none: no electricity consumption
+    fixed: assume electricity intensity
     calculated: calculate based on aeration energy equation from BSM2 documentation
     """
 
+    none = auto()
     fixed = auto()
     calculated = auto()
 
@@ -248,11 +251,26 @@ see reaction package for documentation.}""",
             default=ElectricityConsumption.fixed,
             domain=In(ElectricityConsumption),
             description="Electricity consumption calculation",
-            doc="""Indicates whether the surface diffusion coefficient will be calculated or fixed by the user
-        **default** - ElectricityConsumption.fixed.
+            doc="""Indicates whether electricity consumption is fixed by the user or excluded
+        **default** - ElectricityConsumption.none.
         **Valid values:** {
+        **ElectricityConsumption.none** - no electricity consumption within the unit,
         **ElectricityConsumption.fixed** - calculate electricity consumption based on assumed electricity intensity in kWh/m3,
-        **ElectricityConsumption.calculated** - calculates electricity consumption based on aeration energy calculation in BSM2 literature for Degrémont DP230 porous disks at an immersion depth of 4 m}""",
+        **ElectricityConsumption.aeration_calculation** - calculate electricity consumption based on aeration energy}""",
+        ),
+    )
+    CONFIG.declare(
+        "has_aeration",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="Aeration flag",
+            doc="""Indicates whether terms for aeration terms should be
+    expected,
+    **default** - False.
+    **Valid values:** {
+    **True** - include aeration terms,
+    **False** - exclude aeration terms.}""",
         ),
     )
 
@@ -266,6 +284,20 @@ see reaction package for documentation.}""",
         """
         # Call UnitModel.build to setup dynamics
         super(CSTR_InjectionData, self).build()
+
+        if self.config.has_aeration:
+            # Assuming that the supplied property package doesn't have both S_O and SO2 to represent oxygen.
+            if "S_O" in self.config.property_package.component_list:
+                oxygen_str = "S_O"
+            elif "S_O2" in self.config.property_package.component_list:
+                oxygen_str = "S_O2"
+            else:
+                raise ConfigurationError(
+                    "has_aeration was set to True, but the property package has neither 'S_O' nor 'S_O2' in its list of components."
+                )
+            
+
+
 
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(
@@ -338,33 +370,6 @@ see reaction package for documentation.}""",
         ):
             self.deltaP = Reference(self.control_volume.deltaP[:])
 
-        self.electricity_consumption = Var(
-            self.flowsheet().time,
-            units=pyunits.kW,
-            bounds=(0, None),
-            doc="Electricity consumption of unit",
-        )
-        # The value is taken from Maravelias' data
-        self.energy_electric_flow_vol_inlet = Param(
-            initialize=0.0108,
-            units=pyunits.kWh / pyunits.m**3,
-            mutable=True,
-            doc="Electricity intensity with respect to inlet flow",
-        )
-        # TODO: add temp dependence for KLa and consider moving to prop model
-        self.KLa = Var(
-            initialize=5,
-            units=pyunits.hour**-1,
-            doc="Lumped mass transfer coefficient for oxygen",
-        )
-        # TODO: add temp dependence for S_O_eq and move to prop model
-        self.S_O_eq = Param(
-            default=8e-3,
-            units=pyunits.kg / pyunits.m**3,
-            mutable=True,
-            doc="Dissolved oxygen concentration at equilibrium",
-        )
-
         self.hydraulic_retention_time = Var(
             self.flowsheet().time,
             initialize=1460.407,
@@ -373,66 +378,109 @@ see reaction package for documentation.}""",
             doc="Hydraulic retention time",
         )
 
-        def CSTR_injection_retention_time_rule(self, t):
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Hydraulic retention time",
+        )
+        def eq_hydraulic_retention_time(self, t):
             return (
                 self.hydraulic_retention_time[t]
                 == self.volume[t] / self.control_volume.properties_in[t].flow_vol
             )
 
-        self.CSTR_injection_retention_time = Constraint(
-            self.flowsheet().time,
-            rule=CSTR_injection_retention_time_rule,
-            doc="Total CSTR retention time",
-        )
+        if self.config.has_aeration:
 
-        # Electricity constraint
-        def rule_electricity_consumption(self, t):
-            if self.config.electricity_consumption == ElectricityConsumption.fixed:
-                return self.electricity_consumption[t] == (
-                    self.energy_electric_flow_vol_inlet
-                    * pyunits.convert(
-                        self.control_volume.properties_in[t].flow_vol,
-                        to_units=pyunits.m**3 / pyunits.hr,
-                    )
+            # TODO: add temp dependence for KLa and consider moving to prop model
+            self.KLa = Var(
+                initialize=5,
+                units=pyunits.hour**-1,
+                doc="Lumped mass transfer coefficient for oxygen",
+            )
+            # TODO: add temp dependence for S_O_eq and move to prop model
+            self.S_O_eq = Param(
+                default=8e-3,
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Dissolved oxygen concentration at equilibrium",
+            )
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                doc="Oxygen mass transfer rate",
+            )
+            def eq_mass_transfer(self, t):
+                return pyunits.convert(
+                    self.injection[t, "Liq", oxygen_str], to_units=pyunits.kg / pyunits.hour
+                ) == (
+                    self.KLa
+                    * self.volume[t]
+                    * (self.S_O_eq - self.outlet.conc_mass_comp[t, oxygen_str])
                 )
+
+        if self.config.electricity_consumption != ElectricityConsumption.none:
+            self.electricity_consumption = Var(
+                self.flowsheet().time,
+                units=pyunits.kW,
+                bounds=(0, None),
+                doc="Electricity consumption of unit",
+            )
+            if self.config.electricity_consumption == ElectricityConsumption.fixed:
+
+                # The value is taken from Maravelias' data
+                self.energy_electric_flow_vol_inlet = Param(
+                    initialize=0.0108,
+                    units=pyunits.kWh / pyunits.m**3,
+                    mutable=True,
+                    doc="Electricity intensity with respect to inlet flow",
+                )
+                # Electricity constraint
+                @self.Constraint(
+                    self.flowsheet().time,
+                    doc="Unit level electricity consumption",
+                )
+                def eq_electricity_consumption(self, t):
+                    return self.electricity_consumption[t] == (
+                        self.energy_electric_flow_vol_inlet
+                        * pyunits.convert(
+                            self.control_volume.properties_in[t].flow_vol,
+                            to_units=pyunits.m**3 / pyunits.hr,
+                        )
+                    )
+
             elif (
                 self.config.electricity_consumption == ElectricityConsumption.calculated
+                and self.config.has_aeration
             ):
-                return self.electricity_consumption[t] == (
-                    # TODO: revisit origin of 1.8 factor and more general aeration energy equation
-                    # 1.8 may be the aeration efficiency which is oxygen mass transfer divided by power input
-                    self.S_O_eq
-                    / 1.8
-                    / pyunits.kg
-                    * pyunits.kWh
-                    * pyunits.convert(
-                        self.control_volume.volume[t] * self.KLa,
-                        to_units=pyunits.m**3 / pyunits.hr,
+                # Electricity constraint
+                @self.Constraint(
+                    self.flowsheet().time,
+                    doc="Unit level electricity consumption",
+                )
+                def eq_electricity_consumption(self, t):
+                    return self.electricity_consumption[t] == (
+                        # TODO: revisit origin of 1.8 factor and more general aeration energy equation
+                        # 1.8 may be the aeration efficiency which is oxygen mass transfer divided by power input
+                        self.S_O_eq
+                        / 1.8
+                        / pyunits.kg
+                        * pyunits.kWh
+                        * pyunits.convert(
+                            self.control_volume.volume[t] * self.KLa,
+                            to_units=pyunits.m**3 / pyunits.hr,
+                        )
                     )
+            elif (
+                not self.config.has_aeration
+                and self.config.electricity_consumption
+                == ElectricityConsumption.calculated
+            ):
+                raise ConfigurationError(
+                    f"electricity_consumption=ElectricityConsumption.fixed is currently only supported for aeration. Set has_aeration=True to compute electricity consumption or set electricity_consumption=ElectricityConsumption.fixed to compute electricity consumption based on an assumed specific energy consumption."
                 )
             else:
                 raise ConfigurationError(
                     f"{self.config.electricity_consumption} is not a valid option for determining electricity consumption."
                 )
-
-        self.unit_electricity_consumption = Constraint(
-            self.flowsheet().time,
-            rule=rule_electricity_consumption,
-            doc="Unit level electricity consumption",
-        )
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="Oxygen mass transfer rate",
-        )
-        def eq_mass_transfer(self, t):
-            return pyunits.convert(
-                self.injection[t, "Liq", "S_O"], to_units=pyunits.kg / pyunits.hour
-            ) == (
-                self.KLa
-                * self.volume[t]
-                * (self.S_O_eq - self.outlet.conc_mass_comp[t, "S_O"])
-            )
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {"Volume": self.volume[time_point]}
