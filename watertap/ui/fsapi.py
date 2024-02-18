@@ -68,27 +68,12 @@ class UnsupportedObjType(TypeError):
 class ModelExport(BaseModel):
     """A variable, expression, or parameter.
 
-    The object may be passed as a valid Pyomo model component with the 'obj' attribute
-    or, if it may not exist yet in the flowsheet until after solving the model, as a
-    string with the 'deferred_obj'. An example of using deferred_obj is shown below::
-
-        exports.add(
-            deferred_obj="fs.leach.solid_outlet.flow_mass[0]",
-            name="solid flow mass",
-            rounding=4,
-            ui_units=pyo.units.kg/pyo.units.hour,
-            display_units="kg/hr",
-            description="solid flow mass",
-            is_input=False,
-            is_output=True,
-            output_category="solids"
-        )
-
-    Note that it makes no sense to use both attributes at the same time.
+    Instances of this class are created during the `build` step.
     """
 
     _SupportedObjType = Union[pyo.Var, pyo.Expression, pyo.Param]
-    "Used for type hints and as a shorthand in error messages (i.e. not for runtime checks)"
+    """Used for type hints and as a shorthand in error messages
+       (i.e. not for runtime checks)"""
 
     # TODO: if Optional[_SupportedObjType] is used for the `obj` type hint,
     # pydantic will run the runtime instance check which is not what we want
@@ -97,8 +82,7 @@ class ModelExport(BaseModel):
     # skip this check.
 
     # inputs
-    obj: Optional[object] = Field(default=None, exclude=True)
-    deferred_obj: Optional[str] = Field(default=None, exclude=True)
+    obj: Optional[object] = Field(default=None, exclude=True)  # use string for deferred
     name: str = ""
     value: float = 0.0
     ui_units: object = Field(default=None, exclude=True)
@@ -132,7 +116,7 @@ class ModelExport(BaseModel):
     @classmethod
     def _ensure_supported_type(cls, obj: object):
         _log.debug(f"ensure supported type obj={obj}")
-        is_valid = (
+        is_valid = isinstance(obj, str) or (
             obj.is_variable_type()
             or obj.is_expression_type()
             or obj.is_parameter_type()
@@ -192,7 +176,7 @@ class ModelExport(BaseModel):
         if v is None:
             v = True
             obj = cls._get_obj(values)
-            if obj is not None:
+            if obj is not None and not isinstance(obj, str):  # deferred obj:str
                 if obj.is_variable_type() or (
                     obj.is_parameter_type() and obj.parent_component().mutable
                 ):
@@ -203,11 +187,7 @@ class ModelExport(BaseModel):
     @classmethod
     def set_obj_key_default(cls, v, values):
         if v is None:
-            obj = cls._get_obj(values)
-            if obj is None:
-                v = values.get("deferred_obj")  # must be one or the other
-            else:
-                v = str(obj)
+            v = str(cls._get_obj(values))
         return v
 
 
@@ -251,7 +231,8 @@ class ModelOption(BaseModel):
                     return v
                 else:
                     raise ValueError(
-                        f"'value' ({v}) not within expected range of [{min_val}-{max_val}]"
+                        f"'value' ({v}) not within expected range"
+                        f"[{min_val}-{max_val}]"
                     )
             else:
                 raise ValueError(f"'value' ({v}) not a valid integer")
@@ -263,7 +244,8 @@ class ModelOption(BaseModel):
                     return v
                 else:
                     raise ValueError(
-                        f"'value' ({v}) not within expected range of [{min_val}-{max_val}]"
+                        f"'value' ({v}) not within expected range"
+                        f"[{min_val}-{max_val}]"
                     )
             else:
                 raise ValueError(f"'value' ({v}) not a valid float")
@@ -331,7 +313,10 @@ class FlowsheetExport(BaseModel):
 
             add(obj=<pyomo object>, name="My value name", ..etc..)
 
-        where the keywords after `obj` match the non-computed names in :class:`ModelExport`.
+        The model object to export is in `obj` and should be Pyomo model component.
+        If, for some reason, the object is an output and created later, it can be
+        given as a string and will be evaluated after the `solve` step.
+        Other keywords after `obj` match the non-computed names in :class:`ModelExport`.
 
         If these same name/value pairs are already in a dictionary, this form is more
         convenient::
@@ -343,7 +328,6 @@ class FlowsheetExport(BaseModel):
             add(my_object)
             # -- OR --
             add(data=my_object)
-
 
         Args:
             *args: If present, should be a single non-named argument, which is a
@@ -375,7 +359,8 @@ class FlowsheetExport(BaseModel):
         key = model_export.obj_key
         if key in self.model_objects:
             raise KeyError(
-                f"Adding ModelExport object failed: duplicate key '{key}' (model_export={model_export})"
+                f"Adding ModelExport object failed: duplicate key '{key}' "
+                f"(model_export={model_export})"
             )
         if _log.isEnabledFor(logging.DEBUG):  # skip except in debug mode
             _log.debug(
@@ -385,10 +370,8 @@ class FlowsheetExport(BaseModel):
         return model_export
 
     def _handle_deferred(self, d: Dict):
-        """Handle potentially 'deferred' objects.
-        These are stored in a different attribute, and the actual object is populated later.
-        """
-        if d.get("deferred_obj", None) is not None:
+        """Handle potentially 'deferred' objects."""
+        if isinstance(d.get("obj"), str):
             self._deferred += 1
 
     def _has_deferred(self):
@@ -478,7 +461,6 @@ class FlowsheetExport(BaseModel):
                 if k.startswith("is_"):
                     data[k] = self._parse_boolean_text(data[k], flowsheet)
             # add parsed export
-            # TODO: Mark output variables as deferred
             self.add(data=data)
             num += 1
 
@@ -623,8 +605,8 @@ class FlowsheetExport(BaseModel):
 
     @staticmethod
     def _massage_object_name(s):
-        s1 = re.sub(r"\[([^]]*)\]", r"['\1']", s)  # quote everything in [brackets]
-        s2 = re.sub(r"\['([0-9.]+)'\]", r"[\1]", s1)  # unquote [0.0] numbers
+        s1 = re.sub(r"\[([^]]*)]", r"['\1']", s)  # quote everything in [brackets]
+        s2 = re.sub(r"\['([0-9.]+)']", r"[\1]", s1)  # unquote [0.0] numbers
         return s2
 
     @staticmethod
@@ -651,9 +633,7 @@ class FlowsheetExport(BaseModel):
     def _undefer(self, flowsheet):
         """Evaluate all deferred objects and move them into the 'obj' attribute.
 
-        At the end, all ModelExport instances in self.model_objects will have
-        a None value for the 'deferred_obj' attr, and any deferred objects will have been
-        found in the context of the input flowsheet and placed in the 'obj' attribute.
+        At the end, no variables will be deferred.
 
         Args:
             flowsheet: Flowsheet context for fetching deferred objects
@@ -665,14 +645,14 @@ class FlowsheetExport(BaseModel):
             return  # speeds up common case
 
         for model_export in self.model_objects.values():
-            d_obj = model_export.deferred_obj
-            if d_obj is not None:
+            if isinstance(model_export.obj, str):
+                d_obj = model_export.obj
                 _log.debug(f"start: un-defer obj={d_obj}")
                 try:
                     obj = FlowsheetExport._parse_object_text(d_obj, flowsheet)
                 except ValueError as e:
                     raise ValueError(f"cannot find deferred obj={d_obj}: {e}")
-                model_export.obj, model_export.deferred_obj = obj, None
+                model_export.obj = obj
                 self._deferred -= 1
                 _log.debug(f"end: un-defer obj={d_obj}")
 
@@ -809,7 +789,6 @@ class FlowsheetInterface:
 
         Raises:
             RuntimeError: if the solver did not terminate in an optimal solution
-            ValueError: if resolving 'deferred' objects for this flowsheet failed (see `_undefer()`)
         """
         try:
             result = self.run_action(Actions.solve, **kwargs)

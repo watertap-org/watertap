@@ -173,7 +173,7 @@ def _export_flash(flowsheet=None, exports=None, **kwargs):
     )
     # export a 'deferred' output
     exports.add(
-        deferred_obj="fs.flash.vap_outlet.temperature[0]",
+        obj="flash.vap_outlet.temperature[0]",
         ui_units=units.K,
         display_units="Kelvin",
         rounding=2,
