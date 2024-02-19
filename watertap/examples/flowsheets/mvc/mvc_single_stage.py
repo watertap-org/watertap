@@ -689,7 +689,7 @@ def display_metrics(m):
         % value(m.fs.costing.specific_energy_consumption)
     )
     print(
-        "Levelized cost of water:                  %.2f $/m3" % m.fs.costing.LCOW.value
+        "Levelized cost of water:                  %.2f $/m3" % value(m.fs.costing.LCOW)
     )
     print(
         "External Q:                               %.2f W" % m.fs.Q_ext[0].value

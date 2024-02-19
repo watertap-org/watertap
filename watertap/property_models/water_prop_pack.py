@@ -456,7 +456,6 @@ class WaterParameterData(PhysicalParameterBlock):
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
                 "pressure_sat": {"method": "_pressure_sat"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
-                "enth_flow_phase": {"method": "_enth_flow_phase"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
@@ -466,6 +465,7 @@ class WaterParameterData(PhysicalParameterBlock):
         obj.define_custom_properties(
             {
                 "dh_vap_mass": {"method": "_dh_vap_mass"},
+                "enth_flow_phase": {"method": "_enth_flow_phase"},
             }
         )
 

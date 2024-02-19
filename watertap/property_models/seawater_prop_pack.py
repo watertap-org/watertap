@@ -759,9 +759,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
-                "boiling_point_elevation_phase": {
-                    "method": "_boiling_point_elevation_phase"
-                },
             }
         )
 
@@ -771,6 +768,9 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "osm_coeff": {"method": "_osm_coeff"},
                 "enth_flow": {"method": "_enth_flow"},
                 "dh_vap_mass": {"method": "_dh_vap_mass"},
+                "boiling_point_elevation_phase": {
+                    "method": "_boiling_point_elevation_phase"
+                },
             }
         )
 

@@ -17,6 +17,8 @@ from watertap.tools.parameter_sweep.sampling_types import (
     UniformSample,
     NormalSample,
     LatinHypercubeSample,
+    PredeterminedFixedSample,
+    PredeterminedRandomSample,
 )
 from watertap.tools.parameter_sweep.parameter_sweep_functions import (
     parameter_sweep,
