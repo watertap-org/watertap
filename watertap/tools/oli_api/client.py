@@ -67,6 +67,7 @@ _logger.addHandler(handler)
 _logger.setLevel(logging.DEBUG)
 if aiohttp_available:
     import threading
+    import random
 
     _logger.info("User has aiohttp setup, enabling parallel requests")
 else:
@@ -331,7 +332,7 @@ class OLIApi:
             f"Delete DBS file {dbs_file_id} status: {delete_request['status']}"
         )
 
-    def _get_flash_mode(self, dbs_file_id, flash_method):
+    def _get_flash_mode(self, dbs_file_id, flash_method, burst_job_tag=None):
         headers = self.credential_manager.headers
         base_url = self.credential_manager.engine_url
         valid_get_flashes = ["corrosion-contact-surface", "chemistry-info"]
@@ -339,12 +340,17 @@ class OLIApi:
         if flash_method in valid_get_flashes:
             mode = "GET"
             url = f"{base_url}/file/{dbs_file_id}/{flash_method}"
+
         elif flash_method in valid_post_flashes:
             mode = "POST"
             url = f"{base_url}/flash/{dbs_file_id}/{flash_method}"
             headers = self.credential_manager.update_headers(
                 {"Content-Type": "application/json"},
             )
+            if burst_job_tag is not None:
+                url = "{}?{}".format(
+                    url, "burst={}_{}".format("watertap_burst", burst_job_tag)
+                )
         else:
             valid_flashes = [*valid_get_flashes, *valid_post_flashes]
             raise RuntimeError(
@@ -356,7 +362,7 @@ class OLIApi:
     # if user has aiohttp lets build async capable functions, otherwise build serial functions
     if aiohttp_available:
 
-        def process_request_list(self, list_of_requests):
+        def process_request_list(self, list_of_requests, burst_job_tag=None):
             """
             Takes in a list of requests to run through OLI and executes the, returning a list
                 of OLI responces, works only with flash
@@ -366,7 +372,7 @@ class OLIApi:
             _logger.info("Collecting requested samples in parallel mode")
 
             def _start_async_loop(loop):
-                '''function that creates a thread for async, ensures we don't run into existing async loops'''
+                """function that creates a thread for async, ensures we don't run into existing async loops"""
                 asyncio.set_event_loop(loop)
                 _logger.info("Async thread successfully started")
                 loop.run_forever()
@@ -380,20 +386,9 @@ class OLIApi:
                 daemon=True,
             )
             async_thread.start()
-            # def _get_async_loop():
-            #     self.async_loop = asyncio.get_running_loop()
-            #     self.async_thread = threading.Thread(
-            #         name="async_thread", target=self.hello
-            #     )
-            #     self.async_thread.start()
-            #     try:
-            #         loop = asyncio.get_running_loop()
-            #         _logger.info("Found system level async loop running!")
-            #     except RuntimeError:
-            #         loop = asyncio.get_event_loop()
-            #         _logger.info("Found script level async loop running!")
 
-            #     return loop
+            if burst_job_tag is None:
+                burst_job_tag = random.randint(0, 100000)
 
             result_list = []
 
@@ -411,17 +406,16 @@ class OLIApi:
                                     input_params=request["input_params"],
                                     sample_index=index,
                                     session=client,
+                                    burst_job_tag=burst_job_tag,
                                 )
                             )
                             for index, request in enumerate(list_of_requests)
                         ]
                     )
 
-            # loop = _get_async_loop()
             async_results = asyncio.run_coroutine_threadsafe(
                 submit_requests(), async_loop
             ).result()
-            # async_results = async_loop.run_until_complete(submit_requests())
 
             result = {}
             processed_result = {}
@@ -434,8 +428,6 @@ class OLIApi:
                     len(list_of_requests), time.time() - acquire_timer
                 )
             )
-
-            # loop = _get_async_loop()
             while True:
 
                 async def run_survey_async():
@@ -461,7 +453,6 @@ class OLIApi:
                                 )
                         return await asyncio.gather(*run_list)
 
-                # async_results = async_loop.run_until_complete(run_survey_async())
                 async_results = asyncio.run_coroutine_threadsafe(
                     run_survey_async(), async_loop
                 ).result()
@@ -504,6 +495,7 @@ class OLIApi:
             mode="POST",
             sample_index=None,
             session=None,
+            burst_job_tag=None,
         ):
             """ """
             _logger.debug("running {} sample #{}".format(mode, sample_index))
@@ -515,11 +507,13 @@ class OLIApi:
 
             if not bool(dbs_file_id):
                 raise IOError("Specify a DBS file id to flash.")
-            test_mode, post_url, headers = self._get_flash_mode(
-                dbs_file_id, flash_method
+            _, post_url, headers = self._get_flash_mode(
+                dbs_file_id, flash_method, burst_job_tag=burst_job_tag
             )
             if mode == "POST":
-
+                post_url = "{}?{}".format(
+                    post_url, "burst={}_{}".format("watertap_burst", burst_job_tag)
+                )
                 if bool(input_params):
                     data = json.dumps(input_params)
                 else:
@@ -532,6 +526,7 @@ class OLIApi:
                 ) as response:
                     if response.status == 200:
                         result = {sample_index: await response.json()}
+                        # print(result)
                         return result
                     else:
                         _logger.debug(
@@ -540,7 +535,6 @@ class OLIApi:
                             )
                         )
                         return {sample_index: False}
-
             if mode == "GET":
                 data = ""
                 get_url = input_params
