@@ -362,7 +362,9 @@ class OLIApi:
     # if user has aiohttp lets build async capable functions, otherwise build serial functions
     if aiohttp_available:
 
-        def process_request_list(self, list_of_requests, burst_job_tag=None):
+        def process_request_list(
+            self, list_of_requests, burst_job_tag=None, max_concurrent_processes=1000
+        ):
             """
             Takes in a list of requests to run through OLI and executes the, returning a list
                 of OLI responces, works only with flash
@@ -391,10 +393,10 @@ class OLIApi:
                 burst_job_tag = random.randint(0, 100000)
 
             result_list = []
-
             acquire_timer = time.time()
 
             async def submit_requests():
+                process_rate_limiter = asyncio.Semaphore(max_concurrent_processes)
                 async with aiohttp.ClientSession() as client:
                     return await asyncio.gather(
                         *[
@@ -407,6 +409,7 @@ class OLIApi:
                                     sample_index=index,
                                     session=client,
                                     burst_job_tag=burst_job_tag,
+                                    rate_limiter=process_rate_limiter,
                                 )
                             )
                             for index, request in enumerate(list_of_requests)
@@ -431,6 +434,7 @@ class OLIApi:
             while True:
 
                 async def run_survey_async():
+                    process_rate_limiter = asyncio.Semaphore(max_concurrent_processes)
                     async with aiohttp.ClientSession() as client:
                         run_list = []
                         for k, item in result_progress.items():
@@ -448,6 +452,7 @@ class OLIApi:
                                             input_params=result_links[k],
                                             sample_index=k,
                                             session=client,
+                                            rate_limiter=process_rate_limiter,
                                         )
                                     )
                                 )
@@ -496,64 +501,66 @@ class OLIApi:
             sample_index=None,
             session=None,
             burst_job_tag=None,
+            rate_limiter=None,
         ):
             """ """
-            _logger.debug("running {} sample #{}".format(mode, sample_index))
-            if not bool(flash_method):
-                raise IOError(
-                    " Specify a flash method to use from {self.valid_flashes.keys()}."
-                    + " Run self.get_valid_flash_methods to see a list and required inputs."
-                )
-
-            if not bool(dbs_file_id):
-                raise IOError("Specify a DBS file id to flash.")
-            _, post_url, headers = self._get_flash_mode(
-                dbs_file_id, flash_method, burst_job_tag=burst_job_tag
-            )
-            if mode == "POST":
-                post_url = "{}?{}".format(
-                    post_url, "burst={}_{}".format("watertap_burst", burst_job_tag)
-                )
-                if bool(input_params):
-                    data = json.dumps(input_params)
-                else:
+            async with rate_limiter:
+                _logger.debug("running {} sample #{}".format(mode, sample_index))
+                if not bool(flash_method):
                     raise IOError(
-                        "Specify flash calculation input to use this function."
+                        " Specify a flash method to use from {self.valid_flashes.keys()}."
+                        + " Run self.get_valid_flash_methods to see a list and required inputs."
                     )
 
-                async with session.post(
-                    post_url, headers=headers, data=data
-                ) as response:
-                    if response.status == 200:
-                        result = {sample_index: await response.json()}
-                        # print(result)
-                        return result
+                if not bool(dbs_file_id):
+                    raise IOError("Specify a DBS file id to flash.")
+                _, post_url, headers = self._get_flash_mode(
+                    dbs_file_id, flash_method, burst_job_tag=burst_job_tag
+                )
+
+                if mode == "POST":
+                    if bool(input_params):
+                        data = json.dumps(input_params)
                     else:
-                        _logger.debug(
-                            "Failed to receive response for {} sample #{}".format(
-                                mode, sample_index
-                            )
+                        raise IOError(
+                            "Specify flash calculation input to use this function."
                         )
-                        return {sample_index: False}
-            if mode == "GET":
-                data = ""
-                get_url = input_params
-                async with session.get(get_url, headers=headers, data=data) as response:
-                    if response.status == 200:
-                        result = {sample_index: await response.json()}
-                        _logger.debug(
-                            "Received response for {} sample #{}".format(
-                                mode, sample_index
+
+                    async with session.post(
+                        post_url, headers=headers, data=data
+                    ) as response:
+                        if response.status == 200:
+                            result = {sample_index: await response.json()}
+                            # print(result)
+                            return result
+                        else:
+                            _logger.debug(
+                                "Failed to receive response for {} sample #{}".format(
+                                    mode, sample_index
+                                )
                             )
-                        )
-                        return result
-                    else:
-                        _logger.info(
-                            "Failed to receive response for {} sample #{}".format(
-                                mode, sample_index
+                            return {sample_index: False}
+                if mode == "GET":
+                    data = ""
+                    get_url = input_params
+                    async with session.get(
+                        get_url, headers=headers, data=data
+                    ) as response:
+                        if response.status == 200:
+                            result = {sample_index: await response.json()}
+                            _logger.debug(
+                                "Received response for {} sample #{}".format(
+                                    mode, sample_index
+                                )
                             )
-                        )
-                        return {sample_index: False}
+                            return result
+                        else:
+                            _logger.info(
+                                "Failed to receive response for {} sample #{}".format(
+                                    mode, sample_index
+                                )
+                            )
+                            return {sample_index: False}
 
     else:
 
@@ -678,12 +685,13 @@ class OLIApi:
                 return req["data"]
             else:
                 _logger.warning(" Poll returned empty data.")
-                print(req)
                 return None
                 # raise IOError(" Poll returned empty data.")
         elif req["status"] == "ERROR":
-            _logger.warning(f"Call failed with status {req['code']}")
-            print(req)
+            if "code" in req:
+                _logger.warning(f"Call failed with status {req['code']}")
+            else:
+                _logger.warning(f"Call failed with status {req}")
             return None
             # raise RuntimeError(f"Call failed with status {req['code']}")
         else:
