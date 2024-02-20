@@ -401,6 +401,9 @@ class Flash:
         initial_input,
         survey=None,
         file_name="",
+        max_concurrent_processes=1000,
+        burst_job_tag=None,
+        batch_size=10,
     ):
         """
         Conduct a composition survey with a given set of clones.
@@ -456,7 +459,12 @@ class Flash:
                     "input_params": clone,
                 }
             )
-        clone_output_list = oliapi_instance.process_request_list(requests)
+        clone_output_list = oliapi_instance.process_request_list(
+            requests,
+            burst_job_tag=burst_job_tag,
+            max_concurrent_processes=max_concurrent_processes,
+            batch_size=batch_size,
+        )
         for clone_output in clone_output_list:
             data_dict = create_output(clone_output)
             if data_dict != None:

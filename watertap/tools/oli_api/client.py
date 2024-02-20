@@ -363,7 +363,62 @@ class OLIApi:
     if aiohttp_available:
 
         def process_request_list(
-            self, list_of_requests, burst_job_tag=None, max_concurrent_processes=1000
+            self,
+            list_of_requests,
+            batch_size=None,
+            burst_job_tag=None,
+            max_concurrent_processes=1000,
+        ):
+            if batch_size is None:
+                return self._process_request_list(
+                    list_of_requests,
+                    burst_job_tag=burst_job_tag,
+                    max_concurrent_processes=max_concurrent_processes,
+                )
+            else:
+                total_samples = len(list_of_requests)
+                splits = int(total_samples / batch_size) + 1
+                result_list = []
+                _logger.info(
+                    "Splitting {} requests into {} batches with maximum size of {}".format(
+                        total_samples, splits, batch_size
+                    )
+                )
+
+                for splits in range(splits):
+                    if len(list_of_requests[splits * batch_size :]) <= batch_size:
+                        _logger.info(
+                            "Splitting from {} to {}".format(
+                                splits * batch_size,
+                                len(list_of_requests),
+                            )
+                        )
+                        sub_list = list_of_requests[splits * batch_size :]
+                    else:
+                        _logger.info(
+                            "Splitting from {} to {}".format(
+                                splits * batch_size,
+                                (splits + 1) * batch_size,
+                            )
+                        )
+                        sub_list = list_of_requests[
+                            splits * batch_size : (splits + 1) * batch_size
+                        ]
+                    if len(sub_list) > 0:
+                        _sub_result = self._process_request_list(
+                            sub_list,
+                            burst_job_tag=burst_job_tag,
+                            max_concurrent_processes=max_concurrent_processes,
+                        )
+                        result_list = result_list + _sub_result
+                    return result_list
+
+        def _process_request_list(
+            self,
+            list_of_requests,
+            burst_job_tag=None,
+            max_concurrent_processes=1000,
+            **kwargs,
         ):
             """
             Takes in a list of requests to run through OLI and executes the, returning a list
@@ -394,6 +449,7 @@ class OLIApi:
 
             result_list = []
             acquire_timer = time.time()
+            _logger.info("Submitting jobs to OLIAPI")
 
             async def submit_requests():
                 process_rate_limiter = asyncio.Semaphore(max_concurrent_processes)
@@ -564,7 +620,7 @@ class OLIApi:
 
     else:
 
-        def process_request_list(self, list_of_requests):
+        def process_request_list(self, list_of_requests, **kwargs):
             """
             Takes in a list of requests to run through OLI and executes the, returning a list
                 of OLI responces, works only with flash
