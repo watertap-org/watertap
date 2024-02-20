@@ -403,7 +403,7 @@ class Flash:
         file_name="",
         max_concurrent_processes=1000,
         burst_job_tag=None,
-        batch_size=10,
+        batch_size=None,
     ):
         """
         Conduct a composition survey with a given set of clones.
