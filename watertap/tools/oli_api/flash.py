@@ -260,138 +260,6 @@ class Flash:
             self.write_output(inputs, file_name)
         return inputs
 
-    def extract_oli_data(self, result_dict):
-        """
-        function for pulling out OLI json data into a normal dictionary structure
-        This will build a following out put structure.
-        The depth will depend on returned OLI, will import list of dicts and dicts
-
-        Assumes that unit, value, and values are used as terminating keys for identifing where data is stored!
-
-        :param result_dict: data from OLI in dict form
-
-        {data: {sub_data:{values:[],units: unit from OLI}}"""
-        output_dict = {}
-
-        def _update_dir(key, current_directory):
-            if key not in current_directory:
-                current_directory.append(key)
-            return current_directory
-
-        def _recurse_search(last_key, input_dict):
-            temp_dict = {}
-            if isinstance(input_dict, dict):
-                # check if we found dict with actual data, otherwise dive deeper
-                if any(
-                    test in input_dict
-                    for test in ["unit", "values", "value", "message"]
-                ):
-                    # Oli indicates a single value with "value" key
-                    if "value" in input_dict:
-                        unit = input_dict.get("unit")
-                        if unit == None or unit == "":
-                            unit = "dimensionless"
-                        temp_dict[last_key] = {
-                            "values": [input_dict["value"]],
-                            "units": unit,
-                        }
-                    # Oli indicates a dict of values with "values" key
-                    elif "values" in input_dict:
-                        temp_dict[last_key] = {}
-                        for key, val in input_dict["values"].items():
-                            temp_dict[last_key][key] = {
-                                "values": [val],
-                                "units": input_dict["unit"],
-                            }
-                    elif "code" in input_dict:
-                        temp_dict = {}
-                        for key, message in input_dict.items():
-                            # print(key, message)
-                            temp_dict[key] = {
-                                "values": [str(message)],
-                                "units": "None",
-                            }
-                        # print("temp_dict", temp_dict)
-
-                    else:
-                        _logger.warning(
-                            "Could not processes input_dict: {}".format(input_dict)
-                        )
-                else:
-                    for key, idict in input_dict.items():
-                        return_dict = _recurse_search(key, idict)
-                        for sub_key, items in return_dict.items():
-                            temp_dict[sub_key] = items
-
-            if isinstance(input_dict, list):
-                temp_dict[last_key] = {}
-                for sub_dict in input_dict:
-                    if "name" in sub_dict:
-                        key = sub_dict["name"]
-                        result_dict = _recurse_search(key, sub_dict)
-                        for key, item in result_dict.items():
-                            temp_dict[last_key][key] = item
-                    if "functionName" in sub_dict:
-                        result_dict = _recurse_search(last_key, sub_dict)
-                        for key, item in result_dict.items():
-                            temp_dict[last_key][key] = item
-            return temp_dict
-
-        for key, items in result_dict.items():
-            output_dict[key] = _recurse_search(key, items)
-        return copy.deepcopy(output_dict)
-
-    def merge_data_list(self, data_list):
-        """
-        merges all data collected during survey
-        :param data_list: a list of dicts extracted from OLI using recursive extraction function
-
-        """
-
-        def _recursive_merge(data_dict, output_dict, overwrite=False):
-            """
-            Merge data structure generated from OLI dicts
-            data_dict: single dictionary that contains data for import
-            output_dict: global dictionary to store all the data in
-            overwrite: enable to overwrite data in the global dict, should be used on import of first data set only!
-            """
-            for key, value in output_dict.items():
-                if "values" in value:
-                    if key in data_dict:
-                        if overwrite:
-                            output_dict[key]["values"] = data_dict[key]["values"]
-                        else:
-                            output_dict[key]["values"].append(
-                                data_dict[key]["values"][0]
-                            )
-                    else:
-                        if overwrite:
-                            output_dict[key]["values"] = [float_nan]
-                        else:
-                            output_dict[key]["values"].append(float_nan)
-
-                else:
-                    if key not in data_dict:
-                        _recursive_merge({}, output_dict[key], overwrite)
-                    else:
-                        _recursive_merge(data_dict[key], output_dict[key], overwrite)
-
-        float_nan = float("nan")
-        # merge all keys in all dicts to ensure we got em all.
-        global_data_output = copy.deepcopy(data_list[0])
-        for d in data_list:
-            global_data_output.update(d)
-
-        for i, d in enumerate(data_list):
-            if i == 0:
-                # ensure we update first value in global dict with data in first list.
-                # these might not be same as we ran update during global_dict_creation
-                overwrite = True
-            else:
-                overwrite = False
-            _recursive_merge(d, global_data_output, overwrite)
-        return copy.deepcopy(global_data_output)
-
     # TODO: consider modifications for async/parallel calculations
     def run_flash(
         self,
@@ -459,17 +327,17 @@ class Flash:
                     "input_params": clone,
                 }
             )
-        clone_output_list = oliapi_instance.process_request_list(
+        output_dict = oliapi_instance.process_request_list(
             requests,
             burst_job_tag=burst_job_tag,
             max_concurrent_processes=max_concurrent_processes,
             batch_size=batch_size,
         )
-        for clone_output in clone_output_list:
-            data_dict = create_output(clone_output)
-            if data_dict != None:
-                output_list.append(data_dict)
-        output_dict = self.merge_data_list(output_list)
+        # for clone_output in clone_output_list:
+        #     data_dict = create_output(clone_output)
+        #     if data_dict != None:
+        #         output_list.append(data_dict)
+        # output_dict = self.merge_data_list(output_list)
         _logger.info("Completed running flash calculations")
         if file_name:
             self.write_output(output_dict, file_name)

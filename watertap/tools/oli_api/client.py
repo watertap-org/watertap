@@ -50,6 +50,7 @@ from pathlib import Path
 import requests
 import json
 import time
+import copy
 from pyomo.common.dependencies import attempt_import
 
 asyncio, asyncio_available = attempt_import("asyncio", defer_check=False)
@@ -370,15 +371,17 @@ class OLIApi:
             max_concurrent_processes=1000,
         ):
             if batch_size is None:
-                return self._process_request_list(
+                _result = self._process_request_list(
                     list_of_requests,
                     burst_job_tag=burst_job_tag,
                     max_concurrent_processes=max_concurrent_processes,
+                    store_data_length=False,
                 )
+                return _result
             else:
                 total_samples = len(list_of_requests)
                 splits = int(total_samples / batch_size) + 1
-                result_list = []
+                list_of_result_dicts = []
                 _logger.info(
                     "Splitting {} requests into {} batches with maximum size of {}".format(
                         total_samples, splits, batch_size
@@ -388,7 +391,7 @@ class OLIApi:
                 for splits in range(splits):
                     if len(list_of_requests[splits * batch_size :]) <= batch_size:
                         _logger.info(
-                            "Splitting from {} to {}".format(
+                            "Selecting data from index {} to {}".format(
                                 splits * batch_size,
                                 len(list_of_requests),
                             )
@@ -396,7 +399,7 @@ class OLIApi:
                         sub_list = list_of_requests[splits * batch_size :]
                     else:
                         _logger.info(
-                            "Splitting from {} to {}".format(
+                            "Selecting data from index {} to {}".format(
                                 splits * batch_size,
                                 (splits + 1) * batch_size,
                             )
@@ -409,15 +412,19 @@ class OLIApi:
                             sub_list,
                             burst_job_tag=burst_job_tag,
                             max_concurrent_processes=max_concurrent_processes,
+                            store_data_length=True,
                         )
-                        result_list = result_list + _sub_result
-                    return result_list
+                        list_of_result_dicts.append(_sub_result)
+                return self.merge_data_list(
+                    list_of_result_dicts, store_data_length=False
+                )
 
         def _process_request_list(
             self,
             list_of_requests,
             burst_job_tag=None,
             max_concurrent_processes=1000,
+            store_data_length=False,
             **kwargs,
         ):
             """
@@ -484,7 +491,7 @@ class OLIApi:
             result_progress = {k: self.check_result(item) for k, item in result.items()}
             _logger.info(
                 "Submitted all {} jobs to OLIAPI, took {} seconds".format(
-                    len(list_of_requests), time.time() - acquire_timer
+                    len(list_of_requests), round(time.time() - acquire_timer, 1)
                 )
             )
             while True:
@@ -509,6 +516,7 @@ class OLIApi:
                                             sample_index=k,
                                             session=client,
                                             rate_limiter=process_rate_limiter,
+                                            full_request=list_of_requests[k],
                                         )
                                     )
                                 )
@@ -522,9 +530,6 @@ class OLIApi:
                 result_status = {
                     k: self.check_result(item) for k, item in result.items()
                 }
-                processed_result = {
-                    k: self.get_result(item) for k, item in result.items()
-                }
                 waiting_to_complete = sum(
                     [result_status[k] == "IN PROGRESS" for k in result.keys()]
                 )
@@ -532,11 +537,15 @@ class OLIApi:
 
                 if waiting_to_complete == False:
                     break
+
             for idx in range(len(list_of_requests)):
-                oli_result = processed_result[idx]
-                oli_result["submitted_request"] = list_of_requests[idx]
+                if result[idx] is None:
+                    oli_result = {}
+                else:
+                    oli_result = result[idx]["processed_data"]
                 result_list.append(oli_result)
-            acquire_time = time.time() - acquire_timer
+
+            acquire_time = round(time.time() - acquire_timer, 1)
 
             # clean up async thread
             _logger.info(
@@ -544,7 +553,7 @@ class OLIApi:
                     len(result), acquire_time, acquire_time / len(result)
                 )
             )
-            return result_list
+            return self.merge_data_list(result_list, store_data_length)
 
         async def async_call(
             self,
@@ -558,6 +567,7 @@ class OLIApi:
             session=None,
             burst_job_tag=None,
             rate_limiter=None,
+            full_request=None,
         ):
             """ """
             async with rate_limiter:
@@ -603,7 +613,12 @@ class OLIApi:
                         get_url, headers=headers, data=data
                     ) as response:
                         if response.status == 200:
-                            result = {sample_index: await response.json()}
+                            response = await response.json()
+                            result = {
+                                sample_index: self.process_oli_result(
+                                    response, full_request
+                                )
+                            }
                             _logger.debug(
                                 "Received response for {} sample #{}".format(
                                     mode, sample_index
@@ -636,6 +651,7 @@ class OLIApi:
                     f"Getting flash samples #{indx} out of {len(list_of_requests)}"
                 )
                 result = self.call(**request)
+                result = self.process_oli_result(result, request)
                 result_list.append(result)
             acquire_time = time.time() - acquire_timer
             _logger.info(
@@ -643,7 +659,8 @@ class OLIApi:
                     len(result), acquire_time, acquire_time / len(result)
                 )
             )
-            return result_list
+            result_dict = self.merge_data_list(result_list)
+            return result_dict
 
     # TODO: consider enabling non-flash methods to be called through this function
     # building this incase user need to do a call, but does not wish to use process request list
@@ -697,7 +714,7 @@ class OLIApi:
             poll_status = self.check_result(req_result)
             result = self.get_result(req_result)
             if result is not None:
-                return result
+                return req_result
         raise RuntimeError("Poll limit exceeded.")
 
     def get_result_link(self, req):
@@ -748,7 +765,184 @@ class OLIApi:
                 _logger.warning(f"Call failed with status {req['code']}")
             else:
                 _logger.warning(f"Call failed with status {req}")
-            return None
+            return req
             # raise RuntimeError(f"Call failed with status {req['code']}")
         else:
             return None
+
+    def process_oli_result(self, result, submitted_result):
+        """take in OLI responce, merge it with submitted request, and convert to WaterTAP-OLI data formats"""
+        processed_result = self.get_result(result)
+        if processed_result == None:
+            processed_result = {}
+        processed_result["submitted_request"] = submitted_result
+        extracted_result = self.extract_oli_data(processed_result)
+        combined_result_states = {
+            "status": result["status"],
+            "processed_data": extracted_result,
+        }
+        return copy.deepcopy(combined_result_states)
+
+    def extract_oli_data(self, result_dict):
+        """
+        function for pulling out OLI json data into a normal dictionary structure
+        This will build a following out put structure.
+        The depth will depend on returned OLI, will import list of dicts and dicts
+
+        Assumes that unit, value, and values are used as terminating keys for identifing where data is stored!
+
+        :param result_dict: data from OLI in dict form
+
+        {data: {sub_data:{values:[],units: unit from OLI}}"""
+        output_dict = {}
+
+        def _update_dir(key, current_directory):
+            if key not in current_directory:
+                current_directory.append(key)
+            return current_directory
+
+        def _recurse_search(last_key, input_dict):
+            temp_dict = {}
+            if isinstance(input_dict, dict):
+                # check if we found dict with actual data, otherwise dive deeper
+                if any(
+                    test in input_dict
+                    for test in ["unit", "values", "value", "message"]
+                ):
+                    # Oli indicates a single value with "value" key
+                    if "value" in input_dict:
+                        unit = input_dict.get("unit")
+                        if unit == None or unit == "":
+                            unit = "dimensionless"
+                        temp_dict[last_key] = {
+                            "values": [input_dict["value"]],
+                            "units": unit,
+                        }
+                    # Oli indicates a dict of values with "values" key
+                    elif "values" in input_dict:
+                        temp_dict[last_key] = {}
+                        for key, val in input_dict["values"].items():
+                            temp_dict[last_key][key] = {
+                                "values": [val],
+                                "units": input_dict["unit"],
+                            }
+                    elif "code" in input_dict:
+                        temp_dict = {}
+                        for key, message in input_dict.items():
+                            # print(key, message)
+                            temp_dict[key] = {
+                                "values": [str(message)],
+                                "units": "None",
+                            }
+                        # print("temp_dict", temp_dict)
+
+                    else:
+                        _logger.warning(
+                            "Could not processes input_dict: {}".format(input_dict)
+                        )
+                else:
+                    for key, idict in input_dict.items():
+                        return_dict = _recurse_search(key, idict)
+                        for sub_key, items in return_dict.items():
+                            temp_dict[sub_key] = items
+
+            if isinstance(input_dict, list):
+                temp_dict[last_key] = {}
+                for sub_dict in input_dict:
+                    if "name" in sub_dict:
+                        key = sub_dict["name"]
+                        result_dict = _recurse_search(key, sub_dict)
+                        for key, item in result_dict.items():
+                            temp_dict[last_key][key] = item
+                    if "functionName" in sub_dict:
+                        result_dict = _recurse_search(last_key, sub_dict)
+                        for key, item in result_dict.items():
+                            temp_dict[last_key][key] = item
+            return temp_dict
+
+        for key, items in result_dict.items():
+            output_dict[key] = _recurse_search(key, items)
+        return copy.deepcopy(output_dict)
+
+    def merge_data_list(self, data_list, store_data_length=False):
+        """
+        merges all data collected during survey
+        data_list: a list of dicts extracted from OLI using recursive extraction function
+
+        """
+
+        def _recursive_merge(
+            data_dict, output_dict, overwrite=False, global_data_length=1
+        ):
+            """
+            Merge data structure generated from OLI dicts
+            data_dict: single dictionary that contains data for import
+            output_dict: global dictionary to store all the data in
+            overwrite: enable to overwrite data in the global dict, should be used on import of first data set only!
+            """
+
+            for key, value in output_dict.items():
+                if "values" in value:
+                    if key in data_dict:
+                        if overwrite:
+                            output_dict[key]["values"] = copy.deepcopy(
+                                data_dict[key]["values"]
+                            )
+                        else:
+                            output_dict[key]["values"] = copy.deepcopy(
+                                output_dict[key]["values"]
+                            ) + copy.deepcopy(data_dict[key]["values"])
+                    else:
+                        if overwrite:
+                            output_dict[key]["values"] = [
+                                float("nan") for i in range(global_data_length)
+                            ]
+                        else:
+                            nan_list = [float("nan") for i in range(global_data_length)]
+                            output_dict[key]["values"] = (
+                                copy.deepcopy(output_dict[key]["values"]) + nan_list
+                            )
+                else:
+                    if key not in data_dict:
+                        _recursive_merge(
+                            {}, output_dict[key], overwrite, global_data_length
+                        )
+                    else:
+                        _recursive_merge(
+                            data_dict[key],
+                            output_dict[key],
+                            overwrite,
+                            global_data_length,
+                        )
+
+        # merge all keys in all dicts to ensure we got em all.
+
+        global_data_output = copy.deepcopy(data_list[0])
+        for d in data_list:
+            global_data_output.update(d)
+        # ensure we break any references
+        global_data_output = copy.deepcopy(global_data_output)
+        current_data_length = 1
+        for i, d in enumerate(data_list):
+            if (
+                "_data_length" in d
+                and d["_data_length"]["values"] == d["_data_length"]["values"]
+            ):
+                current_data_length = int(d["_data_length"]["values"])
+                # del d["_data_length"]
+
+            if i == 0:
+                # ensure we update first value in global dict with data in first list.
+                # these might not be same as we ran update during global_dict_creation
+                overwrite = True
+            else:
+                overwrite = False
+            _recursive_merge(
+                d,
+                global_data_output,
+                overwrite=overwrite,
+                global_data_length=current_data_length,
+            )
+        if store_data_length:
+            global_data_output["_data_length"] = {"values": len(data_list)}
+        return copy.deepcopy(global_data_output)
