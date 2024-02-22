@@ -84,14 +84,14 @@ jobs:
         os:
           - linux
           - win64
-          # - macos
+          - macos
         include:
           - os: linux
             os-version: ubuntu-20.04
           - os: win64
             os-version: windows-2019
-          # - os: macos
-          #   os-version: macos-10.15
+          - os: macos
+            os-version: macos-14
           - python-version: '3.8'
             # limit uploading coverage report for a single Python version in the matrix
             cov_report: true
@@ -240,44 +240,3 @@ jobs:
     - name: Run pytest with nbmake
       run:
         pytest --nbmake **/*.ipynb
-
-  macos:
-    name: macOS setup (EXPERIMENTAL)
-    runs-on: macos-11
-    needs: [code-formatting]
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version:
-          - '3.8'
-    steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: watertap
-        python-version: ${{ matrix.python-version }}
-    - name: Install WaterTAP (dev) without idaes get-extensions
-      run: |
-        echo '::group::Output of "conda install" commands'
-        conda install --quiet --yes pip=21.1 wheel setuptools pandoc
-        echo '::endgroup::'
-        echo '::group::Output of "pip install" commands'
-        pip install -r requirements-dev.txt
-        echo '::endgroup::'
-        echo '::group::Display installed packages'
-        conda list
-        pip list
-        pip show pyomo idaes-pse
-        echo '::endgroup::'
-    - name: Install Ipopt from conda-forge
-      run:
-        conda install --quiet --yes -c conda-forge ipopt=3.14.11
-    - name: Build Pyomo extensions
-      run: |
-        conda install --quiet --yes cmake
-        # some failures are expected, but this should succeed as long as pynumero is built correctly
-        pyomo build-extensions || python -c "from pyomo.contrib.pynumero.asl import AmplInterface; exit(0) if AmplInterface.available() else exit(1)"
-    - name: Run pytest
-      run: |
-        pytest --pyargs watertap -k 'not (nf_dspmde.nf_ui or nf_dspmde.nf_with_bypass_ui or mvc.mvc_single_stage_ui)'
