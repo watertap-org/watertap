@@ -84,14 +84,11 @@ jobs:
         os:
           - linux
           - win64
-          - macos
         include:
           - os: linux
             os-version: ubuntu-20.04
           - os: win64
             os-version: windows-2019
-          - os: macos
-            os-version: macos-14
           - python-version: '3.8'
             # limit uploading coverage report for a single Python version in the matrix
             cov_report: true
@@ -240,3 +237,41 @@ jobs:
     - name: Run pytest with nbmake
       run:
         pytest --nbmake **/*.ipynb
+
+  # unlike other GHA runners, Miniconda is not installed by default on macos-14
+  # see actions/runner-images#9262
+  test-macos:
+    name: Tests (py${{ matrix.python-version }}/macos w/ Apple Silicon)
+    runs-on: macos-14
+    needs: [code-formatting]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.8'
+          - '3.9'
+          - '3.10'
+          - '3.11'
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        echo '::group::Output of "pip install" commands'
+        pip install -r requirements-dev.txt
+        echo '::endgroup::'
+        echo '::group::Output of "pip install -U ray" command'
+        pip install -U ray
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        pip list
+        pip show watertap idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --verbose
+        echo '::endgroup::'
+    - name: Test with pytest
+      run: |
+        pytest --pyargs watertap
