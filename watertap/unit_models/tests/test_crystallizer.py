@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import pytest
 from pyomo.environ import (
     ConcreteModel,
 )
@@ -98,6 +99,7 @@ def build():
     return m
 
 
+@pytest.mark.requires_idaes_solver
 class TestCrystallizer(UnitTestHarness):
     def configure(self):
         m = build()
