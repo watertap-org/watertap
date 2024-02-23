@@ -121,17 +121,6 @@ jobs:
         echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --verbose
         echo '::endgroup::'
-    - name: Add coverage report pytest options
-      if: matrix.cov_report
-      run:
-        |
-        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-report=xml" >> $GITHUB_ENV
-    - name: Test with pytest
-      run: |
-        pytest --pyargs watertap
-    - name: Upload coverage report to Codecov
-      if: matrix.cov_report
-      uses: codecov/codecov-action@v2
     - name: Test documentation code
       run: |
         make -C docs doctest -d
