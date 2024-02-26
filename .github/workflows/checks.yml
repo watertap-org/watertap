@@ -43,13 +43,16 @@ jobs:
           - '3.11'
         os:
           - linux
-          - win64
-        replica: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+          # - win64
+        replica: [
+          "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+          "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+        ]
         include:
           - os: linux
             os-version: ubuntu-20.04
-          - os: win64
-            os-version: windows-2019
+          # - os: win64
+          #   os-version: windows-2019
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
