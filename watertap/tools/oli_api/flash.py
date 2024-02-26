@@ -52,8 +52,6 @@ from pathlib import Path
 
 from copy import deepcopy
 from itertools import product
-from pyomo.environ import units as pyunits
-import copy
 
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
     get_oli_name,

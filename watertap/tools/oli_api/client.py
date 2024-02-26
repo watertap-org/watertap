@@ -47,7 +47,6 @@ __author__ = "Adam Atia, Adi Bannady, Paul Vecchiarelli"
 import logging
 
 import sys
-from pathlib import Path
 import requests
 import json
 import time

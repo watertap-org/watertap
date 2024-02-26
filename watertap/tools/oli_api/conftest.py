@@ -55,8 +55,6 @@ from watertap.tools.oli_api.credentials import (
     cryptography_available,
 )
 
-from pyomo.environ import units as pyunits
-
 
 @pytest.fixture(scope="session")
 def local_dbs_file() -> Path:
