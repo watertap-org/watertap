@@ -295,9 +295,6 @@ see reaction package for documentation.}""",
                 raise ConfigurationError(
                     "has_aeration was set to True, but the property package has neither 'S_O' nor 'S_O2' in its list of components."
                 )
-            
-
-
 
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(
@@ -410,7 +407,8 @@ see reaction package for documentation.}""",
             )
             def eq_mass_transfer(self, t):
                 return pyunits.convert(
-                    self.injection[t, "Liq", oxygen_str], to_units=pyunits.kg / pyunits.hour
+                    self.injection[t, "Liq", oxygen_str],
+                    to_units=pyunits.kg / pyunits.hour,
                 ) == (
                     self.KLa
                     * self.volume[t]
@@ -469,6 +467,7 @@ see reaction package for documentation.}""",
                             to_units=pyunits.m**3 / pyunits.hr,
                         )
                     )
+
             elif (
                 not self.config.has_aeration
                 and self.config.electricity_consumption

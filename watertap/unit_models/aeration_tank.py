@@ -22,7 +22,6 @@ from idaes.core import (
 )
 
 
-
 from watertap.unit_models.cstr_injection import (
     CSTR_InjectionData,
     ElectricityConsumption,

@@ -39,7 +39,7 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    unused_variables_set
+    unused_variables_set,
 )
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
@@ -54,14 +54,28 @@ from watertap.unit_models.cstr_injection import CSTR_Injection, ElectricityConsu
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
 from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
-from watertap.property_models.activated_sludge.asm1_reactions import ASM1ReactionParameterBlock
-from watertap.property_models.activated_sludge.asm2d_properties import ASM2dParameterBlock
-from watertap.property_models.activated_sludge.asm2d_reactions import ASM2dReactionParameterBlock
-from watertap.property_models.activated_sludge.modified_asm2d_properties import ModifiedASM2dParameterBlock
-from watertap.property_models.activated_sludge.modified_asm2d_reactions import ModifiedASM2dReactionParameterBlock
+from watertap.property_models.activated_sludge.asm1_reactions import (
+    ASM1ReactionParameterBlock,
+)
+from watertap.property_models.activated_sludge.asm2d_properties import (
+    ASM2dParameterBlock,
+)
+from watertap.property_models.activated_sludge.asm2d_reactions import (
+    ASM2dReactionParameterBlock,
+)
+from watertap.property_models.activated_sludge.modified_asm2d_properties import (
+    ModifiedASM2dParameterBlock,
+)
+from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
+    ModifiedASM2dReactionParameterBlock,
+)
 
-from watertap.property_models.anaerobic_digestion.adm1_properties import ADM1ParameterBlock
-from watertap.property_models.anaerobic_digestion.adm1_reactions import ADM1ReactionParameterBlock
+from watertap.property_models.anaerobic_digestion.adm1_properties import (
+    ADM1ParameterBlock,
+)
+from watertap.property_models.anaerobic_digestion.adm1_reactions import (
+    ADM1ReactionParameterBlock,
+)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -332,17 +346,15 @@ class TestCSTR_withASM1(object):
         m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = ASM1ParameterBlock()
-        m.fs.reactions = ASM1ReactionParameterBlock(
-            property_package=m.fs.properties
-        )
+        m.fs.reactions = ASM1ReactionParameterBlock(property_package=m.fs.properties)
 
         m.fs.unit = CSTR_Injection(
             property_package=m.fs.properties,
             reaction_package=m.fs.reactions,
             has_aeration=True,
-            electricity_consumption=ElectricityConsumption.calculated
+            electricity_consumption=ElectricityConsumption.calculated,
         )
-  
+
         m.fs.unit.inlet.flow_vol.fix(20648 * units.m**3 / units.day)
         m.fs.unit.inlet.temperature.fix(308.15 * units.K)
         m.fs.unit.inlet.pressure.fix(1 * units.atm)
@@ -362,7 +374,7 @@ class TestCSTR_withASM1(object):
 
         m.fs.unit.volume.fix(500)
         m.fs.unit.injection.fix(0)
-        m.fs.unit.injection[0, 'Liq', 'S_O'].fix(2e-3)
+        m.fs.unit.injection[0, "Liq", "S_O"].fix(2e-3)
 
         return m
 
@@ -377,7 +389,6 @@ class TestCSTR_withASM1(object):
         assert hasattr(model.fs.unit.inlet, "pressure")
         assert hasattr(model.fs.unit.inlet, "alkalinity")
 
-
         assert hasattr(model.fs.unit, "outlet")
         assert len(model.fs.unit.inlet.vars) == 5
         assert hasattr(model.fs.unit.inlet, "flow_vol")
@@ -391,7 +402,6 @@ class TestCSTR_withASM1(object):
         assert hasattr(model.fs.unit, "hydraulic_retention_time")
         assert hasattr(model.fs.unit, "KLa")
         assert hasattr(model.fs.unit, "S_O_eq")
-
 
         assert hasattr(model.fs.unit, "injection")
         for k in model.fs.unit.injection:
@@ -448,10 +458,7 @@ class TestCSTR_withASM1(object):
         assert pytest.approx(2092.2123, abs=1e-3) == value(
             model.fs.unit.hydraulic_retention_time[0]
         )
-        assert pytest.approx(8.2694, abs=1e-3) == value(
-            model.fs.unit.KLa
-        )
-
+        assert pytest.approx(8.2694, abs=1e-3) == value(model.fs.unit.KLa)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -465,23 +472,25 @@ class TestCSTR_withASM1(object):
             )
             <= 1e-6
         )
-        assert (
-            abs(
-                value(
-                    model.fs.unit.inlet.flow_vol[0]
-                    * sum(
-                        model.fs.unit.inlet.conc_mass_comp[0, j]
-                        for j in model.fs.properties.solute_set
-                    )
-                    - model.fs.unit.outlet.flow_vol[0]
-                    * sum(
-                        model.fs.unit.outlet.conc_mass_comp[0, j]
-                        for j in model.fs.properties.solute_set)
-                    + sum(model.fs.unit.control_volume.rate_reaction_generation[0, 'Liq', j] for j in model.fs.properties.solute_set)
-            
-            <= 1e-6
-        )))
-
+        assert abs(
+            value(
+                model.fs.unit.inlet.flow_vol[0]
+                * sum(
+                    model.fs.unit.inlet.conc_mass_comp[0, j]
+                    for j in model.fs.properties.solute_set
+                )
+                - model.fs.unit.outlet.flow_vol[0]
+                * sum(
+                    model.fs.unit.outlet.conc_mass_comp[0, j]
+                    for j in model.fs.properties.solute_set
+                )
+                + sum(
+                    model.fs.unit.control_volume.rate_reaction_generation[0, "Liq", j]
+                    for j in model.fs.properties.solute_set
+                )
+                <= 1e-6
+            )
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -517,16 +526,15 @@ def test_with_asm2d():
     m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = ASM2dParameterBlock()
-    m.fs.reactions = ASM2dReactionParameterBlock(
-        property_package=m.fs.properties
-    )
+    m.fs.reactions = ASM2dReactionParameterBlock(property_package=m.fs.properties)
 
     m.fs.unit = CSTR_Injection(
         property_package=m.fs.properties,
         reaction_package=m.fs.reactions,
         has_aeration=True,
-        electricity_consumption=ElectricityConsumption.calculated
+        electricity_consumption=ElectricityConsumption.calculated,
     )
+
 
 @pytest.mark.build
 @pytest.mark.unit
@@ -543,8 +551,9 @@ def test_with_mod_asm2d():
         property_package=m.fs.properties,
         reaction_package=m.fs.reactions,
         has_aeration=True,
-        electricity_consumption=ElectricityConsumption.calculated
+        electricity_consumption=ElectricityConsumption.calculated,
     )
+
 
 @pytest.mark.unit
 def test_error_without_oxygen():
@@ -555,7 +564,10 @@ def test_error_without_oxygen():
     m.fs.reactions = ADM1ReactionParameterBlock(property_package=m.fs.properties)
 
     # Expect exception if has_aeration=True but S_O or S_O2 not listed in component_list of prop package.
-    with pytest.raises(ConfigurationError,match="has_aeration was set to True, but the property package has neither 'S_O' nor 'S_O2' in its list of components."):
+    with pytest.raises(
+        ConfigurationError,
+        match="has_aeration was set to True, but the property package has neither 'S_O' nor 'S_O2' in its list of components.",
+    ):
         m.fs.unit = CSTR_Injection(
             property_package=m.fs.properties,
             reaction_package=m.fs.reactions,

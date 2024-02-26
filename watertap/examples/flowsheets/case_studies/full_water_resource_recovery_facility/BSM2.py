@@ -516,6 +516,7 @@ def setup_optimization(m, reactor_volume_equalities=False):
 
     add_effluent_violations(m)
 
+
 def add_effluent_violations(m):
     # TODO: update "m" to blk; change ref to m.fs.Treated instead of CL1 effluent
     m.fs.TSS_max = pyo.Var(initialize=0.03, units=pyo.units.kg / pyo.units.m**3)
