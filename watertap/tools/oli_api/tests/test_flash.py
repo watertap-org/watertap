@@ -46,7 +46,13 @@ import pytest
 
 from pathlib import Path
 
-from watertap.tools.oli_api.flash import Flash
+from watertap.tools.oli_api.flash import (
+    Flash,
+    build_survey,
+    get_survey_sample_conditions,
+    flatten_results,
+    write_output,
+)
 from watertap.tools.oli_api.client import OLIApi
 
 from numpy import linspace
@@ -57,8 +63,7 @@ def test_water_analysis_single_point(
     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
 ):
     dbs_file_id = oliapi_instance.session_dbs_files[-1]
-    stream_input = flash_instance.build_flash_calculation_input(
-        "wateranalysis",
+    stream_input = flash_instance.configure_water_analysis(
         source_water,
         file_name=tmp_path / "test_wa_input",
     )
@@ -76,7 +81,7 @@ def test_water_analysis_survey(
     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
 ):
     dbs_file_id = oliapi_instance.session_dbs_files[-1]
-    survey = flash_instance.build_survey(
+    survey = build_survey(
         {
             "Na_+": linspace(0, 1e4, 2),
             "temperature": linspace(0, 70, 2),
@@ -84,12 +89,7 @@ def test_water_analysis_survey(
         get_oli_names=True,
         file_name=tmp_path / "test_survey",
     )
-    samples = [0, 2]
-    flash_instance.get_survey_sample_conditions(survey, samples)
-    stream_input = flash_instance.build_flash_calculation_input(
-        "wateranalysis",
-        source_water,
-    )
+    stream_input = flash_instance.configure_water_analysis(source_water)
     stream_output = flash_instance.run_flash(
         "wateranalysis",
         oliapi_instance,
@@ -98,15 +98,6 @@ def test_water_analysis_survey(
         survey,
         file_name=tmp_path / "test_wa_survey",
     )
-    properties = [
-        "molecularConcentration",
-    ]
-    extracted_properties = flash_instance.extract_properties(
-        stream_output,
-        properties=properties,
-        samples=samples,
-        file_name=tmp_path / "test_ext_props",
-    )
 
 
 @pytest.mark.unit
@@ -114,24 +105,13 @@ def test_isothermal_flash_single_point(
     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
 ):
     dbs_file_id = oliapi_instance.session_dbs_files[-1]
-    stream_input = flash_instance.build_flash_calculation_input(
-        "wateranalysis",
-        source_water,
-    )
-    stream_output = flash_instance.run_flash(
-        "wateranalysis",
+    stream_input = flash_instance.configure_water_analysis(source_water)
+    inflows = flash_instance.get_apparent_species_from_true(
+        stream_input,
         oliapi_instance,
         dbs_file_id,
-        stream_input,
     )
-    inflows = flash_instance.get_inflows(
-        stream_output,
-        file_name="isothermal_inflows",
-    )
-    isothermal_input = flash_instance.build_flash_calculation_input(
-        "isothermal",
-        inflows,
-    )
+    isothermal_input = flash_instance.configure_flash_analysis(inflows, "isothermal")
     isothermal_output = flash_instance.run_flash(
         "isothermal",
         oliapi_instance,
@@ -144,7 +124,7 @@ def test_isothermal_flash_survey(
     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
 ):
     dbs_file_id = oliapi_instance.session_dbs_files[-1]
-    survey = flash_instance.build_survey(
+    survey = build_survey(
         {
             "NaCl": linspace(0, 1e4, 2),
             "temperature": linspace(0, 70, 2),
@@ -152,44 +132,17 @@ def test_isothermal_flash_survey(
         get_oli_names=True,
         file_name=tmp_path / "test_survey",
     )
-    samples = [0, 2]
-    flash_instance.get_survey_sample_conditions(
-        survey,
-        samples,
-    )
-    stream_input = flash_instance.build_flash_calculation_input(
-        "wateranalysis",
-        source_water,
-    )
-    stream_output = flash_instance.run_flash(
-        "wateranalysis",
+    dbs_file_id = oliapi_instance.session_dbs_files[-1]
+    stream_input = flash_instance.configure_water_analysis(source_water)
+    inflows = flash_instance.get_apparent_species_from_true(
+        stream_input,
         oliapi_instance,
         dbs_file_id,
-        stream_input,
     )
-    inflows = flash_instance.get_inflows(
-        stream_output,
-        file_name="isothermal_inflows",
-    )
-    isothermal_input = flash_instance.build_flash_calculation_input(
-        "isothermal",
-        inflows,
-    )
+    isothermal_input = flash_instance.configure_flash_analysis(inflows, "isothermal")
     isothermal_output = flash_instance.run_flash(
         "isothermal",
         oliapi_instance,
         dbs_file_id,
         isothermal_input,
-        survey,
-        file_name=tmp_path / "test_iso_survey",
-    )
-    properties = [
-        "entropy",
-        "molecularConcentration",
-    ]
-    extracted_properties = flash_instance.extract_properties(
-        isothermal_output,
-        properties,
-        samples,
-        file_name=tmp_path / "test_ext_props",
     )

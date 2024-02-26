@@ -95,14 +95,8 @@ def oliapi_instance(
     }
     credential_manager = CredentialManager(**credentials, test=True)
     with OLIApi(credential_manager, interactive_mode=False) as oliapi:
-        oliapi.get_dbs_file_id(str(local_dbs_file))
-        oliapi.get_dbs_file_id(
-            source_water["components"],
-            thermo_framework="MSE (H3O+ ion)",
-            private_databanks=["XSC"],
-            phases=["liquid1", "solid"],
-            model_name="test",
-        )
+        oliapi.upload_dbs_file(str(local_dbs_file))
+        oliapi.generate_dbs_file(source_water)
         yield oliapi
     with contextlib.suppress(FileNotFoundError):
         cred_file_path.unlink()
@@ -116,16 +110,4 @@ def flash_instance(scope="session"):
 
 @pytest.fixture
 def source_water(scope="session"):
-    return {
-        "temperature": 298.15,
-        "pressure": 101325,
-        "components": {
-            "Cl_-": 1000,
-            "Na_+": 1000,
-        },
-        "units": {
-            "temperature": pyunits.K,
-            "pressure": pyunits.Pa,
-            "components": pyunits.mg / pyunits.L,
-        },
-    }
+    return {"Cl_-": 1000, "Na_+": 1000}
