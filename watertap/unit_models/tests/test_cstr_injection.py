@@ -46,6 +46,7 @@ from idaes.core.util.testing import (
     ReactionParameterTestBlock,
     initialization_tester,
 )
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
@@ -59,6 +60,8 @@ from watertap.property_models.activated_sludge.asm2d_reactions import ASM2dReact
 from watertap.property_models.activated_sludge.modified_asm2d_properties import ModifiedASM2dParameterBlock
 from watertap.property_models.activated_sludge.modified_asm2d_reactions import ModifiedASM2dReactionParameterBlock
 
+from watertap.property_models.anaerobic_digestion.adm1_properties import ADM1ParameterBlock
+from watertap.property_models.anaerobic_digestion.adm1_reactions import ADM1ReactionParameterBlock
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -542,3 +545,19 @@ def test_with_mod_asm2d():
         has_aeration=True,
         electricity_consumption=ElectricityConsumption.calculated
     )
+
+@pytest.mark.unit
+def test_error_without_oxygen():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = ADM1ParameterBlock()
+    m.fs.reactions = ADM1ReactionParameterBlock(property_package=m.fs.properties)
+
+    # Expect exception if has_aeration=True but S_O or S_O2 not listed in component_list of prop package.
+    with pytest.raises(ConfigurationError,match="has_aeration was set to True, but the property package has neither 'S_O' nor 'S_O2' in its list of components."):
+        m.fs.unit = CSTR_Injection(
+            property_package=m.fs.properties,
+            reaction_package=m.fs.reactions,
+            has_aeration=True,
+        )

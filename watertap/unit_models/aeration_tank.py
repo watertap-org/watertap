@@ -14,41 +14,21 @@ Inherits from a modified CSTR model with injection terms. This model assumes oxy
 """
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.environ import (
-    Reference,
-    Var,
-    Constraint,
-    Param,
-    units as pyunits,
-    NonNegativeReals,
-)
+from pyomo.common.config import In
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-    UnitModelBlockData,
-    useDefault,
 )
-from idaes.core.util.config import (
-    is_physical_parameter_block,
-    is_reaction_parameter_block,
-)
+
 
 
 from watertap.unit_models.cstr_injection import (
     CSTR_InjectionData,
     ElectricityConsumption,
 )
-from watertap.costing.unit_models.aeration_tank import cost_aeration_tank
 
 __author__ = "Adam Atia"
-
-from enum import Enum, auto
 
 
 @declare_process_block_class("AerationTank")
@@ -58,11 +38,6 @@ class AerationTankData(CSTR_InjectionData):
     """
 
     CONFIG = CSTR_InjectionData.CONFIG()
-    CONFIG.get("electricity_consumption")
-    CONFIG.get("has_aeration")._default = True
+    CONFIG.electricity_consumption = ElectricityConsumption.calculated
     CONFIG.get("has_aeration")._domain = In([True])
     CONFIG.has_aeration = True
-
-    # @property
-    # def default_costing_method(self):
-    #     return cost_aeration_tank

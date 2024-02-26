@@ -475,7 +475,7 @@ see reaction package for documentation.}""",
                 == ElectricityConsumption.calculated
             ):
                 raise ConfigurationError(
-                    f"electricity_consumption=ElectricityConsumption.fixed is currently only supported for aeration. Set has_aeration=True to compute electricity consumption or set electricity_consumption=ElectricityConsumption.fixed to compute electricity consumption based on an assumed specific energy consumption."
+                    f"electricity_consumption=ElectricityConsumption.calculated is currently only supported for aeration. Set has_aeration=True to compute electricity consumption or set electricity_consumption=ElectricityConsumption.fixed to compute electricity consumption based on an assumed specific energy consumption."
                 )
             else:
                 raise ConfigurationError(
