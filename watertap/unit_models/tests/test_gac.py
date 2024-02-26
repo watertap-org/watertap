@@ -20,15 +20,8 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock,
-    DiffusivityCalculation,
-)
-from watertap.unit_models.gac import (
-    GAC,
-    FilmTransferCoefficientType,
-    SurfaceDiffusionCoefficientType,
-)
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
+from watertap.unit_models.gac import GAC
 from watertap.costing import WaterTAPCosting
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
@@ -131,7 +124,7 @@ def build_crittenden():
     m.fs.properties = MCASParameterBlock(
         solute_list=["TCE"],
         mw_data={"H2O": 0.018, "TCE": 0.1314},
-        diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+        diffus_calculation="HaydukLaudie",
         molar_volume_data={("Liq", "TCE"): 9.81e-5},
         ignore_neutral_charge=True,
     )
@@ -233,7 +226,7 @@ def build_multicomponent():
             "BGAN": 0.1,
         },
         charge={"BGCAT": 1, "BGAN": -2},
-        diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+        diffus_calculation="HaydukLaudie",
         molar_volume_data={("Liq", "TCE"): 9.81e-5},
         diffusivity_data={
             ("Liq", "BGSOL"): 1e-5,
@@ -349,7 +342,7 @@ class TestGACErrorLog:
                     "BGAN": 0.1,
                 },
                 charge={"BGCAT": 1, "BGAN": -2},
-                diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+                diffus_calculation="HaydukLaudie",
                 molar_volume_data={("Liq", "TCE"): 9.81e-5},
                 diffusivity_data={
                     ("Liq", "BGSOL"): 1e-5,
@@ -379,7 +372,7 @@ class TestGACErrorLog:
             m.fs.properties = MCASParameterBlock(
                 solute_list=["TCE"],
                 mw_data={"H2O": 0.018, "TCE": 0.1314},
-                diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+                diffus_calculation="HaydukLaudie",
                 molar_volume_data={("Liq", "TCE"): 9.81e-5},
                 charge={"TCE": 0},
             )
@@ -419,7 +412,7 @@ class TestGACErrorLog:
                     "BGAN": 0.1,
                 },
                 charge={"BGCAT": 1, "BGAN": -2},
-                diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+                diffus_calculation="HaydukLaudie",
                 molar_volume_data={("Liq", "TCE"): 9.81e-5},
                 diffusivity_data={
                     ("Liq", "BGSOL"): 1e-5,
@@ -458,7 +451,7 @@ class TestGACErrorLog:
                     "BGAN": 0.1,
                 },
                 charge={"BGCAT": 1, "BGAN": -2},
-                diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+                diffus_calculation="HaydukLaudie",
                 molar_volume_data={("Liq", "TCE"): 9.81e-5},
                 diffusivity_data={
                     ("Liq", "BGSOL"): 1e-5,
