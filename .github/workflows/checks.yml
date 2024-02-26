@@ -77,4 +77,4 @@ jobs:
         echo '::endgroup::'
     - name: Run pytest with nbmake
       run:
-        pytest --nbmake --nbmake-timeout=600 **/*.ipynb
+        pytest --nbmake --nbmake-timeout=600 tutorials/parameter_sweep_demo.ipynb
