@@ -138,6 +138,10 @@ class OLIApi:
         Generate a DBS file on OLI Cloud given chemistry inputs.
 
         :param inflows: dictionary with inflows and optional custom parameters
+        :param thermo_framework: string name of thermodynamic databank to use
+        :param model_name: string name of model OLI will use
+        :param phases: container dict for chemistry model parameters
+        :param databanks: list of databanks to include in DBS file
         :param keep_file: bool to remove (default) or ignore DBS file during session cleanup
 
         :return dbs_file_id: string name for DBS file ID

@@ -149,6 +149,8 @@ class Flash:
         :param calc_alkalinity: bool to calculate alkalinity of solution
         :param use_scaling_rigorous: bool to switch between Rigorous (default) and Estimated scaling computations
         :param file_name: string for file to write, if any
+        :param mesh_grid: if True (default) the input array will be combined to generate combination of all possible samples
+            if False, the direct values in survey_arrays will be used
 
         :return json_input: JSON for Water Analysis
         """
@@ -868,6 +870,7 @@ class Flash:
                 f"relative_inflows={self.relative_inflows},"
                 + " surveys will add values to initial state"
             )
+
         if survey is None:
             survey = {}
         num_samples = None
@@ -896,6 +899,7 @@ class Flash:
             # max_concurrent_processes=max_concurrent_processes,
             # batch_size=batch_size,
         )
+        _logger.info("Completed running flash calculations")
         result = flatten_results(processed_requests)
         if file_name:
             write_output(result, file_name)
@@ -1110,7 +1114,7 @@ def flatten_results(processed_requests):
                 if "params" in prop:
                     if isinstance(prop[-1], int):
                         prop_tag = _get_nested_data(result, prop)["name"]
-            else
+            else:
                 _logger.warning(f"Unexpected result in result")
             label = f"{prop_tag}_{phase_tag}" if phase_tag else prop_tag
             input_dict[k][label] = _extract_values(result, prop)
