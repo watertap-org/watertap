@@ -111,8 +111,8 @@ Equations and Relationships
    "S_PO4 concentration", ":math:`S_{PO4, 3} = S_{PO4, 2} + (S_{F, in} * i_{PSF})`"
    "S_IC concentration", ":math:`S_{IC, 3} = S_{IC, 2} + (S_{F, in} * i_{CSF}) - (S_{su} * Ci[S_{su}] * 1000 * 12) - (S_{aa} * Ci[S_{aa}] * 1000 * 12)`"
 
-Equations and Relationships (With Decay)
-----------------------------------------
+Equations and Relationships (with phosphorus biomass handled explicitly)
+------------------------------------------------------------------------
 
 .. csv-table::
    :header: "Description", "Equation"
@@ -150,7 +150,7 @@ Equations and Relationships (With Decay)
    "S_K concentration", ":math:`S_{K, 6} = S_{K, in} + (K_{XPP} * X_{PP, in})`"
    "S_Mg concentration", ":math:`S_{Mg, 6} = S_{Mg, in} + (Mg_{XPP} * X_{PP, in})`"
 
-Equations and Relationships (Without Decay)
+Equations and Relationships (with phosphorus biomass handled implicitly)
 -------------------------------------------
 
 .. csv-table::
