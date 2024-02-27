@@ -63,21 +63,18 @@ class TranslatorDataASM2dADM1(TranslatorData):
 
     CONFIG = TranslatorData.CONFIG()
 
+    # TODO: Change the default to False
     CONFIG.declare(
         "bio_P",
-        # TODO: Change the default to False
         ConfigValue(
             default=True,
             domain=Bool,
             description="Switching function for phosphorus biomass",
-            doc="""
-           Switching function for handling the transformation of phosphorus biomass.
-
-           **default** - True.
-               **Valid values:** {
-            **False** - the BioP variables are kinetically described within the ADM,
-            **True** - the BioP variables are supposed to be transformed in the interface
-            """,
+            doc="""Switching function for handling the transformation of phosphorus biomass,
+**default** - True.
+**Valid values:** {
+**False** - the BioP variables are kinetically described within the ADM,
+**True** - the BioP variables are supposed to be transformed in the interface""",
         ),
     )
 

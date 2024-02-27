@@ -60,14 +60,11 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             default=True,
             domain=Bool,
             description="Switching function for decay",
-            doc="""
-           Switching function for handling decay in reaction rate expressions.
-
-           **default** - True.
-               **Valid values:** {
-            **True** - the decay of heterotrophs and autotrophs is dependent on the electron acceptor present,
-            **False** - the decay of heterotrophs and autotrophs does not change
-            """,
+            doc="""Switching function for handling decay in reaction rate expressions,
+**default** - True.
+**Valid values:** {
+**True** - the decay of heterotrophs and autotrophs is dependent on the electron acceptor present,
+**False** - the decay of heterotrophs and autotrophs does not change""",
         ),
     )
 
