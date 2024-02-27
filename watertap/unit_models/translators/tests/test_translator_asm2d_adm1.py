@@ -43,10 +43,8 @@ from idaes.core.util.model_statistics import (
 import idaes.logger as idaeslog
 from idaes.core.util.testing import initialization_tester
 
-from watertap.unit_models.translators.translator_asm2d_adm1 import (
-    Translator_ASM2d_ADM1,
-    BioP,
-)
+from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2d_ADM1
+
 from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
 )
@@ -107,7 +105,7 @@ def test_config():
 
 
 # -----------------------------------------------------------------------------
-class TestAsm2dAdm1_bioP_on(object):
+class TestAsm2dAdm1_bioP_true(object):
     @pytest.fixture(scope="class")
     def asmadm(self):
         m = ConcreteModel()
@@ -130,7 +128,7 @@ class TestAsm2dAdm1_bioP_on(object):
             outlet_reaction_package=m.fs.ADM1_rxn_props,
             has_phase_equilibrium=False,
             outlet_state_defined=True,
-            bio_P=BioP.on,
+            bio_P=True,
         )
 
         m.fs.unit.inlet.flow_vol.fix(18446 * units.m**3 / units.day)
@@ -394,7 +392,7 @@ class TestAsm2dAdm1_bioP_on(object):
 
 
 # -----------------------------------------------------------------------------
-class TestAsm2dAdm1_bioP_off(object):
+class TestAsm2dAdm1_bioP_false(object):
     @pytest.fixture(scope="class")
     def asmadm(self):
         m = ConcreteModel()
@@ -417,7 +415,7 @@ class TestAsm2dAdm1_bioP_off(object):
             outlet_reaction_package=m.fs.ADM1_rxn_props,
             has_phase_equilibrium=False,
             outlet_state_defined=True,
-            bio_P=BioP.off,
+            bio_P=False,
         )
 
         m.fs.unit.inlet.flow_vol.fix(18446 * units.m**3 / units.day)

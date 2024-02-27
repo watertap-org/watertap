@@ -24,7 +24,7 @@ Water Research, 95, pp.370-382. https://github.com/wwtmodels/Plant-Wide-Models
 """
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue
 from enum import Enum, auto
 
 # Import IDAES cores
@@ -56,11 +56,6 @@ __author__ = "Marcus Holly"
 _log = idaeslog.getLogger(__name__)
 
 
-class BioP(Enum):
-    on = auto()
-    off = auto()
-
-
 @declare_process_block_class("Translator_ASM2d_ADM1")
 class TranslatorDataASM2dADM1(TranslatorData):
     """
@@ -71,21 +66,19 @@ class TranslatorDataASM2dADM1(TranslatorData):
 
     CONFIG.declare(
         "bio_P",
+        # TODO: Change the default to False
         ConfigValue(
-            default=BioP.on,
-            domain=In(BioP),
+            default=True,
+            domain=Bool,
             description="Switching function for phosphorus biomass",
             doc="""
            Switching function for handling the transformation of phosphorus biomass.
 
-           **default** - `BioP.on``
-
-       .. csv-table::
-           :header: "Configuration Options", "Description"
-
-           "``BioP.on``", "All the BioP variables are supposed to be transformed in the interface"
-           "``BioP.off``", "All the BioP variables are kinetically described within the ADM"
-       """,
+           **default** - True.
+               **Valid values:** {
+            **False** - the BioP variables are kinetically described within the ADM,
+            **True** - the BioP variables are supposed to be transformed in the interface
+            """,
         ),
     )
 
@@ -479,7 +472,7 @@ see reaction package for documentation.}""",
         # -----------------------------------------BioP.on----------------------------------------------------------#
 
         # -------------------------------------------Step 4----------------------------------------------------------------#
-        if self.config.bio_P == BioP.on:
+        if self.config.bio_P:
 
             @self.Expression(
                 self.flowsheet().time, doc="Biomass concentration at step 4"
@@ -883,7 +876,7 @@ see reaction package for documentation.}""",
         # ---------------------------------------BioP.off-------------------------------------------------------#
 
         # -----------------------------------------Step 4--------------------------------------------------------------#
-        elif self.config.bio_P == BioP.off:
+        else:
 
             @self.Expression(
                 self.flowsheet().time, doc="Biomass concentration at step 4"
