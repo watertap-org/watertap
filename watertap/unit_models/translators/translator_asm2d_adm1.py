@@ -43,6 +43,7 @@ from pyomo.environ import (
     check_optimal_termination,
     Set,
     Expr_if,
+    value,
 )
 
 from idaes.core.util.exceptions import InitializationError
@@ -577,16 +578,32 @@ see reaction package for documentation.}""",
                 return blk.properties_out[t].conc_mass_comp["X_I"] == blk.XI_AS4[t]
 
             # TODO: Consider removing cases where vars are set to 0 and they are not being used
-            # TODO: These were left in just to match Flores-Alsina as closely as possible
-            XH_AS4 = eps * pyunits.kg / pyunits.m**3
+            # TODO: Many were left in just to match Flores-Alsina as closely as possible
 
-            XPAO_AS4 = eps * pyunits.kg / pyunits.m**3
+            self.XH_AS4 = Param(
+                initialize=eps,
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of X_H at step 4",
+            )
+
+            self.XPAO_AS4 = Param(
+                initialize=eps,
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of X_PAO at step 4",
+            )
 
             @self.Constraint(self.flowsheet().time, doc="X_PAO concentration output")
             def XPAO_output(blk, t):
-                return blk.properties_out[t].conc_mass_comp["X_PAO"] == XPAO_AS4
+                return blk.properties_out[t].conc_mass_comp["X_PAO"] == self.XPAO_AS4
 
-            XAUT_AS4 = eps * pyunits.kg / pyunits.m**3
+            self.XAUT_AS4 = Param(
+                initialize=eps,
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of X_AUT at step 4",
+            )
 
             # -----------------------------------------Step 5--------------------------------------------------------------#
             @self.Expression(
@@ -713,49 +730,84 @@ see reaction package for documentation.}""",
                     * mw_c
                 )
 
-            XS_AS5 = eps * pyunits.kg / pyunits.m**3
+            self.XS_AS5 = Param(
+                initialize=eps,
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of X_AS at step 5",
+            )
 
             # -----------------------------------------Step 6--------------------------------------------------------------#
-            XPP_AS6 = eps * pyunits.kg / pyunits.m**3
+            self.XPP_AS6 = Param(
+                initialize=eps,
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of X_PP at step 6",
+            )
 
             @self.Constraint(self.flowsheet().time, doc="X_PP concentration output")
             def XPP_output(blk, t):
-                return blk.properties_out[t].conc_mass_comp["X_PP"] == XPP_AS6
+                return blk.properties_out[t].conc_mass_comp["X_PP"] == self.XPP_AS6
 
-            XPHA_AS6 = eps * pyunits.kg / pyunits.m**3
+            self.XPHA_AS6 = Param(
+                initialize=eps,
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of X_PHA at step 6",
+            )
 
             @self.Constraint(self.flowsheet().time, doc="X_PHA concentration output")
             def XPHA_output(blk, t):
-                return blk.properties_out[t].conc_mass_comp["X_PHA"] == XPHA_AS6
+                return blk.properties_out[t].conc_mass_comp["X_PHA"] == self.XPHA_AS6
 
-            Sva_AS6 = XPHA_AS6 * self.f_XPHA_Sva
+            self.Sva_AS6 = Param(
+                initialize=value(self.XPHA_AS6) * value(self.f_XPHA_Sva),
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of S_va at step 6",
+            )
 
             @self.Constraint(
                 self.flowsheet().time,
                 doc="Total valerate concentration output",
             )
             def Sva_output(blk, t):
-                return blk.properties_out[t].conc_mass_comp["S_va"] == Sva_AS6
+                return blk.properties_out[t].conc_mass_comp["S_va"] == self.Sva_AS6
 
-            Sbu_AS6 = XPHA_AS6 * self.f_XPHA_Sbu
+            self.Sbu_AS6 = Param(
+                initialize=value(self.XPHA_AS6) * value(self.f_XPHA_Sbu),
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of S_bu at step 6",
+            )
 
             @self.Constraint(
                 self.flowsheet().time,
                 doc="Total butyrate concentration output",
             )
             def Sbu_output(blk, t):
-                return blk.properties_out[t].conc_mass_comp["S_bu"] == Sbu_AS6
+                return blk.properties_out[t].conc_mass_comp["S_bu"] == self.Sbu_AS6
 
-            Spro_AS6 = XPHA_AS6 * self.f_XPHA_Spro
+            self.Spro_AS6 = Param(
+                initialize=value(self.XPHA_AS6) * value(self.f_XPHA_Spro),
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of S_pro at step 6",
+            )
 
             @self.Constraint(
                 self.flowsheet().time,
                 doc="Total propionate concentration output",
             )
             def Spro_output(blk, t):
-                return blk.properties_out[t].conc_mass_comp["S_pro"] == Spro_AS6
+                return blk.properties_out[t].conc_mass_comp["S_pro"] == self.Spro_AS6
 
-            Sac_AS6 = XPHA_AS6 * self.f_XPHA_Sac
+            self.Sac_AS6 = Param(
+                initialize=value(self.XPHA_AS6) * value(self.f_XPHA_Sac),
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of S_ac at step 6",
+            )
 
             @self.Constraint(
                 self.flowsheet().time,
@@ -764,7 +816,7 @@ see reaction package for documentation.}""",
             def Sac_output(blk, t):
                 return (
                     blk.properties_out[t].conc_mass_comp["S_ac"]
-                    == Sac_AS6 + blk.SA_AS2[t]
+                    == self.Sac_AS6 + blk.SA_AS2[t]
                 )
 
             @self.Expression(self.flowsheet().time, doc="S_PO4 concentration at step 6")
@@ -780,10 +832,18 @@ see reaction package for documentation.}""",
                 return (
                     blk.SIC_AS5[t]
                     + blk.properties_in[t].conc_mass_comp["X_PHA"] * self.C_PHA
-                    - Sva_AS6 * blk.config.outlet_reaction_package.Ci["S_va"] * mw_c
-                    - Sbu_AS6 * blk.config.outlet_reaction_package.Ci["S_bu"] * mw_c
-                    - Spro_AS6 * blk.config.outlet_reaction_package.Ci["S_pro"] * mw_c
-                    - Sac_AS6 * blk.config.outlet_reaction_package.Ci["S_ac"] * mw_c
+                    - self.Sva_AS6
+                    * blk.config.outlet_reaction_package.Ci["S_va"]
+                    * mw_c
+                    - self.Sbu_AS6
+                    * blk.config.outlet_reaction_package.Ci["S_bu"]
+                    * mw_c
+                    - self.Spro_AS6
+                    * blk.config.outlet_reaction_package.Ci["S_pro"]
+                    * mw_c
+                    - self.Sac_AS6
+                    * blk.config.outlet_reaction_package.Ci["S_ac"]
+                    * mw_c
                 )
 
             @self.Constraint(self.flowsheet().time, doc="S_IC concentration output")
@@ -917,7 +977,12 @@ see reaction package for documentation.}""",
             def XI_output(blk, t):
                 return blk.properties_out[t].conc_mass_comp["X_I"] == blk.XI_AS4[t]
 
-            XH_AS4 = eps * pyunits.kg / pyunits.m**3
+            self.XH_AS4 = Param(
+                initialize=eps,
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of X_H at step 4",
+            )
 
             @self.Expression(self.flowsheet().time, doc="X_PAO concentration at step 4")
             def XPAO_AS4(blk, t):
@@ -931,7 +996,12 @@ see reaction package for documentation.}""",
             def XPHA_AS4(blk, t):
                 return blk.properties_in[t].conc_mass_comp["X_PHA"]
 
-            XAUT_AS4 = eps * pyunits.kg / pyunits.m**3
+            self.XAUT_AS4 = Param(
+                initialize=eps,
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of X_AUT at step 4",
+            )
 
             # -----------------------------------------Step 5--------------------------------------------------------------#
             @self.Expression(
@@ -1066,13 +1136,33 @@ see reaction package for documentation.}""",
             def SIC_output(blk, t):
                 return blk.properties_out[t].conc_mass_comp["S_IC"] == blk.SIC_AS5[t]
 
-            XS_AS5 = eps * pyunits.kg / pyunits.m**3
+            self.XS_AS5 = Param(
+                initialize=eps,
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of X_S at step 5",
+            )
 
-            XPAO_AS5 = self.properties_in[0].conc_mass_comp["X_PAO"]
+            self.XPAO_AS5 = Param(
+                initialize=self.properties_in[0].conc_mass_comp["X_PAO"],
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of X_PAO at step 5",
+            )
 
-            XPP_AS5 = self.properties_in[0].conc_mass_comp["X_PP"]
+            self.XPP_AS5 = Param(
+                initialize=self.properties_in[0].conc_mass_comp["X_PP"],
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of X_PP at step 5",
+            )
 
-            XPHA_AS5 = self.properties_in[0].conc_mass_comp["X_PHA"]
+            self.XPHA_AS5 = Param(
+                initialize=self.properties_in[0].conc_mass_comp["X_PHA"],
+                units=pyunits.kg / pyunits.m**3,
+                mutable=True,
+                doc="Mass concentration of X_PHA at step 5",
+            )
 
             # -----------------------------------------Step 6--------------------------------------------------------------#
             @self.Constraint(
@@ -1115,23 +1205,26 @@ see reaction package for documentation.}""",
                     == eps * pyunits.kg / pyunits.m**3 + blk.SA_AS2[t]
                 )
 
-            XPAO_AS6 = self.properties_in[0].conc_mass_comp["X_PAO"]
-
             @self.Constraint(self.flowsheet().time, doc="X_PAO concentration output")
             def XPAO_output(blk, t):
-                return blk.properties_out[t].conc_mass_comp["X_PAO"] == XPAO_AS6
-
-            XPP_AS6 = self.properties_in[0].conc_mass_comp["X_PP"]
+                return (
+                    blk.properties_out[t].conc_mass_comp["X_PAO"]
+                    == blk.properties_in[0].conc_mass_comp["X_PAO"]
+                )
 
             @self.Constraint(self.flowsheet().time, doc="X_PP concentration output")
             def XPP_output(blk, t):
-                return blk.properties_out[t].conc_mass_comp["X_PP"] == XPP_AS6
-
-            XPHA_AS6 = self.properties_in[0].conc_mass_comp["X_PHA"]
+                return (
+                    blk.properties_out[t].conc_mass_comp["X_PP"]
+                    == blk.properties_in[0].conc_mass_comp["X_PP"]
+                )
 
             @self.Constraint(self.flowsheet().time, doc="X_PHA concentration output")
             def XPHA_output(blk, t):
-                return blk.properties_out[t].conc_mass_comp["X_PHA"] == XPHA_AS6
+                return (
+                    blk.properties_out[t].conc_mass_comp["X_PHA"]
+                    == blk.properties_in[0].conc_mass_comp["X_PHA"]
+                )
 
             @self.Constraint(
                 self.flowsheet().time,
