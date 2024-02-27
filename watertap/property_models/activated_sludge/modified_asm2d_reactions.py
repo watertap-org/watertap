@@ -23,8 +23,6 @@ Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article
 import pyomo.environ as pyo
 from pyomo.common.config import Bool, ConfigValue
 
-from enum import Enum, auto
-
 # Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
