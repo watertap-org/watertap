@@ -11,7 +11,7 @@
 #################################################################################
 """
 Tests for CSTR unit model with injection.
-Authors: Andrew Lee, Vibhav Dabadghao
+Authors: Andrew Lee, Adam Atia, Vibhav Dabadghao
 """
 
 import pytest
