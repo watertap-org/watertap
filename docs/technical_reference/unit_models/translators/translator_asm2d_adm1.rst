@@ -151,7 +151,7 @@ Equations and Relationships (with phosphorus biomass handled explicitly)
    "S_Mg concentration", ":math:`S_{Mg, 6} = S_{Mg, in} + (Mg_{XPP} * X_{PP, in})`"
 
 Equations and Relationships (with phosphorus biomass handled implicitly)
--------------------------------------------
+------------------------------------------------------------------------
 
 .. csv-table::
    :header: "Description", "Equation"
