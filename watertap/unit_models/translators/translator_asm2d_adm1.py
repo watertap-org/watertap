@@ -25,7 +25,6 @@ Water Research, 95, pp.370-382. https://github.com/wwtmodels/Plant-Wide-Models
 
 # Import Pyomo libraries
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue
-from enum import Enum, auto
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class
