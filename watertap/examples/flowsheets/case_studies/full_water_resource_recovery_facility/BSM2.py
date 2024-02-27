@@ -73,16 +73,11 @@ from pyomo.util.check_units import assert_units_consistent
 def main(reactor_volume_equalities=False):
     m = build()
     set_operating_conditions(m)
-    for mx in m.mixers:
-        mx.pressure_equality_constraints[0.0, 2].deactivate()
+
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
-    dt = DiagnosticsToolbox(m)
-    dt.report_structural_issues()
     initialize_system(m)
-    # TODO: resolve the danger of redundant constraint related to pressure equality constraints created in mixer, specifically for isobaric conditions. the mixer initializer will turn these constraints back on
-    for mx in m.mixers:
-        mx.pressure_equality_constraints[0.0, 2].deactivate()
+
     assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
@@ -104,9 +99,8 @@ def main(reactor_volume_equalities=False):
     print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
     # display_results(m)
     display_costing(m)
-    dt.report_structural_issues()
 
-    return m, results, dt
+    return m, results
 
 
 def build():
@@ -385,6 +379,10 @@ def set_operating_conditions(m):
     m.fs.TU.hydraulic_retention_time.fix(86400 * pyo.units.s)
     m.fs.TU.diameter.fix(10 * pyo.units.m)
 
+    # TODO: resolve the danger of redundant constraint related to pressure equality constraints created in mixer, specifically for isobaric conditions. the mixer initializer will turn these constraints back on
+    for mx in m.mixers:
+        mx.pressure_equality_constraints[0.0, 2].deactivate()
+
 
 def initialize_system(m):
     # Initialize flowsheet
@@ -452,6 +450,10 @@ def initialize_system(m):
         unit.initialize(outlvl=idaeslog.INFO_HIGH)
 
     seq.run(m, function)
+
+    # TODO: resolve the danger of redundant constraint related to pressure equality constraints created in mixer, specifically for isobaric conditions. the mixer initializer will turn these constraints back on
+    for mx in m.mixers:
+        mx.pressure_equality_constraints[0.0, 2].deactivate()
 
 
 def add_costing(m):
@@ -728,4 +730,4 @@ def display_costing(m):
 
 
 if __name__ == "__main__":
-    m, results, dt = main()
+    m, results = main()

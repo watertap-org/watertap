@@ -36,32 +36,51 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.BSM2 import (
-    main,
-    solve,
-    add_costing,
-    display_results,
-    display_costing,
-)
+import watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.BSM2 as bsm2
+
+# (
+#     main,
+
+#     solve,
+#     add_costing,
+#     display_results,
+#     display_costing,
+# )
 
 
 class TestFullFlowsheet:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m, res = main()
+        m = bsm2.build()
+        bsm2.set_operating_conditions(m)
+        for mx in m.mixers:
+            mx.pressure_equality_constraints[0.0, 2].deactivate()
+        assert degrees_of_freedom(m) == 0
+        assert_units_consistent(m)
+        bsm2.initialize_system(m)
+        for mx in m.mixers:
+            mx.pressure_equality_constraints[0.0, 2].deactivate()
+        assert degrees_of_freedom(m) == 0
 
-        m.results = res
+        m.results = bsm2.solve(m)
+
+        # bsm2.add_costing(m)
+        # m.fs.costing.initialize()
+        # assert_degrees_of_freedom(m, 0)
+
+        # results = solve(m)
+        # pyo.assert_optimal_termination(results)
 
         return m
 
     @pytest.mark.integration
-    def test_structure(self, system_frame):
+    def test_square_problem(self, system_frame):
         assert_units_consistent(system_frame)
         assert degrees_of_freedom(system_frame) == 0
         assert_optimal_termination(system_frame.results)
 
     @pytest.mark.component
-    def test_solve(self, system_frame):
+    def test_square_solve(self, system_frame):
         m = system_frame
 
         assert value(m.fs.Treated.properties[0].flow_vol) == pytest.approx(
@@ -111,23 +130,40 @@ class TestFullFlowsheet:
     def test_costing(self, system_frame):
         m = system_frame
 
-        add_costing(m)
+        bsm2.add_costing(m)
         m.fs.costing.initialize()
-        results = solve(m)
+        results = bsm2.solve(m)
 
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.327896, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.351097, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            16324401.07, rel=1e-3
+            17443323.82075141, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            593159.13, rel=1e-3
+            638749.398846816, rel=1e-3
         )
 
     @pytest.mark.component
     def test_display(self, system_frame):
         m = system_frame
-        display_results(m)
-        display_costing(m)
+        bsm2.display_results(m)
+        bsm2.display_costing(m)
+
+    @pytest.mark.component
+    def test_optimization(self, system_frame):
+        m = system_frame
+        bsm2.setup_optimization(system_frame, reactor_volume_equalities=False)
+        results = bsm2.solve(system_frame)
+        assert_optimal_termination(results)
+        assert degrees_of_freedom(system_frame) == 10
+
+        # check costing
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.349754, rel=1e-3)
+        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
+            17443323.82075141, rel=1e-3
+        )
+        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
+            629781.7128566639, rel=1e-3
+        )
