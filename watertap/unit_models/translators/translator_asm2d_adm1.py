@@ -24,7 +24,8 @@ Water Research, 95, pp.370-382. https://github.com/wwtmodels/Plant-Wide-Models
 """
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.common.config import ConfigBlock, ConfigValue, In
+from enum import Enum, auto
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class
@@ -46,15 +47,17 @@ from pyomo.environ import (
 
 from idaes.core.util.exceptions import InitializationError
 
-from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
-    DecaySwitch,
-)
 
 __author__ = "Marcus Holly"
 
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class BioP(Enum):
+    on = auto()
+    off = auto()
 
 
 @declare_process_block_class("Translator_ASM2d_ADM1")
@@ -64,6 +67,27 @@ class TranslatorDataASM2dADM1(TranslatorData):
     """
 
     CONFIG = TranslatorData.CONFIG()
+
+    CONFIG.declare(
+        "bio_P",
+        ConfigValue(
+            default=BioP.on,
+            domain=In(BioP),
+            description="Switching function for phosphorus biomass",
+            doc="""
+           Switching function for handling the transformation of phosphorus biomass.
+
+           **default** - `BioP.on``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``BioP.on``", "All the BioP variables are supposed to be transformed in the interface"
+           "``BioP.off``", "All the BioP variables are kinetically described within the ADM"
+       """,
+        ),
+    )
+
     CONFIG.declare(
         "inlet_reaction_package",
         ConfigValue(
@@ -451,10 +475,10 @@ see reaction package for documentation.}""",
                 * mw_c
             )
 
-        # -----------------------------------------DecaySwitch.on----------------------------------------------------------#
+        # -----------------------------------------BioP.on----------------------------------------------------------#
 
         # -------------------------------------------Step 4----------------------------------------------------------------#
-        if self.config.inlet_reaction_package.config.decay_switch == DecaySwitch.on:
+        if self.config.bio_P == BioP.on:
 
             @self.Expression(
                 self.flowsheet().time, doc="Biomass concentration at step 4"
@@ -796,10 +820,10 @@ see reaction package for documentation.}""",
             def SMg_output(blk, t):
                 return blk.properties_out[t].conc_mass_comp["S_Mg"] == blk.SMg_AS6[t]
 
-        # ---------------------------------------DecaySwitch.off-------------------------------------------------------#
+        # ---------------------------------------BioP.off-------------------------------------------------------#
 
         # -----------------------------------------Step 4--------------------------------------------------------------#
-        elif self.config.inlet_reaction_package.config.decay_switch == DecaySwitch.off:
+        elif self.config.bio_P == BioP.off:
 
             @self.Expression(
                 self.flowsheet().time, doc="Biomass concentration at step 4"
