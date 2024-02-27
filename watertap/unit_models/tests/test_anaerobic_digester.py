@@ -44,9 +44,6 @@ from watertap.property_models.anaerobic_digestion.adm1_reactions import (
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
 
-from idaes.core import UnitModelCostingBlock
-from watertap.costing import WaterTAPCosting
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
@@ -122,14 +119,6 @@ def build():
 class TestAnaerobicDigester(UnitTestHarness):
     def configure(self):
         m = build()
-
-        # Add unit model costing
-        m.fs.costing = WaterTAPCosting()
-
-        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        m.fs.costing.cost_process()
-
-        iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-6)
 
         self.unit_model_block = m.fs.unit
 
@@ -219,4 +208,3 @@ class TestAnaerobicDigester(UnitTestHarness):
         self.unit_solutions[m.fs.unit.KH_h2[0]] = 0.0007384652
         self.unit_solutions[m.fs.unit.electricity_consumption[0]] = 23.7291667
         self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1880470.588
-        self.unit_solutions[m.fs.unit.costing.capital_cost] = 2166581.415

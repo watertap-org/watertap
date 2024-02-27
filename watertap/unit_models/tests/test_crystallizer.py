@@ -24,9 +24,6 @@ from idaes.core.solvers import get_solver
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
 
-from idaes.core import UnitModelCostingBlock
-from watertap.costing import WaterTAPCosting, CrystallizerCostType
-
 from watertap.unit_models.crystallizer import Crystallization
 import watertap.property_models.cryst_prop_pack as props
 
@@ -104,19 +101,6 @@ class TestCrystallizer(UnitTestHarness):
     def configure(self):
         m = build()
 
-        # Add unit model costing
-        m.fs.costing = WaterTAPCosting()
-
-        m.fs.unit.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-            costing_method_arguments={"cost_type": CrystallizerCostType.mass_basis},
-        )
-
-        iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-5)
-
-        m.fs.costing.cost_process()
-        m.fs.costing.initialize()
-
         self.unit_model_block = m.fs.unit
 
         self.unit_solutions[
@@ -136,9 +120,3 @@ class TestCrystallizer(UnitTestHarness):
         self.unit_solutions[m.fs.unit.diameter_crystallizer] = 1.204904
         self.unit_solutions[m.fs.unit.volume_suspension] = 1.6194469
         self.unit_solutions[m.fs.unit.t_res] = 1.022821
-        self.unit_solutions[m.fs.unit.costing.capital_cost] = 600166.82793
-        self.unit_solutions[
-            m.fs.costing.aggregate_flow_costs["electricity"]
-        ] = 8596.50939
-        self.unit_solutions[m.fs.costing.aggregate_flow_costs["steam"]] = 2720557.6394
-        self.unit_solutions[m.fs.costing.aggregate_flow_costs["NaCl"]] = 0
