@@ -39,7 +39,6 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    unused_variables_set,
 )
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
