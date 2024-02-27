@@ -69,9 +69,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
                **Valid values:** {
             **True** - the decay of heterotrophs and autotrophs is dependent on the electron acceptor present,
             **False** - the decay of heterotrophs and autotrophs does not change
-
-
-       """,
+            """,
         ),
     )
 
