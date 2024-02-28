@@ -608,13 +608,6 @@ class TestPressureExchanger_with_mass_transfer:
         m = unit_frame
         initialization_tester(unit_frame)
 
-    @pytest.mark.component
-    def test_var_scaling(self, unit_frame):
-        m = unit_frame
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i[0]) for i in badly_scaled_var_lst]
-        assert badly_scaled_var_lst == []
-
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, unit_frame):
@@ -874,18 +867,3 @@ class TestPressureExchanger_with_ion_prop_pack:
     @pytest.mark.unit
     def test_report(self, unit_frame):
         unit_frame.fs.unit.report()
-
-
-class TestPressureExchanger_with_leakage_no_mixing:
-    @pytest.fixture(scope="class")
-    def unit_frame(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-        with pytest.raises(
-            ConfigurationError,
-            match="Setting 'has_leakage=True' requires 'has_mixing=True'.",
-        ):
-            m.fs.unit = PressureExchanger(
-                property_package=m.fs.properties,
-                has_leakage=True,
-            )

@@ -417,22 +417,27 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
                     == b.low_pressure_side.properties_in[t].pressure
                 )
 
-        @self.Constraint(self.flowsheet().config.time, doc="Equal volumetric flow rate")
-        def eq_equal_flow_vol(b, t):
-
-            return (
-                b.low_pressure_side.properties_out[t].flow_vol
-                == b.low_pressure_side.properties_in[t].flow_vol
-            )
-
         if self.config.has_leakage:
 
-            @self.Constraint(self.flowsheet().config.time, doc="Leakage")
-            def eq_leakage(b, t):
+            @self.Constraint(
+                self.flowsheet().config.time, doc="Equal volumetric flow rate"
+            )
+            def eq_equal_flow_vol(b, t):
                 return (
                     b.low_pressure_side.properties_out[t].flow_vol
                     == (1 - b.leakage_vol[t])
                     * b.high_pressure_side.properties_in[t].flow_vol
+                )
+
+        else:
+
+            @self.Constraint(
+                self.flowsheet().config.time, doc="Equal volumetric flow rate"
+            )
+            def eq_equal_flow_vol(b, t):
+                return (
+                    b.low_pressure_side.properties_out[t].flow_vol
+                    == b.high_pressure_side.properties_in[t].flow_vol
                 )
 
         if self.config.has_mixing:
@@ -462,6 +467,17 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
                 return (
                     b.high_pressure_side.mass_transfer_term[t, p, j]
                     == -b.low_pressure_side.mass_transfer_term[t, p, j]
+                )
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                doc="Equal volumetric flow rate on low-pressure side",
+            )
+            def eq_equal_LPS_flow_vol(b, t):
+
+                return (
+                    b.low_pressure_side.properties_out[t].flow_vol
+                    == b.low_pressure_side.properties_in[t].flow_vol
                 )
 
     def initialize_build(
@@ -647,7 +663,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
 
         for t, c in self.eq_equal_flow_vol.items():
             sf = iscale.get_scaling_factor(
-                self.low_pressure_side.properties_in[t].flow_vol
+                self.high_pressure_side.properties_in[t].flow_vol
             )
             iscale.constraint_scaling_transform(c, sf)
 
@@ -657,10 +673,10 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             )
             iscale.constraint_scaling_transform(c, sf)
 
-        if hasattr(self, "eq_leakage"):
-            for t, c in self.eq_leakage.items():
+        if hasattr(self, "eq_equal_LPS_flow_vol"):
+            for t, c in self.eq_equal_LPS_flow_vol.items():
                 sf = iscale.get_scaling_factor(
-                    self.high_pressure_side.properties_in[t].flow_vol
+                    self.low_pressure_side.properties_in[t].flow_vol
                 )
                 iscale.constraint_scaling_transform(c, sf)
 
