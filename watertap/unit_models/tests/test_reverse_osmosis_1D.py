@@ -23,10 +23,8 @@ import watertap.property_models.NaCl_prop_pack as props
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
 
-from watertap.core import (
-    MembraneChannel0DBlock,
-    FrictionFactor,
-)
+from watertap.core import FrictionFactor
+
 
 from watertap.unit_models.reverse_osmosis_1D import (
     ReverseOsmosis1D,
