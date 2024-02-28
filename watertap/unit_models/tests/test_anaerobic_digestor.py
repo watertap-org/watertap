@@ -120,8 +120,6 @@ class TestUnitDefault(UnitTestHarness):
         )
         iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-6)
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[m.fs.unit.liquid_outlet.pressure[0]] = 101325
         self.unit_solutions[m.fs.unit.liquid_outlet.temperature[0]] = 308.15
         self.unit_solutions[
@@ -209,3 +207,5 @@ class TestUnitDefault(UnitTestHarness):
         self.unit_solutions[m.fs.unit.electricity_consumption[0]] = 23.7291667
         self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1880470.588
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 2166581.415
+
+        return m

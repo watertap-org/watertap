@@ -59,8 +59,17 @@ class UnitTestHarness:
         self.default_absolute_tolerance = 1e-12
         self.default_relative_tolerance = 1e-6
 
-        self.configure()
+        model = self.configure()
         gc.collect()
+        if not hasattr(self, "unit_model_block"):
+            self.unit_model_block = model.find_component("fs.unit")
+            if self.unit_model_block is None:
+                raise RuntimeError(
+                    f"The {self.__class__.__name__}.configure method should either "
+                    "set the attribute `unit_model_block` or name it `fs.unit`."
+                )
+        # keep the model so it does not get garbage collected
+        self._model = model
         blk = self.unit_model_block
 
         # attaching objects to model to carry through in pytest frame
@@ -75,12 +84,14 @@ class UnitTestHarness:
         """
         Placeholder method to allow user to setup test harness.
 
-        The configure function must set the attributes:
+        The configure method must set the attributes:
+        unit_solutions: ComponentMap of values for the specified variables
 
-        unit_model: pyomo unit model block (e.g. m.fs.unit), the block should
-            have zero degrees of freedom, i.e. fully specified
+        The unit model tested should be named `fs.unit`, or this method
+        should set the attribute `unit_model_block`.
 
-        unit_solutions: dictionary of property values for the specified state variables
+        Returns:
+            model: the top-level Pyomo model
         """
 
     @pytest.fixture(scope="class")
