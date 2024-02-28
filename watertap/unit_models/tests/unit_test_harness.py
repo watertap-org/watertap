@@ -97,36 +97,38 @@ class UnitTestHarness:
         """
 
     @pytest.fixture(scope="class")
-    def frame_unit(self):
+    def frame(self):
         self.configure_class()
-        return self.unit_model_block
+        return self._model, self.unit_model_block
 
     @pytest.mark.unit
-    def test_units_consistent(self, frame_unit):
-        assert_units_consistent(frame_unit)
+    def test_units_consistent(self, frame):
+        m, unit_model = frame
+        assert_units_consistent(unit_model)
 
     @pytest.mark.unit
-    def test_dof(self, frame_unit):
-        if degrees_of_freedom(frame_unit) != 0:
+    def test_dof(self, frame):
+        m, unit_model = frame
+        if degrees_of_freedom(unit_model) != 0:
             raise UnitAttributeError(
                 "The unit has {dof} degrees of freedom when 0 is required."
-                "".format(dof=degrees_of_freedom(frame_unit))
+                "".format(dof=degrees_of_freedom(unit_model))
             )
 
     @pytest.mark.component
-    def test_initialization(self, frame_unit):
-        blk = frame_unit
+    def test_initialization(self, frame):
+        m, blk = frame
         initialization_tester(
-            blk.model(),
+            m,
             unit=blk,
             solver=blk._test_objs.solver,
             optarg=blk._test_objs.optarg,
         )
 
     @pytest.mark.component
-    def test_unit_solutions(self, frame_unit):
+    def test_unit_solutions(self, frame):
         self.configure_class()
-        blk = frame_unit
+        m, blk = frame
         solutions = blk._test_objs.unit_solutions
 
         # solve unit
