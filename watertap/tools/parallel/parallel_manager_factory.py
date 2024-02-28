@@ -47,12 +47,12 @@ def create_parallel_manager(parallel_manager_class=None, **kwargs):
 
     number_of_subprocesses = kwargs.get("number_of_subprocesses", 1)
     if should_fan_out(number_of_subprocesses):
-        parallel_backend = kwargs.get("parallel_back_end", "ConcurrentFutures")
-        if parallel_backend == "ConcurrentFutures":
+        parallel_backend = kwargs.get("parallel_back_end", "multiprocessing")
+        if parallel_backend.lower() in ("concurrentfutures", "concurrent.futures"):
             return ConcurrentFuturesParallelManager(number_of_subprocesses)
-        elif parallel_backend == "MultiProcessing":
+        elif parallel_backend.lower() in ("multiprocessing",):
             return MultiprocessingParallelManager(number_of_subprocesses)
-        elif parallel_backend == "RayIo":
+        elif parallel_backend.lower() in ("rayio", "ray"):
             if ray_avaialble:
                 return RayIoParallelManager(number_of_subprocesses)
             else:
