@@ -162,8 +162,8 @@ class TestFullFlowsheet:
         # check costing
         assert value(m.fs.costing.LCOW) == pytest.approx(0.349754, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17443323.82075141, rel=1e-3
+            17443323.82075141, rel=1e-5
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            629781.7128566639, rel=1e-3
+            629781.7128566639, rel=1e-5
         )
