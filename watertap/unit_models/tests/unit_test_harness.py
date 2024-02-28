@@ -11,6 +11,7 @@
 #################################################################################
 
 import pytest
+import abc
 
 from pyomo.environ import Block, assert_optimal_termination, ComponentMap, value
 from pyomo.util.check_units import assert_units_consistent
@@ -41,7 +42,7 @@ class UnitRuntimeError(RuntimeError):
     """
 
 
-class UnitTestHarness:
+class UnitTestHarness(abc.ABC):
     def configure_class(self):
         # string for solver, if None use WaterTAP default
         self.solver = None
@@ -80,6 +81,7 @@ class UnitTestHarness:
         blk._test_objs.optarg = self.optarg
         blk._test_objs.unit_solutions = self.unit_solutions
 
+    @abc.abstractmethod
     def configure(self):
         """
         Placeholder method to allow user to setup test harness.
