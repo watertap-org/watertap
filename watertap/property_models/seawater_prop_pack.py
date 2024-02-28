@@ -108,7 +108,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
             "H2O": 18.01528e-3,
             "TDS": 31.4038218e-3,
         }
-        # average atomic weight of sea salt, based on
+        # molecular weight of TDS is taken as the average atomic weight of sea salt, based on
         # "Reference-Composition Salinity Scale" in Millero et al. (2008) and cited by Sharqawy et al. (2010)
 
         self.mw_comp = Param(
