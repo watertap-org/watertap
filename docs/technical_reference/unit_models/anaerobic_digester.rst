@@ -1,4 +1,4 @@
-Anaerobic Digestor
+Anaerobic Digester
 ==================
 
 Introduction
@@ -19,7 +19,7 @@ common basis by which future model development and validation studies can be com
 
 In this implementation of the model, the user MUST provide two property packages - one for the liquid phase and
 another for the vapor phase. The reaction parameter block should utilize the property package specified for the liquid phase.
-This anaerobic digestor model is based on the standard IDAES CSTR with the addition of mass transfer
+This anaerobic digester model is based on the standard IDAES CSTR with the addition of mass transfer
 terms and an extra port for the vapor outlet. The model relies on the following key assumptions:
 
    * supports steady-state only
@@ -27,16 +27,16 @@ terms and an extra port for the vapor outlet. The model relies on the following 
    * vapor phase property package has a single phase named Vap
    * liquid and vapor phase properties need not have the same component lists
 
-.. figure:: ../../_static/unit_models/anaerobic_digestor.png
+.. figure:: ../../_static/unit_models/anaerobic_digester.png
     :width: 400
     :align: center
 
-    Figure 1. Schematic representation of an anaerobic digestor
+    Figure 1. Schematic representation of an anaerobic digester
 
 .. index::
-   pair: watertap.unit_models.anaerobic_digestor;anaerobic_digestor
+   pair: watertap.unit_models.anaerobic_digester;anaerobic_digester
 
-.. currentmodule:: watertap.unit_models.anaerobic_digestor
+.. currentmodule:: watertap.unit_models.anaerobic_digester
 
 Degrees of Freedom
 ------------------
@@ -117,7 +117,7 @@ Equations and Relationships
 
 Classes
 -------
-.. currentmodule:: watertap.unit_models.anaerobic_digestor
+.. currentmodule:: watertap.unit_models.anaerobic_digester
 
 .. autoclass:: AD
     :members:

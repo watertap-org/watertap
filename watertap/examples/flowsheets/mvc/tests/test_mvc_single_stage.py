@@ -37,6 +37,7 @@ from watertap.examples.flowsheets.mvc.mvc_single_stage import (
     fix_outlet_pressures,
     solve,
     set_up_optimization,
+    main,
 )
 
 import watertap.property_models.seawater_prop_pack as props_seawater
@@ -335,3 +336,8 @@ class TestMVC:
             22.36, rel=1e-2
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(4.52, rel=1e-2)
+
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.unit
+    def test_main_fun(self):
+        main()

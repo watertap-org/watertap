@@ -14,6 +14,7 @@ import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock, ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core import declare_process_block_class, ProcessBlockData, UnitModelBlockData
+from idaes.core.base.process_base import ProcessBaseBlock
 from idaes.core.util.misc import add_object_reference
 from idaes.core.base.costing_base import (
     UnitModelCostingBlockData,
@@ -100,7 +101,7 @@ class MultiUnitModelCostingBlockData(UnitModelCostingBlockData, UnitModelCosting
         add_object_reference(self, "costing_package", fcb)
         add_object_reference(self, "unit_model", unit_model)
 
-        self.costing_blocks = pyo.Block(self.config.costing_blocks)
+        self.costing_blocks = ProcessBaseBlock(self.config.costing_blocks)
         self.costing_block_selector = pyo.Param(
             self.config.costing_blocks, domain=pyo.Boolean, default=0, mutable=True
         )

@@ -20,7 +20,7 @@ Unit Models
    gac
    osmotically_assisted_reverse_osmosis_0D
    osmotically_assisted_reverse_osmosis_1D
-   anaerobic_digestor
+   anaerobic_digester
    ion_exchange_0D
    membrane_distillation_0D
    mvc
@@ -29,3 +29,4 @@ Unit Models
    electroNP_ZO
    translators/index
    zero_order_unit_models/index
+   stoichiometric_reactor
