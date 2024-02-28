@@ -33,7 +33,6 @@ from watertap.unit_models.pressure_exchanger import (
 )
 import watertap.property_models.seawater_prop_pack as props
 import watertap.property_models.multicomp_aq_sol_prop_pack as props_multi
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
