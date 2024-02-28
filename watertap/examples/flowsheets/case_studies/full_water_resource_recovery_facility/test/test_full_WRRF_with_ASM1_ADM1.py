@@ -246,6 +246,7 @@ class TestFullFlowsheet_with_equal_reactor_vols:
         bsm2.display_results(m)
         bsm2.display_costing(m)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_optimization(self, system_frame):
         m = system_frame
