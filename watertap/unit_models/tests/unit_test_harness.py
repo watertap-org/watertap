@@ -18,6 +18,7 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
 )
 from idaes.core.solvers import get_solver
+from idaes.core.util.testing import initialization_tester
 from idaes.core.util.exceptions import InitializationError
 import idaes.core.util.scaling as iscale
 
@@ -103,7 +104,7 @@ class UnitTestHarness:
         blk = frame_unit
 
         try:
-            blk.initialize(solver=blk._test_objs.solver, optarg=blk._test_objs.optarg)
+            initialization_tester(blk.model())
         except InitializationError:
             raise InitializationError(
                 "The unit has failed to initialize successfully. Please check the output logs for more information."
