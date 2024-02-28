@@ -19,7 +19,7 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
 )
 from idaes.core.solvers import get_solver
-from idaes.core.util.exceptions import InitializationError
+from idaes.core.util.testing import initialization_tester
 import idaes.core.util.scaling as iscale
 
 
@@ -44,10 +44,12 @@ class UnitRuntimeError(RuntimeError):
 
 class UnitTestHarness:
     def configure_class(self):
-        self.solver = None  # string for solver, if None use WaterTAP default
-        self.optarg = (
-            None  # dictionary for solver options, if None use WaterTAP default
-        )
+        # string for solver, if None use WaterTAP default
+        self.solver = None
+        # dictionary for solver options, if None use WaterTAP default
+        self.optarg = None
+
+        # solution map from var to value
         self.unit_solutions = ComponentMap()
 
         # arguments for badly scaled variables
@@ -114,13 +116,12 @@ class UnitTestHarness:
     @pytest.mark.component
     def test_initialization(self, frame_unit):
         blk = frame_unit
-
-        try:
-            blk.initialize(solver=blk._test_objs.solver, optarg=blk._test_objs.optarg)
-        except InitializationError:
-            raise InitializationError(
-                "The unit has failed to initialize successfully. Please check the output logs for more information."
-            )
+        initialization_tester(
+            blk.model(),
+            unit=blk,
+            solver=blk._test_objs.solver,
+            optarg=blk._test_objs.optarg,
+        )
 
     @pytest.mark.component
     def test_unit_solutions(self, frame_unit):
