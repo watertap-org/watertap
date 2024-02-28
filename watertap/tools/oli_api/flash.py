@@ -960,12 +960,12 @@ class Flash:
                 else:
                     _logger.warning(f"Survey key {k} not found in JSON input.")
                 if self.relative_inflows:
-                    if "value" in d[k]:
+                    if isinstance(d[k], dict):
                         d[k]["value"] += v[index]
                     else:
                         d[k] += v[index]
                 else:
-                    if "value" in d[k]:
+                    if isinstance(d[k], dict):
                         d[k]["value"] = v[index]
                     else:
                         d[k] = v[index]
