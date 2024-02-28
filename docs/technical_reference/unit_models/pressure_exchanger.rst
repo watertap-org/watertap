@@ -141,7 +141,7 @@ then there is 1 additional constraint and the equal pressure equation is replace
    :header: "Description", "Equation"
 
    "Pressure transfer", ":math:`P_{out, LPS} + HPD = P_{in, HPS}`"
-   "Equal pressure", ":math:`P_{out, HPS} = P_{in, LPS} + LPS`"
+   "Equal pressure", ":math:`P_{out, HPS} = P_{in, LPS} + LPD`"
 
 Class Documentation
 -------------------
