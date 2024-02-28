@@ -10,22 +10,12 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from pyomo.environ import (
-    ConcreteModel,
-)
-
-from idaes.core import (
-    FlowsheetBlock,
-)
+from pyomo.environ import ConcreteModel
 
 from idaes.core.solvers import get_solver
 
-from idaes.core import (
-    FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-)
+from idaes.core import FlowsheetBlock
+
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
@@ -44,7 +34,6 @@ from watertap.core import (
     MembraneChannel0DBlock,
     FrictionFactor,
 )
-import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
