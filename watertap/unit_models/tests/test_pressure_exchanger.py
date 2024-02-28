@@ -75,7 +75,6 @@ def test_config_no_mass_transfer():
     assert m.fs.unit.config.property_package is m.fs.properties
 
     # verify no mass transfer
-    assert not m.fs.unit.config.has_leakage
     assert not m.fs.unit.config.has_mixing
 
 
@@ -84,11 +83,8 @@ def test_config_mass_transfer():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.SeawaterParameterBlock()
-    m.fs.unit = PressureExchanger(
-        property_package=m.fs.properties, has_leakage=True, has_mixing=True
-    )
+    m.fs.unit = PressureExchanger(property_package=m.fs.properties, has_mixing=True)
     # check mass_transfer is added
-    assert m.fs.unit.config.has_leakage
     assert m.fs.unit.config.has_mixing
 
 
@@ -158,7 +154,7 @@ def test_build(
 
     cv_list = ["low_pressure_side", "high_pressure_side"]
     cv_var_lst = ["deltaP"]
-    if has_leakage or has_mixing:
+    if has_mixing:
         cv_var_lst.append("mass_transfer_term")
     cv_exp_lst = ["work"]
 
@@ -419,7 +415,9 @@ class TestPressureExchanger_with_high_pressure_difference:
 
         # Specify unit
         high_pressure_difference = 0.8 * pyunits.bar
+        low_pressure_difference = 0 * pyunits.bar
         m.fs.unit.high_pressure_difference.fix(high_pressure_difference)
+        m.fs.unit.low_pressure_difference.fix(low_pressure_difference)
         return m
 
     @pytest.mark.unit
@@ -581,7 +579,9 @@ class TestPressureExchanger_with_mass_transfer:
 
         # Specify unit
         high_pressure_difference = 0.8 * pyunits.bar
+        low_pressure_difference = 0 * pyunits.bar
         m.fs.unit.high_pressure_difference.fix(high_pressure_difference)
+        m.fs.unit.low_pressure_difference.fix(low_pressure_difference)
         return m
 
     @pytest.mark.unit
@@ -638,7 +638,7 @@ class TestPressureExchanger_with_mass_transfer:
         assert pytest.approx(4.92e6, rel=1e-3) == value(
             m.fs.unit.low_pressure_outlet.pressure[0]
         )
-        assert pytest.approx(0.9767, rel=1e-3) == value(
+        assert pytest.approx(0.9868, rel=1e-3) == value(
             m.fs.unit.high_pressure_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         assert pytest.approx(7.352e-2, rel=1e-3) == value(
@@ -653,28 +653,28 @@ class TestPressureExchanger_with_mass_transfer:
         assert pytest.approx(-4.899e6, rel=1e-3) == value(
             m.fs.unit.high_pressure_side.deltaP[0]
         )
-        assert pytest.approx(-4.899e3, rel=1e-3) == value(
+        assert pytest.approx(-4.948e3, rel=1e-3) == value(
             m.fs.unit.high_pressure_side.work[0]
         )
 
         # testing solvent transfer
-        assert pytest.approx(-9.472e-3, rel=1e-3) == value(
+        assert pytest.approx(3.559e-4, rel=1e-3) == value(
             m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "H2O"]
         )
-        assert pytest.approx(0.9672, rel=1e-3) == value(
+        assert pytest.approx(0.9871, rel=1e-3) == value(
             m.fs.unit.high_pressure_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
-        assert pytest.approx(0.9972, rel=1e-3) == value(
+        assert pytest.approx(0.9874, rel=1e-3) == value(
             m.fs.unit.low_pressure_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         # testing solute transfer
-        assert pytest.approx(-1.689e-3, rel=1e-3) == value(
+        assert pytest.approx(-1.293e-3, rel=1e-3) == value(
             m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "TDS"]
         )
-        assert pytest.approx(7.183e-2, rel=1e-3) == value(
+        assert pytest.approx(7.222e-2, rel=1e-3) == value(
             m.fs.unit.high_pressure_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
-        assert pytest.approx(3.751e-2, rel=1e-3) == value(
+        assert pytest.approx(3.712e-2, rel=1e-3) == value(
             m.fs.unit.low_pressure_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
 
@@ -835,12 +835,12 @@ class TestPressureExchanger_with_ion_prop_pack:
         assert pytest.approx(-4.899e6, rel=1e-3) == value(
             m.fs.unit.high_pressure_side.deltaP[0]
         )
-        assert pytest.approx(-4.899e3, rel=1e-3) == value(
+        assert pytest.approx(-4.948e3, rel=1e-3) == value(
             m.fs.unit.high_pressure_side.work[0]
         )
 
         # testing solvent transfer
-        assert pytest.approx(-0.4665, rel=1e-3) == value(
+        assert pytest.approx(0.06733, rel=1e-3) == value(
             m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "H2O"]
         )
         assert pytest.approx(0.5, rel=1e-3) == value(
@@ -848,26 +848,26 @@ class TestPressureExchanger_with_ion_prop_pack:
                 "Liq", "H2O"
             ]
         )
-        assert pytest.approx(0.9731, rel=1e-3) == value(
+        assert pytest.approx(0.9634, rel=1e-3) == value(
             m.fs.unit.low_pressure_side.properties_out[0].flow_mass_phase_comp[
                 "Liq", "H2O"
             ]
         )
 
         # testing solute transfer
-        assert pytest.approx(-0.02193, rel=1e-3) == value(
+        assert pytest.approx(-0.01659, rel=1e-3) == value(
             m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "Na"]
         )
-        assert pytest.approx(-4.331e-4, rel=1e-3) == value(
+        assert pytest.approx(-3.276e-4, rel=1e-3) == value(
             m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "Ca"]
         )
-        assert pytest.approx(-2.634e-3, rel=1e-3) == value(
+        assert pytest.approx(-1.992e-3, rel=1e-3) == value(
             m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "Mg"]
         )
-        assert pytest.approx(-1.009e-3, rel=1e-3) == value(
+        assert pytest.approx(-7.632e-4, rel=1e-3) == value(
             m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "SO4"]
         )
-        assert pytest.approx(-2.630e-2, rel=1e-3) == value(
+        assert pytest.approx(-1.989e-2, rel=1e-3) == value(
             m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "Cl"]
         )
 

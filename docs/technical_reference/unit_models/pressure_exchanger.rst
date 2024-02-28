@@ -5,8 +5,7 @@ This pressure exchanger unit model:
     * is isothermal
     * supports a single liquid phase only
     * supports steady-state only
-    * supports mixing or leakage between the low and high pressure side
-    * enforces a constraint that the inlet flowrates to each side must be equal
+    * supports leakage and mixing effect
 
 .. index::
    pair: watertap.unit_models.pressure_exchanger;pressure_exchanger
@@ -35,10 +34,9 @@ Where the system is also subject to following constraints:
 When setting the ``has_mixing`` configuration option to ``True``, there is 1 additional variable ``mixing_vol`` that must be fixed.
 
 When setting the ``has_leakage`` configuration option to ``True``, there is 1 additional variable ``leakage_vol`` that must be fixed.
-Note that ``has_leakage=True`` requires users to set ``has_mixing=True``.
 
 When setting the ``pressure_exchange_calculation`` configuration option to ``PressureExchangeType.high_pressure_difference``,
-there is 1 additional variable ``high_pressure_difference`` that must be fixed. Instead, ``efficiency_pressure_exchanger`` is unfixed.
+there are 2 additional variables ``high_pressure_difference`` and ``low_pressure_difference`` that must be fixed. Instead, ``efficiency_pressure_exchanger`` is unfixed.
 
 Model Structure
 ------------------
@@ -67,6 +65,7 @@ The pressure exchanger unit model includes the following variables:
    "Volumetric leakage fraction", ":math:`\delta`", "leakage_vol", "[t]", ":math:`\text{dimensionless}`", "Var"
    "Volumetric mixing fraction", ":math:`\chi`", "leakage_vol", "[t]", ":math:`\text{dimensionless}`", "Var"
    "High pressure difference", ":math:`HPD`", "high_pressure_difference", "[t]", ":math:`\text{Pa}`", "Var"
+   "Low pressure difference", ":math:`LPD`", "low_pressure_difference", "[t]", ":math:`\text{Pa}`", "Var"
 
 Each control volume (i.e. `low_presssure_side`, and `high_pressure_side`) has the following variables of interest:
 
@@ -83,6 +82,7 @@ Each property block on both control volumes (i.e. `properties_in` and `propertie
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units", "Pyomo Type" 
 
+   "Mass flowrate", ":math:`M`", "flow_mass_phase_comp", "[p, j]", "\*", "Var"
    "Volumetric flowrate", ":math:`Q`", "flow_vol", "None", "\*", "Var"
    "Concentration", ":math:`C`", "conc_mass_phase_comp", "[p, j]", "\*", "Var"
    "Temperature", ":math:`T`", "temperature", "[t]", "\*", "Var"
@@ -101,12 +101,20 @@ if ``has_leakage`` and ``has_mixing`` are set to default (``False``):
    "Mass balance for each side", ":math:`M_{out, j} = M_{in, j}`"
    "Momentum balance for each side", ":math:`P_{out} = P_{in} + ΔP`"
    "Isothermal assumption for each side", ":math:`T_{out} = T_{in}`"
-   "Equal volumetric flowrate*", ":math:`Q_{in, LPS} = Q_{in, HPS}`"
+   "Equal volumetric flowrate*", ":math:`Q_{out, LPS} = Q_{in, HPS}`"
+   "Equal pressure*", ":math:`P_{out, HPS} = P_{in, LPS}`"
    "Pressure transfer*", ":math:`ΔP_{LPS} = - \eta ΔP_{HPS}`"
 
 \* LPS stands for low pressure side, HPS stands for high pressure side
 
-if ``has_leakage`` or ``has_mixing`` is set to ``True``, the mass balance equations for each side become:
+if ``has_leakage`` is set to ``True``, then the equal volumetric flowrate equation is replaced by:
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Equal volumetric flowrate", ":math:`Q_{out, HPS} = (1 - \delta) Q_{in, HPS}`"
+
+if ``has_mixing`` is set to ``True``, the mass balance equations for each side become:
 
 .. csv-table::
    :header: "Description", "Equation"
@@ -115,23 +123,24 @@ if ``has_leakage`` or ``has_mixing`` is set to ``True``, the mass balance equati
 
 \* MTT is mass transfer term into the control volume
 
-and there are 3 additional constraints:
+and there are 2 additional constraints:
 
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Leakage", ":math:`Q_{out, HPS} = (1 - \delta) Q_{in, HPS}`"
    "Mixing effect of solute*", ":math:`C_{out, LPS} = C_{in, LPS} (1-\chi) + C_{in, HPS} \chi`"
    "Linking mass transfer terms", ":math:`MTT_{j, LPS} = -MTT_{j, HPS}`"
 
 \* C only represents solute concentration, not solvent
 
-if ``pressure_change_calculation`` is set to ``PressureExchangeType.high_pressure_difference``, then there is 1 additional constraint:
+if ``pressure_change_calculation`` is set to ``PressureExchangeType.high_pressure_difference``,
+then there is 1 additional constraint and the equal pressure equation is replaced:
 
 .. csv-table::
    :header: "Description", "Equation"
 
    "Pressure transfer", ":math:`P_{out, LPS} + HPD = P_{in, HPS}`"
+   "Equal pressure*", ":math:`P_{out, HPS} = P_{in, LPS} + LPS`"
 
 Class Documentation
 -------------------
