@@ -63,7 +63,7 @@ The pressure exchanger unit model includes the following variables:
 
    "Efficiency", ":math:`\eta`", "efficiency_pressure_exchanger", "[t]", ":math:`\text{dimensionless}`", "Var"
    "Volumetric leakage fraction", ":math:`\delta`", "leakage_vol", "[t]", ":math:`\text{dimensionless}`", "Var"
-   "Volumetric mixing fraction", ":math:`\chi`", "leakage_vol", "[t]", ":math:`\text{dimensionless}`", "Var"
+   "Volumetric mixing fraction", ":math:`\chi`", "mixing_vol", "[t]", ":math:`\text{dimensionless}`", "Var"
    "High pressure difference", ":math:`HPD`", "high_pressure_difference", "[t]", ":math:`\text{Pa}`", "Var"
    "Low pressure difference", ":math:`LPD`", "low_pressure_difference", "[t]", ":math:`\text{Pa}`", "Var"
 
@@ -140,7 +140,7 @@ then there is 1 additional constraint and the equal pressure equation is replace
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Pressure transfer", ":math:`P_{out, LPS} + HPD = P_{in, HPS}`"
+   "High pressure difference", ":math:`P_{out, LPS} + HPD = P_{in, HPS}`"
    "Equal pressure", ":math:`P_{out, HPS} = P_{in, LPS} + LPD`"
 
 Class Documentation
