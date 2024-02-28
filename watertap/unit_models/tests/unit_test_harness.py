@@ -11,6 +11,7 @@
 #################################################################################
 
 import pytest
+import gc
 
 from pyomo.environ import Block, assert_optimal_termination, ComponentMap, value
 from pyomo.util.check_units import assert_units_consistent
@@ -59,6 +60,7 @@ class UnitTestHarness:
         self.default_relative_tolerance = 1e-6
 
         self.configure()
+        gc.collect()
         blk = self.unit_model_block
 
         # attaching objects to model to carry through in pytest frame
