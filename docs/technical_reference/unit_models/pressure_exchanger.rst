@@ -112,7 +112,7 @@ if ``has_leakage`` is set to ``True``, then the equal volumetric flowrate equati
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Equal volumetric flowrate", ":math:`Q_{out, HPS} = (1 - \delta) Q_{in, HPS}`"
+   "Equal volumetric flowrate", ":math:`Q_{out, LPS} = (1 - \delta) Q_{in, HPS}`"
 
 if ``has_mixing`` is set to ``True``, the mass balance equations for each side become:
 
@@ -123,13 +123,14 @@ if ``has_mixing`` is set to ``True``, the mass balance equations for each side b
 
 \* MTT is mass transfer term into the control volume
 
-and there are 2 additional constraints:
+and there are 3 additional constraints:
 
 .. csv-table::
    :header: "Description", "Equation"
 
    "Mixing effect of solute*", ":math:`C_{out, LPS} = C_{in, LPS} (1-\chi) + C_{in, HPS} \chi`"
    "Linking mass transfer terms", ":math:`MTT_{j, LPS} = -MTT_{j, HPS}`"
+   "Equal low pressure side volumetric flowrate", ":math:`Q_{out, LPS} = Q_{in, LPS}`"
 
 \* C only represents solute concentration, not solvent
 
@@ -140,7 +141,7 @@ then there is 1 additional constraint and the equal pressure equation is replace
    :header: "Description", "Equation"
 
    "Pressure transfer", ":math:`P_{out, LPS} + HPD = P_{in, HPS}`"
-   "Equal pressure*", ":math:`P_{out, HPS} = P_{in, LPS} + LPS`"
+   "Equal pressure", ":math:`P_{out, HPS} = P_{in, LPS} + LPS`"
 
 Class Documentation
 -------------------
