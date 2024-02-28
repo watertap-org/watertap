@@ -17,17 +17,6 @@ from concurrent import futures
 from watertap.tools.parallel.results import LocalResults
 from watertap.tools.parallel.parallel_manager import build_and_execute, ParallelManager
 
-# hot patch via: https://github.com/python/cpython/pull/28007#issuecomment-928959665
-import os
-from concurrent.futures import ProcessPoolExecutor
-from concurrent.futures.thread import _global_shutdown_lock
-
-if hasattr(os, 'register_at_fork'):
-    os.register_at_fork(before=_global_shutdown_lock.acquire,
-                        after_in_child=_global_shutdown_lock._at_fork_reinit,
-                        after_in_parent=_global_shutdown_lock.release)
-# end hot patch
-
 
 class ConcurrentFuturesParallelManager(ParallelManager):
     def __init__(self, number_of_subprocesses=1, **kwargs):
