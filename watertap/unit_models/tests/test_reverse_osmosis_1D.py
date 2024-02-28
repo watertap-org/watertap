@@ -16,12 +16,13 @@ from idaes.core.solvers import get_solver
 
 from idaes.core import FlowsheetBlock
 
+import idaes.core.util.scaling as iscale
+
 from watertap.unit_models.reverse_osmosis_base import TransportModel
 
 import watertap.property_models.NaCl_prop_pack as props
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
-import idaes.core.util.scaling as iscale
 
 from watertap.core import FrictionFactor
 
