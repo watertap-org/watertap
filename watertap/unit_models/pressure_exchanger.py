@@ -248,7 +248,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             self.high_pressure_difference = Var(
                 self.flowsheet().config.time,
                 initialize=0.8e5,
-                bounds=(1e-6, None),
+                bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.Pa,
                 doc="High pressure difference",
@@ -256,7 +256,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             self.low_pressure_difference = Var(
                 self.flowsheet().config.time,
                 initialize=0.4e5,
-                bounds=(1e-6, None),
+                bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.Pa,
                 doc="Low pressure difference",
