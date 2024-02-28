@@ -11,7 +11,6 @@
 #################################################################################
 
 import pytest
-import gc
 
 from pyomo.environ import Block, assert_optimal_termination, ComponentMap, value
 from pyomo.util.check_units import assert_units_consistent
@@ -62,7 +61,6 @@ class UnitTestHarness:
         self.default_relative_tolerance = 1e-6
 
         model = self.configure()
-        gc.collect()
         if not hasattr(self, "unit_model_block"):
             self.unit_model_block = model.find_component("fs.unit")
             if self.unit_model_block is None:
