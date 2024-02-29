@@ -33,7 +33,7 @@ Where the system is also subject to following constraints:
 
 When setting the ``has_mixing`` configuration option to ``True``, there is 1 additional variable ``mixing_vol_frac`` that must be fixed.
 
-When setting the ``has_leakage`` configuration option to ``True``, there is 1 additional variable ``leakage_vol`` that must be fixed.
+When setting the ``has_leakage`` configuration option to ``True``, there is 1 additional variable ``leakage_vol_frac`` that must be fixed.
 
 When setting the ``pressure_exchange_calculation`` configuration option to ``PressureExchangeType.high_pressure_difference``,
 there are 2 additional variables ``high_pressure_difference`` and ``low_pressure_difference`` that must be fixed. Instead, ``efficiency_pressure_exchanger`` is unfixed.
