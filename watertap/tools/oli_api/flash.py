@@ -472,7 +472,9 @@ class Flash:
             "vapor-fraction",
             "isochoric",
         ]:
-            if calculated_variable:
+            if calculated_variable is not None:
+                if calculated_variable not in ["temperature", "pressure"]:
+                    raise RuntimeError(f"Invalid input for 'calculated_variable': {calculated_variable}; 'temperature' or 'pressure' supported.")
                 _logger.info(
                     f"{flash_method} will calculate {calculated_variable} as its variable"
                 )
