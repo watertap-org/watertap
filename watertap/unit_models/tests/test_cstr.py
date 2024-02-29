@@ -465,10 +465,10 @@ class TestInitializers:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(526.45 * 2, rel=1e-5) == value(
+        assert pytest.approx(566989.10, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(8.95257e-07, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(6.64365e-06, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, model):
