@@ -49,7 +49,7 @@ _log = idaeslog.getLogger(__name__)
 @declare_process_block_class("ASM1ReactionParameterBlock")
 class ASM1ReactionParameterData(ReactionParameterBlock):
     """
-    Property Parameter Block Class
+    Reaction Parameter Block Class
     """
 
     def build(self):
@@ -507,3 +507,4 @@ class ASM1ReactionBlockData(ReactionBlockDataBase):
         super().calculate_scaling_factors()
         iscale.constraint_scaling_transform(self.rate_expression["R5"], 1e3)
         iscale.constraint_scaling_transform(self.rate_expression["R3"], 1e3)
+        iscale.constraint_scaling_transform(self.rate_expression["R4"], 1e3)
