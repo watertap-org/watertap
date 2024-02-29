@@ -11,6 +11,7 @@
 #################################################################################
 
 import pytest
+import abc
 
 from pyomo.environ import Block, assert_optimal_termination, ComponentMap, value
 from pyomo.util.check_units import assert_units_consistent
@@ -19,7 +20,6 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util.exceptions import InitializationError
 import idaes.core.util.scaling as iscale
 
 
@@ -42,12 +42,14 @@ class UnitRuntimeError(RuntimeError):
     """
 
 
-class UnitTestHarness:
+class UnitTestHarness(abc.ABC):
     def configure_class(self):
-        self.solver = None  # string for solver, if None use WaterTAP default
-        self.optarg = (
-            None  # dictionary for solver options, if None use WaterTAP default
-        )
+        # string for solver, if None use WaterTAP default
+        self.solver = None
+        # dictionary for solver options, if None use WaterTAP default
+        self.optarg = None
+
+        # solution map from var to value
         self.unit_solutions = ComponentMap()
 
         # arguments for badly scaled variables
@@ -59,7 +61,16 @@ class UnitTestHarness:
         self.default_absolute_tolerance = 1e-12
         self.default_relative_tolerance = 1e-6
 
-        self.configure()
+        model = self.configure()
+        if not hasattr(self, "unit_model_block"):
+            self.unit_model_block = model.find_component("fs.unit")
+            if self.unit_model_block is None:
+                raise RuntimeError(
+                    f"The {self.__class__.__name__}.configure method should either "
+                    "set the attribute `unit_model_block` or name it `fs.unit`."
+                )
+        # keep the model so it does not get garbage collected
+        self._model = model
         blk = self.unit_model_block
 
         # attaching objects to model to carry through in pytest frame
@@ -70,50 +81,54 @@ class UnitTestHarness:
         blk._test_objs.optarg = self.optarg
         blk._test_objs.unit_solutions = self.unit_solutions
 
+    @abc.abstractmethod
     def configure(self):
         """
         Placeholder method to allow user to setup test harness.
 
-        The configure function must set the attributes:
+        The configure method must set the attributes:
+        unit_solutions: ComponentMap of values for the specified variables
 
-        unit_model: pyomo unit model block (e.g. m.fs.unit), the block should
-            have zero degrees of freedom, i.e. fully specified
+        The unit model tested should be named `fs.unit`, or this method
+        should set the attribute `unit_model_block`.
 
-        unit_solutions: dictionary of property values for the specified state variables
+        Returns:
+            model: the top-level Pyomo model
         """
 
     @pytest.fixture(scope="class")
-    def frame_unit(self):
+    def frame(self):
         self.configure_class()
-        return self.unit_model_block
+        return self._model, self.unit_model_block
 
     @pytest.mark.unit
-    def test_units_consistent(self, frame_unit):
-        assert_units_consistent(frame_unit)
+    def test_units_consistent(self, frame):
+        m, unit_model = frame
+        assert_units_consistent(unit_model)
 
     @pytest.mark.unit
-    def test_dof(self, frame_unit):
-        if degrees_of_freedom(frame_unit) != 0:
+    def test_dof(self, frame):
+        m, unit_model = frame
+        if degrees_of_freedom(unit_model) != 0:
             raise UnitAttributeError(
                 "The unit has {dof} degrees of freedom when 0 is required."
-                "".format(dof=degrees_of_freedom(frame_unit))
+                "".format(dof=degrees_of_freedom(unit_model))
             )
 
     @pytest.mark.component
-    def test_initialization(self, frame_unit):
-        blk = frame_unit
-
-        try:
-            initialization_tester(blk.model())
-        except InitializationError:
-            raise InitializationError(
-                "The unit has failed to initialize successfully. Please check the output logs for more information."
-            )
+    def test_initialization(self, frame):
+        m, blk = frame
+        initialization_tester(
+            m,
+            unit=blk,
+            solver=blk._test_objs.solver,
+            optarg=blk._test_objs.optarg,
+        )
 
     @pytest.mark.component
-    def test_unit_solutions(self, frame_unit):
+    def test_unit_solutions(self, frame):
         self.configure_class()
-        blk = frame_unit
+        m, blk = frame
         solutions = blk._test_objs.unit_solutions
 
         # solve unit
