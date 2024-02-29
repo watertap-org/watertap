@@ -108,8 +108,6 @@ class TestClarifier(UnitTestHarness):
     def configure(self):
         m = build()
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[m.fs.unit.underflow.conc_mass_comp[0, "S_I"]] = 0.027
         self.unit_solutions[m.fs.unit.underflow.conc_mass_comp[0, "S_S"]] = 0.058
         self.unit_solutions[m.fs.unit.underflow.conc_mass_comp[0, "X_I"]] = 6.3190857
@@ -135,3 +133,5 @@ class TestClarifier(UnitTestHarness):
         self.unit_solutions[m.fs.unit.effluent.conc_mass_comp[0, "S_NH"]] = 0.023
         self.unit_solutions[m.fs.unit.effluent.conc_mass_comp[0, "S_ND"]] = 0.005
         self.unit_solutions[m.fs.unit.effluent.conc_mass_comp[0, "X_ND"]] = 0.00836576
+
+        return m

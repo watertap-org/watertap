@@ -120,8 +120,6 @@ class TestAnaerobicDigester(UnitTestHarness):
     def configure(self):
         m = build()
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[m.fs.unit.liquid_outlet.pressure[0]] = 101325
         self.unit_solutions[m.fs.unit.liquid_outlet.temperature[0]] = 308.15
         self.unit_solutions[
@@ -208,3 +206,5 @@ class TestAnaerobicDigester(UnitTestHarness):
         self.unit_solutions[m.fs.unit.KH_h2[0]] = 0.0007384652
         self.unit_solutions[m.fs.unit.electricity_consumption[0]] = 23.7291667
         self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1880470.588
+
+        return m

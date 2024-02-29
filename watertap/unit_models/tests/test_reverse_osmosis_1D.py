@@ -117,8 +117,6 @@ class TestReverseOsmosis1D(UnitTestHarness):
         m = build()
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[m.fs.unit.deltaP[0]] = -1.75535e5
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
@@ -147,6 +145,8 @@ class TestReverseOsmosis1D(UnitTestHarness):
         self.unit_solutions[m.fs.unit.feed_side.N_Re_avg[0]] = 371.01255
         self.unit_solutions[m.fs.unit.feed_side.K_avg[0, "NaCl"]] = 2.985544e-5
         self.unit_solutions[m.fs.unit.area] = 26.63124
+
+        return m
 
 
 def build_basic():
@@ -220,8 +220,6 @@ class TestReverseOsmosis1D_basic(UnitTestHarness):
         m = build_basic()
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         ] = 0.00484064
@@ -241,6 +239,8 @@ class TestReverseOsmosis1D_basic(UnitTestHarness):
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 0.000265183
         self.unit_solutions[m.fs.unit.area] = 144.307206
+
+        return m
 
 
 def build_SKK():
@@ -321,8 +321,6 @@ class TestReverseOsmosis1D_SKK(UnitTestHarness):
         m = build_SKK()
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[m.fs.unit.deltaP[0]] = -98760.812
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
@@ -351,6 +349,8 @@ class TestReverseOsmosis1D_SKK(UnitTestHarness):
         self.unit_solutions[m.fs.unit.feed_side.N_Re_avg[0]] = 383.229748
         self.unit_solutions[m.fs.unit.feed_side.K_avg[0, "NaCl"]] = 3.0276974e-5
         self.unit_solutions[m.fs.unit.area] = 14.20961
+
+        return m
 
 
 def build_cp_mod_fixed():
@@ -425,8 +425,6 @@ class TestReverseOsmosis1D_cp_mod_fixed(UnitTestHarness):
         m = build_cp_mod_fixed()
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         ] = 0.0024494142
@@ -446,6 +444,8 @@ class TestReverseOsmosis1D_cp_mod_fixed(UnitTestHarness):
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 0.000652886
         self.unit_solutions[m.fs.unit.area] = 329.708005
+
+        return m
 
 
 def build_cp_calculated_kf_fixed():
@@ -521,8 +521,6 @@ class TestReverseOsmosis1D_cp_calculated_kf_fixed(UnitTestHarness):
         m = build_cp_calculated_kf_fixed()
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         ] = 0.002791588
@@ -541,6 +539,8 @@ class TestReverseOsmosis1D_cp_calculated_kf_fixed(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 0.000464535
+
+        return m
 
 
 def build_cp_calculated_kf_calculated():
@@ -616,8 +616,6 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated(UnitTestHarness):
         m = build_cp_calculated_kf_calculated()
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         ] = 0.002382908
@@ -636,6 +634,8 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 0.000546681
+
+        return m
 
 
 def build_friction_factor_spiral_wound():
@@ -714,8 +714,6 @@ class TestReverseOsmosis1D_friction_factor_spiral_wound(UnitTestHarness):
         m = build_friction_factor_spiral_wound()
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         ] = 0.00590823
@@ -734,6 +732,8 @@ class TestReverseOsmosis1D_friction_factor_spiral_wound(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 2.9015866e-5
+
+        return m
 
 
 def build_cp_calculated_kf_calculated_pdrop_fixed_by_dx():
@@ -813,8 +813,6 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_dx(
         m = build_cp_calculated_kf_calculated_pdrop_fixed_by_dx()
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         ] = 0.00224943
@@ -833,6 +831,8 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_dx(
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 0.000588787
+
+        return m
 
 
 def build_cp_calculated_kf_calculated_pdrop_fixed_by_stage():
@@ -912,8 +912,6 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_stage(
         m = build_cp_calculated_kf_calculated_pdrop_fixed_by_stage()
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         ] = 0.002278454
@@ -932,3 +930,5 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_stage(
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 0.0005792222
+
+        return m

@@ -101,8 +101,6 @@ class TestCrystallizer(UnitTestHarness):
     def configure(self):
         m = build()
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[
             m.fs.unit.solids.flow_mass_phase_comp[0, "Sol", "NaCl"]
         ] = 0.08504096
@@ -120,3 +118,5 @@ class TestCrystallizer(UnitTestHarness):
         self.unit_solutions[m.fs.unit.diameter_crystallizer] = 1.204904
         self.unit_solutions[m.fs.unit.volume_suspension] = 1.6194469
         self.unit_solutions[m.fs.unit.t_res] = 1.022821
+
+        return m

@@ -162,8 +162,6 @@ class TestReverseOsmosis0D(UnitTestHarness):
     def configure(self):
         m = build()
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
         ] = 0.004721771
@@ -179,6 +177,8 @@ class TestReverseOsmosis0D(UnitTestHarness):
         self.unit_solutions[m.fs.unit.feed_side.cp_modulus[0, 0, "NaCl"]] = 1.1
         self.unit_solutions[m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"]] = 1.1
         self.unit_solutions[m.fs.unit.deltaP[0]] = -3e5
+
+        return m
 
 
 def build_SKK():
@@ -305,8 +305,6 @@ class TestReverseOsmosis0D_SKK(UnitTestHarness):
     def configure(self):
         m = build_SKK()
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
         ] = 0.006710409
@@ -322,6 +320,8 @@ class TestReverseOsmosis0D_SKK(UnitTestHarness):
         self.unit_solutions[m.fs.unit.feed_side.cp_modulus[0, 0, "NaCl"]] = 1.1
         self.unit_solutions[m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"]] = 1.1
         self.unit_solutions[m.fs.unit.deltaP[0]] = -3e5
+
+        return m
 
 
 def build_kf_fixed():
@@ -447,8 +447,6 @@ class TestReverseOsmosis0D_kf_fixed(UnitTestHarness):
     def configure(self):
         m = build_kf_fixed()
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
         ] = 0.0038152554
@@ -474,6 +472,8 @@ class TestReverseOsmosis0D_kf_fixed(UnitTestHarness):
                 "Liq", "NaCl"
             ]
         ] = 50.20324317
+
+        return m
 
 
 def build_kf_calculated():
@@ -601,8 +601,6 @@ class TestReverseOsmosis0D_kf_calculated(UnitTestHarness):
     def configure(self):
         m = build_kf_calculated()
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
         ] = 0.00456244
@@ -631,6 +629,8 @@ class TestReverseOsmosis0D_kf_calculated(UnitTestHarness):
                 "Liq", "NaCl"
             ]
         ] = 49.9360425
+
+        return m
 
 
 def build_p_drop_calculation():
@@ -755,8 +755,6 @@ class TestReverseOsmosis0D_p_drop_calculation(UnitTestHarness):
     def configure(self):
         m = build_p_drop_calculation()
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[m.fs.unit.deltaP[0]] = -1.661080199e5
         self.unit_solutions[m.fs.unit.feed_side.N_Re[0, 0]] = 395.840743
         self.unit_solutions[m.fs.unit.feed_side.velocity[0, 0]] = 0.2360863
@@ -787,6 +785,8 @@ class TestReverseOsmosis0D_p_drop_calculation(UnitTestHarness):
                 "Liq", "NaCl"
             ]
         ] = 76.3246904
+
+        return m
 
 
 def build_p_drop_calculation_fixed_per_unit_length():
@@ -915,8 +915,6 @@ class TestReverseOsmosis0D_p_drop_fixed_per_unit_length(UnitTestHarness):
     def configure(self):
         m = build_p_drop_calculation_fixed_per_unit_length()
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
         ] = 0.0045624403
@@ -943,6 +941,8 @@ class TestReverseOsmosis0D_p_drop_fixed_per_unit_length(UnitTestHarness):
             ]
         ] = 49.936042
         self.unit_solutions[m.fs.unit.deltaP[0]] = -3e5
+
+        return m
 
 
 def build_friction_factor_spiral_wound():
@@ -1068,8 +1068,6 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
     def configure(self):
         m = build_friction_factor_spiral_wound()
 
-        self.unit_model_block = m.fs.unit
-
         self.unit_solutions[m.fs.unit.deltaP[0]] = -1.801003299e5
         self.unit_solutions[m.fs.unit.feed_side.N_Re[0, 0]] = 395.840743
         self.unit_solutions[m.fs.unit.feed_side.velocity[0, 0]] = 0.2360863
@@ -1100,3 +1098,5 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
                 "Liq", "NaCl"
             ]
         ] = 76.211017
+
+        return m
