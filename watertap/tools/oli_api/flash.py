@@ -169,7 +169,7 @@ class Flash:
             if float(temperature):
                 temp_input.update({"value": float(temperature)})
             else:
-                raise RuntimeError(
+                raise ValueError(
                     f"Invalid temperature: {temperature}. Expected number"
                 )
         input_list.append(temp_input)
@@ -184,7 +184,7 @@ class Flash:
             if float(pressure):
                 pres_input.update({"value": float(pressure)})
             else:
-                raise RuntimeError(f"Invalid pressure: {pressure}. Expected number")
+                raise ValueError(f"Invalid pressure: {pressure}. Expected number")
         input_list.append(pres_input)
 
         reconciliation_options = [
@@ -243,6 +243,7 @@ class Flash:
                 alkalinity_titrant = "H2SO4"
             if not alkalinity_ph:
                 alkalinity_ph = 4.5
+                _logger.info("No alkalinity endpoint pH specified. Assuming 4.5.")
                 additional_req_input.extend(
                     [
                         {
@@ -449,7 +450,7 @@ class Flash:
             if float(temperature):
                 temp_input.update({"value": float(temperature)})
             else:
-                raise RuntimeError(
+                raise ValueError(
                     f"Invalid temperature: {temperature}. Expected number"
                 )
         input_dict["temperature"] = temp_input
@@ -462,7 +463,7 @@ class Flash:
             if float(pressure):
                 pres_input.update({"value": float(pressure)})
             else:
-                raise RuntimeError(f"Invalid pressure: {pressure}. Expected number")
+                raise ValueError(f"Invalid pressure: {pressure}. Expected number")
         input_dict["pressure"] = pres_input
 
         if flash_method in [
@@ -492,7 +493,7 @@ class Flash:
             if float(enthalpy):
                 enth_input.update({"value": float(enthalpy)})
             else:
-                raise RuntimeError(f"Invalid enthalpy: {enthalpy}. Expected number")
+                raise ValueError(f"Invalid enthalpy: {enthalpy}. Expected number")
             input_dict["enthalpy"] = enth_input
 
         if flash_method == "vapor-amount":
@@ -505,7 +506,7 @@ class Flash:
             if float(vapor_amount):
                 vapor_amount_input.update({"value": float(vapor_amount)})
             else:
-                raise RuntimeError(
+                raise ValueError(
                     f"Invalid vapor amount: {vapor_amount}. Expected number"
                 )
             input_dict["vaporAmountMoles"] = vapor_amount_input
@@ -520,7 +521,7 @@ class Flash:
             if float(vapor_fraction):
                 vapor_fraction_amount.update({"value": float(vapor_fraction)})
             else:
-                raise RuntimeError(
+                raise ValueError(
                     f"Invalid vapor fraction: {vapor_fraction}. Expected number"
                 )
             input_dict["vaporMolFrac"] = vapor_fraction_input
@@ -533,7 +534,7 @@ class Flash:
             if float(volume):
                 volume_input.update({"value": float(volume)})
             else:
-                raise RuntimeError(f"Invalid volume: {volume}. Expected number")
+                raise ValueError(f"Invalid volume: {volume}. Expected number")
             input_dict["totalVolume"] = volume_input
 
         if flash_method == "setph":
@@ -546,7 +547,7 @@ class Flash:
             if float(ph):
                 ph_input["targetPH"].update({"value": float(ph)})
             else:
-                raise RuntimeError(f"Invalid ph: {ph}. Expected number")
+                raise ValueError(f"Invalid ph: {ph}. Expected number")
             input_dict["targetPH"] = ph_input
             if not acid_titrant:
                 acid_titrant = "HCl"
@@ -964,13 +965,20 @@ class Flash:
                 if self.relative_inflows:
                     if isinstance(d[k], dict):
                         d[k]["value"] += v[index]
+                        val = d[k]["value"]
                     else:
                         d[k] += v[index]
+                        val = d[k]
                 else:
                     if isinstance(d[k], dict):
-                        d[k]["value"] = v[index]
+                        d[k]["value"] += v[index]
+                        val = d[k]["value"]
                     else:
-                        d[k] = v[index]
+                        d[k]["value"] += v[index]
+                        val = d[k]["value"]
+                _logger.info(
+                    f"Updating {k} for sample #{index} clone: new value = {val}"
+                )
         return clone
 
     def get_apparent_species_from_true(
@@ -1068,11 +1076,12 @@ def flatten_results(processed_requests):
                 if "value" in values:
                     extracted_values.update({"values": values["value"]})
                 if "unit" in values:
-                    extracted_values.update({"units": values["unit"]})
+                    unit = values["unit"] if values["unit"] else "dimensionless"
+                    extracted_values.update({"units": unit})
             elif all(k in values for k in ["found", "phase"]):
                 extracted_values = values
             else:
-                unit = values["unit"]
+                unit = values["unit"] if values["unit"] else "dimensionless"
                 if "value" in values:
                     extracted_values = {
                         "units": unit,

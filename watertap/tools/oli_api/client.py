@@ -276,8 +276,7 @@ class OLIApi:
 
         if dbs_file_ids is None:
             dbs_file_ids = self.get_user_dbs_file_ids()
-        _logger.info(f"WaterTAP will delete {len(dbs_file_ids)} DBS files")
-        r = input("[y]/n: ") if self.interactive_mode else ""
+        r = input(f"WaterTAP will delete {len(dbs_file_ids)} DBS files: [y]/n: ") if self.interactive_mode else ""
         if (r.lower() == "y") or (r == ""):
             for dbs_file_id in dbs_file_ids:
                 _logger.info(f"Deleting {dbs_file_id} ...")
@@ -361,10 +360,11 @@ class OLIApi:
             result["submitted_requests"] = request
             result_list.append(result)
         acquire_time = time.time() - acquire_timer
+        num_samples = len(requests)
         _logger.info(
-            f"Finished all {len(requests)} jobs from OLI. "
-            + f"Total: {acquire_time} seconds, "
-            + f"Rate: {acquire_time/len(result)} seconds/sample"
+            f"Finished all {num_samples} jobs from OLI. "
+            + f"Total: {acquire_time} s, "
+            + f"Rate: {acquire_time/num_samples} s/sample"
         )
         return result_list
 
