@@ -293,10 +293,9 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
         self.high_pressure_side.add_state_blocks(has_phase_equilibrium=False)
 
         self.high_pressure_side.add_material_balances(
-                balance_type=self.config.material_balance_type,
-                has_mass_transfer=self.config.has_mixing,
-            )
-            )
+            balance_type=self.config.material_balance_type,
+            has_mass_transfer=self.config.has_mixing,
+        )
 
         self.high_pressure_side.add_energy_balances(
             balance_type=self.config.energy_balance_type,
@@ -328,9 +327,9 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
         self.low_pressure_side.add_state_blocks(has_phase_equilibrium=False)
 
         self.low_pressure_side.add_material_balances(
-                balance_type=self.config.material_balance_type,
-                has_mass_transfer=self.config.has_mixing,
-            )
+            balance_type=self.config.material_balance_type,
+            has_mass_transfer=self.config.has_mixing,
+        )
 
         self.low_pressure_side.add_energy_balances(
             balance_type=self.config.energy_balance_type,
