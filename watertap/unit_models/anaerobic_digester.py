@@ -449,7 +449,7 @@ see reaction package for documentation.}""",
             units=pyunits.m**3 / pyunits.day / pyunits.bar,
             doc="friction parameter",
         )
-
+        # TODO: use Henry's law constant for co2 already created in ADM1 rxn model
         self.KH_co2 = Var(
             self.flowsheet().time,
             initialize=0.02715,
@@ -457,6 +457,7 @@ see reaction package for documentation.}""",
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
             doc="CO2 Henry's law coefficient",
         )
+        # TODO: move henry's law constants to ADM1 rxn model and/or ADM1 vapor prop model
         self.KH_ch4 = Var(
             self.flowsheet().time,
             initialize=0.00116,
@@ -471,6 +472,7 @@ see reaction package for documentation.}""",
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
             doc="H2 Henry's law coefficient",
         )
+        # TODO: consider moving KLA to prop model and make name consistent with name used on cstr_injection/asm1
         self.K_La = Param(
             initialize=200,
             units=pyunits.day**-1,
