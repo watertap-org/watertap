@@ -82,7 +82,7 @@ class Flash:
     :param input_unit_set: dictionary for conversions between OLI and Pyomo unit names
     :param output_unit_set: dictionary for preferred output units
     :param relative_inflows: bool switch for surveys - true to add specified value to initial value, false to replace initial value with specified value
-    :param interactive_mode: bool switch for level of logging display
+    :param debug_level: string defining level of logging activity
     """
 
     def __init__(
@@ -91,14 +91,14 @@ class Flash:
         input_unit_set=input_unit_set,
         output_unit_set=output_unit_set,
         relative_inflows=True,
-        interactive_mode=True,
+        debug_level="INFO",
     ):
         self.optional_properties = optional_properties
         self.input_unit_set = input_unit_set
         self.output_unit_set = output_unit_set
         self.relative_inflows = relative_inflows
 
-        if interactive_mode:
+        if debug_level=="INFO":
             _logger.setLevel(logging.INFO)
         else:
             _logger.setLevel(logging.DEBUG)
@@ -972,11 +972,11 @@ class Flash:
                         val = d[k]
                 else:
                     if isinstance(d[k], dict):
-                        d[k]["value"] += v[index]
+                        d[k]["value"] = v[index]
                         val = d[k]["value"]
                     else:
-                        d[k]["value"] += v[index]
-                        val = d[k]["value"]
+                        d[k] = v[index]
+                        val = d[k]
                 _logger.info(
                     f"Updating {k} for sample #{index} clone: new value = {val}"
                 )
@@ -1181,20 +1181,17 @@ def flatten_results(processed_requests):
 
 def write_output(content, file_name):
     """
-    Write dictionary-based content to JSON file.
+    Write dictionary-based content to file.
 
     :param content: dictionary of content to write
     :param file_name: string for name of file to write
-
-    :return json_file: string for full path of write file
     """
 
-    json_file = Path(f"./{file_name}.json").resolve()
-    _logger.info(f"Saving content to {json_file}")
-    with open(json_file, "w", encoding="utf-8") as f:
+    _logger.info(f"Saving content to {file_name}")
+    with open(file_name, "w", encoding="utf-8") as f:
         json.dump(content, f)
     _logger.info("Save complete")
-    return json_file
+    file_path = Path(file_name.resolve())
 
 
 def build_survey(survey_arrays, get_oli_names=False, file_name=None, mesh_grid=True):

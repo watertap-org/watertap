@@ -74,7 +74,7 @@ class OLIApi:
 
         :param credential_manager_class: class used to manage credentials
         :param interactive_mode: enables direct interaction with user through prompts
-        :param debug_level: defines level of logging activity
+        :param debug_level: string defining level of logging activity
         """
 
         self.credential_manager = credential_manager
@@ -103,7 +103,7 @@ class OLIApi:
         """
         Upload a DBS file to OLI Cloud given a full file path.
 
-        :param dbs_file_path: string path to dbs file
+        :param dbs_file_path: string path to DBS file
         :param keep_file: bool to remove (default) or ignore DBS file during session cleanup
 
         :return dbs_file_id: string name for DBS file ID
