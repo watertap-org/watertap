@@ -169,9 +169,7 @@ class Flash:
             if float(temperature):
                 temp_input.update({"value": float(temperature)})
             else:
-                raise ValueError(
-                    f"Invalid temperature: {temperature}. Expected number"
-                )
+                raise ValueError(f"Invalid temperature: {temperature}. Expected number")
         input_list.append(temp_input)
 
         pres_input = {
@@ -450,9 +448,7 @@ class Flash:
             if float(temperature):
                 temp_input.update({"value": float(temperature)})
             else:
-                raise ValueError(
-                    f"Invalid temperature: {temperature}. Expected number"
-                )
+                raise ValueError(f"Invalid temperature: {temperature}. Expected number")
         input_dict["temperature"] = temp_input
 
         pres_input = {
@@ -475,7 +471,9 @@ class Flash:
         ]:
             if calculated_variable is not None:
                 if calculated_variable not in ["temperature", "pressure"]:
-                    raise RuntimeError(f"Invalid input for 'calculated_variable': {calculated_variable}; 'temperature' or 'pressure' supported.")
+                    raise RuntimeError(
+                        f"Invalid input for 'calculated_variable': {calculated_variable}; 'temperature' or 'pressure' supported."
+                    )
                 _logger.info(
                     f"{flash_method} will calculate {calculated_variable} as its variable"
                 )
