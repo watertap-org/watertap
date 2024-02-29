@@ -864,6 +864,10 @@ class Flash:
         :return processed_requests: results from processed OLI flash requests
         """
 
+        if flash_method == "corrosion-rates":
+            # check if DBS file is using AQ thermodynamic framework
+            oliapi_instance.get_corrosion_contact_surfaces(dbs_file_id)
+
         if self.relative_inflows:
             _logger.info(
                 f"relative_inflows={self.relative_inflows},"
