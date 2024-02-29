@@ -31,9 +31,9 @@ Where the system is also subject to following constraints:
     
     Figure 1. Schematic representation of an energy recovery system using a pressure exchanger.
 
-When setting the ``has_mixing`` configuration option to ``True``, there is 1 additional variable ``mixing_vol_frac`` that must be fixed.
+When setting the ``has_mixing`` configuration option to ``True``, there is 1 additional variable ``mixing_vol`` that must be fixed.
 
-When setting the ``has_leakage`` configuration option to ``True``, there is 1 additional variable ``leakage_vol_frac`` that must be fixed.
+When setting the ``has_leakage`` configuration option to ``True``, there is 1 additional variable ``leakage_vol`` that must be fixed.
 
 When setting the ``pressure_exchange_calculation`` configuration option to ``PressureExchangeType.high_pressure_difference``,
 there are 2 additional variables ``high_pressure_difference`` and ``low_pressure_difference`` that must be fixed. Instead, ``efficiency_pressure_exchanger`` is unfixed.
@@ -64,8 +64,10 @@ The pressure exchanger unit model includes the following variables:
    "Efficiency", ":math:`\eta`", "efficiency_pressure_exchanger", "[t]", ":math:`\text{dimensionless}`", "Var"
    "Volumetric leakage fraction", ":math:`\delta`", "leakage_vol", "[t]", ":math:`\text{dimensionless}`", "Var"
    "Volumetric mixing fraction", ":math:`\chi`", "mixing_vol", "[t]", ":math:`\text{dimensionless}`", "Var"
-   "High pressure difference", ":math:`HPD`", "high_pressure_difference", "[t]", ":math:`\text{Pa}`", "Var"
-   "Low pressure difference", ":math:`LPD`", "low_pressure_difference", "[t]", ":math:`\text{Pa}`", "Var"
+   "High pressure difference*", ":math:`HPD`", "high_pressure_difference", "[t]", ":math:`\text{Pa}`", "Var"
+   "Low pressure difference*", ":math:`LPD`", "low_pressure_difference", "[t]", ":math:`\text{Pa}`", "Var"
+
+\*High pressure difference and low pressure difference are non-negative values
 
 Each control volume (i.e. `low_presssure_side`, and `high_pressure_side`) has the following variables of interest:
 
