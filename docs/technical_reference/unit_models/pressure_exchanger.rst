@@ -132,7 +132,7 @@ and there are 3 additional constraints:
    "Linking mass transfer terms", ":math:`MTT_{j, LPS} = -MTT_{j, HPS}`"
    "Equal low pressure side volumetric flowrate", ":math:`Q_{out, LPS} = Q_{in, LPS}`"
 
-\* C only represents solute concentration, not solvent
+\* C represents solute concentration
 
 if ``pressure_change_calculation`` is set to ``PressureExchangeType.high_pressure_difference``,
 then there is 1 additional constraint and the equal pressure equation is replaced:
