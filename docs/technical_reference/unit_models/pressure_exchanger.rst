@@ -31,7 +31,7 @@ Where the system is also subject to following constraints:
     
     Figure 1. Schematic representation of an energy recovery system using a pressure exchanger.
 
-When setting the ``has_mixing`` configuration option to ``True``, there is 1 additional variable ``mixing_vol`` that must be fixed.
+When setting the ``has_mixing`` configuration option to ``True``, there is 1 additional variable ``mixing_vol_frac`` that must be fixed.
 
 When setting the ``has_leakage`` configuration option to ``True``, there is 1 additional variable ``leakage_vol`` that must be fixed.
 
