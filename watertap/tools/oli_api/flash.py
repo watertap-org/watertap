@@ -105,7 +105,7 @@ class Flash:
 
     def configure_water_analysis(
         self,
-        inflows,
+        inflows=None,
         temperature=None,
         pressure=None,
         reconciliation=None,
@@ -350,8 +350,8 @@ class Flash:
 
     def configure_flash_analysis(
         self,
-        inflows,
-        flash_method,
+        inflows=None,
+        flash_method=None,
         temperature=None,
         pressure=None,
         calculated_variable=None,
@@ -435,11 +435,10 @@ class Flash:
                 f"Failed to configure Flash. Invalid method: {flash_method}"
             )
 
-        input_dict = {}
-
         if not inflows:
             raise RuntimeError("Inflows must be defined for Flash Analysis.")
 
+        input_dict = {}
         temp_input = {
             "unit": self.input_unit_set["temperature"]["oli_unit"],
             "value": 273.15,
