@@ -29,19 +29,22 @@ pytest.importorskip(
 class IPythonComms:
     statements: List[str]
     error_file_path: Path
+    message_when_no_errors: str = "NO ERRORS WHATSOEVER"
 
     def __post_init__(self):
         self.error_file_path.touch()
-
+        
     @cached_property
     def lines(self) -> List[str]:
         return [
             "try:",
             *[f"\t{smt}" for smt in self.statements],
             "except Exception as e:",
-            f"\tprint(e, file=open('{self.error_file_path}', 'w'))",
+            "\tto_print = str(e)",
             "else:",
-            "    exit",
+            f"\tto_print = r'''{self.message_when_no_errors}'''",
+            f"print(to_print, file=open(r'{self.error_file_path}', 'w'))",
+            "exit",
         ]
 
     @cached_property
@@ -72,7 +75,7 @@ m.c = pyo.Constraint(expr=m.x[1] * m.x[2] == -1)
 
 if __name__ == '__main__':
     solver = get_solver()
-    solver.solve(m, tee=True)
+    solver.solve(m)
     """
 
     ipy = IPythonComms(
@@ -96,5 +99,8 @@ if __name__ == '__main__':
         stderr=subprocess.PIPE,
     )
 
-    out, err = proc.communicate(input=ipy.for_stdin, timeout=5)
-    assert ipy.error_text == ""
+    out, err = proc.communicate(input=ipy.for_stdin, timeout=30)
+    assert ipy.error_text == ipy.message_when_no_errors
+    print(out)
+    print(ipy.error_text)
+    raise RuntimeError(ipy.error_text)
