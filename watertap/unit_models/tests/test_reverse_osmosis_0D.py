@@ -82,77 +82,10 @@ def build():
     m.fs.unit.feed_side.cp_modulus.fix(concentration_polarization_modulus)
 
     # Set scaling factors for badly scaled variables
-    iscale.set_scaling_factor(m.fs.unit.feed_side.properties_out[0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e7
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
-    iscale.set_scaling_factor(m.fs.unit.recovery_mass_phase_comp[0, "Liq", "NaCl"], 1e5)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 0, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e7)
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e7
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_out[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].flow_mass_phase_comp["Liq", "NaCl"], 1e5
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].flow_mass_phase_comp["Liq", "NaCl"], 1e5
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(m.fs.unit.mixed_permeate[0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"], 1e1
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e5
-    )
-
     iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
@@ -225,77 +158,10 @@ def build_SKK():
     m.fs.unit.feed_side.cp_modulus.fix(concentration_polarization_modulus)
 
     # Set scaling factors for badly scaled variables
-    iscale.set_scaling_factor(m.fs.unit.feed_side.properties_out[0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e7
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
-    iscale.set_scaling_factor(m.fs.unit.recovery_mass_phase_comp[0, "Liq", "NaCl"], 1e5)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 0, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e3)
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_out[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(m.fs.unit.mixed_permeate[0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"], 1e1
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-
     iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
@@ -367,77 +233,10 @@ def build_kf_fixed():
     m.fs.unit.feed_side.K[0, 1.0, "NaCl"].fix(kf)
 
     # Set scaling factors for badly scaled variables
-    iscale.set_scaling_factor(m.fs.unit.feed_side.properties_out[0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e7
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
-    iscale.set_scaling_factor(m.fs.unit.recovery_mass_phase_comp[0, "Liq", "NaCl"], 1e5)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 0, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e3)
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_out[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(m.fs.unit.mixed_permeate[0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"], 1e1
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-
     iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
@@ -521,77 +320,10 @@ def build_kf_calculated():
     m.fs.unit.length.fix(length)
 
     # Set scaling factors for badly scaled variables
-    iscale.set_scaling_factor(m.fs.unit.feed_side.properties_out[0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e7
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
-    iscale.set_scaling_factor(m.fs.unit.recovery_mass_phase_comp[0, "Liq", "NaCl"], 1e5)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 0, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e3)
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_out[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(m.fs.unit.mixed_permeate[0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"], 1e1
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-
     iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
@@ -675,77 +407,10 @@ def build_p_drop_calculation():
     m.fs.unit.length.fix(16)
 
     # Set scaling factors for badly scaled variables
-    iscale.set_scaling_factor(m.fs.unit.feed_side.properties_out[0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e7
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
-    iscale.set_scaling_factor(m.fs.unit.recovery_mass_phase_comp[0, "Liq", "NaCl"], 1e5)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 0, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e3)
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_out[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(m.fs.unit.mixed_permeate[0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"], 1e1
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-
     iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
@@ -835,77 +500,10 @@ def build_p_drop_calculation_fixed_per_unit_length():
     m.fs.unit.feed_side.dP_dx.fix(-membrane_pressure_drop / length)
 
     # Set scaling factors for badly scaled variables
-    iscale.set_scaling_factor(m.fs.unit.feed_side.properties_out[0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e7
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
-    iscale.set_scaling_factor(m.fs.unit.recovery_mass_phase_comp[0, "Liq", "NaCl"], 1e5)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 0, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e3)
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_out[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(m.fs.unit.mixed_permeate[0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"], 1e1
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-
     iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
@@ -988,77 +586,10 @@ def build_friction_factor_spiral_wound():
     m.fs.unit.length.fix(16)
 
     # Set scaling factors for badly scaled variables
-    iscale.set_scaling_factor(m.fs.unit.feed_side.properties_out[0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e7
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
-    iscale.set_scaling_factor(m.fs.unit.recovery_mass_phase_comp[0, "Liq", "NaCl"], 1e5)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 0, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e3)
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_out[0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_in[0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].flow_vol_phase["Liq"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.feed_side.properties_interface[0, 1].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].pressure, 1e-6)
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].pressure_osm_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.permeate_side[0, 1].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(m.fs.unit.permeate_side[0, 1].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(m.fs.unit.mixed_permeate[0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].mass_frac_phase_comp["Liq", "NaCl"], 1e4
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"], 1e1
-    )
-    iscale.set_scaling_factor(
-        m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e3
-    )
-
     iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
