@@ -33,6 +33,14 @@ from idaes.models.unit_models.separator import SplittingType
 
 from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
 
+from idaes.core import UnitModelCostingBlock
+from watertap.costing import WaterTAPCosting
+from watertap.costing.unit_models.clarifier import (
+    cost_circular_clarifier,
+    cost_rectangular_clarifier,
+    cost_primary_clarifier,
+)
+
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
@@ -98,8 +106,10 @@ def build():
     )
     iscale.set_scaling_factor(m.fs.unit.effluent_state[0.0].conc_mass_comp["X_BA"], 1e7)
     iscale.set_scaling_factor(m.fs.unit.effluent_state[0.0].conc_mass_comp["X_P"], 1e7)
-    iscale.set_scaling_factor(m.fs.unit.effluent_state[0.0].conc_mass_comp["S_O"], 1e3)
-    iscale.set_scaling_factor(m.fs.unit.effluent_state[0.0].conc_mass_comp["S_NO"], 1e3)
+    iscale.set_scaling_factor(m.fs.unit.effluent_state[0.0].conc_mass_comp["S_O"], 1e7)
+    iscale.set_scaling_factor(m.fs.unit.effluent_state[0.0].conc_mass_comp["S_NO"], 1e7)
+
+    iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
 
@@ -133,5 +143,69 @@ class TestClarifier(UnitTestHarness):
         self.unit_solutions[m.fs.unit.effluent.conc_mass_comp[0, "S_NH"]] = 0.023
         self.unit_solutions[m.fs.unit.effluent.conc_mass_comp[0, "S_ND"]] = 0.005
         self.unit_solutions[m.fs.unit.effluent.conc_mass_comp[0, "X_ND"]] = 0.00836576
+
+        return m
+
+
+class TestCircularCosting(UnitTestHarness):
+    def configure(self):
+        m = build()
+
+        # Add unit model costing
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing, costing_method=cost_circular_clarifier
+        )
+        m.fs.unit.surface_area.fix(1500 * units.m**2)
+
+        iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-6)
+
+        m.fs.costing.cost_process()
+
+        self.unit_solutions[m.fs.unit.costing.capital_cost] = 1681573 * 2
+
+        return m
+
+
+class TestRectangularCosting(UnitTestHarness):
+    def configure(self):
+        m = build()
+
+        # Add unit model costing
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_rectangular_clarifier,
+        )
+        m.fs.unit.surface_area.fix(1500 * units.m**2)
+
+        iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-6)
+
+        m.fs.costing.cost_process()
+
+        self.unit_solutions[m.fs.unit.costing.capital_cost] = 2131584 * 2
+
+        return m
+
+
+class TestPrimaryClarifierCosting(UnitTestHarness):
+    def configure(self):
+        m = build()
+
+        # Add unit model costing
+        m.fs.costing = WaterTAPCosting()
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing, costing_method=cost_primary_clarifier
+        )
+        m.fs.unit.surface_area.fix(1500 * units.m**2)
+
+        iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-6)
+
+        m.fs.costing.cost_process()
+
+        self.unit_solutions[m.fs.unit.costing.capital_cost] = 1390570 * 2
 
         return m
