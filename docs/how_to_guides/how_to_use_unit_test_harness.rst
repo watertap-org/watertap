@@ -46,8 +46,8 @@ assumes a test file is being created for an anaerobic digester.
     solver = get_solver()
 
 Next, setup the configure function which will create the flowsheet, specify the property and reaction packages,
-specify the unit model configuration, set the operating conditions, add the unit model costing, and
-set the scaling factors for any variables that are badly scaled. Then, iterate through any variables on the unit model that you'd like to confirm the value of.
+specify the unit model configuration (named `fs.unit`), set the operating conditions, add the unit model costing, and
+set the scaling factors for any variables that are badly scaled. Then, iterate through any variables on the unit model that you'd like to have the value of tested. Finally, return the top-level Pyomo model.
 Failures may arise at this stage, at which point an error message will be displayed that prompts you
 to adjust something in the configure function and/or address the discrepancy between the
 expected value for a variable (user-input) and its actual value.
@@ -124,9 +124,6 @@ expected value for a variable (user-input) and its actual value.
             m.fs.unit.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7
             )
             iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-6)
-
-            # Specify the unit model being tested
-            self.unit_model_block = m.fs.unit
 
             # Check the expected unit model outputs
             self.unit_solutions[m.fs.unit.liquid_outlet.pressure[0]] = 101325
@@ -217,3 +214,4 @@ expected value for a variable (user-input) and its actual value.
             self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1880470.588
             self.unit_solutions[m.fs.unit.costing.capital_cost] = 2166581.415
 
+            return m
