@@ -1185,13 +1185,16 @@ def write_output(content, file_name):
 
     :param content: dictionary of content to write
     :param file_name: string for name of file to write
+
+    :param file_path: string for full path of written file
     """
 
     _logger.info(f"Saving content to {file_name}")
     with open(file_name, "w", encoding="utf-8") as f:
         json.dump(content, f)
     _logger.info("Save complete")
-    file_path = Path(file_name.resolve())
+    file_path = Path(file_name).resolve()
+    return file_path
 
 
 def build_survey(survey_arrays, get_oli_names=False, file_name=None, mesh_grid=True):
