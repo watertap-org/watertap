@@ -81,4 +81,3 @@ if __name__ == '__main__':
 
     out, err = proc.communicate(input=ipy.for_stdin, timeout=5)
     assert ipy.error_text == ""
-    raise RuntimeError(out)
