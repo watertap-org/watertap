@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from .anaerobic_digestor import AD
+from .anaerobic_digester import AD
 from .reverse_osmosis_0D import ReverseOsmosis0D
 from .reverse_osmosis_1D import ReverseOsmosis1D
 from .osmotically_assisted_reverse_osmosis_0D import OsmoticallyAssistedReverseOsmosis0D
@@ -32,3 +32,4 @@ from .electroNP_ZO import ElectroNPZO
 from .cstr import CSTR
 from .clarifier import Clarifier
 from .cstr_injection import CSTR_Injection
+from .aeration_tank import AerationTank
