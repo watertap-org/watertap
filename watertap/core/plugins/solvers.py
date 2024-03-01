@@ -250,12 +250,17 @@ class _BaseDebugSolverWrapper:
         if results is not None and pyo.check_optimal_termination(results):
             return results
 
+        # prevent circular imports
+        from watertap.core.util import model_debug_mode
+
+        # deactivate the model debug mode so we don't
+        # nest this environment within itself
+        model_debug_mode.deactivate()
+
         self.restore_initial_values(blk)
         debug = self
 
         # else there was a problem
-        # TODO: we may want to switch out the default IDAES solver so we
-        #       don't nest one of these environments inside itself...
         print(f"Solver debugging mode: the block {blk.name} failed to solve.")
         print(f"{blk.name} is called `blk` in this context.")
         print(f"The solver {solver.name} is available in the variable `solver`.")
@@ -271,6 +276,10 @@ class _BaseDebugSolverWrapper:
         dt = DiagnosticsToolbox(blk)
         # dt.report_structural_issues()
         IPython.embed(colors="neutral")
+
+        # activate the model debug mode
+        # to keep the state the same
+        model_debug_mode.activate()
 
         return results
 
