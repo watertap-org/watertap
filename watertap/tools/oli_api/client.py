@@ -99,6 +99,13 @@ class OLIApi:
         self.dbs_file_cleanup(self.session_dbs_files)
         return False
 
+    def _prompt(self, msg, default=""):
+        if self.interactive_mode:
+            return input(msg)
+        else:
+            _logger.info(msg)
+            return default
+
     def upload_dbs_file(self, dbs_file_path, keep_file=False):
         """
         Upload a DBS file to OLI Cloud given a full file path.
@@ -276,11 +283,7 @@ class OLIApi:
 
         if dbs_file_ids is None:
             dbs_file_ids = self.get_user_dbs_file_ids()
-        r = (
-            input(f"WaterTAP will delete {len(dbs_file_ids)} DBS files: [y]/n: ")
-            if self.interactive_mode
-            else ""
-        )
+        r = self._prompt("WaterTAP will delete {len(dbs_file_ids)} DBS files [y]/n: ", "y")
         if (r.lower() == "y") or (r == ""):
             for dbs_file_id in dbs_file_ids:
                 _logger.info(f"Deleting {dbs_file_id} ...")
