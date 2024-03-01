@@ -43,8 +43,9 @@ class IPythonComms:
             "\tto_print = str(e)",
             "else:",
             f"\tto_print = r'''{self.message_when_no_errors}'''",
-            f"print(to_print, file=open(r'{self.error_file_path}', 'w'))",
-            "exit",
+            "finally:",
+            f"\tprint(to_print, file=open(r'{self.error_file_path}', 'w'))",
+            "\texit",
         ]
 
     @cached_property
@@ -101,6 +102,3 @@ if __name__ == '__main__':
 
     out, err = proc.communicate(input=ipy.for_stdin, timeout=30)
     assert ipy.error_text == ipy.message_when_no_errors
-    print(out)
-    print(ipy.error_text)
-    raise RuntimeError(ipy.error_text)
