@@ -206,6 +206,75 @@ class IpoptWaterTAP(IPOPT):
         return True
 
 
+class _BaseDebugSolverWrapper:
+
+    # defined by the derived class,
+    # created on the fly
+    _base_solver = None
+    _debug_solver_name = None
+
+    def __init__(self, **kwds):
+
+        kwds["name"] = self._debug_solver_name
+        self.options = Bunch()
+        if kwds.get("options") is not None:
+            for key in kwds["options"]:
+                setattr(self.options, key, kwds["options"][key])
+
+        self._value_cache = pyo.ComponentMap()
+
+    def restore_initial_values(self, blk):
+        for var in blk.component_data_objects(pyo.Var, descend_into=True):
+            var.set_value(self._value_cache[var], skip_validation=True)
+
+    def _cache_initial_values(self, blk):
+        for v in blk.component_data_objects(pyo.Var, descend_into=True):
+            self._value_cache[v] = v.value
+
+    def solve(self, blk, *args, **kwds):
+
+        if not IPython_available:
+            raise ImportError(f"The DebugSolverWrapper requires ipython.")
+
+        solver = pyo.SolverFactory(self._base_solver)
+
+        for k, v in self.options.items():
+            solver.options[k] = v
+
+        self._cache_initial_values(blk)
+
+        try:
+            results = solver.solve(blk, *args, **kwds)
+        except:
+            results = None
+        if results is not None and pyo.check_optimal_termination(results):
+            return results
+
+        self.restore_initial_values(blk)
+        debug = self
+
+        # else there was a problem
+        # TODO: we may want to switch out the default IDAES solver so we
+        #       don't nest one of these environments inside itself...
+        print(f"Solver debugging mode: the block {blk.name} failed to solve.")
+        print(f"{blk.name} is called `blk` in this context.")
+        print(f"The solver {solver.name} is available in the variable `solver`.")
+        print(f"The Initial values have be restored into the block.")
+        print(
+            f"You can restore them anytime by calling `debug.restore_initial_values(blk)`."
+        )
+        print(
+            f"The model has been loaded into an IDAES DiagnosticsToolbox instance called `dt`."
+        )
+        from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+
+        dt = DiagnosticsToolbox(blk)
+        # dt.report_structural_issues()
+        IPython.embed(colors="neutral")
+
+        return results
+
+
 def create_debug_solver_wrapper(solver_name):
 
     assert pyo.SolverFactory(solver_name).available()
@@ -216,70 +285,9 @@ def create_debug_solver_wrapper(solver_name):
         debug_solver_name,
         doc=f"Debug solver wrapper for {solver_name}",
     )
-    class DebugSolverWrapper:
-
+    class DebugSolverWrapper(_BaseDebugSolverWrapper):
         _base_solver = solver_name
-
-        def __init__(self, **kwds):
-
-            kwds["name"] = debug_solver_name
-            self.options = Bunch()
-            if kwds.get("options") is not None:
-                for key in kwds["options"]:
-                    setattr(self.options, key, kwds["options"][key])
-
-            self._value_cache = pyo.ComponentMap()
-
-        def restore_initial_values(self, blk):
-            for var in blk.component_data_objects(pyo.Var, descend_into=True):
-                var.set_value(self._value_cache[var], skip_validation=True)
-
-        def _cache_initial_values(self, blk):
-            for v in blk.component_data_objects(pyo.Var, descend_into=True):
-                self._value_cache[v] = v.value
-
-        def solve(self, blk, *args, **kwds):
-
-            if not IPython_available:
-                raise ImportError(f"The DebugSolverWrapper requires ipython.")
-
-            solver = pyo.SolverFactory(self._base_solver)
-
-            for k, v in self.options.items():
-                solver.options[k] = v
-
-            self._cache_initial_values(blk)
-
-            try:
-                results = solver.solve(blk, *args, **kwds)
-            except:
-                results = None
-            if results is not None and pyo.check_optimal_termination(results):
-                return results
-
-            self.restore_initial_values(blk)
-            debug = self
-
-            # else there was a problem
-            # TODO: we may want to switch out the default IDAES solver so we
-            #       don't nest one of these environments inside itself...
-            print(f"Solver debugging mode: the block {blk.name} failed to solve.")
-            print(f"{blk.name} is called `blk` in this context.")
-            print(f"The solver {solver.name} is available in the variable `solver`.")
-            print(f"The Initial values have be restored into the block.")
-            print(
-                f"You can restore them anytime by calling `debug.restore_initial_values(blk)`."
-            )
-            print(
-                f"The model has been loaded into an IDAES DiagnosticsToolbox instance called `dt`."
-            )
-            from idaes.core.util.model_diagnostics import DiagnosticsToolbox
-
-            dt = DiagnosticsToolbox(blk)
-            # dt.report_structural_issues()
-            IPython.embed(colors="neutral")
-
-            return results
+        _debug_solver_name = debug_solver_name
 
     return debug_solver_name
 
