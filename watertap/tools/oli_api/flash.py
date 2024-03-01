@@ -98,7 +98,7 @@ class Flash:
         self.output_unit_set = output_unit_set
         self.relative_inflows = relative_inflows
 
-        if debug_level=="INFO":
+        if debug_level == "INFO":
             _logger.setLevel(logging.INFO)
         else:
             _logger.setLevel(logging.DEBUG)
