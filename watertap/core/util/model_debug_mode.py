@@ -11,22 +11,51 @@
 #################################################################################
 
 import idaes
+from idaes.core.util.exceptions import BurntToast
 from idaes.logger import solver_capture_off
 from watertap.core.plugins.solvers import create_debug_solver_wrapper
 
 
-def activate():
-    _default_solver_config_value = idaes.cfg.get("default_solver")
-    # create a debug solver around the current default solver
-    debug_solver_name = create_debug_solver_wrapper(
-        _default_solver_config_value.value()
-    )
+class _ModelDebugMode:
+    def __init__(self):
+        self._prior_default_solver = None
+        self._prior_idaes_logger_capture_solver = None
 
-    # reconfigure the default IDAES solver to use the debug wrapper
-    _default_solver_config_value.set_default_value(debug_solver_name)
-    if not _default_solver_config_value._userSet:
-        _default_solver_config_value.reset()
+    def activate(self):
+        _default_solver_config_value = idaes.cfg.get("default_solver")
+        self._prior_default_solver = _default_solver_config_value.value()
+        # create a debug solver around the current default solver
+        debug_solver_name = create_debug_solver_wrapper(self._prior_default_solver)
 
-    # disable solver log capturing so the resulting notebook
-    # can use the whole terminal screen
-    solver_capture_off()
+        # reconfigure the default IDAES solver to use the debug wrapper
+        _default_solver_config_value.set_default_value(debug_solver_name)
+        if not _default_solver_config_value._userSet:
+            _default_solver_config_value.reset()
+
+        # disable solver log capturing so the resulting notebook
+        # can use the whole terminal screen
+        self._prior_idaes_logger_capture_solver = idaes.cfg.logger_capture_solver
+        solver_capture_off()
+
+    def deactivate(self):
+        if self._prior_default_solver is None:
+            if self._prior_idaes_logger_capture_solver is not None:
+                raise BurntToast
+            # TODO: should we raise an error instead?
+            return
+
+        # reconfigure the default IDAES solver to use the debug wrapper
+        _default_solver_config_value = idaes.cfg.get("default_solver")
+        _default_solver_config_value.set_default_value(self._prior_default_solver)
+        if not _default_solver_config_value._userSet:
+            _default_solver_config_value.reset()
+
+        idaes.cfg.logger_capture_solver = self._prior_idaes_logger_capture_solver
+
+        self._prior_idaes_logger_capture_solver = None
+        self._prior_default_solver = None
+
+
+_mdm = _ModelDebugMode()
+activate = _mdm.activate
+deactivate = _mdm.deactivate
