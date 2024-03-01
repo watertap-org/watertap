@@ -43,9 +43,8 @@ class IPythonComms:
             "\tto_print = str(e)",
             "else:",
             f"\tto_print = r'''{self.message_when_no_errors}'''",
-            "finally:",
-            f"\tprint(to_print, file=open(r'{self.error_file_path}', 'w'))",
-            "\texit",
+            f"print(to_print, file=open(r'{self.error_file_path}', 'w'))",
+            "exit",
         ]
 
     @cached_property
