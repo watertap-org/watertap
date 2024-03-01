@@ -7,6 +7,11 @@ from typing import List
 
 import pytest
 
+# this needs to be done explicitly here since watertap.core.util.model_debug_mode is only imported in a subprocess
+pytest.importorskip(
+    "IPython", reason="The model debug mode functionality depends on IPython"
+)
+
 
 @dataclass
 class IPythonComms:
