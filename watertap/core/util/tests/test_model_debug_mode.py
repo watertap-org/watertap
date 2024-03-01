@@ -33,7 +33,7 @@ class IPythonComms:
 
     def __post_init__(self):
         self.error_file_path.touch()
-        
+
     @cached_property
     def lines(self) -> List[str]:
         return [
