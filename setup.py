@@ -21,7 +21,7 @@ cwd = Path(__file__).parent
 long_description = (cwd / "README.md").read_text()
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=2.3.0,<2.5.0rc0",  # from PyPI
+    "idaes-pse>=2.4.0,<2.5.0rc0",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
