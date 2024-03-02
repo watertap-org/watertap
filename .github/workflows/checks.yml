@@ -29,6 +29,7 @@ env:
   # --pyargs watertap is needed to be able to define CLI options in watertap/conftest.py
   PYTEST_ADDOPTS: "--color=yes"
   PIP_PROGRESS_BAR: "off"
+  WATERTAP_KERNEL_NAME: watertap-dev
 
 jobs:
 
@@ -237,9 +238,12 @@ jobs:
         echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --verbose
         echo '::endgroup::'
+    - name: Install Jupyter kernel
+      run: |
+        python -m ipykernel install --user --name "${{ env.WATERTAP_KERNEL_NAME }}"
     - name: Run pytest with nbmake
       run:
-        pytest --nbmake **/*.ipynb
+        pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}" **/*.ipynb
 
   macos:
     name: macOS setup (EXPERIMENTAL)
