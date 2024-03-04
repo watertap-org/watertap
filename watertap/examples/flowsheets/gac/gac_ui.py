@@ -43,7 +43,7 @@ def export_to_ui():
         category=FlowsheetCategory.wastewater,
         build_options={
             "MaterialFlowBasis": {
-                "name": "FilmTransferCoefficientType",
+                "name": "MaterialFlowBasis",
                 "display_name": "Material Flow Basis",
                 "values_allowed": [
                     x.name for x in [MaterialFlowBasis.molar, MaterialFlowBasis.mass]
