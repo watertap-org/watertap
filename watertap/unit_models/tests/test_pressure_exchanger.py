@@ -100,10 +100,10 @@ def test_build(
 
     # test ports and state variables
     port_lst = [
-        "low_pressure_inlet",
-        "low_pressure_outlet",
-        "high_pressure_inlet",
-        "high_pressure_outlet",
+        "feed_inlet",
+        "feed_outlet",
+        "brine_inlet",
+        "brine_outlet",
     ]
     port_vars_lst = ["flow_mass_phase_comp", "pressure", "temperature"]
 
@@ -139,7 +139,7 @@ def test_build(
     ]
 
     if has_leakage or has_mixing:
-        # unit_cons_lst.append("eq_mass_transfer_from_high_pressure_side")
+        # unit_cons_lst.append("eq_mass_transfer_from_brine_side")
         unit_cons_lst.append("eq_leakage")
         unit_cons_lst.append("eq_mixing")
         unit_cons_lst.append("eq_mass_transfer_term")
@@ -151,7 +151,7 @@ def test_build(
 
     # test control volumes, only terms directly used by pressure exchanger
 
-    cv_list = ["low_pressure_side", "high_pressure_side"]
+    cv_list = ["feed_side", "brine_side"]
     cv_var_lst = ["deltaP"]
     if has_mixing:
         cv_var_lst.append("mass_transfer_term")
@@ -212,47 +212,35 @@ class TestPressureExchanger_without_mass_transfer:
         highP_mass_frac_TDS = 0.07
         highP_pressure = 50e5
 
-        m.fs.unit.low_pressure_side.properties_in[0].flow_vol_phase["Liq"].fix(flow_vol)
-        m.fs.unit.low_pressure_side.properties_in[0].mass_frac_phase_comp[
-            "Liq", "TDS"
-        ].fix(lowP_mass_frac_TDS)
-
-        m.fs.unit.low_pressure_side.properties_in[0].pressure.fix(lowP_pressure)
-        m.fs.unit.low_pressure_side.properties_in[0].temperature.fix(temperature)
-
-        m.fs.unit.high_pressure_side.properties_in[0].flow_vol_phase["Liq"].fix(
-            flow_vol
+        m.fs.unit.feed_side.properties_in[0].flow_vol_phase["Liq"].fix(flow_vol)
+        m.fs.unit.feed_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].fix(
+            lowP_mass_frac_TDS
         )
-        m.fs.unit.high_pressure_side.properties_in[0].mass_frac_phase_comp[
-            "Liq", "TDS"
-        ].fix(highP_mass_frac_TDS)
-        m.fs.unit.high_pressure_side.properties_in[0].pressure.fix(highP_pressure)
-        m.fs.unit.high_pressure_side.properties_in[0].temperature.fix(temperature)
+
+        m.fs.unit.feed_side.properties_in[0].pressure.fix(lowP_pressure)
+        m.fs.unit.feed_side.properties_in[0].temperature.fix(temperature)
+
+        m.fs.unit.brine_side.properties_in[0].flow_vol_phase["Liq"].fix(flow_vol)
+        m.fs.unit.brine_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].fix(
+            highP_mass_frac_TDS
+        )
+        m.fs.unit.brine_side.properties_in[0].pressure.fix(highP_pressure)
+        m.fs.unit.brine_side.properties_in[0].temperature.fix(temperature)
 
         # solve inlet conditions and only fix state variables (i.e. unfix flow_vol and mass_frac_phase)
 
-        results = solver.solve(m.fs.unit.high_pressure_side.properties_in[0])
+        results = solver.solve(m.fs.unit.brine_side.properties_in[0])
         assert results.solver.termination_condition == TerminationCondition.optimal
-        m.fs.unit.high_pressure_side.properties_in[0].flow_mass_phase_comp[
-            "Liq", "TDS"
-        ].fix()
-        m.fs.unit.high_pressure_side.properties_in[0].flow_vol_phase["Liq"].unfix()
-        m.fs.unit.high_pressure_side.properties_in[0].mass_frac_phase_comp[
-            "Liq", "TDS"
-        ].unfix()
+        m.fs.unit.brine_side.properties_in[0].flow_mass_phase_comp["Liq", "TDS"].fix()
+        m.fs.unit.brine_side.properties_in[0].flow_vol_phase["Liq"].unfix()
+        m.fs.unit.brine_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].unfix()
 
-        results = solver.solve(m.fs.unit.low_pressure_side.properties_in[0])
+        results = solver.solve(m.fs.unit.feed_side.properties_in[0])
         assert results.solver.termination_condition == TerminationCondition.optimal
-        m.fs.unit.low_pressure_side.properties_in[0].flow_mass_phase_comp[
-            "Liq", "H2O"
-        ].fix()
-        m.fs.unit.low_pressure_side.properties_in[0].flow_mass_phase_comp[
-            "Liq", "TDS"
-        ].fix()
-        m.fs.unit.low_pressure_side.properties_in[0].flow_vol_phase["Liq"].unfix()
-        m.fs.unit.low_pressure_side.properties_in[0].mass_frac_phase_comp[
-            "Liq", "TDS"
-        ].unfix()
+        m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix()
+        m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "TDS"].fix()
+        m.fs.unit.feed_side.properties_in[0].flow_vol_phase["Liq"].unfix()
+        m.fs.unit.feed_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].unfix()
 
         # Specify unit
         efficiency = 0.95
@@ -304,46 +292,40 @@ class TestPressureExchanger_without_mass_transfer:
     def test_solution(self, unit_frame):
         m = unit_frame
         assert pytest.approx(0.9877, rel=1e-3) == value(
-            m.fs.unit.low_pressure_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         assert pytest.approx(3.582e-2, rel=1e-3) == value(
-            m.fs.unit.low_pressure_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
         assert pytest.approx(4.755e6, rel=1e-3) == value(
-            m.fs.unit.low_pressure_outlet.pressure[0]
+            m.fs.unit.feed_outlet.pressure[0]
         )
         assert pytest.approx(0.9767, rel=1e-3) == value(
-            m.fs.unit.high_pressure_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.unit.brine_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         assert pytest.approx(7.352e-2, rel=1e-3) == value(
-            m.fs.unit.high_pressure_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            m.fs.unit.brine_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
-        assert pytest.approx(4.654e6, rel=1e-3) == value(
-            m.fs.unit.low_pressure_side.deltaP[0]
-        )
-        assert pytest.approx(4.654e3, rel=1e-3) == value(
-            m.fs.unit.low_pressure_side.work[0]
-        )
+        assert pytest.approx(4.654e6, rel=1e-3) == value(m.fs.unit.feed_side.deltaP[0])
+        assert pytest.approx(4.654e3, rel=1e-3) == value(m.fs.unit.feed_side.work[0])
         assert pytest.approx(-4.899e6, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.deltaP[0]
+            m.fs.unit.brine_side.deltaP[0]
         )
-        assert pytest.approx(-4.899e3, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.work[0]
-        )
+        assert pytest.approx(-4.899e3, rel=1e-3) == value(m.fs.unit.brine_side.work[0])
 
         # testing solvent transfer
         assert pytest.approx(0.9767, rel=1e-3) == value(
-            m.fs.unit.high_pressure_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.unit.brine_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         assert pytest.approx(0.9877, rel=1e-3) == value(
-            m.fs.unit.low_pressure_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         # testing solute transfer
         assert pytest.approx(7.352e-2, rel=1e-3) == value(
-            m.fs.unit.high_pressure_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            m.fs.unit.brine_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
         assert pytest.approx(3.582e-2, rel=1e-3) == value(
-            m.fs.unit.low_pressure_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
 
     @pytest.mark.unit
@@ -370,47 +352,35 @@ class TestPressureExchanger_with_high_pressure_difference:
         highP_mass_frac_TDS = 0.07
         highP_pressure = 50e5
 
-        m.fs.unit.low_pressure_side.properties_in[0].flow_vol_phase["Liq"].fix(flow_vol)
-        m.fs.unit.low_pressure_side.properties_in[0].mass_frac_phase_comp[
-            "Liq", "TDS"
-        ].fix(lowP_mass_frac_TDS)
-
-        m.fs.unit.low_pressure_side.properties_in[0].pressure.fix(lowP_pressure)
-        m.fs.unit.low_pressure_side.properties_in[0].temperature.fix(temperature)
-
-        m.fs.unit.high_pressure_side.properties_in[0].flow_vol_phase["Liq"].fix(
-            flow_vol
+        m.fs.unit.feed_side.properties_in[0].flow_vol_phase["Liq"].fix(flow_vol)
+        m.fs.unit.feed_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].fix(
+            lowP_mass_frac_TDS
         )
-        m.fs.unit.high_pressure_side.properties_in[0].mass_frac_phase_comp[
-            "Liq", "TDS"
-        ].fix(highP_mass_frac_TDS)
-        m.fs.unit.high_pressure_side.properties_in[0].pressure.fix(highP_pressure)
-        m.fs.unit.high_pressure_side.properties_in[0].temperature.fix(temperature)
+
+        m.fs.unit.feed_side.properties_in[0].pressure.fix(lowP_pressure)
+        m.fs.unit.feed_side.properties_in[0].temperature.fix(temperature)
+
+        m.fs.unit.brine_side.properties_in[0].flow_vol_phase["Liq"].fix(flow_vol)
+        m.fs.unit.brine_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].fix(
+            highP_mass_frac_TDS
+        )
+        m.fs.unit.brine_side.properties_in[0].pressure.fix(highP_pressure)
+        m.fs.unit.brine_side.properties_in[0].temperature.fix(temperature)
 
         # solve inlet conditions and only fix state variables (i.e. unfix flow_vol and mass_frac_phase)
 
-        results = solver.solve(m.fs.unit.high_pressure_side.properties_in[0])
+        results = solver.solve(m.fs.unit.brine_side.properties_in[0])
         assert results.solver.termination_condition == TerminationCondition.optimal
-        m.fs.unit.high_pressure_side.properties_in[0].flow_mass_phase_comp[
-            "Liq", "TDS"
-        ].fix()
-        m.fs.unit.high_pressure_side.properties_in[0].flow_vol_phase["Liq"].unfix()
-        m.fs.unit.high_pressure_side.properties_in[0].mass_frac_phase_comp[
-            "Liq", "TDS"
-        ].unfix()
+        m.fs.unit.brine_side.properties_in[0].flow_mass_phase_comp["Liq", "TDS"].fix()
+        m.fs.unit.brine_side.properties_in[0].flow_vol_phase["Liq"].unfix()
+        m.fs.unit.brine_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].unfix()
 
-        results = solver.solve(m.fs.unit.low_pressure_side.properties_in[0])
+        results = solver.solve(m.fs.unit.feed_side.properties_in[0])
         assert results.solver.termination_condition == TerminationCondition.optimal
-        m.fs.unit.low_pressure_side.properties_in[0].flow_mass_phase_comp[
-            "Liq", "H2O"
-        ].fix()
-        m.fs.unit.low_pressure_side.properties_in[0].flow_mass_phase_comp[
-            "Liq", "TDS"
-        ].fix()
-        m.fs.unit.low_pressure_side.properties_in[0].flow_vol_phase["Liq"].unfix()
-        m.fs.unit.low_pressure_side.properties_in[0].mass_frac_phase_comp[
-            "Liq", "TDS"
-        ].unfix()
+        m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix()
+        m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "TDS"].fix()
+        m.fs.unit.feed_side.properties_in[0].flow_vol_phase["Liq"].unfix()
+        m.fs.unit.feed_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].unfix()
 
         # Specify unit
         high_pressure_difference = 0.8 * pyunits.bar
@@ -461,46 +431,40 @@ class TestPressureExchanger_with_high_pressure_difference:
     def test_solution(self, unit_frame):
         m = unit_frame
         assert pytest.approx(0.9877, rel=1e-3) == value(
-            m.fs.unit.low_pressure_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         assert pytest.approx(3.582e-2, rel=1e-3) == value(
-            m.fs.unit.low_pressure_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
         assert pytest.approx(4.92e6, rel=1e-3) == value(
-            m.fs.unit.low_pressure_outlet.pressure[0]
+            m.fs.unit.feed_outlet.pressure[0]
         )
         assert pytest.approx(0.9767, rel=1e-3) == value(
-            m.fs.unit.high_pressure_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.unit.brine_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         assert pytest.approx(7.352e-2, rel=1e-3) == value(
-            m.fs.unit.high_pressure_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            m.fs.unit.brine_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
-        assert pytest.approx(4.819e6, rel=1e-3) == value(
-            m.fs.unit.low_pressure_side.deltaP[0]
-        )
-        assert pytest.approx(4.819e3, rel=1e-3) == value(
-            m.fs.unit.low_pressure_side.work[0]
-        )
+        assert pytest.approx(4.819e6, rel=1e-3) == value(m.fs.unit.feed_side.deltaP[0])
+        assert pytest.approx(4.819e3, rel=1e-3) == value(m.fs.unit.feed_side.work[0])
         assert pytest.approx(-4.899e6, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.deltaP[0]
+            m.fs.unit.brine_side.deltaP[0]
         )
-        assert pytest.approx(-4.899e3, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.work[0]
-        )
+        assert pytest.approx(-4.899e3, rel=1e-3) == value(m.fs.unit.brine_side.work[0])
 
         # testing solvent transfer
         assert pytest.approx(0.9767, rel=1e-3) == value(
-            m.fs.unit.high_pressure_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.unit.brine_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         assert pytest.approx(0.9877, rel=1e-3) == value(
-            m.fs.unit.low_pressure_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         # testing solute transfer
         assert pytest.approx(7.352e-2, rel=1e-3) == value(
-            m.fs.unit.high_pressure_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            m.fs.unit.brine_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
         assert pytest.approx(3.582e-2, rel=1e-3) == value(
-            m.fs.unit.low_pressure_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
 
     @pytest.mark.unit
@@ -531,50 +495,38 @@ class TestPressureExchanger_with_mass_transfer:
         leakage_vol = 0.01
         mixing_vol = 0.035
 
-        m.fs.unit.low_pressure_side.properties_in[0].flow_vol_phase["Liq"].fix(flow_vol)
-        m.fs.unit.low_pressure_side.properties_in[0].mass_frac_phase_comp[
-            "Liq", "TDS"
-        ].fix(lowP_mass_frac_TDS)
-
-        m.fs.unit.low_pressure_side.properties_in[0].pressure.fix(lowP_pressure)
-        m.fs.unit.low_pressure_side.properties_in[0].temperature.fix(temperature)
-
-        m.fs.unit.high_pressure_side.properties_in[0].flow_vol_phase["Liq"].fix(
-            flow_vol
+        m.fs.unit.feed_side.properties_in[0].flow_vol_phase["Liq"].fix(flow_vol)
+        m.fs.unit.feed_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].fix(
+            lowP_mass_frac_TDS
         )
-        m.fs.unit.high_pressure_side.properties_in[0].mass_frac_phase_comp[
-            "Liq", "TDS"
-        ].fix(highP_mass_frac_TDS)
-        m.fs.unit.high_pressure_side.properties_in[0].pressure.fix(highP_pressure)
-        m.fs.unit.high_pressure_side.properties_in[0].temperature.fix(temperature)
+
+        m.fs.unit.feed_side.properties_in[0].pressure.fix(lowP_pressure)
+        m.fs.unit.feed_side.properties_in[0].temperature.fix(temperature)
+
+        m.fs.unit.brine_side.properties_in[0].flow_vol_phase["Liq"].fix(flow_vol)
+        m.fs.unit.brine_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].fix(
+            highP_mass_frac_TDS
+        )
+        m.fs.unit.brine_side.properties_in[0].pressure.fix(highP_pressure)
+        m.fs.unit.brine_side.properties_in[0].temperature.fix(temperature)
 
         m.fs.unit.leakage_vol[0].fix(leakage_vol)
         m.fs.unit.mixing_vol[0].fix(mixing_vol)
 
         # solve inlet conditions and only fix state variables (i.e. unfix flow_vol and mass_frac_phase)
 
-        results = solver.solve(m.fs.unit.high_pressure_side.properties_in[0])
+        results = solver.solve(m.fs.unit.brine_side.properties_in[0])
         assert results.solver.termination_condition == TerminationCondition.optimal
-        m.fs.unit.high_pressure_side.properties_in[0].flow_mass_phase_comp[
-            "Liq", "TDS"
-        ].fix()
-        m.fs.unit.high_pressure_side.properties_in[0].flow_vol_phase["Liq"].unfix()
-        m.fs.unit.high_pressure_side.properties_in[0].mass_frac_phase_comp[
-            "Liq", "TDS"
-        ].unfix()
+        m.fs.unit.brine_side.properties_in[0].flow_mass_phase_comp["Liq", "TDS"].fix()
+        m.fs.unit.brine_side.properties_in[0].flow_vol_phase["Liq"].unfix()
+        m.fs.unit.brine_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].unfix()
 
-        results = solver.solve(m.fs.unit.low_pressure_side.properties_in[0])
+        results = solver.solve(m.fs.unit.feed_side.properties_in[0])
         assert results.solver.termination_condition == TerminationCondition.optimal
-        m.fs.unit.low_pressure_side.properties_in[0].flow_mass_phase_comp[
-            "Liq", "H2O"
-        ].fix()
-        m.fs.unit.low_pressure_side.properties_in[0].flow_mass_phase_comp[
-            "Liq", "TDS"
-        ].fix()
-        m.fs.unit.low_pressure_side.properties_in[0].flow_vol_phase["Liq"].unfix()
-        m.fs.unit.low_pressure_side.properties_in[0].mass_frac_phase_comp[
-            "Liq", "TDS"
-        ].unfix()
+        m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix()
+        m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "TDS"].fix()
+        m.fs.unit.feed_side.properties_in[0].flow_vol_phase["Liq"].unfix()
+        m.fs.unit.feed_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].unfix()
 
         # Specify unit
         high_pressure_difference = 0.8 * pyunits.bar
@@ -622,52 +574,46 @@ class TestPressureExchanger_with_mass_transfer:
     def test_solution(self, unit_frame):
         m = unit_frame
         assert pytest.approx(0.9877, rel=1e-3) == value(
-            m.fs.unit.low_pressure_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         assert pytest.approx(3.582e-2, rel=1e-3) == value(
-            m.fs.unit.low_pressure_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
         assert pytest.approx(4.92e6, rel=1e-3) == value(
-            m.fs.unit.low_pressure_outlet.pressure[0]
+            m.fs.unit.feed_outlet.pressure[0]
         )
         assert pytest.approx(0.9868, rel=1e-3) == value(
-            m.fs.unit.high_pressure_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.unit.brine_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         assert pytest.approx(7.352e-2, rel=1e-3) == value(
-            m.fs.unit.high_pressure_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            m.fs.unit.brine_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
-        assert pytest.approx(4.819e6, rel=1e-3) == value(
-            m.fs.unit.low_pressure_side.deltaP[0]
-        )
-        assert pytest.approx(4.819e3, rel=1e-3) == value(
-            m.fs.unit.low_pressure_side.work[0]
-        )
+        assert pytest.approx(4.819e6, rel=1e-3) == value(m.fs.unit.feed_side.deltaP[0])
+        assert pytest.approx(4.819e3, rel=1e-3) == value(m.fs.unit.feed_side.work[0])
         assert pytest.approx(-4.899e6, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.deltaP[0]
+            m.fs.unit.brine_side.deltaP[0]
         )
-        assert pytest.approx(-4.948e3, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.work[0]
-        )
+        assert pytest.approx(-4.948e3, rel=1e-3) == value(m.fs.unit.brine_side.work[0])
 
         # testing solvent transfer
         assert pytest.approx(3.559e-4, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "H2O"]
+            m.fs.unit.brine_side.mass_transfer_term[0, "Liq", "H2O"]
         )
         assert pytest.approx(0.9871, rel=1e-3) == value(
-            m.fs.unit.high_pressure_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.unit.brine_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         assert pytest.approx(0.9874, rel=1e-3) == value(
-            m.fs.unit.low_pressure_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         # testing solute transfer
         assert pytest.approx(-1.293e-3, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "TDS"]
+            m.fs.unit.brine_side.mass_transfer_term[0, "Liq", "TDS"]
         )
         assert pytest.approx(7.222e-2, rel=1e-3) == value(
-            m.fs.unit.high_pressure_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            m.fs.unit.brine_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
         assert pytest.approx(3.712e-2, rel=1e-3) == value(
-            m.fs.unit.low_pressure_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
 
     @pytest.mark.unit
@@ -731,7 +677,7 @@ class TestPressureExchanger_with_ion_prop_pack:
         m.fs.unit.leakage_vol[0].fix(leakage_vol)
         m.fs.unit.mixing_vol[0].fix(mixing_vol)
 
-        LPS_in = m.fs.unit.low_pressure_side.properties_in[0]
+        LPS_in = m.fs.unit.feed_side.properties_in[0]
         for ion, x in lowP_mass_frac.items():
             mol_comp_flow = (
                 x * pyunits.kg / pyunits.kg * feed_flow_mass / LPS_in.mw_comp[ion]
@@ -744,8 +690,8 @@ class TestPressureExchanger_with_ion_prop_pack:
             / LPS_in.mw_comp["H2O"]
         )
 
-        m.fs.unit.low_pressure_side.properties_in[0].pressure.fix(lowP_pressure)
-        m.fs.unit.low_pressure_side.properties_in[0].temperature.fix(temperature)
+        m.fs.unit.feed_side.properties_in[0].pressure.fix(lowP_pressure)
+        m.fs.unit.feed_side.properties_in[0].temperature.fix(temperature)
 
         ### NOTE THE PRESSURE EXHCANGER EXPECTS EQUAL VOLUMETRIC FLOW RATES
         # so one of mass fraction (here we unfix H2O mass fraction)
@@ -756,7 +702,7 @@ class TestPressureExchanger_with_ion_prop_pack:
         # a -1 DOF error and should not occur in practice where typicly at least one of
         # the inlet mass flow rates is colaculated.
 
-        HPS_in = m.fs.unit.high_pressure_side.properties_in[0]
+        HPS_in = m.fs.unit.brine_side.properties_in[0]
         for ion, x in highP_mass_frac.items():
             mol_comp_flow = (
                 x * pyunits.kg / pyunits.kg * feed_flow_mass / HPS_in.mw_comp[ion]
@@ -770,8 +716,8 @@ class TestPressureExchanger_with_ion_prop_pack:
             / HPS_in.mw_comp["H2O"]
         )
 
-        m.fs.unit.high_pressure_side.properties_in[0].pressure.fix(highP_pressure)
-        m.fs.unit.high_pressure_side.properties_in[0].temperature.fix(temperature)
+        m.fs.unit.brine_side.properties_in[0].pressure.fix(highP_pressure)
+        m.fs.unit.brine_side.properties_in[0].temperature.fix(temperature)
 
         return m
 
@@ -815,52 +761,42 @@ class TestPressureExchanger_with_ion_prop_pack:
         m = unit_frame
 
         assert pytest.approx(4.755e6, rel=1e-3) == value(
-            m.fs.unit.low_pressure_outlet.pressure[0]
+            m.fs.unit.feed_outlet.pressure[0]
         )
 
-        assert pytest.approx(4.654e6, rel=1e-3) == value(
-            m.fs.unit.low_pressure_side.deltaP[0]
-        )
-        assert pytest.approx(4.654e3, rel=1e-3) == value(
-            m.fs.unit.low_pressure_side.work[0]
-        )
+        assert pytest.approx(4.654e6, rel=1e-3) == value(m.fs.unit.feed_side.deltaP[0])
+        assert pytest.approx(4.654e3, rel=1e-3) == value(m.fs.unit.feed_side.work[0])
         assert pytest.approx(-4.899e6, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.deltaP[0]
+            m.fs.unit.brine_side.deltaP[0]
         )
-        assert pytest.approx(-4.948e3, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.work[0]
-        )
+        assert pytest.approx(-4.948e3, rel=1e-3) == value(m.fs.unit.brine_side.work[0])
 
         # testing solvent transfer
         assert pytest.approx(0.06733, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "H2O"]
+            m.fs.unit.brine_side.mass_transfer_term[0, "Liq", "H2O"]
         )
         assert pytest.approx(0.5, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.properties_out[0].flow_mass_phase_comp[
-                "Liq", "H2O"
-            ]
+            m.fs.unit.brine_side.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
         )
         assert pytest.approx(0.9634, rel=1e-3) == value(
-            m.fs.unit.low_pressure_side.properties_out[0].flow_mass_phase_comp[
-                "Liq", "H2O"
-            ]
+            m.fs.unit.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
         )
 
         # testing solute transfer
         assert pytest.approx(-0.01659, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "Na"]
+            m.fs.unit.brine_side.mass_transfer_term[0, "Liq", "Na"]
         )
         assert pytest.approx(-3.276e-4, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "Ca"]
+            m.fs.unit.brine_side.mass_transfer_term[0, "Liq", "Ca"]
         )
         assert pytest.approx(-1.992e-3, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "Mg"]
+            m.fs.unit.brine_side.mass_transfer_term[0, "Liq", "Mg"]
         )
         assert pytest.approx(-7.632e-4, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "SO4"]
+            m.fs.unit.brine_side.mass_transfer_term[0, "Liq", "SO4"]
         )
         assert pytest.approx(-1.989e-2, rel=1e-3) == value(
-            m.fs.unit.high_pressure_side.mass_transfer_term[0, "Liq", "Cl"]
+            m.fs.unit.brine_side.mass_transfer_term[0, "Liq", "Cl"]
         )
 
     @pytest.mark.unit

@@ -40,7 +40,7 @@ there are 2 additional variables ``high_pressure_difference`` and ``low_pressure
 
 Model Structure
 ------------------
-The pressure exchanger model consists of 2 `ControlVolume0DBlocks`: one for the low-pressure side and high-pressure side.
+The pressure exchanger model consists of 2 `ControlVolume0DBlocks`: one for the feed side and brine side.
 
 Sets
 ----
@@ -69,7 +69,7 @@ The pressure exchanger unit model includes the following variables:
 
 \*High pressure difference and low pressure difference are non-negative values
 
-Each control volume (i.e. `low_presssure_side`, and `high_pressure_side`) has the following variables of interest:
+Each control volume (i.e. `feed_side`, and `brine_side`) has the following variables of interest:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units", "Pyomo Type" 
@@ -103,18 +103,18 @@ if ``has_leakage`` and ``has_mixing`` are set to default (``False``):
    "Mass balance for each side", ":math:`M_{out, j} = M_{in, j}`"
    "Momentum balance for each side", ":math:`P_{out} = P_{in} + ΔP`"
    "Isothermal assumption for each side", ":math:`T_{out} = T_{in}`"
-   "Equal volumetric flowrate*", ":math:`Q_{out, LPS} = Q_{in, HPS}`"
-   "Equal pressure*", ":math:`P_{out, HPS} = P_{in, LPS}`"
-   "Pressure transfer*", ":math:`ΔP_{LPS} = - \eta ΔP_{HPS}`"
+   "Equal volumetric flowrate*", ":math:`Q_{out, F} = Q_{in, F}`"
+   "Equal pressure*", ":math:`P_{out, B} = P_{in, F}`"
+   "Pressure transfer*", ":math:`ΔP_{F} = - \eta ΔP_{B}`"
 
-\* LPS stands for low pressure side, HPS stands for high pressure side
+\* F stands for feed side, B stands for brine side
 
 if ``has_leakage`` is set to ``True``, then the equal volumetric flowrate equation is replaced by:
 
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Equal volumetric flowrate", ":math:`Q_{out, LPS} = (1 - \delta) Q_{in, HPS}`"
+   "Equal volumetric flowrate", ":math:`Q_{out, F} = (1 - \delta) Q_{in, B}`"
 
 if ``has_mixing`` is set to ``True``, the mass balance equations for each side become:
 
@@ -130,9 +130,9 @@ and there are 3 additional constraints:
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Mixing effect of solute*", ":math:`C_{out, LPS} = C_{in, LPS} (1-\chi) + C_{in, HPS} \chi`"
-   "Linking mass transfer terms", ":math:`MTT_{j, LPS} = -MTT_{j, HPS}`"
-   "Equal low pressure side volumetric flowrate", ":math:`Q_{out, LPS} = Q_{in, LPS}`"
+   "Mixing effect of solute*", ":math:`C_{out, F} = C_{in, F} (1-\chi) + C_{in, B} \chi`"
+   "Linking mass transfer terms", ":math:`MTT_{j, F} = -MTT_{j, B}`"
+   "Equal feed side volumetric flowrate", ":math:`Q_{out, F} = Q_{in, F}`"
 
 \* C represents solute concentration
 
@@ -142,8 +142,8 @@ then there is 1 additional constraint and the equal pressure equation is replace
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Pressure drop across HPS,in and LPS, out", ":math:`P_{out, LPS} + HPD = P_{in, HPS}`"
-   "Pressure drop across HPS, out and LPS, in", ":math:`P_{out, HPS} = P_{in, LPS} + LPD`"
+   "Pressure drop across B,in and F, out", ":math:`P_{out, F} + HPD = P_{in, B}`"
+   "Pressure drop across B, out and F, in", ":math:`P_{out, B} = P_{in, F} + LPD`"
 
 Class Documentation
 -------------------
