@@ -14,6 +14,7 @@ GUI configuration for the GAC model.
 """
 
 from pyomo.environ import units as pyunits
+from idaes.core import MaterialFlowBasis
 from idaes.core.solvers import get_solver
 from watertap.property_models.multicomp_aq_sol_prop_pack import DiffusivityCalculation
 from watertap.unit_models.gac import (
@@ -41,6 +42,12 @@ def export_to_ui():
         requires_idaes_solver=True,
         category=FlowsheetCategory.wastewater,
         build_options={
+            "MaterialFlowBasis": {
+                "name": "FilmTransferCoefficientType",
+                "display_name": "Material Flow Basis",
+                "values_allowed": [x.name for x in MaterialFlowBasis],
+                "value": MaterialFlowBasis.molar.name,
+            },
             "FilmTransferCoefficientType": {
                 "name": "FilmTransferCoefficientType",
                 "display_name": "Film Transfer Coefficient Type",
