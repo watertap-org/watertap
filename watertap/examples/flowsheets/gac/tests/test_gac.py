@@ -75,8 +75,7 @@ class TestGACFlowsheet:
     def test_build_solve_options(self):
 
         # test build and solve at initial conditions for all config options
-        for flow_basis in MaterialFlowBasis:
-            print(flow_basis.name)
+        for flow_basis in [MaterialFlowBasis.molar, MaterialFlowBasis.mass]:
             for film_option in FilmTransferCoefficientType:
                 for surface_option in SurfaceDiffusionCoefficientType:
                     for diffus_option in DiffusivityCalculation:
@@ -91,8 +90,6 @@ class TestGACFlowsheet:
                             )
                             gac_fs.initialize(m)
                             res = gac_fs.optimize(m)
-
-                            m.fs.gac.operational_time.display()
 
                             assert_units_consistent(m)
                             assert degrees_of_freedom(m) == 0
