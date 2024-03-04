@@ -101,7 +101,8 @@ setup(
             "json-schema-for-humans",
             "mongomock",
             "pandas",
-            "nbmake",
+            # treebeardtech/nbmake#121
+            "nbmake != 1.5.1",
             "nbconvert",
         ],
         "notebooks": [
@@ -126,7 +127,8 @@ setup(
             "pytest",  # test framework
             "pytest-cov",  # code coverage
             "mongomock",  # mongodb mocking for testing
-            "nbmake",
+            # treebeardtech/nbmake#121
+            "nbmake != 1.5.1",
         ],
     },
     package_data={  # Optional
