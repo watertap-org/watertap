@@ -233,7 +233,7 @@ class TestCrystallizer_costing_by_volume(UnitTestHarness):
         m.fs.costing = WaterTAPCosting()
         m.fs.unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing,
-            costing_method_arguments={"cost_type": CrystallizerCostType.mass_basis},
+            costing_method_arguments={"cost_type": CrystallizerCostType.volume_basis},
         )
 
         m.fs.costing.crystallizer.steam_pressure.fix(5)
@@ -245,6 +245,13 @@ class TestCrystallizer_costing_by_volume(UnitTestHarness):
 
         self.unit_solutions[m.fs.unit.diameter_crystallizer] = 1.5427211
         self.unit_solutions[m.fs.unit.volume_suspension] = 0.9587126
-        self.unit_solutions[m.fs.unit.costing.capital_cost] = 600166.827
+        self.unit_solutions[m.fs.unit.costing.capital_cost] = 398225.15644
 
         return m
+
+
+class TestCrystallizerReporting:
+    @pytest.mark.unit
+    def test_reporting(self):
+        m = build()
+        m.fs.unit.report()

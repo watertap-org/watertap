@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
+import pytest
 from pyomo.environ import ConcreteModel
 
 from idaes.core.solvers import get_solver
@@ -824,3 +824,10 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_stage(
         ] = 0.0005792222
 
         return m
+
+
+class TestReverseOsmosis1DReporting:
+    @pytest.mark.unit
+    def test_reporting(self):
+        m = build()
+        m.fs.unit.report()

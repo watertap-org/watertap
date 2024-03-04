@@ -19,7 +19,7 @@ Aspects on ADM1 Implementation within the BSM2 Framework.
 Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
 
 """
-
+import pytest
 from pyomo.environ import (
     ConcreteModel,
 )
@@ -208,3 +208,10 @@ class TestAnaerobicDigester(UnitTestHarness):
         self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1880470.588
 
         return m
+
+
+class TestAnaerobicDigesterReporting:
+    @pytest.mark.unit
+    def test_reporting(self):
+        m = build()
+        m.fs.unit.report()
