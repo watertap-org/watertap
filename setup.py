@@ -101,7 +101,8 @@ setup(
             "json-schema-for-humans",
             "mongomock",
             "pandas",
-            "nbmake",
+            # treebeardtech/nbmake#121
+            "nbmake != 1.5.1",
             "nbconvert",
         ],
         "notebooks": [
