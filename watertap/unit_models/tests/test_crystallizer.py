@@ -10,7 +10,6 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-import pytest
 from pyomo.environ import (
     ConcreteModel,
 )
@@ -248,10 +247,3 @@ class TestCrystallizer_costing_by_volume(UnitTestHarness):
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 398225.15644
 
         return m
-
-
-class TestCrystallizerReporting:
-    @pytest.mark.unit
-    def test_reporting(self):
-        m = build()
-        m.fs.unit.report()

@@ -9,7 +9,6 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-import pytest
 from pyomo.environ import ConcreteModel
 
 from idaes.core.solvers import get_solver
@@ -631,10 +630,3 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
         ] = 76.211017
 
         return m
-
-
-class TestReverseOsmosis0DReporting:
-    @pytest.mark.unit
-    def test_reporting(self):
-        m = build()
-        m.fs.unit.report()

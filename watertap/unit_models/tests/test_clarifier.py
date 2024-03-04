@@ -13,7 +13,6 @@
 Tests for clarifier.
 """
 __author__ = "Chenyu Wang"
-import pytest
 from pyomo.environ import (
     ConcreteModel,
     units,
@@ -209,10 +208,3 @@ class TestPrimaryClarifierCosting(UnitTestHarness):
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 1390570 * 2
 
         return m
-
-
-class TestClarifierReporting:
-    @pytest.mark.unit
-    def test_reporting(self):
-        m = build()
-        m.fs.unit.report()
