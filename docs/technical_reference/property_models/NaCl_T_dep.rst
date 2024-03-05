@@ -1,7 +1,7 @@
 NaCl Property Package with Temperature Dependence
 =================================================
 
-This package implements property relationships for a NaCl solution.
+This package implements property relationships for an NaCl solution.
 
 This NaCl property package:
    * supports only H2O (solvent) and NaCl (solute) components
