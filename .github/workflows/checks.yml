@@ -79,6 +79,11 @@ jobs:
         jupyter --paths
         jupyter --config-dir
         jupyter --data-dir
+        cat << 'EOF' > $(jupyter --config-dir)/jupyter_nbmake_config.py
+        c.KernelSpecManager.whitelist = {'${{ env.WATERTAP_KERNEL_NAME }}'}
+        c.KernelSpecManager.ensure_native_kernel = False
+        EOF
+
     - name: Run pytest with nbmake
       run:
         pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}" **/*.ipynb
