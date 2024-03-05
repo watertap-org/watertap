@@ -178,3 +178,8 @@ class UnitTestHarness(abc.ABC):
                 )
             if not comp_obj == value(var):
                 raise AssertionError(f"{var}: Expected {val}, got {value(var)} instead")
+
+    @pytest.mark.component
+    def test_reporting(self, frame):
+        m, blk = frame
+        blk.report()
