@@ -88,6 +88,6 @@ jobs:
         EOF
 
     - name: Run pytest with nbmake
-      run:
+      run: |
         jupyter kernelspec list
         pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}" **/*.ipynb
