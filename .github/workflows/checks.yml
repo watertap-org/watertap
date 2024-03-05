@@ -76,6 +76,9 @@ jobs:
     - name: Install Jupyter kernel
       run: |
         python -m ipykernel install --user --name "${{ env.WATERTAP_KERNEL_NAME }}"
+        jupyter --paths
+        jupyter --config-dir
+        jupyter --data-dir
     - name: Run pytest with nbmake
       run:
         pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}" **/*.ipynb
