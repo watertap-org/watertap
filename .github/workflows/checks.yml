@@ -78,20 +78,7 @@ jobs:
         jupyter kernelspec list
         python -m ipykernel install --user --name "${{ env.WATERTAP_KERNEL_NAME }}"
         jupyter kernelspec list
-        jupyter --paths
-        jupyter --config-dir
-        jupyter --data-dir
-        mkdir -p $(jupyter --config-dir)
-        cat << 'EOF' > $(jupyter --config-dir)/jupyter_notebook_config.py
-        c.KernelSpecManager.whitelist = {'${{ env.WATERTAP_KERNEL_NAME }}'}
-        c.KernelSpecManager.ensure_native_kernel = False
-        EOF
 
     - name: Run pytest with nbmake
       run: |
-        jupyter kernelspec list
-        jupyter kernelspec remove -y python3
-        jupyter kernelspec list
-        jupyter kernelspec remove -y python3
-        jupyter kernelspec list
         pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}" **/*.ipynb
