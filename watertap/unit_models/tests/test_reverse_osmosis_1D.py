@@ -52,8 +52,6 @@ def build():
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
         pressure_change_type=PressureChangeType.calculated,
-        transformation_scheme="BACKWARD",
-        transformation_method="dae.finite_difference",
         finite_elements=3,
         has_full_reporting=True,
     )
