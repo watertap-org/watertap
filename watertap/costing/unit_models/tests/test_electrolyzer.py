@@ -48,7 +48,7 @@ class TestElectrolyzerCosting:
 
         m = build_costing
 
-        # testing gac costing block dof and initialization
+        # testing electrolyzer costing block dof and initialization
         assert assert_units_consistent(m) is None
         assert istat.degrees_of_freedom(m) == 0
         m.fs.unit.costing.initialize()
