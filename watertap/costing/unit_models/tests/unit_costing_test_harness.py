@@ -78,9 +78,16 @@ class UnitCostingTestHarness(abc.ABC):
                     f"The {self.__class__.__name__}.configure method should either "
                     "set the attribute `unit_model_block` or name it `fs.unit`."
                 )
+        if not hasattr(self, "unit_model_costing_block"):
+            self.unit_model_costing_block = model.find_component("fs.unit.costing")
+            if self.unit_model_costing_block is None:
+                raise RuntimeError(
+                    f"The {self.__class__.__name__}.configure method should either "
+                    "set the attribute `unit_model_costing_block` or name it `fs.unit.costing`."
+                )
         # keep the model so it does not get garbage collected
         self._model = model
-        blk = self.unit_model_block
+        blk = self.unit_model_costing_block
 
         # attaching objects to model to carry through in pytest frame
         # TODO: Consider removing these objects and directly calling self
@@ -98,7 +105,7 @@ class UnitCostingTestHarness(abc.ABC):
         The configure method must set the attributes:
         cost_solutions: ComponentMap of values for the specified variables
 
-        The unit model tested should be named `fs.unit`, or this method
+        The costing and unit model tested should be named `fs.unit`, or this method
         should set the attribute `unit_model_block`.
 
         Returns:
@@ -108,25 +115,25 @@ class UnitCostingTestHarness(abc.ABC):
     @pytest.fixture(scope="class")
     def frame(self):
         self.configure_class()
-        return self._model, self.unit_model_block
+        return self._model, self.unit_model_costing_block
 
     @pytest.mark.unit
     def test_units_consistent(self, frame):
-        m, unit_model = frame
-        assert_units_consistent(unit_model)
+        m, unit_model_costing = frame
+        assert_units_consistent(unit_model_costing)
 
     @pytest.mark.unit
     def test_dof(self, frame):
-        m, unit_model = frame
-        if degrees_of_freedom(unit_model) != 0:
+        m, unit_model_costing = frame
+        if degrees_of_freedom(unit_model_costing) != 0:
             raise UnitAttributeError(
                 "The unit has {dof} degrees of freedom when 0 is required."
-                "".format(dof=degrees_of_freedom(unit_model))
+                "".format(dof=degrees_of_freedom(unit_model_costing))
             )
 
     @pytest.mark.component
     def test_initialization(self, frame):
-        m, blk = frame
+        m, unit_model_costing = frame
         m.fs.unit.costing.initialize()
 
     @pytest.mark.component
