@@ -17,7 +17,7 @@ The flowsheet follows the same formulation as benchmark simulation model no.2 (B
 but comprises different specifications for default values than BSM2.
 
 """
-__author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia"
+__author__ = "Alejandro Garciadiego, Adam Atia, Marcus Holly, Chenyu Wang, Ben Knueven, Xinhong Liu,"
 
 import pyomo.environ as pyo
 
@@ -34,13 +34,13 @@ from watertap.unit_models.translators.translator_adm1_asm1 import Translator_ADM
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
-
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
 from watertap.property_models.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
+from idaes.models.unit_models.mixer import MomentumMixingType
 from idaes.models.unit_models.separator import SplittingType
 from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
@@ -55,7 +55,7 @@ from idaes.models.unit_models import (
     Product,
 )
 
-from watertap.unit_models.cstr_injection import CSTR_Injection
+from watertap.unit_models.aeration_tank import AerationTank, ElectricityConsumption
 from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
 from watertap.property_models.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
@@ -69,13 +69,15 @@ from watertap.costing.unit_models.clarifier import (
 from pyomo.util.check_units import assert_units_consistent
 
 
-def main():
+def main(reactor_volume_equalities=False):
     m = build()
     set_operating_conditions(m)
+
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
-
     initialize_system(m)
+
+    assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
 
@@ -85,7 +87,16 @@ def main():
 
     results = solve(m)
     pyo.assert_optimal_termination(results)
-    display_results(m)
+
+    print("\n\n=============SIMULATION RESULTS=============\n\n")
+    # display_results(m)
+    display_costing(m)
+
+    setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
+    results = solve(m, tee=True)
+    pyo.assert_optimal_termination(results)
+    print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
+    # display_results(m)
     display_costing(m)
 
     return m, results
@@ -109,7 +120,9 @@ def build():
     # ==========================================================================
     # Mixer for inlet water and recycled sludge
     m.fs.MX1 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["feed_water", "recycle"]
+        property_package=m.fs.props_ASM1,
+        inlet_list=["feed_water", "recycle"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
     # First reactor (anoxic) - standard CSTR
     m.fs.R1 = CSTR(
@@ -120,16 +133,22 @@ def build():
         property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
     )
     # Third reactor (aerobic) - CSTR with injection
-    m.fs.R3 = CSTR_Injection(
-        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+    m.fs.R3 = AerationTank(
+        property_package=m.fs.props_ASM1,
+        reaction_package=m.fs.ASM1_rxn_props,
+        electricity_consumption=ElectricityConsumption.calculated,
     )
     # Fourth reactor (aerobic) - CSTR with injection
-    m.fs.R4 = CSTR_Injection(
-        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+    m.fs.R4 = AerationTank(
+        property_package=m.fs.props_ASM1,
+        reaction_package=m.fs.ASM1_rxn_props,
+        electricity_consumption=ElectricityConsumption.calculated,
     )
     # Fifth reactor (aerobic) - CSTR with injection
-    m.fs.R5 = CSTR_Injection(
-        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+    m.fs.R5 = AerationTank(
+        property_package=m.fs.props_ASM1,
+        reaction_package=m.fs.ASM1_rxn_props,
+        electricity_consumption=ElectricityConsumption.calculated,
     )
     m.fs.SP5 = Separator(
         property_package=m.fs.props_ASM1, outlet_list=["underflow", "overflow"]
@@ -149,8 +168,11 @@ def build():
     )
     # Mixing sludge recycle and R5 underflow
     m.fs.MX6 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["clarifier", "reactor"]
+        property_package=m.fs.props_ASM1,
+        inlet_list=["clarifier", "reactor"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
+
     # Product Blocks
     m.fs.Treated = Product(property_package=m.fs.props_ASM1)
     # Recycle pressure changer - use a simple isothermal unit for now
@@ -173,43 +195,8 @@ def build():
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
-    # Add additional parameter and constraints
-    m.fs.R3.KLa = pyo.Var(
-        initialize=7.6,
-        units=pyo.units.hour**-1,
-        doc="Lumped mass transfer coefficient for oxygen",
-    )
-    m.fs.R4.KLa = pyo.Var(
-        initialize=5.7,
-        units=pyo.units.hour**-1,
-        doc="Lumped mass transfer coefficient for oxygen",
-    )
-    m.fs.S_O_eq = pyo.Param(
-        default=8e-3,
-        units=pyo.units.kg / pyo.units.m**3,
-        mutable=True,
-        doc="Dissolved oxygen concentration at equilibrium",
-    )
-
-    @m.fs.R3.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
-    def mass_transfer_R3(self, t):
-        return pyo.units.convert(
-            m.fs.R3.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
-        ) == (
-            m.fs.R3.KLa
-            * m.fs.R3.volume[t]
-            * (m.fs.S_O_eq - m.fs.R3.outlet.conc_mass_comp[t, "S_O"])
-        )
-
-    @m.fs.R4.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
-    def mass_transfer_R4(self, t):
-        return pyo.units.convert(
-            m.fs.R4.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
-        ) == (
-            m.fs.R4.KLa
-            * m.fs.R4.volume[t]
-            * (m.fs.S_O_eq - m.fs.R4.outlet.conc_mass_comp[t, "S_O"])
-        )
+    m.fs.R3.KLa = 7.6
+    m.fs.R4.KLa = 5.7
 
     # ======================================================================
     # Anaerobic digester section
@@ -251,13 +238,19 @@ def build():
     m.fs.DU = DewateringUnit(property_package=m.fs.props_ASM1)
 
     m.fs.MX2 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["feed_water1", "recycle1"]
+        property_package=m.fs.props_ASM1,
+        inlet_list=["feed_water1", "recycle1"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
     m.fs.MX3 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["feed_water2", "recycle2"]
+        property_package=m.fs.props_ASM1,
+        inlet_list=["feed_water2", "recycle2"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
     m.fs.MX4 = Mixer(
-        property_package=m.fs.props_ASM1, inlet_list=["thickener", "clarifier"]
+        property_package=m.fs.props_ASM1,
+        inlet_list=["thickener", "clarifier"],
+        momentum_mixing_type=MomentumMixingType.equality,
     )
 
     # Make connections related to AD section
@@ -280,6 +273,9 @@ def build():
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     iscale.calculate_scaling_factors(m.fs)
+
+    # keep handy all the mixers
+    m.mixers = (m.fs.MX1, m.fs.MX2, m.fs.MX3, m.fs.MX4, m.fs.MX6)
 
     return m
 
@@ -382,6 +378,10 @@ def set_operating_conditions(m):
     m.fs.TU.hydraulic_retention_time.fix(86400 * pyo.units.s)
     m.fs.TU.diameter.fix(10 * pyo.units.m)
 
+    # TODO: resolve the danger of redundant constraint related to pressure equality constraints created in mixer, specifically for isobaric conditions. the mixer initializer will turn these constraints back on
+    for mx in m.mixers:
+        mx.pressure_equality_constraints[0.0, 2].deactivate()
+
 
 def initialize_system(m):
     # Initialize flowsheet
@@ -392,7 +392,7 @@ def initialize_system(m):
     seq.options.tear_set = [m.fs.stream2, m.fs.stream10adm]
 
     G = seq.create_graph(m)
-    # Uncomment this code to see tear set and initialization order
+    # The code below shows tear set and initialization order
     order = seq.calculation_order(G)
     print("Initialization Order")
     for o in order:
@@ -450,6 +450,10 @@ def initialize_system(m):
 
     seq.run(m, function)
 
+    # TODO: resolve the danger of redundant constraint related to pressure equality constraints created in mixer, specifically for isobaric conditions. the mixer initializer will turn these constraints back on
+    for mx in m.mixers:
+        mx.pressure_equality_constraints[0.0, 2].deactivate()
+
 
 def add_costing(m):
     m.fs.costing = WaterTAPCosting()
@@ -475,12 +479,7 @@ def add_costing(m):
     m.fs.DU.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.TU.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
-    # Leaving out mixer costs for now
-    # m.fs.MX1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    # m.fs.MX6.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    # m.fs.MX2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    # m.fs.MX3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    # m.fs.MX4.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # TODO: Leaving out mixer costs; consider including later
 
     # process costing and add system level metrics
     m.fs.costing.cost_process()
@@ -490,13 +489,89 @@ def add_costing(m):
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
+    iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
+    iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
+    iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
+
     iscale.calculate_scaling_factors(m.fs)
 
 
-def solve(blk, solver=None):
+def setup_optimization(m, reactor_volume_equalities=False):
+
+    for i in ["R1", "R2", "R3", "R4", "R5"]:
+        reactor = getattr(m.fs, i)
+        reactor.volume.unfix()
+        reactor.volume.setlb(1)
+        # reactor.volume.setub(2000)
+    if reactor_volume_equalities:
+        add_reactor_volume_equalities(m)
+    m.fs.R3.outlet.conc_mass_comp[:, "S_O"].unfix()
+    m.fs.R3.outlet.conc_mass_comp[:, "S_O"].setub(8e-3)
+
+    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].unfix()
+    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].setub(8e-3)
+
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].unfix()
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].setub(8e-3)
+
+    # Unfix fraction of outflow from reactor 5 that goes to recycle
+    m.fs.SP5.split_fraction[:, "underflow"].unfix()
+    # m.fs.SP5.split_fraction[:, "underflow"].setlb(0.45)
+    m.fs.SP6.split_fraction[:, "recycle"].unfix()
+
+    add_effluent_violations(m)
+
+
+def add_effluent_violations(m):
+    # TODO: update "m" to blk; change ref to m.fs.Treated instead of CL1 effluent
+    m.fs.TSS_max = pyo.Var(initialize=0.03, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.TSS_max.fix()
+
+    @m.fs.Constraint(m.fs.time)
+    def eq_TSS_max(self, t):
+        return m.fs.CL1.effluent_state[0].TSS <= m.fs.TSS_max
+
+    m.fs.COD_max = pyo.Var(initialize=0.1, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.COD_max.fix()
+
+    @m.fs.Constraint(m.fs.time)
+    def eq_COD_max(self, t):
+        return m.fs.CL1.effluent_state[0].COD <= m.fs.COD_max
+
+    m.fs.totalN_max = pyo.Var(initialize=0.018, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.totalN_max.fix()
+
+    @m.fs.Constraint(m.fs.time)
+    def eq_totalN_max(self, t):
+        return m.fs.CL1.effluent_state[0].Total_N <= m.fs.totalN_max
+
+    m.fs.BOD5_max = pyo.Var(initialize=0.01, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.BOD5_max.fix()
+
+    @m.fs.Constraint(m.fs.time)
+    def eq_BOD5_max(self, t):
+        return m.fs.CL1.effluent_state[0].BOD5["effluent"] <= m.fs.BOD5_max
+
+
+def add_reactor_volume_equalities(m):
+    # TODO: These constraints were applied for initial optimization of AS reactor volumes; otherwise, volumes drive towards lower bound. Revisit
+    @m.fs.Constraint(m.fs.time)
+    def Vol_1(self, t):
+        return m.fs.R1.volume[0] == m.fs.R2.volume[0]
+
+    @m.fs.Constraint(m.fs.time)
+    def Vol_2(self, t):
+        return m.fs.R3.volume[0] == m.fs.R4.volume[0]
+
+    @m.fs.Constraint(m.fs.time)
+    def Vol_3(self, t):
+        return m.fs.R5.volume[0] >= m.fs.R4.volume[0] * 0.5
+
+
+def solve(blk, solver=None, tee=False):
     if solver is None:
         solver = get_solver()
-    results = solver.solve(blk, tee=True)
+    results = solver.solve(blk, tee=tee)
     pyo.assert_optimal_termination(results)
     return results
 
