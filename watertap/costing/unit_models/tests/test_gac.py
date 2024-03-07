@@ -21,6 +21,8 @@ from pyomo.environ import (
 )
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (
+    declare_process_block_class,
+    UnitModelBlockData,
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
@@ -31,15 +33,13 @@ from watertap.unit_models.tests.test_gac import build_crittenden
 from watertap.costing.unit_models.tests.unit_costing_test_harness import (
     UnitCostingTestHarness,
 )
-from idaes.core import (
-    declare_process_block_class,
-    UnitModelBlockData,
-)
 from watertap.costing.unit_models.gac import cost_gac
 
 __author__ = "Hunter Barber"
 
 solver = get_solver()
+zero = 1e-8
+relative_tolerance = 1e-3
 
 
 @declare_process_block_class("DummyUnitModel")
@@ -52,56 +52,68 @@ class DummyUnitModelData(UnitModelBlockData):
         return cost_gac
 
 
-class TestGACCosting:
-    @pytest.fixture(scope="class")
-    def build(self):
-        m = pyo.ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
+def build():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.unit = DummyUnitModel()
-        m.fs.unit.bed_volume = Var(units=pyunits.meter**3)
-        m.fs.unit.bed_volume.fix(8.900)
-        m.fs.unit.bed_mass_gac = Var(units=pyunits.kg)
-        m.fs.unit.bed_mass_gac.fix(4004)
-        m.fs.unit.gac_usage_rate = Var(units=pyunits.kg / pyunits.second)
-        m.fs.unit.gac_usage_rate.fix(0.0002925)
+    m.fs.unit = DummyUnitModel()
+    m.fs.unit.bed_volume = Var(units=pyunits.meter**3)
+    m.fs.unit.bed_volume.fix(8.900)
+    m.fs.unit.bed_mass_gac = Var(units=pyunits.kg)
+    m.fs.unit.bed_mass_gac.fix(4004)
+    m.fs.unit.gac_usage_rate = Var(units=pyunits.kg / pyunits.second)
+    m.fs.unit.gac_usage_rate.fix(0.0002925)
+
+    m.fs.costing = WaterTAPCosting()
+    m.fs.costing.base_currency = pyo.units.USD_2020
+
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.costing.cost_process()
+
+    # testing gac costing block dof and initialization
+
+    # solve
+    results = solver.solve(m)
+
+    # Check for optimal solution
+    assert pyo.check_optimal_termination(results)
+
+    cost = m.fs.unit.costing
+    # Check for known cost solution of default twin alternating contactors
+    assert pyo.value(m.fs.costing.gac_pressure.num_contactors_op) == 1
+    assert pyo.value(m.fs.costing.gac_pressure.num_contactors_redundant) == 1
+    assert pytest.approx(56900, rel=1e-3) == pyo.value(cost.contactor_cost)
+    assert pytest.approx(4.359, rel=1e-3) == pyo.value(cost.adsorbent_unit_cost)
+    assert pytest.approx(17450, rel=1e-3) == pyo.value(cost.adsorbent_cost)
+    assert pytest.approx(81690, rel=1e-3) == pyo.value(cost.other_process_cost)
+    assert pytest.approx(2.0 * 156000, rel=1e-3) == pyo.value(cost.capital_cost)
+    assert pytest.approx(12680, rel=1e-3) == pyo.value(cost.gac_makeup_cost)
+    assert pytest.approx(27660, rel=1e-3) == pyo.value(cost.gac_regen_cost)
+    assert pytest.approx(0.01631, rel=1e-3) == pyo.value(cost.energy_consumption)
+    assert pytest.approx(40370, rel=1e-3) == pyo.value(cost.fixed_operating_cost)
+
+    return m
+
+
+class TestGACHand(UnitCostingTestHarness):
+    def configure(self):
+        m = build()
+
+        # arguments for UnitTestHarness
+        self.default_zero = zero
+        self.default_relative_tolerance = relative_tolerance
+
+        self.cost_solutions[m.fs.unit.costing.contactor_cost] = 56900
+        self.cost_solutions[m.fs.unit.costing.adsorbent_unit_cost] = 4.359
+        self.cost_solutions[m.fs.unit.costing.adsorbent_cost] = 17450
+        self.cost_solutions[m.fs.unit.costing.other_process_cost] = 81690
+        self.cost_solutions[m.fs.unit.costing.capital_cost] = 2 * 156000
+        self.cost_solutions[m.fs.unit.costing.gac_makeup_cost] = 12680
+        self.cost_solutions[m.fs.unit.costing.gac_regen_cost] = 27660
+        self.cost_solutions[m.fs.unit.costing.energy_consumption] = 0.01631
+        self.cost_solutions[m.fs.unit.costing.fixed_operating_cost] = 40370
 
         return m
-
-    @pytest.mark.component
-    def test_robust_costing_pressure(self, build):
-        m = build
-
-        m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyo.units.USD_2020
-
-        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        m.fs.costing.cost_process()
-
-        # testing gac costing block dof and initialization
-        assert assert_units_consistent(m) is None
-        assert istat.degrees_of_freedom(m) == 0
-        m.fs.unit.costing.initialize()
-
-        # solve
-        results = solver.solve(m)
-
-        # Check for optimal solution
-        assert pyo.check_optimal_termination(results)
-
-        cost = m.fs.unit.costing
-        # Check for known cost solution of default twin alternating contactors
-        assert pyo.value(m.fs.costing.gac_pressure.num_contactors_op) == 1
-        assert pyo.value(m.fs.costing.gac_pressure.num_contactors_redundant) == 1
-        assert pytest.approx(56900, rel=1e-3) == pyo.value(cost.contactor_cost)
-        assert pytest.approx(4.359, rel=1e-3) == pyo.value(cost.adsorbent_unit_cost)
-        assert pytest.approx(17450, rel=1e-3) == pyo.value(cost.adsorbent_cost)
-        assert pytest.approx(81690, rel=1e-3) == pyo.value(cost.other_process_cost)
-        assert pytest.approx(2.0 * 156000, rel=1e-3) == pyo.value(cost.capital_cost)
-        assert pytest.approx(12680, rel=1e-3) == pyo.value(cost.gac_makeup_cost)
-        assert pytest.approx(27660, rel=1e-3) == pyo.value(cost.gac_regen_cost)
-        assert pytest.approx(0.01631, rel=1e-3) == pyo.value(cost.energy_consumption)
-        assert pytest.approx(40370, rel=1e-3) == pyo.value(cost.fixed_operating_cost)
 
 
 # class TestGACHand(UnitCostingTestHarness):

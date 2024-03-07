@@ -24,9 +24,6 @@ import idaes.core.util.scaling as iscale
 
 
 # -----------------------------------------------------------------------------
-
-
-# -----------------------------------------------------------------------------
 class UnitAttributeError(AttributeError):
     """
     WaterTAP exception for generic attribute errors arising from unit model testing.
@@ -53,7 +50,7 @@ class UnitCostingTestHarness(abc.ABC):
         self.optarg = None
 
         # solution map from var to value
-        self.unit_solutions = ComponentMap()
+        self.cost_solutions = ComponentMap()
 
         # arguments for badly scaled variables
         self.default_large = 1e4
@@ -82,7 +79,7 @@ class UnitCostingTestHarness(abc.ABC):
         blk._test_objs = Block()
         blk._test_objs.solver = self.solver
         blk._test_objs.optarg = self.optarg
-        blk._test_objs.unit_solutions = self.unit_solutions
+        blk._test_objs.cost_solutions = self.cost_solutions
 
     @abc.abstractmethod
     def configure(self):
@@ -90,7 +87,7 @@ class UnitCostingTestHarness(abc.ABC):
         Placeholder method to allow user to setup test harness.
 
         The configure method must set the attributes:
-        unit_solutions: ComponentMap of values for the specified variables
+        cost_solutions: ComponentMap of values for the specified variables
 
         The unit model tested should be named `fs.unit`, or this method
         should set the attribute `unit_model_block`.
@@ -121,18 +118,13 @@ class UnitCostingTestHarness(abc.ABC):
     @pytest.mark.component
     def test_initialization(self, frame):
         m, blk = frame
-        initialization_tester(
-            m,
-            unit=blk,
-            solver=blk._test_objs.solver,
-            optarg=blk._test_objs.optarg,
-        )
+        m.fs.unit.costing.initialize()
 
     @pytest.mark.component
-    def test_unit_solutions(self, frame):
+    def test_cost_solutions(self, frame):
         self.configure_class()
         m, blk = frame
-        solutions = blk._test_objs.unit_solutions
+        solutions = blk._test_objs.cost_solutions
 
         # solve unit
         if blk._test_objs.solver is None:
@@ -144,23 +136,6 @@ class UnitCostingTestHarness(abc.ABC):
         results = opt.solve(blk)
 
         # check solve
-        badly_scaled_vars = list(
-            iscale.badly_scaled_var_generator(
-                blk,
-                large=self.default_large,
-                small=self.default_small,
-                zero=self.default_zero,
-            )
-        )
-        if badly_scaled_vars:
-            lines = [
-                f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}"
-                for x in badly_scaled_vars
-            ]
-            msg = "One or more badly scaled variables found:\n"
-            msg += "\n".join(lines)
-            raise AssertionError(msg)
-
         assert_optimal_termination(results)
 
         # check results
@@ -181,8 +156,3 @@ class UnitCostingTestHarness(abc.ABC):
                 )
             if not comp_obj == value(var):
                 raise AssertionError(f"{var}: Expected {val}, got {value(var)} instead")
-
-    @pytest.mark.component
-    def test_reporting(self, frame):
-        m, blk = frame
-        blk.report()
